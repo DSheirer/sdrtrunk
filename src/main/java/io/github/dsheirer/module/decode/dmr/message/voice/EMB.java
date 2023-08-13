@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,9 @@ package io.github.dsheirer.module.decode.dmr.message.voice;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
+import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashSet;
 
 /**
  * DMR Voice Frame B-F Embedded Signalling Chunk
@@ -32,7 +31,6 @@ import java.util.HashSet;
 public class EMB
 {
     private final static Logger mLog = LoggerFactory.getLogger(EMB.class);
-    public static final int[] CRC_CHECKSUMS = new int[]{0x02F, 0x11E, 0x1B7, 0x1E2, 0x1C9, 0x0E5, 0x073};
     private static final int[] VALID_WORDS = new int[]{
         0x0000, 0x0273, 0x04E5, 0x0696, 0x09C9, 0x0BBA, 0x0D2C, 0x0F5F, 0x11E2, 0x1391, 0x1507, 0x1774, 0x182B, 0x1A58,
         0x1CCE, 0x1EBD, 0x21B7, 0x23C4, 0x2552, 0x2721, 0x287E, 0x2A0D, 0x2C9B, 0x2EE8, 0x3055, 0x3226, 0x34B0, 0x36C3,

@@ -17,20 +17,18 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.channel;
+package io.github.dsheirer.module.decode.dmr.message;
 
-import java.util.List;
+import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 
-public interface ITimeslotFrequencyReceiver
+/**
+ * DMR message that exposes a service options configuration
+ */
+public interface IServiceOptionsProvider
 {
     /**
-     * Provides the logical slot number(s) that require a matching timeslot frequency mapping
+     * Service Options
+     * @return service options
      */
-    public int[] getLogicalSlotNumbers();
-
-    /**
-     * Applies the list of timeslot frequency mappings to the implementer
-     * @param timeslotFrequencies that match the logical timeslots
-     */
-    public void apply(List<TimeslotFrequency> timeslotFrequencies);
+    ServiceOptions getServiceOptions();
 }

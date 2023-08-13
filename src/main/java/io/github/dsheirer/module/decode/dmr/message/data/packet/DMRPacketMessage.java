@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.ip.IPacket;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,6 +74,10 @@ public class DMRPacketMessage extends DMRMessage
         sb.append("CC:").append(getPacketSequence().getPacketSequenceHeader().getSlotType().getColorCode());
         sb.append(" FM:").append(getPacketSequence().getPacketSequenceHeader().getSourceLLID());
         sb.append(" TO:").append(getPacketSequence().getPacketSequenceHeader().getDestinationLLID());
+        if(getPacketSequence().isEncrypted())
+        {
+            sb.append(" ENCRYPTED");
+        }
         sb.append(" ").append(getPacket().toString());
         return sb.toString();
     }

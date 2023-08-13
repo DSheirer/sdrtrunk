@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.util.Callback;
 
 /**
- * Maps a timeslot number to a pair of channel frequency values
+ * Maps a logical slot number (LSN) to a pair of channel frequency values
  */
 public class TimeslotFrequency
 {
@@ -73,7 +73,7 @@ public class TimeslotFrequency
      * Downlink Frequency property
      */
     @JsonIgnore
-    public LongProperty downlinkFrequencyPropertyProperty()
+    public LongProperty downlinkFrequencyProperty()
     {
         return mDownlinkFrequencyProperty;
     }
@@ -168,7 +168,7 @@ public class TimeslotFrequency
      */
     public static Callback<TimeslotFrequency,Observable[]> extractor()
     {
-        return (TimeslotFrequency tf) -> new Observable[] {tf.getNumberProperty(), tf.downlinkFrequencyPropertyProperty(),
+        return (TimeslotFrequency tf) -> new Observable[] {tf.getNumberProperty(), tf.downlinkFrequencyProperty(),
             tf.uplinkFrequencyProperty(), tf.getDownlinkMHz(), tf.getUplinkMHz()};
     }
 }

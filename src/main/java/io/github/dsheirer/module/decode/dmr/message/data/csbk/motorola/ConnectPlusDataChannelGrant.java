@@ -23,7 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
@@ -40,14 +40,13 @@ public class ConnectPlusDataChannelGrant extends CSBKMessage implements ITimeslo
 {
     private static final int[] TARGET_ADDRESS = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
         32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] REPEATER = new int[]{40, 41, 42, 43};
-    private static final int[] CHANNEL_GRANT_TIMESLOT = new int[]{44};
+    private static final int[] REPEATER = new int[]{40, 41, 42, 43, 44};
 
     //Analysis: this field correlates to UNKNOWN_FIELD_1(bits: 40-48) in ConnectPlusTerminateChannelGrant.
     private static final int[] UNKNOWN_FIELD = new int[]{48, 49, 50, 51, 52, 53, 54, 55};
 
     private RadioIdentifier mTargetRadio;
-    private DMRLogicalChannel mDMRLogicalChannel;
+    private DMRLsn mDmrLsn;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -118,31 +117,22 @@ public class ConnectPlusDataChannelGrant extends CSBKMessage implements ITimeslo
     }
 
     /**
-     * Channel grant timeslot
-     * @return 1 or 2
-     */
-    public int getChannelGrantTimeslot()
-    {
-        return getMessage().getInt(CHANNEL_GRANT_TIMESLOT) + 1;
-    }
-
-    /**
      * DMR Channel
      */
-    public DMRLogicalChannel getChannel()
+    public DMRLsn getChannel()
     {
-        if(mDMRLogicalChannel == null)
+        if(mDmrLsn == null)
         {
-            mDMRLogicalChannel = new DMRLogicalChannel(getRepeater(), getChannelGrantTimeslot());
+            mDmrLsn = new DMRLsn(getRepeater());
         }
 
-        return mDMRLogicalChannel;
+        return mDmrLsn;
     }
 
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getChannel().getLSNArray();
+        return getChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -154,7 +144,7 @@ public class ConnectPlusDataChannelGrant extends CSBKMessage implements ITimeslo
     {
         for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
         {
-            if(timeslotFrequency.getNumber() == getChannel().getLogicalSlotNumber())
+            if(timeslotFrequency.getNumber() == getChannel().getValue())
             {
                 getChannel().setTimeslotFrequency(timeslotFrequency);
             }

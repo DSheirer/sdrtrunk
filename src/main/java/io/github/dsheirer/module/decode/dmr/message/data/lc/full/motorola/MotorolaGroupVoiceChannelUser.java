@@ -29,14 +29,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Motorola Capacity Plus - Yet Another Voice Channel User Message - Why?  Is this one specific to Encrypted calls?
+ * Motorola Capacity Plus - Group Voice Channel User
  */
-public class CapacityPlusEncryptedVoiceChannelUser extends CapacityPlusVoiceChannelUser
+public class MotorolaGroupVoiceChannelUser extends CapacityPlusVoiceChannelUser
 {
-    private static final int[] UNKNOWN_1 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] TARGET_ADDRESS = new int[]{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] UNKNOWN_2 = new int[]{48, 49, 50, 51, 52, 53, 54, 55};
-    private static final int[] SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    private static final int[] GROUP_ADDRESS = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+            36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] SOURCE_ADDRESS = new int[]{48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+            60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
     //Reed Solomon FEC: 72-95
 
     private RadioIdentifier mRadio;
@@ -48,7 +48,7 @@ public class CapacityPlusEncryptedVoiceChannelUser extends CapacityPlusVoiceChan
      *
      * @param message for the link control payload
      */
-    public CapacityPlusEncryptedVoiceChannelUser(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public MotorolaGroupVoiceChannelUser(CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
         super(message, timestamp, timeslot);
     }
@@ -73,26 +73,12 @@ public class CapacityPlusEncryptedVoiceChannelUser extends CapacityPlusVoiceChan
             sb.append(" RESERVED-BIT");
         }
 
-        sb.append("FLC MOTOROLA CAP+ ENCRYPTED VOICE CHANNEL USER");
+        sb.append("FLC MOTOROLA GROUP VOICE CHANNEL USER");
         sb.append(" FM:").append(getRadio());
         sb.append(" TO:").append(getTalkgroup());
         sb.append(" ").append(getServiceOptions());
-        sb.append(" UNK1:").append(getUnknown1());
-        sb.append(" UNK2:").append(getUnknown2());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
-    }
-
-    /**
-     * Unknown 8-bit fields
-     */
-    public String getUnknown1()
-    {
-        return getMessage().getHex(UNKNOWN_1, 2);
-    }
-    public String getUnknown2()
-    {
-        return getMessage().getHex(UNKNOWN_2, 2);
     }
 
     /**
@@ -115,7 +101,7 @@ public class CapacityPlusEncryptedVoiceChannelUser extends CapacityPlusVoiceChan
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(TARGET_ADDRESS));
+            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(GROUP_ADDRESS));
         }
 
         return mTalkgroup;

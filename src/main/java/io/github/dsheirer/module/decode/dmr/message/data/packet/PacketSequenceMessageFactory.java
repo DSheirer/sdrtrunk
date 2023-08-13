@@ -29,7 +29,10 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataH
 import io.github.dsheirer.module.decode.dmr.message.data.header.UDTHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MNISProprietaryDataHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.type.ApplicationType;
+import io.github.dsheirer.module.decode.dmr.message.type.DataPacketFormat;
+import io.github.dsheirer.module.decode.ip.DefinedShortDataPacket;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraTokenHeader;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraUnknownPacket;
@@ -179,9 +182,20 @@ public class PacketSequenceMessageFactory
                         packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
             }
         }
+        else if(secondaryHeader instanceof MotorolaDataEncryptionHeader &&
+                packetSequence.getPacketSequenceHeader().getDataPacketFormat() == DataPacketFormat.DEFINED_SHORT_DATA)
+        {
+            return createDefinedShortData(packetSequence, packet);
+        }
         else
         {
-            mLog.info("Unknown Proprietary Packet Header Type - creating unknown packet.");
+            if(packetSequence.getProprietaryDataHeader() != null)
+            {
+                mLog.info("Unknown Proprietary Packet Header Type - creating unknown packet. Data Packet Format: " +
+                        packetSequence.getPacketSequenceHeader().getDataPacketFormat() + " Proprietary Header: " +
+                        packetSequence.getProprietaryDataHeader().getClass());
+            }
+
             return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
                 packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
         }
@@ -217,8 +231,7 @@ public class PacketSequenceMessageFactory
      */
     public static IMessage createDefinedShortData(PacketSequence packetSequence, CorrectedBinaryMessage packet)
     {
-        mLog.info("Unknown Short Data Packet Header Type - creating unknown packet.");
-        return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
+        return new DMRPacketMessage(packetSequence, new DefinedShortDataPacket(packet, 0), packet,
             packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
     }
 

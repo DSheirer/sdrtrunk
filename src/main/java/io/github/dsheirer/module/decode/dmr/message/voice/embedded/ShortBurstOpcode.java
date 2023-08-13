@@ -17,43 +17,55 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
-
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
-import java.util.Collections;
-import java.util.List;
+package io.github.dsheirer.module.decode.dmr.message.voice.embedded;
 
 /**
- * Null Short Link Control Message
+ * Short Burst opcode
+ *
+ * See: https://patents.google.com/patent/US8271009B2 Page 12
  */
-public class NullMessage extends ShortLCMessage
+public enum ShortBurstOpcode
 {
+    NULL(0),
+    ARC4_ENCRYPTION(1),
+    TXI_DELAY(3),
+    UNKNOWN(-1);
+
+    private int mValue;
+
     /**
-     * Constructs an instance
-     *
-     * @param message containing the short link control message bits
+     * Constructor
+     * @param value of the opcode
      */
-    public NullMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    ShortBurstOpcode(int value)
     {
-        super(message, timestamp, timeslot);
+        mValue = value;
     }
 
-    @Override
-    public String toString()
+    /**
+     * Numeric value for the opcode
+     * @return value.
+     */
+    private int getValue()
     {
-        StringBuilder sb = new StringBuilder();
-        if(!isValid())
+        return mValue;
+    }
+
+    /**
+     * Lookup the enum entry from the specified value.
+     * @param value to lookup
+     * @return matching entry or UNKNOWN.
+     */
+    public static ShortBurstOpcode fromValue(int value)
+    {
+        for(ShortBurstOpcode opcode: ShortBurstOpcode.values())
         {
-            sb.append("[CRC ERROR] ");
+            if(opcode.getValue() == value)
+            {
+                return opcode;
+            }
         }
-        sb.append("SLC TS1:IDLE TS2:IDLE");
-        return sb.toString();
-    }
 
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.emptyList();
+        return UNKNOWN;
     }
 }

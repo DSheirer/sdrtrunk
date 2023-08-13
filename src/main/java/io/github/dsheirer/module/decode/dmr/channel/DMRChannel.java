@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,9 +56,9 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     }
 
     /**
-     * Repeater number for the channel.
+     * Repeater number or channel number for the channel.
      */
-    public int getRepeater()
+    public int getChannel()
     {
         return getValue();
     }
@@ -70,36 +70,6 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     public int getTimeslot()
     {
         return mTimeslot;
-    }
-
-    /**
-     * Logical slot number for this channel.  LSN is a 1-based index value where repeater one, timeslot 1 is
-     * LSN 1, timeslot 2 is LSN 2, etc.
-     *
-     * Formula: LSN = ((channel - 1) * 2) + timeslot
-     *
-     * @return logical slot number, a 1-based index value
-     */
-    public int getLogicalSlotNumber()
-    {
-        int repeater = getRepeater();
-
-        if(repeater > 0)
-        {
-            return ((repeater - 1) * 2) + getTimeslot();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Returns an array of length 1 containing this channel's logical slot number
-     */
-    public int[] getLSNArray()
-    {
-        int[] logicalSlotNumbers = new int[1];
-        logicalSlotNumbers[0] = getLogicalSlotNumber();
-        return logicalSlotNumbers;
     }
 
     /**
@@ -119,6 +89,13 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     public boolean isTDMAChannel()
     {
         return true;
+    }
+
+
+    @Override
+    public String toString()
+    {
+        return "CHAN:" + getChannel() + ":" + getTimeslot();
     }
 
     /**

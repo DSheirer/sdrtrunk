@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DmrRestLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
@@ -39,7 +39,6 @@ import java.util.List;
 public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequencyReceiver
 {
     private static final int[] LC_START_STOP = new int[]{16, 17};
-    private static final int TIMESLOT = 18;
     private static final int[] REST_LSN = new int[]{19, 20, 21, 22, 23};
     private static final int ASYNC = 24;
     private static final int[] SITE = new int[]{25, 26, 27, 28};
@@ -58,7 +57,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     private static final int[] NEIGHBOR_6_REST = new int[]{76, 77, 78, 79};
 
 
-    private DMRLogicalChannel mRestChannel;
+    private DmrRestLsn mRestChannel;
     private DMRSite mSite;
     private List<Identifier> mIdentifiers;
 
@@ -287,36 +286,22 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     }
 
     /**
-     * Rest repeater
-     */
-    public int getRestRepeater() { return (int) Math.ceil(getRestLSN() / 2.0); }
-
-    /**
-     * Rest timeslot
-     * @return timeslot 1 or 2
-     */
-    public int getRestTimeslot()
-    {
-        return (getRestLSN() % 2 == 0) ? 2 : 1;
-    }
-
-    /**
      * DMR Channel
      */
-    public DMRLogicalChannel getRestChannel()
+    public DmrRestLsn getRestChannel()
     {
         if(mRestChannel == null)
         {
-            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
+            mRestChannel = new DmrRestLsn(getRestLSN());
         }
 
         return mRestChannel;
     }
 
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getRestChannel().getLSNArray();
+        return getRestChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -329,7 +314,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(timeslotFrequency.getNumber() == getRestChannel().getLogicalSlotNumber())
+            if(timeslotFrequency.getNumber() == getRestChannel().getValue())
             {
                 getRestChannel().setTimeslotFrequency(timeslotFrequency);
             }

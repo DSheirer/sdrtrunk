@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,14 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.message.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 
 /**
  * Hytera Full Link Control
  */
-public abstract class HyteraFullLC extends FullLCMessage
+public abstract class HyteraFullLC extends FullLCMessage implements IServiceOptionsProvider
 {
     private static final int[] SERVICE_OPTIONS = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] FREE_REPEATER = new int[]{24, 25, 26, 27};

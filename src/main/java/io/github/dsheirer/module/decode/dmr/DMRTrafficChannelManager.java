@@ -322,7 +322,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     public void processChannelGrant(DMRChannel channel, IdentifierCollection identifierCollection,
                                     Opcode opcode, long timestamp, boolean encrypted)
     {
-        int lsn = channel.getLogicalSlotNumber();
+        int lsn = channel.getValue();
 
         DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
         DecodeEventType decodeEventType = getEventType(opcode, identifierCollection, encrypted);

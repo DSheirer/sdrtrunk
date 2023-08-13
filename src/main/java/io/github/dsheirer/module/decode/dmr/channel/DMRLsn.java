@@ -19,29 +19,60 @@
 
 package io.github.dsheirer.module.decode.dmr.channel;
 
+import java.util.List;
+
 /**
- * DMR logical channel. This channel uses a logical channel number and a timeslot.
+ * DMR Logical Slot Number (LSN) channel.
+ *
+ * Note: LSN 1-16 are represented in memory using the following channel and timeslot values:
+ *
+ * LSN: CHANNEL/TIMESLOT
+ *  1:  1/1
+ *  2:  1/2
+ *  3:  2/1
+ *  4:  2/2
+ *  5:  3/1
+ *  6:  3/2
+ *  7:  4/1
+ *  8:  4/2
+ *  9:  5/1
+ * 10:  5/2
+ * 11:  6/1
+ * 12:  6/2
+ * 13:  7/1
+ * 14:  7/2
+ * 15:  8/1
+ * 16:  8/2
  */
-public class DMRLogicalChannel extends DMRChannel
+public class DMRLsn extends DMRChannel implements ITimeslotFrequencyReceiver
 {
     private TimeslotFrequency mTimeslotFrequency;
 
     /**
-     * Constructs an instance.  Note: radio reference uses a one based index, so we add a value of one to the
-     * calculated logical slot value for visual compatibility for users.
+     * Constructs an instance
      *
-     * @param channel number or repeater number
-     * @param logicalSlotNumber - zero based index.
+     * @param lsn in range 1 - 16
      */
-    public DMRLogicalChannel(int channel, int timeslot)
+    public DMRLsn(int lsn)
     {
-        super(channel, timeslot);
+        super(((lsn - 1) / 2) + 1, ((lsn - 1) % 2) + 1);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "LSN:" + getLsn();
     }
 
     /**
-     * Downlink frequency
-     * @return value in Hertz, or 0 if this channel doesn't have a timeslot frequency mapping
+     * Logical Slot Number
+     * @return lsn
      */
+    public int getLsn()
+    {
+        return ((getChannel() - 1) * 2) + getTimeslot();
+    }
+
     @Override
     public long getDownlinkFrequency()
     {
@@ -53,10 +84,6 @@ public class DMRLogicalChannel extends DMRChannel
         return 0;
     }
 
-    /**
-     * Uplink frequency
-     * @return value in Hertz, or 0 if this channel doesn't have a timeslot frequency mapping
-     */
     @Override
     public long getUplinkFrequency()
     {
@@ -68,23 +95,40 @@ public class DMRLogicalChannel extends DMRChannel
         return 0;
     }
 
+    @Override
+    public int[] getLogicalSlotNumbers()
+    {
+        return new int[]{getLsn()};
+    }
+
     /**
-     * Sets the timeslot frequency mapping
-     * @param timeslotFrequency
+     * Sets the lsn to frequency mapper value.
+     * @param timeslotFrequency to set
      */
     public void setTimeslotFrequency(TimeslotFrequency timeslotFrequency)
     {
         mTimeslotFrequency = timeslotFrequency;
     }
 
-    /**
-     * Formatted channel number
-     */
-    public String toString()
+    @Override
+    public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("LSN:").append(getLogicalSlotNumber());
-//        sb.append(" LCN:").append(getValue());
-        return sb.toString();
+        for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
+        {
+            if(timeslotFrequency.getNumber() == getLsn())
+            {
+                setTimeslotFrequency(timeslotFrequency);
+                return;
+            }
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        for(int x = 1; x <= 16; x++)
+        {
+            DMRLsn lsn = new DmrRestLsn(x);
+            System.out.println(lsn);
+        }
     }
 }

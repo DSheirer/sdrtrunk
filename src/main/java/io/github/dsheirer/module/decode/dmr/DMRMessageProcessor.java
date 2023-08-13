@@ -44,6 +44,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBloc
 import io.github.dsheirer.module.decode.dmr.message.data.packet.PacketSequenceAssembler;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceSuperFrameProcessor;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +61,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageProcessor.class);
     private DecodeConfigDMR mConfigDMR;
+    private VoiceSuperFrameProcessor mSuperFrameProcessor1 = new VoiceSuperFrameProcessor();
+    private VoiceSuperFrameProcessor mSuperFrameProcessor2 = new VoiceSuperFrameProcessor();
     private FLCAssembler mFLCAssemblerTimeslot1 = new FLCAssembler(1);
     private FLCAssembler mFLCAssemblerTimeslot2 = new FLCAssembler(2);
     private MBCAssembler mMBCAssembler = new MBCAssembler();
@@ -89,11 +93,45 @@ public class DMRMessageProcessor implements Listener<IMessage>
     @Override
     public void receive(IMessage message)
     {
+        if(message instanceof FullLCMessage flc)
+        {
+            if(flc.getTimeslot() == 1)
+            {
+                mSuperFrameProcessor1.process(flc);
+            }
+            else
+            {
+                mSuperFrameProcessor2.process(flc);
+            }
+        }
+        else if(message instanceof VoiceMessage voiceMessage)
+        {
+            if(voiceMessage.getTimeslot() == 1)
+            {
+                mSuperFrameProcessor1.process(voiceMessage);
+            }
+            else
+            {
+                mSuperFrameProcessor2.process(voiceMessage);
+            }
+        }
+        else if(message instanceof DMRBurst dmrBurst && dmrBurst.isValid())
+        {
+            if(dmrBurst.getTimeslot() == 1)
+            {
+                mSuperFrameProcessor1.reset();
+            }
+            else
+            {
+                mSuperFrameProcessor2.reset();
+            }
+        }
+
         //Enrich messages that carry DMR Logical Slot Number channels with LCN to frequency mappings
         if(message instanceof ITimeslotFrequencyReceiver)
         {
             ITimeslotFrequencyReceiver receiver = (ITimeslotFrequencyReceiver)message;
-            int[] lsns = receiver.getLogicalTimeslotNumbers();
+            int[] lsns = receiver.getLogicalSlotNumbers();
 
             List<TimeslotFrequency> timeslotFrequencies = new ArrayList<>();
 

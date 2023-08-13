@@ -1,30 +1,28 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- *     -----------------------------------------------------------------------
- *     Galois24 decoder based on Hank Wallace's tutorial/algorithm located at:
- *     http://www.aqdi.com/golay.htm
- ******************************************************************************/
 
 /**
  * Galois 24/12/7 decoder
@@ -159,5 +157,18 @@ public class Golay24
         int checksum = message.getInt(startIndex + 12, startIndex + 22);
 
         return (checksum ^ calculated);
+    }
+
+    public static void main(String[] args)
+    {
+//        CorrectedBinaryMessage bm = new CorrectedBinaryMessage(BinaryMessage.loadHex("F3BB20"));
+//        CorrectedBinaryMessage bm = new CorrectedBinaryMessage(BinaryMessage.loadHex("F0C5C0"));
+        CorrectedBinaryMessage bm = new CorrectedBinaryMessage(BinaryMessage.loadHex("AFAC00"));
+
+        System.out.println("M:" + bm.toHexString());
+        int a = Golay24.checkAndCorrect(bm, 0);
+        System.out.println("M:" + bm.toHexString());
+
+        System.out.println("A:" + a);
     }
 }

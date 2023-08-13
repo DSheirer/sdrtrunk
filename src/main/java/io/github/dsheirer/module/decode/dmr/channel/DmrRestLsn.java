@@ -17,43 +17,26 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
-
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
-import java.util.Collections;
-import java.util.List;
+package io.github.dsheirer.module.decode.dmr.channel;
 
 /**
- * Null Short Link Control Message
+ * DMR Rest Channel logical slot number (LSN).
  */
-public class NullMessage extends ShortLCMessage
+public class DmrRestLsn extends DMRLsn
 {
     /**
      * Constructs an instance
      *
-     * @param message containing the short link control message bits
+     * @param lsn in range 1 - 16
      */
-    public NullMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public DmrRestLsn(int lsn)
     {
-        super(message, timestamp, timeslot);
+        super(lsn);
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-        if(!isValid())
-        {
-            sb.append("[CRC ERROR] ");
-        }
-        sb.append("SLC TS1:IDLE TS2:IDLE");
-        return sb.toString();
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.emptyList();
+        return "REST:" + getLsn();
     }
 }

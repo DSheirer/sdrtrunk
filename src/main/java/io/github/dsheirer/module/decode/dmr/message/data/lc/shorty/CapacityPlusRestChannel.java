@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DmrRestLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
@@ -34,13 +34,11 @@ import java.util.List;
 public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslotFrequencyReceiver
 {
     private static final int[] UNKNOWN = new int[]{12, 13, 14};
-    //private static final int[] REST_REPEATER = new int[]{15, 16, 17, 18};
     private static final int[] REST_LSN = new int[]{15, 16, 17, 18, 19};
-    //private static final int[] REST_TIMESLOT = new int[]{19};
     private static final int[] SITE = new int[]{20, 21, 22, 23, 24};
     private static final int[] UNKNOWN_2 = new int[]{25, 26, 27};
 
-    private DMRLogicalChannel mRestChannel;
+    private DmrRestLsn mRestChannel;
     private DMRSite mSite;
     private List<Identifier> mIdentifiers;
 
@@ -63,7 +61,7 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
             sb.append("[CRC ERROR] ");
         }
         sb.append("SLC MOTOROLA CAP+ SITE:").append(getSite());
-        sb.append(" REST:").append(getRestChannel());
+        sb.append(" ").append(getRestChannel());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
@@ -84,11 +82,11 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
     /**
      * Rest Channel Number
      */
-    public DMRLogicalChannel getRestChannel()
+    public DmrRestLsn getRestChannel()
     {
         if(mRestChannel == null)
         {
-            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
+            mRestChannel = new DmrRestLsn(getRestLSN());
         }
 
         return mRestChannel;
@@ -104,25 +102,12 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
     }
 
     /**
-     * Rest repeater
-     */
-    public int getRestRepeater() { return (int) Math.ceil(getRestLSN() / 2.0); }
-
-    /**
-     * Rest timeslot
-     */
-    public int getRestTimeslot()
-    {
-        return (getRestLSN() % 2 == 0) ? 2 : 1;
-    }
-
-    /**
      * Exposes the rest channel logical slot number so that a LSN to frequency map can be applied to this message.
      */
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getRestChannel().getLSNArray();
+        return getRestChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -134,7 +119,7 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
     {
         for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
         {
-            if(getRestChannel().getLogicalSlotNumber() == timeslotFrequency.getNumber())
+            if(getRestChannel().getValue() == timeslotFrequency.getNumber())
             {
                 getRestChannel().setTimeslotFrequency(timeslotFrequency);
             }

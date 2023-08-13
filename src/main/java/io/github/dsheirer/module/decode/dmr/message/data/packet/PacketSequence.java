@@ -24,6 +24,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.header.PacketSequenceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.UDTHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaDataEncryptionHeader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,6 +88,15 @@ public class PacketSequence
         }
 
         return false;
+    }
+
+    /**
+     * Indicates if this sequence contains a Motorola data encryption header.
+     * @return true if so
+     */
+    public boolean isEncrypted()
+    {
+        return hasProprietaryDataHeader() && getProprietaryDataHeader() instanceof MotorolaDataEncryptionHeader;
     }
 
     public int getTimeslot()

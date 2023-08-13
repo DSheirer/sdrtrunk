@@ -17,43 +17,28 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
+package io.github.dsheirer.module.decode.dmr.message.voice.embedded;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * Null Short Link Control Message
+ * Unknown or garbage short burst
  */
-public class NullMessage extends ShortLCMessage
+public class UnknownShortBurst extends ShortBurst
 {
     /**
-     * Constructs an instance
+     * Constructor
      *
-     * @param message containing the short link control message bits
+     * @param message containing the delinterleaved and error-corrected short burst payload.
      */
-    public NullMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public UnknownShortBurst(CorrectedBinaryMessage message)
     {
-        super(message, timestamp, timeslot);
+        super(message);
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-        if(!isValid())
-        {
-            sb.append("[CRC ERROR] ");
-        }
-        sb.append("SLC TS1:IDLE TS2:IDLE");
-        return sb.toString();
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.emptyList();
+        return "UNKNOWN SHORT BURST:" + getMessage().toHexString();
     }
 }

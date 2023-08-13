@@ -17,38 +17,77 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
+package io.github.dsheirer.module.decode.ip;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Null Short Link Control Message
+ * Defined Short Data Packet
  */
-public class NullMessage extends ShortLCMessage
+public class DefinedShortDataPacket implements IPacket
 {
+    private BinaryMessage mMessage;
+    private int mOffset;
+
     /**
-     * Constructs an instance
-     *
-     * @param message containing the short link control message bits
+     * Constructor
+     * @param message of the complete packet
+     * @param offset into the message
      */
-    public NullMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public DefinedShortDataPacket(BinaryMessage message, int offset)
     {
-        super(message, timestamp, timeslot);
+        mMessage = message;
+        mOffset = offset;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        if(!isValid())
+
+        sb.append("DEFINED SHORT DATA PACKET:");
+
+        if(getMessage().size() > getOffset())
         {
-            sb.append("[CRC ERROR] ");
+            sb.append(mMessage.getSubMessage(getOffset(), getMessage().size()).toHexString());
         }
-        sb.append("SLC TS1:IDLE TS2:IDLE");
+        else
+        {
+            sb.append("(EMPTY)");
+        }
+
         return sb.toString();
+    }
+
+    public BinaryMessage getMessage()
+    {
+        return mMessage;
+    }
+
+    public int getOffset()
+    {
+        return mOffset;
+    }
+
+    @Override
+    public IHeader getHeader()
+    {
+        return null;
+    }
+
+    @Override
+    public IPacket getPayload()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean hasPayload()
+    {
+        return false;
     }
 
     @Override

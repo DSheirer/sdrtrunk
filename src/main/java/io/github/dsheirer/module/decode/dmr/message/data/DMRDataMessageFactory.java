@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.UnconfirmedDataH
 import io.github.dsheirer.module.decode.dmr.message.data.header.VoiceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MNISProprietaryDataHeader;
-import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaProprietaryDataHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.data.usb.USBData;
@@ -132,7 +132,7 @@ public class DMRDataMessageFactory
                                     }
                                     else
                                     {
-                                        MotorolaProprietaryDataHeader mprdh = new MotorolaProprietaryDataHeader(pattern,
+                                        MotorolaDataEncryptionHeader mprdh = new MotorolaDataEncryptionHeader(pattern,
                                             payload, cach, slotType, timestamp, timeslot);
                                         mprdh.setValid(valid);
                                         return mprdh;

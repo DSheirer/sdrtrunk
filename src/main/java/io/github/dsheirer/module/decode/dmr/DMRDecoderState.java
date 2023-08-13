@@ -65,8 +65,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoice
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.UDTShortMessageService;
@@ -646,12 +646,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                     else
                     {
-                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getLogicalSlotNumber());
+                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getValue());
 
                         if(isStale(event, csbk.getTimestamp(), csbk.getIdentifiers()))
                         {
                             event = getDecodeEvent(csbk, DecodeEventType.DATA_CALL, channel, mergedIdentifiers);
-                            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
+                            mDetectedCallEventsMap.put(channel.getValue(), event);
                         }
                         else
                         {
@@ -679,12 +679,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                     else
                     {
-                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getLogicalSlotNumber());
+                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getValue());
 
                         if(isStale(event, csbk.getTimestamp(), csbk.getIdentifiers()))
                         {
                             event = getDecodeEvent(csbk, DecodeEventType.CALL_GROUP, channel, mergedIdentifiers);
-                            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
+                            mDetectedCallEventsMap.put(channel.getValue(), event);
                         }
                         else
                         {
@@ -711,12 +711,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                     else
                     {
-                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getLogicalSlotNumber());
+                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getValue());
 
                         if(isStale(event, csbk.getTimestamp(), csbk.getIdentifiers()))
                         {
                             event = getDecodeEvent(csbk, DecodeEventType.CALL_UNIT_TO_UNIT, channel, mergedIdentifiers);
-                            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
+                            mDetectedCallEventsMap.put(channel.getValue(), event);
                         }
                         else
                         {
@@ -756,12 +756,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                     else
                     {
-                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getLogicalSlotNumber());
+                        DecodeEvent event = mDetectedCallEventsMap.get(channel.getValue());
 
                         if(isStale(event, csbk.getTimestamp(), csbk.getIdentifiers()))
                         {
                             event = getDecodeEvent(csbk, DecodeEventType.DATA_CALL, channel, mergedIdentifiers);
-                            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
+                            mDetectedCallEventsMap.put(channel.getValue(), event);
                         }
                         else
                         {
@@ -807,12 +807,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                     else
                     {
-                        DecodeEvent detectedEvent = mDetectedCallEventsMap.get(channel.getLogicalSlotNumber());
+                        DecodeEvent detectedEvent = mDetectedCallEventsMap.get(channel.getValue());
 
                         if(isStale(detectedEvent, csbk.getTimestamp(), csbk.getIdentifiers()))
                         {
                             detectedEvent = getDecodeEvent(csbk, DecodeEventType.CALL_GROUP, channel, mergedIdentifiers);
-                            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), detectedEvent);
+                            mDetectedCallEventsMap.put(channel.getValue(), detectedEvent);
                         }
                         else
                         {
@@ -979,10 +979,8 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 break;
             case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
-                if(message instanceof CapacityPlusGroupVoiceChannelUser cpgvcu)
+                if(message instanceof MotorolaGroupVoiceChannelUser cpgvcu)
                 {
-                    updateRestChannel(cpgvcu.getRestChannel());
-
                     if(isTerminator)
                     {
                         getIdentifierCollection().remove(Role.FROM);

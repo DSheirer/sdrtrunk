@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.message.type.Activity;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -55,13 +54,18 @@ public class ActivityUpdateMessage extends ShortLCMessage
         {
             sb.append("[CRC ERROR] ");
         }
-
-        sb.append("SLC ACTIVITY UPDATE TS1 [");
-        sb.append(getHashAddressTS1()).append("] ");
+        sb.append("SLC TS1:");
         sb.append(getActivityTS1());
-        sb.append(" / TS2 [");
-        sb.append(getHashAddressTS2()).append("] ");
+        if(getActivityTS1() != Activity.IDLE)
+        {
+            sb.append(" [").append(getHashAddressTS1()).append("]");
+        }
+        sb.append(" TS2:");
         sb.append(getActivityTS2());
+        if(getActivityTS2() != Activity.IDLE)
+        {
+            sb.append(" [").append(getHashAddressTS2()).append("]");
+        }
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
