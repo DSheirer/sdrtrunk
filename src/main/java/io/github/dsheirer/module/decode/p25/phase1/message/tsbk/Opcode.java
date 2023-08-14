@@ -324,7 +324,7 @@ public enum Opcode
     public static List<Opcode> getUngrouped()
     {
         List<Opcode> ungrouped = new ArrayList<>();
-        for(Opcode opcode: ungrouped)
+        for(Opcode opcode: Opcode.values())
         {
             if(!opcode.isGrouped())
             {
