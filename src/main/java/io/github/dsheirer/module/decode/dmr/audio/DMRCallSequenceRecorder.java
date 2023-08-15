@@ -205,7 +205,7 @@ public class DMRCallSequenceRecorder extends MBECallSequenceRecorder
             {
                 switch(message.getOpcode())
                 {
-                    case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
+                    case FULL_MOTOROLA_GROUP_VOICE_CHANNEL_USER:
                         if(message instanceof MotorolaGroupVoiceChannelUser cpvcu)
                         {
                             if(mCallSequence == null)
