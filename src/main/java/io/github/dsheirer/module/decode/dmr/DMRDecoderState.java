@@ -72,7 +72,10 @@ import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage
 import io.github.dsheirer.module.decode.dmr.message.data.packet.UDTShortMessageService;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.embedded.Arc4EncryptionParameters;
+import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedParameters;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
@@ -289,7 +292,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         DecodeEvent smsEvent = DMRDecodeEvent.builder(DecodeEventType.SMS, sms.getTimestamp())
                 .details("MESSAGE: " + sms.getSMS())
                 .identifiers(new IdentifierCollection(sms.getIdentifiers()))
-                .timeslot(sms.getTimeslot())
+                .timeslot(getTimeslot())
                 .build();
         broadcast(smsEvent);
     }
@@ -312,7 +315,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
             DecodeEvent smsEvent = DMRDecodeEvent.builder(DecodeEventType.SMS, packet.getTimestamp())
                     .identifiers(mic)
-                    .timeslot(packet.getTimeslot())
+                    .timeslot(getTimeslot())
                     .details("SMS:" + hyteraSmsPacket.getSMS())
                     .build();
             broadcast(smsEvent);
@@ -324,7 +327,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
             DecodeEvent unknownTokenEvent = DMRDecodeEvent.builder(DecodeEventType.UNKNOWN_PACKET, packet.getTimestamp())
                     .identifiers(mic)
-                    .timeslot(packet.getTimeslot())
+                    .timeslot(getTimeslot())
                     .details("HYTERA UNK TOKEN MSG:" + hyteraUnknownPacket.getHeader().toString())
                     .build();
             broadcast(unknownTokenEvent);
@@ -333,7 +336,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             DecodeEvent packetEvent = DMRDecodeEvent.builder(DecodeEventType.DATA_PACKET, packet.getTimestamp())
                     .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
-                    .timeslot(packet.getTimeslot())
+                    .timeslot(getTimeslot())
                     .details(packet.toString())
                     .build();
 
@@ -369,6 +372,19 @@ public class DMRDecoderState extends TimeslotDecoderState
         else
         {
             broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
+        }
+
+        if(message.getSyncPattern() == DMRSyncPattern.BS_VOICE_FRAME_F && message instanceof VoiceEMBMessage voiceEmb)
+        {
+            if(voiceEmb.hasEmbeddedParameters())
+            {
+                EmbeddedParameters embedded = voiceEmb.getEmbeddedParameters();
+
+                if(embedded.getShortBurst() instanceof Arc4EncryptionParameters arc4)
+                {
+                    updateEncryptedCall(arc4, true, voiceEmb.getTimestamp());
+                }
+            }
         }
     }
 
@@ -778,7 +794,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 DecodeEvent event = DMRDecodeEvent.builder(DecodeEventType.REQUEST, csbk.getTimestamp())
                     .details("Registration Request")
                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(csbk.getTimeslot())
+                    .timeslot(getTimeslot())
                     .build();
                 broadcast(event);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
@@ -787,7 +803,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 DecodeEvent regRespEvent = DMRDecodeEvent.builder(DecodeEventType.RESPONSE, csbk.getTimestamp())
                     .details("Registration Response")
                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(csbk.getTimeslot())
+                    .timeslot(getTimeslot())
                     .build();
                 broadcast(regRespEvent);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
@@ -829,7 +845,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 DecodeEvent affiliateEvent = DMRDecodeEvent.builder(DecodeEventType.AFFILIATE, csbk.getTimestamp())
                     .details("TALKGROUP AFFILIATION")
                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(csbk.getTimeslot())
+                    .timeslot(getTimeslot())
                     .build();
                 broadcast(affiliateEvent);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
@@ -840,19 +856,20 @@ public class DMRDecoderState extends TimeslotDecoderState
         }
     }
 
-    private DecodeEvent getDecodeEvent(CSBKMessage csbk, DecodeEventType decodeEventType, DMRChannel channel, IdentifierCollection mergedIdentifiers) {
+    private DecodeEvent getDecodeEvent(CSBKMessage csbk, DecodeEventType decodeEventType, DMRChannel channel,
+                                       IdentifierCollection mergedIdentifiers) {
         return DMRDecodeEvent.builder(decodeEventType, csbk.getTimestamp())
                 .channel(channel)
                 .details(csbk.getOpcode().getLabel())
                 .identifiers(mergedIdentifiers)
-                .timeslot(channel.getTimeslot())
+                .timeslot(getTimeslot())
                 .build();
     }
 
     private DecodeEvent getDecodeEvent(CSBKMessage csbk, DecodeEventType decodeEventType, String details) {
         return DMRDecodeEvent.builder(decodeEventType, csbk.getTimestamp())
                 .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                .timeslot(csbk.getTimeslot())
+                .timeslot(getTimeslot())
                 .details(details)
                 .build();
     }
@@ -978,7 +995,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                 }
                 break;
-            case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
+            case FULL_MOTOROLA_GROUP_VOICE_CHANNEL_USER:
                 if(message instanceof MotorolaGroupVoiceChannelUser cpgvcu)
                 {
                     if(isTerminator)
@@ -1103,7 +1120,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                     DecodeEvent gpsEvent = DMRDecodeEvent.builder(DecodeEventType.GPS, message.getTimestamp())
                         .identifiers(ic)
-                        .timeslot(message.getTimeslot())
+                        .timeslot(getTimeslot())
                         .details("LOCATION:" + gpsInformation.getGPSLocation())
                         .build();
 
@@ -1116,6 +1133,41 @@ public class DMRDecoderState extends TimeslotDecoderState
                     getIdentifierCollection().update(tac.getTalkerAliasIdentifier());
                 }
                 break;
+        }
+    }
+
+    /**
+     * Updates the current call with encryption information.
+     * @param encryptionParameters decoded from the Voice Frame F
+     * @param isGroup true for group or false for individual call.
+     */
+    private void updateEncryptedCall(Arc4EncryptionParameters encryptionParameters, boolean isGroup, long timestamp)
+    {
+        if(mCurrentCallEvent != null)
+        {
+            String details = mCurrentCallEvent.getDetails();;
+
+            if(details == null)
+            {
+                details = encryptionParameters.toString();
+            }
+            else if(!details.contains(encryptionParameters.toString()))
+            {
+                details += " " + encryptionParameters;
+            }
+
+            mCurrentCallEvent.setDetails(details);
+        }
+        else
+        {
+            mCurrentCallEvent = DMRDecodeEvent.builder(isGroup ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                            DecodeEventType.CALL_ENCRYPTED, timestamp)
+                    .channel(getCurrentChannel())
+                    .details(encryptionParameters.toString())
+                    .identifiers(getIdentifierCollection().copyOf())
+                    .timeslot(getTimeslot())
+                    .build();
+            broadcast(mCurrentCallEvent);
         }
     }
 
@@ -1136,13 +1188,14 @@ public class DMRDecoderState extends TimeslotDecoderState
                 .channel(getCurrentChannel())
                 .details(details)
                 .identifiers(getIdentifierCollection().copyOf())
+                .timeslot(getTimeslot())
                 .build();
 
             broadcast(mCurrentCallEvent);
         }
         else
         {
-            if(type != DecodeEventType.CALL)
+            if(mCurrentCallEvent.getDetails() == null)
             {
                 mCurrentCallEvent.setDetails(details);
             }

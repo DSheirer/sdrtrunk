@@ -113,7 +113,7 @@ public class LCMessageFactory
             case FULL_STANDARD_TERMINATOR_DATA:
                 flc = new TerminatorData(message, timestamp, timeslot);
                 break;
-            case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
+            case FULL_MOTOROLA_GROUP_VOICE_CHANNEL_USER:
                 flc = new MotorolaGroupVoiceChannelUser(message, timestamp, timeslot);
                 break;
             case FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER:
