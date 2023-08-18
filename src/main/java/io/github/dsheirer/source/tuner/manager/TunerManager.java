@@ -45,6 +45,13 @@ import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -54,14 +61,6 @@ import org.usb4java.DeviceList;
 import org.usb4java.HotplugCallback;
 import org.usb4java.HotplugCallbackHandle;
 import org.usb4java.LibUsb;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tuner manager provides access to tuners using USB, recording, sound-card and system-daemon accessible devices. This
@@ -187,10 +186,10 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 DeviceList deviceList = new DeviceList();
                 int deviceCount = LibUsb.getDeviceList(mLibUsbApplicationContext, deviceList);
 
-                mLog.info("LibUsb - discovered [" + deviceCount + "] potential usb devices");
-
                 if(deviceCount >= 0)
                 {
+                    mLog.info("LibUsb - discovered [" + deviceCount + "] potential usb devices");
+
                     for(Device device: deviceList)
                     {
                         int bus = LibUsb.getBusNumber(device);
@@ -228,9 +227,40 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                         //Unref the device - it will be rediscovered under the device context when it is started
                         LibUsb.unrefDevice(device);
                     }
-                }
 
-                LibUsb.freeDeviceList(deviceList, false);
+                    LibUsb.freeDeviceList(deviceList, false);
+                }
+                //If the get device list operation generated error -99, turn on warning logging and try device list
+                // again to see what's causing it.
+                else if(deviceCount == LibUsb.ERROR_OTHER)
+                {
+                    try
+                    {
+                        mLog.info("LibUsb reported error -99 during get device list - increasing logging level and retrying");
+                        LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_WARNING);
+                        deviceCount = LibUsb.getDeviceList(mLibUsbApplicationContext, deviceList);
+                        if(deviceCount >=0)
+                        {
+                            mLog.info("LibUsb - get device list count [" + deviceCount + "] during retry");
+                            LibUsb.freeDeviceList(deviceList, false);
+                        }
+                        else
+                        {
+                            mLog.info("LibUsb - get device list reported error [" + deviceCount + "/" +
+                                    LibUsb.errorName(deviceCount) + "] during retry");
+                        }
+                        LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_NONE);
+                        mLog.info("LibUse - get device list reattempt complete - if additional logging was generated please notify developer");
+                    }
+                    catch(Exception e)
+                    {
+                        mLog.info("LibUsb error during get device list reattempt", e);
+                    }
+                }
+                else
+                {
+                    mLog.error("LibUsb - error [" + deviceCount + "/" + LibUsb.errorName(deviceCount) + "] during get device list");
+                }
             }
             catch(Exception e)
             {
