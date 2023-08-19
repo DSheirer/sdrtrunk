@@ -53,7 +53,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.6.0-alpha7'
+version = '0.6.0-beta1'
 
 //Java 20 is required for this version of the Project Panama preview/incubator feature
 java {
