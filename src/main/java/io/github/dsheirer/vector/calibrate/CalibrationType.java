@@ -46,6 +46,7 @@ public enum CalibrationType
     FM_DEMODULATOR("FM Demodulator", 2),
     GAIN_CONTROL_COMPLEX("Complex Gain Control", 1),
     HILBERT_TRANSFORM("Hilbert Transform", 1),
+    INTERPOLATOR("Interpolator", 1),
     MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 1),
     OSCILLATOR_REAL("Real Oscillator", 1),

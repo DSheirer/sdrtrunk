@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.filter.interpolator.RealInterpolator;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,9 @@ public class InterpolatingSampleBuffer
     private float mMinimumSamplesPerSymbol;
 
     private RealInterpolator mInterpolator = new RealInterpolator(1.0f);
+    private Mean mMean = new Mean();
+    private double mMin = Double.MAX_VALUE;
+    private double mMax = 0;
 
     /**
      * Buffer to store complex sample data and produce interpolated samples.
@@ -116,6 +120,19 @@ public class InterpolatingSampleBuffer
             mDetectedSamplesPerSymbol = mMinimumSamplesPerSymbol;
         }
 
+        mMean.increment(mDetectedSamplesPerSymbol);
+        if(mDetectedSamplesPerSymbol < mMin)
+        {
+            mMin = mDetectedSamplesPerSymbol;
+        }
+        if(mDetectedSamplesPerSymbol > mMax)
+        {
+            mMax = mDetectedSamplesPerSymbol;
+        }
+        System.out.println("SPS: " + mDetectedSamplesPerSymbol +
+                " AVG:" + mMean.getResult() +
+                " MIN:" + mMin +
+                " MAX:" + mMax);
         //Add another symbol's worth of samples to the counter and adjust timing based on gardner error
         increaseSampleCounter((mDetectedSamplesPerSymbol + (symbolTimingError * mSampleCounterGain)));
     }

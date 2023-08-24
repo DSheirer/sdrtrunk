@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
+import io.github.dsheirer.dsp.symbol.Dibit;
 import java.util.EnumSet;
 
 /**
@@ -193,5 +194,54 @@ public enum DMRSyncPattern
     public String toString()
     {
         return mLabel;
+    }
+
+    /**
+     * Converts the DMR sync pattern to a float array of ideal phase values for each Dibit to use for correlation against
+     * a stream of transmitted symbol phases.
+     * @param pattern to convert.
+     * @return symbols array representing the sync pattern.
+     */
+    public float[] toSymbols()
+    {
+        float[] symbols = new float[24];
+        Dibit[] dibits = toDibits();
+
+        for(int x = 0; x < 24; x++)
+        {
+            symbols[x] = dibits[x].getIdealPhase();
+        }
+
+        return symbols;
+    }
+
+    /**
+     * Converts the DMR sync pattern to an array of dibit symbols
+     * @return dibit symbols array representing the sync pattern.
+     */
+    public Dibit[] toDibits()
+    {
+        Dibit[] dibits = new Dibit[24];
+        long value = getPattern();
+        long mask = 3;
+        long dibitValue;
+
+        for(int x = 0; x < 24; x++)
+        {
+            dibitValue = (value & mask) >> (2 * x);
+
+            if(dibitValue == 1)
+            {
+                dibits[23 - x] = Dibit.D01_PLUS_3;
+            }
+            else
+            {
+                dibits[23 - x] = Dibit.D11_MINUS_3;
+            }
+
+            mask = mask << 2;
+        }
+
+        return dibits;
     }
 }

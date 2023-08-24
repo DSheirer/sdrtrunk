@@ -35,6 +35,7 @@ import io.github.dsheirer.vector.calibrate.filter.RealHalfBand63TapFilterCalibra
 import io.github.dsheirer.vector.calibrate.filter.RealHalfBandDefaultFilterCalibration;
 import io.github.dsheirer.vector.calibrate.gain.ComplexGainCalibration;
 import io.github.dsheirer.vector.calibrate.gain.ComplexGainControlCalibration;
+import io.github.dsheirer.vector.calibrate.interpolator.InterpolatorCalibration;
 import io.github.dsheirer.vector.calibrate.magnitude.MagnitudeCalibration;
 import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
@@ -106,6 +107,7 @@ public class CalibrationManager
             sInstance.add(new ComplexMixerCalibration());
             sInstance.add(new FirFilterCalibration());
             sInstance.add(new FmDemodulatorCalibration());
+            sInstance.add(new InterpolatorCalibration());
             sInstance.add(new MagnitudeCalibration());
             sInstance.add(new RealDcRemovalCalibration());
             sInstance.add(new RealHalfBand11TapFilterCalibration());
@@ -114,7 +116,6 @@ public class CalibrationManager
             sInstance.add(new RealHalfBand63TapFilterCalibration());
             sInstance.add(new RealHalfBandDefaultFilterCalibration());
             sInstance.add(new RealOscillatorCalibration());
-
 //            sInstance.add(new HilbertCalibration()); //Not currently used
             sInstance.add(new WindowCalibration()); //Not currently used
         }
@@ -275,20 +276,8 @@ public class CalibrationManager
     public static void main(String[] args)
     {
         CalibrationManager manager = getInstance();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Current Calibration Settings:\n");
-        for(CalibrationType type: CalibrationType.values())
-        {
-            Calibration calibration = manager.getCalibration(type);
-            if(calibration != null)
-            {
-                sb.append("\t").append(type.name()).append("\t").append(manager.getCalibration(type).getImplementation()).append("\n");
-            }
-        }
-        System.out.println(sb);
-
-        manager.reset();
+//        manager.reset();
+        manager.reset(CalibrationType.INTERPOLATOR);
 
         if(!manager.isCalibrated())
         {
