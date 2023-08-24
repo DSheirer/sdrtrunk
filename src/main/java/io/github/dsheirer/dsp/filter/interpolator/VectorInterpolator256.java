@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,29 +17,24 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message;
+package io.github.dsheirer.dsp.filter.interpolator;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.message.TimeslotMessage;
-import io.github.dsheirer.protocol.Protocol;
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorOperators;
+import jdk.incubator.vector.VectorSpecies;
 
 /**
- * Base DMR Message
+ * Vector interpolator for 256 bit SIMD instructions.
  */
-public abstract class DMRMessage extends TimeslotMessage
+public class VectorInterpolator256 extends VectorInterpolator
 {
-    /**
-     * Constructs an instance
-     * @param timestamp for the message
-     */
-    public DMRMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
-    {
-        super(message, timeslot, timestamp);
-    }
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_256;
 
     @Override
-    public Protocol getProtocol()
+    protected float vectorFilter(float[] samples, int offset, int index)
     {
-        return Protocol.DMR;
+        FloatVector tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 0);
+        FloatVector sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset);
+        return sampleVector.mul(tapsVector).reduceLanes(VectorOperators.ADD);
     }
 }

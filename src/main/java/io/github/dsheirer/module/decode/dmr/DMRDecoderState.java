@@ -546,7 +546,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         if(message.getSyncPattern().isMobileSyncPattern())
         {
-            if(message.getSyncPattern().isDirectMode())
+            if(message.getSyncPattern().isDCDM())
             {
                 updateCurrentCall(DecodeEventType.CALL, "DIRECT MODE", message.getTimestamp());
             }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -338,7 +338,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
 
     public static void main(String[] args)
     {
-        File file = new File("/home/denny/Downloads/TIII,HYT414.585000,.wav");
+        File file = new File("/media/denny/T9/DQPSK Equalizer Research/DMR_1_CAPPLUS.wav");
 
         try
         {

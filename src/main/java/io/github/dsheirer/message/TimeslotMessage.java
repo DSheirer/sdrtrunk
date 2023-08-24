@@ -24,7 +24,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 /**
  * Timeslot message base class.
  */
-public abstract class TimeslotMessage extends AbstractMessage
+public abstract class TimeslotMessage extends AbstractMessage implements IMessage
 {
     public static final int TIMESLOT_0 = 0;
     public static final int TIMESLOT_1 = 1;

@@ -1,0 +1,371 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.dmr;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
+import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
+import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
+import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.sample.Listener;
+import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * DMR message framer.  Processes sync detections and a stream of dibits into DMR messages.
+ */
+public class DmrSoftSymbolMessageFramer implements Listener<Dibit>
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(DmrSoftSymbolMessageFramer.class);
+    private static final int DIBIT_CACH_START = 0;
+    private static final int DIBIT_BURST_END = 144;
+
+    private Listener<IMessage> mMessageListener;
+    private Dibit[] mBufferA = new Dibit[144];
+    private Dibit[] mBufferB = new Dibit[144];
+    private int mBufferAPointer = 0;
+    private int mBufferBPointer = 0;
+    private DMRSyncPattern mBufferAPattern = DMRSyncPattern.UNKNOWN;
+    private DMRSyncPattern mBufferBPattern = DMRSyncPattern.UNKNOWN;
+    private int mBufferATimeslot;
+    private int mBufferBTimeslot;
+    private boolean mBufferAActive = false;
+    private boolean mAssemblingBurst = false;
+    private int mDibitCounter = 0;
+    private int mDibitSinceTimestampCounter = 0;
+    private long mReferenceTimestamp = 0;
+
+    /**
+     * Constructs an instance
+     */
+    public DmrSoftSymbolMessageFramer()
+    {
+        Arrays.fill(mBufferA, Dibit.D00_PLUS_1);
+        Arrays.fill(mBufferB, Dibit.D00_PLUS_1);
+    }
+
+    /**
+     * Primary input method for receiving the stream of demodulated dibit symbols.
+     * @param dibit to process.
+     */
+    @Override
+    public void receive(Dibit dibit)
+    {
+        mDibitCounter++;
+        mDibitSinceTimestampCounter++;
+
+        //Issue a sync loss for each full 1-second interval (ie 4800 dibits) of no sync.
+        if(!mAssemblingBurst && mDibitCounter >= 4800)
+        {
+            dispatch(new SyncLossMessage(getTimestamp(), 9600, Protocol.DMR, DMRMessage.TIMESLOT_0));
+            mDibitCounter -= 4800;
+            mBufferAPattern = DMRSyncPattern.UNKNOWN;
+            mBufferBPattern = DMRSyncPattern.UNKNOWN;
+        }
+
+        if(mAssemblingBurst)
+        {
+            if(mBufferAActive)
+            {
+                mBufferA[mBufferAPointer++] = dibit;
+
+                if(mBufferAPointer >= mBufferA.length)
+                {
+                    dispatchBufferA();
+                }
+            }
+            else
+            {
+                mBufferB[mBufferBPointer++] = dibit;
+
+                if(mBufferBPointer >= mBufferB.length)
+                {
+                    dispatchBufferB();
+                }
+            }
+        }
+    }
+
+    private void dispatchBufferA()
+    {
+        mDibitCounter -= 144;
+
+        if(mDibitCounter > 0)
+        {
+            //If there are 144 dibits then tag the sync loss to other timeslot, otherwise dump it to timeslot 0.
+            if(mDibitCounter == 144)
+            {
+                //Note: since buffer b got skipped, we'll use buffer a timeslot and then it will get reassigned from
+                //the CACH to the correct timeslot.
+                dispatch(new SyncLossMessage(getTimestamp(), 288, Protocol.DMR, mBufferATimeslot));
+            }
+            else
+            {
+                dispatch(new SyncLossMessage(getTimestamp(), mDibitCounter * 2, Protocol.DMR, DMRMessage.TIMESLOT_0));
+
+                if(mDibitCounter > 1 && !mBufferAPattern.isDCDM())
+                {
+                    mBufferATimeslot = 0;
+                    mBufferBTimeslot = 0;
+                    mBufferBPattern = DMRSyncPattern.UNKNOWN;
+                }
+            }
+        }
+
+        mDibitCounter = 0;
+
+        CorrectedBinaryMessage message = getMessage(mBufferA, DIBIT_CACH_START, DIBIT_BURST_END);
+        CACH cach = CACH.getCACH(message);
+
+        if(mBufferAPattern.hasCACH() && cach.isValid() && mBufferATimeslot != cach.getTimeslot())
+        {
+            mBufferATimeslot = cach.getTimeslot();
+            mBufferBTimeslot = (mBufferATimeslot == 1 ? 2 : 1);
+        }
+
+        dispatch(DMRMessageFactory.create(mBufferAPattern, message, cach, getTimestamp(), mBufferATimeslot));
+
+        //Since voice frames only have sync on the first burst, we use pseudo-patterns to track the rest of the bursts
+        //across the voice super-frame.  If the current pattern is a voice frame, set it to the next pseudo voice sync.
+        if(mBufferAPattern.isVoicePattern())
+        {
+            mBufferAPattern = DMRSyncPattern.getNextVoice(mBufferAPattern);
+        }
+
+        //Automatically trigger buffer B burst collection if it is collecting a voice super frame.
+        if(mBufferBPattern.isVoicePattern())
+        {
+            mAssemblingBurst = true;
+            mBufferAActive = false;
+            mBufferBPointer = 0;
+        }
+        else
+        {
+            mAssemblingBurst = false;
+        }
+    }
+
+    private void dispatchBufferB()
+    {
+        mDibitCounter -= 144;
+
+        if(mDibitCounter > 0)
+        {
+            //If there are 144 dibits then tag the sync loss to other timeslot, otherwise dump it to timeslot 0.
+            if(mDibitCounter == 144)
+            {
+                //Note: since buffer a got skipped, we'll use buffer b timeslot and then it will get reassigned from
+                //the CACH to the correct timeslot.
+                dispatch(new SyncLossMessage(getTimestamp(), 288, Protocol.DMR, mBufferBTimeslot));
+            }
+            else
+            {
+                dispatch(new SyncLossMessage(getTimestamp(), mDibitCounter * 2, Protocol.DMR, DMRMessage.TIMESLOT_0));
+
+                if(mDibitCounter > 1 && !mBufferBPattern.isDCDM())
+                {
+                    mBufferATimeslot = 0;
+                    mBufferBTimeslot = 0;
+                    mBufferAPattern = DMRSyncPattern.UNKNOWN;
+                }
+            }
+        }
+
+        mDibitCounter = 0;
+
+        CorrectedBinaryMessage burst = getMessage(mBufferB, DIBIT_CACH_START, DIBIT_BURST_END);
+        CACH cach = CACH.getCACH(burst);
+
+        if(mBufferBPattern.hasCACH() && cach.isValid() && mBufferBTimeslot != cach.getTimeslot())
+        {
+            mBufferBTimeslot = cach.getTimeslot();
+            mBufferATimeslot = (mBufferBTimeslot == 1 ? 2 : 1);
+        }
+
+        dispatch(DMRMessageFactory.create(mBufferBPattern, burst, cach, getTimestamp(), mBufferBTimeslot));
+
+        //Since voice frames only have sync on the first burst, we use pseudo-patterns to track the rest of the bursts
+        //across the voice super-frame.  If the current pattern is a voice frame, set it to the next pseudo voice sync.
+        if(mBufferBPattern.isVoicePattern())
+        {
+            mBufferBPattern = DMRSyncPattern.getNextVoice(mBufferBPattern);
+        }
+
+        //Automatically trigger buffer A burst collection if it is collecting a voice super frame.
+        if(mBufferAPattern.isVoicePattern())
+        {
+            mAssemblingBurst = true;
+            mBufferAActive = true;
+            mBufferAPointer = 0;
+        }
+        else
+        {
+            mAssemblingBurst = false;
+        }
+    }
+
+    /**
+     * Dispatches the message to the registered message listener.
+     * @param message
+     */
+    private void dispatch(IMessage message)
+    {
+        if(mMessageListener != null)
+        {
+            mMessageListener.receive(message);
+        }
+    }
+
+    /**
+     * Sets the listener to receive framed DMR messages.
+     * @param listener for messages.
+     */
+    public void setListener(Listener<IMessage> listener)
+    {
+        mMessageListener = listener;
+    }
+
+    /**
+     * Creates a binary message from the dibit buffer.
+     * @param buffer containing dibits
+     * @param start index inclusive
+     * @param end index exclusive.
+     * @return binary message
+     */
+    private CorrectedBinaryMessage getMessage(Dibit[] buffer, int start, int end)
+    {
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage(2 * (end - start));
+
+        Dibit dibit = null;
+        for(int i = start; i < end; i++)
+        {
+            dibit = buffer[i];
+            message.add(dibit.getBit1(), dibit.getBit2());
+        }
+
+        return message;
+    }
+
+    /**
+     * Indicates a sync pattern is detected and the next received dibit symbol is the first dibit of the DMR burst.
+     * @param pattern detected
+     */
+    public void syncDetected(DMRSyncPattern pattern)
+    {
+        //TODO: detect when we are currently assembling and we want to switch, that the previously current buffer gets topped off.
+        if(mAssemblingBurst)
+        {
+            if(mBufferAActive && mBufferAPointer < mBufferA.length)
+            {
+                mBufferAPointer = 144;
+                mBufferAPattern = DMRSyncPattern.UNKNOWN;
+            }
+            else if(!mBufferAActive && mBufferBPointer < mBufferB.length)
+            {
+                mBufferBPointer = 144;
+                mBufferBPattern = DMRSyncPattern.UNKNOWN;
+            }
+        }
+
+        mAssemblingBurst = true;
+
+        if(mBufferAActive)
+        {
+            mBufferAActive = false;
+            mBufferBPointer = 0;
+            mBufferBPattern = pattern;
+
+            if(pattern.isDCDM())
+            {
+                if(pattern.isDCDMTS1())
+                {
+                    mBufferATimeslot = 2;
+                    mBufferBTimeslot = 1;
+                }
+                else if(pattern.isDCDMTS2())
+                {
+                    mBufferATimeslot = 1;
+                    mBufferBTimeslot = 2;
+                }
+
+                if(mBufferAPattern == DMRSyncPattern.UNKNOWN)
+                {
+                    mBufferAPattern = DMRSyncPattern.DIRECT_EMPTY_TIMESLOT;
+                }
+            }
+        }
+        else
+        {
+            mBufferAActive = true;
+            mBufferAPointer = 0;
+            mBufferAPattern = pattern;
+
+            if(pattern.isDCDM())
+            {
+                if(pattern.isDCDMTS1())
+                {
+                    mBufferATimeslot = 1;
+                    mBufferBTimeslot = 2;
+                }
+                else if(pattern.isDCDMTS2())
+                {
+                    mBufferATimeslot = 2;
+                    mBufferBTimeslot = 1;
+                }
+
+                if(mBufferBPattern == DMRSyncPattern.UNKNOWN)
+                {
+                    mBufferBPattern = DMRSyncPattern.DIRECT_EMPTY_TIMESLOT;
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets or updates the current dibit stream time from an incoming sample buffer.
+     * @param time to use as a reference timestamp.
+     */
+    public void setTimestamp(long time)
+    {
+        mReferenceTimestamp = time;
+        mDibitSinceTimestampCounter = 0;
+    }
+
+    /**
+     * Calculates the timestamp accurate to the currently received dibit.
+     * @return timestamp in milliseconds.
+     */
+    private long getTimestamp()
+    {
+        if(mReferenceTimestamp > 0)
+        {
+            return mReferenceTimestamp + (long)(1000.0 * mDibitSinceTimestampCounter / 4800);
+        }
+        else
+        {
+            mDibitSinceTimestampCounter = 0;
+            return System.currentTimeMillis();
+        }
+    }
+}

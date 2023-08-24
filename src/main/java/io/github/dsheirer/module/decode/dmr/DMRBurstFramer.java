@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -292,11 +292,11 @@ public class DMRBurstFramer implements Listener<Dibit>
                 {
                     DMRSyncPattern sync1 = mSyncTrackerTimeslot1.getSyncPattern();
 
-                    if(sync1.isMobileStationSyncPattern() || sync1.isDirectModeTS1())
+                    if(sync1.isMobileStationSyncPattern() || sync1.isDCDMTS1())
                     {
                         mBurstDetectListener.burstDetected(burst1, sync1, 1);
                     }
-                    else if(sync1.isDirectModeTS2())
+                    else if(sync1.isDCDMTS2())
                     {
                         mBurstDetectListener.burstDetected(burst1, sync1, 2);
                     }
@@ -316,11 +316,11 @@ public class DMRBurstFramer implements Listener<Dibit>
                 {
                     DMRSyncPattern sync2 = mSyncTrackerTimeslot2.getSyncPattern();
 
-                    if(sync2.isMobileStationSyncPattern() || sync2.isDirectModeTS1())
+                    if(sync2.isMobileStationSyncPattern() || sync2.isDCDMTS1())
                     {
                         mBurstDetectListener.burstDetected(burst2, sync2, 1);
                     }
-                    else if(sync2.isDirectModeTS2())
+                    else if(sync2.isDCDMTS2())
                     {
                         mBurstDetectListener.burstDetected(burst2, sync2, 2);
                     }
@@ -467,8 +467,8 @@ public class DMRBurstFramer implements Listener<Dibit>
                         break;
 
                     case MOBILE_STATION_VOICE: //Voice frame A
-                    case DIRECT_MODE_VOICE_TIMESLOT_1:
-                    case DIRECT_MODE_VOICE_TIMESLOT_2:
+                    case DIRECT_VOICE_TIMESLOT_1:
+                    case DIRECT_VOICE_TIMESLOT_2:
                         mSyncPattern = DMRSyncPattern.MS_VOICE_FRAME_B;
                         break;
                     case MS_VOICE_FRAME_B:

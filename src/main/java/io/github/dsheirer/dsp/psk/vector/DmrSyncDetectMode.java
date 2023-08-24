@@ -17,29 +17,12 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message;
-
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.message.TimeslotMessage;
-import io.github.dsheirer.protocol.Protocol;
+package io.github.dsheirer.dsp.psk.vector;
 
 /**
- * Base DMR Message
+ * DMR sync detection modes enumeration.
  */
-public abstract class DMRMessage extends TimeslotMessage
+public enum DmrSyncDetectMode
 {
-    /**
-     * Constructs an instance
-     * @param timestamp for the message
-     */
-    public DMRMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
-    {
-        super(message, timeslot, timestamp);
-    }
-
-    @Override
-    public Protocol getProtocol()
-    {
-        return Protocol.DMR;
-    }
+    AUTOMATIC, BASE_ONLY, MOBILE_ONLY, DIRECT_ONLY;
 }

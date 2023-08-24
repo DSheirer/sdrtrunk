@@ -17,29 +17,28 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message;
-
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.message.TimeslotMessage;
-import io.github.dsheirer.protocol.Protocol;
+package io.github.dsheirer.dsp.psk.dqpsk;
 
 /**
- * Base DMR Message
+ * Interface for a soft symbol listener
  */
-public abstract class DMRMessage extends TimeslotMessage
+public interface DQPSKSoftSymbolListener
 {
     /**
-     * Constructs an instance
-     * @param timestamp for the message
+     * Receive demodulated soft symbol stream
+     * @param samples to process
      */
-    public DMRMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
-    {
-        super(message, timeslot, timestamp);
-    }
+    void receive(float[] samples);
 
-    @Override
-    public Protocol getProtocol()
-    {
-        return Protocol.DMR;
-    }
+    /**
+     * Receive an updated stream timestamp from the incoming sample buffers.
+     * @param timestamp to set for reference
+     */
+    void setTimestamp(long timestamp);
+
+    /**
+     * Sets the samples per symbol rate for the incoming sample stream.
+     * @param samplesPerSymbol to set.
+     */
+    void setSamplesPerSymbol(float samplesPerSymbol);
 }

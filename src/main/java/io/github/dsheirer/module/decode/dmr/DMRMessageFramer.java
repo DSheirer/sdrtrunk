@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.dmr.audio.DMRCallSequenceRecorder;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
@@ -210,7 +209,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 
         if(mMessageListener != null)
         {
-            DMRMessage dmrMessage = DMRMessageFactory.create(syncPattern, message, cach, getTimestamp(), timeslot);
+            IMessage dmrMessage = DMRMessageFactory.create(syncPattern, message, cach, getTimestamp(), timeslot);
 
             if(dmrMessage != null)
             {

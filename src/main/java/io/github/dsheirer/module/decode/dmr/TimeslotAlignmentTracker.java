@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ public class TimeslotAlignmentTracker
     {
         if(cach1 != null && cach1.isValid())
         {
-            if(cach1.isTimeslot0())
+            if(cach1.isTimeslot1())
             {
                 mBurst1Ts1++;
             }
@@ -81,7 +81,7 @@ public class TimeslotAlignmentTracker
 
         if(cach2 != null && cach2.isValid())
         {
-            if(cach2.isTimeslot0())
+            if(cach2.isTimeslot1())
             {
                 mBurst2Ts1++;
             }
@@ -91,31 +91,31 @@ public class TimeslotAlignmentTracker
             }
         }
 
-        if(pattern1.isDirectMode())
+        if(pattern1.isDCDM())
         {
             switch((pattern1))
             {
-                case DIRECT_MODE_DATA_TIMESLOT_1:
-                case DIRECT_MODE_VOICE_TIMESLOT_1:
+                case DIRECT_DATA_TIMESLOT_1:
+                case DIRECT_VOICE_TIMESLOT_1:
                     mBurst1Ts1++;
                     break;
-                case DIRECT_MODE_DATA_TIMESLOT_2:
-                case DIRECT_MODE_VOICE_TIMESLOT_2:
+                case DIRECT_DATA_TIMESLOT_2:
+                case DIRECT_VOICE_TIMESLOT_2:
                     mBurst1Ts2++;
                     break;
             }
         }
 
-        if(pattern2.isDirectMode())
+        if(pattern2.isDCDM())
         {
             switch((pattern2))
             {
-                case DIRECT_MODE_DATA_TIMESLOT_1:
-                case DIRECT_MODE_VOICE_TIMESLOT_1:
+                case DIRECT_DATA_TIMESLOT_1:
+                case DIRECT_VOICE_TIMESLOT_1:
                     mBurst2Ts1++;
                     break;
-                case DIRECT_MODE_DATA_TIMESLOT_2:
-                case DIRECT_MODE_VOICE_TIMESLOT_2:
+                case DIRECT_DATA_TIMESLOT_2:
+                case DIRECT_VOICE_TIMESLOT_2:
                     mBurst2Ts2++;
                     break;
             }

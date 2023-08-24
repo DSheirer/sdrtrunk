@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
             if(!mEncryptedCallStateEstablished)
             {
                 //DCDM doesn't provide FLCs or EMBs ... assume that the call is unencrypted.
-                if(message instanceof VoiceMessage vm && vm.getSyncPattern().isDirectMode())
+                if(message instanceof VoiceMessage vm && vm.getSyncPattern().isDCDM())
                 {
                     mEncryptedCallStateEstablished = true;
                     mEncryptedCall = false;
