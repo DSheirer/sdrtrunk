@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,6 @@ public class GroupVoiceChannelUser extends AbstractVoiceChannelUser
         sb.append(getRadio());
         sb.append(" TO:").append(getTalkgroup());
         sb.append(" ").append(getServiceOptions());
-        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 

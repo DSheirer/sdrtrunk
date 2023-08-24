@@ -281,6 +281,20 @@ public class BinaryMessage extends BitSet
         }
     }
 
+    /**
+     * Adds bit1 and bit2 to this bitset.
+     *
+     * Note: this method does not provide overfill protection.
+     *
+     * @param bit1 to add.
+     * @param bit2 to add.
+     */
+    public void add(boolean bit1, boolean bit2)
+    {
+        set(mPointer++, bit1);
+        set(mPointer++, bit2);
+    }
+
     public String toString()
     {
         StringBuilder sb = new StringBuilder();

@@ -20,7 +20,6 @@
 package io.github.dsheirer.module.decode.dmr.message.data.csbk;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.Hytera08Acknowledge;
@@ -88,6 +87,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBloc
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.UnknownMultiCSBK;
 import io.github.dsheirer.module.decode.dmr.message.type.AnnouncementType;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceKind;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import java.util.List;
 
 /**

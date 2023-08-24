@@ -479,7 +479,7 @@ public class DecoderFactory
                                    AliasList aliasList, DecodeConfigDMR decodeConfig,
                                    TrafficChannelManager trafficChannelManager, IChannelDescriptor channelDescriptor)
     {
-        modules.add(new DMRDecoder(decodeConfig));
+        modules.add(new DMRDecoder(decodeConfig, channel.isTrafficChannel()));
 
         DMRTrafficChannelManager dmrTrafficChannelManager = null;
 

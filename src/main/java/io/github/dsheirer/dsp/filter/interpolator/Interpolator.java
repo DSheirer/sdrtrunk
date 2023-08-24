@@ -1,25 +1,24 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.dsp.filter.interpolator;
 
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2015 Dennis Sheirer
- *     
- *     Copyright (C) 2002,2012 Free Software Foundation, Inc.
- *     Ported to java from gnuradio - interpolator_taps.h
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
 public abstract class Interpolator
 {
 	public static final int NTAPS = 8;
@@ -158,4 +157,19 @@ public abstract class Interpolator
 		  { -1.98993e-04f,  1.24642e-03f, -5.41054e-03f,  9.98534e-01f,  7.89295e-03f, -2.76968e-03f,  8.53777e-04f, -1.54700e-04f }, // 127/128
 		  {  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  1.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f }, // 128/128
 	};
+
+	/**
+	 * Calculates an interpolated value from eight samples that start at the offset into the sample array.  The
+	 * interpolated sample will fall within the middle of the eight sample array, between indexes offset+3 and
+	 * offset+4.  The mu argument is translated into an index position between 0 and 128, where a mu of 0.0 will be
+	 * converted to index zero and will be equal to the sample at index offset+3 and a mu of 1.0 will be equal to
+	 * the sample at offset+4.  All mu values between 0.0 and 1.0 will be converted to a 1 - 127 index and will
+	 * produce an approximated value from among 127 interpolated sample points between indexes offset+3 and offset+4.
+	 *
+	 * @param samples - sample array of length at least offset + 7
+	 * @param offset into the sample array for the start of the 8-value sequence
+	 * @param mu - interpolated sample position between 0.0 and 1.0
+	 * @return - interpolated sample value
+	 */
+	public abstract float filter(float[] samples, int offset, float mu);
 }

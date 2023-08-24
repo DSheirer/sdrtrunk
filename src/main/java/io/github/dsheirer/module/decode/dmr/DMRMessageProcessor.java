@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
@@ -73,7 +74,7 @@ public class DMRMessageProcessor implements Listener<IMessage>
     private TalkerAliasAssembler mTalkerAliasAssembler = new TalkerAliasAssembler();
     private Listener<IMessage> mMessageListener;
     private Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
-    private DmrCrcMaskManager mCrcMaskManager = new DmrCrcMaskManager();
+    private DMRCrcMaskManager mCrcMaskManager = new DMRCrcMaskManager();
     private boolean mIgnoreCrcChecksums;
 
     /**
@@ -113,6 +114,13 @@ public class DMRMessageProcessor implements Listener<IMessage>
         if(message == null)
         {
             return;
+        }
+
+        if(message instanceof SyncLossMessage)
+        {
+            mSLCAssembler.reset();
+            mFLCAssemblerTimeslot1.reset();
+            mFLCAssemblerTimeslot2.reset();
         }
 
         //Detect and correct messages employing an alternate CRC mask pattern.

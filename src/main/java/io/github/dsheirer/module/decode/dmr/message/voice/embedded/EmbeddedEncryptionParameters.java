@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import io.github.dsheirer.module.decode.dmr.message.type.EncryptionAlgorithm;
 /**
  * Encryption parameters short burst payload.
  */
-public class EncryptionParameters extends ShortBurst
+public class EmbeddedEncryptionParameters extends ShortBurst
 {
     private static final int[] KEY = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
     private static final int[] ALGORITHM = new int[]{8, 9, 10};
@@ -35,7 +35,7 @@ public class EncryptionParameters extends ShortBurst
      *
      * @param message containing the de-interleaved and error-corrected short burst payload.
      */
-    public EncryptionParameters(CorrectedBinaryMessage message)
+    public EmbeddedEncryptionParameters(CorrectedBinaryMessage message)
     {
         super(message);
     }

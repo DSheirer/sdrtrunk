@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,12 @@ package io.github.dsheirer.module.decode.dmr.message.voice;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.BPTC_16_2;
 import io.github.dsheirer.edac.Golay24;
+import io.github.dsheirer.module.decode.dmr.bptc.BPTC_16_2;
 import io.github.dsheirer.module.decode.dmr.message.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedEncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedParameters;
-import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.NonStandardShortBurst;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.NullShortBurst;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.ShortBurst;
@@ -183,7 +183,7 @@ public class VoiceSuperFrameProcessor
         return switch(opcode)
         {
             case NULL -> new NullShortBurst(decoded);
-            case ARC4_ENCRYPTION, AES128_ENCRYPTION, AES256_ENCRYPTION -> new EncryptionParameters(decoded);
+            case ARC4_ENCRYPTION, AES128_ENCRYPTION, AES256_ENCRYPTION -> new EmbeddedEncryptionParameters(decoded);
             case TXI_DELAY -> new TransmitInterrupt(decoded);
             default -> new UnknownShortBurst(decoded);
         };

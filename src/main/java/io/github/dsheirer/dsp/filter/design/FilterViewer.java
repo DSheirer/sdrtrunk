@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 package io.github.dsheirer.dsp.filter.design;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.hilbert.HilbertTransform;
 import io.github.dsheirer.dsp.window.WindowType;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -62,9 +61,10 @@ public class FilterViewer extends Application
         int filterLength = 47;
         WindowType windowType = WindowType.HAMMING;
 
-        float[] taps = FilterFactory.getHalfBand(filterLength, windowType);
+//        float[] taps = FilterFactory.getHalfBand(filterLength, windowType);
+        float[] taps = FilterFactory.getRootRaisedCosine(50000.0 / 4800.0, 20, 0.2f);
 
-        taps = HilbertTransform.HALF_BAND_FILTER_47_TAP;
+//        taps = HilbertTransform.HALF_BAND_FILTER_47_TAP;
 
         if(taps == null)
         {

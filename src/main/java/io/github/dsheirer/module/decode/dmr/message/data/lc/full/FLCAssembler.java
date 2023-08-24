@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.full;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.Hamming16;
+import io.github.dsheirer.module.decode.dmr.bptc.BPTC_128_77;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
 import org.slf4j.Logger;
@@ -38,6 +38,7 @@ public class FLCAssembler
     private int mFragmentCount = 0;
     private long mTimestamp;
     private int mTimeslot;
+    private BPTC_128_77 mBPTC = new BPTC_128_77();
 
     /**
      * Constructs an instance
@@ -45,6 +46,15 @@ public class FLCAssembler
     public FLCAssembler(int timeslot)
     {
         mTimeslot = timeslot;
+    }
+
+    /**
+     * Resets this assembler when a sync loss is detected.
+     */
+    public void reset()
+    {
+        mAssemblingMessage = null;
+        mFragmentCount = 0;
     }
 
     /**
@@ -101,7 +111,8 @@ public class FLCAssembler
 
         if(mFragmentCount == 4)
         {
-            message = decode(mAssemblingMessage, mTimestamp, mTimeslot);
+//            message = decode(mAssemblingMessage, mTimestamp, mTimeslot);
+            message = decode2(mAssemblingMessage, mTimestamp, mTimeslot);
         }
 
         mAssemblingMessage = null;
@@ -112,87 +123,123 @@ public class FLCAssembler
     /**
      * Decodes an assembled FLC message, performs error detection and correction and returns a constructed FLC message
      */
-    private static FullLCMessage decode(BinaryMessage message, long timestamp, int timeslot)
+    private FullLCMessage decode2(BinaryMessage message, long timestamp, int timeslot)
     {
         if(message != null)
         {
-            boolean valid = true;
-
-            CorrectedBinaryMessage descrambled = new CorrectedBinaryMessage(128);
-            int src;
-            descrambled.set(127, message.get(127));
-            for(int i = 0; i < 127; i++)
-            {
-                src = (i * 8) % 127;
-                boolean x = message.get(src);
-                descrambled.set(i, message.get(src));
-            }
-
-            int errorCount = 0;
-
-            for(int row = 0; row < 8; row++)
-            {
-                int rowErrorCount = Hamming16.checkAndCorrect(descrambled, row * 16);
-
-                errorCount += rowErrorCount;
-
-                if(errorCount > 1)
-                {
-                    valid = false;
-                }
-            }
-
-            //If valid, check the column parity values
-            if(valid)
-            {
-                //Check the column parity values
-                for(int column = 0; column < 16; column++)
-                {
-                    boolean parity = descrambled.get(column);
-
-                    for(int y = 1; y < 8; y++)
-                    {
-                        parity ^= descrambled.get(column + (y * 16));
-                    }
-
-                    if(parity)
-                    {
-                        valid = false;
-                    }
-                }
-            }
-
-            //Extract the message.  Row 1 and 2 are 11 bits.  Rows 3-7 are 10 bits.
-            CorrectedBinaryMessage extractedMessage = new CorrectedBinaryMessage(77);
-            int pointer = 0;
-
-            for(int row = 0; row < 2; row++)
-            {
-                for(int column = 0; column < 11; column++)
-                {
-                    extractedMessage.set(pointer++, descrambled.get(row * 16 + column));
-                }
-            }
-
-            for(int row = 2; row < 7; row++)
-            {
-                for(int column = 0; column < 10; column++)
-                {
-                    extractedMessage.set(pointer++, descrambled.get(row * 16 + column));
-                }
-
-                //Transfer the checksum parity bit from this row
-                extractedMessage.set(70 + row, descrambled.get(row * 16 + 10));
-            }
-
-            extractedMessage.setCorrectedBitCount(errorCount);
+            CorrectedBinaryMessage extractedMessage = mBPTC.extract(message);
             FullLCMessage flco = LCMessageFactory.createFull(extractedMessage, timestamp, timeslot, false);
-            flco.setValid(valid);
+            flco.setValid(extractedMessage.getCorrectedBitCount() >= 0);
             return flco;
         }
 
         return null;
     }
+
+
+//    /**
+//     * Decodes an assembled FLC message, performs error detection and correction and returns a constructed FLC message
+//     */
+//    private static FullLCMessage decode(BinaryMessage message, long timestamp, int timeslot)
+//    {
+//        if(message != null)
+//        {
+//            System.out.println("FLC Raw:" + message);
+//            boolean valid = true;
+//
+//            CorrectedBinaryMessage descrambled = new CorrectedBinaryMessage(128);
+//            int src;
+//            descrambled.set(127, message.get(127));
+//            for(int i = 0; i < 127; i++)
+//            {
+//                src = (i * 8) % 127;
+//                boolean x = message.get(src);
+//                descrambled.set(i, message.get(src));
+//            }
+//
+//            System.out.println("FLC Des:" + descrambled);
+//            int errorCount = 0;
+//
+//            for(int row = 0; row < 8; row++)
+//            {
+//                int errorIndex = Hamming16.getErrorIndex(descrambled, row * 16);
+//                BinaryMessage rowErrors = BPTC_128_77.getRowErrors(descrambled);
+//                BinaryMessage columnErrors = BPTC_128_77.getColumnErrors(descrambled);
+//
+//                int rowErrorCount = Hamming16.checkAndCorrect(descrambled, row * 16);
+//
+//                if(rowErrorCount == 0)
+//                {
+//                    System.out.println("Row [" + row + "]");
+//                }
+//                else
+//                {
+//                    System.out.println("Row [" + row + "] Error Count: " + rowErrorCount + " Index:" + errorIndex +
+//                            " Value: " + message.get(errorIndex) +
+//                            " Row Errors: " + rowErrors + " Column Errors: " + columnErrors );
+//                }
+//
+//                errorCount += rowErrorCount;
+//
+//                if(errorCount > 1)
+//                {
+//                    valid = false;
+//                }
+//            }
+//
+//            //If valid, check the column parity values
+//            if(valid)
+//            {
+//                //Check the column parity values
+//                for(int column = 0; column < 16; column++)
+//                {
+//                    boolean parity = descrambled.get(column);
+//
+//                    for(int y = 1; y < 8; y++)
+//                    {
+//                        parity ^= descrambled.get(column + (y * 16));
+//                    }
+//
+//                    if(parity)
+//                    {
+//                        valid = false;
+//                    }
+//                }
+//            }
+//
+//            //Extract the message.  Row 1 and 2 are 11 bits.  Rows 3-7 are 10 bits.
+//            CorrectedBinaryMessage extractedMessage = new CorrectedBinaryMessage(77);
+//            int pointer = 0;
+//
+//            for(int row = 0; row < 2; row++)
+//            {
+//                for(int column = 0; column < 11; column++)
+//                {
+//                    extractedMessage.set(pointer++, descrambled.get(row * 16 + column));
+//                }
+//            }
+//
+//            for(int row = 2; row < 7; row++)
+//            {
+//                for(int column = 0; column < 10; column++)
+//                {
+//                    extractedMessage.set(pointer++, descrambled.get(row * 16 + column));
+//                }
+//
+//                //Transfer the checksum parity bit from this row
+//                extractedMessage.set(70 + row, descrambled.get(row * 16 + 10));
+//            }
+//
+//            extractedMessage.setCorrectedBitCount(errorCount);
+//
+//
+//            FullLCMessage flco = LCMessageFactory.createFull(extractedMessage, timestamp, timeslot, false);
+//            flco.setValid(valid);
+//            return flco;
+//        }
+//
+//        return null;
+//    }
 
     /**
      * Adds the cach payload to the currently assembling message

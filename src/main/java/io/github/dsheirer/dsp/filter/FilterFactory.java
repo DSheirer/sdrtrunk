@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,14 +56,13 @@ import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
+import java.text.DecimalFormat;
+import java.util.Set;
+import java.util.TreeSet;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.DecimalFormat;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Utility methods for designing various types of filters.
@@ -627,11 +626,13 @@ public class FilterFactory
      * @param samplesPerSymbol - number of samples per symbol
      * @param symbolCount - number of symbol intervals for the filter.  This directly impacts the filter size
      * @param alpha - roll-off factor.
+     * @param gain of the filter
      * @return - filter coefficients
      */
     public static float[] getRootRaisedCosine(double samplesPerSymbol, int symbolCount, float alpha)
     {
-        int taps = (int)(samplesPerSymbol * symbolCount);
+        samplesPerSymbol /= 2;
+        int taps = (int)Math.round(samplesPerSymbol * symbolCount);
 
         float scale = 0;
 
@@ -639,47 +640,47 @@ public class FilterFactory
 
         for(int x = 0; x < taps; x++)
         {
-            float index = (float)x - ((float)taps / 2.0f);
+            double index = x - (taps / 2.0f);
 
-            float x1 = (float)FastMath.PI * index / (float)samplesPerSymbol;
-            float x2 = 4.0f * alpha * index / (float)samplesPerSymbol;
-            float x3 = x2 * x2 - 1.0f;
+            double x1 = FastMath.PI * index / samplesPerSymbol;
+            double x2 = 4.0 * alpha * index / samplesPerSymbol;
+            double x3 = x2 * x2 - 1.0;
 
-            float numerator, denominator;
+            double numerator, denominator;
 
             if(FastMath.abs(x3) >= 0.000001)
             {
                 if(x != taps / 2)
                 {
-                    numerator = (float)FastMath.cos((1.0 + alpha) * x1) +
-                        (float)FastMath.sin((1.0f - alpha) * x1) / (4.0f * alpha * index / (float)samplesPerSymbol);
+                    numerator = FastMath.cos((1.0 + alpha) * x1) +
+                        FastMath.sin((1.0 - alpha) * x1) / (4.0 * alpha * index / samplesPerSymbol);
                 }
                 else
                 {
-                    numerator = (float)FastMath.cos((1.0f + alpha) * x1) + (1.0f - alpha) * (float)FastMath.PI / (4.0f * alpha);
+                    numerator = FastMath.cos((1.0 + alpha) * x1) + (1.0 - alpha) * FastMath.PI / (4.0 * alpha);
                 }
 
-                denominator = x3 * (float)FastMath.PI;
+                denominator = x3 * FastMath.PI;
             }
             else
             {
-                if(alpha == 1.0f)
+                if(alpha == 1.0)
                 {
                     coefficients[x] = -1.0f;
                     continue;
                 }
 
-                x3 = (1.0f - alpha) * x1;
-                x2 = (1.0f + alpha) * x1;
+                x3 = (1.0 - alpha) * x1;
+                x2 = (1.0 + alpha) * x1;
 
-                numerator = (float)(FastMath.sin(x2) * (1.0f + alpha) * FastMath.PI - FastMath.cos(x3) * ((1.0 - alpha) * FastMath.PI *
-                    (double)samplesPerSymbol) / (4.0 * alpha * index) + FastMath.sin(x3) * (double)samplesPerSymbol *
-                    (double)samplesPerSymbol / (4.0 * alpha * index * index));
+                numerator = (FastMath.sin(x2) * (1.0 + alpha) * FastMath.PI - FastMath.cos(x3) * ((1.0 - alpha) * FastMath.PI *
+                    samplesPerSymbol) / (4.0 * alpha * index) + FastMath.sin(x3) * samplesPerSymbol *
+                    samplesPerSymbol / (4.0 * alpha * index * index));
 
-                denominator = (float)(-32.0 * FastMath.PI * alpha * alpha * index / (double)samplesPerSymbol);
+                denominator = -32.0 * FastMath.PI * alpha * alpha * index / samplesPerSymbol;
             }
 
-            coefficients[x] = 4.0f * alpha * numerator / denominator;
+            coefficients[x] = (float)(4.0 * alpha * numerator / denominator);
 
             scale += coefficients[x];
         }
@@ -1210,13 +1211,20 @@ public class FilterFactory
     {
         DecimalFormat df = new DecimalFormat("0.000000");
 
-        int length = 15;
+        int length = 49;
 
-        float [] taps = FilterFactory.getHalfBand(length, WindowType.HAMMING);
-
-        for(int x = 0; x < length; x++)
+        try
         {
-            mLog.debug("Tap: " + x + " Value: " + df.format(taps[x]));
+            float [] taps = FilterFactory.getSinc(0.5, length, WindowType.NONE);
+
+            for(int x = 0; x < length; x++)
+            {
+                mLog.debug("Tap: " + x + " Value: " + df.format(taps[x]));
+            }
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
         }
 
         mLog.debug("Done!");

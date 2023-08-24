@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,14 @@
 package io.github.dsheirer.module.decode.dmr.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.message.EmptyTimeslotPlaceholderMessage;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DMRDataMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
+import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,39 +43,33 @@ public class DMRMessageFactory
      * @param timeslot for the burst
      * @return DMRMessage instance or null for UNKNOWN sync pattern
      */
-    public static DMRBurst create(DMRSyncPattern syncPattern, CorrectedBinaryMessage binaryMessage, CACH cach,
+    public static IMessage create(DMRSyncPattern syncPattern, CorrectedBinaryMessage binaryMessage, CACH cach,
                                   long timestamp, int timeslot)
     {
         switch(syncPattern)
         {
-            case BASE_STATION_VOICE:
-            case MOBILE_STATION_VOICE:
-            case BS_VOICE_FRAME_B:
-            case BS_VOICE_FRAME_C:
-            case BS_VOICE_FRAME_D:
-            case BS_VOICE_FRAME_E:
-            case BS_VOICE_FRAME_F:
-
-            case MS_VOICE_FRAME_B:
-            case MS_VOICE_FRAME_C:
-            case MS_VOICE_FRAME_D:
-            case MS_VOICE_FRAME_E:
-            case MS_VOICE_FRAME_F:
+            case BASE_STATION_VOICE, MOBILE_STATION_VOICE:
+            case BS_VOICE_FRAME_B, BS_VOICE_FRAME_C, BS_VOICE_FRAME_D, BS_VOICE_FRAME_E, BS_VOICE_FRAME_F:
+            case MS_VOICE_FRAME_B, MS_VOICE_FRAME_C, MS_VOICE_FRAME_D, MS_VOICE_FRAME_E, MS_VOICE_FRAME_F:
+            case DIRECT_VOICE_FRAME_B, DIRECT_VOICE_FRAME_C, DIRECT_VOICE_FRAME_D, DIRECT_VOICE_FRAME_E,
+                 DIRECT_VOICE_FRAME_F:
                 return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, timeslot);
-            case DIRECT_MODE_VOICE_TIMESLOT_1:
+            case DIRECT_VOICE_TIMESLOT_1:
                 return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, 1);
-            case DIRECT_MODE_VOICE_TIMESLOT_2:
+            case DIRECT_VOICE_TIMESLOT_2:
                 return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, 2);
             case BASE_STATION_DATA:
             case MOBILE_STATION_DATA:
                 return DMRDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, timeslot);
-            case DIRECT_MODE_DATA_TIMESLOT_1:
+            case DIRECT_DATA_TIMESLOT_1:
                 return DMRDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 1);
-            case DIRECT_MODE_DATA_TIMESLOT_2:
+            case DIRECT_DATA_TIMESLOT_2:
                 return DMRDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 2);
+            case DIRECT_EMPTY_TIMESLOT:
+                return new EmptyTimeslotPlaceholderMessage(timestamp, 288, Protocol.DMR, timeslot);
             case UNKNOWN:
                 return null;
-            case MOBILE_STATION_REVERSE_CHANNEL:
+            case REVERSE_CHANNEL:
             case RESERVED:
             default:
                 return new UnknownDMRMessage(syncPattern, binaryMessage, cach, timestamp, timeslot);
@@ -95,14 +92,13 @@ public class DMRMessageFactory
         {
             case BASE_STATION_VOICE:
             case MOBILE_STATION_VOICE:
-            case DIRECT_MODE_VOICE_TIMESLOT_1:
-            case DIRECT_MODE_VOICE_TIMESLOT_2:
+            case DIRECT_VOICE_TIMESLOT_1:
+            case DIRECT_VOICE_TIMESLOT_2:
                 return new VoiceAMessage(syncPattern, message, cach, timestamp, timeslot);
-            case BS_VOICE_FRAME_B:
-            case BS_VOICE_FRAME_C:
-            case BS_VOICE_FRAME_D:
-            case BS_VOICE_FRAME_E:
-            case BS_VOICE_FRAME_F:
+            case BS_VOICE_FRAME_B, BS_VOICE_FRAME_C, BS_VOICE_FRAME_D, BS_VOICE_FRAME_E, BS_VOICE_FRAME_F:
+            case MS_VOICE_FRAME_B, MS_VOICE_FRAME_C, MS_VOICE_FRAME_D, MS_VOICE_FRAME_E, MS_VOICE_FRAME_F:
+            case DIRECT_VOICE_FRAME_B, DIRECT_VOICE_FRAME_C, DIRECT_VOICE_FRAME_D, DIRECT_VOICE_FRAME_E,
+                 DIRECT_VOICE_FRAME_F:
             default:
                 return new VoiceEMBMessage(syncPattern, message, cach, timestamp, timeslot);
         }

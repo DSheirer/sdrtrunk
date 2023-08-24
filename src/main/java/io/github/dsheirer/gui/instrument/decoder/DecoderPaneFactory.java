@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ package io.github.dsheirer.gui.instrument.decoder;
 
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
-
 import java.util.EnumSet;
 
 public class DecoderPaneFactory
@@ -33,8 +32,7 @@ public class DecoderPaneFactory
         DecoderType.LTR_NET,
         DecoderType.MDC1200,
         DecoderType.MPT1327,
-        DecoderType.TAIT_1200,
-            DecoderType.DMR);
+        DecoderType.TAIT_1200);
 
     /**
      * Creates a decoder pane for the decoder type
@@ -59,8 +57,6 @@ public class DecoderPaneFactory
                 throw new IllegalArgumentException("Use the getP25P1DecoderPane() method for P25 decoder type");
             case P25_PHASE2:
                 return new P25Phase2HDQPSKPane();
-            case DMR:
-                return new DMRPane();
         }
 
         return getDefaultPane();

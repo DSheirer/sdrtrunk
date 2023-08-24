@@ -100,6 +100,12 @@ public class TalkerAliasHeader extends FullLCMessage
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
+
+        if(!isValid())
+        {
+            sb.append("[CRC-ERROR] ");
+        }
+
         sb.append("FLC TALKER ALIAS HEADER");
         sb.append(" FORMAT:").append(getFormat());
         sb.append(" CHARACTERS:").append(getCharacterLength());
