@@ -25,8 +25,8 @@ import io.github.dsheirer.edac.BPTC_16_2;
 import io.github.dsheirer.edac.Golay24;
 import io.github.dsheirer.module.decode.dmr.message.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.voice.embedded.Arc4EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedParameters;
+import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.NonStandardShortBurst;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.NullShortBurst;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.ShortBurst;
@@ -38,8 +38,8 @@ import io.github.dsheirer.module.decode.dmr.message.voice.embedded.UnknownShortB
  * Monitors audio call voice frame messaging to detect encrypted audio calls and extract the encryption parameters
  * that are embedded into the six voice frames that comprise a voice super-frame.
  * <p>
- * See patent: https://patents.google.com/patent/EP2347540B1/en - embedding encryption parameters in voice super frame
- * See patent: https://patents.google.com/patent/US8271009B2 - TXI - interrupting voice transmissions
+ * See patent: <a href="https://patents.google.com/patent/EP2347540B1/en">...</a> - embedding encryption parameters in voice super frame
+ * See patent: <a href="https://patents.google.com/patent/US8271009B2">...</a> - TXI - interrupting voice transmissions
  */
 public class VoiceSuperFrameProcessor
 {
@@ -47,8 +47,6 @@ public class VoiceSuperFrameProcessor
             33, 34, 35, 48, 49, 50, 51, 52, 53, 54, 55};
     private static final int[] CRC4 = new int[]{56, 57, 58, 59};
     private boolean mEncrypted = false;
-    private int mAlgorithm;
-    private int mKey;
     private byte[] mFragmentA;
     private byte[] mFragmentB;
     private byte[] mFragmentC;
@@ -83,8 +81,6 @@ public class VoiceSuperFrameProcessor
 
     private void softReset()
     {
-        mAlgorithm = 0;
-        mKey = 0;
         mFragmentA = null;
         mFragmentB = null;
         mFragmentC = null;
@@ -124,9 +120,6 @@ public class VoiceSuperFrameProcessor
     {
         if(voiceMessage instanceof VoiceEMBMessage voiceEMB)
         {
-            boolean valid = voiceEMB.getEMB().isValid();
-            boolean encrypted = voiceEMB.getEMB().isEncrypted();
-
             if(voiceEMB.getEMB().isValid() && voiceEMB.getEMB().isEncrypted())
             {
                 mEncrypted = true;
@@ -175,7 +168,6 @@ public class VoiceSuperFrameProcessor
      * initialization vector to return a parameters object.
      *
      * @param frameFFragment containing the short-burst FLC fragment
-     * @param iv that was previously extracted from the voice super-frame
      * @return embedded parameters.
      */
     private ShortBurst extractShortBurst(BinaryMessage frameFFragment)
@@ -191,7 +183,7 @@ public class VoiceSuperFrameProcessor
         return switch(opcode)
         {
             case NULL -> new NullShortBurst(decoded);
-            case ARC4_ENCRYPTION -> new Arc4EncryptionParameters(decoded);
+            case ARC4_ENCRYPTION, AES128_ENCRYPTION, AES256_ENCRYPTION -> new EncryptionParameters(decoded);
             case TXI_DELAY -> new TransmitInterrupt(decoded);
             default -> new UnknownShortBurst(decoded);
         };
@@ -233,11 +225,11 @@ public class VoiceSuperFrameProcessor
 
         if(passes)
         {
-            return String.format("%04X", iv);
+            return String.format("%08X", iv);
         }
         else
         {
-            return String.format("%04X", iv) + "(CRC-FAIL " + check1 + "/" + check2 + "/" + check3 + "/" +
+            return String.format("%08X", iv) + "(CRC-FAIL " + check1 + "/" + check2 + "/" + check3 + "/" +
                     reassembled.getCorrectedBitCount() + ")";
         }
     }
@@ -262,10 +254,10 @@ public class VoiceSuperFrameProcessor
      */
     public static boolean crc4(int value, int crc)
     {
-        long checksum = (value & 0x0FFFFFFFFl) << 4;
+        long checksum = (value & 0x0FFFFFFFFL) << 4;
         checksum ^= 0xF; //Initial fill
-        long polynomial = 0x013l << 31;
-        long checkBit = 0x1l << 35;
+        long polynomial = 0x013L << 31;
+        long checkBit = 0x1L << 35;
 
         for(int x = 31; x >= 0; x--)
         {

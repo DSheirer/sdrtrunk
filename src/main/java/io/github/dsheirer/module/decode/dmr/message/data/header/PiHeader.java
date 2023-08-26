@@ -17,18 +17,19 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.header.hytera;
+package io.github.dsheirer.module.decode.dmr.message.data.header;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
-import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessageFactory;
 
 /**
- * Hytera Proprietary Data Header
+ * PI/Encryption Header with Link Control
  */
-public class HyteraProprietaryDataHeader extends ProprietaryDataHeader
+public class PiHeader extends HeaderMessage
 {
     /**
      * Constructs an instance.
@@ -40,23 +41,42 @@ public class HyteraProprietaryDataHeader extends ProprietaryDataHeader
      * @param timestamp message was received
      * @param timeslot for the DMR burst
      */
-    public HyteraProprietaryDataHeader(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
+    public PiHeader(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
     {
         super(syncPattern, message, cach, slotType, timestamp, timeslot);
+    }
+
+    /**
+     * Access the embedded link control message
+     */
+    public LCMessage getLCMessage()
+    {
+        if(mLCMessage == null)
+        {
+            //Overrides default to ignore opcode and construct an encryption parameters message.
+            mLCMessage = LCMessageFactory.createFullEncryption(getMessage(), getTimestamp(), getTimeslot());
+        }
+
+        return mLCMessage;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("CC:").append(getSlotType().getColorCode());
+
         if(!isValid())
         {
             sb.append(" [CRC ERROR]");
         }
-        sb.append(" HYTERA PROPRIETARY DATA HEADER");
-        sb.append(" SAP:").append(getServiceAccessPoint());
-        sb.append(" MSG:").append(getMessage().toHexString());
+
+        sb.append(getSlotType());
+
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits()).append(" ");
+        }
+        sb.append(" ").append(getLCMessage());
         return sb.toString();
     }
 }

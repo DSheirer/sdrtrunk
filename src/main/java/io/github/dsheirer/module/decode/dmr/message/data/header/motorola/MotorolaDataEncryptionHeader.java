@@ -64,8 +64,8 @@ public class MotorolaDataEncryptionHeader extends ProprietaryDataHeader
         sb.append(" MOTOROLA DATA ENCRYPTION HEADER");
         sb.append(" SAP:").append(getServiceAccessPoint());
         sb.append(" ALGORITHM?:").append(getAlgorithm());
-        sb.append(" KEY?:").append(getKeyId());
-        sb.append(" IV?:").append(getInitializationVector());
+        sb.append(" KEY:").append(getKeyId());
+        sb.append(" IV:").append(getInitializationVector());
         sb.append(" UNK:").append(getUnknown());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();

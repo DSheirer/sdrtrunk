@@ -27,7 +27,6 @@ import java.util.TreeMap;
 
 /**
  * Control Signalling Block (CSBK) Opcode enumeration
- *
  * ETSI TS 102 361-2 DMR Voice & Generic Services, Annex B
  * ETSI TS 102 361-4 DMR Trunking Protocol, Annex B
  */
@@ -91,6 +90,8 @@ public enum Opcode
 
     HYTERA_08_ACKNOWLEDGE(Vendor.HYTERA_8, 32, "HYTERA 08 ACKNOWLEDGE"),
     HYTERA_08_ANNOUNCEMENT(Vendor.HYTERA_8, 40, "HYTERA 08 ANNOUNCEMENT"),
+    //CSBKO 44 & 47 observed on Tier3 interleaved in voice group call terminator sequence.  44 was continuously transmitted
+    //and 47 was only transmitted 3x times in succession in the middle of the terminators and CSBKO 44 messages.
     HYTERA_08_CSBKO_44(Vendor.HYTERA_8, 44, "HYTERA 08 CSBKO 44"),
     HYTERA_08_CSBKO_47(Vendor.HYTERA_8, 47, "HYTERA 08 CSBKO 47"),
 
@@ -104,9 +105,9 @@ public enum Opcode
 
     UNKNOWN(Vendor.UNKNOWN, -1, "UNKNOWN");
 
-    private Vendor mVendor;
-    private int mValue;
-    private String mLabel;
+    private final Vendor mVendor;
+    private final int mValue;
+    private final String mLabel;
 
     /**
      * Constructor

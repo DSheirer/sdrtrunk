@@ -34,7 +34,7 @@ import java.util.List;
  */
 public abstract class DataMessageWithLinkControl extends DataMessage
 {
-    private LCMessage mLCMessage;
+    protected LCMessage mLCMessage;
 
     /**
      * Constructs an instance.

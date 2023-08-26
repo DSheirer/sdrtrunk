@@ -30,7 +30,7 @@ public abstract class FullLCMessage extends LCMessage
 {
     private static final int ENCRYPTION_FLAG = 0;
     private static final int RESERVED = 1;
-    private static final int[] OPCODE = new int[]{2, 3, 4, 5, 6, 7};
+    protected static final int[] OPCODE = new int[]{2, 3, 4, 5, 6, 7};
     private static final int[] VENDOR = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
 
     /**

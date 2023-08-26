@@ -37,11 +37,12 @@ public abstract class HyteraFullLC extends FullLCMessage implements IServiceOpti
     protected static final int[] TARGET_ADDRESS = new int[]{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] PRIORITY_CALL_HASHED_ADDRESS = new int[]{48, 49, 50, 51, 52, 53, 54, 55};
     private static final int[] SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
-    private static final int[] UNKNOWN_1 = new int[]{72, 73, 74, 75};
-    private static final int[] UNKNOWN_2 = new int[]{76, 77, 78, 79};
+    //FEC: 72-96
+    //TODO: Target and Source address fields may be full 24-bit values.  How do we distinguish between Hytera repeater
+    //TODO: and a Hytera XPT repeater?  Do the service options identify when it's XPT?
 
     private ServiceOptions mServiceOptions;
-    private RadioIdentifier mSourceRadio;
+    protected RadioIdentifier mSourceRadio;
 
     /**
      * Constructs an instance.
@@ -108,24 +109,6 @@ public abstract class HyteraFullLC extends FullLCMessage implements IServiceOpti
     public String getPriorityCallHashedAddress()
     {
         return String.format("%02X", getMessage().getInt(PRIORITY_CALL_HASHED_ADDRESS)).toUpperCase();
-    }
-
-    /**
-     * Unknown nibble one.  This value remains consistent for the FLC between the Voice Header and the Terminator
-     * for calls.  It does not seem to have correlation to the channel/repeater number
-     */
-    public int getUnknownField1()
-    {
-        return getMessage().getInt(UNKNOWN_1);
-    }
-
-    /**
-     * Unknown nibble two.  For each talkgroup, this field shows one value for the Voice Header and the same value but
-     * bit-inverted in the Terminator.
-     */
-    public int getUnknownField2()
-    {
-        return getMessage().getInt(UNKNOWN_2);
     }
 
     /**

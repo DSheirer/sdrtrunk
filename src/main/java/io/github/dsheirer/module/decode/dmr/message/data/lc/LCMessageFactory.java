@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.edac.Checksum_5_DMR;
 import io.github.dsheirer.edac.ReedSolomon_12_9_4_DMR;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GroupVoiceChannelUser;
@@ -33,13 +34,11 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasHead
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TerminatorData;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnknownFullLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraArc4EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraTerminator;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaArc4EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ActivityUpdateMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
@@ -61,8 +60,20 @@ public class LCMessageFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(LCMessageFactory.class);
     private static final ReedSolomon_12_9_4_DMR REED_SOLOMON_12_9_4_DMR = new ReedSolomon_12_9_4_DMR();
-    private static int TERMINATOR_LINK_CONTROL_CRC_MASK = 0x99;
-    private static int VOICE_LINK_CONTROL_CRC_MASK = 0x96;
+    private static final int TERMINATOR_LINK_CONTROL_CRC_MASK = 0x99;
+    private static final int VOICE_LINK_CONTROL_CRC_MASK = 0x96;
+
+    /**
+     * Creates a full link control message specifically for the PI_HEADER message type.
+     * @param message bits
+     * @param timestamp of the original message
+     * @param timeslot of the original message
+     * @return encryption parameters link control.
+     */
+    public static FullLCMessage createFullEncryption(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    {
+        return new EncryptionParameters(message, timestamp, timeslot);
+    }
 
     /**
      * Creates a full link control message
@@ -123,34 +134,9 @@ public class LCMessageFactory
             case FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER:
                 flc = new CapacityPlusWideAreaVoiceChannelUser(message, timestamp, timeslot);
                 break;
-            case FULL_ARC4_ENCRYPTION_PARAMETERS:
-                boolean isHytera = false;
-
-                //This is apparently now a DMR standard FLC opcode, even though it's using Motorola's vendor ID (0x10).
-                //As observed on a known Hytera system, it's not using the standard FLC RS-12/9/4 check, which fails.
-                //It's apparently using the CRC-CCITT with 0x9696 initial fill.  Not sure if both Hytera and Motorola
-                // are using this FEC.  But, by using only 16 bits for checksum versus the standad 24, they're able to
-                // include a full 24-bit group/radio ID in the message.  For now we'll identify as either Motorola
-                //(using reed solomon) or Hytera (using crc-ccitt).
-                if(!valid)
-                {
-                    int bitErrors = CRCDMR.correctCCITT80(message, 0, 80, 0x9696);
-
-                    if(bitErrors < 2)
-                    {
-                        valid = true;
-                        isHytera = true;
-                    }
-                }
-
-                if(isHytera)
-                {
-                    flc = new HyteraArc4EncryptionParameters(message, timestamp, timeslot);
-                }
-                else
-                {
-                    flc = new MotorolaArc4EncryptionParameters(message, timestamp, timeslot);
-                }
+            case FULL_ENCRYPTION_PARAMETERS:
+                flc = new EncryptionParameters(message, timestamp, timeslot);
+                valid = flc.isValid();
                 break;
             case FULL_HYTERA_GROUP_VOICE_CHANNEL_USER:
                 flc = new HyteraGroupVoiceChannelUser(message, timestamp, timeslot);
