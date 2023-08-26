@@ -57,6 +57,10 @@ public class DataBlock3_4Rate extends DataBlock
     {
         StringBuilder sb = new StringBuilder();
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         if(!isValid())
         {
             sb.append(" [CRC ERROR]");

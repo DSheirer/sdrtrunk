@@ -17,56 +17,66 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.voice.embedded;
+package io.github.dsheirer.module.decode.dmr.message.type;
 
 /**
- * Short Burst opcode
- * See: <a href="https://patents.google.com/patent/US8271009B2">...</a> Page 12
+ * Enumeration of encryption algorithms
  */
-public enum ShortBurstOpcode
+public enum EncryptionAlgorithm
 {
-    NULL(0),
-    ARC4_ENCRYPTION(1),
-    TXI_DELAY(3),
-    AES128_ENCRYPTION(4),
-    AES256_ENCRYPTION(5),
-    UNKNOWN(-1);
+    NO_ENCRYPTION(0x00, "NO ENCRYPTION"),
+    HYTERA_BASIC_PRIVACY(0x01, "HYTERA BP"),
+    HYTERA_ENHANCED_PRIVACY(0x02, "HYTERA RC4/EP"),
+    DMRA_RC4(0x21, "DMRA RC4/EP"),
+    DMRA_AES128(0x24, "DMRA AES128"),
+    DMRA_AES256(0x25, "DMRA AES256" ),
+    HYTERA_ENHANCED_PRIVACY_2(0x26, "HYTERA RC4/EP"),
+    UNKNOWN(-1, "UNKNOWN");
 
     private final int mValue;
+    private final String mLabel;
 
     /**
      * Constructor
-     * @param value of the opcode
+     * @param value for the algorithm
+     * @param label to display
      */
-    ShortBurstOpcode(int value)
+    EncryptionAlgorithm(int value, String label)
     {
         mValue = value;
+        mLabel = label;
     }
 
     /**
-     * Numeric value for the opcode
+     * Numeric value for the algorithm
      * @return value.
      */
-    private int getValue()
+    public int getValue()
     {
         return mValue;
     }
 
     /**
-     * Lookup the enum entry from the specified value.
+     * Utility method to lookup the encryption from the value.
      * @param value to lookup
-     * @return matching entry or UNKNOWN.
+     * @return matching entry or UNKNOWN
      */
-    public static ShortBurstOpcode fromValue(int value)
+    public static EncryptionAlgorithm fromValue(int value)
     {
-        for(ShortBurstOpcode opcode: ShortBurstOpcode.values())
+        for(EncryptionAlgorithm algorithm: EncryptionAlgorithm.values())
         {
-            if(opcode.getValue() == value)
+            if(algorithm.getValue() == value)
             {
-                return opcode;
+                return algorithm;
             }
         }
 
         return UNKNOWN;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
     }
 }

@@ -20,11 +20,12 @@
 package io.github.dsheirer.module.decode.dmr.message.voice.embedded;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.dmr.message.type.EncryptionAlgorithm;
 
 /**
  * Encryption parameters short burst payload.
  */
-public class Arc4EncryptionParameters extends ShortBurst
+public class EncryptionParameters extends ShortBurst
 {
     private static final int[] KEY = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
     private static final int[] ALGORITHM = new int[]{8, 9, 10};
@@ -34,7 +35,7 @@ public class Arc4EncryptionParameters extends ShortBurst
      *
      * @param message containing the de-interleaved and error-corrected short burst payload.
      */
-    public Arc4EncryptionParameters(CorrectedBinaryMessage message)
+    public EncryptionParameters(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -49,31 +50,45 @@ public class Arc4EncryptionParameters extends ShortBurst
     }
 
     /**
-     * Encryption algorithm
-     * @return algorithm (0 - 7).  1 = ARC4
+     * Encryption algorithm value
+     * @return algorithm (0 - 7).
      */
     public int getAlgorithmValue()
     {
         return getMessage().getInt(ALGORITHM);
     }
 
-    public String getAlgorithm()
+    /**
+     * Encryption algorithm.
+     * @return algorithm
+     */
+    public EncryptionAlgorithm getAlgorithm()
     {
         int algorithm = getAlgorithmValue();
 
-        if(algorithm == 1)
+        return switch(algorithm)
         {
-            return "EP/ARC4";
-        }
-
-        return "ALGORITHM:" + algorithm;
+            case 1 -> EncryptionAlgorithm.DMRA_RC4;
+            case 4 -> EncryptionAlgorithm.DMRA_AES128;
+            case 5 -> EncryptionAlgorithm.DMRA_AES256;
+            default -> EncryptionAlgorithm.UNKNOWN;
+        };
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ENCRYPTION:").append(getAlgorithm());
+
+        sb.append("ENCRYPTION ALGORITHM:");
+        if(getAlgorithm() == EncryptionAlgorithm.UNKNOWN)
+        {
+            sb.append(getAlgorithmValue());
+        }
+        else
+        {
+            sb.append(getAlgorithm());
+        }
         sb.append(" KEY:").append(getKey());
         return sb.toString();
     }

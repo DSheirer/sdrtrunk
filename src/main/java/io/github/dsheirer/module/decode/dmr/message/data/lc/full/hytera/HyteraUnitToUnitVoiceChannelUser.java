@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,8 +71,6 @@ public class HyteraUnitToUnitVoiceChannelUser extends HyteraFullLC
             sb.append(" PRIORITY CALL FOR:").append(getPriorityCallHashedAddress());
             sb.append(" ON REPEATER:").append(getPriorityCallRepeater());
         }
-        sb.append(" UNK1:").append(getUnknownField1());
-        sb.append(" UNK2:").append(getUnknownField2());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }

@@ -24,7 +24,9 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.header.PacketSequenceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.UDTHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaDataEncryptionHeader;
+import io.github.dsheirer.module.decode.dmr.message.type.EncryptionAlgorithm;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,12 +35,12 @@ import java.util.List;
  */
 public class PacketSequence
 {
-    private int mTimeslot;
+    private final int mTimeslot;
     private PacketSequenceHeader mPacketSequenceHeader;
     private UDTHeader mUDTHeader;
     private ProprietaryDataHeader mProprietaryDataHeader;
-    private List<Preamble> mPreambles = new ArrayList<>();
-    private List<DataBlock> mDataBlocks = new ArrayList<>();
+    private final List<Preamble> mPreambles = new ArrayList<>();
+    private final List<DataBlock> mDataBlocks = new ArrayList<>();
 
     public PacketSequence(int timeslot)
     {
@@ -96,7 +98,19 @@ public class PacketSequence
      */
     public boolean isEncrypted()
     {
-        return hasProprietaryDataHeader() && getProprietaryDataHeader() instanceof MotorolaDataEncryptionHeader;
+        if(hasProprietaryDataHeader())
+        {
+            if(getProprietaryDataHeader() instanceof MotorolaDataEncryptionHeader)
+            {
+                return true;
+            }
+            else if(getProprietaryDataHeader() instanceof HyteraDataEncryptionHeader hdeh)
+            {
+                return hdeh.getAlgorithm() != EncryptionAlgorithm.NO_ENCRYPTION;
+            }
+        }
+
+        return false;
     }
 
     public int getTimeslot()

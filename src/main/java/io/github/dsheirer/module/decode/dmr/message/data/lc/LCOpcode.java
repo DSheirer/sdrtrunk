@@ -27,7 +27,6 @@ import java.util.TreeMap;
 
 /**
  * Full and Short Link Control Opcode enumeration
- *
  * ETSI TS 102 361-2 DMR Voice & Generic Services, Annex B.1 & B.2
  * ETSI TS 102 361-4 DMR Trunking Protocol, Annex B.1 & B.2
  */
@@ -49,7 +48,7 @@ public enum LCOpcode
     //Observed on Cap+ Multi-Site System during an encrypted voice call
     FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 32, "ENCRYPTED VOICE CHANNEL USER"),
     //Observed on Cap+ Multi-Site System during an encrypted voice call
-    FULL_ARC4_ENCRYPTION_PARAMETERS(Vendor.MOTOROLA_CAPACITY_PLUS, true, 33, "ARC4/EP ENCRYPTION PARAMETERS"),
+    FULL_ENCRYPTION_PARAMETERS(Vendor.MOTOROLA_CAPACITY_PLUS, true, 33, "ENCRYPTION PARAMETERS"),
     //Cap+ opcodes from https://forums.radioreference.com/threads/understanding-capacity-plus-trunking-some-more.452566/
     //FLCO 0: Group Call Maintenance
     //FLCO 3: Private Call Maintenance (TermLC)
@@ -81,10 +80,10 @@ public enum LCOpcode
     private static final EnumSet<LCOpcode> TALKER_ALIAS_OPCODES = EnumSet.of(FULL_STANDARD_TALKER_ALIAS_HEADER,
             FULL_STANDARD_TALKER_ALIAS_BLOCK_1, FULL_STANDARD_TALKER_ALIAS_BLOCK_2, FULL_STANDARD_TALKER_ALIAS_BLOCK_3);
 
-    private Vendor mVendor;
-    private boolean mFull;
-    private int mValue;
-    private String mLabel;
+    private final Vendor mVendor;
+    private final boolean mFull;
+    private final int mValue;
+    private final String mLabel;
 
     /**
      * Constructs an instance

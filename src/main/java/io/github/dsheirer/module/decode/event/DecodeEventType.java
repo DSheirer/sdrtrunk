@@ -67,6 +67,7 @@ public enum DecodeEventType
     PAGE("Page"),
     QUERY("Query"),
     RADIO_CHECK("Radio Check"),
+    RADIO_REGISTRATION_SERVICE("Hytera RRS"),
     REGISTER("Register"),
     REGISTER_ESN("ESN"),
     REQUEST("Request"),
@@ -78,9 +79,10 @@ public enum DecodeEventType
     STATUS("Status"),
     UDP_PACKET("UDP/IP Packet"),
     UNKNOWN_PACKET("Unknown Packet"),
+    XCMP("Motorola XCMP"),
     UNKNOWN("Unknown");
 
-    private String mLabel;
+    private final String mLabel;
 
     /**
      * Encrypted voice call event types for filtering

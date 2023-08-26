@@ -33,8 +33,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessageFactory
 import io.github.dsheirer.module.decode.dmr.message.data.header.ConfirmedDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.DataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.DefinedShortDataHeader;
-import io.github.dsheirer.module.decode.dmr.message.data.header.HeaderMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.header.MBCHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.PiHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.RawShortDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.ResponseDataHeader;
@@ -43,7 +43,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.StatusDataHeader
 import io.github.dsheirer.module.decode.dmr.message.data.header.UDTHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.UnconfirmedDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.VoiceHeader;
-import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraProprietaryDataHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MNISProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
@@ -98,7 +98,7 @@ public class DMRDataMessageFactory
                     return new MBCHeader(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
                 case CHANNEL_CONTROL_ENC_HEADER:
                 case PI_HEADER:
-                    return new HeaderMessage(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    return new PiHeader(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
                 case VOICE_HEADER:
                     return new VoiceHeader(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
                 case DATA_ENC_HEADER:
@@ -138,10 +138,10 @@ public class DMRDataMessageFactory
                                         return mprdh;
                                     }
                                 case HYTERA_68:
-                                    HyteraProprietaryDataHeader hpdh = new HyteraProprietaryDataHeader(pattern, payload,
-                                        cach, slotType, timestamp, timeslot);
-                                    hpdh.setValid(valid);
-                                    return hpdh;
+                                    HyteraDataEncryptionHeader hsdh = new HyteraDataEncryptionHeader(pattern, payload,
+                                            cach, slotType, timestamp, timeslot);
+                                    hsdh.setValid(valid);
+                                    return hsdh;
                                 default:
                                     ProprietaryDataHeader pdh = new ProprietaryDataHeader(pattern, payload, cach,
                                         slotType, timestamp, timeslot);

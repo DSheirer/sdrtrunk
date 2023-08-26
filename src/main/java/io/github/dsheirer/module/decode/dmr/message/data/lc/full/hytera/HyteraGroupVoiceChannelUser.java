@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,10 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +33,11 @@ import java.util.List;
  */
 public class HyteraGroupVoiceChannelUser extends HyteraFullLC
 {
+    protected static final int[] TALKGROUP = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+            39, 40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] SOURCE_RADIO = new int[]{48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
+            63, 64, 65, 66, 67, 68, 69, 70, 71};
+
     private TalkgroupIdentifier mTalkgroup;
     private List<Identifier> mIdentifiers;
 
@@ -55,26 +61,11 @@ public class HyteraGroupVoiceChannelUser extends HyteraFullLC
             sb.append("[CRC-ERROR] ");
         }
 
-        sb.append("FLC HYTERA XPT GROUP VOICE CHANNEL USER FM:");
+        sb.append("FLC HYTERA GROUP VOICE CHANNEL USER FM:");
         sb.append(getSourceRadio());
         sb.append(" TO:").append(getTalkgroup());
-        if(isAllChannelsBusy())
-        {
-            sb.append(" ALL REPEATERS BUSY");
-        }
-        else
-        {
-            sb.append(" FREE REPEATER:").append(getFreeRepeater());
-        }
-
-        if(hasPriorityCall())
-        {
-            sb.append(" PRIORITY CALL FOR:").append(getPriorityCallHashedAddress());
-            sb.append(" ON REPEATER:").append(getPriorityCallRepeater());
-        }
         sb.append(" ").append(getServiceOptions());
-        sb.append(" UNK1:").append(getUnknownField1());
-        sb.append(" UNK2:").append(getUnknownField2());
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 
@@ -85,10 +76,23 @@ public class HyteraGroupVoiceChannelUser extends HyteraFullLC
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(TARGET_ADDRESS));
+            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(TALKGROUP));
         }
 
         return mTalkgroup;
+    }
+
+    /**
+     * Source radio address
+     */
+    public RadioIdentifier getSourceRadio()
+    {
+        if(mSourceRadio == null)
+        {
+            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE_RADIO));
+        }
+
+        return mSourceRadio;
     }
 
     @Override

@@ -57,6 +57,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcem
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcement.VoteNowAdvice;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.grant.ChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.header.HeaderMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GroupVoiceChannelUser;
@@ -74,13 +75,17 @@ import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
-import io.github.dsheirer.module.decode.dmr.message.voice.embedded.Arc4EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedParameters;
+import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EncryptionParameters;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraUnknownPacket;
+import io.github.dsheirer.module.decode.ip.hytera.shortdata.HyteraShortDataPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.ars.ARSPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.xcmp.XCMPPacket;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
 import io.github.dsheirer.util.PacketUtil;
@@ -320,6 +325,32 @@ public class DMRDecoderState extends TimeslotDecoderState
                     .build();
             broadcast(smsEvent);
         }
+        //Hytera Short Data - Radio Registration Service (RRS)
+        else if(packet.getPacket() instanceof HyteraShortDataPacket hsdp)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("HYTERA");
+
+            if(hsdp.getPacketSequence().isEncrypted())
+            {
+                HyteraDataEncryptionHeader hdeh = (HyteraDataEncryptionHeader)hsdp.getPacketSequence().getProprietaryDataHeader();
+                sb.append(" ENCRYPTED ALGORITHM:").append(hdeh.getAlgorithm());
+                sb.append(" KEY:").append(hdeh.getKeyId());
+                sb.append(" IV:").append(hdeh.getIV());
+            }
+
+            sb.append(" SHORT DATA:").append(hsdp.getMessage().toHexString());
+
+
+            DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.RADIO_REGISTRATION_SERVICE, packet.getTimestamp())
+                    .identifiers(mic)
+                    .timeslot(getTimeslot())
+                    .details(sb.toString())
+                    .build();
+            broadcast(shortDataEvent);
+        }
         //Unknown Hytera Long Data Service Token Message
         else if(packet.getPacket() instanceof HyteraUnknownPacket hyteraUnknownPacket)
         {
@@ -328,9 +359,45 @@ public class DMRDecoderState extends TimeslotDecoderState
             DecodeEvent unknownTokenEvent = DMRDecodeEvent.builder(DecodeEventType.UNKNOWN_PACKET, packet.getTimestamp())
                     .identifiers(mic)
                     .timeslot(getTimeslot())
-                    .details("HYTERA UNK TOKEN MSG:" + hyteraUnknownPacket.getHeader().toString())
+                    .details("HYTERA LONG DATA UNK TOKEN MSG:" + hyteraUnknownPacket.getHeader().toString())
                     .build();
             broadcast(unknownTokenEvent);
+        }
+        //Motorola ARS
+        else if(packet.getPacket() instanceof ARSPacket ars)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.RADIO_REGISTRATION_SERVICE, packet.getTimestamp())
+                    .identifiers(mic)
+                    .timeslot(getTimeslot())
+                    .details(ars.toString())
+                    .build();
+            broadcast(shortDataEvent);
+        }
+        //Motorola LRRP
+        else if(packet.getPacket() instanceof LRRPPacket lrrp)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.LRRP, packet.getTimestamp())
+                    .identifiers(mic)
+                    .timeslot(getTimeslot())
+                    .details(lrrp.toString())
+                    .build();
+            broadcast(shortDataEvent);
+        }
+        //Motorola XCMP
+        else if(packet.getPacket() instanceof XCMPPacket xcmp)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.XCMP, packet.getTimestamp())
+                    .identifiers(mic)
+                    .timeslot(getTimeslot())
+                    .details(xcmp.toString())
+                    .build();
+            broadcast(shortDataEvent);
         }
         else
         {
@@ -380,7 +447,7 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 EmbeddedParameters embedded = voiceEmb.getEmbeddedParameters();
 
-                if(embedded.getShortBurst() instanceof Arc4EncryptionParameters arc4)
+                if(embedded.getShortBurst() instanceof EncryptionParameters arc4)
                 {
                     updateEncryptedCall(arc4, true, voiceEmb.getTimestamp());
                 }
@@ -972,6 +1039,15 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         switch(message.getOpcode())
         {
+            case FULL_ENCRYPTION_PARAMETERS:
+                if(message instanceof io.github.dsheirer.module.decode.dmr.message.data.lc.full.EncryptionParameters ep)
+                {
+                    if(mCurrentCallEvent != null)
+                    {
+                        mCurrentCallEvent.setDetails(ep.getDetails());
+                    }
+                }
+                break;
             case SHORT_CAPACITY_PLUS_REST_CHANNEL_NOTIFICATION:
                 if(message instanceof CapacityPlusRestChannel)
                 {
@@ -1141,7 +1217,7 @@ public class DMRDecoderState extends TimeslotDecoderState
      * @param encryptionParameters decoded from the Voice Frame F
      * @param isGroup true for group or false for individual call.
      */
-    private void updateEncryptedCall(Arc4EncryptionParameters encryptionParameters, boolean isGroup, long timestamp)
+    private void updateEncryptedCall(EncryptionParameters encryptionParameters, boolean isGroup, long timestamp)
     {
         if(mCurrentCallEvent != null)
         {
@@ -1151,7 +1227,7 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 details = encryptionParameters.toString();
             }
-            else if(!details.contains(encryptionParameters.toString()))
+            else if(!details.contains(encryptionParameters.toString()) && !details.contains("ENCRYPTION"))
             {
                 details += " " + encryptionParameters;
             }

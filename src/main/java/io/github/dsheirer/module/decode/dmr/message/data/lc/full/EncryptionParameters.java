@@ -17,29 +17,30 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera;
+package io.github.dsheirer.module.decode.dmr.message.data.lc.full;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCOpcode;
+import io.github.dsheirer.module.decode.dmr.message.type.EncryptionAlgorithm;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Hytera ARC4/EP Encryption Parameters
- * <p>
- * Note: observed as FLC payload for a PI_HEADER slot type.
- * Note: observed on a Hytera system that was configured as IP Site Connect compatible.
+ * Encryption Parameters, carried by a PI_HEADER.
+ *
+ * Note: this message repurposes the OPCODE field to carry the encryption algorithm.
  */
-public class HyteraArc4EncryptionParameters extends FullLCMessage
+public class EncryptionParameters extends FullLCMessage
 {
     private static final int[] KEY_ID = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] INITIALIZATION_VECTOR = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
             38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     private static final int[] DESTINATION_GROUP = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
             71, 72, 73, 74, 75, 76, 77, 78, 79};
-    //Hytera version uses CRC-CCITT with 0x9696 initial fill, bits: 80-95
+    //CRC-CCITT with 0x9696 initial fill, bits: 80-95
 
     private DMRTalkgroup mTalkgroup;
     private List<Identifier> mIdentifiers;
@@ -50,9 +51,23 @@ public class HyteraArc4EncryptionParameters extends FullLCMessage
      * @param timestamp for the message
      * @param timeslot of the message
      */
-    public HyteraArc4EncryptionParameters(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public EncryptionParameters(CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
         super(message, timestamp, timeslot);
+        int bitErrors = CRCDMR.correctCCITT80(message, 0, 80, 0x9696);
+        setValid(bitErrors < 2);
+    }
+
+    /**
+     * Overrides the default method for opcode to return a static value, because the opcode field is repurposed to
+     * be the algorithm field in both Motorola and Hytera variants of this message, both carried by the Encryption
+     * Header message.
+     * @return full encryption parameters opcode.
+     */
+    @Override
+    public LCOpcode getOpcode()
+    {
+        return LCOpcode.FULL_ENCRYPTION_PARAMETERS;
     }
 
     @Override
@@ -75,12 +90,45 @@ public class HyteraArc4EncryptionParameters extends FullLCMessage
             sb.append(" *RESERVED-BIT*");
         }
 
-        sb.append("FLC HYTERA ARC4/EP ENCRYPTION PARAMETERS");
+        sb.append("FLC ENCRYPTION PARAMETERS");
+        sb.append(" VENDOR:").append(getVendor());
+        if(getAlgorithm() == EncryptionAlgorithm.UNKNOWN)
+        {
+            //List the algorithm (aka opcod) value for unknown algorithms
+            sb.append(" ALGORITHM:").append(getOpcodeValue());
+        }
+        else
+        {
+            sb.append(" ALGORITHM:").append(getAlgorithm());
+        }
         sb.append(" KEY:").append(getKeyId());
         sb.append(" IV:").append(getInitializationVector());
         sb.append(" TALKGROUP:").append(getTalkgroup());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
+    }
+
+    /**
+     * Encryption parameter details
+     * @return details
+     */
+    public String getDetails()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ENCRYPTION ALGORITHM:").append(getAlgorithm());
+        sb.append(" KEY:").append(getKeyId());
+        sb.append(" IV:").append(getInitializationVector());
+        sb.append(" VENDOR:").append(getVendor());
+        return sb.toString();
+    }
+
+    /**
+     * Encryption algorithm.  Note: this message repurposes the OPCODE field to carry the algorithm ID.
+     * @return algorithm or UNKNOWN.
+     */
+    public EncryptionAlgorithm getAlgorithm()
+    {
+        return EncryptionAlgorithm.fromValue(getOpcodeValue());
     }
 
     public DMRTalkgroup getTalkgroup()
