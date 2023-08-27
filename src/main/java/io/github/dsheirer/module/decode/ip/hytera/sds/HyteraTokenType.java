@@ -29,13 +29,15 @@ package io.github.dsheirer.module.decode.ip.hytera.sds;
  */
 public enum HyteraTokenType
 {
-    //Note: this may be the message type, but is definitely followed by 4-byte total length field. Need more examples
-    MESSAGE_HEADER(0x0201, 4),  //First 2 bytes are total message length, 2nd 2 bytes = unknown
+    RADIO_REGISTRATION_SERVICE_HEADER(0x0200, 1),  //Total message length
+    TEXT_MESSAGE_SERVICE_HEADER(0x0201, 4),  //First 2 bytes are total message length, 2nd 2 bytes = unknown
+
     ID_MESSAGE(0x0001, -1),
     ID_SOURCE(0x0002, -1),
     ID_DESTINATION(0x0003, -1),
     ENCODING(0x0101, -1),
     PAYLOAD(0x0102, -1),
+    RRS_UNKNOWN(0x0703, 0),
     UNKNOWN(-1, -1);
 
     private int mOpcode;

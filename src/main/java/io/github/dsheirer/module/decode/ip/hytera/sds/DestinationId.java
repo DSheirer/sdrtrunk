@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.ip.hytera.sds;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.ipv4.IPV4Address;
 
 /**
  * Destination Identifier
@@ -45,8 +46,17 @@ public class DestinationId extends HyteraToken
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("DESTINATION:").append(getId());
+        sb.append("DESTINATION:").append(getIdFormatted());
         return sb.toString();
+    }
+
+    /**
+     * Indicates if this is an IP address (true) or a Radio ID (false).
+     * @return true if IP
+     */
+    public boolean isIp()
+    {
+        return getId() > 0x00FFFFFF;
     }
 
     /**
@@ -67,6 +77,18 @@ public class DestinationId extends HyteraToken
     public int getId()
     {
         return mMessage.getInt(ID);
+    }
+
+    public String getIdFormatted()
+    {
+        if(isIp())
+        {
+            return new IPV4Address(getId()).toString() + " [" + (getId() & 0xFFFFFF) + "]";
+        }
+        else
+        {
+            return String.valueOf(getId());
+        }
     }
 
     @Override

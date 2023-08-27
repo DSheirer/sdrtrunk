@@ -34,6 +34,7 @@ import io.github.dsheirer.module.decode.dmr.message.type.DataPacketFormat;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.ip.DefinedShortDataPacket;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
+import io.github.dsheirer.module.decode.ip.hytera.rrs.HyteraRrsPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraTokenHeader;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraUnknownPacket;
 import io.github.dsheirer.module.decode.ip.hytera.shortdata.HyteraShortDataPacket;
@@ -243,8 +244,19 @@ public class PacketSequenceMessageFactory
      */
     public static IMessage createDefinedShortData(PacketSequence packetSequence, CorrectedBinaryMessage packet)
     {
-        return new DMRPacketMessage(packetSequence, new DefinedShortDataPacket(packet, 0), packet,
-            packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
+        //Test to see if this is Hytera Radio Registration Service (RRS)
+        HyteraTokenHeader hyteraTokenHeader = new HyteraTokenHeader(packet);
+
+        if(hyteraTokenHeader.isRRSMessage())
+        {
+            return new DMRPacketMessage(packetSequence, new HyteraRrsPacket(hyteraTokenHeader), packet,
+                    packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
+        }
+        else
+        {
+            return new DMRPacketMessage(packetSequence, new DefinedShortDataPacket(packet, 0), packet,
+                    packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
+        }
     }
 
     /**

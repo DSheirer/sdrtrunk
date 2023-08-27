@@ -80,6 +80,7 @@ import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EncryptionPar
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.ip.hytera.rrs.HyteraRrsPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraUnknownPacket;
 import io.github.dsheirer.module.decode.ip.hytera.shortdata.HyteraShortDataPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
@@ -325,7 +326,22 @@ public class DMRDecoderState extends TimeslotDecoderState
                     .build();
             broadcast(smsEvent);
         }
-        //Hytera Short Data - Radio Registration Service (RRS)
+        //Hytera Radio Registration Service (RRS)
+        else if(packet.getPacket() instanceof HyteraRrsPacket rrs)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("HYTERA RRS REGISTER RADIO:");
+            sb.append(rrs.getDestination());
+            DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.RADIO_REGISTRATION_SERVICE, packet.getTimestamp())
+                    .identifiers(mic)
+                    .timeslot(getTimeslot())
+                    .details(sb.toString())
+                    .build();
+            broadcast(shortDataEvent);
+        }
+        //Hytera Short Data
         else if(packet.getPacket() instanceof HyteraShortDataPacket hsdp)
         {
             MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
@@ -342,7 +358,6 @@ public class DMRDecoderState extends TimeslotDecoderState
             }
 
             sb.append(" SHORT DATA:").append(hsdp.getMessage().toHexString());
-
 
             DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.RADIO_REGISTRATION_SERVICE, packet.getTimestamp())
                     .identifiers(mic)
