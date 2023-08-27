@@ -72,7 +72,15 @@ public class HyteraTokenHeader implements IHeader
      */
     public boolean isSMSMessage()
     {
-        return hasTokens(HyteraTokenType.MESSAGE_HEADER, HyteraTokenType.ENCODING, HyteraTokenType.PAYLOAD);
+        return hasTokens(HyteraTokenType.TEXT_MESSAGE_SERVICE_HEADER, HyteraTokenType.ENCODING, HyteraTokenType.PAYLOAD);
+    }
+
+    /**
+     * Indicates if this header has RRS service message.
+     */
+    public boolean isRRSMessage()
+    {
+        return hasTokens(HyteraTokenType.RADIO_REGISTRATION_SERVICE_HEADER, HyteraTokenType.ID_DESTINATION);
     }
 
     /**
@@ -153,7 +161,7 @@ public class HyteraTokenHeader implements IHeader
                     length += contentLength * 8;  //Actual content
                 }
 
-                HyteraToken field = HyteraTokenFactory.getField(token, mMessage.getSubMessage(offset, offset + length + 1));
+                HyteraToken field = HyteraTokenFactory.getField(token, mMessage.getSubMessage(offset, offset + length));
                 offset += length;
                 mParsedTokens.add(field);
             }

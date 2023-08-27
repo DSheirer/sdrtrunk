@@ -22,29 +22,29 @@ package io.github.dsheirer.module.decode.ip.hytera.sds;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * Constructs Hytera token field instances.
+ * Unknown RRS field parsed from a Hytera Radio Registration Service (RRS) message
  */
-public class HyteraTokenFactory
+public class RrsUnknown extends HyteraToken
 {
     /**
-     * Creates a new parsed field instance
-     * @param token that identifies the field type
-     * @param message fragment that includes the token, run-length, and field content.
-     * @return parsed field instance
+     * Constructs an instance
+     *
+     * @param message containing both the token, run-length, and content
      */
-    public static HyteraToken getField(HyteraTokenType token, CorrectedBinaryMessage message)
+    public RrsUnknown(CorrectedBinaryMessage message)
     {
-        return switch(token)
-        {
-            case ID_DESTINATION -> new DestinationId(message);
-            case ID_MESSAGE -> new MessageId(message);
-            case ID_SOURCE -> new SourceId(message);
-            case ENCODING -> new Encoding(message);
-            case PAYLOAD -> new Payload(message);
-            case RRS_UNKNOWN -> new RrsUnknown(message);
-            case TEXT_MESSAGE_SERVICE_HEADER -> new TmsMessageHeader(message);
-            case RADIO_REGISTRATION_SERVICE_HEADER -> new RrsMessageHeader(message);
-            default -> new Unknown(message);
-        };
+        super(message);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RRS UNKNOWN TOKEN";
+    }
+
+    @Override
+    HyteraTokenType getTokenType()
+    {
+        return HyteraTokenType.RRS_UNKNOWN;
     }
 }

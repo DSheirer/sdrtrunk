@@ -22,16 +22,19 @@ package io.github.dsheirer.module.decode.ip.hytera.sds;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * Message Header
- *
+ * Text Message Service (TMS) Message Header
+ * <p>
  * Initial token that specifies the overall message length and some other unidentified bit fields.
- *
+ * <p>
  * Note: I've only confirmed this is the start token for long SMS messages, but it may also be the start token for
  * other packet data messages like GPS or any other packet overlay application.
  */
-public class MessageHeader extends HyteraToken
+public class TmsMessageHeader extends HyteraToken
 {
-    private static int[] MESSAGE_LENGTH = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+    private static int[] MESSAGE_LENGTH_BCD_THOUSANDS = new int[]{16, 17, 18, 19};
+    private static int[] MESSAGE_LENGTH_BCD_HUNDREDS = new int[]{20, 21, 22, 23};
+    private static int[] MESSAGE_LENGTH_BCD_TENS = new int[]{24, 25, 26, 27};
+    private static int[] MESSAGE_LENGTH_BCD_ONES = new int[]{28, 29, 30, 31};
     private static int[] MESSAGE_FLAGS = new int[]{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
 
     /**
@@ -39,7 +42,7 @@ public class MessageHeader extends HyteraToken
      *
      * @param message containing both the token, run-length, and content
      */
-    public MessageHeader(CorrectedBinaryMessage message)
+    public TmsMessageHeader(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -56,7 +59,7 @@ public class MessageHeader extends HyteraToken
     @Override
     HyteraTokenType getTokenType()
     {
-        return HyteraTokenType.MESSAGE_HEADER;
+        return HyteraTokenType.TEXT_MESSAGE_SERVICE_HEADER;
     }
 
     /**
@@ -65,6 +68,7 @@ public class MessageHeader extends HyteraToken
      * - Priority/Flash (boolean)
      * - Encryption Type (enum of at least 4 values, ie 2+ bits)
      * - Emergency (boolean)
+     *
      * @return
      */
     public String getFlags()
@@ -78,6 +82,10 @@ public class MessageHeader extends HyteraToken
      */
     public int getMessageLength()
     {
-        return mMessage.getInt(MESSAGE_LENGTH);
+        int length = mMessage.getInt(MESSAGE_LENGTH_BCD_THOUSANDS) * 1000;
+        length += mMessage.getInt(MESSAGE_LENGTH_BCD_HUNDREDS) * 100;
+        length += mMessage.getInt(MESSAGE_LENGTH_BCD_TENS) * 10;
+        length += mMessage.getInt(MESSAGE_LENGTH_BCD_ONES);
+        return length;
     }
 }
