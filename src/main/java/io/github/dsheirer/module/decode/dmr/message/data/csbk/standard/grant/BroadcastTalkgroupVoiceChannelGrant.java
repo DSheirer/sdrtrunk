@@ -104,7 +104,7 @@ public class BroadcastTalkgroupVoiceChannelGrant extends ChannelGrant
 
         sb.append(" BROADCAST TALKGROUP VOICE CHANNEL GRANT FM:").append(getSourceRadio());
         sb.append(" TO:").append(getDestinationTalkgroup());
-        sb.append(" CHAN:").append(getChannel());
+        sb.append(" ").append(getChannel());
         return sb.toString();
     }
 

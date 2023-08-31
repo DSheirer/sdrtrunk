@@ -19,8 +19,6 @@
 
 package io.github.dsheirer.module.decode.dmr.channel;
 
-import java.util.List;
-
 /**
  * DMR Logical Slot Number (LSN) channel.
  *
@@ -44,10 +42,8 @@ import java.util.List;
  * 15:  8/1
  * 16:  8/2
  */
-public class DMRLsn extends DMRChannel implements ITimeslotFrequencyReceiver
+public class DMRLsn extends DMRChannel
 {
-    private TimeslotFrequency mTimeslotFrequency;
-
     /**
      * Constructs an instance
      *
@@ -61,7 +57,7 @@ public class DMRLsn extends DMRChannel implements ITimeslotFrequencyReceiver
     @Override
     public String toString()
     {
-        return "LSN:" + getLsn();
+        return "LSN:" + getLsn() + " LCN:" + getChannelNumber();
     }
 
     /**
@@ -70,65 +66,7 @@ public class DMRLsn extends DMRChannel implements ITimeslotFrequencyReceiver
      */
     public int getLsn()
     {
-        return ((getChannel() - 1) * 2) + getTimeslot();
+        return ((getChannelNumber() - 1) * 2) + getTimeslot();
     }
 
-    @Override
-    public long getDownlinkFrequency()
-    {
-        if(mTimeslotFrequency != null)
-        {
-            return mTimeslotFrequency.getDownlinkFrequency();
-        }
-
-        return 0;
-    }
-
-    @Override
-    public long getUplinkFrequency()
-    {
-        if(mTimeslotFrequency != null)
-        {
-            return mTimeslotFrequency.getUplinkFrequency();
-        }
-
-        return 0;
-    }
-
-    @Override
-    public int[] getLogicalSlotNumbers()
-    {
-        return new int[]{getLsn()};
-    }
-
-    /**
-     * Sets the lsn to frequency mapper value.
-     * @param timeslotFrequency to set
-     */
-    public void setTimeslotFrequency(TimeslotFrequency timeslotFrequency)
-    {
-        mTimeslotFrequency = timeslotFrequency;
-    }
-
-    @Override
-    public void apply(List<TimeslotFrequency> timeslotFrequencies)
-    {
-        for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
-        {
-            if(timeslotFrequency.getNumber() == getLsn())
-            {
-                setTimeslotFrequency(timeslotFrequency);
-                return;
-            }
-        }
-    }
-
-    public static void main(String[] args)
-    {
-        for(int x = 1; x <= 16; x++)
-        {
-            DMRLsn lsn = new DmrRestLsn(x);
-            System.out.println(lsn);
-        }
-    }
 }

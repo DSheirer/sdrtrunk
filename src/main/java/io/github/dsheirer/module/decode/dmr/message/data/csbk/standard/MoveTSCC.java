@@ -88,7 +88,8 @@ public class MoveTSCC extends CSBKMessage
 
         if(multiBlock != null)
         {
-            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 0);
+            //Timeslot hard-coded to 1 since this is a control channel.
+            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 1);
         }
     }
 

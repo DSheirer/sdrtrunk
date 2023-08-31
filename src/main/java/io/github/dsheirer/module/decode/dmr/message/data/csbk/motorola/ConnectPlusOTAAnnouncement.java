@@ -45,7 +45,7 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     private static final int[] VERSION = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] UNKNOWN = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
         57, 58, 59, 60, 61, 62};
-    private static final int[] DATA_REPEATER = new int[]{63, 64, 65, 66, 67};
+    private static final int[] LOGICAL_SLOT_NUMBER = new int[]{63, 64, 65, 66, 67};
 
     private DMRLsn mDataChannel;
     private List<Identifier> mIdentifiers;
@@ -99,11 +99,11 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     }
 
     /**
-     * Data repeater number
+     * Data logical slot numberrepeater number
      */
-    public int getDataRepeater()
+    public int getDataLsn()
     {
-        return getMessage().getInt(DATA_REPEATER);
+        return getMessage().getInt(LOGICAL_SLOT_NUMBER) - 1; //Leave this as minus 1
     }
 
     /**
@@ -113,16 +113,16 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     {
         if(mDataChannel == null)
         {
-            mDataChannel = new DMRLsn(getDataRepeater());
+            mDataChannel = new DMRLsn(getDataLsn());
         }
 
         return mDataChannel;
     }
 
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        return getDataChannel().getLogicalSlotNumbers();
+        return getDataChannel().getLogicalChannelNumbers();
     }
 
     /**
@@ -133,13 +133,7 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
-        {
-            if(timeslotFrequency.getNumber() == getDataChannel().getValue())
-            {
-                getDataChannel().setTimeslotFrequency(timeslotFrequency);
-            }
-        }
+        getDataChannel().apply(timeslotFrequencies);
     }
 
     @Override

@@ -103,7 +103,7 @@ public class DuplexPrivateDataChannelGrant extends ChannelGrant
 
         sb.append(" DUPLEX PRIVATE DATA CHANNEL GRANT FM:").append(getSourceRadio());
         sb.append(" TO:").append(getDestinationRadio());
-        sb.append(" CHAN:").append(getChannel());
+        sb.append(" ").append(getChannel());
         return sb.toString();
     }
 

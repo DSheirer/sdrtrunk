@@ -176,9 +176,9 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
      * Exposes the rest channel logical slot number so that a LSN to frequency map can be applied to this message.
      */
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        return getRestChannel().getLogicalSlotNumbers();
+        return getRestChannel().getLogicalChannelNumbers();
     }
 
     /**
@@ -189,12 +189,6 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
-        {
-            if(getRestChannel().getValue() == timeslotFrequency.getNumber())
-            {
-                getRestChannel().setTimeslotFrequency(timeslotFrequency);
-            }
-        }
+        getRestChannel().apply(timeslotFrequencies);
     }
 }

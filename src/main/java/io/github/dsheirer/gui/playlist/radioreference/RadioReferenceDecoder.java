@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,13 +41,12 @@ import io.github.dsheirer.rrapi.type.Tag;
 import io.github.dsheirer.rrapi.type.Talkgroup;
 import io.github.dsheirer.rrapi.type.Type;
 import io.github.dsheirer.rrapi.type.Voice;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for decoding type, flavor and voice for systems and formatting talkgroups according to user preferences.
@@ -374,16 +373,10 @@ public class RadioReferenceDecoder
                     }
                 }
 
-                int lsn = (lcn - 1) * 2 + 1;
-                TimeslotFrequency timeslot1Frequency = new TimeslotFrequency();
-                timeslot1Frequency.setNumber(lsn);
-                timeslot1Frequency.setDownlinkFrequency((long)(siteFrequency.getFrequency() * 1E6));
-                frequencies.add(timeslot1Frequency);
-
-                TimeslotFrequency timeslot2Frequency = new TimeslotFrequency();
-                timeslot2Frequency.setNumber(lsn + 1);
-                timeslot2Frequency.setDownlinkFrequency((long)(siteFrequency.getFrequency() * 1E6));
-                frequencies.add(timeslot2Frequency);
+                TimeslotFrequency timeslotFrequency = new TimeslotFrequency();
+                timeslotFrequency.setNumber(lcn);
+                timeslotFrequency.setDownlinkFrequency((long)(siteFrequency.getFrequency() * 1E6));
+                frequencies.add(timeslotFrequency);
             }
 
             return frequencies;

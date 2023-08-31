@@ -86,8 +86,8 @@ public class AnnounceWithdrawTSCC extends Announcement
 
         if(multiBlock != null)
         {
-            //Control channel timeslot hard-coded to 0
-            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 0);
+            //Control channel timeslot hard-coded to 1
+            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 1);
         }
     }
 

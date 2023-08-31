@@ -85,7 +85,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     private ToggleSwitch mUseCompressedTalkgroupsToggle;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private TableView<TimeslotFrequency> mTimeslotFrequencyTable;
-    private IntegerTextField mLogicalSlotNumberField;
+    private IntegerTextField mLogicalChannelNumberField;
     private FrequencyField mDownlinkFrequencyField;
 //    private FrequencyField mUplinkFrequencyField;
     private Button mAddTimeslotFrequencyButton;
@@ -172,7 +172,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(useCompressedTalkgroupsLabel, 7, row);
             gridPane.getChildren().add(useCompressedTalkgroupsLabel);
 
-            Label timeslotTableLabel = new Label("Logical Slot Number (LSN) to Frequency Map. Required for: Connect Plus and Tier-III systems that don't use absolute frequencies");
+            Label timeslotTableLabel = new Label("Logical Channel Number (LCN) to Frequency Map. Required for: Connect Plus and Tier-III systems that don't use absolute frequencies.  LSN = Logical Slot Number");
             GridPane.setHalignment(timeslotTableLabel, HPos.LEFT);
             GridPane.setConstraints(timeslotTableLabel, 0, ++row, 6, 1);
             gridPane.getChildren().add(timeslotTableLabel);
@@ -194,16 +194,12 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             editorBox.setAlignment(Pos.CENTER_LEFT);
             editorBox.setSpacing(5);
 
-            Label lsnLabel = new Label("LSN");
-            editorBox.getChildren().addAll(lsnLabel,getLogicalSlotNumberField());
+            Label lcnLabel = new Label("LCN");
+            editorBox.getChildren().addAll(lcnLabel, getLogicalChannelNumberField());
 
             Label downlinkLabel = new Label("Frequency (MHz)");
             downlinkLabel.setPadding(new Insets(0,0,0,5));
             editorBox.getChildren().addAll(downlinkLabel,getDownlinkFrequencyField());
-
-//            Label uplinkLabel = new Label("Uplink");
-//            uplinkLabel.setPadding(new Insets(0,0,0,5));
-//            editorBox.getChildren().addAll(uplinkLabel,getUplinkFrequencyField());
 
             GridPane.setConstraints(editorBox, 0, row, 4, 1);
             gridPane.getChildren().add(editorBox);
@@ -287,20 +283,22 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             mTimeslotFrequencyTable = new TableView<>(FXCollections.observableArrayList(TimeslotFrequency.extractor()));
             mTimeslotFrequencyTable.setPrefHeight(100.0);
 
-            TableColumn<TimeslotFrequency,Number> numberColumn = new TableColumn("LSN");
-            numberColumn.setPrefWidth(70);
+            TableColumn<TimeslotFrequency,Number> numberColumn = new TableColumn("LCN");
+            numberColumn.setPrefWidth(75);
             numberColumn.setCellValueFactory(cellData -> cellData.getValue().getNumberProperty());
             mTimeslotFrequencyTable.getColumns().addAll(numberColumn);
             mTimeslotFrequencyTable.getSortOrder().add(numberColumn);
 
             TableColumn<TimeslotFrequency,Number> downlinkColumn = new TableColumn("Frequency (MHz)");
             downlinkColumn.setCellValueFactory(cellData -> cellData.getValue().getDownlinkMHz());
-            downlinkColumn.setPrefWidth(175);
+            downlinkColumn.setPrefWidth(150);
             mTimeslotFrequencyTable.getColumns().addAll(downlinkColumn);
 
-//            TableColumn<TimeslotFrequency,Number> uplinkColumn = new TableColumn("Uplink (MHz)");
-//            uplinkColumn.setCellValueFactory(cellData -> cellData.getValue().getUplinkMHz());
-//            mTimeslotFrequencyTable.getColumns().addAll(uplinkColumn);
+            TableColumn<TimeslotFrequency,String> lsnColumn = new TableColumn("IDs (TS1/TS2)");
+            lsnColumn.setPrefWidth(225);
+            lsnColumn.setCellValueFactory(new PropertyValueFactory<>("logicalSlotNumbers"));
+            mTimeslotFrequencyTable.getColumns().addAll(lsnColumn);
+
 
             mTimeslotFrequencyTable.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setTimeslot(newValue));
@@ -317,20 +315,20 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         //Preserve the current modified flag state since setting values in the editor will change it.
         boolean modified = modifiedProperty().get();
 
-        getLogicalSlotNumberField().setDisable(timeslot == null);
+        getLogicalChannelNumberField().setDisable(timeslot == null);
         getDownlinkFrequencyField().setDisable(timeslot == null);
 //        getUplinkFrequencyField().setDisable(timeslot == null);
         getDeleteTimeslotFrequencyButton().setDisable(timeslot == null);
 
         if(timeslot != null)
         {
-            getLogicalSlotNumberField().set(timeslot.getNumber());
+            getLogicalChannelNumberField().set(timeslot.getNumber());
             getDownlinkFrequencyField().set(timeslot.getDownlinkFrequency());
 //            getUplinkFrequencyField().set(timeslot.getUplinkFrequency());
         }
         else
         {
-            getLogicalSlotNumberField().set(0);
+            getLogicalChannelNumberField().set(0);
             getDownlinkFrequencyField().set(0);
 //            getUplinkFrequencyField().set(0);
         }
@@ -412,19 +410,19 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         return mDeleteTimeslotFrequencyButton;
     }
 
-    private IntegerTextField getLogicalSlotNumberField()
+    private IntegerTextField getLogicalChannelNumberField()
     {
-        if(mLogicalSlotNumberField == null)
+        if(mLogicalChannelNumberField == null)
         {
-            mLogicalSlotNumberField = new IntegerTextField();
-            mLogicalSlotNumberField.setDisable(true);
-            mLogicalSlotNumberField.setPrefWidth(65);
-            mLogicalSlotNumberField.textProperty().addListener((observable, oldValue, newValue) -> {
+            mLogicalChannelNumberField = new IntegerTextField();
+            mLogicalChannelNumberField.setDisable(true);
+            mLogicalChannelNumberField.setPrefWidth(65);
+            mLogicalChannelNumberField.textProperty().addListener((observable, oldValue, newValue) -> {
                 TimeslotFrequency selected = getTimeslotTable().getSelectionModel().getSelectedItem();
 
                 if(selected != null)
                 {
-                    Integer value = mLogicalSlotNumberField.get();
+                    Integer value = mLogicalChannelNumberField.get();
 
                     if(value != null)
                     {
@@ -436,7 +434,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             });
         }
 
-        return mLogicalSlotNumberField;
+        return mLogicalChannelNumberField;
     }
 
     private FrequencyField getDownlinkFrequencyField()
@@ -610,8 +608,8 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         getTimeslotTable().setDisable(config == null);
         getAddTimeslotFrequencyButton().setDisable(config == null);
         getDeleteTimeslotFrequencyButton().setDisable(true);
-        getLogicalSlotNumberField().set(0);
-        getLogicalSlotNumberField().setDisable(true);
+        getLogicalChannelNumberField().set(0);
+        getLogicalChannelNumberField().setDisable(true);
         getDownlinkFrequencyField().set(0);
         getDownlinkFrequencyField().setDisable(true);
 //        getUplinkFrequencyField().set(0);

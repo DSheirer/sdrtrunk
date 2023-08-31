@@ -98,7 +98,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     private List<Channel> mManagedTrafficChannels;
 
     private Map<Long,Channel> mAllocatedTrafficChannelFrequencyMap = new ConcurrentHashMap<>();
-    private Map<Integer,DMRChannelGrantEvent> mLSNGrantEventMap = new ConcurrentHashMap<>();
+    private Map<DMRChannel,DMRChannelGrantEvent> mChannelGrantEventMap = new ConcurrentHashMap<>();
 
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
@@ -322,9 +322,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     public void processChannelGrant(DMRChannel channel, IdentifierCollection identifierCollection,
                                     Opcode opcode, long timestamp, boolean encrypted)
     {
-        int lsn = channel.getValue();
-
-        DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
+        DMRChannelGrantEvent event = mChannelGrantEventMap.get(channel);
         DecodeEventType decodeEventType = getEventType(opcode, identifierCollection, encrypted);
 
         if(isStale(event, timestamp, identifierCollection)) //Create new event
@@ -335,7 +333,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 .identifiers(identifierCollection)
                 .build();
 
-            mLSNGrantEventMap.put(lsn, event);
+            mChannelGrantEventMap.put(channel, event);
 
         }
         else //Update current event
@@ -355,7 +353,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                         .identifiers(identifierCollection)
                         .build();
 
-                    mLSNGrantEventMap.put(lsn, event);
+                    mChannelGrantEventMap.put(channel, event);
                     broadcast(event);
                 }
             }
@@ -643,37 +641,37 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
          */
         private void removeCallEvents(long frequency)
         {
-            List<Integer> lsnsToRemove = new ArrayList<>();
+            List<DMRChannel> channelsToRemove = new ArrayList<>();
 
-            for(Map.Entry<Integer,DMRChannelGrantEvent> entry: mLSNGrantEventMap.entrySet())
+            for(Map.Entry<DMRChannel,DMRChannelGrantEvent> entry: mChannelGrantEventMap.entrySet())
             {
-                if(entry.getValue().getChannelDescriptor().getDownlinkFrequency() == frequency)
+                if(entry.getKey().getDownlinkFrequency() == frequency)
                 {
-                    lsnsToRemove.add(entry.getKey());
+                    channelsToRemove.add(entry.getKey());
                 }
             }
 
-            for(Integer lsn: lsnsToRemove)
+            for(DMRChannel channel: channelsToRemove)
             {
-                mLSNGrantEventMap.remove(lsn);
+                mChannelGrantEventMap.remove(channel);
             }
         }
 
         private void updateCallEventDetails(long frequency, String detailFragment)
         {
-            List<Integer> lsnsToUpdate = new ArrayList<>();
+            List<DMRChannel> channelsToUpdate = new ArrayList<>();
 
-            for(Map.Entry<Integer,DMRChannelGrantEvent> entry: mLSNGrantEventMap.entrySet())
+            for(Map.Entry<DMRChannel,DMRChannelGrantEvent> entry: mChannelGrantEventMap.entrySet())
             {
                 if(entry.getValue().getChannelDescriptor().getDownlinkFrequency() == frequency)
                 {
-                    lsnsToUpdate.add(entry.getKey());
+                    channelsToUpdate.add(entry.getKey());
                 }
             }
 
-            for(Integer lsn: lsnsToUpdate)
+            for(DMRChannel channel: channelsToUpdate)
             {
-                DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
+                DMRChannelGrantEvent event = mChannelGrantEventMap.get(channel);
 
                 if(event != null)
                 {

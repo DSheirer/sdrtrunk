@@ -108,7 +108,7 @@ public class PrivateDataChannelGrant extends ChannelGrant
 
         sb.append(" PRIVATE DATA CHANNEL GRANT FM:").append(getSourceRadio());
         sb.append(" TO:").append(getDestinationRadio());
-        sb.append(" CHAN:").append(getChannel());
+        sb.append(" ").append(getChannel());
         return sb.toString();
     }
 
