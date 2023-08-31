@@ -31,7 +31,7 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.util.Callback;
 
 /**
- * Maps a logical slot number (LSN) to a pair of channel frequency values
+ * Maps a logical channel number (LCN) to a pair of channel frequency values
  */
 public class TimeslotFrequency
 {
@@ -100,7 +100,10 @@ public class TimeslotFrequency
     }
 
     /**
-     * Logical slot number (LSN) as a 1-index based counter
+     * Logical channel number (LCN) as a 1-index based counter
+     *
+     * Note: lsn (logical slot number) is a legacy name for this field.  The field currently holds the LCN or logical
+     * channel number.  To avoid breaking serialization, we leave this field labeled as lsn.
      */
     @JacksonXmlProperty(isAttribute = true, localName = "lsn")
     public int getNumber()
@@ -109,12 +112,52 @@ public class TimeslotFrequency
     }
 
     /**
-     * Sets the logical slot number (LSN) as a 1-index start
-     * @param lsn where LSN 1 is the first slot, 2 the second, etc
+     * Logical channel number which is the same value as getNumber.
+     * @return
      */
-    public void setNumber(int lsn)
+    @JsonIgnore
+    public int getChannelNumber()
     {
-        mNumberProperty.set(lsn);
+        return getNumber();
+    }
+
+    @JsonIgnore
+    public String getLogicalSlotNumbers()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        int channel = getChannelNumber();
+
+        if(channel > 0)
+        {
+            if(channel < 32) //Connect Plus uses 5-bits for LSN for a maximum value of 31
+            {
+                //Cap+ & Con+ Logical Slot Numbers
+                int lsn1 = (channel - 1) * 2 + 1;
+                int lsn2 = (channel - 1) * 2 + 2;
+                sb.append("LSN:").append(lsn1).append("/").append(lsn2).append(" or ");
+            }
+
+            //Tier III channel IDs
+            int chanId1 = channel * 2 + 1;
+            int chanId2 = channel * 2 + 2;
+            sb.append("Tier3 Chan:").append(chanId1).append("/").append(chanId2);
+        }
+        else
+        {
+            sb.append("(empty)");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Sets the logical channel number (LCN) as a 1-index start
+     * @param lcn where LCN 1 is logical slot numbers (LSN) 1 and 2, LCN2=LSN3/4, etc.
+     */
+    public void setNumber(int lcn)
+    {
+        mNumberProperty.set(lcn);
     }
 
     /**
@@ -160,7 +203,7 @@ public class TimeslotFrequency
     @Override
     public String toString()
     {
-        return "TIMESLOT LSN:" + getNumber() + " DOWNLINK:" + getDownlinkFrequency();
+        return "LCN:" + getNumber() + " DOWNLINK:" + getDownlinkFrequency();
     }
 
     /**

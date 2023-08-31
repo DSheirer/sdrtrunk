@@ -22,7 +22,6 @@ package io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.grant;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
@@ -158,11 +157,11 @@ public abstract class ChannelGrant extends CSBKMessage implements ITimeslotFrequ
      * Logical Slot Number(s) for channels contained in this message
      */
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        if(getChannel() instanceof DMRLsn dmrLsn)
+        if(getChannel() != null)
         {
-            return dmrLsn.getLogicalSlotNumbers();
+            return getChannel().getLogicalChannelNumbers();
         }
 
         return new int[0];
@@ -175,17 +174,9 @@ public abstract class ChannelGrant extends CSBKMessage implements ITimeslotFrequ
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        if(getChannel() instanceof DMRTier3Channel)
+        if(getChannel() != null)
         {
-            DMRTier3Channel channel = (DMRTier3Channel)getChannel();
-
-            for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
-            {
-                if(channel.getValue() == timeslotFrequency.getNumber())
-                {
-                    channel.setTimeslotFrequency(timeslotFrequency);
-                }
-            }
+            getChannel().apply(timeslotFrequencies);
         }
     }
 }

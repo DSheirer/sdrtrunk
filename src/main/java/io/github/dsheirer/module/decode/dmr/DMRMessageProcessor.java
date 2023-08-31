@@ -127,19 +127,19 @@ public class DMRMessageProcessor implements Listener<IMessage>
             }
         }
 
-        //Enrich messages that carry DMR Logical Slot Number channels with LCN to frequency mappings
+        //Enrich messages that carry DMR Logical Channel Numbers with LCN to frequency mappings
         if(message instanceof ITimeslotFrequencyReceiver)
         {
             ITimeslotFrequencyReceiver receiver = (ITimeslotFrequencyReceiver)message;
-            int[] lsns = receiver.getLogicalSlotNumbers();
+            int[] lcns = receiver.getLogicalChannelNumbers();
 
             List<TimeslotFrequency> timeslotFrequencies = new ArrayList<>();
 
-            for(int lsn: lsns)
+            for(int lcn: lcns)
             {
-                if(mTimeslotFrequencyMap.containsKey(lsn))
+                if(mTimeslotFrequencyMap.containsKey(lcn))
                 {
-                    timeslotFrequencies.add(mTimeslotFrequencyMap.get(lsn));
+                    timeslotFrequencies.add(mTimeslotFrequencyMap.get(lcn));
                 }
             }
 

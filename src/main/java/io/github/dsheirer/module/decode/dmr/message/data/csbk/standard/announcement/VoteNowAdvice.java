@@ -23,7 +23,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
@@ -90,7 +89,8 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
 
         if(multiBlock != null)
         {
-            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 0);
+            //Timeslot hard-coded to one for control channel
+            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 1);
         }
     }
 
@@ -239,11 +239,11 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
      * Logical Slot Number(s) for channels contained in this message
      */
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        if(getChannel() instanceof DMRLsn dmrLsn)
+        if(getChannel() != null)
         {
-            return dmrLsn.getLogicalSlotNumbers();
+            return getChannel().getLogicalChannelNumbers();
         }
 
         return new int[0];
@@ -256,17 +256,9 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        if(getChannel() instanceof DMRTier3Channel)
+        if(getChannel() != null)
         {
-            DMRTier3Channel channel = (DMRTier3Channel)getChannel();
-
-            for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
-            {
-                if(channel.getValue() == timeslotFrequency.getNumber())
-                {
-                    channel.setTimeslotFrequency(timeslotFrequency);
-                }
-            }
+            getChannel().apply(timeslotFrequencies);
         }
     }
 }

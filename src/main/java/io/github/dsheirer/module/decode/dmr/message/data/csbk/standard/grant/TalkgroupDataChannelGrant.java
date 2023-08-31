@@ -110,7 +110,7 @@ public class TalkgroupDataChannelGrant extends ChannelGrant
 
         sb.append(" TALKGROUP DATA CHANNEL GRANT FM:").append(getSourceRadio());
         sb.append(" TO:").append(getDestinationTalkgroup());
-        sb.append(" CHAN:").append(getChannel());
+        sb.append(" ").append(getChannel());
         return sb.toString();
     }
 

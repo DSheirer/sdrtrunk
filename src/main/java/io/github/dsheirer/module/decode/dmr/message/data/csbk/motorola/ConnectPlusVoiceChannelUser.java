@@ -44,7 +44,7 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
         32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         56, 57, 58, 59, 60, 61, 62, 63};
-    private static final int[] TRAFFIC_CHANNEL_REPEATER = new int[]{64, 65, 66, 67, 68};
+    private static final int[] LOGICAL_SLOT_NUMBER = new int[]{64, 65, 66, 67, 68};
     private static final int[] UNKNOWN_FIELD = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
     private RadioIdentifier mRadio;
@@ -126,9 +126,9 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     /**
      * Traffic channel repeater
      */
-    public int getTrafficChannelRepeater()
+    public int getTrafficLsn()
     {
-        return getMessage().getInt(TRAFFIC_CHANNEL_REPEATER);
+        return getMessage().getInt(LOGICAL_SLOT_NUMBER) - 1; //Always leave as minus 1
     }
 
     /**
@@ -138,16 +138,16 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     {
         if(mDmrLsn == null)
         {
-            mDmrLsn = new DMRLsn(getTrafficChannelRepeater());
+            mDmrLsn = new DMRLsn(getTrafficLsn());
         }
 
         return mDmrLsn;
     }
 
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        return getChannel().getLogicalSlotNumbers();
+        return getChannel().getLogicalChannelNumbers();
     }
 
     /**
@@ -157,13 +157,7 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
-        {
-            if(timeslotFrequency.getNumber() == getChannel().getValue())
-            {
-                getChannel().setTimeslotFrequency(timeslotFrequency);
-            }
-        }
+        getChannel().apply(timeslotFrequencies);
     }
 
     @Override

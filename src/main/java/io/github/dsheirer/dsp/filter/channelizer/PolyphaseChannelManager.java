@@ -23,6 +23,7 @@ import io.github.dsheirer.buffer.INativeBufferProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
@@ -65,6 +66,7 @@ import org.slf4j.LoggerFactory;
 public class PolyphaseChannelManager implements ISourceEventProcessor
 {
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
+    private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LoggerFactory.getLogger(PolyphaseChannelManager.class));
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final double MINIMUM_CHANNEL_BANDWIDTH = 25000.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
@@ -203,7 +205,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             }
             catch(IllegalArgumentException iae)
             {
-                mLog.debug("Couldn't design final output low pass filter for polyphase channel source");
+                LOGGING_SUPPRESSOR.error(iae.getMessage(), 3, "Couldn't allocate channel. " + iae.getMessage());
+                channelSource = null;
             }
         }
 

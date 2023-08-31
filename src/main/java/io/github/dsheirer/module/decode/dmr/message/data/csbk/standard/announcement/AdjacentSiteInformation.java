@@ -84,8 +84,8 @@ public class AdjacentSiteInformation extends Announcement
 
         if(multiBlock != null)
         {
-            //Timeslot hard-coded to zero for control channel
-            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 0);
+            //Timeslot hard-coded to one for control channel
+            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 1);
         }
     }
 

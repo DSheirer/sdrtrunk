@@ -299,9 +299,9 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
      * Logical slot numbers that require slot to frequency mappings.
      */
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        return getRestChannel().getLogicalSlotNumbers();
+        return getRestChannel().getLogicalChannelNumbers();
     }
 
     /**
@@ -312,13 +312,7 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
-        {
-            if(getRestChannel().getValue() == timeslotFrequency.getNumber())
-            {
-                getRestChannel().setTimeslotFrequency(timeslotFrequency);
-            }
-        }
+        getRestChannel().apply(timeslotFrequencies);
     }
 
     @Override

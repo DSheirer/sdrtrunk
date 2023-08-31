@@ -24,14 +24,12 @@ package io.github.dsheirer.module.decode.dmr.channel;
  */
 public class DMRTier3Channel extends DMRChannel
 {
-    private TimeslotFrequency mTimeslotFrequency;
-
     /**
      * Constructs an instance.  Note: radio reference uses a one based index, so we add a value of one to the
      * calculated logical slot value for visual compatibility for users.
      *
      * @param channel number or repeater number
-     * @param logicalSlotNumber - zero based index.
+     * @param timeslot either 1 or 2.
      */
     public DMRTier3Channel(int channel, int timeslot)
     {
@@ -39,42 +37,12 @@ public class DMRTier3Channel extends DMRChannel
     }
 
     /**
-     * Downlink frequency
-     * @return value in Hertz, or 0 if this channel doesn't have a timeslot frequency mapping
+     * Tier III Channel ID
+     * @return channel ID
      */
-    @Override
-    public long getDownlinkFrequency()
+    public int getChannelId()
     {
-        if(mTimeslotFrequency != null)
-        {
-            return mTimeslotFrequency.getDownlinkFrequency();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Uplink frequency
-     * @return value in Hertz, or 0 if this channel doesn't have a timeslot frequency mapping
-     */
-    @Override
-    public long getUplinkFrequency()
-    {
-        if(mTimeslotFrequency != null)
-        {
-            return mTimeslotFrequency.getUplinkFrequency();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Sets the timeslot frequency mapping
-     * @param timeslotFrequency
-     */
-    public void setTimeslotFrequency(TimeslotFrequency timeslotFrequency)
-    {
-        mTimeslotFrequency = timeslotFrequency;
+        return getChannelNumber() * 2 + getTimeslot();
     }
 
     /**
@@ -83,7 +51,8 @@ public class DMRTier3Channel extends DMRChannel
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(" LCN:").append(getValue());
+        sb.append(" LCN:").append(getChannelNumber());
+        sb.append(" CHANID:").append(getChannelId());
         return sb.toString();
     }
 }

@@ -24,9 +24,9 @@ import java.util.List;
 public interface ITimeslotFrequencyReceiver
 {
     /**
-     * Provides the logical slot number(s) that require a matching timeslot frequency mapping
+     * Provides the logical channel number(s) that require a matching timeslot frequency mapping
      */
-    public int[] getLogicalSlotNumbers();
+    public int[] getLogicalChannelNumbers();
 
     /**
      * Applies the list of timeslot frequency mappings to the implementer

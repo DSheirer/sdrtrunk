@@ -299,9 +299,9 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     }
 
     @Override
-    public int[] getLogicalSlotNumbers()
+    public int[] getLogicalChannelNumbers()
     {
-        return getRestChannel().getLogicalSlotNumbers();
+        return getRestChannel().getLogicalChannelNumbers();
     }
 
     /**
@@ -312,13 +312,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
-        {
-            if(timeslotFrequency.getNumber() == getRestChannel().getValue())
-            {
-                getRestChannel().setTimeslotFrequency(timeslotFrequency);
-            }
-        }
+        getRestChannel().apply(timeslotFrequencies);
     }
 
     @Override
