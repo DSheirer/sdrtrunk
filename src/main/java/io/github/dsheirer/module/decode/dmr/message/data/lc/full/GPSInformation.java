@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,10 +24,10 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.location.LocationIdentifier;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRLocation;
 import io.github.dsheirer.module.decode.dmr.message.type.PositionError;
-import org.apache.commons.math3.util.FastMath;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.math3.util.FastMath;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 /**
  * GPS Information
@@ -81,14 +81,28 @@ public class GPSInformation extends FullLCMessage
         return PositionError.fromValue(getMessage().getInt(POSITION_ERROR));
     }
 
+    /**
+     * Latitude in decimal degrees
+     */
     public double getLatitude()
     {
         return getMessage().getTwosComplement(LATITUDE_START, LATITUDE_END) * LATITUDE_UNITS;
     }
 
+    /**
+     * Longitude in decimal degrees
+     */
     public double getLongitude()
     {
         return getMessage().getTwosComplement(LONGITUDE_START, LONGITUDE_END) * LONGITUDE_UNITS;
+    }
+
+    /**
+     * Geo-position for the lat/lon
+     */
+    public GeoPosition getPosition()
+    {
+        return new GeoPosition(getLatitude(), getLongitude());
     }
 
     /**

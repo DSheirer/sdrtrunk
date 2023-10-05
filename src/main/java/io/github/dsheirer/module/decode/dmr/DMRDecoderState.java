@@ -424,18 +424,19 @@ public class DMRDecoderState extends TimeslotDecoderState
 
             broadcast(packetEvent);
 
-            GeoPosition geoPosition = PacketUtil.extractGeoPosition(packet.getPacket());
+        }
 
-            if (geoPosition != null) {
-                PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, packet.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .identifiers(new IdentifierCollection(packet.getIdentifiers()))
-                        .protocol(Protocol.LRRP)
-                        .location(geoPosition)
-                        .build();
+        GeoPosition geoPosition = PacketUtil.extractGeoPosition(packet.getPacket());
 
-                broadcast(plottableDecodeEvent);
-            }
+        if (geoPosition != null) {
+            PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, packet.getTimestamp())
+                    .channel(getCurrentChannel())
+                    .identifiers(new IdentifierCollection(packet.getIdentifiers()))
+                    .protocol(Protocol.LRRP)
+                    .location(geoPosition)
+                    .build();
+
+            broadcast(plottableDecodeEvent);
         }
     }
 
@@ -1209,19 +1210,17 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 break;
             case FULL_STANDARD_GPS_INFO:
-                if(message instanceof GPSInformation)
+                if(message instanceof GPSInformation gpsInformation)
                 {
-                    GPSInformation gpsInformation = (GPSInformation)message;
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.update(gpsInformation.getGPSLocation());
+                    PlottableDecodeEvent plottableGPS = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, message.getTimestamp())
+                            .channel(getCurrentChannel())
+                            .details("LOCATION:" + gpsInformation.getGPSLocation())
+                            .identifiers(new IdentifierCollection(getIdentifierCollection().getIdentifiers()))
+                            .protocol(Protocol.DMR)
+                            .location(gpsInformation.getPosition())
+                            .build();
 
-                    DecodeEvent gpsEvent = DMRDecodeEvent.builder(DecodeEventType.GPS, message.getTimestamp())
-                        .identifiers(ic)
-                        .timeslot(getTimeslot())
-                        .details("LOCATION:" + gpsInformation.getGPSLocation())
-                        .build();
-
-                    broadcast(gpsEvent);
+                    broadcast(plottableGPS);
                 }
                 break;
             case FULL_STANDARD_TALKER_ALIAS_COMPLETE:
