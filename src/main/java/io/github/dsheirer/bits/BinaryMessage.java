@@ -844,13 +844,18 @@ public class BinaryMessage extends BitSet
      */
     public int getTwosComplement(int start, int end)
     {
-        BinaryMessage sub = getSubMessage(start, end);
-        boolean negative = sub.get(start);
-        sub.flip(0, sub.size());
-
-        int value = sub.getInt(0, sub.size()) + 1;
-        value *= (negative ? -1 : 1);
-        return value;
+        if(get(start))
+        {
+            //Negative value - flip and add one
+            BinaryMessage fragment = getSubMessage(start, end);
+            fragment.flip(0, fragment.size());
+            return fragment.getInt(1, fragment.size()) + 1;
+        }
+        else
+        {
+            //Positive value - return the contents.
+            return getInt(start + 1, end);
+        }
     }
 
 
