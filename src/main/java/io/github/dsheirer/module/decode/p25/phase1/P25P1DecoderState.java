@@ -57,6 +57,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaUnitGPS;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCCallTermination;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCExtendedFunctionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCMessageUpdate;
@@ -1884,6 +1885,22 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 break;
             case UNIT_TO_UNIT_ANSWER_REQUEST:
                 processBroadcast(lcw.getIdentifiers(), timestamp, DecodeEventType.PAGE, "Unit-to-Unit Answer Request");
+                break;
+            case MOTOROLA_UNIT_GPS:
+                if(lcw instanceof LCMotorolaUnitGPS moto)
+                {
+                    String gpsDetails = "LOCATION: " + moto.getLatitude() + " " + moto.getLongitude();
+
+                    PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, timestamp)
+                            .location(new GeoPosition(moto.getLatitude(), moto.getLongitude()))
+                            .channel(getCurrentChannel())
+                            .details(gpsDetails)
+                            .end(timestamp)
+                            .protocol(Protocol.APCO25)
+                            .identifiers(new IdentifierCollection(getIdentifierCollection().getIdentifiers()))
+                            .build();
+                    broadcast(event);
+                }
                 break;
             default:
 //                mLog.debug("Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
