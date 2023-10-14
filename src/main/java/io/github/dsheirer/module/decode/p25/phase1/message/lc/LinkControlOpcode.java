@@ -96,6 +96,7 @@ public enum LinkControlOpcode
     MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE("PATCH GROUP VOICE CHANNEL UPDATE", 1),
     MOTOROLA_PATCH_GROUP_ADD("PATCH GROUP ADD", 3),
     MOTOROLA_PATCH_GROUP_DELETE("PATCH GROUP DELETE", 4),
+    MOTOROLA_UNIT_GPS("UNIT GPS", 6),
     MOTOROLA_TALK_COMPLETE("TALK_COMPLETE", 15),
     MOTOROLA_UNKNOWN("UNKNOWN", -1),
 
@@ -201,6 +202,8 @@ public enum LinkControlOpcode
                         return MOTOROLA_PATCH_GROUP_ADD;
                     case 4:
                         return MOTOROLA_PATCH_GROUP_DELETE;
+                    case 6:
+                        return MOTOROLA_UNIT_GPS;
                     case 15:
                         return MOTOROLA_TALK_COMPLETE;
                     default:
