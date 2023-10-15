@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.AbstractVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
-import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.preference.UserPreferences;
@@ -105,63 +104,54 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     {
         if(hasAudioCodec() && message.getTimeslot() == getTimeslot())
         {
-            //DCDM doesn't provide FLCs or EMBs ... assume that the call is unencrypted.
-            if(!mEncryptedCallStateEstablished && message instanceof VoiceMessage vm &&
-                    vm.getSyncPattern().isDirectMode())
+            //Attempt to set the audio encryption state from certain types of messages
+            if(!mEncryptedCallStateEstablished)
             {
-                mEncryptedCallStateEstablished = true;
-                mEncryptedCall = false;
-                List<byte[]> frames = vm.getAMBEFrames();
-                for(byte[] frame: frames)
+                //DCDM doesn't provide FLCs or EMBs ... assume that the call is unencrypted.
+                if(message instanceof VoiceMessage vm && vm.getSyncPattern().isDirectMode())
                 {
-                    processAudio(frame, message.getTimestamp());
+                    mEncryptedCallStateEstablished = true;
+                    mEncryptedCall = false;
                 }
-            }
-            //Both Motorola and Hytera signal their Basic Privacy (BP) scrambling in some of the Voice B-F frames
-            //in the EMB field.
-            else if(!mEncryptedCallStateEstablished && message instanceof VoiceEMBMessage voiceMessage)
-            {
-                if(voiceMessage.getEMB().isValid())
+                //Both Motorola and Hytera signal their Basic Privacy (BP) scrambling in some of the Voice B-F frames
+                //in the EMB field.
+                else if(message instanceof VoiceEMBMessage voiceMessage && voiceMessage.getEMB().isValid())
                 {
                     mEncryptedCallStateEstablished = true;
                     mEncryptedCall = voiceMessage.getEMB().isEncrypted();
                 }
+                else if(message instanceof VoiceHeader voiceHeader)
+                {
+                    LCMessage lc = voiceHeader.getLCMessage();
 
-                List<byte[]> frames = voiceMessage.getAMBEFrames();
-                for(byte[] frame: frames)
-                {
-                    processAudio(frame, message.getTimestamp());
-                }
-            }
-            else if(message instanceof VoiceMessage voiceMessage)
-            {
-                List<byte[]> frames = voiceMessage.getAMBEFrames();
-                for(byte[] frame: frames)
-                {
-                    processAudio(frame, message.getTimestamp());
-                }
-            }
-            else if(!mEncryptedCallStateEstablished && message instanceof VoiceHeader voiceHeader)
-            {
-                LCMessage lc = voiceHeader.getLCMessage();
-
-                if(lc instanceof FullLCMessage flc) //We know it is, but this null checks as well
-                {
-                    if(flc.isValid())
+                    if(lc instanceof FullLCMessage flc) //We know it is, but this null checks as well
                     {
-                        mEncryptedCallStateEstablished = true;
-                        mEncryptedCall = flc.isEncrypted();
+                        if(flc.isValid())
+                        {
+                            mEncryptedCallStateEstablished = true;
+                            mEncryptedCall = flc.isEncrypted();
+                        }
                     }
                 }
+                //Note: the DMRMessageProcessor extracts Full Link Control messages from Voice Frames B-C and sends them
+                // independent of any DMR Burst messaging.  When encountered, it can be assumed that they are part of
+                // an ongoing call and can be used to establish encryption state when the FLC is a voice channel user.
+                else if(message instanceof AbstractVoiceChannelUser avcu)
+                {
+                    mEncryptedCallStateEstablished = true;
+                    mEncryptedCall = avcu.getServiceOptions().isEncrypted();
+                }
             }
-            //Note: the DMRMessageProcess extracts Full Link Control messages from Voice Frames B-C and sends them
-            // independent of any DMR Burst messaging.  When encountered, it can be assumed that they are part of
-            // an ongoing call and can be used to establish encryption state when the FLC is a voice channel user.
-            else if(!mEncryptedCallStateEstablished && message instanceof AbstractVoiceChannelUser avcu)
+
+            //Queue or process audio frames.  Note: audio frames are held/queued until encrypted state is established
+            //before any audio is generated for the audio segment.
+            if(message instanceof VoiceMessage voiceMessage)
             {
-                ServiceOptions serviceOptions = avcu.getServiceOptions();
-                mEncryptedCallStateEstablished = true;
-                mEncryptedCall = serviceOptions.isEncrypted();
+                List<byte[]> frames = voiceMessage.getAMBEFrames();
+                for(byte[] frame: frames)
+                {
+                    processAudio(frame, message.getTimestamp());
+                }
             }
             else if(message instanceof Terminator)
             {
