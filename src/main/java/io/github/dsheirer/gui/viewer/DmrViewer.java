@@ -17,20 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.dmr;
+package io.github.dsheirer.gui.viewer;
 
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.dmr.DMRMessageFramer;
 import io.github.dsheirer.module.decode.dmr.DMRMessageProcessor;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.record.binary.BinaryReader;
+import io.github.dsheirer.util.ThreadPool;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.prefs.Preferences;
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -40,10 +42,10 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableView;
@@ -58,21 +60,19 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utility application to load and view a DMR .bits recording file with the messages fully parsed.
+ * DMR Viewer panel
  */
-public class DMRRecordingViewer extends VBox
+public class DmrViewer extends VBox
 {
-    private static final Logger mLog = LoggerFactory.getLogger(DMRRecordingViewer.class);
+    private static final Logger mLog = LoggerFactory.getLogger(DmrViewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
-    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory";
-    private Preferences mPreferences = Preferences.userNodeForPackage(DMRRecordingViewer.class);
-    private Scene mScene;
+    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.dmr";
+    private Preferences mPreferences = Preferences.userNodeForPackage(DmrViewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
     private TableView<IMessage> mMessageTableView;
@@ -86,8 +86,9 @@ public class DMRRecordingViewer extends VBox
     private TextField mFindText;
     private Button mFindButton;
     private Button mFindNextButton;
+    private ProgressIndicator mLoadingIndicator;
 
-    public DMRRecordingViewer()
+    public DmrViewer()
     {
         setPadding(new Insets(5));
         setSpacing(5);
@@ -133,6 +134,21 @@ public class DMRRecordingViewer extends VBox
     }
 
     /**
+     * Spinny loading icon to show over the message table view
+     */
+    private ProgressIndicator getLoadingIndicator()
+    {
+        if(mLoadingIndicator == null)
+        {
+            mLoadingIndicator = new ProgressIndicator();
+            mLoadingIndicator.setProgress(-1);
+            mLoadingIndicator.setVisible(false);
+        }
+
+        return mLoadingIndicator;
+    }
+
+    /**
      * Processes the recording file and loads the content into the viewer
      * @param file containing a .bits recording of decoded DMR data.
      */
@@ -140,33 +156,45 @@ public class DMRRecordingViewer extends VBox
     {
         if(file != null && file.exists())
         {
-            getSelectedFileLabel().setText(file.getName());
             mMessages.clear();
+            getLoadingIndicator().setVisible(true);
+            getSelectedFileLabel().setText("Loading ...");
+            final boolean useCompressed = getUseCompressedTalkgroups().isSelected();
 
-            DMRMessageFramer messageFramer = new DMRMessageFramer(null);
-            DecodeConfigDMR config = new DecodeConfigDMR();
-            if(getUseCompressedTalkgroups().isSelected())
+            ThreadPool.CACHED.submit(new Runnable()
             {
-                config.setUseCompressedTalkgroups(true);
-            }
-            DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
-            messageFramer.setListener(messageProcessor);
-            messageProcessor.setMessageListener(message -> mMessages.add(message));
-
-            try(BinaryReader reader = new BinaryReader(file.toPath(), 200))
-            {
-                while(reader.hasNext())
+                @Override
+                public void run()
                 {
-                    ByteBuffer buffer = reader.next();
-                    messageFramer.receive(buffer);
-                }
-            }
-            catch(Exception ioe)
-            {
-                ioe.printStackTrace();
-            }
+                    List<IMessage> messages = new ArrayList<>();
+                    DMRMessageFramer messageFramer = new DMRMessageFramer(null);
+                    DecodeConfigDMR config = new DecodeConfigDMR();
+                    config.setUseCompressedTalkgroups(useCompressed);
+                    DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
+                    messageFramer.setListener(messageProcessor);
+                    messageProcessor.setMessageListener(message -> messages.add(message));
 
-            getMessageTableView().scrollTo(0);
+                    try(BinaryReader reader = new BinaryReader(file.toPath(), 200))
+                    {
+                        while(reader.hasNext())
+                        {
+                            ByteBuffer buffer = reader.next();
+                            messageFramer.receive(buffer);
+                        }
+                    }
+                    catch(Exception ioe)
+                    {
+                        ioe.printStackTrace();
+                    }
+
+                    Platform.runLater(() -> {
+                        getLoadingIndicator().setVisible(false);
+                        getSelectedFileLabel().setText(file.getName());
+                        mMessages.addAll(messages);
+                        getMessageTableView().scrollTo(0);
+                    });
+                }
+            });
         }
     }
 
@@ -176,9 +204,9 @@ public class DMRRecordingViewer extends VBox
     private void updateFilters()
     {
         Predicate<IMessage> timeslotPredicate = message ->
-               (getShowTS0().isSelected() && (message.getTimeslot() == 0)) ||
-               (getShowTS1().isSelected() && (message.getTimeslot() == 1)) ||
-               (getShowTS2().isSelected() && (message.getTimeslot() == 2));
+                (getShowTS0().isSelected() && (message.getTimeslot() == 0)) ||
+                        (getShowTS1().isSelected() && (message.getTimeslot() == 1)) ||
+                        (getShowTS2().isSelected() && (message.getTimeslot() == 2));
 
         String filterText = getSearchText().getText();
 
@@ -256,6 +284,7 @@ public class DMRRecordingViewer extends VBox
         if(mMessageTableView == null)
         {
             mMessageTableView = new TableView<>();
+            mMessageTableView.setPlaceholder(getLoadingIndicator());
             SortedList<IMessage> sortedList = new SortedList<>(mFilteredMessages);
             sortedList.comparatorProperty().bind(mMessageTableView.comparatorProperty());
             mMessageTableView.setItems(sortedList);
@@ -509,37 +538,9 @@ public class DMRRecordingViewer extends VBox
     {
         if(mUseCompressedTalkgroups == null)
         {
-            mUseCompressedTalkgroups = new CheckBox("Use Compressed Talkgroups");
+            mUseCompressedTalkgroups = new CheckBox("Use Hytera Tier III Compressed Talkgroups");
         }
 
         return mUseCompressedTalkgroups;
-    }
-
-    public static void main(String[] args)
-    {
-        Application viewer = new Application()
-        {
-            @Override
-            public void start(Stage primaryStage) throws Exception
-            {
-                Scene scene = new Scene(new DMRRecordingViewer(), 1100, 800);
-                primaryStage.setTitle("DMR Recording Viewer");
-                primaryStage.setScene(scene);
-                primaryStage.show();
-            }
-        };
-
-        Runnable r = () -> {
-            try
-            {
-                viewer.start(new Stage());
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error starting DMR recording viewer application", e);
-            }
-        };
-
-        Platform.startup(r);
     }
 }

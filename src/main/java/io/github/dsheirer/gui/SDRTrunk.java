@@ -32,13 +32,13 @@ import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
 import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.dmr.ViewDmrRecordingViewerRequest;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.gui.preference.CalibrateRequest;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
+import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
@@ -420,9 +420,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         viewMenu.add(new JSeparator());
 
-        JMenuItem dmrMessageViewerMenu = new JMenuItem("DMR Recording Viewer");
-        dmrMessageViewerMenu.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewDmrRecordingViewerRequest()));
-        viewMenu.add(dmrMessageViewerMenu);
+        JMenuItem recordingViewerMenu = new JMenuItem("Message Recording Viewer (.bits)");
+        recordingViewerMenu.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewRecordingViewerRequest()));
+        viewMenu.add(recordingViewerMenu);
 
         JMenuItem settingsMenu = new JMenuItem("Icon Manager");
         settingsMenu.addActionListener(arg0 -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
