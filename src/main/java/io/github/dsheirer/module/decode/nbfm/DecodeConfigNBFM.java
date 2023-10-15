@@ -59,6 +59,8 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     {
         switch(getBandwidth())
         {
+            case BW_7_5:
+                return new ChannelSpecification(25000.0, 7500, 3500.0, 3750.0);
             case BW_12_5:
                 return new ChannelSpecification(25000.0, 12500, 6000.0, 7000.0);
             case BW_25_0:
