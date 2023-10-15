@@ -145,6 +145,7 @@ public abstract class DecodeConfigAnalog extends DecodeConfiguration implements 
     {
         BW_3_0("3.0 kHz", 3000.0),
         BW_5_0("5.0 kHz", 5000.0),
+        BW_7_5("7.5 kHz", 7500.0),
         BW_8_33("8.33 kHz", 8333.0),
         BW_12_5("12.5 kHz", 12500.0),
         BW_15_0("15.0 kHz", 15000.0),
@@ -168,7 +169,7 @@ public abstract class DecodeConfigAnalog extends DecodeConfiguration implements 
         public static EnumSet<Bandwidth> AM_BANDWIDTHS = EnumSet.of(BW_3_0, BW_5_0, BW_8_33, BW_15_0, BW_25_0);
 
         //FM demodulator channel bandwidth options
-        public static EnumSet<Bandwidth> FM_BANDWIDTHS = EnumSet.of(BW_12_5, BW_25_0);
+        public static EnumSet<Bandwidth> FM_BANDWIDTHS = EnumSet.of(BW_7_5, BW_12_5, BW_25_0);
 
         /**
          * Indicates if this entry is valid for the AM decoder.
