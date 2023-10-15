@@ -17,17 +17,17 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.dmr;
+package io.github.dsheirer.gui.viewer;
 
 import io.github.dsheirer.gui.JavaFxWindowRequest;
 
 /**
- * Request to show the DMR recording viewer
+ * Request to show the recording viewer
  */
-public class ViewDmrRecordingViewerRequest extends JavaFxWindowRequest
+public class ViewRecordingViewerRequest extends JavaFxWindowRequest
 {
     /**
      * Constructs an instance
      */
-    public ViewDmrRecordingViewerRequest() {}
+    public ViewRecordingViewerRequest() {}
 }

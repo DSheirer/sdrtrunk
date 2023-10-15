@@ -24,8 +24,6 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelRange;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.dmr.DMRRecordingViewer;
-import io.github.dsheirer.gui.dmr.ViewDmrRecordingViewerRequest;
 import io.github.dsheirer.gui.icon.IconManager;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.PlaylistEditor;
@@ -37,6 +35,8 @@ import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
+import io.github.dsheirer.gui.viewer.RecordingViewer;
+import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
@@ -67,7 +67,7 @@ public class JavaFxWindowManager extends Application
     public static final String USER_PREFERENCES_EDITOR = "preferences";
     public static final String STAGE_MONITOR_KEY_CALIBRATION_DIALOG = "calibration.dialog";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
-    public static final String STAGE_MONITOR_KEY_DMR_MESSAGE_VIEWER = "dmr.message.viewer";
+    public static final String STAGE_MONITOR_KEY_RECORDING_VIEWER = "recording.viewer";
     public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
     public static final String STAGE_MONITOR_KEY_JMBE_EDITOR = "jmbe.editor";
     public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
@@ -82,14 +82,14 @@ public class JavaFxWindowManager extends Application
     private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private UserPreferencesEditor mUserPreferencesEditor;
-    private DMRRecordingViewer mDmrRecordingViewer;
+    private RecordingViewer mRecordingViewer;
 
     private Stage mChannelMapStage;
     private Stage mIconManagerStage;
     private Stage mJmbeEditorStage;
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
-    private Stage mDmrRecordingViewerStage;
+    private Stage mRecordingViewerStage;
 
     /**
      * Constructs an instance.  Note: this constructor is used for Swing applications.
@@ -195,31 +195,31 @@ public class JavaFxWindowManager extends Application
     }
 
     /**
-     * Stage for the DMR Message Viewer
+     * Stage for the recording viewer
      */
-    public Stage getDmrRecordingViewerStage()
+    public Stage getRecordingViewerStage()
     {
-        if(mDmrRecordingViewerStage == null)
+        if(mRecordingViewerStage == null)
         {
             createJFXPanel();
-            Scene scene = new Scene(getDmrRecordingViewer(), 1100, 800);
-            mDmrRecordingViewerStage = new Stage();
-            mDmrRecordingViewerStage.setTitle("sdrtrunk - DMR Recording Viewer");
-            mDmrRecordingViewerStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mDmrRecordingViewerStage, STAGE_MONITOR_KEY_DMR_MESSAGE_VIEWER);
+            Scene scene = new Scene(getRecordingViewer(), 1100, 800);
+            mRecordingViewerStage = new Stage();
+            mRecordingViewerStage.setTitle("sdrtrunk - Message Recording Viewer (.bits)");
+            mRecordingViewerStage.setScene(scene);
+            mUserPreferences.getJavaFxPreferences().monitor(mRecordingViewerStage, STAGE_MONITOR_KEY_RECORDING_VIEWER);
         }
 
-        return mDmrRecordingViewerStage;
+        return mRecordingViewerStage;
     }
 
-    public DMRRecordingViewer getDmrRecordingViewer()
+    public RecordingViewer getRecordingViewer()
     {
-        if(mDmrRecordingViewer == null)
+        if(mRecordingViewer == null)
         {
-            mDmrRecordingViewer = new DMRRecordingViewer();
+            mRecordingViewer = new RecordingViewer();
         }
 
-        return mDmrRecordingViewer;
+        return mRecordingViewer;
     }
 
     public Stage getIconManagerStage()
@@ -453,12 +453,12 @@ public class JavaFxWindowManager extends Application
      * Process a channel map editor request
      */
     @Subscribe
-    public void process(final ViewDmrRecordingViewerRequest request)
+    public void process(final ViewRecordingViewerRequest request)
     {
         execute(() -> {
-            getDmrRecordingViewerStage().show();
-            getDmrRecordingViewerStage().requestFocus();
-            getDmrRecordingViewerStage().toFront();
+            getRecordingViewerStage().show();
+            getRecordingViewerStage().requestFocus();
+            getRecordingViewerStage().toFront();
         });
     }
 
