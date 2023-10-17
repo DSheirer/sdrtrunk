@@ -95,6 +95,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTe
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.HarrisGroupRegroupExplicitEncryptionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
@@ -1220,6 +1221,21 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     break;
                 case MOTOROLA_OSP_PATCH_GROUP_DELETE:
                     mPatchGroupManager.removePatchGroups(tsbk.getIdentifiers());
+                    break;
+
+                //L3HARRIS PATCH GROUP OPCODES
+                case HARRIS_OSP_GRG_EXENC_CMD:
+                    if(tsbk instanceof HarrisGroupRegroupExplicitEncryptionCommand regroup)
+                    {
+                        if(regroup.getRegroupOptions().isActivate())
+                        {
+                            mPatchGroupManager.addPatchGroup(regroup.getPatchGroup());
+                        }
+                        else
+                        {
+                            mPatchGroupManager.removePatchGroup(regroup.getPatchGroup());
+                        }
+                    }
                     break;
 
                 //STANDARD - INBOUND OPCODES

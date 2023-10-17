@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,27 +22,23 @@ package io.github.dsheirer.identifier.patch;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Manager for (temporary) patch groups and related identifiers.
+ * Manager for (temporary) patch groups aka super groups. This manager monitors patch group additions and deletions and
+ * maintains a map of the current state of each patch group active in the system.
  *
- * Patch groups are primarily used on Motorola P25 systems.  This manager monitors patch group additions and deletions
- * and maintains a map of the current patch groups.
- *
- * Traffic channel calls will sometimes reference a patch group by simply using the patch group identifier.  This
- * manager will replace that reference with the full patch group so that the call event has the full patch group
- * including all of the patched groups, which may not have been included in the patch group reference on the
- * traffic channel.
+ * Traffic channel calls will reference a patch group by simply using the patch group identifier.  This
+ * manager will replace that reference with the current state of the full patch group so that the call event has the
+ * full patch group including all patched talkgroups or individual radios, which may not have been included in the
+ * patch group reference on the control or traffic channel.
  */
 public class PatchGroupManager
 {
-    //    private final static Logger mLog = LoggerFactory.getLogger(PatchGroupManager.class);
-    private Map<Integer,Long> mPatchGroupLastUpdatedMap = new HashMap<>();
     private Map<Integer,PatchGroupIdentifier> mPatchGroupMap = new HashMap<>();
 
     /**
@@ -58,13 +54,13 @@ public class PatchGroupManager
     public void clear()
     {
         mPatchGroupMap.clear();
-        mPatchGroupLastUpdatedMap.clear();
     }
 
     /**
      * Adds the patch group identifier to the set of managed patch groups.  If the patch group is already being
-     * managed, the new identifier is checked for additional patched talkgroups and they are added to the existing
-     * managed patch group.
+     * managed, the new patch group argument is checked for additional patched talkgroups and they are added to the
+     * existing managed patch group.  Where the patch group version (super group sequence number) is different, the
+     * existing patch group is discarded and replaced with the updated version of the patch group.
      *
      * @param patchGroupIdentifier to add or update
      */
@@ -76,8 +72,19 @@ public class PatchGroupManager
         {
             if(mPatchGroupMap.containsKey(update.getPatchGroup().getValue()))
             {
-                PatchGroup current = mPatchGroupMap.get(update.getPatchGroup().getValue()).getValue();
-                current.addPatchedGroups(update.getPatchedGroupIdentifiers());
+                PatchGroup existingPatchGroup = mPatchGroupMap.get(update.getPatchGroup().getValue()).getValue();
+
+                //If the patch group version number is the same, this is an update
+                if(existingPatchGroup.getVersion() == update.getVersion())
+                {
+                    existingPatchGroup.addPatchedTalkgroups(update.getPatchedTalkgroupIdentifiers());
+                    existingPatchGroup.addPatchedRadios(update.getPatchedRadioIdentifiers());
+                }
+                //Otherwise, this is a replace operation.
+                else
+                {
+                    mPatchGroupMap.put(update.getPatchGroup().getValue(), patchGroupIdentifier);
+                }
             }
             else
             {
@@ -109,7 +116,6 @@ public class PatchGroupManager
     {
         int id = patchGroupIdentifier.getValue().getPatchGroup().getValue();
         mPatchGroupMap.remove(id);
-        mPatchGroupLastUpdatedMap.remove(id);
     }
 
     /**
@@ -153,23 +159,28 @@ public class PatchGroupManager
      */
     public Identifier update(Identifier identifier)
     {
-        if(identifier == null)
-        {
-            return identifier;
-        }
-
-        if(identifier.getIdentifierClass() == IdentifierClass.USER && identifier.getRole() == Role.TO)
+        if(identifier != null && identifier.getIdentifierClass() == IdentifierClass.USER && identifier.getRole() == Role.TO)
         {
             switch(identifier.getForm())
             {
-                case PATCH_GROUP:
-                    if(identifier instanceof PatchGroupIdentifier)
+                case TALKGROUP:
+                    if(identifier instanceof TalkgroupIdentifier talkgroupIdentifier)
                     {
-                        PatchGroupIdentifier patchGroupIdentifier = (PatchGroupIdentifier)identifier;
+                        Identifier mapValue = mPatchGroupMap.get(talkgroupIdentifier.getValue());
+                        if (mapValue != null)
+                        {
+                            return mapValue;
+                        }
+                    }
+                    break;
+                case PATCH_GROUP:
+                    if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
+                    {
                         int patchGroupId = patchGroupIdentifier.getValue().getPatchGroup().getValue();
 
                         Identifier mapValue = mPatchGroupMap.get(patchGroupId);
-                        if (mapValue != null) {
+                        if (mapValue != null)
+                        {
                             return mapValue;
                         }
                     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 package io.github.dsheirer.audio.broadcast.rdioscanner;
 
 import com.google.common.net.HttpHeaders;
-import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
@@ -34,7 +33,6 @@ import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.configuration.ConfigurationLongIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
@@ -42,24 +40,12 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Queue;
@@ -67,6 +53,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -525,7 +513,12 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
             
             sb.append(patchGroup.getPatchGroup().getValue().toString());
             
-            for(TalkgroupIdentifier patched: patchGroup.getPatchedGroupIdentifiers())
+            for(TalkgroupIdentifier patched: patchGroup.getPatchedTalkgroupIdentifiers())
+            {
+                sb.append(",").append(patched.getValue());
+            }
+
+            for(RadioIdentifier patched: patchGroup.getPatchedRadioIdentifiers())
             {
                 sb.append(",").append(patched.getValue());
             }

@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac;
@@ -87,11 +84,11 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToU
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnknownStructure;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnknownVendorMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisRegroupCommand;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Message factory for creating Encoded MAC Information (EMI) message parser instances.
@@ -293,6 +290,8 @@ public class MacMessageFactory
                 return new AdjacentStatusBroadcastAbbreviated(message, offset);
             case PHASE1_125_IDENTIFIER_UPDATE:
                 return new FrequencyBandUpdate(message, offset);
+            case PHASE1_176_L3HARRIS_GROUP_REGROUP:
+                return new L3HarrisRegroupCommand(message, offset);
             case PHASE1_192_GROUP_VOICE_CHANNEL_GRANT_EXTENDED:
                 return new GroupVoiceChannelGrantExtended(message, offset);
             case PHASE1_195_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:

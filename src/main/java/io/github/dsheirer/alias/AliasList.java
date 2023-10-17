@@ -388,6 +388,8 @@ public class AliasList
                     }
                     break;
                 case PATCH_GROUP:
+                    List<Alias> aliases = new ArrayList<>();
+
                     PatchGroupIdentifier patchGroupIdentifier = (PatchGroupIdentifier)identifier;
                     PatchGroup patchGroup = patchGroupIdentifier.getValue();
 
@@ -395,8 +397,6 @@ public class AliasList
 
                     if(patchGroupAliasList != null)
                     {
-                        List<Alias> aliases = new ArrayList<>();
-
                         Alias alias = patchGroupAliasList.getAlias(patchGroup.getPatchGroup());
 
                         if(alias != null)
@@ -404,19 +404,36 @@ public class AliasList
                             aliases.add(alias);
                         }
 
-                        for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
+                        for(TalkgroupIdentifier patchedTalkgroup: patchGroup.getPatchedTalkgroupIdentifiers())
                         {
-                            Alias patchedAlias = patchGroupAliasList.getAlias(patchedGroup);
+                            Alias patchedTalkgroupAlias = patchGroupAliasList.getAlias(patchedTalkgroup);
 
-                            if(patchedAlias != null && !aliases.contains(patchedAlias))
+                            if(patchedTalkgroupAlias != null && !aliases.contains(patchedTalkgroupAlias))
                             {
-                                aliases.add(patchedAlias);
+                                aliases.add(patchedTalkgroupAlias);
                             }
                         }
-
-                        return aliases;
                     }
-                    break;
+
+                    if(patchGroup.hasPatchedRadios())
+                    {
+                        RadioAliasList radioAliasList = mRadioProtocolMap.get(patchGroupIdentifier.getProtocol());
+
+                        if(radioAliasList != null)
+                        {
+                            for(RadioIdentifier patchedRadio: patchGroup.getPatchedRadioIdentifiers())
+                            {
+                                Alias patchedRadioAlias = radioAliasList.getAlias(patchedRadio);
+
+                                if(patchedRadioAlias != null && !aliases.contains(patchedRadioAlias))
+                                {
+                                    aliases.add(patchedRadioAlias);
+                                }
+                            }
+                        }
+                    }
+
+                    return aliases;
                 case RADIO:
                     RadioIdentifier radio = (RadioIdentifier)identifier;
 
@@ -483,9 +500,7 @@ public class AliasList
     {
         if(alias != null)
         {
-            List<Alias> aliases = new ArrayList<>();
-            aliases.add(alias);
-            return aliases;
+            return Collections.singletonList(alias);
         }
 
         return Collections.emptyList();

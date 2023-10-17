@@ -66,7 +66,7 @@ public class LCMotorolaPatchGroupDelete extends MotorolaLinkControlWord
         if(mPatchGroup == null)
         {
             PatchGroup patchGroup = new PatchGroup(APCO25Talkgroup.create(getMessage().getInt(PATCH_GROUP)));
-            patchGroup.addPatchedGroups(getPatchedGroups());
+            patchGroup.addPatchedTalkgroups(getPatchedGroups());
             mPatchGroup = APCO25PatchGroup.create(patchGroup);
         }
 

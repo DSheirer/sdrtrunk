@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,9 +38,6 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -48,12 +45,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Audio broadcaster to push completed audio recordings to the Broadcastify call push API.
@@ -475,7 +473,11 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
 
         StringBuilder sb = new StringBuilder();
         sb.append(patchGroup.getPatchGroup().getValue().toString());
-        for(TalkgroupIdentifier patched: patchGroup.getPatchedGroupIdentifiers())
+        for(TalkgroupIdentifier patched: patchGroup.getPatchedTalkgroupIdentifiers())
+        {
+            sb.append(",").append(patched.getValue());
+        }
+        for(RadioIdentifier patched: patchGroup.getPatchedRadioIdentifiers())
         {
             sb.append(",").append(patched.getValue());
         }

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp;
@@ -29,7 +28,6 @@ import io.github.dsheirer.module.decode.p25.reference.NetworkAddressType;
 import io.github.dsheirer.module.decode.p25.reference.PDUPriorityMaximumType;
 import io.github.dsheirer.module.decode.p25.reference.ReadyTimer;
 import io.github.dsheirer.module.decode.p25.reference.StandbyTimer;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,7 +79,7 @@ public class ActivateTdsContextAccept extends SNDCPMessage
         }
         sb.append(" READY TIMER:").append(getReadyTimer().getSeconds()).append("s");
         sb.append(" STANDBY TIMER:").append(getStandbyTimer().getSeconds()).append("s");
-        sb.append(" MTU:").append(getMaximumTransmitUnit().getByteCount()).append("B");
+        sb.append(" MTU:").append(getMaximumTransmitUnit().getByteCount());
         sb.append(" AUTHORIZED GROUPS:").append(getDataAccessGroups());
         return sb.toString();
     }

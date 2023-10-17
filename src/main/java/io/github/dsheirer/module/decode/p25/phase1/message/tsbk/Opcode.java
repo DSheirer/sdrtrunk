@@ -176,11 +176,11 @@ public enum Opcode
     MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN(14, "CCH PLND SHUTDWN", "CONTROL CHANNEL PLANNED SHUTDOWN"),
     MOTOROLA_OSP_UNKNOWN(-1, "MOTOROLA OSP UNKNOWN OPCODE", "MOTOROLA OSP UNKNOWN OPCODE"),
 
-    //Vendor: motorola, Inbound Service Packet (ISP)
+    //Vendor: L3Harris, Inbound Service Packet (ISP)
     HARRIS_ISP_UNKNOWN(-1, "HARRIS ISP UNKNOWN OPCODE", "HARRIS ISP UNKNOWN OPCODE"),
 
-    //Vendor: harris, Outbound Service Packet (OSP)
-    HARRIS_OSP_TDMA_SYNC(48, "HARRIS TDMA SYNC", "HARRIS TDMA SYNC BROADCAST"),
+    //Vendor: L3Harris, Outbound Service Packet (OSP)
+    HARRIS_OSP_GRG_EXENC_CMD(48, "HARRIS REGROUP", "HARRIS GROUP REGROUP COMMAND WITH EXPLICIT ENCRYPTION"),
     HARRIS_OSP_UNKNOWN(-1, "HARRIS OSP UNKNOWN OPCODE", "HARRIS OSP UNKNOWN OPCODE"),
 
     //Vendor: unknown, Inbound Service Packet (ISP)
@@ -294,7 +294,7 @@ public enum Opcode
     /**
      * Harris opcodes
      */
-    public static final EnumSet<Opcode> HARRIS = EnumSet.of(HARRIS_ISP_UNKNOWN, HARRIS_OSP_TDMA_SYNC,
+    public static final EnumSet<Opcode> HARRIS = EnumSet.of(HARRIS_ISP_UNKNOWN, HARRIS_OSP_GRG_EXENC_CMD,
             HARRIS_OSP_UNKNOWN);
 
     /**
@@ -425,7 +425,7 @@ public enum Opcode
                     switch(value)
                     {
                         case 48:
-                            return HARRIS_OSP_TDMA_SYNC;
+                            return HARRIS_OSP_GRG_EXENC_CMD;
                         default:
                             return HARRIS_OSP_UNKNOWN;
                     }

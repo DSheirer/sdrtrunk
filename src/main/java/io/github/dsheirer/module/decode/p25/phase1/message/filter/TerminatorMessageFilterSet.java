@@ -42,6 +42,7 @@ public class TerminatorMessageFilterSet extends FilterSet<IMessage>
         addFilter(new TerminatorMessageFilter("Command/Status", LinkControlOpcode.COMMAND_STATUS_OPCODES));
         addFilter(new TerminatorMessageFilter("Network/Channel", LinkControlOpcode.NETWORK_OPCODES));
         addFilter(new TerminatorMessageFilter("Voice", LinkControlOpcode.VOICE_OPCODES));
+        addFilter(new TerminatorMessageFilter("L3Harris", LinkControlOpcode.L3HARRIS_OPCODES));
         addFilter(new TerminatorMessageFilter("Motorola", LinkControlOpcode.MOTOROLA_OPCODES));
 
         List<LinkControlOpcode> others = new ArrayList<>();
