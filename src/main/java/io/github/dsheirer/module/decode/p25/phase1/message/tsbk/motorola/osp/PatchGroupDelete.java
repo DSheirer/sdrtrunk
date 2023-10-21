@@ -66,7 +66,7 @@ public class PatchGroupDelete extends OSPMessage
         if(mPatchGroup == null)
         {
             PatchGroup patchGroup = new PatchGroup(APCO25Talkgroup.create(getPatchAddress()));
-            patchGroup.addPatchedGroups(getPatchedTalkgroups());
+            patchGroup.addPatchedTalkgroups(getPatchedTalkgroups());
             mPatchGroup = APCO25PatchGroup.create(patchGroup);
         }
 

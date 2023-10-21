@@ -20,6 +20,9 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode10;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode42;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode43;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupAdd;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupDelete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupVoiceChannelUpdate;
@@ -127,6 +130,15 @@ public class LinkControlWordFactory
                 return new LCUnitToUnitAnswerRequest(binaryMessage);
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
                 return new LCUnitToUnitVoiceChannelUser(binaryMessage);
+
+            case L3HARRIS_UNKNOWN_0A:
+                return new LCHarrisUnknownOpcode10(binaryMessage);
+            case L3HARRIS_UNKNOWN_2A:
+                return new LCHarrisUnknownOpcode42(binaryMessage);
+            case L3HARRIS_UNKNOWN_2B:
+                return new LCHarrisUnknownOpcode43(binaryMessage);
+            case L3HARRIS_UNKNOWN:
+                return new UnknownLinkControlWord(binaryMessage);
 
             case MOTOROLA_PATCH_GROUP_ADD:
                 return new LCMotorolaPatchGroupAdd(binaryMessage);

@@ -87,6 +87,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToU
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelGrantUpdateExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisRegroupCommand;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -390,6 +391,19 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 break;
             case PHASE1_109_UNIT_REGISTRATION_COMMAND_ABBREVIATED:
                 broadcast(message, mac, getCurrentChannel(), DecodeEventType.COMMAND, "UNIT REGISTRATION");
+                break;
+            case PHASE1_176_L3HARRIS_GROUP_REGROUP:
+                if(mac instanceof L3HarrisRegroupCommand regroup)
+                {
+                    if(regroup.getRegroupOptions().isActivate())
+                    {
+                        mPatchGroupManager.addPatchGroup(regroup.getPatchGroup());
+                    }
+                    else
+                    {
+                        mPatchGroupManager.removePatchGroup(regroup.getPatchGroup());
+                    }
+                }
                 break;
             case PHASE1_197_UNIT_TO_UNIT_ANSWER_REQUEST_EXTENDED:
                 if(mac instanceof UnitToUnitAnswerRequestExtended uuare)
