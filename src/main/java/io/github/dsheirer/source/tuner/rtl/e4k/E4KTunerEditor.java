@@ -41,6 +41,7 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
+import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.usb.UsbException;
 
@@ -52,6 +53,7 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
     private final static Logger mLog = LoggerFactory.getLogger(E4KTunerEditor.class);
     private static final long serialVersionUID = 1L;
     private JButton mTunerInfoButton;
+    private JToggleButton mBiasTButton;
     private JComboBox<SampleRate> mSampleRateCombo;
     private JComboBox<E4KGain> mMasterGainCombo;
     private JComboBox<E4KMixerGain> mMixerGainCombo;
@@ -95,7 +97,8 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         add(getTunerInfoButton());
 
         add(new JLabel("Status:"));
-        add(getTunerStatusLabel(), "wrap");
+        add(getTunerStatusLabel());
+        add(getBiasTButton(), "wrap");
 
         add(getButtonPanel(), "span,align left");
 
@@ -144,6 +147,8 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
 
         if(hasTuner())
         {
+            getBiasTButton().setEnabled(true);
+            getBiasTButton().setSelected(getConfiguration().isBiasT());
             getTunerInfoButton().setEnabled(true);
             getSampleRateCombo().setEnabled(true);
             getSampleRateCombo().setSelectedItem(getConfiguration().getSampleRate());
@@ -174,6 +179,8 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         }
         else
         {
+            getBiasTButton().setEnabled(false);
+            getBiasTButton().setSelected(false);
             getTunerInfoButton().setEnabled(false);
             getSampleRateCombo().setEnabled(false);
             getMasterGainCombo().setEnabled(false);
@@ -185,6 +192,28 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         updateSampleRateToolTip();
 
         setLoading(false);
+    }
+
+    /**
+     * Bias-T toggle button
+     * @return
+     */
+    private JToggleButton getBiasTButton()
+    {
+        if(mBiasTButton == null)
+        {
+            mBiasTButton = new JToggleButton("Bias-T");
+            mBiasTButton.setEnabled(false);
+            mBiasTButton.addActionListener(e -> {
+                if(!isLoading())
+                {
+                    getTuner().getController().setBiasT(mBiasTButton.isSelected());
+                    save();
+                }
+            });
+        }
+
+        return mBiasTButton;
     }
 
     private JComboBox getIfGainCombo()
@@ -459,7 +488,7 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
             double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
             config.setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
-
+            config.setBiasT(getTuner().getController().isBiasT());
             config.setSampleRate((SampleRate)getSampleRateCombo().getSelectedItem());
             config.setMasterGain((E4KGain)getMasterGainCombo().getSelectedItem());
             config.setMixerGain((E4KMixerGain)getMixerGainCombo().getSelectedItem());
