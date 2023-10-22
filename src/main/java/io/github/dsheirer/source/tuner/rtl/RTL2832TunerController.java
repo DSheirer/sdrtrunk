@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,6 +66,7 @@ public class RTL2832TunerController extends USBTunerController
     private Descriptor mDescriptor;
     private EmbeddedTuner mEmbeddedTuner;
     private long mTunedFrequency = 0;
+    private boolean mBiasTEnabled = false;
     private ReentrantLock mLock = new ReentrantLock();
 
     /**
@@ -174,7 +175,7 @@ public class RTL2832TunerController extends USBTunerController
 
         try
         {
-            writeRegister(Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1);
+            writeRegister(Block.USB, Address.USB_SYSCTL, 0x09, 1);
         }
         catch(LibUsbException lue)
         {
@@ -195,7 +196,7 @@ public class RTL2832TunerController extends USBTunerController
 
             try
             {
-                writeRegister(Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1);
+                writeRegister(Block.USB, Address.USB_SYSCTL, 0x09, 1);
             }
             catch(LibUsbException lue)
             {
@@ -238,7 +239,7 @@ public class RTL2832TunerController extends USBTunerController
 
         if(tunerType == TunerType.UNKNOWN)
         {
-            throw new SourceException("Unrecognized embedded tuner type for RTL-2832");
+            throw new SourceException("Unrecognized RTL-2832 embedded tuner type: " + tunerType);
         }
 
         mEmbeddedTuner = TunerFactory.getRtlEmbeddedTuner(tunerType, new ControllerAdapter(this));
@@ -297,6 +298,26 @@ public class RTL2832TunerController extends USBTunerController
         }
 
         return null;
+    }
+
+    /**
+     * Sets the enabled state of the bias-t
+     * @param enabled true to turn-on the bias-t or false to turn-off the bias-t.
+     */
+    public void setBiasT(boolean enabled)
+    {
+        setGPIOOutput((byte)0x01);
+        setGPIOBit((byte)0x01, enabled);
+        mBiasTEnabled = enabled;
+    }
+
+    /**
+     * Indicates if the bias-t is enabled.
+     * @return true if enabled.
+     */
+    public boolean isBiasT()
+    {
+        return mBiasTEnabled;
     }
 
     /**
@@ -437,8 +458,8 @@ public class RTL2832TunerController extends USBTunerController
      */
     public void resetUSBBuffer() throws LibUsbException
     {
-        writeRegister(Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002, 2);
-        writeRegister(Block.USB, Address.USB_EPA_CTL.getAddress(), 0x0000, 2);
+        writeRegister(Block.USB, Address.USB_EPA_CTL, 0x1002, 2);
+        writeRegister(Block.USB, Address.USB_EPA_CTL, 0x0000, 2);
     }
 
     /**
@@ -448,13 +469,13 @@ public class RTL2832TunerController extends USBTunerController
     public void initBaseband() throws LibUsbException
     {
         /* Initialize USB */
-        writeRegister(Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1);
-        writeRegister(Block.USB, Address.USB_EPA_MAXPKT.getAddress(), 0x0002, 2);
-        writeRegister(Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002, 2);
+        writeRegister(Block.USB, Address.USB_SYSCTL, 0x09, 1);
+        writeRegister(Block.USB, Address.USB_EPA_MAXPKT, 0x0002, 2);
+        writeRegister(Block.USB, Address.USB_EPA_CTL, 0x1002, 2);
 
         /* Power on demod */
-        writeRegister(Block.SYS, Address.DEMOD_CTL_1.getAddress(), 0x22, 1);
-        writeRegister(Block.SYS, Address.DEMOD_CTL.getAddress(), 0xE8, 1);
+        writeRegister(Block.SYS, Address.DEMOD_CTL_1, 0x22, 1);
+        writeRegister(Block.SYS, Address.DEMOD_CTL, 0xE8, 1);
 
         /* Reset demod */
         writeDemodRegister(Page.ONE, (short) 0x01, 0x14, 1); //Bit 3 = soft reset
@@ -513,7 +534,7 @@ public class RTL2832TunerController extends USBTunerController
      */
     private void deinitBaseband() throws IllegalArgumentException, UsbDisconnectedException
     {
-        writeRegister(Block.SYS, Address.DEMOD_CTL.getAddress(), 0x20, 1);
+        writeRegister(Block.SYS, Address.DEMOD_CTL, 0x20, 1);
     }
 
     /**
@@ -527,7 +548,7 @@ public class RTL2832TunerController extends USBTunerController
     private void setGPIOBit(byte bitMask, boolean enabled) throws LibUsbException
     {
         //Get current register value
-        int value = readRegister(Block.SYS, Address.GPO.getAddress(), 1);
+        int value = readRegister(Block.SYS, Address.GPO, 1);
 
         //Update the masked bits
         if(enabled)
@@ -540,7 +561,7 @@ public class RTL2832TunerController extends USBTunerController
         }
 
         //Write the change back to the device
-        writeRegister(Block.SYS, Address.GPO.getAddress(), value, 1);
+        writeRegister(Block.SYS, Address.GPO, value, 1);
     }
 
     /**
@@ -553,16 +574,16 @@ public class RTL2832TunerController extends USBTunerController
     private void setGPIOOutput(byte bitMask) throws LibUsbException
     {
         //Get current register value
-        int value = readRegister(Block.SYS, Address.GPD.getAddress(), 1);
+        int value = readRegister(Block.SYS, Address.GPD, 1);
 
         //Mask the value and rewrite it
-        writeRegister(Block.SYS, Address.GPO.getAddress(), value & ~bitMask, 1);
+        writeRegister(Block.SYS, Address.GPO, value & ~bitMask, 1);
 
         //Get current register value
-        value = readRegister(Block.SYS, Address.GPOE.getAddress(), 1);
+        value = readRegister(Block.SYS, Address.GPOE, 1);
 
         //Mask the value and rewrite it
-        writeRegister(Block.SYS, Address.GPOE.getAddress(), value | bitMask, 1);
+        writeRegister(Block.SYS, Address.GPOE, value | bitMask, 1);
     }
 
     /**
@@ -720,7 +741,7 @@ public class RTL2832TunerController extends USBTunerController
      * @param length of value in bytes
      * @throws LibUsbException on error
      */
-    private void writeRegister(Block block, short address, int value, int length) throws LibUsbException
+    private void writeRegister(Block block, Address address, int value, int length) throws LibUsbException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(length);
         buffer.order(ByteOrder.BIG_ENDIAN);
@@ -740,7 +761,7 @@ public class RTL2832TunerController extends USBTunerController
         }
 
         buffer.rewind();
-        write(address, block, buffer);
+        write(address.getAddress(), block, buffer);
     }
 
     /**
@@ -751,10 +772,10 @@ public class RTL2832TunerController extends USBTunerController
      * @return value read
      * @throws LibUsbException on error
      */
-    private int readRegister(Block block, short address, int length) throws LibUsbException
+    private int readRegister(Block block, Address address, int length) throws LibUsbException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(2);
-        read(address, block, buffer);
+        read(address.getAddress(), block, buffer);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
 
         if(length == 2)
@@ -869,11 +890,11 @@ public class RTL2832TunerController extends USBTunerController
 
             if(type == TunerTypeCheck.FC2580)
             {
-                return ((value & 0x7F) == type.getCheckValue());
+                return ((value & 0x7F) == (type.getCheckValue() & 0xFF));
             }
             else
             {
-                return (value == type.getCheckValue());
+                return (value == (type.getCheckValue() & 0xFF));
             }
         }
         catch(LibUsbException e)
@@ -973,7 +994,7 @@ public class RTL2832TunerController extends USBTunerController
 
     public void setSampleRateFrequencyCorrection(int ppm) throws SourceException
     {
-        int offset = -ppm * TWO_TO_22_POWER / 1000000;
+        int offset = -ppm * TWO_TO_22_POWER / 1_000_000;
         writeDemodRegister(Page.ONE, (short) 0x3F, (offset & 0xFF), 1);
         writeDemodRegister(Page.ONE, (short) 0x3E, (Integer.rotateRight(offset, 8) & 0xFF), 1);
         /* Test to retune controller to apply frequency correction */
@@ -983,7 +1004,7 @@ public class RTL2832TunerController extends USBTunerController
         }
         catch(Exception e)
         {
-            throw new SourceException("couldn't set sample rate frequency correction", e);
+            throw new SourceException("Couldn't set sample rate frequency correction", e);
         }
     }
 
@@ -1027,7 +1048,7 @@ public class RTL2832TunerController extends USBTunerController
         try
         {
             /* Tell the RTL-2832 to address the EEPROM */
-            writeRegister(Block.I2C, EEPROM_ADDRESS, (byte) offset, 1);
+            writeRegister(Block.I2C, Address.EEPROM, (byte) offset, 1);
         }
         catch(LibUsbException e)
         {
@@ -1068,7 +1089,7 @@ public class RTL2832TunerController extends USBTunerController
         }
 
         int offsetAndValue = Integer.rotateLeft((0xFF & offset), 8) | (0xFF & value);
-        writeRegister(Block.I2C, EEPROM_ADDRESS, offsetAndValue, 2);
+        writeRegister(Block.I2C, Address.EEPROM, offsetAndValue, 2);
     }
 
     public enum Address
@@ -1093,7 +1114,8 @@ public class RTL2832TunerController extends USBTunerController
         SYSINTE_1(0x3009),
         SYSINTS_1(0x300A),
         DEMOD_CTL_1(0x300B),
-        IR_SUSPEND(0x300C);
+        IR_SUSPEND(0x300C),
+        EEPROM(0xA0);
 
         private int mAddress;
 
@@ -1314,6 +1336,14 @@ public class RTL2832TunerController extends USBTunerController
             getLabels();
         }
 
+        /**
+         * Indicates if this is a rtl-sdr.com V4 R828D dongle with notch filtering.
+         */
+        public boolean isRtlSdrV4()
+        {
+            return "RTLSDRBlog".equals(getVendorLabel()) && "Blog V4".equals(getProductLabel());
+        }
+
         public boolean isValid()
         {
             return mData[0] != (byte)0x0 && mData[1] != (byte)0x0;
@@ -1477,6 +1507,15 @@ public class RTL2832TunerController extends USBTunerController
         public boolean isRunning()
         {
             return mController.isRunning();
+        }
+
+        /**
+         * Indicates if this is a rtl-sdr.com V4 dongle with support for notch filtering.
+         * @return true if this is a V4 R828D tuner.
+         */
+        public boolean isV4Dongle()
+        {
+            return mController.getDescriptor().isRtlSdrV4();
         }
 
         /**

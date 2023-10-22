@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 
 /**
  * RTL2832 tuner configuration
@@ -33,11 +34,13 @@ import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = E4KTunerConfiguration.class, name = "e4KTunerConfiguration"),
         @JsonSubTypes.Type(value = R820TTunerConfiguration.class, name = "r820TTunerConfiguration"),
+        @JsonSubTypes.Type(value = R828DTunerConfiguration.class, name = "r828DTunerConfiguration"),
 })
 @JacksonXmlRootElement(localName = "tuner_configuration")
 public abstract class RTL2832TunerConfiguration extends TunerConfiguration
 {
     private RTL2832TunerController.SampleRate mSampleRate = RTL2832TunerController.SampleRate.RATE_2_400MHZ;
+    private boolean mBiasTEnabled = false;
 
     /**
      * Default constructor to support Jackson
@@ -60,5 +63,24 @@ public abstract class RTL2832TunerConfiguration extends TunerConfiguration
     public void setSampleRate(RTL2832TunerController.SampleRate sampleRate)
     {
         mSampleRate = sampleRate;
+    }
+
+    /**
+     * Sets the enabled state of the Bias-T
+     * @param enabled true to turn-on the bias-T
+     */
+    public void setBiasT(boolean enabled)
+    {
+        mBiasTEnabled = enabled;
+    }
+
+    /**
+     * Indicates if the Bias-T is enabled.
+     * @return true if enabled.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean isBiasT()
+    {
+        return mBiasTEnabled;
     }
 }

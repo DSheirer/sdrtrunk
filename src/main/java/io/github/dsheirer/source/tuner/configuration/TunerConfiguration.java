@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,8 @@ import io.github.dsheirer.source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
 
 /**
@@ -47,6 +48,7 @@ import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
         @JsonSubTypes.Type(value = HackRFTunerConfiguration.class, name = "hackRFTunerConfiguration"),
         @JsonSubTypes.Type(value = RecordingTunerConfiguration.class, name = "recordingTunerConfiguration"),
         @JsonSubTypes.Type(value = R820TTunerConfiguration.class, name = "r820TTunerConfiguration"),
+        @JsonSubTypes.Type(value = R828DTunerConfiguration.class, name = "r828DTunerConfiguration"),
         @JsonSubTypes.Type(value = RspTunerConfiguration.class, name = "rspTunerConfiguration"),
 })
 @JacksonXmlRootElement(localName = "tuner_configuration")

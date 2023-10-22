@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,35 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.source.tuner.rtl.r820t;
+package io.github.dsheirer.source.tuner.rtl.r8x;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerConfiguration;
 
 /**
- * RTL-2832 with embedded R820T tuner configuration
+ * RTL-2832 with embedded R8xxx tuner configuration
  */
-public class R820TTunerConfiguration extends RTL2832TunerConfiguration
+public abstract class R8xTunerConfiguration extends RTL2832TunerConfiguration
 {
-    private R820TEmbeddedTuner.R820TGain mMasterGain = R820TEmbeddedTuner.R820TGain.GAIN_327;
-    private R820TEmbeddedTuner.R820TMixerGain mMixerGain = R820TEmbeddedTuner.R820TMixerGain.GAIN_105;
-    private R820TEmbeddedTuner.R820TLNAGain mLNAGain = R820TEmbeddedTuner.R820TLNAGain.GAIN_222;
-    private R820TEmbeddedTuner.R820TVGAGain mVGAGain = R820TEmbeddedTuner.R820TVGAGain.GAIN_210;
+    private R8xEmbeddedTuner.MasterGain mMasterMasterGain = R8xEmbeddedTuner.MasterGain.GAIN_327;
+    private R8xEmbeddedTuner.MixerGain mMixerGain = R8xEmbeddedTuner.MixerGain.GAIN_105;
+    private R8xEmbeddedTuner.LNAGain mLNAGain = R8xEmbeddedTuner.LNAGain.GAIN_222;
+    private R8xEmbeddedTuner.VGAGain mVGAGain = R8xEmbeddedTuner.VGAGain.GAIN_210;
 
     /**
      * Default constructor for JAXB
      */
-    public R820TTunerConfiguration()
+    public R8xTunerConfiguration()
     {
-    }
-
-    @JsonIgnore
-    @Override
-    public TunerType getTunerType()
-    {
-        return TunerType.RAFAELMICRO_R820T;
     }
 
     /**
@@ -52,51 +43,51 @@ public class R820TTunerConfiguration extends RTL2832TunerConfiguration
      *
      * @param uniqueID for the tuner
      */
-    public R820TTunerConfiguration(String uniqueID)
+    public R8xTunerConfiguration(String uniqueID)
     {
         super(uniqueID);
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "master_gain")
-    public R820TEmbeddedTuner.R820TGain getMasterGain()
+    public R8xEmbeddedTuner.MasterGain getMasterGain()
     {
-        return mMasterGain;
+        return mMasterMasterGain;
     }
 
-    public void setMasterGain(R820TEmbeddedTuner.R820TGain gain)
+    public void setMasterGain(R8xEmbeddedTuner.MasterGain masterGain)
     {
-        mMasterGain = gain;
+        mMasterMasterGain = masterGain;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "mixer_gain")
-    public R820TEmbeddedTuner.R820TMixerGain getMixerGain()
+    public R8xEmbeddedTuner.MixerGain getMixerGain()
     {
         return mMixerGain;
     }
 
-    public void setMixerGain(R820TEmbeddedTuner.R820TMixerGain mixerGain)
+    public void setMixerGain(R8xEmbeddedTuner.MixerGain mixerGain)
     {
         mMixerGain = mixerGain;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "lna_gain")
-    public R820TEmbeddedTuner.R820TLNAGain getLNAGain()
+    public R8xEmbeddedTuner.LNAGain getLNAGain()
     {
         return mLNAGain;
     }
 
-    public void setLNAGain(R820TEmbeddedTuner.R820TLNAGain lnaGain)
+    public void setLNAGain(R8xEmbeddedTuner.LNAGain lnaGain)
     {
         mLNAGain = lnaGain;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "vga_gain")
-    public R820TEmbeddedTuner.R820TVGAGain getVGAGain()
+    public R8xEmbeddedTuner.VGAGain getVGAGain()
     {
         return mVGAGain;
     }
 
-    public void setVGAGain(R820TEmbeddedTuner.R820TVGAGain vgaGain)
+    public void setVGAGain(R8xEmbeddedTuner.VGAGain vgaGain)
     {
         mVGAGain = vgaGain;
     }
