@@ -53,7 +53,8 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.6.0-beta2'
+//Note: this should match the GitLab release tag.
+version = '0.6.0-beta-3'
 
 //Java 20 is required for this version of the Project Panama preview/incubator feature
 java {
