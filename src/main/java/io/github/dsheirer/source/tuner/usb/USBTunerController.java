@@ -56,8 +56,8 @@ public abstract class USBTunerController extends TunerController
     protected static final byte USB_BULK_TRANSFER_ENDPOINT = (byte) 0x81;
     private static final long USB_BULK_TRANSFER_TIMEOUT_MS = 2000l;
 
-    private int mBus;
-    private String mPortAddress;
+    protected int mBus;
+    protected String mPortAddress;
     private Context mDeviceContext = new Context();
     private Device mDevice;
     private DeviceHandle mDeviceHandle;

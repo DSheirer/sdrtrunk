@@ -71,9 +71,14 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     }
 
     /**
-     * I2C Address for the embedded tuner
+     * I2C Write Address for the embedded tuner
      */
-    public abstract byte getI2CAddress();
+    public abstract byte getI2CWriteAddress();
+
+    /**
+     * I2C Read Address for the embedded tuner
+     */
+    public abstract byte getI2CReadAddress();
 
     /**
      * Applies the tuner configuration values to this embedded tuner
@@ -83,8 +88,6 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     @Override
     public void apply(TunerConfiguration tunerConfig) throws SourceException
     {
-        //Invoke super for frequency, frequency correction and autoPPM
-
         if(tunerConfig instanceof R8xTunerConfiguration config)
         {
             try
@@ -120,7 +123,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
 
         if(value != current)
         {
-            getAdapter().writeI2CRegister(getI2CAddress(), (byte) register.getRegister(), value, controlI2C);
+            getAdapter().writeI2CRegister(getI2CWriteAddress(), (byte) register.getRegister(), value, controlI2C);
             mShadowRegister[register.getRegister()] = value;
         }
     }
@@ -130,7 +133,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
      */
     public int readRegister(Register register, boolean controlI2C) throws UsbException
     {
-        return getAdapter().readI2CRegister(getI2CAddress(), (byte) register.getRegister(), controlI2C);
+        return getAdapter().readI2CRegister(getI2CReadAddress(), (byte) register.getRegister(), controlI2C);
     }
 
     /**
@@ -459,7 +462,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     {
         for(int x = 5; x < mShadowRegister.length; x++)
         {
-            getAdapter().writeI2CRegister(getI2CAddress(), (byte) x, mShadowRegister[x], controlI2C);
+            getAdapter().writeI2CRegister(getI2CWriteAddress(), (byte) x, mShadowRegister[x], controlI2C);
         }
     }
 
@@ -469,7 +472,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     protected int getStatusRegister(int register, boolean controlI2C) throws UsbException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(5);
-        getAdapter().read(getI2CAddress(), RTL2832TunerController.Block.I2C, buffer);
+        getAdapter().read(getI2CWriteAddress(), RTL2832TunerController.Block.I2C, buffer);
         return bitReverse(buffer.get(register) & 0xFF);
     }
 

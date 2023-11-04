@@ -24,6 +24,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 
@@ -33,6 +34,7 @@ import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = E4KTunerConfiguration.class, name = "e4KTunerConfiguration"),
+        @JsonSubTypes.Type(value = FC0013TunerConfiguration.class, name = "fc0013TunerConfiguration"),
         @JsonSubTypes.Type(value = R820TTunerConfiguration.class, name = "r820TTunerConfiguration"),
         @JsonSubTypes.Type(value = R828DTunerConfiguration.class, name = "r828DTunerConfiguration"),
 })
