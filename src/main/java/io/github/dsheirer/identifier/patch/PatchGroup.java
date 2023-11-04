@@ -166,12 +166,12 @@ public class PatchGroup
 
         if(hasPatchedTalkgroups())
         {
-            sb.append(" TG").append(getPatchedTalkgroupIdentifiers());
+            sb.append(getPatchedTalkgroupIdentifiers());
         }
 
         if(hasPatchedRadios())
         {
-            sb.append(" RA").append(getPatchedRadioIdentifiers());
+            sb.append(getPatchedRadioIdentifiers());
         }
 
         return sb.toString();
