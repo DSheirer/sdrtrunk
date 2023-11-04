@@ -30,7 +30,8 @@ import javax.usb.UsbException;
  */
 public class R828DEmbeddedTuner extends R8xEmbeddedTuner
 {
-    private static final byte I2C_ADDRESS = (byte) 0x74;
+    private static final byte I2C_WRITE_ADDRESS = (byte) 0x74;
+    private static final byte I2C_READ_ADDRESS = (byte) 0x75;
     private static final int VCO_POWER_REF = 1;
     /**
      * RTL-SDR.com blog V4 dongle indicator.
@@ -56,9 +57,15 @@ public class R828DEmbeddedTuner extends R8xEmbeddedTuner
     }
 
     @Override
-    public byte getI2CAddress()
+    public byte getI2CWriteAddress()
     {
-        return I2C_ADDRESS;
+        return I2C_WRITE_ADDRESS;
+    }
+
+    @Override
+    public byte getI2CReadAddress()
+    {
+        return I2C_READ_ADDRESS;
     }
 
     /**

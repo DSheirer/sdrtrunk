@@ -354,21 +354,28 @@ public class RTL2832TunerController extends USBTunerController
      */
     public String getUniqueID()
     {
-        if(mDescriptor != null && mDescriptor.hasSerial())
+        if(mDescriptor != null)
         {
-            if(hasEmbeddedTuner())
+            if(mDescriptor.hasSerial())
             {
-                return TunerClass.RTL2832 + "/" + getTunerType().getLabel() + " " + mDescriptor.getSerial();
+                if(hasEmbeddedTuner())
+                {
+                    return TunerClass.RTL2832 + "/" + getTunerType().getLabel() + " " + mDescriptor.getSerial();
+                }
+                else
+                {
+                    return TunerClass.RTL2832 + " " + mDescriptor.getSerial();
+                }
             }
             else
             {
-                return TunerClass.RTL2832 + " " + mDescriptor.getSerial();
+                return "RTL-2832 USB Bus:" + mBus + " Port:" + mPortAddress;
             }
         }
         else
         {
             int serial = (0xFF & getDeviceDescriptor().iSerialNumber());
-            return TunerClass.RTL2832.toString() + " " + serial;
+            return TunerClass.RTL2832 + " " + serial;
         }
     }
 
@@ -593,10 +600,9 @@ public class RTL2832TunerController extends USBTunerController
      */
     private void enableI2CRepeater(boolean enabled) throws LibUsbException
     {
-        Page page = Page.ONE;
         short address = 1;
         int value = (enabled ? 0x18 : 0x10);
-        writeDemodRegister(page, address, value, 1);
+        writeDemodRegister(Page.ONE, address, value, 1);
     }
 
     /**

@@ -55,6 +55,9 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832UnknownTunerEditor;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KEmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerEditor;
+import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013EmbeddedTuner;
+import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerEditor;
 import io.github.dsheirer.source.tuner.rtl.r8x.R8xTunerEditor;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TEmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
@@ -368,6 +371,7 @@ public class TunerFactory
         return switch(tunerType)
         {
             case ELONICS_E4000 -> new E4KEmbeddedTuner(adapter);
+            case FITIPOWER_FC0013 -> new FC0013EmbeddedTuner(adapter);
             case RAFAELMICRO_R820T -> new R820TEmbeddedTuner(adapter);
             case RAFAELMICRO_R828D -> new R828DEmbeddedTuner(adapter);
             default -> throw new SourceException("Unsupported/Unrecognized Tuner Type: " + tunerType);
@@ -387,6 +391,8 @@ public class TunerFactory
                 return new AirspyTunerConfiguration(uniqueID);
             case ELONICS_E4000:
                 return new E4KTunerConfiguration(uniqueID);
+            case FITIPOWER_FC0013:
+                return new FC0013TunerConfiguration(uniqueID);
             case FUNCUBE_DONGLE_PRO:
                 return new FCD1TunerConfiguration(uniqueID);
             case FUNCUBE_DONGLE_PRO_PLUS:
@@ -479,6 +485,8 @@ public class TunerFactory
                     {
                         case ELONICS_E4000:
                             return new E4KTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                        case FITIPOWER_FC0013:
+                            return new FC0013TunerEditor(userPreferences, tunerManager, discoveredTuner);
                         case RAFAELMICRO_R820T:
                         case RAFAELMICRO_R828D:
                             return new R8xTunerEditor(userPreferences, tunerManager, discoveredTuner);
