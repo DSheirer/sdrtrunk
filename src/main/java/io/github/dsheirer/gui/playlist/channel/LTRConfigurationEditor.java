@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,8 @@ import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -49,9 +51,6 @@ import javafx.scene.layout.VBox;
 import org.controlsfx.control.SegmentedButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * LTR (standard) channel configuration editor
@@ -77,9 +76,9 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
      * @param userPreferences for preferences
      */
     public LTRConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                  UserPreferences userPreferences)
+                                  UserPreferences userPreferences, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences);
+        super(playlistManager, tunerManager, userPreferences, filterProcessor);
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getAuxDecoderPane());

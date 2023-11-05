@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,11 +23,10 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides access to channel configuration editors for various decoder types.
@@ -41,31 +40,35 @@ public class ChannelConfigurationEditorFactory
      * Constructs an editor for the specified decoder type
      * @param decoderType to create
      * @param playlistManager for the editor
+     * @param tunerManager for tuners
+     * @param userPreferences for preferences
+     * @param filterProcessor to be notified to clear and restore any applied filters.
      * @return constructed editor
      */
     public static ChannelConfigurationEditor getEditor(DecoderType decoderType, PlaylistManager playlistManager,
-                                                       TunerManager tunerManager, UserPreferences userPreferences)
+                                                       TunerManager tunerManager, UserPreferences userPreferences,
+                                                       IFilterProcessor filterProcessor)
     {
         switch(decoderType)
         {
             case AM:
-                return new AMConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new AMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case DMR:
-                return new DMRConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new DMRConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case NBFM:
-                return new NBFMConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new NBFMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case LTR_NET:
-                return new LTRNetConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new LTRNetConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case LTR:
-                return new LTRConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new LTRConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case MPT1327:
-                return new MPT1327ConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new MPT1327ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case PASSPORT:
-                return new PassportConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new PassportConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case P25_PHASE1:
-                return new P25P1ConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new P25P1ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case P25_PHASE2:
-                return new P25P2ConfigurationEditor(playlistManager, tunerManager, userPreferences);
+                return new P25P2ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             default:
                 if(decoderType != null && !mLoggedUnrecognizedTypes.contains(decoderType))
                 {

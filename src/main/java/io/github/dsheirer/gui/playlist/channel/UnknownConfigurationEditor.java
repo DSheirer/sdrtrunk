@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,9 +45,9 @@ public class UnknownConfigurationEditor extends ChannelConfigurationEditor
      * @param aliasModel
      */
     public UnknownConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences)
+                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences);
+        super(playlistManager, tunerManager, userPreferences, filterProcessor);
         getTitledPanesBox().getChildren().add(getDecoderPane());
     }
 
