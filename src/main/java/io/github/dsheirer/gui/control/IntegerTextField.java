@@ -67,7 +67,7 @@ public class IntegerTextField extends TextField
             //Do nothing ... we couldn't parse the value
         }
 
-        return null;
+        return 0;
     }
 
     /**
