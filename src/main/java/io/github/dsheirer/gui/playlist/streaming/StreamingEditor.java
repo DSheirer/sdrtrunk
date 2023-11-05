@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,11 @@ import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfigura
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.rrapi.type.UserFeedBroadcast;
 import io.github.dsheirer.util.ThreadPool;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -48,6 +53,7 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -57,12 +63,6 @@ import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Editor for broadcast audio stream configurations
@@ -75,6 +75,7 @@ public class StreamingEditor extends SplitPane
     private TableView<ConfiguredBroadcast> mConfiguredBroadcastTableView;
     private MenuButton mNewButton;
     private Button mDeleteButton;
+    private Button mRefreshButton;
     private TabPane mTabPane;
     private Tab mConfigurationTab;
     private Tab mAliasTab;
@@ -101,7 +102,7 @@ public class StreamingEditor extends SplitPane
         refreshBroadcastifyStreams();
 
         VBox buttonsBox = new VBox();
-        buttonsBox.getChildren().addAll(getNewButton(), getDeleteButton());
+        buttonsBox.getChildren().addAll(getNewButton(), getDeleteButton(), getRefreshButton());
         buttonsBox.setPadding(new Insets(0, 0, 0, 10));
         buttonsBox.setSpacing(10);
 
@@ -231,21 +232,16 @@ public class StreamingEditor extends SplitPane
     {
         if(mPlaylistManager.getRadioReference().availableProperty().get())
         {
-            ThreadPool.CACHED.submit(new Runnable()
-            {
-                @Override
-                public void run()
+            ThreadPool.CACHED.submit(() -> {
+                try
                 {
-                    try
-                    {
-                        List<UserFeedBroadcast> feeds = mPlaylistManager.getRadioReference().getService().getUserFeeds();
-                        mBroadcastifyFeeds.clear();
-                        mBroadcastifyFeeds.addAll(feeds);
-                    }
-                    catch(Throwable t)
-                    {
-                        mLog.error("Unable to refresh broadcastify stream configuration(s)");
-                    }
+                    List<UserFeedBroadcast> feeds = mPlaylistManager.getRadioReference().getService().getUserFeeds();
+                    mBroadcastifyFeeds.clear();
+                    mBroadcastifyFeeds.addAll(feeds);
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Unable to refresh broadcastify stream configuration(s)");
                 }
             });
         }
@@ -346,6 +342,22 @@ public class StreamingEditor extends SplitPane
         }
 
         return mNewButton;
+    }
+
+    /**
+     * Refresh broadcastify feeds.
+     * @return button to refresh.
+     */
+    private Button getRefreshButton()
+    {
+        if(mRefreshButton == null)
+        {
+            mRefreshButton = new Button("Refresh");
+            mRefreshButton.setTooltip(new Tooltip("Refresh streams available from Broadcastify"));
+            mRefreshButton.setOnAction(event -> refreshBroadcastifyStreams());
+        }
+
+        return mRefreshButton;
     }
 
     private Button getDeleteButton()
