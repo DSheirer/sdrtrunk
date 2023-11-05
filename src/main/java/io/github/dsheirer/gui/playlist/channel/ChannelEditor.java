@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,12 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -62,13 +68,6 @@ import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * JavaFX editor for managing channel configurations.
@@ -449,6 +448,25 @@ public class ChannelEditor extends SplitPane
             nameColumn.setPrefWidth(200);
 
             TableColumn frequencyColumn = new TableColumn("Frequency");
+            frequencyColumn.setComparator((o1, o2) -> {
+                if(o1 instanceof Channel c1 && o2 instanceof Channel c2)
+                {
+                    if(!c1.getFrequencyList().isEmpty() && !c2.getFrequencyList().isEmpty())
+                    {
+                        return Long.compare(c1.getFrequencyList().get(0), c2.getFrequencyList().get(0));
+                    }
+                    else if(!c1.getFrequencyList().isEmpty())
+                    {
+                        return Long.compare(c1.getFrequencyList().get(0), 0l);
+                    }
+                    else if(!c2.getFrequencyList().isEmpty())
+                    {
+                        return Long.compare(0l, c2.getFrequencyList().get(0));
+                    }
+                }
+
+                return Integer.compare(o1.hashCode(), o2.hashCode());
+            });
             frequencyColumn.setCellValueFactory(new FrequencyCellValueFactory());
             frequencyColumn.setPrefWidth(100);
 
