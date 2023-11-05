@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,8 @@ import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -69,9 +71,6 @@ import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-import java.util.function.Predicate;
-
 /**
  * Channel configuration editor
  */
@@ -100,6 +99,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private IconNode mPlayGraphicNode;
     private IconNode mStopGraphicNode;
     private ChannelProcessingMonitor mChannelProcessingMonitor = new ChannelProcessingMonitor();
+    private IFilterProcessor mFilterProcessor;
 
     /**
      * Constructs an instance
@@ -108,11 +108,12 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
      * @param userPreferences for preferences
      */
     public ChannelConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences)
+                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
     {
         mPlaylistManager = playlistManager;
         mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
+        mFilterProcessor = filterProcessor;
 
         setMaxWidth(Double.MAX_VALUE);
 
@@ -689,7 +690,16 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mSaveButton.setMaxWidth(Double.MAX_VALUE);
             mSaveButton.disableProperty().bind(modifiedProperty().not());
             mSaveButton.setOnAction(event -> {
-                save();
+                if(mFilterProcessor != null)
+                {
+                    mFilterProcessor.clearFilter();
+                    save();
+                    mFilterProcessor.restoreFilter();
+                }
+                else
+                {
+                    save();
+                }
 
                 if(getItem().isProcessing())
                 {

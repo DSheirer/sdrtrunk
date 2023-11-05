@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
 /**
  * JavaFX editor for managing channel configurations.
  */
-public class ChannelEditor extends SplitPane
+public class ChannelEditor extends SplitPane implements IFilterProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelEditor.class);
     private PlaylistManager mPlaylistManager;
@@ -105,7 +105,8 @@ public class ChannelEditor extends SplitPane
         mPlaylistManager = playlistManager;
         mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
-        mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager, mTunerManager, userPreferences);
+        mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager, mTunerManager,
+                userPreferences, this);
 
         HBox channelsBox = new HBox();
         channelsBox.setSpacing(10.0);
@@ -202,7 +203,7 @@ public class ChannelEditor extends SplitPane
                     if(editor == null)
                     {
                         editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager,
-                            mTunerManager, mUserPreferences);
+                            mTunerManager, mUserPreferences, this);
 
                         if(editor != null)
                         {
@@ -370,6 +371,24 @@ public class ChannelEditor extends SplitPane
         }
 
         mChannelFilteredList.setPredicate(null);
+        mChannelFilteredList.setPredicate(mChannelListFilter);
+    }
+
+    /**
+     * Temporarily clear the filter when the channel configuration editor is applying changes.
+     */
+    @Override
+    public void clearFilter()
+    {
+        mChannelFilteredList.setPredicate(null);
+    }
+
+    /**
+     * Restore the filter once the channel configuration editor has completed applying changes.
+     */
+    @Override
+    public void restoreFilter()
+    {
         mChannelFilteredList.setPredicate(mChannelListFilter);
     }
 

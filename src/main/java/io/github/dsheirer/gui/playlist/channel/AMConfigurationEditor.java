@@ -92,9 +92,9 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
      * @param userPreferences for preferences
      */
     public AMConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                 UserPreferences userPreferences)
+                                 UserPreferences userPreferences, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences);
+        super(playlistManager, tunerManager, userPreferences, filterProcessor);
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getEventLogPane());

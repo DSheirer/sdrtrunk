@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
@@ -53,9 +55,6 @@ import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * P25 Phase 1 channel configuration editor
@@ -83,9 +82,9 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
      * @param userPreferences for preferences
      */
     public P25P1ConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                    UserPreferences userPreferences)
+                                    UserPreferences userPreferences, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences);
+        super(playlistManager, tunerManager, userPreferences, filterProcessor);
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getEventLogPane());
