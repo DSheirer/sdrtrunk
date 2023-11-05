@@ -70,7 +70,7 @@ public class SDRplay
     private static final Logger mLog = LoggerFactory.getLogger(SDRplay.class);
 
     /**
-     * Foreign memory arenaallocation resource scope
+     * Foreign memory arena allocation resource scope
      */
     private final Arena mArena = Arena.openShared();
 

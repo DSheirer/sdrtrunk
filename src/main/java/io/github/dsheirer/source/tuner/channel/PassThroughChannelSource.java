@@ -55,7 +55,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
         super(listener, tunerChannel);
         mTunerController = tunerController;
         mBufferDispatcher = new Dispatcher<>("sdrtrunk pass-through channel " + tunerChannel.getFrequency(),
-                250, 50, getHeartbeatManager());
+                50, getHeartbeatManager());
         mBufferDispatcher.setListener(new BufferProcessor());
     }
 

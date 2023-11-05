@@ -35,24 +35,16 @@ import org.slf4j.LoggerFactory;
 public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
 {
     private static final Logger mLog = LoggerFactory.getLogger(StreamCallbackAdapter.class);
-    private Arena mArena;
     private IStreamListener mStreamListener;
     private IStreamCallbackListener mStreamCallbackListener;
 
     /**
      * Constructs an instance of the callback implementation
-     * @param arena for defining new foreign memory segments
      * @param streamListener to receive transferred I/Q samples and event details
      * @param listener to receive callback parameters
      */
-    public StreamCallbackAdapter(Arena arena, IStreamListener streamListener, IStreamCallbackListener listener)
+    public StreamCallbackAdapter(IStreamListener streamListener, IStreamCallbackListener listener)
     {
-        if(arena == null)
-        {
-            throw new IllegalArgumentException("Arena must be non-null");
-        }
-
-        mArena = arena;
         mStreamCallbackListener = listener;
         setListener(streamListener);
     }
@@ -81,24 +73,27 @@ public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
     {
         if(mStreamListener != null || mStreamCallbackListener != null)
         {
-            //Translate the callback parameters pointer to a memory segment and re-construct the parameters as a Java object
-            StreamCallbackParameters parameters = new StreamCallbackParameters(sdrplay_api_StreamCbParamsT
-                    .ofAddress(parametersPointer, mArena.scope()));
-
-            if(mStreamCallbackListener != null)
+            try(Arena arena = Arena.openConfined())
             {
-                mStreamCallbackListener.process(mStreamListener.getTunerSelect(), parameters, reset);
-            }
+                //Translate the callback parameters pointer to a memory segment and re-construct the parameters as a Java object
+                StreamCallbackParameters parameters = new StreamCallbackParameters(sdrplay_api_StreamCbParamsT
+                        .ofAddress(parametersPointer, arena.scope()));
 
-            if(mStreamListener != null)
-            {
-                //Allocate memory segments from I/Q pointers, transfer from native to JVM array, and send to listener
-                long arrayByteSize = ValueLayout.JAVA_SHORT.byteSize() * sampleCount;
-                MemorySegment iSamples = MemorySegment.ofAddress(iSamplesPointer.address(), arrayByteSize, mArena.scope());
-                MemorySegment qSamples = MemorySegment.ofAddress(qSamplesPointer.address(), arrayByteSize, mArena.scope());
-                short[] i = iSamples.toArray(ValueLayout.JAVA_SHORT);
-                short[] q = qSamples.toArray(ValueLayout.JAVA_SHORT);
-                mStreamListener.processStream(i, q, parameters, Flag.evaluate(reset));
+                if(mStreamCallbackListener != null)
+                {
+                    mStreamCallbackListener.process(mStreamListener.getTunerSelect(), parameters, reset);
+                }
+
+                if(mStreamListener != null)
+                {
+                    //Allocate memory segments from I/Q pointers, transfer from native to JVM array, and send to listener
+                    long arrayByteSize = ValueLayout.JAVA_SHORT.byteSize() * sampleCount;
+                    MemorySegment iSamples = MemorySegment.ofAddress(iSamplesPointer.address(), arrayByteSize, arena.scope());
+                    MemorySegment qSamples = MemorySegment.ofAddress(qSamplesPointer.address(), arrayByteSize, arena.scope());
+                    short[] i = iSamples.toArray(ValueLayout.JAVA_SHORT);
+                    short[] q = qSamples.toArray(ValueLayout.JAVA_SHORT);
+                    mStreamListener.processStream(i, q, parameters, Flag.evaluate(reset));
+                }
             }
         }
     }

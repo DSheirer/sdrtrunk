@@ -36,24 +36,14 @@ import org.slf4j.LoggerFactory;
 public class DeviceEventAdapter implements sdrplay_api_EventCallback_t
 {
     private static final Logger mLog = LoggerFactory.getLogger(DeviceEventAdapter.class);
-
-    private Arena mArena;
     private IDeviceEventListener mDeviceEventListener;
 
     /**
      * Constructs an instance.
-     * @param arena to use in creating foreign memory segments to access foreign structures.
      * @param listener to receive translated device events.
      */
-    public DeviceEventAdapter(Arena arena, IDeviceEventListener listener)
+    public DeviceEventAdapter(IDeviceEventListener listener)
     {
-        if(arena == null)
-        {
-            throw new IllegalArgumentException("Resource scope must be non-null");
-        }
-
-        mArena = arena;
-
         setListener(listener);
     }
 
@@ -75,35 +65,44 @@ public class DeviceEventAdapter implements sdrplay_api_EventCallback_t
     public void apply(int eventTypeId, int tunerSelectId, MemorySegment eventParametersPointer,
                       MemorySegment callbackContext)
     {
-        MemorySegment memorySegment = sdrplay_api_EventParamsT.ofAddress(eventParametersPointer, mArena.scope());
-        EventType eventType = EventType.fromValue(eventTypeId);
-        TunerSelect tunerSelect = TunerSelect.fromValue(tunerSelectId);
-
-        switch(eventType)
+        try(Arena arena = Arena.openConfined())
         {
-            case GAIN_CHANGE -> {
-                mDeviceEventListener.processGainChange(tunerSelect,
-                        EventParametersFactory.createGainCallbackParameters(memorySegment));
-            }
-            case POWER_OVERLOAD_CHANGE -> {
-                mDeviceEventListener.processPowerOverload(tunerSelect,
-                        EventParametersFactory.createPowerOverloadCallbackParameters(memorySegment));
-            }
-            case DEVICE_REMOVED -> {
-                mDeviceEventListener.processDeviceRemoval(tunerSelect);
-            }
-            case RSP_DUO_MODE_CHANGE -> {
-                mDeviceEventListener.processRspDuoModeChange(tunerSelect,
-                        EventParametersFactory.createRspDuoModeCallbackParameters(memorySegment));
-            }
-            case UNKNOWN -> {
-                mLog.warn("Unknown device event callback ignored.  Please contact the library developer as this may " +
-                        "indicate a change to the SDRPlay API change. Tuner:" + tunerSelect + " Event Type ID:" +
-                        eventTypeId);
-                mDeviceEventListener.processEvent(eventType, tunerSelect);
-            }
-            default -> {
-                throw new IllegalStateException("DeviceEventAdapter must be updated handle EventType." + eventType);
+            MemorySegment memorySegment = sdrplay_api_EventParamsT.ofAddress(eventParametersPointer, arena.scope());
+            EventType eventType = EventType.fromValue(eventTypeId);
+            TunerSelect tunerSelect = TunerSelect.fromValue(tunerSelectId);
+
+            switch(eventType)
+            {
+                case GAIN_CHANGE ->
+                {
+                    mDeviceEventListener.processGainChange(tunerSelect,
+                            EventParametersFactory.createGainCallbackParameters(memorySegment));
+                }
+                case POWER_OVERLOAD_CHANGE ->
+                {
+                    mDeviceEventListener.processPowerOverload(tunerSelect,
+                            EventParametersFactory.createPowerOverloadCallbackParameters(memorySegment));
+                }
+                case DEVICE_REMOVED ->
+                {
+                    mDeviceEventListener.processDeviceRemoval(tunerSelect);
+                }
+                case RSP_DUO_MODE_CHANGE ->
+                {
+                    mDeviceEventListener.processRspDuoModeChange(tunerSelect,
+                            EventParametersFactory.createRspDuoModeCallbackParameters(memorySegment));
+                }
+                case UNKNOWN ->
+                {
+                    mLog.warn("Unknown device event callback ignored.  Please contact the library developer as this may " +
+                            "indicate a change to the SDRPlay API change. Tuner:" + tunerSelect + " Event Type ID:" +
+                            eventTypeId);
+                    mDeviceEventListener.processEvent(eventType, tunerSelect);
+                }
+                default ->
+                {
+                    throw new IllegalStateException("DeviceEventAdapter must be updated handle EventType." + eventType);
+                }
             }
         }
     }

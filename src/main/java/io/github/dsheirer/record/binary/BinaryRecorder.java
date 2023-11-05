@@ -49,7 +49,7 @@ public class BinaryRecorder extends Module implements IByteBufferListener
     private final static Logger mLog = LoggerFactory.getLogger(BinaryRecorder.class);
     private static final int MAX_RECORDING_BYTE_SIZE = 524288;  //500 kB
 
-    private Dispatcher<ByteBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk binary recorder", 200, 250);
+    private Dispatcher<ByteBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk binary recorder", 250);
     private AtomicBoolean mRunning = new AtomicBoolean();
     private Path mBaseRecordingPath;
     private String mRecordingIdentifier;
