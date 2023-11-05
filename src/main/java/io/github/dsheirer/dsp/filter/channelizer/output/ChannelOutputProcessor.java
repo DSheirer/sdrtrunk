@@ -50,8 +50,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mInputChannelCount = inputChannelCount;
         //Process 1/10th of the sample rate per second at a rate of 20 times a second (200% of anticipated rate)
         mHeartbeatManager = heartbeatManager;
-        mChannelResultsDispatcher = new Dispatcher("sdrtrunk polyphase channel", (int)(sampleRate / 10),
-                50, mHeartbeatManager);
+        mChannelResultsDispatcher = new Dispatcher("sdrtrunk polyphase channel",50, mHeartbeatManager);
         mChannelResultsDispatcher.setListener(floats -> {
             try
             {

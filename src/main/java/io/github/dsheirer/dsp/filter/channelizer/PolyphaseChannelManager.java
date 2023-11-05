@@ -110,7 +110,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
 
         mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
-        mBufferDispatcher = new Dispatcher("sdrtrunk polyphase buffer processor", 50, 10);
+        mBufferDispatcher = new Dispatcher("sdrtrunk polyphase buffer processor", 10);
         mBufferDispatcher.setListener(mNativeBufferReceiver);
     }
 

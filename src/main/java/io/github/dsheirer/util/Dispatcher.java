@@ -41,46 +41,35 @@ import org.slf4j.LoggerFactory;
 public class Dispatcher<E> implements Listener<E>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Dispatcher.class);
-    private static final long OVERFLOW_LOG_EVENT_WAIT_PERIOD = TimeUnit.SECONDS.toMillis(10);
-    private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<>();
+    private final LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<>();
     private Listener<E> mListener;
-    private AtomicBoolean mRunning = new AtomicBoolean();
-    private String mThreadName;
+    private final AtomicBoolean mRunning = new AtomicBoolean();
+    private final String mThreadName;
     private ScheduledExecutorService mExecutorService;
     private ScheduledFuture<?> mScheduledFuture;
-    private int mBatchSize;
-    private long mInterval;
+    private final long mInterval;
     private HeartbeatManager mHeartbeatManager;
 
     /**
      * Constructs an instance of a Dispatcher with integrated heartbeat support.
      * @param threadName to name the dispatcher thread
-     * @param batchSize is maximum number of elements to process from the queue per interval.  This should be sized to
-     * the anticipated number of elements per second, divided by the number of intervals per second and increased by
-     * a factor of two.  This serves to constrain how many elements are processed per interval when the queue starts
-     * to back up, so that the thread doesn't dominate CPU resources.
      * @param interval for processing each batch in milliseconds.
      * @param heartbeatManager to receive a heartbeat command at each processing interval.
      */
-    public Dispatcher(String threadName, int batchSize, long interval, HeartbeatManager heartbeatManager)
+    public Dispatcher(String threadName, long interval, HeartbeatManager heartbeatManager)
     {
-        this(threadName, batchSize, interval);
+        this(threadName, interval);
         mHeartbeatManager = heartbeatManager;
     }
 
     /**
      * Constructs an instance
      * @param threadName to name the dispatcher thread
-     * @param batchSize is maximum number of elements to process from the queue per interval.  This should be sized to
-     * the anticipated number of elements per second, divided by the number of intervals per second and increased by
-     * a factor of two.  This serves to constrain how many elements are processed per interval when the queue starts
-     * to back up, so that the thread doesn't dominate CPU resources.
      * @param interval for processing each batch in milliseconds.
      */
-    public Dispatcher(String threadName, int batchSize, long interval)
+    public Dispatcher(String threadName, long interval)
     {
         mThreadName = threadName;
-        mBatchSize = batchSize;
         mInterval = interval;
     }
 
@@ -171,7 +160,7 @@ public class Dispatcher<E> implements Listener<E>
     {
         List<E> elements = new ArrayList<>();
 
-        mQueue.drainTo(elements, mBatchSize);
+        mQueue.drainTo(elements);
 
         for(E element: elements)
         {
@@ -195,7 +184,7 @@ public class Dispatcher<E> implements Listener<E>
      */
     class Processor implements Runnable
     {
-        private AtomicBoolean mRunning = new AtomicBoolean();
+        private final AtomicBoolean mRunning = new AtomicBoolean();
 
         @Override
         public void run()
@@ -214,7 +203,7 @@ public class Dispatcher<E> implements Listener<E>
      */
     class ProcessorWithHeartbeat implements Runnable
     {
-        private AtomicBoolean mRunning = new AtomicBoolean();
+        private final AtomicBoolean mRunning = new AtomicBoolean();
 
         @Override
         public void run()

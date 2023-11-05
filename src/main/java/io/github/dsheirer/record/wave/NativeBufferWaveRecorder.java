@@ -47,7 +47,7 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     private static final Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
     private static final long STATUS_UPDATE_BYTE_INTERVAL = 1_048_576;
     private static final long MAX_RECORDING_SIZE = (long)Integer.MAX_VALUE * 2l;
-    private Dispatcher<INativeBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk native buffer wave recorder", 100, 250);
+    private Dispatcher<INativeBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk native buffer wave recorder", 250);
 
     private AtomicBoolean mRunning = new AtomicBoolean();
     private NativeBufferWaveWriter mWriter;

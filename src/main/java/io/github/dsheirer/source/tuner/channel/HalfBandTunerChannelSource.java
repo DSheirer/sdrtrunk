@@ -74,8 +74,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
         mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
         //Set dispatcher to process 1/10 of estimated sample arrival rate, 20 times per second (up to 200% per interval)
-        mBufferDispatcher = new Dispatcher("sdrtrunk heterodyne channel " + tunerChannel.getFrequency(),
-                (int)(sampleRate / 10), 50, getHeartbeatManager());
+        mBufferDispatcher = new Dispatcher("sdrtrunk heterodyne channel " + tunerChannel.getFrequency(), 50, getHeartbeatManager());
         mBufferDispatcher.setListener(new NativeBufferProcessor());
 
         //Setup the frequency mixer to the current source frequency

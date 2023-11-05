@@ -68,8 +68,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     private static final int PROCESSED_CHANNEL_RESULTS_THRESHOLD = 1024;
 
-    //Sized to process 1/20th batch of 152 buffers a second,  at 40 times per second
-    private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(152 / 20, 25);
+    //Sized to process 40 times per second
+    private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(25);
     private FloatFFT_1D mFFT;
     private float[] mInlineSamples;
     private float[] mInlineFilter;
@@ -406,9 +406,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     public class IFFTProcessorDispatcher extends Dispatcher<List<float[]>>
     {
-        public IFFTProcessorDispatcher(int batchSize, long interval)
+        public IFFTProcessorDispatcher(long interval)
         {
-            super("sdrtrunk polyphase ifft processor", batchSize, interval);
+            super("sdrtrunk polyphase ifft processor", interval);
 
             //We create a listener interface to receive the batched channel results arrays from the scheduled thread pool
             //dispatcher thread that is part of this continuous buffer processor.  We perform an IFFT on each
