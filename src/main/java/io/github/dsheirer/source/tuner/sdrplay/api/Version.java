@@ -32,7 +32,8 @@ public enum Version
     V3_08(3.08f, true),
     V3_09(3.09f, true),
     V3_10(3.10f, true),
-    V3_11(3.11f, true);
+    V3_11(3.11f, true),
+    V3_12(3.12f, true);
 
     private float mValue;
     private boolean mSupported;
