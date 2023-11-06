@@ -34,7 +34,8 @@ public class RdioScannerBuilder
     private static final String DASH_DASH = "--";
     private static final String BOUNDARY = "--sdrtrunk-sdrtrunk-sdrtrunk";
     private List<Part> mParts = new ArrayList<>();
-    private byte[] audioBytes = null; 
+    private byte[] audioBytes = null;
+    private String audioName = null;
 
     /**
      * Constructs an instance
@@ -49,6 +50,15 @@ public class RdioScannerBuilder
     public String getBoundary()
     {
         return BOUNDARY;
+    }
+
+    /**
+     * Adds a Audio file name part to the call
+     */
+    public RdioScannerBuilder addAudioName(String value)
+    {
+        audioName = value;
+        return this;
     }
 
     /**
@@ -110,7 +120,8 @@ public class RdioScannerBuilder
         }
         StringBuilder sb= new StringBuilder();
         sb.append(DASH_DASH).append(boundary).append("\r\n");
-        sb.append("Content-Disposition: form-data; name=\"").append("audio").append("\"\r\n\r\n");
+        sb.append("Content-Disposition: form-data; filename =\"").append(audioName);
+        sb.append("\"; name=\"").append("audio").append("\"\r\n\r\n");
         return sb.toString();
 
     }
