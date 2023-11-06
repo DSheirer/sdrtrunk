@@ -1,0 +1,38 @@
+# Create nightly release for Linux, Mac and Windows using the Linux runner.
+name: Nightly Release
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 20
+        uses: actions/setup-java@v3
+        with:
+          java-version: '20'
+          distribution: 'liberica'
+          java-package: 'jdk+fx'
+
+      - name: Build Linux and Mac releases with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: runtimeZipOthers -PprojectVersion=nightly
+
+      - name: Build Windows release with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: runtimeZipWindows -PprojectVersion=nightly
+
+      - name: Add build artifacts to nightly release
+        uses: pyTooling/Actions/releaser@main
+        with:
+          tag: nightly
+          rm: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: build/image/*.zip

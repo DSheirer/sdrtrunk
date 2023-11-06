@@ -53,17 +53,8 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-/**
- * Version naming conventions:
- *   Alpha: maj.min.patch-alpha-build
- *    Beta: maj.min.patch-beta-build
- * Release: maj.min.patch
- *
- * Note: this is so that the file names for the resultant release build products match the GitLab release asset
- * tag name, specifically the dashes inserted before and after the alpha/beta labels.
- * See: https://github.com/DSheirer/sdrtrunk/issues/1651
- */
-version = '0.6.0-beta-4'
+//Version is defined in gradle.properties so that we can CLI override it for nightly builds.
+version = project.findProperty('projectVersion')
 
 //Java 20 is required for this version of the Project Panama preview/incubator feature
 java {
