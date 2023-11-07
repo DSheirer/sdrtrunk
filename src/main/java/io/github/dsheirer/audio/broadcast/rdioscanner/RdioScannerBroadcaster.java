@@ -232,6 +232,9 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                 String talkgroupLabel = getTalkgroupLabel(audioRecording);
                 String talkgroupGroup = getTalkgroupGroup(audioRecording);
                 String systemLabel = getSystemLabel(audioRecording);
+                String path = audioRecording.getPath().toString();
+                // Remove TEMPORARY_STREAM_FILE_SUFFIX
+                String audioName = path.substring(path.substring(0, path.lastIndexOf("_")).lastIndexOf("_") + 1);
 
                 try
                 {
@@ -252,6 +255,7 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                         RdioScannerBuilder bodyBuilder = new RdioScannerBuilder();
                             bodyBuilder.addPart(FormField.KEY, getBroadcastConfiguration().getApiKey())
                             .addPart(FormField.SYSTEM, getBroadcastConfiguration().getSystemID())
+                            .addAudioName(audioName)
                             .addFile(audioBytes)
                             .addPart(FormField.DATE_TIME, timestampSeconds)
                             .addPart(FormField.TALKGROUP_ID, talkgroup)
