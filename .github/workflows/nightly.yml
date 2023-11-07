@@ -4,13 +4,16 @@ name: Nightly Release
 on:
   push:
     branches: [ master ]
+# Don't run nightly build for pull requests - uncomment to test changes to this action within scope of the PR review
+#  pull_request:
+#    branches: [ master ]
 
 jobs:
   nightly:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 20
         uses: actions/setup-java@v3
@@ -29,10 +32,16 @@ jobs:
         with:
           arguments: runtimeZipWindows -PprojectVersion=nightly
 
+      - name: Create Build Info file
+        run: |
+          echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
+
       - name: Add build artifacts to nightly release
         uses: pyTooling/Actions/releaser@main
         with:
           tag: nightly
           rm: false
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: build/image/*.zip
+          files: |
+            build/image/*.zip
+            build/image/build_info.txt

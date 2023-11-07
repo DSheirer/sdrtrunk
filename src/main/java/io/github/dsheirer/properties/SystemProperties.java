@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.properties;
 
 import io.github.dsheirer.gui.SDRTrunk;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.awt.*;
+import java.awt.Color;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,6 +34,8 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.Manifest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SystemProperties - provides an isolated instance of properties for the application
@@ -48,6 +47,7 @@ public class SystemProperties
     private static String DEFAULT_APP_ROOT = "SDRTrunk";
     private static String PROPERTIES_FILENAME = "SDRTrunk.properties";
     private static String MANIFEST_VERSION = "Implementation-Version";
+    private static String BUILD_TIMESTAMP = "Build-Timestamp";
 
     private static SystemProperties INSTANCE;
     private static Properties mProperties;
@@ -208,11 +208,19 @@ public class SystemProperties
             if(manifest != null)
             {
                 String version = manifest.getMainAttributes().getValue(MANIFEST_VERSION);
+                String timestamp = manifest.getMainAttributes().getValue(BUILD_TIMESTAMP);
 
                 if(version != null)
                 {
-                    sb.append(" v");
-                    sb.append(version);
+                    if(version.contains("nightly") && timestamp != null)
+                    {
+                        sb.append( " nightly - ").append(timestamp);
+                    }
+                    else
+                    {
+                        sb.append(" v");
+                        sb.append(version);
+                    }
                 }
             }
 
