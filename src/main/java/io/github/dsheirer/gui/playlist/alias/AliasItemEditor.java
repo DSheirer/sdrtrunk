@@ -362,7 +362,10 @@ public class AliasItemEditor extends Editor<Alias>
                 for(AliasID aliasID: getIdentifiersList().getItems())
                 {
                     //Create a copy of the identifier so that the alias and the editor don't have the same instance
-                    alias.addAliasID(AliasFactory.copyOf(aliasID));
+                    //and reset the overlap flag (if set) so that the alias list can reevaluate the overlap state.
+                    AliasID copy = AliasFactory.copyOf(aliasID);
+                    copy.setOverlap(false);
+                    alias.addAliasID(copy);
                 }
 
                 //Remove and replace alias actions

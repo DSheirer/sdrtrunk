@@ -123,7 +123,7 @@ public class R828DEmbeddedTuner extends R8xEmbeddedTuner
         }
         catch(UsbException e)
         {
-            throw new SourceException("R820TTunerController - exception while setting frequency [" + frequency + "] - " +
+            throw new SourceException("R828DTunerController - exception while setting frequency [" + frequency + "] - " +
                     e.getLocalizedMessage());
         }
         finally
