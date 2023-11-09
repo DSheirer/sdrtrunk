@@ -184,6 +184,7 @@ public class AliasFactory
         copy.setGroup(original.getGroup());
         copy.setColor(original.getColor());
         copy.setIconName(original.getIconName());
+        copy.setRecordable(original.isRecordable());
         return copy;
     }
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,12 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
-import java.util.List;
-
-import org.controlsfx.control.ToggleSwitch;
-
 import com.google.common.collect.Ordering;
-
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -49,6 +45,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.util.Callback;
+import org.controlsfx.control.ToggleSwitch;
 
 /**
  * Editor for multiple selected aliases providing limited options for changing attributes of multiple aliases
@@ -65,6 +62,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     private ToggleSwitch mMonitorAudioToggleSwitch;
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private Button mApplyMonitorButton;
+    private ToggleSwitch mRecordToggleSwitch;
+    private Button mApplyRecordButton;
 
     private BooleanProperty mChangeInProgressProperty;
     private ReadOnlyBooleanProperty mChangeInProgressROProperty;
@@ -143,6 +142,17 @@ public class AliasBulkEditor extends Editor<List<Alias>>
 
         GridPane.setConstraints(getApplyMonitorButton(), 4, row);
         gridPane.getChildren().add(getApplyMonitorButton());
+
+        Label recordLabel = new Label("Record");
+        GridPane.setHalignment(recordLabel, HPos.RIGHT);
+        GridPane.setConstraints(recordLabel, 0, ++row);
+        gridPane.getChildren().add(recordLabel);
+
+        GridPane.setConstraints(getRecordToggleSwitch(), 1, row);
+        gridPane.getChildren().add(getRecordToggleSwitch());
+
+        GridPane.setConstraints(getApplyRecordButton(), 4, row);
+        gridPane.getChildren().add(getApplyRecordButton());
 
         getChildren().add(gridPane);
     }
@@ -326,6 +336,19 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         return mMonitorAudioToggleSwitch;
     }
 
+    private ToggleSwitch getRecordToggleSwitch()
+    {
+        if(mRecordToggleSwitch == null)
+        {
+            mRecordToggleSwitch = new ToggleSwitch();
+            mRecordToggleSwitch.setSelected(false);
+            mRecordToggleSwitch.selectedProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mRecordToggleSwitch;
+    }
+
     private ComboBox<Integer> getMonitorPriorityComboBox()
     {
         if(mMonitorPriorityComboBox == null)
@@ -345,8 +368,6 @@ public class AliasBulkEditor extends Editor<List<Alias>>
 
         return mMonitorPriorityComboBox;
     }
-
-    private static int setCount = 0;
 
     private Button getApplyMonitorButton()
     {
@@ -378,7 +399,6 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                     for(Alias alias : getItem())
                     {
                         alias.setCallPriority(pri);
-                        //System.out.println(++setCount);
                     }
 
                     endChange();
@@ -387,6 +407,25 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         }
 
         return mApplyMonitorButton;
+    }
+
+    private Button getApplyRecordButton()
+    {
+        if(mApplyRecordButton == null)
+        {
+            mApplyRecordButton = new Button("Apply");
+            mApplyRecordButton.setOnAction(event -> {
+                startChange();
+                boolean record = getRecordToggleSwitch().isSelected();
+                for(Alias alias : getItem())
+                {
+                    alias.setRecordable(record);
+                }
+                endChange();
+            });
+        }
+
+        return mApplyRecordButton;
     }
 
     /**
