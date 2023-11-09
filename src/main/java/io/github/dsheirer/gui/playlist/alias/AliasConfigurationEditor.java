@@ -387,7 +387,7 @@ public class AliasConfigurationEditor extends SplitPane
             idsColumn.setCellValueFactory(new IdentifierCountCell());
 
             TableColumn<Alias, Boolean> errorsColumn = new TableColumn<>("Error");
-            errorsColumn.setPrefWidth(80);
+            errorsColumn.setPrefWidth(120);
             errorsColumn.setCellValueFactory(new PropertyValueFactory<>("overlap"));
             errorsColumn.setCellFactory(param ->
             {
