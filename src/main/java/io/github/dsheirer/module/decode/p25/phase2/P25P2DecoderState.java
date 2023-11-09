@@ -1059,6 +1059,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     {
         if(mCurrentCallEvent != null)
         {
+            //Refresh the identifier collection before we close out the event
+            mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
