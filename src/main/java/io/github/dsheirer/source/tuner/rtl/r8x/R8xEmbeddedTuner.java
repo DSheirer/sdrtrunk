@@ -45,7 +45,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     private static final byte VERSION = (byte) 49;
     protected static final int IF_FREQUENCY = 3570000;
     private static final Logger mLog = LoggerFactory.getLogger(R8xEmbeddedTuner.class);
-    private static int mVcoPowerRef = 1;
+    private int mVcoPowerRef = 1;
 
     /**
      * Shadow register is used to keep a cached (in-memory) copy of all registers, so that we don't have to read a
@@ -232,10 +232,11 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
         FrequencyDivider divider = FrequencyDivider.fromFrequency(frequency);
         int statusRegister4 = getStatusRegister(4, controlI2C);
         int vco_fine_tune = (statusRegister4 & 0x30) >> 4;
-        int div_num = divider.getDividerNumber(vco_fine_tune);
+        int div_num = divider.getDividerNumber(vco_fine_tune, mVcoPowerRef);
         writeRegister(Register.DIVIDER, (byte) (div_num << 5), controlI2C);
         /* Get the integral number for this divider and frequency */
         Integral integral = divider.getIntegral(frequency);
+        System.out.println("Using divider [" + divider + "] integral [" + integral + "] for [" + frequency + "]");
         writeRegister(Register.PLL, integral.getRegisterValue(), controlI2C);
         /* Calculate the sigma-delta modulator fractional setting.  If it's non-zero, power up the sdm and apply the
         fractional setting, otherwise turn it off */
@@ -984,17 +985,17 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
             mIntegralValue = integralValue;
         }
 
-        public int getDividerNumber(int vcoFineTune)
+        public int getDividerNumber(int vcoFineTune, int vcoPowerRef)
         {
-            if(vcoFineTune == mVcoPowerRef)
+            if(vcoFineTune == vcoPowerRef)
             {
                 return mDividerNumber;
             }
-            else if(vcoFineTune < mVcoPowerRef)
+            else if(vcoFineTune < vcoPowerRef)
             {
                 return mDividerNumber - 1;
             }
-            else if(vcoFineTune > mVcoPowerRef)
+            else if(vcoFineTune > vcoPowerRef)
             {
                 return mDividerNumber + 1;
             }
