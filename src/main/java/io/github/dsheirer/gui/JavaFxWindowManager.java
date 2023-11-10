@@ -164,27 +164,7 @@ public class JavaFxWindowManager extends Application
     public void shutdown()
     {
         MyEventBus.getGlobalEventBus().unregister(this);
-
-        if(mChannelMapStage != null)
-        {
-            mUserPreferences.getJavaFxPreferences().unmonitor(mChannelMapStage);
-        }
-
-        if(mIconManagerStage != null)
-        {
-            mUserPreferences.getJavaFxPreferences().unmonitor(mIconManagerStage);
-        }
-
-        if(mPlaylistStage != null)
-        {
-            mUserPreferences.getJavaFxPreferences().unmonitor(mPlaylistStage);
-        }
-
-        if(mUserPreferencesStage != null)
-        {
-            mUserPreferences.getJavaFxPreferences().unmonitor(mUserPreferencesStage);
-        }
-
+        mUserPreferences.getJavaFxPreferences().clearStageMonitors();
         Platform.exit();
     }
 
