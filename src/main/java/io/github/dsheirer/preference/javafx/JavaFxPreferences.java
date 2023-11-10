@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@
 package io.github.dsheirer.preference.javafx;
 
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.prefs.Preferences;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -27,11 +31,6 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.prefs.Preferences;
 
 /**
  * Manages user preferences for JavaFX elements (e.g. stages).
@@ -59,7 +58,7 @@ public class JavaFxPreferences
      */
     public void monitor(Stage stage, String key)
     {
-        mStageMonitors.remove(new StageMonitor(stage, key));
+        mStageMonitors.add(new StageMonitor(stage, key));
     }
 
     /**
@@ -78,6 +77,21 @@ public class JavaFxPreferences
                 it.remove();
                 next.dispose();
             }
+        }
+    }
+
+    /**
+     * Removes all stage monitors and prepares for shutdown.
+     */
+    public void clearStageMonitors()
+    {
+        Iterator<StageMonitor> it = mStageMonitors.iterator();
+
+        while(it.hasNext())
+        {
+            StageMonitor next = it.next();
+            it.remove();
+            next.dispose();
         }
     }
 
