@@ -365,7 +365,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * @param request containing channel and other details
      * @throws ChannelException if a source is not available for the channel
      */
-    private void startProcessing(ChannelStartProcessingRequest request) throws ChannelException
+    private synchronized void startProcessing(ChannelStartProcessingRequest request) throws ChannelException
     {
         Channel channel = request.getChannel();
 
