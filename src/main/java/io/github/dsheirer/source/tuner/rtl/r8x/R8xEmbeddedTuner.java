@@ -236,7 +236,6 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
         writeRegister(Register.DIVIDER, (byte) (div_num << 5), controlI2C);
         /* Get the integral number for this divider and frequency */
         Integral integral = divider.getIntegral(frequency);
-        System.out.println("Using divider [" + divider + "] integral [" + integral + "] for [" + frequency + "]");
         writeRegister(Register.PLL, integral.getRegisterValue(), controlI2C);
         /* Calculate the sigma-delta modulator fractional setting.  If it's non-zero, power up the sdm and apply the
         fractional setting, otherwise turn it off */
