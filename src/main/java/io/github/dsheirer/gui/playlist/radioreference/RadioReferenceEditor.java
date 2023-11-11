@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.RadioReferenceException;
+import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.Country;
 import io.github.dsheirer.rrapi.type.CountryInfo;
@@ -689,7 +690,11 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
                     Platform.runLater(() -> {
                         getCountySystemEditor().setSystems(countyInfo.getSystems());
-                        getCountyAgencyEditor().setAgencies(countyInfo.getAgencies());
+
+                        List<Agency> countyAgencies = countyInfo.getAgencies();
+                        Agency countyAgency = new CountyAgency(countyInfo);
+                        countyAgencies.add(countyAgency);
+                        getCountyAgencyEditor().setAgencies(countyAgencies);
                     });
                 }
                 catch(RadioReferenceException rre)

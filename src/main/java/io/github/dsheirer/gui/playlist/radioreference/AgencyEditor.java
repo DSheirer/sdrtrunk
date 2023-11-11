@@ -23,6 +23,7 @@ import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AgencyInfo;
+import io.github.dsheirer.rrapi.type.CountyInfo;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
@@ -158,8 +159,13 @@ public class AgencyEditor extends VBox
             ThreadPool.CACHED.submit(() -> {
                 try
                 {
-                    final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);
-                    Platform.runLater(() -> getAgencyFrequencyEditor().setCategories(agencyInfo.getCategories()));
+                    if (mLevel == Level.COUNTY && agency instanceof CountyAgency) {
+                        final CountyInfo countyInfo = mRadioReference.getService().getCountyInfo(-agency.getAgencyId());
+                        Platform.runLater(() -> getAgencyFrequencyEditor().setCategories(countyInfo.getCategories()));
+                    } else {
+                        final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);
+                        Platform.runLater(() -> getAgencyFrequencyEditor().setCategories(agencyInfo.getCategories()));
+                    }
                 }
                 catch(Throwable t)
                 {
@@ -196,11 +202,11 @@ public class AgencyEditor extends VBox
             {
                 return 0;
             }
-            else if(o1.getName() == null)
+            else if(o1.getName() == null || o2 instanceof CountyAgency)
             {
                 return 1;
             }
-            else if(o2.getName() == null)
+            else if(o2.getName() == null || o1 instanceof CountyAgency)
             {
                 return -1;
             }
