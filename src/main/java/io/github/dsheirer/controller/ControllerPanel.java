@@ -97,8 +97,8 @@ public class ControllerPanel extends JPanel
         mTabbedPane.addTab("Map", mMapPanel);
         mTabbedPane.addTab("Tuners", mTunerManagerPanel);
 
-        Icon gearIcon = IconFontSwing.buildIcon(FontAwesome.COG, 20, Color.DARK_GRAY);
-        mTabbedPane.addTab("Playlist Editor", gearIcon, new JLabel("Show Playlist Manager"));
+        Icon playIcon = IconFontSwing.buildIcon(FontAwesome.PLAY_CIRCLE_O, 20, Color.DARK_GRAY);
+        mTabbedPane.addTab("Playlist Editor", playIcon, new JLabel("Show Playlist Manager"));
         mSettingsTabIndex = mTabbedPane.getTabCount() - 1;
 
         //Set preferred size to influence the split between these panels
