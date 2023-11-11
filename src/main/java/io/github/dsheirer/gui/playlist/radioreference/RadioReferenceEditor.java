@@ -56,6 +56,7 @@ import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -691,9 +692,10 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                     Platform.runLater(() -> {
                         getCountySystemEditor().setSystems(countyInfo.getSystems());
 
-                        List<Agency> countyAgencies = countyInfo.getAgencies();
-                        Agency countyAgency = new CountyAgency(countyInfo);
-                        countyAgencies.add(countyAgency);
+                        // Make a new list so we don't add our CountyAgency to the original list of agencies
+                        List<Agency> countyAgencies = new ArrayList<Agency>();
+                        countyAgencies.add(new CountyAgency(countyInfo));
+                        countyAgencies.addAll(countyInfo.getAgencies());
                         getCountyAgencyEditor().setAgencies(countyAgencies);
                     });
                 }
