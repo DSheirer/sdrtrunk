@@ -244,9 +244,7 @@ public class JavaFxWindowManager extends Application
         else
         {
             execute(() -> {
-                getJmbeEditorStage().show();
-                getJmbeEditorStage().requestFocus();
-                getJmbeEditorStage().toFront();
+                restoreStage(getJmbeEditorStage());
                 getJmbeEditor().process(request);
             });
         }
@@ -317,9 +315,7 @@ public class JavaFxWindowManager extends Application
         execute(() -> {
             try
             {
-                getPlaylistStage().show();
-                getPlaylistStage().requestFocus();
-                getPlaylistStage().toFront();
+                restoreStage(getPlaylistStage());
                 getPlaylistEditor().process(request);
             }
             catch(Throwable t)
@@ -367,9 +363,7 @@ public class JavaFxWindowManager extends Application
     public void process(final ViewUserPreferenceEditorRequest request)
     {
         execute(() -> {
-            getUserPreferencesStage().show();
-            getUserPreferencesStage().requestFocus();
-            getUserPreferencesStage().toFront();
+            restoreStage(getUserPreferencesStage());
             getUserPreferencesEditor().process(request);
         });
     }
@@ -408,11 +402,7 @@ public class JavaFxWindowManager extends Application
     @Subscribe
     public void process(final ViewIconManagerRequest request)
     {
-        execute(() -> {
-            getIconManagerStage().show();
-            getIconManagerStage().requestFocus();
-            getIconManagerStage().toFront();
-        });
+        execute(() -> restoreStage(getIconManagerStage()));
     }
 
     /**
@@ -422,9 +412,7 @@ public class JavaFxWindowManager extends Application
     public void process(final ViewChannelMapEditorRequest request)
     {
         execute(() -> {
-            getChannelMapStage().show();
-            getChannelMapStage().requestFocus();
-            getChannelMapStage().toFront();
+            restoreStage(getChannelMapStage());
             getChannelMapEditor().process(request);
         });
     }
@@ -435,11 +423,19 @@ public class JavaFxWindowManager extends Application
     @Subscribe
     public void process(final ViewRecordingViewerRequest request)
     {
-        execute(() -> {
-            getRecordingViewerStage().show();
-            getRecordingViewerStage().requestFocus();
-            getRecordingViewerStage().toFront();
-        });
+        execute(() -> restoreStage(getRecordingViewerStage()));
+    }
+
+    /**
+     * Restores the stage to previous size and location.
+     * @param stage to restore.
+     */
+    private void restoreStage(Stage stage)
+    {
+        stage.setIconified(false);
+        stage.show();
+        stage.requestFocus();
+        stage.toFront();
     }
 
     @Override
