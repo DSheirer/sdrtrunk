@@ -158,9 +158,12 @@ public class AgencyFrequencyEditor extends GridPane
 
         if(categories != null && !categories.isEmpty())
         {
-            getCategoryComboBox().getItems().add(ALL_CATEGORIES);
+            // Only allow the combined list of all categories if there aren't that many
+            if (categories.size() < 10) {
+                categories.add(0, ALL_CATEGORIES);
+            }
             getCategoryComboBox().getItems().addAll(categories);
-            getCategoryComboBox().getSelectionModel().select(ALL_CATEGORIES);
+            getCategoryComboBox().getSelectionModel().select(categories.get(0));
         }
         else
         {
