@@ -763,7 +763,7 @@ public class SpectralDisplayPanel extends JPanel
                 if(mTuner != null)
                 {
                     contextMenu.add(new JSeparator());
-                    contextMenu.add(new ClearTunerMenuItem(SpectralDisplayPanel.this));
+                    contextMenu.add(new DisableSpectrumWaterfallMenuItem(SpectralDisplayPanel.this));
                 }
 
                 boolean separatorAdded = false;
