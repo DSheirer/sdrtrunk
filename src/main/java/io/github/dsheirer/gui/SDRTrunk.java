@@ -156,18 +156,10 @@ public class SDRTrunk implements Listener<TunerEvent>
             }
         }
 
-        //Setup the application home directory
-        Path home = getHomePath();
-
         ThreadPool.logSettings();
 
-        mLog.info("Home path: " + home.toString());
-
         //Load properties file
-        if(home != null)
-        {
-            loadProperties(home);
-        }
+        loadProperties();
 
         //Log current properties setting
         SystemProperties.getInstance().logCurrentSettings();
@@ -632,34 +624,30 @@ public class SDRTrunk implements Listener<TunerEvent>
      * Loads the application properties file from the user's home directory,
      * creating the properties file for the first-time, if necessary
      */
-    private void loadProperties(Path homePath)
+    private void loadProperties()
     {
-        Path propsPath = homePath.resolve("SDRTrunk.properties");
+        Path propertiesPath = mUserPreferences.getDirectoryPreference().getDirectoryApplicationRoot().resolve("SDRTrunk.properties");
 
-        if(!Files.exists(propsPath))
+        if(!Files.exists(propertiesPath))
         {
             try
             {
-                mLog.info("SDRTrunk - creating application properties file [" +
-                    propsPath.toAbsolutePath() + "]");
-
-                Files.createFile(propsPath);
+                mLog.info("SDRTrunk - creating application properties file [" + propertiesPath.toAbsolutePath() + "]");
+                Files.createFile(propertiesPath);
             }
             catch(IOException e)
             {
-                mLog.error("SDRTrunk - couldn't create application properties "
-                    + "file [" + propsPath.toAbsolutePath(), e);
+                mLog.error("SDRTrunk - couldn't create application properties file [" + propertiesPath.toAbsolutePath(), e);
             }
         }
 
-        if(Files.exists(propsPath))
+        if(Files.exists(propertiesPath))
         {
-            SystemProperties.getInstance().load(propsPath);
+            SystemProperties.getInstance().load(propertiesPath);
         }
         else
         {
-            mLog.error("SDRTrunk - couldn't find or recreate the SDRTrunk " +
-                "application properties file");
+            mLog.error("SDRTrunk - couldn't find or recreate the SDRTrunk application properties file");
         }
     }
 
