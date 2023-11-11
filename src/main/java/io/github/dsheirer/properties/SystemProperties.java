@@ -161,10 +161,6 @@ public class SystemProperties
         {
             mLog.info("SystemProperties - no properties file loaded - using defaults");
         }
-        else
-        {
-            mLog.info("SystemProperties - application properties loaded [" + mPropertiesPath.toString() + "]");
-        }
     }
 
     /**
