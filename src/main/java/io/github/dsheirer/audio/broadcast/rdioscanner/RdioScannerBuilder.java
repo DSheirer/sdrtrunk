@@ -120,7 +120,7 @@ public class RdioScannerBuilder
         }
         StringBuilder sb= new StringBuilder();
         sb.append(DASH_DASH).append(boundary).append("\r\n");
-        sb.append("Content-Disposition: form-data; filename =\"").append(audioName);
+        sb.append("Content-Disposition: form-data; filename=\"").append(audioName);
         sb.append("\"; name=\"").append("audio").append("\"\r\n\r\n");
         return sb.toString();
 
