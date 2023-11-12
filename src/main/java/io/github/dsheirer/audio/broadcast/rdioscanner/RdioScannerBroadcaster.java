@@ -270,7 +270,6 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                             .uri(URI.create(getBroadcastConfiguration().getHost()))
                             .header(HttpHeaders.CONTENT_TYPE, MULTIPART_FORM_DATA + "; boundary=" + bodyBuilder.getBoundary())
                             .header(HttpHeaders.USER_AGENT, "sdrtrunk")
-                            .header(HttpHeaders.CONTENT_TYPE, "audio/mpeg")
                             .POST(bodyBuilder.build())
                             .build();
 
