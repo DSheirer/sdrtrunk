@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,12 @@ package io.github.dsheirer.preference.directory;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.prefs.Preferences;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User preferences for directories
@@ -37,6 +36,9 @@ public class DirectoryPreference extends Preference
 {
     private final static Logger mLog = LoggerFactory.getLogger(DirectoryPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(DirectoryPreference.class);
+
+    private static final int DEFAULT_USAGE_THRESHOLD_RECORDINGS_MB = 2000;
+    private static final int DEFAULT_USAGE_THRESHOLD_EVENT_LOGS_MB = 200;
 
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
     private static final String DIRECTORY_APPLICATION_LOG = "logs";
@@ -57,6 +59,8 @@ public class DirectoryPreference extends Preference
     private static final String PREFERENCE_KEY_DIRECTORY_RECORDING = "directory.recording";
     private static final String PREFERENCE_KEY_DIRECTORY_SCREEN_CAPTURE = "directory.screen.capture";
     private static final String PREFERENCE_KEY_DIRECTORY_STREAMING = "directory.streaming";
+    private static final String PREFERENCE_KEY_DIRECTORY_MAX_USAGE_RECORDINGS = "directory.max.usage.recordings";
+    private static final String PREFERENCE_KEY_DIRECTORY_MAX_USAGE_EVENT_LOGS = "directory.max.usage.event.logs";
 
     private Path mDirectoryApplicationRoot;
     private Path mDirectoryApplicationLogs;
@@ -67,6 +71,8 @@ public class DirectoryPreference extends Preference
     private Path mDirectoryRecording;
     private Path mDirectoryScreenCapture;
     private Path mDirectoryStreaming;
+    private Integer mDirectoryMaxUsageRecordings;
+    private Integer mDirectoryMaxUsageEventLogs;
 
     /**
      * Constructs this preference with an update listener
@@ -125,6 +131,58 @@ public class DirectoryPreference extends Preference
         mDirectoryRecording = null;
         mDirectoryScreenCapture = null;
         mDirectoryStreaming = null;
+    }
+
+    /**
+     * User-specified maximum drive space usage for the recording directory.
+     * @return max usage threshold in MB.
+     */
+    public int getDirectoryMaxUsageRecordings()
+    {
+        if(mDirectoryMaxUsageRecordings == null)
+        {
+            mDirectoryMaxUsageRecordings = mPreferences.getInt(PREFERENCE_KEY_DIRECTORY_MAX_USAGE_RECORDINGS,
+                    DEFAULT_USAGE_THRESHOLD_RECORDINGS_MB);
+        }
+
+        return mDirectoryMaxUsageRecordings;
+    }
+
+    /**
+     * Sets the threshold for maximum drive space usage for the recordings directory.
+     * @param thresholdMB threshold in MB
+     */
+    public void setDirectoryMaxUsageRecordings(int thresholdMB)
+    {
+        mPreferences.putInt(PREFERENCE_KEY_DIRECTORY_MAX_USAGE_RECORDINGS, thresholdMB);
+        mDirectoryMaxUsageRecordings = thresholdMB;
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * User-specified maximum drive space usage for the event logs directory.
+     * @return max usage threshold in MB.
+     */
+    public int getDirectoryMaxUsageEventLogs()
+    {
+        if(mDirectoryMaxUsageEventLogs == null)
+        {
+            mDirectoryMaxUsageEventLogs = mPreferences.getInt(PREFERENCE_KEY_DIRECTORY_MAX_USAGE_EVENT_LOGS,
+                    DEFAULT_USAGE_THRESHOLD_EVENT_LOGS_MB);
+        }
+
+        return mDirectoryMaxUsageEventLogs;
+    }
+
+    /**
+     * Sets the threshold for maximum drive space usage for the event logs directory.
+     * @param thresholdMB threshold in MB
+     */
+    public void setDirectoryMaxUsageEventLogs(int thresholdMB)
+    {
+        mPreferences.putInt(PREFERENCE_KEY_DIRECTORY_MAX_USAGE_EVENT_LOGS, thresholdMB);
+        mDirectoryMaxUsageEventLogs = thresholdMB;
+        notifyPreferenceUpdated();
     }
 
     /**

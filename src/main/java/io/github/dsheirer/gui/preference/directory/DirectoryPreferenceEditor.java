@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
+import java.io.File;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -31,6 +32,7 @@ import javafx.geometry.Orientation;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Spinner;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -38,8 +40,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 
 /**
@@ -96,6 +96,9 @@ public class DirectoryPreferenceEditor extends HBox
     private Button mChangeStreamingButton;
     private Button mResetStreamingButton;
     private Label mStreamingPathLabel;
+
+    private Spinner<Integer> mRecordingSpinner;
+    private Spinner<Integer> mEventLogSpinner;
 
     public DirectoryPreferenceEditor(UserPreferences userPreferences)
     {
@@ -247,9 +250,55 @@ public class DirectoryPreferenceEditor extends HBox
 
             GridPane.setMargin(getResetStreamingButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetStreamingButton(), 3, row++);
+
+            Label monitorLabel = new Label("File storage usage monitoring - maximum size thresholds (MB)");
+            GridPane.setMargin(monitorLabel, new Insets(15, 0, 2, 0));
+            mEditorPane.add(monitorLabel, 0, row++, 4, 1);
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row++, 4, 1);
+
+            mEditorPane.add(new Label("Event Logs"), 0, row);
+            GridPane.setMargin(getEventLogSpinner(), new Insets(2, 2, 2, 0));
+            mEditorPane.add(getEventLogSpinner(), 1, row++);
+
+            mEditorPane.add(new Label("Recordings"), 0, row);
+            GridPane.setMargin(getRecordingSpinner(), new Insets(2, 2, 2, 0));
+            mEditorPane.add(getRecordingSpinner(), 1, row);
         }
 
         return mEditorPane;
+    }
+
+    /**
+     * Recording directory maximum size threshold spinner
+     * @return spinner
+     */
+    private Spinner<Integer> getRecordingSpinner()
+    {
+        if(mRecordingSpinner == null)
+        {
+            mRecordingSpinner = new Spinner<>(100, Integer.MAX_VALUE, mDirectoryPreference.getDirectoryMaxUsageRecordings(), 100);
+            mRecordingSpinner.valueProperty().addListener((observable, oldValue, newValue) -> mDirectoryPreference
+                    .setDirectoryMaxUsageRecordings(newValue));
+        }
+
+        return mRecordingSpinner;
+    }
+
+    /**
+     * Event log directory maximum size threshold spinner
+     * @return spinner
+     */
+    private Spinner<Integer> getEventLogSpinner()
+    {
+        if(mEventLogSpinner == null)
+        {
+            mEventLogSpinner = new Spinner<>(100, Integer.MAX_VALUE, mDirectoryPreference.getDirectoryMaxUsageEventLogs(), 100);
+            mEventLogSpinner.setEditable(true);
+            mEventLogSpinner.valueProperty().addListener((observable, oldValue, newValue) -> mDirectoryPreference
+                    .setDirectoryMaxUsageEventLogs(newValue));
+        }
+
+        return mEventLogSpinner;
     }
 
     private Label getApplicationRootLabel()
