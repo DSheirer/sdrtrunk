@@ -41,6 +41,8 @@ import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
 import io.github.dsheirer.module.log.EventLogManager;
+import io.github.dsheirer.monitor.ResourceMonitor;
+import io.github.dsheirer.monitor.StatusBox;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -90,6 +92,7 @@ public class JavaFxWindowManager extends Application
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
     private Stage mRecordingViewerStage;
+    private JFXPanel mStatusPanel;
 
     /**
      * Constructs an instance.  Note: this constructor is used for Swing applications.
@@ -116,6 +119,27 @@ public class JavaFxWindowManager extends Application
         mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
         mPlaylistManager.init();
         setup();
+    }
+
+    /**
+     * Creates or accesses the JavaFX status panel, used by the main application GUI.
+     * @param resourceMonitor for statistics
+     * @return JFXPanel accessible on Swing thread that delegates JavaFX scene creation to the FX event thread.
+     */
+    public JFXPanel getStatusPanel(ResourceMonitor resourceMonitor)
+    {
+        if(mStatusPanel == null)
+        {
+            mStatusPanel = new JFXPanel();
+
+            //JFXPanel has to be populated on the FX event thread
+            Platform.runLater(() -> {
+                Scene scene = new Scene(new StatusBox(resourceMonitor));
+                mStatusPanel.setScene(scene);
+            });
+        }
+
+        return mStatusPanel;
     }
 
     private void setup()

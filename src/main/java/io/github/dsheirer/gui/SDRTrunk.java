@@ -43,6 +43,7 @@ import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
+import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
@@ -68,7 +69,6 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -82,6 +82,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
 import javafx.scene.control.ButtonType;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -128,6 +129,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private UserPreferences mUserPreferences = new UserPreferences();
     private TunerManager mTunerManager;
     private ApplicationLog mApplicationLog;
+    private ResourceMonitor mResourceMonitor;
+    private JFXPanel mStatusPanel;
 
     private String mTitle;
 
@@ -140,6 +143,8 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
+
+        mResourceMonitor = new ResourceMonitor(mUserPreferences);
 
         String operatingSystem = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
 
@@ -316,7 +321,7 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void initGUI()
     {
-        mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
+        mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill][]"));
 
         /**
          * Setup main JFrame window
@@ -382,6 +387,10 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mMainGui.add(mSplitPane, "cell 0 0,span,grow");
 
+        mResourceMonitor.start();
+        mStatusPanel = mJavaFxWindowManager.getStatusPanel(mResourceMonitor);
+        mMainGui.add(mStatusPanel, "span,growx");
+
         /**
          * Menu items
          */
@@ -392,14 +401,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         menuBar.add(fileMenu);
 
         JMenuItem exitMenu = new JMenuItem("Exit");
-        exitMenu.addActionListener(
-            new ActionListener()
-            {
-                public void actionPerformed(ActionEvent event)
-                {
-                    processShutdown();
-                    System.exit(0);
-                }
+        exitMenu.addActionListener(event -> {
+                processShutdown();
+                System.exit(0);
             }
         );
 
@@ -571,6 +575,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
         mAudioRecordingManager.stop();
+        mResourceMonitor.stop();
 
         mLog.info("Stopping spectral display ...");
         mSpectralPanel.clearTuner();
@@ -742,14 +747,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
             setSelected(mBroadcastStatusPanel != null);
 
-            addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    toggleBroadcastStatusPanelVisibility();
-                    setSelected(mBroadcastStatusVisible);
-                }
+            addActionListener(e -> {
+                toggleBroadcastStatusPanelVisibility();
+                setSelected(mBroadcastStatusVisible);
             });
         }
     }
