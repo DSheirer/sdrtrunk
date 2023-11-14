@@ -460,6 +460,9 @@ public class JavaFxWindowManager extends Application
         stage.show();
         stage.requestFocus();
         stage.toFront();
+        stage.setMinHeight(stage.getHeight());
+        stage.setMinWidth(stage.getWidth());
+        // System.out.println("Stage [" + stage.getTitle() + "] restored - width[" + stage.getWidth() + "] height [" + stage.getHeight() + "]");
     }
 
     @Override
