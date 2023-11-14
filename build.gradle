@@ -229,7 +229,8 @@ def configure(org.beryx.runtime.RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.crypto.ec - needed for HTTPS connections (broadcastify calls & map tile server)
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
-    rt.extension.addModules('jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility')
+    //java.management for JVM resource monitoring
+    rt.extension.addModules('jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management')
 
     //Use auto-detected modules and 'add' any specified modules.
     rt.extension.additive.set(true)
