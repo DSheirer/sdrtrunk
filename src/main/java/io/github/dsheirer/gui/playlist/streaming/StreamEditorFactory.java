@@ -40,6 +40,8 @@ public class StreamEditorFactory
                 return new BroadcastifyStreamEditor(playlistManager);
             case RDIOSCANNER_CALL:
                 return new RdioScannerEditor(playlistManager);
+            case OPENMHZ:
+                return new OpenMHzEditor(playlistManager);
             case BROADCASTIFY_CALL:
                 return new BroadcastifyCallEditor(playlistManager);
             case ICECAST_HTTP:
