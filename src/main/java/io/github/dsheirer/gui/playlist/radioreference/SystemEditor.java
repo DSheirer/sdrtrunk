@@ -294,7 +294,11 @@ public class SystemEditor extends VBox
                     {
                         CountyInfo countyInfo = null;
 
-                        if(site.getCountyId() > 0)
+                        int countyId = site.getCountyId();
+
+                        //Temporary sites that have been added to a system where the county/location is unknown, can
+                        //have a county ID of 99,999 as observed from API (undocumented).
+                        if(countyId > 0 && countyId != 99999)
                         {
                             countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
                         }
