@@ -31,8 +31,10 @@ import java.nio.file.Path;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -64,6 +66,7 @@ public class ResourceMonitor
     private DoubleProperty mJavaMemoryUsedPercentage = new SimpleDoubleProperty();
     private DoubleProperty mSystemMemoryUsedPercentage = new SimpleDoubleProperty();
     private DoubleProperty mCpuPercentage = new SimpleDoubleProperty();
+    private BooleanProperty mCpuAvailable = new SimpleBooleanProperty();
     private DoubleProperty mDirectoryUsePercentEventLogs = new SimpleDoubleProperty();
     private DoubleProperty mDirectoryUsePercentRecordings = new SimpleDoubleProperty();
     private StringProperty mFileSizeEventLogs = new SimpleStringProperty();
@@ -143,7 +146,8 @@ public class ResourceMonitor
             mMemoryUsed.set(mMemoryAllocated.getValue() - Runtime.getRuntime().freeMemory());
             mJavaMemoryUsedPercentage.set((double)mMemoryUsed.get() / (double)mMemoryAllocated.get());
             mSystemMemoryUsedPercentage.set((double)mMemoryAllocated.get() / (double)mMemoryTotal.get());
-            mCpuPercentage.set(loadFinal);
+            mCpuPercentage.set(loadFinal > 0 ? loadFinal : 0);
+            mCpuAvailable.set(loadFinal >= 0);
         });
     }
 
@@ -228,6 +232,15 @@ public class ResourceMonitor
     public DoubleProperty cpuPercentageProperty()
     {
         return mCpuPercentage;
+    }
+
+    /**
+     * Indicates if the CPU usage percentage value is available on this operating system.
+     * @return false when the CPU load value is a negative value, indicating that the JVM for this OS doesn't support it.
+     */
+    public BooleanProperty cpuAvailableProperty()
+    {
+        return mCpuAvailable;
     }
 
     /**
