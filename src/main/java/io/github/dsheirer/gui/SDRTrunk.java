@@ -81,6 +81,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.prefs.Preferences;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.control.ButtonType;
@@ -107,14 +108,19 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
+    private Preferences mPreferences = Preferences.userNodeForPackage(SDRTrunk.class);
 
-    private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
+    private static final String PREFERENCE_BROADCAST_STATUS_VISIBLE = "sdrtrunk.broadcast.status.visible";
+    private static final String PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE = "sdrtrunk.now.playing.details.visible";
+    private static final String PREFERENCE_RESOURCE_STATUS_VISIBLE = "sdrtrunk.resource.status.visible";
     private static final String BASE_WINDOW_NAME = "sdrtrunk.main.window";
     private static final String CONTROLLER_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".control.panel";
     private static final String SPECTRAL_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".spectral.panel";
     private static final String WINDOW_FRAME_IDENTIFIER = BASE_WINDOW_NAME + ".frame";
 
     private boolean mBroadcastStatusVisible;
+    private boolean mResourceStatusVisible;
+    private boolean mNowPlayingDetailsVisible;
     private AudioRecordingManager mAudioRecordingManager;
     private AudioStreamingManager mAudioStreamingManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
@@ -130,7 +136,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private TunerManager mTunerManager;
     private ApplicationLog mApplicationLog;
     private ResourceMonitor mResourceMonitor;
-    private JFXPanel mStatusPanel;
+    private JFXPanel mResourceStatusPanel;
 
     private String mTitle;
 
@@ -211,10 +217,12 @@ public class SDRTrunk implements Listener<TunerEvent>
         MapService mapService = new MapService(mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
+        mNowPlayingDetailsVisible = mPreferences.getBoolean(PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE, true);
+
         if(!GraphicsEnvironment.isHeadless())
         {
             mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
-                    mSettingsManager, mTunerManager, mUserPreferences);
+                    mSettingsManager, mTunerManager, mUserPreferences, mNowPlayingDetailsVisible);
         }
 
         mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, mTunerManager.getDiscoveredTunerModel());
@@ -321,7 +329,7 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void initGUI()
     {
-        mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill][]"));
+        mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]0[shrink 0]"));
 
         /**
          * Setup main JFrame window
@@ -377,7 +385,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mSplitPane.add(mSpectralPanel);
         mSplitPane.add(mControllerPanel);
 
-        mBroadcastStatusVisible = SystemProperties.getInstance().get(PROPERTY_BROADCAST_STATUS_VISIBLE, false);
+        mBroadcastStatusVisible = mPreferences.getBoolean(PREFERENCE_BROADCAST_STATUS_VISIBLE, false);
 
         //Show broadcast status panel when user requests - disabled by default
         if(mBroadcastStatusVisible)
@@ -388,8 +396,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         mMainGui.add(mSplitPane, "cell 0 0,span,grow");
 
         mResourceMonitor.start();
-        mStatusPanel = mJavaFxWindowManager.getStatusPanel(mResourceMonitor);
-        mMainGui.add(mStatusPanel, "span,growx");
+        mResourceStatusVisible = mPreferences.getBoolean(PREFERENCE_RESOURCE_STATUS_VISIBLE, true);
+        if(mResourceStatusVisible)
+        {
+            mMainGui.add(getResourceStatusPanel(), "span,growx");
+        }
 
         /**
          * Menu items
@@ -519,7 +530,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new TunersMenu());
         viewMenu.add(new JSeparator());
         viewMenu.add(new DisableSpectrumWaterfallMenuItem(mSpectralPanel));
-        viewMenu.add(new BroadcastStatusVisibleMenuItem(mControllerPanel));
+        viewMenu.add(new NowPlayingChannelDetailsVisibleMenuItem());
+        viewMenu.add(new BroadcastStatusVisibleMenuItem());
+        viewMenu.add(new ResourceStatusVisibleMenuItem());
 
         menuBar.add(viewMenu);
 
@@ -621,7 +634,54 @@ public class SDRTrunk implements Listener<TunerEvent>
             mMainGui.revalidate();
         });
 
-        SystemProperties.getInstance().set(PROPERTY_BROADCAST_STATUS_VISIBLE, mBroadcastStatusVisible);
+        mPreferences.putBoolean(PREFERENCE_BROADCAST_STATUS_VISIBLE, mBroadcastStatusVisible);
+    }
+
+    /**
+     * Lazy constructor for resource status panel
+     */
+    private JFXPanel getResourceStatusPanel()
+    {
+
+        if(mResourceStatusPanel == null)
+        {
+            mResourceStatusPanel = mJavaFxWindowManager.getStatusPanel(mResourceMonitor);
+        }
+
+        return mResourceStatusPanel;
+    }
+
+    /**
+     * Toggles visibility of the resource status panel at the bottom of the main UI window
+     */
+    private void toggleResourceStatusPanelVisibility()
+    {
+        mResourceStatusVisible = !mResourceStatusVisible;
+
+        EventQueue.invokeLater(() -> {
+            if(mResourceStatusVisible)
+            {
+                mMainGui.add(getResourceStatusPanel(), "span,growx");
+            }
+            else
+            {
+                mMainGui.remove(getResourceStatusPanel());
+            }
+
+            mMainGui.revalidate();
+        });
+
+        mPreferences.putBoolean(PREFERENCE_RESOURCE_STATUS_VISIBLE, mResourceStatusVisible);
+    }
+
+    /**
+     * Toggles visibility of the Now Playing channel details panel
+     */
+    private void toggleNowPlayingDetailsPanelVisibility()
+    {
+        mNowPlayingDetailsVisible = !mNowPlayingDetailsVisible;
+        mControllerPanel.getNowPlayingPanel().setDetailTabsVisible(mNowPlayingDetailsVisible);
+        mPreferences.putBoolean(PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE, mNowPlayingDetailsVisible);
     }
 
 
@@ -735,21 +795,50 @@ public class SDRTrunk implements Listener<TunerEvent>
         }
     }
 
+    /**
+     * Broadcast status panel visible toggle menu item
+     */
     public class BroadcastStatusVisibleMenuItem extends JCheckBoxMenuItem
     {
-        private ControllerPanel mControllerPanel;
-
-        public BroadcastStatusVisibleMenuItem(ControllerPanel controllerPanel)
+        public BroadcastStatusVisibleMenuItem()
         {
             super("Show Streaming Status");
-
-            mControllerPanel = controllerPanel;
-
-            setSelected(mBroadcastStatusPanel != null);
-
+            setSelected(mBroadcastStatusVisible);
             addActionListener(e -> {
                 toggleBroadcastStatusPanelVisibility();
                 setSelected(mBroadcastStatusVisible);
+            });
+        }
+    }
+
+    /**
+     * Resource status panel visible toggle menu item
+     */
+    public class ResourceStatusVisibleMenuItem extends JCheckBoxMenuItem
+    {
+        public ResourceStatusVisibleMenuItem()
+        {
+            super("Show Resource Status");
+            setSelected(mResourceStatusVisible);
+            addActionListener(e -> {
+                toggleResourceStatusPanelVisibility();
+                setSelected(mResourceStatusVisible);
+            });
+        }
+    }
+
+    /**
+     * Now Playing channel details visible toggle menu item
+     */
+    public class NowPlayingChannelDetailsVisibleMenuItem extends JCheckBoxMenuItem
+    {
+        public NowPlayingChannelDetailsVisibleMenuItem()
+        {
+            super("Show Now Playing Channel Details");
+            setSelected(mNowPlayingDetailsVisible);
+            addActionListener(e -> {
+                toggleNowPlayingDetailsPanelVisibility();
+                setSelected(mNowPlayingDetailsVisible);
             });
         }
     }

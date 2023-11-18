@@ -23,6 +23,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 
 /**
@@ -39,7 +40,7 @@ public class StatusBox extends HBox
     public StatusBox(ResourceMonitor resourceMonitor)
     {
         mResourceMonitor = resourceMonitor;
-        setPadding(new Insets(0, 0, 2, 0));
+        setPadding(new Insets(1, 0, 1, 0));
         setSpacing(6);
         Label cpuLabel = new Label("CPU:");
         cpuLabel.setPadding(new Insets(0, 0, 0, 10));
@@ -48,6 +49,8 @@ public class StatusBox extends HBox
 
         ProgressBar cpuIndicator = new ProgressBar();
         cpuIndicator.progressProperty().bind(mResourceMonitor.cpuPercentageProperty());
+        cpuIndicator.disableProperty().bind(mResourceMonitor.cpuAvailableProperty().not());
+        cpuIndicator.setTooltip(new Tooltip("Java process CPU usage. Disabled if the CPU loading is not available from the OS"));
         getChildren().add(cpuIndicator);
 
         Label memoryLabel = new Label("Allocated Memory:");
@@ -56,6 +59,7 @@ public class StatusBox extends HBox
 
         ProgressBar memoryBar = new ProgressBar();
         memoryBar.progressProperty().bind(mResourceMonitor.systemMemoryUsedPercentageProperty());
+        memoryBar.setTooltip(new Tooltip("Percentage of total system memory that Java has reserved from the Operating System."));
         getChildren().add(memoryBar);
 
         Label javaMemoryLabel = new Label("Used Memory:");
@@ -64,6 +68,7 @@ public class StatusBox extends HBox
 
         ProgressBar javaMemoryBar = new ProgressBar();
         javaMemoryBar.progressProperty().bind(mResourceMonitor.javaMemoryUsedPercentageProperty());
+        javaMemoryBar.setTooltip(new Tooltip("Percentage of allocated memory that Java/sdrtrunk is currently using. This value fluctuates as Java manages memory and garbage collection"));
         getChildren().add(javaMemoryBar);
 
         Label eventLogsLabel = new Label("Event Logs:");
@@ -72,6 +77,7 @@ public class StatusBox extends HBox
 
         ProgressBar eventLogsBar = new ProgressBar();
         eventLogsBar.progressProperty().bind(mResourceMonitor.directoryUsePercentEventLogsProperty());
+        eventLogsBar.setTooltip(new Tooltip("Percentage of drive space used for event logs based on user-specified max threshold in user preferences"));
         getChildren().add(eventLogsBar);
 
         Label eventLogsSizeLabel = new Label();
@@ -86,6 +92,7 @@ public class StatusBox extends HBox
 
         ProgressBar recordingsBar = new ProgressBar();
         recordingsBar.progressProperty().bind(mResourceMonitor.directoryUsePercentRecordingsProperty());
+        recordingsBar.setTooltip(new Tooltip("Percentage of drive space used for recordings based on user-specified max threshold in user preferences"));
         getChildren().add(recordingsBar);
 
         Label recordingsSizeLabel = new Label();
