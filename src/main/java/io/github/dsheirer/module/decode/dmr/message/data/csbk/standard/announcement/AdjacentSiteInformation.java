@@ -151,6 +151,10 @@ public class AdjacentSiteInformation extends Announcement
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" ").append(getSystemIdentityCode().getModel());
         sb.append(" NEIGHBOR NETWORK:").append(getNeighborSystemIdentityCode().getNetwork());
         sb.append(" SITE:").append(getNeighborSystemIdentityCode().getSite());
