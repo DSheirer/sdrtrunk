@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,11 @@ package io.github.dsheirer.gui.playlist.alias;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.playlist.PlaylistManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -44,15 +48,11 @@ import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 public class AliasViewByRecordingEditor extends VBox
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasViewByRecordingEditor.class);
-
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
     private ComboBox<String> mAliasListNameComboBox;
     private HBox mTopBox;
     private TextField mSearchField;
@@ -67,10 +67,13 @@ public class AliasViewByRecordingEditor extends VBox
     private AvailablePredicate mNoRecordPredicate;
     private SelectedPredicate mRecordPredicate;
 
-    public AliasViewByRecordingEditor(PlaylistManager playlistManager)
+    public AliasViewByRecordingEditor()
     {
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         VBox buttonBox = new VBox();
         buttonBox.setMaxHeight(Double.MAX_VALUE);
         buttonBox.setAlignment(Pos.CENTER);
@@ -105,8 +108,7 @@ public class AliasViewByRecordingEditor extends VBox
         if(mAliasListNameComboBox == null)
         {
             Predicate<String> filterPredicate = s -> !s.contentEquals(AliasModel.NO_ALIAS_LIST);
-            FilteredList<String> filteredChannelList =
-                new FilteredList<>(mPlaylistManager.getAliasModel().aliasListNames(), filterPredicate);
+            FilteredList<String> filteredChannelList = new FilteredList<>(mAliasModel.aliasListNames(), filterPredicate);
             mAliasListNameComboBox = new ComboBox<>(filteredChannelList);
             mAliasListNameComboBox.setPadding(new Insets(0,10,0,0));
             mAliasListNameComboBox.getSelectionModel().selectedItemProperty()
@@ -126,8 +128,7 @@ public class AliasViewByRecordingEditor extends VBox
     {
         if(mNoRecordFilteredList == null)
         {
-            mNoRecordFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
-                getNoRecordPredicate());
+            mNoRecordFilteredList = new FilteredList<>(mAliasModel.aliasList(), getNoRecordPredicate());
         }
 
         return mNoRecordFilteredList;
@@ -137,8 +138,7 @@ public class AliasViewByRecordingEditor extends VBox
     {
         if(mRecordFilteredList == null)
         {
-            mRecordFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
-                getRecordPredicate());
+            mRecordFilteredList = new FilteredList<>(mAliasModel.aliasList(), getRecordPredicate());
         }
 
         return mRecordFilteredList;

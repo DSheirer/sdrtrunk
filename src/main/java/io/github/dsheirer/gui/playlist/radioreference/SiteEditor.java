@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
@@ -33,7 +34,6 @@ import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.RadioNetwork;
 import io.github.dsheirer.rrapi.type.Site;
@@ -42,6 +42,15 @@ import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.animation.RotateTransition;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
@@ -74,14 +83,6 @@ import org.controlsfx.control.SegmentedButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-
 public class SiteEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(SiteEditor.class);
@@ -90,9 +91,12 @@ public class SiteEditor extends GridPane
     private static final String PRIMARY_CONTROL_CHANNEL = "d";
     private static final String TOGGLE_BUTTON_CONTROL = "Control";
     private static final String TOGGLE_BUTTON_P25_VOICE = "All P25 Voice";
-
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private ChannelModel mChannelModel;
+    @Resource
     private UserPreferences mUserPreferences;
-    private PlaylistManager mPlaylistManager;
     private TableView<SiteFrequency> mSiteFrequencyTableView;
     private TableColumn<SiteFrequency,String> mTypeColumn;
     private SegmentedButton mFrequenciesSegmentedButton;
@@ -116,11 +120,13 @@ public class SiteEditor extends GridPane
     private ComboBox mAliasListNameComboBox;
     private Button mNewAliasListButton;
 
-    public SiteEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public SiteEditor()
     {
-        mUserPreferences = userPreferences;
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         setMaxHeight(Double.MAX_VALUE);
         setHgap(5.0);
         setVgap(5.0);
@@ -476,7 +482,7 @@ public class SiteEditor extends GridPane
                     gotoChannel = channel;
                 }
 
-                mPlaylistManager.getChannelModel().addChannel(channel);
+                mChannelModel.addChannel(channel);
             }
         }
 
@@ -540,7 +546,7 @@ public class SiteEditor extends GridPane
                 channel.setSourceConfiguration(sourceConfig);
             }
 
-            mPlaylistManager.getChannelModel().addChannel(channel);
+            mChannelModel.addChannel(channel);
 
             if(getGoToChannelEditorCheckBox().isSelected())
             {
@@ -614,7 +620,7 @@ public class SiteEditor extends GridPane
                     channel.setSourceConfiguration(sourceConfig);
                 }
 
-                mPlaylistManager.getChannelModel().addChannel(channel);
+                mChannelModel.addChannel(channel);
 
                 if(getGoToChannelEditorCheckBox().isSelected())
                 {
@@ -641,7 +647,7 @@ public class SiteEditor extends GridPane
                         gotoChannel = channel;
                     }
 
-                    mPlaylistManager.getChannelModel().addChannel(channel);
+                    mChannelModel.addChannel(channel);
                 }
 
                 if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
@@ -706,7 +712,7 @@ public class SiteEditor extends GridPane
                     channel.setSourceConfiguration(sourceConfig);
                 }
 
-                mPlaylistManager.getChannelModel().addChannel(channel);
+                mChannelModel.addChannel(channel);
 
                 if(getGoToChannelEditorCheckBox().isSelected())
                 {
@@ -734,7 +740,7 @@ public class SiteEditor extends GridPane
                         gotoChannel = channel;
                     }
 
-                    mPlaylistManager.getChannelModel().addChannel(channel);
+                    mChannelModel.addChannel(channel);
                 }
 
                 if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
@@ -768,7 +774,7 @@ public class SiteEditor extends GridPane
         {
             Predicate<String> filterPredicate = s -> !s.contentEquals(AliasModel.NO_ALIAS_LIST);
             FilteredList<String> filteredChannelList =
-                new FilteredList<>(mPlaylistManager.getAliasModel().aliasListNames(), filterPredicate);
+                new FilteredList<>(mAliasModel.aliasListNames(), filterPredicate);
             mAliasListNameComboBox = new ComboBox<>(filteredChannelList);
             mAliasListNameComboBox.setDisable(true);
             mAliasListNameComboBox.setMaxWidth(Double.MAX_VALUE);
@@ -806,7 +812,7 @@ public class SiteEditor extends GridPane
                     if(name != null && !name.isEmpty())
                     {
                         name = name.trim();
-                        mPlaylistManager.getAliasModel().addAliasList(name);
+                        mAliasModel.addAliasList(name);
                         getAliasListNameComboBox().getSelectionModel().select(name);
                     }
                 });

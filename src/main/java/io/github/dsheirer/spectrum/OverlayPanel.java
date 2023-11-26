@@ -32,6 +32,9 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -102,32 +105,34 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
     private double mSpectrumInset = 20.0d;
     private LabelSizeManager mLabelSizeMonitor = new LabelSizeManager();
 
-    private SettingsManager mSettingsManager;
+    @Resource
     private ChannelModel mChannelModel;
+    @Resource
     private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
+    private SettingsManager mSettingsManager;
 
     /**
      * Translucent overlay panel for displaying channel configurations,
      * processing channels, selected channels, frequency labels and lines, and
      * a cursor with a frequency readout.
      */
-    public OverlayPanel(SettingsManager settingsManager, ChannelModel channelModel, ChannelProcessingManager channelProcessingManager)
+    public OverlayPanel()
     {
-        mSettingsManager = settingsManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         if(mSettingsManager != null)
         {
             mSettingsManager.addListener(this);
         }
 
-        mChannelModel = channelModel;
-
         if(mChannelModel != null)
         {
             mChannelModel.addListener(this::receive);
         }
-
-        mChannelProcessingManager = channelProcessingManager;
 
         if(mChannelProcessingManager != null)
         {
@@ -143,6 +148,7 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
         setColors();
     }
 
+    @PreDestroy
     public void dispose()
     {
         if(mChannelModel != null)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,14 +43,17 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Manages settings and configurations for all tuner types.
  */
+@Component("tunerConfigurationManager")
 public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(TunerConfigurationManager.class);
     private static final String SETTINGS_FILE_NAME = "tuner_configuration.json";
+    @Resource
     private UserPreferences mUserPreferences;
     private List<DisabledTuner> mDisabledTunerList = new ArrayList<>();
     private List<TunerConfiguration> mTunerConfigurations = new ArrayList<>();
@@ -56,13 +61,15 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
     private Lock mLock = new ReentrantLock();
 
     /**
-     * Constructs an instance and loads the save configuration state.
-     *
-     * @param userPreferences to determine directories for accessing files
+     * Constructs an instance
      */
-    public TunerConfigurationManager(UserPreferences userPreferences)
+    public TunerConfigurationManager()
     {
-        mUserPreferences = userPreferences;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
         load();
     }
 

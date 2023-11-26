@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,15 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
@@ -59,25 +68,17 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcaster implements IBroadcastMetadataUpdater
 {
     private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV2AudioStreamingBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
-    private int mMaxPayloadSize = 16377;
 
+    @Resource
+    private AliasModel mAliasModel;
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
-    private AliasModel mAliasModel;
     private long mLastConnectionAttempt = 0;
+    private int mMaxPayloadSize = 16377;
     private AtomicBoolean mConnecting = new AtomicBoolean();
     private LinkedTransferQueue<UltravoxMessage> mMetadataMessageQueue = new LinkedTransferQueue<>();
 
@@ -94,10 +95,9 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
      * @param configuration for the Shoutcast V2 stream
      */
     public ShoutcastV2AudioStreamingBroadcaster(ShoutcastV2Configuration configuration, InputAudioFormat inputAudioFormat,
-                                                MP3Setting mp3Setting, AliasModel aliasModel)
+                                                MP3Setting mp3Setting)
     {
         super(configuration, inputAudioFormat, mp3Setting);
-        mAliasModel = aliasModel;
     }
 
     public ShoutcastV2Configuration getConfiguration()

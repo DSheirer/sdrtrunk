@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.playback;
 
@@ -25,12 +24,12 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
-import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
@@ -40,13 +39,6 @@ import io.github.dsheirer.settings.ColorSetting;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -54,8 +46,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, SettingChangeListener
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, SettingChangeListener, IPreferenceUpdateListener
 {
     private static final long serialVersionUID = 1L;
     private static final Logger mLog = LoggerFactory.getLogger(AudioChannelPanel.class);
@@ -66,51 +65,52 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     public static final String PROPERTY_COLOR_MUTED = PROPERTY_PREFIX + "muted";
     public static final String PROPERTY_COLOR_VALUE = PROPERTY_PREFIX + "value";
 
-    private Font mFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
+    private AliasModel mAliasModel;
+    private IconModel mIconModel;
+    private SettingsManager mSettingsManager;
+    private UserPreferences mUserPreferences;
 
+    private Font mFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
     private Color mBackgroundColor;
     private Color mLabelColor;
     private Color mMutedColor;
     private Color mValueColor;
-
-    private IconModel mIconModel;
-    private SettingsManager mSettingsManager;
-    private UserPreferences mUserPreferences;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private AudioOutput mAudioOutput;
-
     private JLabel mMutedLabel = new JLabel("M");
     private JLabel mChannelName = new JLabel(" ");
     private JLabel mIconLabel = new JLabel(" ");
     private JLabel mIdentifierLabel = new JLabel("-----");
     private Identifier mIdentifier;
     private List<Alias> mAliases = Collections.EMPTY_LIST;
-    private AliasModel mAliasModel;
     private Lock mLock = new ReentrantLock();
 
-    public AudioChannelPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
-                             AudioOutput audioOutput, AliasModel aliasModel)
+    public AudioChannelPanel(UserPreferences userPreferences, SettingsManager settingsManager, AliasModel aliasModel,
+                             IconModel iconModel, AudioOutput audioOutput)
     {
-        mIconModel = iconModel;
-        mSettingsManager = settingsManager;
-        mSettingsManager.addListener(this);
-        mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
-        mTalkgroupFormatPreference = mUserPreferences.getTalkgroupFormatPreference();
+        mSettingsManager = settingsManager;
+        mAliasModel = aliasModel;
         mAudioOutput = audioOutput;
-
+        mIconModel = iconModel;
+        mSettingsManager.addListener(this);
         if(mAudioOutput != null)
         {
             mAudioOutput.addAudioEventListener(this);
             mAudioOutput.setIdentifierCollectionListener(new AudioMetadataProcessor());
         }
-
+        mUserPreferences.addUpdateListener(this);
+        mTalkgroupFormatPreference = mUserPreferences.getTalkgroupFormatPreference();
         mBackgroundColor = SystemProperties.getInstance().get(PROPERTY_COLOR_BACKGROUND, Color.BLACK);
         mLabelColor = SystemProperties.getInstance().get(PROPERTY_COLOR_LABEL, Color.LIGHT_GRAY);
         mMutedColor = SystemProperties.getInstance().get(PROPERTY_COLOR_MUTED, Color.RED);
         mValueColor = SystemProperties.getInstance().get(PROPERTY_COLOR_VALUE, Color.GREEN);
-
         init();
+    }
+
+    public void preDestroy()
+    {
+        mUserPreferences.removeUpdateListener(this);
     }
 
     /**
@@ -128,9 +128,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
 
     public void dispose()
     {
-        //Deregister from receiving preference update notifications
-        MyEventBus.getGlobalEventBus().unregister(this);
-
         if(mAudioOutput != null)
         {
             mAudioOutput.removeAudioEventListener(this);
@@ -140,9 +137,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
 
     private void init()
     {
-        //Register to receive preference updates
-        MyEventBus.getGlobalEventBus().register(this);
-
         setLayout(new MigLayout("align center center, insets 0 0 0 0",
             "[][][align right]0[grow,fill]", ""));
         setBackground(mBackgroundColor);
@@ -183,14 +177,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
                 break;
             case AUDIO_MUTED:
             case AUDIO_UNMUTED:
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        mMutedLabel.setVisible(mAudioOutput.isMuted());
-                    }
-                });
+                EventQueue.invokeLater(() -> mMutedLabel.setVisible(mAudioOutput.isMuted()));
                 break;
             default:
                 break;

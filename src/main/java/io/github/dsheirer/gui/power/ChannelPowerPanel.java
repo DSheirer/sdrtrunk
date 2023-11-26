@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.power;
 
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
 import io.github.dsheirer.dsp.squelch.ISquelchConfiguration;
 import io.github.dsheirer.gui.control.DbPowerMeter;
@@ -27,7 +28,6 @@ import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamplesToNativeBufferModule;
-import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
@@ -38,6 +38,8 @@ import io.github.dsheirer.spectrum.FrequencyOverlayPanel;
 import io.github.dsheirer.spectrum.SpectrumPanel;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.event.ComponentEvent;
@@ -73,14 +75,19 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private static final String NOT_AVAILABLE = "Not Available";
+    @Resource
+    private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
+    private FrequencyOverlayPanel mFrequencyOverlayPanel;
+    @Resource
     private PlaylistManager mPlaylistManager;
+    @Resource
+    private SpectrumPanel mSpectrumPanel;
     private ProcessingChain mProcessingChain;
     private ComplexSamplesToNativeBufferModule mSampleStreamTapModule = new ComplexSamplesToNativeBufferModule();
     private ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
     private DFTResultsConverter mDFTResultsConverter = new ComplexDecibelConverter();
-    private JLayeredPane mLayeredPanel;
-    private SpectrumPanel mSpectrumPanel;
-    private FrequencyOverlayPanel mFrequencyOverlayPanel;
+    private JLayeredPane mLayeredPanel = new JLayeredPane();
     private DbPowerMeter mPowerMeter = new DbPowerMeter();
     private PeakMonitor mPeakMonitor = new PeakMonitor(DbPowerMeter.DEFAULT_MINIMUM_POWER);
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
@@ -103,10 +110,13 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     /**
      * Constructs an instance.
      */
-    public ChannelPowerPanel(PlaylistManager playlistManager, SettingsManager settingsManager)
+    public ChannelPowerPanel()
     {
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         setLayout(new MigLayout("", "[][][][grow,fill]", "[grow,fill]"));
         mPowerMeter.setPeakVisible(true);
         mPowerMeter.setSquelchThresholdVisible(true);
@@ -227,16 +237,12 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
 
         fftPanel.add(labelPanel, "wrap");
 
-        mFrequencyOverlayPanel = new FrequencyOverlayPanel(settingsManager);
-
-        mSpectrumPanel = new SpectrumPanel(settingsManager);
         mSpectrumPanel.setSampleSize(18.0);
 
         /**
          * The layered pane holds the overlapping spectrum and channel panels
          * and manages the sizing of each panel with the resize listener
          */
-        mLayeredPanel = new JLayeredPane();
         mLayeredPanel.addComponentListener(new ResizeListener());
 
         /**
@@ -346,7 +352,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     {
         if(mProcessingChain != null)
         {
-            Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
+            Channel channel = mChannelProcessingManager.getChannel(mProcessingChain);
 
             if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration)
             {
@@ -363,7 +369,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
      */
     private void setConfigSquelchAutoTrack(boolean autoTrack)
     {
-        Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
+        Channel channel = mChannelProcessingManager.getChannel(mProcessingChain);
 
         if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration)
         {
@@ -440,7 +446,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
                 mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(tcs.getSampleRate()));
             }
 
-            Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
+            Channel channel = mChannelProcessingManager.getChannel(mProcessingChain);
 
             if(channel != null)
             {

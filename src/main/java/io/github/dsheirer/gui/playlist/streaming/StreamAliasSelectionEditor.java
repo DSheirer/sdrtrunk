@@ -1,31 +1,33 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -49,17 +51,14 @@ import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 /**
  * Editor for managing which aliases are configured for a specific broadcast configuration audio stream
  */
 public class StreamAliasSelectionEditor extends VBox
 {
     private final static Logger mLog = LoggerFactory.getLogger(StreamAliasSelectionEditor.class);
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
     private BroadcastConfiguration mSelectedBroadcastConfiguration;
     private HBox mSearchBox;
     private TextField mSearchField;
@@ -76,12 +75,14 @@ public class StreamAliasSelectionEditor extends VBox
 
     /**
      * Constructs an instance
-     * @param playlistManager for access to alias model
      */
-    public StreamAliasSelectionEditor(PlaylistManager playlistManager)
+    public StreamAliasSelectionEditor()
     {
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         VBox buttonBox = new VBox();
         buttonBox.setMaxHeight(Double.MAX_VALUE);
         buttonBox.setAlignment(Pos.CENTER);
@@ -125,8 +126,7 @@ public class StreamAliasSelectionEditor extends VBox
     {
         if(mAvailableFilteredList == null)
         {
-            mAvailableFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
-                mAvailableAliasPredicate);
+            mAvailableFilteredList = new FilteredList<>(mAliasModel.aliasList(), mAvailableAliasPredicate);
         }
 
         return mAvailableFilteredList;
@@ -136,8 +136,7 @@ public class StreamAliasSelectionEditor extends VBox
     {
         if(mSelectedFilteredList == null)
         {
-            mSelectedFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
-                mSelectedAliasPredicate);
+            mSelectedFilteredList = new FilteredList<>(mAliasModel.aliasList(), mSelectedAliasPredicate);
         }
 
         return mSelectedFilteredList;

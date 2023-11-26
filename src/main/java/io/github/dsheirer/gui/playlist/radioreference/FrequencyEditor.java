@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.module.decode.DecoderFactory;
@@ -27,7 +28,6 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Category;
 import io.github.dsheirer.rrapi.type.Frequency;
@@ -36,6 +36,7 @@ import io.github.dsheirer.rrapi.type.SubCategory;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.util.ThreadPool;
+import java.text.DecimalFormat;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.geometry.HPos;
@@ -53,15 +54,13 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-
 public class FrequencyEditor extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(FrequencyEditor.class);
     private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat("0.00000");
-    private UserPreferences mUserPreferences;
+    private ChannelModel mChannelModel;
     private RadioReference mRadioReference;
-    private PlaylistManager mPlaylistManager;
+    private UserPreferences mUserPreferences;
     private Level mLevel;
     private TextField mAlphaTagTextField;
     private TextField mFrequencyTextField;
@@ -77,12 +76,18 @@ public class FrequencyEditor extends VBox
     private ModeDecoderType mModeDecoderType;
     private long mFrequency;
 
-    public FrequencyEditor(UserPreferences userPreferences, RadioReference radioReference,
-                           PlaylistManager playlistManager, Level level)
+    /**
+     * Constructs an instance
+     * @param userPreferences for preferences lookups
+     * @param radioReference for data lookups
+     * @param channelModel for channels
+     * @param level for this editor.
+     */
+    public FrequencyEditor(UserPreferences userPreferences, RadioReference radioReference, ChannelModel channelModel, Level level)
     {
         mUserPreferences = userPreferences;
         mRadioReference = radioReference;
-        mPlaylistManager = playlistManager;
+        mChannelModel = channelModel;
         mLevel = level;
 
         GridPane gridPane = new GridPane();
@@ -372,7 +377,7 @@ public class FrequencyEditor extends VBox
                 if(channel != null)
                 {
                     getCreateButton().setDisable(true);
-                    mPlaylistManager.getChannelModel().addChannel(channel);
+                    mChannelModel.addChannel(channel);
 
                     if(getShowCreatedChannelCheckBox().selectedProperty().get())
                     {

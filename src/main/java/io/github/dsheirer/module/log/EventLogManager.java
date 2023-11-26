@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,35 +14,37 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.log;
 
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import jakarta.annotation.Resource;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+@Component("eventLogManager")
 public class EventLogManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(EventLogManager.class);
 
+    @Resource
     private UserPreferences mUserPreferences;
-    private AliasModel mAliasModel;
 
-    public EventLogManager(AliasModel aliasModel, UserPreferences userPreferences)
+    /**
+     * Constructs an instance
+     */
+    public EventLogManager()
     {
-        mAliasModel = aliasModel;
-        mUserPreferences = userPreferences;
     }
 
     public List<Module> getLoggers(Channel channel)
@@ -57,7 +58,7 @@ public class EventLogManager
             frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
         }
 
-        List<Module> loggers = new ArrayList<Module>();
+        List<Module> loggers = new ArrayList<>();
 
         for(EventLogType type : config.getLoggers())
         {
@@ -96,11 +97,9 @@ public class EventLogManager
         switch(eventLogType)
         {
             case CALL_EVENT:
-                return new DecodeEventLogger(mAliasModel, eventLogDirectory, sb.toString(), frequency);
-            case DECODED_MESSAGE:
-                return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
             case TRAFFIC_CALL_EVENT:
-                return new DecodeEventLogger(mAliasModel, eventLogDirectory, sb.toString(), frequency);
+                return new DecodeEventLogger(eventLogDirectory, sb.toString(), frequency);
+            case DECODED_MESSAGE:
             case TRAFFIC_DECODED_MESSAGE:
                 return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
             default:

@@ -21,7 +21,7 @@ package io.github.dsheirer.audio.codec.mbe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P1CallSequenceRecorder;
@@ -30,17 +30,11 @@ import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifi
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.AudioSegmentRecorder;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
 import jmbe.iface.IAudioCodec;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
-import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,15 +51,15 @@ public class MBECallSequenceConverter
      * @param output path to write the WAVE recording.
      * @throws IOException if there is an error.
      */
-    public static void convert(Path input, Path output) throws IOException
+    public static void convert(UserPreferences userPreferences, Path input, Path output) throws IOException
     {
         InputStream inputStream = Files.newInputStream(input);
         ObjectMapper mapper = new ObjectMapper();
         MBECallSequence sequence = mapper.readValue(inputStream, MBECallSequence.class);
-        convert(sequence, output);
+        convert(userPreferences, sequence, output);
     }
 
-    public static void convert(MBECallSequence callSequence, Path outputPath)
+    public static void convert(UserPreferences userPreferences, MBECallSequence callSequence, Path outputPath)
     {
         if(callSequence == null || callSequence.isEncrypted())
         {
@@ -76,7 +70,7 @@ public class MBECallSequenceConverter
         {
             if(callSequence.getProtocol().equals(P25P1CallSequenceRecorder.PROTOCOL))
             {
-                P25P1AudioModule audioModule = new P25P1AudioModule(new UserPreferences(), new AliasList("mbe generator"));
+                P25P1AudioModule audioModule = new P25P1AudioModule(userPreferences, new AliasList("mbe generator"));
                 audioModule.setRecordAudio(true);
                 audioModule.start();
 
@@ -133,47 +127,6 @@ public class MBECallSequenceConverter
                 }
 
                 audioModule.stop();
-            }
-        }
-    }
-
-    public static void main(String[] args)
-    {
-        boolean all = true;
-
-        String path = "/home/denny/SDRTrunk/recordings";
-        Path input = Paths.get(path);
-
-        if(all)
-        {
-            Collection<File> mbeFiles = FileUtils.listFiles(input.toFile(), new SuffixFileFilter(".mbe"), DirectoryFileFilter.DIRECTORY);
-
-            for(File inputFile: mbeFiles)
-            {
-                Path output = Paths.get(inputFile.getAbsolutePath().replace(".mbe", ".wav"));
-                mLog.info("Converting: " + inputFile);
-                try
-                {
-                    MBECallSequenceConverter.convert(inputFile.toPath(), output);
-                }
-                catch(IOException ioe)
-                {
-                    mLog.error("Error", ioe);
-                }
-            }
-        }
-        else
-        {
-            Path output = Paths.get(path.replace(".mbe", ".wav"));
-            mLog.info("Converting: " + path);
-
-            try
-            {
-                MBECallSequenceConverter.convert(input, output);
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error", ioe);
             }
         }
     }

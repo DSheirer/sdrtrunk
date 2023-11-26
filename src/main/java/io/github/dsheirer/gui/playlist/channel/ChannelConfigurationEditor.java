@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.channel;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelException;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
@@ -31,13 +32,13 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javafx.application.Platform;
@@ -78,8 +79,13 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelConfigurationEditor.class);
 
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
     protected TunerManager mTunerManager;
+    @Resource
     protected UserPreferences mUserPreferences;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private Button mPlayButton;
@@ -103,20 +109,20 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
     /**
      * Constructs an instance
-     * @param playlistManager for playlists
-     * @param tunerManager for tuners
-     * @param userPreferences for preferences
      */
-    public ChannelConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
+    public ChannelConfigurationEditor()
     {
-        mPlaylistManager = playlistManager;
-        mTunerManager = tunerManager;
-        mUserPreferences = userPreferences;
-        mFilterProcessor = filterProcessor;
+    }
 
+    /**
+     * Spring post-construct setup that is common for all sub-class implementations.
+     *
+     * Note: this method is not annotated with @PostConstruct because the subclass method would mask it.  So, we
+     * invoke this method from the subclass.
+     */
+    public void postConstruct()
+    {
         setMaxWidth(Double.MAX_VALUE);
-
         HBox hbox = new HBox();
         hbox.setSpacing(10);
         hbox.setPadding(new Insets(10,10,10,10));
@@ -125,16 +131,16 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         HBox.setHgrow(getButtonBox(), Priority.NEVER);
         hbox.getChildren().addAll(getTextFieldPane(), getButtonBox());
         VBox.setVgrow(getTitledPanesScrollPane(), Priority.ALWAYS);
-
         getChildren().addAll(hbox, getTitledPanesScrollPane());
     }
 
     /**
-     * Provides subclass access to the playlist manager and related components
+     * Sets the filter processor to be controlled by this instance
+     * @param filterProcessor to be controlled.
      */
-    protected PlaylistManager getPlaylistManager()
+    public void setFilterProcessor(IFilterProcessor filterProcessor)
     {
-        return mPlaylistManager;
+        mFilterProcessor = filterProcessor;
     }
 
     @Override
@@ -181,7 +187,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             {
                 if(!getAliasListComboBox().getItems().contains(aliasListName))
                 {
-                    mPlaylistManager.getAliasModel().addAliasList(aliasListName);
+                    mAliasModel.addAliasList(aliasListName);
                 }
 
                 getAliasListComboBox().getSelectionModel().select(aliasListName);
@@ -370,7 +376,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                         ThreadPool.CACHED.execute(() -> {
                             try
                             {
-                                mPlaylistManager.getChannelProcessingManager().start(getItem());
+                                mChannelProcessingManager.start(getItem());
                             }
                             catch(ChannelException ce)
                             {
@@ -391,7 +397,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                         ThreadPool.CACHED.execute(() -> {
                             try
                             {
-                                mPlaylistManager.getChannelProcessingManager().stop(getItem());
+                                mChannelProcessingManager.stop(getItem());
                             }
                             catch(ChannelException ce)
                             {
@@ -623,7 +629,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         {
             Predicate<String> filterPredicate = s -> !s.contentEquals(AliasModel.NO_ALIAS_LIST);
             FilteredList<String> filteredChannelList =
-                new FilteredList<>(mPlaylistManager.getAliasModel().aliasListNames(), filterPredicate);
+                new FilteredList<>(mAliasModel.aliasListNames(), filterPredicate);
             mAliasListComboBox = new ComboBox<>(filteredChannelList);
             mAliasListComboBox.setPrefWidth(150);
             mAliasListComboBox.setDisable(true);
@@ -659,7 +665,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                         if(name != null && !name.isEmpty())
                         {
                             name = name.trim();
-                            mPlaylistManager.getAliasModel().addAliasList(name);
+                            mAliasModel.addAliasList(name);
                             getAliasListComboBox().getSelectionModel().select(name);
                         }
                     });
@@ -713,8 +719,8 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                     {
                         try
                         {
-                            mPlaylistManager.getChannelProcessingManager().stop(getItem());
-                            mPlaylistManager.getChannelProcessingManager().start(getItem());
+                            mChannelProcessingManager.stop(getItem());
+                            mChannelProcessingManager.start(getItem());
                         }
                         catch(ChannelException se)
                         {

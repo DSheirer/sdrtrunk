@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,43 +18,38 @@
  */
 package io.github.dsheirer.spectrum;
 
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
+import java.awt.EventQueue;
 
 import javax.swing.JMenuItem;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
+/**
+ * Swing menu item to show a tuner in the spectral display.
+ */
 public class ShowTunerMenuItem extends JMenuItem
 {
-    private DiscoveredTunerModel mDiscoveredTunerModel;
-    private Tuner mTuner;
+    private final DiscoveredTunerModel mDiscoveredTunerModel;
+    private final UserPreferences mUserPreferences;
+    private final Tuner mTuner;
 
-    public ShowTunerMenuItem(DiscoveredTunerModel discoveredTunerModel, Tuner tuner)
+    /**
+     * Constructs an instance
+     * @param tuner to show
+     * @param discoveredTunerModel to receive spectral display request
+     * @param userPreferences to override the spectral display enabled state to true before showing the tuner.
+     */
+    public ShowTunerMenuItem(Tuner tuner, DiscoveredTunerModel discoveredTunerModel, UserPreferences userPreferences)
     {
         super(tuner != null ? "Show: " + tuner.getPreferredName() : "(empty)");
-        mDiscoveredTunerModel = discoveredTunerModel;
         mTuner = tuner;
-
-        addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        SystemProperties properties = SystemProperties.getInstance();
-                        properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
-                        mDiscoveredTunerModel.broadcast(new TunerEvent(mTuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
-                    }
-                });
-            }
-        });
+        mDiscoveredTunerModel = discoveredTunerModel;
+        mUserPreferences = userPreferences;
+        addActionListener(e -> EventQueue.invokeLater(() -> {
+            mUserPreferences.getApplicationPreference().setSpectralDisplayEnabled(true);
+            mDiscoveredTunerModel.broadcast(new TunerEvent(mTuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
+        }));
     }
 }

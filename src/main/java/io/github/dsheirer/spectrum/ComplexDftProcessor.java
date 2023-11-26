@@ -63,7 +63,6 @@ public class ComplexDftProcessor<T extends INativeBuffer> implements Listener<T>
     {
         mFrameRate = SystemProperties.getInstance().get(FRAME_RATE_PROPERTY, 20);
         setWindowType(mWindowType);
-        start();
     }
 
     public void dispose()

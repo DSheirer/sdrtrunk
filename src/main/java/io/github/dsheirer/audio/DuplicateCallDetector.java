@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.audio;
 
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -31,6 +32,8 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.duplicate.CallManagementPreference;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Detects duplicate calls that occur within the same system.  This detector is thread safe for the receive() method.
@@ -48,15 +52,26 @@ import org.slf4j.LoggerFactory;
  * Note: system in this context refers to the system name value that is used in channel configurations.  All decoder
  * channels must share the same system name for call duplication detection.
  */
+@Component("duplicateCallDetector")
 public class DuplicateCallDetector implements Listener<AudioSegment>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DuplicateCallDetector.class);
     private CallManagementPreference mCallManagementPreference;
     private Map<String,SystemDuplicateCallDetector> mDetectorMap = new HashMap();
+    @Resource
+    private UserPreferences mUserPreferences;
 
-    public DuplicateCallDetector(UserPreferences userPreferences)
+    /**
+     * Constructs an instance
+     */
+    public DuplicateCallDetector()
     {
-        mCallManagementPreference = userPreferences.getDuplicateCallDetectionPreference();
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mCallManagementPreference = mUserPreferences.getCallManagementPreference();
     }
 
     @Override
@@ -81,7 +96,9 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                         mDetectorMap.put(system, detector);
                     }
 
+                    audioSegment.addLease(detector.getClass().toString());
                     detector.add(audioSegment);
+                    audioSegment.removeLease(getClass().toString());
                 }
             }
         }
@@ -241,7 +258,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
 
                     if(complete)
                     {
-                        audioSegment.decrementConsumerCount();
+                        audioSegment.removeLease(getClass().toString());
                     }
 
                     return complete;
@@ -270,7 +287,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                                     if(isDuplicate(current, toCheck))
                                     {
                                         toCheck.setDuplicate(true);
-                                        toCheck.decrementConsumerCount();
+                                        toCheck.removeLease(getClass().toString());
                                         duplicates.add(toCheck);
                                     }
                                 }

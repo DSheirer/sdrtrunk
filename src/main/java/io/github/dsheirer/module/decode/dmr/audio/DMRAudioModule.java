@@ -66,7 +66,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
 
     /**
      * Constructs an instance
-     * @param userPreferences for JMBE library location
+     * @param userPreferences for preferences
      * @param aliasList for audio
      * @param timeslot for this audio module
      */

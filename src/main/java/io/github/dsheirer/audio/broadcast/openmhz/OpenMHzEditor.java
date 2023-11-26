@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,24 +17,18 @@
  * ****************************************************************************
  */
 
- package io.github.dsheirer.gui.playlist.streaming;
+ package io.github.dsheirer.audio.broadcast.openmhz;
 
- import io.github.dsheirer.audio.broadcast.BroadcastServerType;
- import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
- import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
- import io.github.dsheirer.gui.control.IntegerTextField;
- import io.github.dsheirer.playlist.PlaylistManager;
- import javafx.geometry.HPos;
- import javafx.geometry.Insets;
- import javafx.scene.control.Alert;
- import javafx.scene.control.Button;
- import javafx.scene.control.ButtonType;
- import javafx.scene.control.Label;
- import javafx.scene.control.TextField;
- import javafx.scene.layout.GridPane;
- import org.slf4j.Logger;
- import org.slf4j.LoggerFactory;
- import org.controlsfx.control.ToggleSwitch;
+import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.gui.control.IntegerTextField;
+import io.github.dsheirer.gui.playlist.streaming.AbstractBroadcastEditor;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
  /**
   * OpenMHz calls API configuration editor
@@ -50,11 +44,9 @@
 
      /**
       * Constructs an instance
-      * @param playlistManager for accessing the broadcast model
       */
-     public OpenMHzEditor(PlaylistManager playlistManager)
+     public OpenMHzEditor()
      {
-         super(playlistManager);
      }
 
      @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,16 +22,14 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallBroadcaster;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
-import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
-import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
-import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerFeedConfiguration;
-import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
-import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
-import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzFeedConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPConfiguration;
+import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
+import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
+import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
+import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioStreamingBroadcaster;
@@ -65,29 +63,26 @@ public class BroadcastFactory
             switch(configuration.getBroadcastServerType())
             {
                 case BROADCASTIFY_CALL:
-                    return new BroadcastifyCallBroadcaster((BroadcastifyCallConfiguration)configuration,
-                            inputAudioFormat, mp3Setting, aliasModel);
+                    return new BroadcastifyCallBroadcaster((BroadcastifyCallConfiguration)configuration);
                 case RDIOSCANNER_CALL:
-                    return new RdioScannerBroadcaster((RdioScannerConfiguration)configuration,
-                            inputAudioFormat, mp3Setting, aliasModel);
+                    return new RdioScannerBroadcaster((RdioScannerConfiguration)configuration);
                 case OPENMHZ:
-                    return new OpenMHzBroadcaster((OpenMHzConfiguration)configuration,
-                        inputAudioFormat, mp3Setting, aliasModel);
+                    return new OpenMHzBroadcaster((OpenMHzConfiguration)configuration);
                 case BROADCASTIFY:
                     return new IcecastTCPAudioBroadcaster((BroadcastifyFeedConfiguration) configuration,
-                            inputAudioFormat, mp3Setting, aliasModel);
+                            inputAudioFormat, mp3Setting);
                 case ICECAST_TCP:
                     return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration, inputAudioFormat,
-                            mp3Setting, aliasModel);
+                            mp3Setting);
                 case ICECAST_HTTP:
                     return new IcecastHTTPAudioBroadcaster((IcecastHTTPConfiguration) configuration, inputAudioFormat,
-                            mp3Setting, aliasModel);
+                            mp3Setting);
                 case SHOUTCAST_V1:
                     return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration, inputAudioFormat,
-                            mp3Setting, aliasModel);
+                            mp3Setting);
                 case SHOUTCAST_V2:
                     return new ShoutcastV2AudioStreamingBroadcaster((ShoutcastV2Configuration) configuration,
-                            inputAudioFormat, mp3Setting, aliasModel);
+                            inputAudioFormat, mp3Setting);
                 case UNKNOWN:
                 default:
                     mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());

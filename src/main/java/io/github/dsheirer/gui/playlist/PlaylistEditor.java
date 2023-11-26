@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,11 +30,14 @@ import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Path;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Menu;
@@ -54,9 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.nio.file.Path;
 
 /**
  * JavaFX playlist, channels, aliases, streaming and radioreference.com import editor
@@ -64,9 +64,17 @@ import java.nio.file.Path;
 public class PlaylistEditor extends BorderPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(PlaylistEditor.class);
-
-    private PlaylistManager mPlaylistManager;
-    private TunerManager mTunerManager;
+    @Resource
+    private AliasEditor mAliasEditor;
+    @Resource
+    private ChannelEditor mChannelEditor;
+    @Resource
+    private PlaylistManagerEditor mPlaylistManagerEditor;
+    @Resource
+    private RadioReferenceEditor mRadioReferenceEditor;
+    @Resource
+    private StreamingEditor mStreamingEditor;
+    @Resource
     private UserPreferences mUserPreferences;
     private MenuBar mMenuBar;
     private TabPane mTabPane;
@@ -75,21 +83,17 @@ public class PlaylistEditor extends BorderPane
     private Tab mAliasesTab;
     private Tab mRadioReferenceTab;
     private Tab mStreamingTab;
-    private AliasEditor mAliasEditor;
-    private ChannelEditor mChannelEditor;
 
     /**
      * Constructs an instance
-     * @param playlistManager for alias and channel models
-     * @param tunerManager for tuners
-     * @param userPreferences for settings
      */
-    public PlaylistEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
+    public PlaylistEditor()
     {
-        mPlaylistManager = playlistManager;
-        mTunerManager = tunerManager;
-        mUserPreferences = userPreferences;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         //Throw a new runnable back onto the FX thread to lazy load the editor content after the editor has been
         //constructed and shown.
         Platform.runLater(() -> {
@@ -221,11 +225,6 @@ public class PlaylistEditor extends BorderPane
 
     private AliasEditor getAliasEditor()
     {
-        if(mAliasEditor == null)
-        {
-            mAliasEditor = new AliasEditor(mPlaylistManager, mUserPreferences);
-        }
-
         return mAliasEditor;
     }
 
@@ -242,11 +241,6 @@ public class PlaylistEditor extends BorderPane
 
     private ChannelEditor getChannelEditor()
     {
-        if(mChannelEditor == null)
-        {
-            mChannelEditor = new ChannelEditor(mPlaylistManager, mTunerManager, mUserPreferences);
-        }
-
         return mChannelEditor;
     }
 
@@ -255,7 +249,7 @@ public class PlaylistEditor extends BorderPane
         if(mPlaylistsTab == null)
         {
             mPlaylistsTab = new Tab("Playlists");
-            mPlaylistsTab.setContent(new PlaylistManagerEditor(mPlaylistManager, mUserPreferences));
+            mPlaylistsTab.setContent(mPlaylistManagerEditor);
         }
 
         return mPlaylistsTab;
@@ -266,7 +260,15 @@ public class PlaylistEditor extends BorderPane
         if(mRadioReferenceTab == null)
         {
             mRadioReferenceTab = new Tab("Radio Reference");
-            mRadioReferenceTab.setContent(new RadioReferenceEditor(mUserPreferences, mPlaylistManager));
+            mRadioReferenceTab.setContent(mRadioReferenceEditor);
+
+            //Only login once/if the user selects the radio reference tab
+            mRadioReferenceTab.selectedProperty().addListener((observable, oldValue, selected) -> {
+                if(selected)
+                {
+                    mRadioReferenceEditor.login();
+                }
+            });
         }
 
         return mRadioReferenceTab;
@@ -277,7 +279,7 @@ public class PlaylistEditor extends BorderPane
         if(mStreamingTab == null)
         {
             mStreamingTab = new Tab("Streaming");
-            mStreamingTab.setContent(new StreamingEditor(mPlaylistManager));
+            mStreamingTab.setContent(mStreamingEditor);
         }
 
         return mStreamingTab;

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,11 @@
 package io.github.dsheirer.gui.playlist.alias;
 
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.AliasID;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -32,29 +34,49 @@ import javafx.scene.control.TabPane;
  */
 public class AliasEditor extends TabPane
 {
-    private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
+    @Resource
     private AliasConfigurationEditor mAliasConfigurationEditor;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
     private AliasViewByIdentifierEditor mAliasViewByIdentifierEditor;
+    @Resource
+    private AliasViewByRecordingEditor mAliasViewByRecordingEditor;
     private Tab mAliasConfigurationTab;
     private Tab mAliasIdentifierTab;
     private Tab mAliasRecordingTab;
+    private boolean mAliasListInvalidated = false;
+
 
     /**
      * Constructs an instance
      * @param playlistManager for alias model access
-     * @param userPreferences for settings
      */
-    public AliasEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public AliasEditor()
     {
-        mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         setPadding(new Insets(4,0,0,0));
         setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         Tab viewByTab = new Tab("View By:");
         viewByTab.setDisable(true);
         getTabs().addAll(viewByTab, getAliasConfigurationTab(), getAliasIdentifierTab(), getAliasRecordingTab());
+
+        //Note if aliases change since we're using a static snapshot
+        mAliasModel.aliasList().addListener((InvalidationListener)observable -> mAliasListInvalidated = true);
+
+        //Only update the alias list when this tab is selected to avoid many slow updates in the background
+        getAliasIdentifierTab().selectedProperty().addListener(observable ->
+        {
+            if (mAliasListInvalidated)
+            {
+                getAliasViewByIdentifierEditor().updateList();
+                mAliasListInvalidated = false;
+            }
+        });
     }
 
     /**
@@ -101,11 +123,6 @@ public class AliasEditor extends TabPane
 
     private AliasConfigurationEditor getAliasConfigurationEditor()
     {
-        if(mAliasConfigurationEditor == null)
-        {
-            mAliasConfigurationEditor = new AliasConfigurationEditor(mPlaylistManager, mUserPreferences);
-        }
-
         return mAliasConfigurationEditor;
     }
 
@@ -122,12 +139,12 @@ public class AliasEditor extends TabPane
 
     private AliasViewByIdentifierEditor getAliasViewByIdentifierEditor()
     {
-        if(mAliasViewByIdentifierEditor == null)
-        {
-            mAliasViewByIdentifierEditor = new AliasViewByIdentifierEditor(mPlaylistManager, getAliasIdentifierTab().selectedProperty());
-        }
-
         return mAliasViewByIdentifierEditor;
+    }
+
+    private AliasViewByRecordingEditor getAliasViewByRecordingEditor()
+    {
+        return mAliasViewByRecordingEditor;
     }
 
     private Tab getAliasRecordingTab()
@@ -135,7 +152,7 @@ public class AliasEditor extends TabPane
         if(mAliasRecordingTab == null)
         {
             mAliasRecordingTab = new Tab("Record");
-            mAliasRecordingTab.setContent(new AliasViewByRecordingEditor(mPlaylistManager));
+            mAliasRecordingTab.setContent(getAliasViewByRecordingEditor());
         }
 
         return mAliasRecordingTab;

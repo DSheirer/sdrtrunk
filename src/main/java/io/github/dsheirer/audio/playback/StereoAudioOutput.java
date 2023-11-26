@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@ package io.github.dsheirer.audio.playback;
 import io.github.dsheirer.audio.AudioFormats;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.mixer.MixerChannel;
-
-import javax.sound.sampled.Mixer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
+
+import javax.sound.sampled.Mixer;
 
 /**
  * Stereo audio output implementation.

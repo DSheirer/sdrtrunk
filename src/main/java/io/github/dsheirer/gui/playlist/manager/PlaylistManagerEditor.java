@@ -1,35 +1,42 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.manager;
 
-import com.google.common.eventbus.Subscribe;
 import com.google.common.io.Files;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelException;
-import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -53,17 +60,10 @@ import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
-
 /**
  * Editor for managing playlists via the playlist manager
  */
-public class PlaylistManagerEditor extends HBox
+public class PlaylistManagerEditor extends HBox implements IPreferenceUpdateListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(PlaylistManagerEditor.class);
 
@@ -72,7 +72,13 @@ public class PlaylistManagerEditor extends HBox
     private static final FileChooser.ExtensionFilter ALL_FILES_FILE_FILTER =
         new FileChooser.ExtensionFilter("All Files (*.*)", "*.*");
 
+    @Resource
+    private ChannelModel mChannelModel;
+    @Resource
+    private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
     private PlaylistManager mPlaylistManager;
+    @Resource
     private UserPreferences mUserPreferences;
     private TableView<Path> mPlaylistTableView;
     private VBox mButtonBox;
@@ -86,25 +92,25 @@ public class PlaylistManagerEditor extends HBox
     /**
      * Constructs an instance
      * @param playlistManager for managing playlist
-     * @param userPreferences for accessing preferences
      */
-    public PlaylistManagerEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public PlaylistManagerEditor()
     {
-        mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+    }
 
-        //Register to receive preferences updates
-        MyEventBus.getGlobalEventBus().register(this);
-
+    @PostConstruct
+    public void postConstruct()
+    {
+        mUserPreferences.addUpdateListener(this);
         setPadding(new Insets(5, 5, 5, 5));
         HBox.setHgrow(getPlaylistTableView(), Priority.ALWAYS);
         getChildren().addAll(getPlaylistTableView(), getButtonBox());
         updateButtons();
     }
 
+    @PreDestroy
     public void dispose()
     {
-        MyEventBus.getGlobalEventBus().unregister(this);
+        mUserPreferences.removeUpdateListener(this);
     }
 
     /**
@@ -272,7 +278,7 @@ public class PlaylistManagerEditor extends HBox
                         }
                     }
 
-                    final List<Channel> autoStartChannels = mPlaylistManager.getChannelModel().getAutoStartChannels();
+                    final List<Channel> autoStartChannels = mChannelModel.getAutoStartChannels();
 
                     if(autoStartChannels.size() > 0)
                     {
@@ -290,7 +296,7 @@ public class PlaylistManagerEditor extends HBox
                                 {
                                     try
                                     {
-                                        mPlaylistManager.getChannelProcessingManager().start(channel);
+                                        mChannelProcessingManager.start(channel);
                                     }
                                     catch(ChannelException ce)
                                     {
@@ -526,7 +532,7 @@ public class PlaylistManagerEditor extends HBox
      * to the playlist list view so that we can reflect changes to the current playlist.
      * @param preferenceType that was updated
      */
-    @Subscribe
+    @Override
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.PLAYLIST)

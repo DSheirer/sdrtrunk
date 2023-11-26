@@ -1,48 +1,60 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 
 package io.github.dsheirer.gui.preference;
 
 import io.github.dsheirer.preference.TimestampFormat;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
+import jakarta.annotation.PostConstruct;
+import java.util.Date;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-
-import java.util.Date;
 
 
 /**
  * Preference settings for channel event view
  */
-public class DecodeEventViewPreferenceEditor extends HBox
+public class DecodeEventViewPreferenceEditor extends PreferenceEditor
 {
     private DecodeEventPreference mDecodeEventPreference;
     private GridPane mEditorPane;
     private ChoiceBox<DisplayableTimestamp> mTimestampFormatChoiceBox;
     private Label mTimestampFormatLabel;
 
-    public DecodeEventViewPreferenceEditor(UserPreferences userPreferences)
+    public DecodeEventViewPreferenceEditor()
     {
-        mDecodeEventPreference = userPreferences.getDecodeEventPreference();
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mDecodeEventPreference = getUserPreferences().getDecodeEventPreference();
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.CHANNEL_EVENT;
     }
 
     private GridPane getEditorPane()

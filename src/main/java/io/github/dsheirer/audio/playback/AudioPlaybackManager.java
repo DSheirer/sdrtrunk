@@ -18,19 +18,21 @@
  */
 package io.github.dsheirer.audio.playback;
 
-import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.AudioException;
-import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.audio.IAudioController;
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.controller.NamingThreadFactory;
-import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.mixer.MixerChannel;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -43,20 +45,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Manages scheduling and playback of audio segments to the local users audio system.
  */
-public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioController
+@Component("audioPlaybackManager")
+public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioController, IPreferenceUpdateListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioPlaybackManager.class);
-
     public static final AudioEvent CONFIGURATION_CHANGE_STARTED =
         new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null);
     public static final AudioEvent CONFIGURATION_CHANGE_COMPLETE =
         new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_COMPLETE, null);
     private Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
     private ScheduledFuture<?> mProcessingTask;
+    @Resource
     private UserPreferences mUserPreferences;
     private MixerChannelConfiguration mMixerChannelConfiguration;
     private List<AudioOutput> mAudioOutputs = new ArrayList<>();
@@ -68,13 +72,15 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
     /**
      * Constructs an instance.
-     *
-     * @param userPreferences for audio playback preferences
      */
-    public AudioPlaybackManager(UserPreferences userPreferences)
+    public AudioPlaybackManager()
     {
-        mUserPreferences = userPreferences;
-        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mUserPreferences.addUpdateListener(this);
 
         MixerChannelConfiguration configuration = mUserPreferences.getPlaybackPreference().getMixerChannelConfiguration();
 
@@ -87,14 +93,21 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             catch(AudioException ae)
             {
                 mLog.error("Error during setup of audio playback configuration.  Attempted to use audio mixer [" +
-                    (configuration != null ? configuration.getMixer().toString() : "null") + "] and channel [" +
-                    (configuration != null ? configuration.getMixerChannel().name() : "null") + "]", ae);
+                        (configuration != null ? configuration.getMixer().toString() : "null") + "] and channel [" +
+                        (configuration != null ? configuration.getMixerChannel().name() : "null") + "]", ae);
             }
         }
         else
         {
             mLog.warn("No audio output devices available");
         }
+    }
+
+    @PreDestroy
+    public void preDestroy()
+    {
+        mUserPreferences.removeUpdateListener(this);
+        dispose();
     }
 
     /**
@@ -120,9 +133,9 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
         while(newSegment != null)
         {
             if(newSegment.isDuplicate() &&
-               mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled())
+               mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled())
             {
-                newSegment.decrementConsumerCount();
+                newSegment.removeLease(getClass().toString());
             }
             else if(newSegment.hasAudio())
             {
@@ -148,10 +161,10 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 audioSegment = it.next();
 
                 if(audioSegment.isDuplicate() &&
-                   mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled())
+                   mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled())
                 {
                     it.remove();
-                    audioSegment.decrementConsumerCount();
+                    audioSegment.removeLease(getClass().toString());
                 }
                 else if(audioSegment.hasAudio())
                 {
@@ -163,7 +176,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 {
                     //Rare situation: the audio segment completed but never had audio ... dispose it
                     it.remove();
-                    audioSegment.decrementConsumerCount();
+                    audioSegment.removeLease(getClass().toString());
                 }
             }
         }
@@ -182,10 +195,10 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 audioSegment = it.next();
 
                 if(audioSegment.isDoNotMonitor() || (audioSegment.isDuplicate() &&
-                   mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
+                   mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled()))
                 {
                     it.remove();
-                    audioSegment.decrementConsumerCount();
+                    audioSegment.removeLease(getClass().toString());
                 }
                 else if(audioSegment.isLinked())
                 {
@@ -194,7 +207,9 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                         if(audioOutput.isLinkedTo(audioSegment))
                         {
                             it.remove();
+                            audioSegment.addLease(audioOutput.getClass().toString());
                             audioOutput.play(audioSegment);
+                            audioSegment.removeLease(getClass().toString());
                         }
                     }
                 }
@@ -211,7 +226,10 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 {
                     if(audioOutput.isEmpty())
                     {
-                        audioOutput.play(mAudioSegments.remove(0));
+                        AudioSegment audioSegment1 = mAudioSegments.remove(0);
+                        audioSegment1.addLease(audioOutput.getClass().toString());
+                        audioOutput.play(audioSegment1);
+                        audioSegment1.removeLease(getClass().toString());
 
                         if(mAudioSegments.isEmpty())
                         {
@@ -228,10 +246,10 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 audioSegment = it.next();
 
                 if(audioSegment.completeProperty().get() || (audioSegment.isDuplicate() &&
-                   mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
+                   mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled()))
                 {
                     it.remove();
-                    audioSegment.decrementConsumerCount();
+                    audioSegment.removeLease(getClass().toString());
                 }
             }
         }
@@ -239,7 +257,6 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
     public void dispose()
     {
-        MyEventBus.getGlobalEventBus().unregister(this);
         if(mProcessingTask != null)
         {
             mProcessingTask.cancel(true);
@@ -254,7 +271,6 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      * Receive user preference update notifications so that we can detect when the user changes the audio output
      * device in the user preferences editor.
      */
-    @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.PLAYBACK)

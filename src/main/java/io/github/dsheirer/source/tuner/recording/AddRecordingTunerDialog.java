@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -64,16 +66,19 @@ public class AddRecordingTunerDialog extends JFrame
     private JButton mCancelButton;
     private static final Pattern TUNER_RECORDING_PATTERN = Pattern.compile(".*_(\\d*)_baseband_\\d{8}_\\d{6}\\.wav");
 
-    public AddRecordingTunerDialog(UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
-                                   TunerConfigurationManager tunerConfigurationManager)
+    /**
+     * Constructs an instance
+     * @param discoveredTunerModel for tuners
+     * @param tunerConfigurationManager for configurations
+     */
+    public AddRecordingTunerDialog(DiscoveredTunerModel discoveredTunerModel,
+                                   TunerConfigurationManager tunerConfigurationManager, UserPreferences userPreferences)
     {
-        Validate.notNull(userPreferences, "UserPreferences cannot be null");
         Validate.notNull(discoveredTunerModel, "TunerModel cannot be null");
         Validate.notNull(tunerConfigurationManager, "TunerConfigurationManager cannot be null");
-
         mDiscoveredTunerModel = discoveredTunerModel;
-        mUserPreferences = userPreferences;
         mTunerConfigurationManager = tunerConfigurationManager;
+        mUserPreferences = userPreferences;
 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle("Select Recording File");
@@ -131,7 +136,7 @@ public class AddRecordingTunerDialog extends JFrame
                 mAddButton.setEnabled(mSelectedRecording != null);
 
                 if(mSelectedRecording != null &&
-                   (mFrequencyTextField.getText() == null || mFrequencyTextField.getText().isEmpty()))
+                        (mFrequencyTextField.getText() == null || mFrequencyTextField.getText().isEmpty()))
                 {
                     Matcher m = TUNER_RECORDING_PATTERN.matcher(mSelectedRecording.getName());
 
@@ -170,9 +175,9 @@ public class AddRecordingTunerDialog extends JFrame
             if(mSelectedRecording == null)
             {
                 JOptionPane.showMessageDialog(AddRecordingTunerDialog.this,
-                    "Please select a recording file",
-                    "Select a Recording File",
-                    JOptionPane.ERROR_MESSAGE);
+                        "Please select a recording file",
+                        "Select a Recording File",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -181,14 +186,14 @@ public class AddRecordingTunerDialog extends JFrame
             if(frequency <= 0 || frequency > Integer.MAX_VALUE)
             {
                 JOptionPane.showMessageDialog(AddRecordingTunerDialog.this,
-                    "Please provide a recording center frequency (1 Hz to 2.14 GHz)",
-                    "Center Frequency Required",
-                    JOptionPane.ERROR_MESSAGE);
+                        "Please provide a recording center frequency (1 Hz to 2.14 GHz)",
+                        "Center Frequency Required",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             mLog.info("Adding recording tuner = frequency [" + frequency +
-                "] recording [" + mSelectedRecording.getAbsolutePath() + "]");
+                    "] recording [" + mSelectedRecording.getAbsolutePath() + "]");
 
 
             try

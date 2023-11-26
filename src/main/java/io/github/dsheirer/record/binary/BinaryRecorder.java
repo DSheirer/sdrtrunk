@@ -77,6 +77,7 @@ public class BinaryRecorder extends Module implements IByteBufferListener
 
     public void start()
     {
+        mLog.info("Starting binary recorder: " + getRecordingPath());
         if(mRunning.compareAndSet(false, true))
         {
             try

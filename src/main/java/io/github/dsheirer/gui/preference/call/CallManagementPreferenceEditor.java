@@ -20,8 +20,10 @@
 package io.github.dsheirer.gui.preference.call;
 
 import io.github.dsheirer.audio.broadcast.PatchGroupStreamingOption;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.preference.duplicate.CallManagementPreference;
+import jakarta.annotation.PostConstruct;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Preference settings for audio call management for duplicate calls and patch group streaming.
  */
-public class CallManagementPreferenceEditor extends HBox
+public class CallManagementPreferenceEditor extends PreferenceEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(CallManagementPreferenceEditor.class);
     private CallManagementPreference mPreference;
@@ -54,12 +56,22 @@ public class CallManagementPreferenceEditor extends HBox
     /**
      * Constructs an instance
      */
-    public CallManagementPreferenceEditor(UserPreferences userPreferences)
+    public CallManagementPreferenceEditor()
     {
-        mPreference = userPreferences.getDuplicateCallDetectionPreference();
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
+        mPreference = getUserPreferences().getCallManagementPreference();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.AUDIO_CALL_MANAGEMENT;
     }
 
     private GridPane getEditorPane()

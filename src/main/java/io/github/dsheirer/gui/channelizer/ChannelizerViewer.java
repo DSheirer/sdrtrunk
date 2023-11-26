@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,13 @@ import io.github.dsheirer.spectrum.ComplexDftProcessor;
 import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.SpectrumPanel;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,13 +54,6 @@ import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class ChannelizerViewer extends JFrame
 {
@@ -316,7 +316,7 @@ public class ChannelizerViewer extends JFrame
         public PrimarySpectrumPanel(SettingsManager settingsManager, double sampleRate)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(28);
             add(mSpectrumPanel);
 
@@ -354,7 +354,7 @@ public class ChannelizerViewer extends JFrame
         public ChannelPanel(SettingsManager settingsManager, double sampleRate, long frequency, int bandwidth, boolean enableLogging)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(32);
             add(mSpectrumPanel, "span");
 
@@ -435,7 +435,7 @@ public class ChannelizerViewer extends JFrame
         {
             mSource = source;
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(32);
             add(mSpectrumPanel, "span");
             add(new JLabel("Index:" + index));

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,14 +23,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEvent;
 import io.github.dsheirer.util.ThreadPool;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,42 +40,49 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+@Component("settingsManager")
 public class SettingsManager implements Listener<TunerConfigurationEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SettingsManager.class);
-
+    @Resource
+    private UserPreferences mUserPreferences;
     private Settings mSettings = new Settings();
     private List<SettingChangeListener> mListeners = new ArrayList<>();
     private boolean mLoadingSettings = false;
     private AtomicBoolean mSettingsSavePending = new AtomicBoolean();
+    private Path mSettingsFilePath;
 
     public SettingsManager()
     {
         //TODO: move settings into a SettingsModel
         //and update this class to only provide loading, saving, and model
         //change detection producing a save.
-
-        init();
     }
 
     /**
      * Loads settings from the current settings file, or the default settings file,
      * as specified in the current SDRTrunk system settings
      */
+    @PostConstruct
     private void init()
     {
-        SystemProperties props = SystemProperties.getInstance();
+        load(getSettingsFilePath());
+    }
 
-        Path settingsFolder = props.getApplicationFolder("settings");
+    private Path getSettingsFilePath()
+    {
+        if(mSettingsFilePath == null)
+        {
+            mSettingsFilePath = mUserPreferences.getDirectoryPreference().getDirectoryApplicationRoot()
+                    .resolve("settings").resolve("settings.xml");
+        }
 
-        String defaultSettingsFile =
-            props.get("settings.defaultFilename", "settings.xml");
-
-        String settingsFile =
-            props.get("settings.currentFilename", defaultSettingsFile);
-
-        load(settingsFolder.resolve(settingsFile));
+        return mSettingsFilePath;
     }
 
     @Override
@@ -228,19 +233,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 
     private void save()
     {
-        SystemProperties props = SystemProperties.getInstance();
-
-        Path settingsFolder = props.getApplicationFolder("settings");
-
-        String settingsDefault = props.get("settings.defaultFilename",
-            "settings.xml");
-
-        String settingsCurrent = props.get("settings.currentFilename",
-            settingsDefault);
-
-        Path settingsPath = settingsFolder.resolve(settingsCurrent);
-
-        try(OutputStream out = Files.newOutputStream(settingsPath))
+        try(OutputStream out = Files.newOutputStream(getSettingsFilePath()))
         {
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
@@ -251,11 +244,11 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         }
         catch(IOException ioe)
         {
-            mLog.error("IO error while writing the settings to a file [" + settingsPath + "]", ioe);
+            mLog.error("IO error while writing the settings to a file [" + getSettingsFilePath() + "]", ioe);
         }
         catch(Exception e)
         {
-            mLog.error("Error while saving settings file [" + settingsPath + "]", e);
+            mLog.error("Error while saving settings file [" + getSettingsFilePath() + "]", e);
         }
     }
 
@@ -269,7 +262,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 
         if(Files.exists(settingsPath))
         {
-            mLog.info("SettingsManager - loading settings file [" + settingsPath.toString() + "]");
+            mLog.info("SettingsManager - loading settings file [" + settingsPath + "]");
 
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
@@ -372,7 +365,6 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         public void run()
         {
             mSettingsSavePending.set(false);
-
             save();
         }
     }

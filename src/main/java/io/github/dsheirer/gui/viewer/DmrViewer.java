@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.audio.call.Call;
+import io.github.dsheirer.gui.control.TimestampTableCellFactory;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.dmr.DMRMessageFramer;
 import io.github.dsheirer.module.decode.dmr.DMRMessageProcessor;
@@ -339,6 +341,7 @@ public class DmrViewer extends VBox
             timestampColumn.setPrefWidth(110);
             timestampColumn.setText("Time");
             timestampColumn.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
+            timestampColumn.setCellFactory(new TimestampTableCellFactory<Call>());
 
             TableColumn timeslotColumn = new TableColumn();
             timeslotColumn.setPrefWidth(35);

@@ -1,8 +1,7 @@
 
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,29 +15,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.map;
-
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.icon.IconModel;
-import org.jdesktop.swingx.JXMapViewer;
-import org.jdesktop.swingx.painter.AbstractPainter;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.jdesktop.swingx.JXMapViewer;
+import org.jdesktop.swingx.painter.AbstractPainter;
 
 public class PlottableEntityPainter extends AbstractPainter<JXMapViewer>
 {
-    private PlottableEntityRenderer mRenderer;
+    private PlottableEntityRenderer mRenderer = new PlottableEntityRenderer();
     private Set<PlottableEntityHistory> mEntities = new HashSet<>();
 
-    public PlottableEntityPainter(AliasModel aliasModel, IconModel iconModel)
+    public PlottableEntityPainter()
     {
-        mRenderer = new PlottableEntityRenderer(aliasModel, iconModel);
         setAntialiasing(true);
         setCacheable(false);
     }

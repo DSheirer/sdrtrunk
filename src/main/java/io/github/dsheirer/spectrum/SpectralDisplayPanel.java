@@ -21,13 +21,11 @@ package io.github.dsheirer.spectrum;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
-import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
@@ -47,6 +45,8 @@ import io.github.dsheirer.spectrum.menu.FFTWindowTypeItem;
 import io.github.dsheirer.spectrum.menu.FrameRateItem;
 import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -80,33 +80,33 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.MouseInputAdapter;
 
-public class SpectralDisplayPanel extends JPanel
-        implements Listener<INativeBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
+public class SpectralDisplayPanel extends JPanel implements Listener<INativeBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final long serialVersionUID = 1L;
-
     private final static Logger mLog = LoggerFactory.getLogger(SpectralDisplayPanel.class);
-
     public static final String FFT_SIZE_PROPERTY = "spectral.display.dft.size";
-    public static final String SPECTRAL_DISPLAY_ENABLED = "spectral.display.enabled";
     public static final int NO_ZOOM = 0;
     public static final int MAX_ZOOM = 6;
+    @Resource
+    private DiscoveredTunerModel mDiscoveredTunerModel;
+    @Resource
+    private OverlayPanel mOverlayPanel;
+    @Resource
+    private SettingsManager mSettingsManager;
+    @Resource
+    private SpectrumPanel mSpectrumPanel;
+    @Resource
+    private WaterfallPanel mWaterfallPanel;
+    @Resource
+    private UserPreferences mUserPreferences;
 
     private DFTSize mDFTSize = DFTSize.FFT04096;
     private int mZoom = 0;
     private int mDFTZoomWindowOffset = 0;
-
     private JScrollPane mScrollPane;
     private JLayeredPane mLayeredPanel;
-    private SpectrumPanel mSpectrumPanel;
-    private WaterfallPanel mWaterfallPanel;
-    private OverlayPanel mOverlayPanel;
     private ComplexDftProcessor mComplexDftProcessor;
     private DFTResultsConverter mDFTConverter;
-    private ChannelModel mChannelModel;
-    private ChannelProcessingManager mChannelProcessingManager;
-    private SettingsManager mSettingsManager;
-    private DiscoveredTunerModel mDiscoveredTunerModel;
     private Tuner mTuner;
 
     /**
@@ -121,19 +121,14 @@ public class SpectralDisplayPanel extends JPanel
      * the DFT is translated to decibels for display in the spectrum and
      * waterfall components.
      */
-    public SpectralDisplayPanel(PlaylistManager playlistManager, SettingsManager settingsManager, DiscoveredTunerModel discoveredTunerModel)
+    public SpectralDisplayPanel()
     {
-        mChannelModel = playlistManager.getChannelModel();
-        mChannelProcessingManager = playlistManager.getChannelProcessingManager();
-        mSettingsManager = settingsManager;
-        mDiscoveredTunerModel = discoveredTunerModel;
+    }
 
-        mSpectrumPanel = new SpectrumPanel(mSettingsManager);
-        mOverlayPanel = new OverlayPanel(mSettingsManager, mChannelModel, mChannelProcessingManager);
-        mWaterfallPanel = new WaterfallPanel(mSettingsManager);
-
+    @PostConstruct
+    public void postConstruct()
+    {
         init();
-
         loadSettings();
     }
 
@@ -396,8 +391,8 @@ public class SpectralDisplayPanel extends JPanel
         mDFTConverter = new ComplexDecibelConverter();
         mComplexDftProcessor.addConverter(mDFTConverter);
 
-        mDFTConverter.addListener((DFTResultsListener)mSpectrumPanel);
-        mDFTConverter.addListener((DFTResultsListener)mWaterfallPanel);
+        mDFTConverter.addListener(mSpectrumPanel);
+        mDFTConverter.addListener(mWaterfallPanel);
     }
 
     /**
@@ -425,7 +420,6 @@ public class SpectralDisplayPanel extends JPanel
         clearTuner();
 
         mComplexDftProcessor.clearBuffer();
-
         mComplexDftProcessor.start();
 
         mTuner = tuner;
@@ -763,7 +757,8 @@ public class SpectralDisplayPanel extends JPanel
                 if(mTuner != null)
                 {
                     contextMenu.add(new JSeparator());
-                    contextMenu.add(new DisableSpectrumWaterfallMenuItem(SpectralDisplayPanel.this));
+                    contextMenu.add(new DisableSpectrumWaterfallMenuItem(SpectralDisplayPanel.this,
+                            mUserPreferences));
                 }
 
                 boolean separatorAdded = false;
@@ -778,7 +773,7 @@ public class SpectralDisplayPanel extends JPanel
                             separatorAdded = true;
                         }
 
-                        contextMenu.add(new ShowTunerMenuItem(mDiscoveredTunerModel, discoveredTuner.getTuner()));
+                        contextMenu.add(new ShowTunerMenuItem(discoveredTuner.getTuner(), mDiscoveredTunerModel, mUserPreferences));
                     }
                 }
 

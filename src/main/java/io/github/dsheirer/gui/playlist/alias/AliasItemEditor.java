@@ -20,12 +20,12 @@
 package io.github.dsheirer.gui.playlist.alias;
 
 import com.google.common.collect.Ordering;
-import com.google.common.eventbus.Subscribe;
 import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasAction;
 import io.github.dsheirer.alias.action.AliasActionType;
 import io.github.dsheirer.alias.action.beep.BeepAction;
@@ -48,6 +48,7 @@ import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormatter;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
+import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.Editor;
@@ -58,11 +59,15 @@ import io.github.dsheirer.gui.playlist.alias.identifier.EmptyIdentifierEditor;
 import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditor;
 import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditorFactory;
 import io.github.dsheirer.icon.Icon;
-import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.icon.IconModel;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,11 +119,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Editor for configuring individual aliases
  */
-public class AliasItemEditor extends Editor<Alias>
+public class AliasItemEditor extends Editor<Alias> implements IPreferenceUpdateListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(AliasItemEditor.class);
 
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private BroadcastModel mBroadcastModel;
+    @Resource
+    private IconModel mIconModel;
+    @Resource
     private UserPreferences mUserPreferences;
     private EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private IdentifierEditorModificationListener mIdentifierEditorModificationListener = new IdentifierEditorModificationListener();
@@ -161,15 +172,16 @@ public class AliasItemEditor extends Editor<Alias>
     private EmptyActionEditor mEmptyActionEditor = new EmptyActionEditor();
     private ActionEditor mActionEditor;
 
-
-    public AliasItemEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public AliasItemEditor()
     {
-        mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
+        mUserPreferences.addUpdateListener(this);
         //Listen for changes to the stream configurations and refresh the stream lists
-        mPlaylistManager.getBroadcastModel().getConfiguredBroadcasts()
-            .addListener((ListChangeListener<ConfiguredBroadcast>)c -> updateStreamViews());
+        mBroadcastModel.getConfiguredBroadcasts().addListener((ListChangeListener<ConfiguredBroadcast>)c -> updateStreamViews());
 
         MyEventBus.getGlobalEventBus().register(this);
 
@@ -192,8 +204,13 @@ public class AliasItemEditor extends Editor<Alias>
         getChildren().add(hbox);
     }
 
+    @PreDestroy
+    public void dispose()
+    {
+        mUserPreferences.removeUpdateListener(this);
+    }
 
-    @Subscribe
+    @Override
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
@@ -251,7 +268,7 @@ public class AliasItemEditor extends Editor<Alias>
             String iconName = alias.getIconName();
             if(iconName != null)
             {
-                icon = mPlaylistManager.getIconModel().getIcon(iconName);
+                icon = mIconModel.getIcon(iconName);
             }
             getIconNodeComboBox().getSelectionModel().select(icon);
 
@@ -399,7 +416,7 @@ public class AliasItemEditor extends Editor<Alias>
                 }
             }
 
-            AliasList aliasList = mPlaylistManager.getAliasModel().getAliasList(alias.getAliasListName());
+            AliasList aliasList = mAliasModel.getAliasList(alias.getAliasListName());
             aliasList.updateAlias(alias);
 
             //Reset the alias to refresh the editor.
@@ -407,12 +424,6 @@ public class AliasItemEditor extends Editor<Alias>
 
             modifiedProperty().set(false);
         }
-    }
-
-    @Override
-    public void dispose()
-    {
-        MyEventBus.getGlobalEventBus().unregister(this);
     }
 
     private VBox getTitledPanesBox()
@@ -819,7 +830,7 @@ public class AliasItemEditor extends Editor<Alias>
 
                 if(getItem() != null)
                 {
-                    List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
+                    List<String> availableStreams = mBroadcastModel.getBroadcastConfigurationNames();
 
                     Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
 
@@ -1088,7 +1099,7 @@ public class AliasItemEditor extends Editor<Alias>
             mIconNodeComboBox = new ComboBox<>();
             mIconNodeComboBox.setMaxWidth(Double.MAX_VALUE);
             mIconNodeComboBox.setDisable(true);
-            mIconNodeComboBox.setItems(new SortedList(mPlaylistManager.getIconModel().iconsProperty(), Ordering.natural()));
+            mIconNodeComboBox.setItems(new SortedList(mIconModel.iconsProperty(), Ordering.natural()));
             mIconNodeComboBox.setCellFactory(new IconCellFactory());
             mIconNodeComboBox.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1103,14 +1114,14 @@ public class AliasItemEditor extends Editor<Alias>
     private void refreshAutoCompleteBindings()
     {
         getGroupSuggestionProvider().clearSuggestions();
-        getGroupSuggestionProvider().addPossibleSuggestions(mPlaylistManager.getAliasModel().getGroupNames());
+        getGroupSuggestionProvider().addPossibleSuggestions(mAliasModel.getGroupNames());
     }
 
     private SuggestionProvider<String> getGroupSuggestionProvider()
     {
         if(mGroupSuggestionProvider == null)
         {
-            mGroupSuggestionProvider = SuggestionProvider.create(mPlaylistManager.getAliasModel().getGroupNames());
+            mGroupSuggestionProvider = SuggestionProvider.create(mAliasModel.getGroupNames());
         }
 
         return mGroupSuggestionProvider;

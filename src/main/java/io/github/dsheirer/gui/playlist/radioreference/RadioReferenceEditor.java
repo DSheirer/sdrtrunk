@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.Agency;
@@ -32,6 +31,12 @@ import io.github.dsheirer.rrapi.type.State;
 import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
@@ -56,16 +61,23 @@ import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 public class RadioReferenceEditor extends BorderPane implements Consumer<AuthorizationInformation>
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioReferenceEditor.class);
-    private UserPreferences mUserPreferences;
+    @Resource
+    private CountyAgencyEditor mCountyAgencyEditor;
+    @Resource
+    private CountySystemEditor mCountySystemEditor;
+    @Resource
+    private NationalAgencyEditor mNationalAgencyEditor;
+    @Resource
     private RadioReference mRadioReference;
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private StateAgencyEditor mStateAgencyEditor;
+    @Resource
+    private StateSystemEditor mStateSystemEditor;
+    @Resource
+    private UserPreferences mUserPreferences;
     private VBox mTopBox;
     private HBox mCredentialsBox;
     private Label mRRStatusText;
@@ -79,11 +91,6 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private ComboBox<Country> mCountryComboBox;
     private ComboBox<State> mStateComboBox;
     private ComboBox<County> mCountyComboBox;
-    private AgencyEditor mNationalAgencyEditor;
-    private AgencyEditor mStateAgencyEditor;
-    private AgencyEditor mCountyAgencyEditor;
-    private SystemEditor mStateSystemEditor;
-    private SystemEditor mCountySystemEditor;
     private TabPane mTabPane;
     private Tab mNationalAgencyTab;
     private Tab mStateAgencyTab;
@@ -91,34 +98,42 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private Tab mStateSystemTab;
     private Tab mCountySystemTab;
 
-    public RadioReferenceEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    /**
+     * Constructs an instance
+     */
+    public RadioReferenceEditor()
     {
-        mUserPreferences = userPreferences;
-        mRadioReference = playlistManager.getRadioReference();
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         setTop(getTopBox());
         setCenter(getTabPane());
 
-        login();
-
-        if(mRadioReference.premiumAccountProperty().get())
-        {
-            refreshCountries();
-        }
-
         //Refresh the countries combo box once we're logged on, if not already
         mRadioReference.premiumAccountProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue)
+            //Only refresh the countries if we're now logged in and we weren't previously logged in.
+            if(newValue && oldValue ^ newValue)
             {
                 refreshCountries();
             }
         });
     }
 
-    private void login()
+    @PreDestroy
+    public void preDestroy()
     {
-        if(mUserPreferences.getRadioReferencePreference().hasStoredCredentials())
+    }
+
+    /**
+     * Performs radio reference login and sets the state of the premiumAccountProperty and if the login is good, it
+     * triggers a refresh on the countries list box.
+     */
+    public void login()
+    {
+        if(mUserPreferences.getRadioReferencePreference().hasStoredCredentials() &&
+            !mRadioReference.premiumAccountProperty().get())
         {
             AuthorizationInformation credentials = mUserPreferences.getRadioReferencePreference().getAuthorizationInformation();
 
@@ -139,6 +154,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         final int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
 
+        //Retrieve the countries off of the JavaFX event thread and load the UI on the JavaFX platform thread
         ThreadPool.CACHED.execute(() -> {
             try
             {
@@ -297,54 +313,29 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
         return mCountySystemTab;
     }
 
-    private AgencyEditor getNationalAgencyEditor()
+    private AgencyEditor getCountyAgencyEditor()
     {
-        if(mNationalAgencyEditor == null)
-        {
-            mNationalAgencyEditor = new AgencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.NATIONAL);
-        }
-
-        return mNationalAgencyEditor;
+        return mCountyAgencyEditor;
     }
 
     private AgencyEditor getStateAgencyEditor()
     {
-        if(mStateAgencyEditor == null)
-        {
-            mStateAgencyEditor = new AgencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.STATE);
-        }
-
         return mStateAgencyEditor;
     }
 
-    private AgencyEditor getCountyAgencyEditor()
+    private AgencyEditor getNationalAgencyEditor()
     {
-        if(mCountyAgencyEditor == null)
-        {
-            mCountyAgencyEditor = new AgencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.COUNTY);
-        }
-
-        return mCountyAgencyEditor;
-    }
-
-    private SystemEditor getStateSystemEditor()
-    {
-        if(mStateSystemEditor == null)
-        {
-            mStateSystemEditor = new SystemEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.STATE);
-        }
-
-        return mStateSystemEditor;
+        return mNationalAgencyEditor;
     }
 
     private SystemEditor getCountySystemEditor()
     {
-        if(mCountySystemEditor == null)
-        {
-            mCountySystemEditor = new SystemEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.COUNTY);
-        }
-
         return mCountySystemEditor;
+    }
+
+    private SystemEditor getStateSystemEditor()
+    {
+        return mStateSystemEditor;
     }
 
     private VBox getTopBox()

@@ -20,10 +20,10 @@ package io.github.dsheirer.module;
 
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioSegment;
-import io.github.dsheirer.audio.AudioSegmentBroadcaster;
 import io.github.dsheirer.audio.IAudioSegmentListener;
 import io.github.dsheirer.audio.IAudioSegmentProvider;
+import io.github.dsheirer.audio.call.AudioSegment;
+import io.github.dsheirer.audio.call.AudioSegmentBroadcaster;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
@@ -131,19 +131,18 @@ public class ProcessingChain implements Listener<ChannelEvent>
      * Creates a processing chain for managing a set of modules
      *
      * @param channel with configuration details for this processing chain
-     * @param aliasModel for looking up aliases
      */
-    public ProcessingChain(Channel channel, AliasModel aliasModel)
+    public ProcessingChain(AliasModel aliasModel, Channel channel)
     {
         mEventBus = new EventBus("Processing Chain Event Bus - Channel: " + channel.getName());
 
         if(channel.getDecodeConfiguration().getTimeslotCount() == 1)
         {
-            mChannelState = new SingleChannelState(channel, aliasModel);
+            mChannelState = new SingleChannelState(aliasModel, channel);
         }
         else
         {
-            mChannelState = new MultiChannelState(channel, aliasModel, channel.getDecodeConfiguration().getTimeslots());
+            mChannelState = new MultiChannelState(aliasModel, channel, channel.getDecodeConfiguration().getTimeslots());
         }
 
         addModule(mChannelState);

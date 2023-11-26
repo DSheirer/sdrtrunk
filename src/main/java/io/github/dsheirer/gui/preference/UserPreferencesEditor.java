@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,10 @@ package io.github.dsheirer.gui.preference;
 
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
-import io.github.dsheirer.preference.UserPreferences;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -53,8 +55,9 @@ public class UserPreferencesEditor extends BorderPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(UserPreferencesEditor.class);
 
-    private Map<PreferenceEditorType,Node> mEditors = new EnumMap<>(PreferenceEditorType.class);
-    private UserPreferences mUserPreferences;
+    @Resource
+    private List<PreferenceEditor> mPreferenceEditors;
+    private Map<PreferenceEditorType,Node> mEditorMap = new EnumMap<>(PreferenceEditorType.class);
     private MenuBar mMenuBar;
     private TreeView mEditorSelectionTreeView;
     private VBox mEditorAndButtonsBox;
@@ -63,29 +66,27 @@ public class UserPreferencesEditor extends BorderPane
 
     /**
      * Constructs an instance
-     *
-     * @param userPreferences to edit
      */
-    public UserPreferencesEditor(UserPreferences userPreferences)
+    public UserPreferencesEditor()
     {
-        mUserPreferences = userPreferences;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        //Spring auto-constructs all of our editors for us with the @Resource tagged member variable.
+        for(PreferenceEditor editor: mPreferenceEditors)
+        {
+            mEditorMap.put(editor.getPreferenceEditorType(), editor);
+        }
+
+        mEditorMap.put(PreferenceEditorType.DEFAULT, getDefaultEditor());
 
         setTop(getMenuBar());
-
         HBox contentBox = new HBox();
         HBox.setHgrow(getEditorAndButtonsBox(), Priority.ALWAYS);
         contentBox.getChildren().addAll(getEditorSelectionTreeView(), getEditorAndButtonsBox());
         setCenter(contentBox);
-    }
-
-    private UserPreferences getUserPreferences()
-    {
-        if(mUserPreferences == null)
-        {
-            mUserPreferences = new UserPreferences();
-        }
-
-        return mUserPreferences;
     }
 
     /**
@@ -141,7 +142,7 @@ public class UserPreferencesEditor extends BorderPane
 
     private Node getDefaultEditor()
     {
-        Node editor = mEditors.get(PreferenceEditorType.DEFAULT);
+        Node editor = mEditorMap.get(PreferenceEditorType.DEFAULT);
 
         if(editor == null)
         {
@@ -149,7 +150,7 @@ public class UserPreferencesEditor extends BorderPane
             defaultEditor.setPadding(new Insets(10, 10, 10, 10));
             Label label = new Label("Please select a preference ...");
             defaultEditor.getChildren().add(label);
-            mEditors.put(PreferenceEditorType.DEFAULT, defaultEditor);
+            mEditorMap.put(PreferenceEditorType.DEFAULT, defaultEditor);
             editor = defaultEditor;
         }
 
@@ -173,7 +174,7 @@ public class UserPreferencesEditor extends BorderPane
             TreeItem<String> audioItem = new TreeItem<>("Audio");
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_CALL_MANAGEMENT));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_MP3));
-            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_OUTPUT));
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_PLAYBACK));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_RECORD));
             treeRoot.getChildren().add(audioItem);
             audioItem.setExpanded(true);
@@ -200,7 +201,7 @@ public class UserPreferencesEditor extends BorderPane
             storageItem.setExpanded(true);
 
             TreeItem<String> sourceItem = new TreeItem<>("Source");
-            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNERS));
+            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.TUNERS));
             treeRoot.getChildren().add(sourceItem);
             sourceItem.setExpanded(true);
 
@@ -266,19 +267,11 @@ public class UserPreferencesEditor extends BorderPane
 
     private void setEditor(PreferenceEditorType type)
     {
-        Node editor = mEditors.get(type);
+        Node editor = mEditorMap.get(type);
 
         if(editor == null)
         {
-            if(type == PreferenceEditorType.DEFAULT)
-            {
-                editor = getDefaultEditor();
-            }
-            else
-            {
-                editor = PreferenceEditorFactory.getEditor(type, getUserPreferences());
-                mEditors.put(type, editor);
-            }
+            editor = mEditorMap.get(PreferenceEditorType.DEFAULT);
         }
 
         getEditorAndButtonsBox().getChildren().remove(mEditor);

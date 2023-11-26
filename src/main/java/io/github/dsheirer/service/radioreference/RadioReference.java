@@ -1,55 +1,53 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.service.radioreference;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.UserInfo;
-import javafx.beans.property.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Scanner;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Service interface to radioreference.com data API with caching for Flavor, Mode, Type and Tag values.
  */
+@Component("radioReference")
 public class RadioReference
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioReference.class);
 
     public static final String SDRTRUNK_APP_KEY = "88969092";
     private RadioReferenceService mRadioReferenceService;
-    private UserPreferences mUserPreferences;
     private AuthorizationInformation mAuthorizationInformation;
     private StringProperty mUserName = new SimpleStringProperty();
     private StringProperty mPassword = new SimpleStringProperty();
@@ -71,11 +69,9 @@ public class RadioReference
 
     /**
      * Constructs an instance of the radio reference service
-     * @param userPreferences for user credentials and other settings
      */
-    public RadioReference(UserPreferences userPreferences)
+    public RadioReference()
     {
-        mUserPreferences = userPreferences;
     }
 
     /**
@@ -291,7 +287,6 @@ public class RadioReference
             mLoginStatus = LoginStatus.UNKNOWN;
             availableProperty().set(false);
             premiumAccountProperty().set(false);
-
         }
     }
 
@@ -332,38 +327,5 @@ public class RadioReference
         }
 
         login();
-    }
-
-    public static void main(String[] args)
-    {
-        UserPreferences userPreferences = new UserPreferences();
-        RadioReference radioReference = new RadioReference(userPreferences);
-
-        AuthorizationInformation credentials = userPreferences.getRadioReferencePreference().getAuthorizationInformation();
-
-        if(credentials == null)
-        {
-            Scanner scanner = new Scanner(System.in);
-            System.out.print("Username: ");
-            String username = scanner.next();
-            System.out.print("Password: ");
-            String password = scanner.next();
-            credentials = getAuthorizatonInformation(username, password);
-        }
-
-        radioReference.setAuthorizationInformation(credentials);
-
-        if(radioReference.availableProperty().get())
-        {
-            try
-            {
-                UserInfo userInfo = radioReference.getService().getUserInfo();
-                System.out.println("User Name: " + userInfo.getUserName() + " Account Expires:" + userInfo.getExpirationDate());
-            }
-            catch(RadioReferenceException rre)
-            {
-                mLog.error("Error", rre);
-            }
-        }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,13 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -45,9 +46,11 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.swing.table.AbstractTableModel;
 
+@Component("broadcastModel")
 public class BroadcastModel extends AbstractTableModel implements Listener<AudioRecording>
 {
     private final static Logger mLog = LoggerFactory.getLogger(BroadcastModel.class);
@@ -68,28 +71,30 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     public static final String[] COLUMN_NAMES = new String[]
         {"Stream Type", "Name", "Status", "Queued", "Streamed/Uploaded", "Aged Off", "Upload Error"};
 
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private UserPreferences mUserPreferences;
+
     private ObservableList<ConfiguredBroadcast> mConfiguredBroadcasts =
         FXCollections.observableArrayList(ConfiguredBroadcast.extractor());
     private List<AudioRecording> mRecordingQueue = new CopyOnWriteArrayList<>();
     private Map<Integer,AbstractAudioBroadcaster> mBroadcasterMap = new HashMap<>();
-    private IconModel mIconModel;
-    private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
     private BroadcastEventListener mBroadcastEventListener = new BroadcastEventListener();
-    private UserPreferences mUserPreferences;
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(AliasModel aliasModel, IconModel iconModel, UserPreferences userPreferences)
+    public BroadcastModel()
     {
-        mAliasModel = aliasModel;
-        mIconModel = iconModel;
-        mUserPreferences = userPreferences;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
-
         removeOrphanedTemporaryRecordings();
     }
 

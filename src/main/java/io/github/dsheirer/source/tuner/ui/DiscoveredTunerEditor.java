@@ -26,6 +26,8 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +42,9 @@ public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements ID
 {
     private static final long serialVersionUID = 1L;
     private static final Logger mLog = LoggerFactory.getLogger(DiscoveredTunerEditor.class);
+    @Resource
     private UserPreferences mUserPreferences;
+    @Resource
     private TunerManager mTunerManager;
     private JPanel mEmptyEditor = new EmptyTunerEditor();
     private JPanel mEditor = mEmptyEditor;
@@ -48,14 +52,9 @@ public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements ID
 
     /**
      * Constructs an instance
-     * @param userPreferences to use for starting wideband recordings sourced by a tuner
-     * @param tunerManager for creating tuner editors
      */
-    public DiscoveredTunerEditor(UserPreferences userPreferences, TunerManager tunerManager)
+    public DiscoveredTunerEditor()
     {
-        mUserPreferences = userPreferences;
-        mTunerManager = tunerManager;
-        init();
     }
 
     /**
@@ -70,6 +69,7 @@ public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements ID
         }
     }
 
+    @PostConstruct
     public void init()
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));

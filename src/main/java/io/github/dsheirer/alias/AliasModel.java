@@ -33,12 +33,14 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Alias Model contains all aliases and is responsible for creation and management of alias lists.  Alias lists are a
  * set of aliases that all share a common alias list name and can be attached to a decoding channel for aliasing
  * identifiers produced by channel decoder(s).
  */
+@Component("aliasModel")
 public class AliasModel
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasModel.class);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,23 +18,12 @@
  */
 package io.github.dsheirer.audio.broadcast.icecast;
 
-import com.google.common.base.Joiner;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
-import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
-import io.github.dsheirer.audio.broadcast.icecast.IcecastMetadata;
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
-import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -42,7 +31,8 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdater
 {
@@ -50,6 +40,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     private final static String UTF8 = "UTF-8";
     private HttpClient mHttpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
     private IcecastConfiguration mIcecastConfiguration;
+    @Resource
     private AliasModel mAliasModel;
     private boolean mConnectionLoggingSuppressed = false;
 
@@ -59,10 +50,9 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
      * sequence, those updates will be queued and processed in the order received.
      */
-    public IcecastBroadcastMetadataUpdater(IcecastConfiguration icecastConfiguration, AliasModel aliasModel)
+    public IcecastBroadcastMetadataUpdater(IcecastConfiguration icecastConfiguration)
     {
         mIcecastConfiguration = icecastConfiguration;
-        mAliasModel = aliasModel;
     }
 
     /**

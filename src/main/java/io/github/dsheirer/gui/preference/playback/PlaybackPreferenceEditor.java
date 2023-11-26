@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,13 @@
 package io.github.dsheirer.gui.preference.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.audio.playbackfx.PlaybackView;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
 import io.github.dsheirer.source.mixer.MixerManager;
+import jakarta.annotation.PostConstruct;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -35,6 +38,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -53,10 +57,10 @@ import javax.sound.sampled.DataLine;
 /**
  * Preference settings for audio playback
  */
-public class PlaybackPreferenceEditor extends HBox
+public class PlaybackPreferenceEditor extends PreferenceEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackPreferenceEditor.class);
-    private final PlaybackPreference mPlaybackPreference;
+    private PlaybackPreference mPlaybackPreference;
     private GridPane mEditorPane;
     private ComboBox<MixerChannelConfiguration> mMixerComboBox;
     private Button mMixerTestButton;
@@ -68,27 +72,48 @@ public class PlaybackPreferenceEditor extends HBox
     private ComboBox<ToneVolume> mStartToneVolumeComboBox;
     private ComboBox<ToneFrequency> mDropToneFrequencyComboBox;
     private ComboBox<ToneVolume> mDropToneVolumeComboBox;
+    private ComboBox<PlaybackView> mPlaybackViewComboBox;
 
-    public PlaybackPreferenceEditor(UserPreferences userPreferences)
+    public PlaybackPreferenceEditor()
     {
-        mPlaybackPreference = userPreferences.getPlaybackPreference();
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
+        mPlaybackPreference = getUserPreferences().getPlaybackPreference();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.AUDIO_PLAYBACK;
     }
 
     private GridPane getEditorPane()
     {
         if(mEditorPane == null)
         {
-            int row = 0;
             mEditorPane = new GridPane();
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
             mEditorPane.setHgap(10);
             mEditorPane.setVgap(10);
-            Label outputLabel = new Label("Audio Output Device");
+
+            int row = 0;
+
+            Label playbackLabel = new Label("Audio Playback (Left/Right) Channel View");
+            mEditorPane.add(playbackLabel, 0, row, 3, 1);
+            Label styleLabel = new Label("View Style:");
+            GridPane.setHalignment(styleLabel, HPos.RIGHT);
+            mEditorPane.add(styleLabel, 0, ++row, 2, 1);
+            mEditorPane.add(getPlaybackViewComboBox(), 2, row, 3, 1);
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, ++row, 6, 1);
+
+            Label outputLabel = new Label("Audio Output Device:");
             GridPane.setHalignment(outputLabel, HPos.RIGHT);
-            mEditorPane.add(outputLabel, 0, row, 2, 1);
+            mEditorPane.add(outputLabel, 0, ++row, 2, 1);
             mEditorPane.add(getMixerComboBox(), 2, row, 3, 1);
             mEditorPane.add(getMixerTestButton(), 5, row);
             mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, ++row, 6, 1);
@@ -267,6 +292,24 @@ public class PlaybackPreferenceEditor extends HBox
         }
 
         return mStartToneVolumeComboBox;
+    }
+
+    /**
+     * Playback view style selection box.
+     */
+    public ComboBox<PlaybackView> getPlaybackViewComboBox()
+    {
+        if(mPlaybackViewComboBox == null)
+        {
+            mPlaybackViewComboBox = new ComboBox<>();
+            mPlaybackViewComboBox.setTooltip(new Tooltip("Determines the styling of the audio playback left/right channel views"));
+            mPlaybackViewComboBox.getItems().addAll(PlaybackView.values());
+            mPlaybackViewComboBox.getSelectionModel().select(mPlaybackPreference.getPlaybackView());
+            mPlaybackViewComboBox.getSelectionModel().selectedItemProperty()
+                    .addListener((observable, oldValue, newValue) -> mPlaybackPreference.setPlaybackView(newValue));
+        }
+
+        return mPlaybackViewComboBox;
     }
 
     /**

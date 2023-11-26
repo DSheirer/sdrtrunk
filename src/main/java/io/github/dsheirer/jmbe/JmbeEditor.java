@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,10 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.jmbe.github.Release;
 import io.github.dsheirer.jmbe.github.Version;
 import io.github.dsheirer.preference.UserPreferences;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.io.File;
+import java.nio.file.Path;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -39,15 +43,13 @@ import javafx.stage.DirectoryChooser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.nio.file.Path;
-
 /**
  * Editor pane for JMBE Library creator
  */
 public class JmbeEditor extends VBox
 {
     private final static Logger mLog = LoggerFactory.getLogger(JmbeEditor.class);
+    @Resource
     private UserPreferences mUserPreferences;
     private Release mCurrentRelease;
     private Label mCurrentVersionLabel;
@@ -61,11 +63,14 @@ public class JmbeEditor extends VBox
 
     /**
      * Constructs an instance
-     * @param userPreferences
      */
-    public JmbeEditor(UserPreferences userPreferences)
+    public JmbeEditor()
     {
-        mUserPreferences = userPreferences;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
         setPadding(new Insets(10,10,10,10));
         setSpacing(10);
         Separator separator = new Separator();

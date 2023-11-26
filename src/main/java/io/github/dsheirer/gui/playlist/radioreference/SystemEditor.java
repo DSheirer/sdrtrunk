@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.CountyInfo;
@@ -34,6 +33,7 @@ import io.github.dsheirer.rrapi.type.Type;
 import io.github.dsheirer.rrapi.type.Voice;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -63,37 +63,40 @@ import org.slf4j.LoggerFactory;
 /**
  * Radio Reference editor for trunked radio systems
  */
-public class SystemEditor extends VBox
+public abstract class SystemEditor extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(SystemEditor.class);
 
-    private UserPreferences mUserPreferences;
+    @Resource
     private RadioReference mRadioReference;
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private SystemTalkgroupSelectionEditor mSystemTalkgroupSelectionEditor;
+    @Resource
+    private UserPreferences mUserPreferences;
     private Level mLevel;
     private ComboBox<System> mSystemComboBox;
     private IntegerProperty mSystemCountProperty = new SimpleIntegerProperty();
     private TabPane mTabPane;
     private Tab mSystemTab;
     private Tab mTalkgroupTab;
+    @Resource
     private SystemSiteSelectionEditor mSystemSiteSelectionEditor;
-    private SystemTalkgroupSelectionEditor mSystemTalkgroupSelectionEditor;
     private RadioReferenceDecoder mRadioReferenceDecoder;
 
     /**
      * Constructs an instance
-     * @param userPreferences for preferences
-     * @param radioReference to access radio reference
-     * @param playlistManager
      * @param level STATE or COUNTY
      */
-    public SystemEditor(UserPreferences userPreferences, RadioReference radioReference,
-                        PlaylistManager playlistManager, Level level)
+    public SystemEditor(Level level)
     {
-        mUserPreferences = userPreferences;
-        mRadioReference = radioReference;
-        mPlaylistManager = playlistManager;
         mLevel = level;
+    }
+
+    /**
+     * Not annotated.  Sub-class implementation must be annotated.
+     */
+    public void postConstruct()
+    {
         mSystemCountProperty.bind(Bindings.size(getSystemComboBox().getItems()));
 
         setPadding(new Insets(20,10,10,10));
@@ -168,11 +171,6 @@ public class SystemEditor extends VBox
 
     private SystemSiteSelectionEditor getSystemSiteSelectionEditor()
     {
-        if(mSystemSiteSelectionEditor == null)
-        {
-            mSystemSiteSelectionEditor = new SystemSiteSelectionEditor(mUserPreferences, mPlaylistManager);
-        }
-
         return mSystemSiteSelectionEditor;
     }
 
@@ -189,11 +187,6 @@ public class SystemEditor extends VBox
 
     private SystemTalkgroupSelectionEditor getSystemTalkgroupSelectionEditor()
     {
-        if(mSystemTalkgroupSelectionEditor == null)
-        {
-            mSystemTalkgroupSelectionEditor = new SystemTalkgroupSelectionEditor(mUserPreferences, mPlaylistManager);
-        }
-
         return mSystemTalkgroupSelectionEditor;
     }
 

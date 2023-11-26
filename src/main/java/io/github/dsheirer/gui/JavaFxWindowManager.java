@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
 package io.github.dsheirer.gui;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
+import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.controller.channel.map.ChannelRange;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.icon.IconManager;
@@ -37,28 +37,30 @@ import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
 import io.github.dsheirer.gui.viewer.RecordingViewer;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
-import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.monitor.StatusBox;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import jiconfont.javafx.IconFontFX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Java FX window manager.  Handles all secondary Java FX windows that are used within this primarily
  * Swing application.
  */
+@Component("javaFxWindowManager")
 public class JavaFxWindowManager extends Application
 {
     private final static Logger mLog = LoggerFactory.getLogger(JavaFxWindowManager.class);
@@ -67,7 +69,6 @@ public class JavaFxWindowManager extends Application
     public static final String ICON_MANAGER = "iconmanager";
     public static final String PLAYLIST_EDITOR = "playlist";
     public static final String USER_PREFERENCES_EDITOR = "preferences";
-    public static final String STAGE_MONITOR_KEY_CALIBRATION_DIALOG = "calibration.dialog";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
     public static final String STAGE_MONITOR_KEY_RECORDING_VIEWER = "recording.viewer";
     public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
@@ -75,50 +76,43 @@ public class JavaFxWindowManager extends Application
     public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
     public static final String STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR = "user.preferences";
 
-    private JFXPanel mJFXPanel;
+    @Resource
     private ChannelMapEditor mChannelMapEditor;
+    @Resource
+    private ChannelMapModel mChannelMapModel;
+    @Resource
     private IconManager mIconManager;
+    @Resource
     private JmbeEditor mJmbeEditor;
+    @Resource
     private PlaylistEditor mPlaylistEditor;
-    private PlaylistManager mPlaylistManager;
-    private TunerManager mTunerManager;
+    @Resource
     private UserPreferences mUserPreferences;
+    @Resource
     private UserPreferencesEditor mUserPreferencesEditor;
-    private RecordingViewer mRecordingViewer;
 
+    private JFXPanel mStatusPanel;
+    private RecordingViewer mRecordingViewer;
     private Stage mChannelMapStage;
     private Stage mIconManagerStage;
     private Stage mJmbeEditorStage;
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
     private Stage mRecordingViewerStage;
-    private JFXPanel mStatusPanel;
+    private List<Stage> mStages = new ArrayList<>();
 
     /**
      * Constructs an instance.  Note: this constructor is used for Swing applications.
      */
-    public JavaFxWindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
-    {
-        mUserPreferences = userPreferences;
-        mTunerManager = tunerManager;
-        mPlaylistManager = playlistManager;
-
-        setup();
-    }
-
-    /**
-     * Constructs an instance.  Note: this constructor is used for standalone JavaFX application testing
-     */
     public JavaFxWindowManager()
     {
-        mUserPreferences = new UserPreferences();
-        AliasModel aliasModel = new AliasModel();
-        EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mTunerManager = new TunerManager(mUserPreferences);
-        mTunerManager.start();
-        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
-        mPlaylistManager.init();
-        setup();
+    }
+
+    @PostConstruct
+    private void postConstruct()
+    {
+        //Register this class to receive events via each method annotated with @Subscribe
+        MyEventBus.getGlobalEventBus().register(this);
     }
 
     /**
@@ -142,24 +136,11 @@ public class JavaFxWindowManager extends Application
         return mStatusPanel;
     }
 
-    private void setup()
-    {
-        //Register this class to receive events via each method annotated with @Subscribe
-        MyEventBus.getGlobalEventBus().register(this);
-
-        //Register JavaFX icon fonts
-        IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
-
-        createJFXPanel();
-    }
-
     /**
      * Executes the runnable on the JavaFX application thread
      */
     private void execute(Runnable runnable)
     {
-        createJFXPanel();
-
         if(Platform.isFxApplicationThread())
         {
             runnable.run();
@@ -171,30 +152,37 @@ public class JavaFxWindowManager extends Application
     }
 
     /**
-     * Creates a JavaFX panel for Swing application compatibility
-     */
-    private void createJFXPanel()
-    {
-        if(mJFXPanel == null)
-        {
-            mJFXPanel = new JFXPanel();
-            Platform.setImplicitExit(false);
-        }
-    }
-
-    /**
      * Removes monitoring for all JavaFX stages and shuts down the FX thread, killing all FX windows.
      */
     public void shutdown()
     {
         MyEventBus.getGlobalEventBus().unregister(this);
         mUserPreferences.getJavaFxPreferences().clearStageMonitors();
-        Platform.exit();
+
+        Platform.runLater(() ->
+        {
+            Iterator<Stage> it = mStages.iterator();
+
+            while(it.hasNext())
+            {
+                try
+                {
+                    it.next().close();
+                }
+                catch(Throwable t)
+                {
+                    //Do nothing ... we're shutting down
+                }
+
+                it.remove();
+            }
+
+            Platform.exit();
+        });
     }
 
     public CalibrationDialog getCalibrationDialog(UserPreferences userPreferences)
     {
-        createJFXPanel();
         return new CalibrationDialog(userPreferences);
     }
 
@@ -205,11 +193,11 @@ public class JavaFxWindowManager extends Application
     {
         if(mRecordingViewerStage == null)
         {
-            createJFXPanel();
             Scene scene = new Scene(getRecordingViewer(), 1100, 800);
             mRecordingViewerStage = new Stage();
             mRecordingViewerStage.setTitle("sdrtrunk - Message Recording Viewer (.bits)");
             mRecordingViewerStage.setScene(scene);
+            mStages.add(mRecordingViewerStage);
             mUserPreferences.getJavaFxPreferences().monitor(mRecordingViewerStage, STAGE_MONITOR_KEY_RECORDING_VIEWER);
         }
 
@@ -230,11 +218,11 @@ public class JavaFxWindowManager extends Application
     {
         if(mIconManagerStage == null)
         {
-            createJFXPanel();
             Scene scene = new Scene(getIconManager(), 500, 500);
             mIconManagerStage = new Stage();
             mIconManagerStage.setTitle("sdrtrunk - Icon Manager");
             mIconManagerStage.setScene(scene);
+            mStages.add(mIconManagerStage);
             mUserPreferences.getJavaFxPreferences().monitor(mIconManagerStage, STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR);
         }
 
@@ -243,11 +231,6 @@ public class JavaFxWindowManager extends Application
 
     public IconManager getIconManager()
     {
-        if(mIconManager == null)
-        {
-            mIconManager = new IconManager(mPlaylistManager.getIconModel());
-        }
-
         return mIconManager;
     }
 
@@ -278,11 +261,11 @@ public class JavaFxWindowManager extends Application
     {
         if(mJmbeEditorStage == null)
         {
-            createJFXPanel();
             Scene scene = new Scene(getJmbeEditor(), 650, 650);
             mJmbeEditorStage = new Stage();
             mJmbeEditorStage.setTitle("sdrtrunk - JMBE Library Updater");
             mJmbeEditorStage.setScene(scene);
+            mStages.add(mJmbeEditorStage);
             mUserPreferences.getJavaFxPreferences().monitor(mJmbeEditorStage, STAGE_MONITOR_KEY_JMBE_EDITOR);
         }
 
@@ -291,11 +274,6 @@ public class JavaFxWindowManager extends Application
 
     public JmbeEditor getJmbeEditor()
     {
-        if(mJmbeEditor == null)
-        {
-            mJmbeEditor = new JmbeEditor(mUserPreferences);
-        }
-
         return mJmbeEditor;
     }
 
@@ -304,11 +282,6 @@ public class JavaFxWindowManager extends Application
      */
     public PlaylistEditor getPlaylistEditor()
     {
-        if(mPlaylistEditor == null)
-        {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
-        }
-
         return mPlaylistEditor;
     }
 
@@ -319,11 +292,11 @@ public class JavaFxWindowManager extends Application
     {
         if(mPlaylistStage == null)
         {
-            createJFXPanel();
             Scene scene = new Scene(getPlaylistEditor(), 1000, 750);
             mPlaylistStage = new Stage();
             mPlaylistStage.setTitle("sdrtrunk - Playlist Editor");
             mPlaylistStage.setScene(scene);
+            mStages.add(mPlaylistStage);
             mUserPreferences.getJavaFxPreferences().monitor(mPlaylistStage, STAGE_MONITOR_KEY_PLAYLIST_EDITOR);
         }
 
@@ -354,11 +327,6 @@ public class JavaFxWindowManager extends Application
      */
     private UserPreferencesEditor getUserPreferencesEditor()
     {
-        if(mUserPreferencesEditor == null)
-        {
-            mUserPreferencesEditor = new UserPreferencesEditor(mUserPreferences);
-        }
-
         return mUserPreferencesEditor;
     }
 
@@ -369,11 +337,11 @@ public class JavaFxWindowManager extends Application
     {
         if(mUserPreferencesStage == null)
         {
-            createJFXPanel();
             Scene scene = new Scene(getUserPreferencesEditor(), 900, 500);
             mUserPreferencesStage = new Stage();
             mUserPreferencesStage.setTitle("sdrtrunk - User Preferences");
             mUserPreferencesStage.setScene(scene);
+            mStages.add(mUserPreferencesStage);
             mUserPreferences.getJavaFxPreferences().monitor(mUserPreferencesStage, STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR);
         }
 
@@ -397,11 +365,6 @@ public class JavaFxWindowManager extends Application
      */
     private ChannelMapEditor getChannelMapEditor()
     {
-        if(mChannelMapEditor == null)
-        {
-            mChannelMapEditor = new ChannelMapEditor(mPlaylistManager.getChannelMapModel());
-        }
-
         return mChannelMapEditor;
     }
 
@@ -412,11 +375,11 @@ public class JavaFxWindowManager extends Application
     {
         if(mChannelMapStage == null)
         {
-            createJFXPanel();
             Scene scene = new Scene(getChannelMapEditor(), 500, 500);
             mChannelMapStage = new Stage();
             mChannelMapStage.setTitle("sdrtrunk - Channel Map Editor");
             mChannelMapStage.setScene(scene);
+            mStages.add(mChannelMapStage);
             mUserPreferences.getJavaFxPreferences().monitor(mChannelMapStage, STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR);
         }
 
@@ -489,14 +452,14 @@ public class JavaFxWindowManager extends Application
                         channelMap1.addRange(new ChannelRange(200,299,160000000, 25000));
                         channelMap1.addRange(new ChannelRange(300,399,170000000, 12500));
                         channelMap1.addRange(new ChannelRange(400,499,180000000, 25000));
-                        mPlaylistManager.getChannelMapModel().addChannelMap(channelMap1);
+                        mChannelMapModel.addChannelMap(channelMap1);
 
                         ChannelMap channelMap2 = new ChannelMap("Test Map 2");
                         channelMap2.addRange(new ChannelRange(1,199,450000000, 12500));
                         channelMap2.addRange(new ChannelRange(200,299,460000000, 25000));
                         channelMap2.addRange(new ChannelRange(300,399,470000000, 12500));
                         channelMap2.addRange(new ChannelRange(400,499,480000000, 25000));
-                        mPlaylistManager.getChannelMapModel().addChannelMap(channelMap2);
+                        mChannelMapModel.addChannelMap(channelMap2);
                         valid = true;
                         process(new ViewChannelMapEditorRequest());
                         break;

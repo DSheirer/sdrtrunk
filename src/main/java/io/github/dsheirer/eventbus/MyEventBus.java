@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,23 +14,29 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.eventbus;
 
 import com.google.common.eventbus.EventBus;
+import org.springframework.stereotype.Component;
 
 /**
  * System wide event bus for dispatching/broadcasting system wide events or objects
  */
+@Component("myEventBus")
 public class MyEventBus
 {
     private static final EventBus GLOBAL_EVENT_BUS = new EventBus();
 
-    //TODO: this is primarily used by the Preference Service ... move this event bus to the Preference Service
     public static EventBus getGlobalEventBus()
     {
         return GLOBAL_EVENT_BUS;
+    }
+
+    public EventBus getEventBus()
+    {
+        return MyEventBus.getGlobalEventBus();
     }
 }

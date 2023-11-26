@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.channel.details;
 
 import io.github.dsheirer.channel.state.DecoderState;
@@ -23,6 +23,11 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JButton;
@@ -31,29 +36,25 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.DefaultCaret;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class ChannelDetailPanel extends JPanel implements Listener<ProcessingChain>
 {
     private static final String EMPTY_DETAILS = "Please select a channel to view details";
 
+    @Resource
+    private ChannelProcessingManager mChannelProcessingManager;
+
     private JLabel mSystemLabel;
     private JLabel mSiteLabel;
     private JLabel mNameLabel;
     private JTextArea mDetailTextPane;
-
-    private ChannelProcessingManager mChannelProcessingManager;
     private ProcessingChain mProcessingChain;
 
-    public ChannelDetailPanel(ChannelProcessingManager channelProcessingManager)
+    public ChannelDetailPanel()
     {
-        mChannelProcessingManager = channelProcessingManager;
-
-        init();
     }
 
+    @PostConstruct
     private void init()
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[]0[grow,fill]"));

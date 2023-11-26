@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,13 +24,16 @@ import ch.qos.logback.classic.LoggerContext;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.CalibrateRequest;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.log.TextAreaLogAppender;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import jakarta.annotation.PostConstruct;
+import java.util.List;
 import javafx.application.Platform;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -48,12 +51,10 @@ import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
  * Preference settings for duplicate call audio handling
  */
-public class VectorCalibrationPreferenceEditor extends HBox
+public class VectorCalibrationPreferenceEditor extends PreferenceEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(VectorCalibrationPreferenceEditor.class);
     private VectorCalibrationPreference mPreference;
@@ -71,10 +72,15 @@ public class VectorCalibrationPreferenceEditor extends HBox
     /**
      * Constructs an instance
      */
-    public VectorCalibrationPreferenceEditor(UserPreferences userPreferences)
+    public VectorCalibrationPreferenceEditor()
+    {
+    }
+
+    @PostConstruct
+    public void postConstruct()
     {
         MyEventBus.getGlobalEventBus().register(this);
-        mPreference = userPreferences.getVectorCalibrationPreference();
+        mPreference = getUserPreferences().getVectorCalibrationPreference();
         setMaxHeight(Double.MAX_VALUE);
         setMaxWidth(Double.MAX_VALUE);
 
@@ -93,6 +99,12 @@ public class VectorCalibrationPreferenceEditor extends HBox
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         vbox.getChildren().add(scrollPane);
         getChildren().add(vbox);
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.VECTOR_CALIBRATION;
     }
 
     @Subscribe

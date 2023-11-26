@@ -25,9 +25,10 @@ import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.source.tuner.recording.AddRecordingTunerDialog;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -60,11 +61,14 @@ public class TunerViewPanel extends JPanel
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(TunerViewPanel.class);
     private static final String TABLE_PREFERENCE_KEY = "tuner.view.panel";
-
-    private UserPreferences mUserPreferences;
+    @Resource
     private DiscoveredTunerModel mDiscoveredTunerModel;
-    private DiscoveredTunerEditor mDiscoveredTunerEditor;
+    @Resource
     private TunerConfigurationManager mTunerConfigurationManager;
+    @Resource
+    private DiscoveredTunerEditor mDiscoveredTunerEditor;
+    @Resource
+    private UserPreferences mUserPreferences;
     private JTable mTunerTable;
     private JTableColumnWidthMonitor mColumnWidthMonitor;
     private TableRowSorter<DiscoveredTunerModel> mRowSorter;
@@ -74,22 +78,15 @@ public class TunerViewPanel extends JPanel
 
     /**
      * Constructs an instance
-     * @param tunerManager for tuners
-     * @param userPreferences for making recordings in the tuner editor
      */
-    public TunerViewPanel(TunerManager tunerManager, UserPreferences userPreferences)
+    public TunerViewPanel()
     {
-        mDiscoveredTunerModel = tunerManager.getDiscoveredTunerModel();
-        mDiscoveredTunerEditor = new DiscoveredTunerEditor(userPreferences, tunerManager);
-        mTunerConfigurationManager = tunerManager.getTunerConfigurationManager();
-        mUserPreferences = userPreferences;
-        init();
     }
 
+    @PostConstruct
     private void init()
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[fill,grow]", "[fill,grow]"));
-
         mRowSorter = new TableRowSorter<>(mDiscoveredTunerModel);
         List<RowSorter.SortKey> sortKeys = new ArrayList<>();
         sortKeys.add(new RowSorter.SortKey(DiscoveredTunerModel.COLUMN_TUNER_TYPE, SortOrder.ASCENDING));
@@ -182,7 +179,7 @@ public class TunerViewPanel extends JPanel
         TableCellRenderer errorCellRenderer = new TunerStatusCellRenderer();
         mTunerTable.getColumnModel().getColumn(DiscoveredTunerModel.COLUMN_TUNER_STATUS).setCellRenderer(errorCellRenderer);
 
-        mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTunerTable, TABLE_PREFERENCE_KEY);
+        mColumnWidthMonitor = new JTableColumnWidthMonitor(mTunerTable, TABLE_PREFERENCE_KEY);
         JScrollPane tunerTableScroller = new JScrollPane(mTunerTable);
 
         JPanel tunerTablePanel = new JPanel();
@@ -216,8 +213,8 @@ public class TunerViewPanel extends JPanel
             mAddRecordingButton = new JButton("Add Recording Tuner");
             mAddRecordingButton.addActionListener(e ->
             {
-                AddRecordingTunerDialog dialog = new AddRecordingTunerDialog(mUserPreferences, mDiscoveredTunerModel,
-                        mTunerConfigurationManager);
+                AddRecordingTunerDialog dialog = new AddRecordingTunerDialog(mDiscoveredTunerModel,
+                        mTunerConfigurationManager, mUserPreferences);
                 dialog.setLocationRelativeTo(TunerViewPanel.this);
                 EventQueue.invokeLater(() -> dialog.setVisible(true));
             });

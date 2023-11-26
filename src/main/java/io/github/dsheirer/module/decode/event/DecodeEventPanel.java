@@ -19,12 +19,10 @@
 package io.github.dsheirer.module.decode.event;
 
 import com.google.common.base.Joiner;
-import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
@@ -33,10 +31,14 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.event.filter.DecodeEventFilterSet;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.EventQueue;
@@ -59,45 +61,47 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain>
+public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain>, IPreferenceUpdateListener
 {
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(DecodeEventPanel.class);
     private static final String TABLE_PREFERENCE_KEY = "decode.event.panel";
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private IconModel mIconModel;
+    @Resource
+    private UserPreferences mUserPreferences;
 
     private JTable mTable;
     private JTableColumnWidthMonitor mTableColumnWidthMonitor;
     private DecodeEventModel mEventModel = new DecodeEventModel();
     private DecodeEventHistory mCurrentEventHistory;
     private JScrollPane mEmptyScroller;
-    private IconModel mIconModel;
-    private AliasModel mAliasModel;
-    private UserPreferences mUserPreferences;
     private TimestampCellRenderer mTimestampCellRenderer;
     private FilterSet<IDecodeEvent> mFilterSet = new DecodeEventFilterSet();
     private TableRowSorter<TableModel> mTableRowSorter;
     private HistoryManagementPanel<IDecodeEvent> mHistoryManagementPanel;
 
-
     /**
      * View for call event table
-     * @param iconModel to display alias icons in table rows
      */
-    public DecodeEventPanel(IconModel iconModel, UserPreferences userPreferences, AliasModel aliasModel)
+    public DecodeEventPanel()
     {
-        MyEventBus.getGlobalEventBus().register(this);
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
+        mUserPreferences.addUpdateListener(this);
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[][grow,fill]"));
-        mIconModel = iconModel;
-        mAliasModel = aliasModel;
-        mUserPreferences = userPreferences;
         mTimestampCellRenderer = new TimestampCellRenderer();
         mTable = new JTable(mEventModel);
         mTableRowSorter = new TableRowSorter<>(mEventModel);
         mTableRowSorter.setRowFilter(new EventRowFilter());
         mTable.setRowSorter(mTableRowSorter);
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-        mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
+        mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mTable, TABLE_PREFERENCE_KEY);
         updateCellRenderers();
         mHistoryManagementPanel = new HistoryManagementPanel<>(mEventModel, "Event Filter Editor");
         mHistoryManagementPanel.updateFilterSet(mFilterSet);
@@ -109,21 +113,22 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         mFilterSet.register(() -> mEventModel.fireTableDataChanged());
     }
 
+    @PreDestroy
     public void dispose()
     {
-        MyEventBus.getGlobalEventBus().unregister(this);
+        mUserPreferences.removeUpdateListener(this);
     }
 
     /**
      * Receives preference update notifications via the event bus
      * @param preferenceType that was updated
      */
-    @Subscribe
+    @Override
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
-            EventQueue.invokeLater(() -> mTimestampCellRenderer.updatePreferences());
+            EventQueue.invokeLater(() -> mTimestampCellRenderer.refreshPreference());
         }
     }
 
@@ -312,10 +317,10 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         public TimestampCellRenderer()
         {
             setHorizontalAlignment(JLabel.CENTER);
-            updatePreferences();
+            refreshPreference();
         }
 
-        public void updatePreferences()
+        public void refreshPreference()
         {
             mTimestampFormatter = mUserPreferences.getDecodeEventPreference().getTimestampFormat().getFormatter();
         }

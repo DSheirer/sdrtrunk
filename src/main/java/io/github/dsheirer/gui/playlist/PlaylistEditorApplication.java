@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,12 @@
 
 package io.github.dsheirer.gui.playlist;
 
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.JavaFxWindowManager;
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -45,14 +44,16 @@ public class PlaylistEditorApplication extends Application
 
     public PlaylistEditorApplication()
     {
-        AliasModel aliasModel = new AliasModel();
-        EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mTunerManager = new TunerManager(mUserPreferences);
-        mTunerManager.start();
-        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
+    }
 
-        mPlaylistManager.init();
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
+    @PostConstruct
+    public void postConstruct()
+    {
+        EventLogManager eventLogManager = new EventLogManager();
+        mTunerManager = new TunerManager();
+        mTunerManager.start();
+        mPlaylistManager = new PlaylistManager();
+        mJavaFxWindowManager = new JavaFxWindowManager();
     }
 
     @Override
@@ -69,7 +70,7 @@ public class PlaylistEditorApplication extends Application
     {
         if(mPlaylistEditor == null)
         {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
+            mPlaylistEditor = new PlaylistEditor();
         }
 
         return mPlaylistEditor;

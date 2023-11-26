@@ -20,7 +20,6 @@
 package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.gui.control.DbPowerMeter;
-import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
@@ -32,14 +31,12 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.beans.value.ChangeListener;
@@ -84,18 +81,18 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private final TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
     private final IntegerFormatter mDecimalFormatter = new IntegerFormatter(1, 65535);
-    private final HexFormatter mHexFormatter = new HexFormatter(1, 65535);
 
     /**
      * Constructs an instance
-     * @param playlistManager for playlists
-     * @param tunerManager for tuners
-     * @param userPreferences for preferences
      */
-    public NBFMConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                   UserPreferences userPreferences, IFilterProcessor filterProcessor)
+    public NBFMConfigurationEditor()
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        super.postConstruct();
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getAuxDecoderPane());

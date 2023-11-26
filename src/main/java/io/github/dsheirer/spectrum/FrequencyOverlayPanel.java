@@ -25,6 +25,8 @@ import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -76,7 +78,7 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
     //the frequency labels
     private double mSpectrumInset = 20.0d;
     private LabelSizeManager mLabelSizeMonitor = new LabelSizeManager();
-
+    @Resource
     private SettingsManager mSettingsManager;
 
     /**
@@ -84,10 +86,13 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
      * processing channels, selected channels, frequency labels and lines, and
      * a cursor with a frequency readout.
      */
-    public FrequencyOverlayPanel(SettingsManager settingsManager)
+    public FrequencyOverlayPanel()
     {
-        mSettingsManager = settingsManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         if(mSettingsManager != null)
         {
             mSettingsManager.addListener(this);

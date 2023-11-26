@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.controller.channel.map.ChannelMap;
+import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
@@ -32,12 +33,11 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.event.ActionEvent;
@@ -67,6 +67,8 @@ import static io.github.dsheirer.module.decode.config.DecodeConfiguration.CALL_T
 public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327ConfigurationEditor.class);
+    @Resource
+    private ChannelMapModel mChannelMapModel;
     private TitledPane mDecoderPane;
     private TitledPane mEventLogPane;
     private TitledPane mRecordPane;
@@ -81,14 +83,15 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
 
     /**
      * Constructs an instance
-     * @param playlistManager for playlists
-     * @param tunerManager for tuners
-     * @param userPreferences for preferences
      */
-    public MPT1327ConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
+    public MPT1327ConfigurationEditor()
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        super.postConstruct();
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getEventLogPane());
@@ -251,7 +254,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             mChannelMapComboBox.setMaxWidth(Double.MAX_VALUE);
             mChannelMapComboBox.setDisable(true);
             mChannelMapComboBox.setTooltip(new Tooltip("Select a channel map to use for this system"));
-            mChannelMapComboBox.setItems(getPlaylistManager().getChannelMapModel().getChannelMaps());
+            mChannelMapComboBox.setItems(mChannelMapModel.getChannelMaps());
             mChannelMapComboBox.setDisable(true);
             mChannelMapComboBox.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));

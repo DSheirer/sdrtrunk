@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,17 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
-import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AgencyInfo;
 import io.github.dsheirer.rrapi.type.CountyInfo;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.IntegerProperty;
@@ -39,19 +43,18 @@ import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
 /**
  * Editor for displaying a list of agencies and viewing frequency lists for each agency
  */
-public class AgencyEditor extends VBox
+public abstract class AgencyEditor extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(AgencyEditor.class);
+    @Resource
     private UserPreferences mUserPreferences;
+    @Resource
+    private ChannelModel mChannelModel;
+    @Resource
     private RadioReference mRadioReference;
-    private PlaylistManager mPlaylistManager;
     private Level mLevel;
     private ListView<Agency> mAgencyListView;
     private AgencyFrequencyEditor mAgencyFrequencyEditor;
@@ -59,19 +62,19 @@ public class AgencyEditor extends VBox
 
     /**
      * Constructs an instance
-     * @param userPreferences
-     * @param radioReference
      * @param level
      */
-    public AgencyEditor(UserPreferences userPreferences, RadioReference radioReference,
-                        PlaylistManager playlistManager, Level level)
+    public AgencyEditor(Level level)
     {
-        mUserPreferences = userPreferences;
-        mRadioReference = radioReference;
-        mPlaylistManager = playlistManager;
         mLevel = level;
-        mAgencyCountProperty.bind(Bindings.size(getAgencyListView().getItems()));
+    }
 
+    /**
+     * Not annotated.  Sub-class must implement the annotation and invoke this method.
+     */
+    public void postConstruct()
+    {
+        mAgencyCountProperty.bind(Bindings.size(getAgencyListView().getItems()));
         setPadding(new Insets(10,10,10,10));
         setSpacing(10);
         VBox.setVgrow(getAgencyFrequencyEditor(), Priority.ALWAYS);
@@ -127,7 +130,7 @@ public class AgencyEditor extends VBox
     {
         if(mAgencyFrequencyEditor == null)
         {
-            mAgencyFrequencyEditor = new AgencyFrequencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, mLevel);
+            mAgencyFrequencyEditor = new AgencyFrequencyEditor(mUserPreferences, mRadioReference, mChannelModel, mLevel);
         }
 
         return mAgencyFrequencyEditor;

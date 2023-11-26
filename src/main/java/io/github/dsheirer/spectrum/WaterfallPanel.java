@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,14 @@
  */
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.ColorSetting;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Graphics;
@@ -40,15 +43,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.JPanel;
 
-public class WaterfallPanel extends JPanel implements DFTResultsListener,
-    Pausable,
-    SettingChangeListener
+public class WaterfallPanel extends JPanel implements DFTResultsListener, Pausable, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
-
-    private final static Logger mLog =
-        LoggerFactory.getLogger(WaterfallPanel.class);
-
+    private final static Logger mLog = LoggerFactory.getLogger(WaterfallPanel.class);
     private static DecimalFormat CURSOR_FORMAT = new DecimalFormat("0.00000");
     private static final String PAUSED = "PAUSED - Right Click to Unpause";
     private static final String DISABLED = "DISABLED - Right Click to Select a Tuner";
@@ -61,7 +59,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     private ColorModel mColorModel = WaterfallColorModel.getDefaultColorModel();
     private Color mColorSpectrumCursor;
     private Image mWaterfallImage;
-
     private Point mCursorLocation = new Point(0, 0);
     private boolean mCursorVisible = false;
     private long mCursorFrequency = 0;
@@ -69,23 +66,33 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     private boolean mDisabled = true;
     private int mZoom = 0;
     private int mDFTZoomWindowOffset = 0;
-
+    @Resource
     private SettingsManager mSettingsManager;
+    @Resource
+    private UserPreferences mUserPreferences;
 
     /**
      * Displays a scrolling window of multiple DFT frequency bin outputs over
      * time.  Maps DFT frequency bin decibel values into a 256 bucket color map
      * for display.
-     *
-     * @param settingsManager
      */
-    public WaterfallPanel(SettingsManager settingsManager)
+    public WaterfallPanel()
     {
-        super();
-        mSettingsManager = settingsManager;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
         mSettingsManager.addListener(this);
         mColorSpectrumCursor = getColor(ColorSettingName.SPECTRUM_CURSOR);
+        mDisabled = !mUserPreferences.getApplicationPreference().isSpectralDisplayEnabled();
+
         reset();
+
+        if(mDisabled)
+        {
+            clearWaterfall();
+        }
     }
 
     /**

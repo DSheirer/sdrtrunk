@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,14 @@
 
 package io.github.dsheirer.gui.playlist.streaming;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
+import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.gui.playlist.Editor;
-import io.github.dsheirer.playlist.PlaylistManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -45,7 +48,10 @@ import org.controlsfx.control.ToggleSwitch;
  */
 public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> extends Editor<T>
 {
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private BroadcastModel mBroadcastModel;
     private Button mSaveButton;
     private Button mResetButton;
     private TextField mFormatField;
@@ -55,11 +61,14 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
 
     /**
      * Constructs an instance
-     * @param playlistManager for access the stream manager
      */
-    public AbstractBroadcastEditor(PlaylistManager playlistManager)
+    public AbstractBroadcastEditor()
     {
-        mPlaylistManager = playlistManager;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
         getFormatField().setText(getBroadcastServerType().toString());
 
         VBox buttonBox = new VBox();
@@ -71,11 +80,6 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         editorBox.getChildren().addAll(getEditorPane(), buttonBox);
         getChildren().addAll(editorBox);
-    }
-
-    protected PlaylistManager getPlaylistManager()
-    {
-        return mPlaylistManager;
     }
 
     protected abstract GridPane getEditorPane();
@@ -117,7 +121,7 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
 
             if(previousName != null && !previousName.isEmpty() && !updatedName.contentEquals(previousName))
             {
-                if(getPlaylistManager().getAliasModel().hasAliasesWithBroadcastChannel(previousName))
+                if(mAliasModel.hasAliasesWithBroadcastChannel(previousName))
                 {
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                     alert.getButtonTypes().clear();
@@ -136,15 +140,14 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
                     alert.showAndWait().ifPresent(buttonType -> {
                         if(buttonType == ButtonType.YES)
                         {
-                            getPlaylistManager().getAliasModel().updateBroadcastChannel(previousName, updatedName);
+                            mAliasModel.updateBroadcastChannel(previousName, updatedName);
                         }
                     });
                 }
             }
 
             //TODO: remove this after we get rid of Swing tables so that we don't have to announce these changes.
-            mPlaylistManager.getBroadcastModel().process(new BroadcastEvent(configuration,
-                BroadcastEvent.Event.CONFIGURATION_CHANGE));
+            mBroadcastModel.process(new BroadcastEvent(configuration, BroadcastEvent.Event.CONFIGURATION_CHANGE));
         }
 
         modifiedProperty().set(false);

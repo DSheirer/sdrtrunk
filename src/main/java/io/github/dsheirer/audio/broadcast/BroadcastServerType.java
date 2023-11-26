@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,9 +31,9 @@ public enum BroadcastServerType
     BROADCASTIFY_CALL("Broadcastify Call", "images/broadcastify.png"),
 
     ICECAST_HTTP("Icecast 2 (v2.4+)", "images/icecast.png"),
-    RDIOSCANNER_CALL("Rdio Scanner", "images/rdioscanner.png"),
-    OPENMHZ("OpenMHz", "images/openmhz.png"),
     ICECAST_TCP("Icecast (v2.3)", "images/icecast.png"),
+    OPENMHZ("OpenMHz", "images/openmhz.png"),
+    RDIOSCANNER_CALL("Rdio Scanner", "images/rdioscanner.png"),
     SHOUTCAST_V1("Shoutcast v1.x", "images/shoutcast.png"),
     SHOUTCAST_V2("Shoutcast v2.x", "images/shoutcast.png"),
     UNKNOWN("Unknown", null);

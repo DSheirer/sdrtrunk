@@ -18,13 +18,12 @@
  */
 package io.github.dsheirer.audio.playback;
 
-import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.audio.AudioEvent;
-import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.controller.NamingThreadFactory;
-import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Broadcaster;
@@ -55,7 +54,7 @@ import javax.sound.sampled.SourceDataLine;
  * Audio output/playback channel for a single audio mixer channel.  Providers support for playback of audio segments
  * and broadcasts audio segment metadata to registered listeners (ie gui components).
  */
-public abstract class AudioOutput implements LineListener, Listener<IdentifierUpdateNotification>
+public abstract class AudioOutput implements LineListener, Listener<IdentifierUpdateNotification>, IPreferenceUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioOutput.class);
     private int mBufferStartThreshold;
@@ -82,6 +81,9 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private boolean mDropDuplicates;
     private long mOutputLastTimestamp = 0;
     private static final long STALE_PLAYBACK_THRESHOLD_MS = 500;
+    private AudioFormat mAudioFormat;
+    private Line.Info mLineInfo;
+    private int mRequestedBufferSize;
 
     /**
      * Single audio channel playback with automatic starting and stopping of the
@@ -102,18 +104,31 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     {
         mMixer = mixer;
         mMixerChannel = mixerChannel;
-        mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(
-                "sdrtrunk audio output " + mixerChannel.name()));
+        mAudioFormat = audioFormat;
+        mLineInfo = lineInfo;
+        mRequestedBufferSize = requestedBufferSize;
         mUserPreferences = userPreferences;
-        mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
+        start();
+    }
+
+    /**
+     * Starts and configures this audio output
+     */
+    private void start()
+    {
+        mUserPreferences.addUpdateListener(this);
+
+        mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(
+                "sdrtrunk audio output " + mMixerChannel.name()));
+        mDropDuplicates = mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled();
 
         try
         {
-            mOutput = (SourceDataLine) mMixer.getLine(lineInfo);
+            mOutput = (SourceDataLine) mMixer.getLine(mLineInfo);
 
             if(mOutput != null)
             {
-                mOutput.open(audioFormat, requestedBufferSize);
+                mOutput.open(mAudioFormat, mRequestedBufferSize);
 
                 //Start threshold: buffer is full with 10% or less of capacity remaining
                 mBufferStartThreshold = (int) (mOutput.getBufferSize() * 0.10);
@@ -133,7 +148,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     catch(IllegalArgumentException iae)
                     {
                         mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" +
-                            mixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                                mMixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
                     }
 
                     try
@@ -144,12 +159,12 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     catch(IllegalArgumentException iae)
                     {
                         mLog.warn("Couldn't obtain MUTE control for stereo line [" +
-                            mixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                                mMixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
                     }
 
-					//Run the queue processor task every 100 milliseconds or 10 times a second
+                    //Run the queue processor task every 100 milliseconds or 10 times a second
                     mProcessorFuture = mScheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
-                        0, 100, TimeUnit.MILLISECONDS);
+                            0, 100, TimeUnit.MILLISECONDS);
                 }
 
                 mAudioStartEvent = new AudioEvent(AudioEvent.Type.AUDIO_STARTED, getChannelName());
@@ -160,13 +175,10 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         catch(LineUnavailableException e)
         {
             mLog.error("Couldn't obtain audio source data line for audio output - mixer [" +
-                mMixer.getMixerInfo().getName() + "]");
+                    mMixer.getMixerInfo().getName() + "]");
         }
 
         updateToneInsertionAudioClips();
-
-        //Register to receive preference update notifications so we can update the preference items
-        MyEventBus.getGlobalEventBus().register(this);
     }
 
     /**
@@ -221,7 +233,6 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     /**
      * Guava event bus notifications that the preferences have been updated, so that we can update audio segment tones.
      */
-    @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.PLAYBACK)
@@ -230,7 +241,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         }
         else if(preferenceType == PreferenceType.DUPLICATE_CALL_DETECTION)
         {
-            mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
+            mDropDuplicates = mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled();
         }
     }
 
@@ -304,7 +315,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     {
         if(mCurrentAudioSegment != null)
         {
-            mCurrentAudioSegment.decrementConsumerCount();
+            mCurrentAudioSegment.removeLease(getClass().toString());
             mCurrentAudioSegment.removeIdentifierUpdateNotificationListener(this);
             mCurrentAudioSegment = null;
             broadcast(null);
@@ -327,7 +338,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                 //Throw away the audio segment if it has been flagged as do not monitor or is duplicate
                 if(isThrowaway(audioSegment))
                 {
-                    audioSegment.decrementConsumerCount();
+                    audioSegment.removeLease(getClass().toString());
                     audioSegment = mAudioSegmentQueue.poll();
                 }
                 else
@@ -440,7 +451,6 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
      */
     public void dispose()
     {
-        MyEventBus.getGlobalEventBus().unregister(this);
         mCanProcessAudio = false;
 
         if(mProcessorFuture != null)

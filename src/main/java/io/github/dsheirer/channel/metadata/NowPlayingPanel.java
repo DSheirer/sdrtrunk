@@ -22,12 +22,10 @@ import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
 import io.github.dsheirer.gui.power.ChannelPowerPanel;
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.settings.SettingsManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import net.miginfocom.swing.MigLayout;
 
@@ -38,30 +36,43 @@ import javax.swing.JPanel;
  */
 public class NowPlayingPanel extends JPanel
 {
-    private final ChannelMetadataPanel mChannelMetadataPanel;
-    private final ChannelDetailPanel mChannelDetailPanel;
-    private final DecodeEventPanel mDecodeEventPanel;
-    private final MessageActivityPanel mMessageActivityPanel;
-    private final ChannelPowerPanel mChannelPowerPanel;
+    @Resource
+    private ChannelDetailPanel mChannelDetailPanel;
+    @Resource
+    private ChannelMetadataPanel mChannelMetadataPanel;
+    @Resource
+    private ChannelPowerPanel mChannelPowerPanel;
+    @Resource
+    private DecodeEventPanel mDecodeEventPanel;
+    private final MessageActivityPanel mMessageActivityPanel = new MessageActivityPanel();
     private JideTabbedPane mTabbedPane;
     private JideSplitPane mSplitPane;
-    private boolean mDetailTabsVisible;
+    private boolean mDetailTabsVisible = true;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
      * messages, events, and spectral view.
      */
-    public NowPlayingPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences,
-                           SettingsManager settingsManager, boolean detailTabsVisible)
+    public NowPlayingPanel()
     {
-        mChannelDetailPanel = new ChannelDetailPanel(playlistManager.getChannelProcessingManager());
-        mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
-        mMessageActivityPanel = new MessageActivityPanel(userPreferences);
-        mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
-        mChannelPowerPanel = new ChannelPowerPanel(playlistManager, settingsManager);
-        mDetailTabsVisible = detailTabsVisible;
+    }
 
-        init();
+    @PostConstruct
+    public void postConstruct()
+    {
+        setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
+        getSplitPane().add(mChannelMetadataPanel);
+
+        if(mDetailTabsVisible)
+        {
+            getSplitPane().add(getTabbedPane());
+        }
+
+        add(getSplitPane());
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mDecodeEventPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelPowerPanel);
     }
 
     /**
@@ -119,22 +130,5 @@ public class NowPlayingPanel extends JPanel
         }
 
         return mSplitPane;
-    }
-
-    private void init()
-    {
-        setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
-        getSplitPane().add(mChannelMetadataPanel);
-
-        if(mDetailTabsVisible)
-        {
-            getSplitPane().add(getTabbedPane());
-        }
-
-        add(getSplitPane());
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mDecodeEventPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelPowerPanel);
     }
 }

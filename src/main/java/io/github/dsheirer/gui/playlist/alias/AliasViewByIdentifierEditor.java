@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,10 +24,13 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.playlist.PlaylistManager;
-import javafx.beans.InvalidationListener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Predicate;
 import javafx.beans.Observable;
-import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -50,35 +53,24 @@ import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
-
 public class AliasViewByIdentifierEditor extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(AliasViewByIdentifierEditor.class);
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
     private ComboBox<String> mAliasListNameComboBox;
     private ComboBox<AliasIDType> mAliasIDTypeComboBox;
     private TableView<AliasAndIdentifier> mAliasAndIdentifierTableView;
     private TableColumn<AliasAndIdentifier,String> mIdentifierColumn;
     private Button mViewAliasButton;
-    private boolean aliasListInvalidated;
 
-    public AliasViewByIdentifierEditor(PlaylistManager playlistManager, ReadOnlyBooleanProperty tabSelectedProperty)
+    public AliasViewByIdentifierEditor()
     {
-    	aliasListInvalidated = false;
-        mPlaylistManager = playlistManager;
-        //Note if aliases change since we're using a static snapshot
-        mPlaylistManager.getAliasModel().aliasList().addListener((InvalidationListener)observable -> aliasListInvalidated = true);
-        
-        //Only update the list when this tab is selected to avoid many slow updates in the background
-        tabSelectedProperty.addListener(observable -> {
-        	if (aliasListInvalidated)
-        		updateList();
-        });
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(10,10,10,10));
         gridPane.setVgap(10);
@@ -115,14 +107,14 @@ public class AliasViewByIdentifierEditor extends VBox
         updateList();
     }
 
-    private void updateList()
+    public void updateList()
     {
         getAliasAndIdentifierTableView().getItems().clear();
 
         String aliasList = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
         AliasIDType type = getAliasIDTypeComboBox().getSelectionModel().getSelectedItem();
 
-        List<Alias> aliases = mPlaylistManager.getAliasModel().getAliases(aliasList, type);
+        List<Alias> aliases = mAliasModel.getAliases(aliasList, type);
 
         for(Alias alias: aliases)
         {
@@ -136,8 +128,6 @@ public class AliasViewByIdentifierEditor extends VBox
         }
 
         getAliasAndIdentifierTableView().getSortOrder().setAll(mIdentifierColumn);
-        
-        aliasListInvalidated = false;
     }
 
     /**
@@ -230,8 +220,7 @@ public class AliasViewByIdentifierEditor extends VBox
         if(mAliasListNameComboBox == null)
         {
             Predicate<String> filterPredicate = s -> !s.contentEquals(AliasModel.NO_ALIAS_LIST);
-            FilteredList<String> filteredChannelList =
-                new FilteredList<>(mPlaylistManager.getAliasModel().aliasListNames(), filterPredicate);
+            FilteredList<String> filteredChannelList = new FilteredList<>(mAliasModel.aliasListNames(), filterPredicate);
             mAliasListNameComboBox = new ComboBox<>(filteredChannelList);
             mAliasListNameComboBox.setPadding(new Insets(0,10,0,0));
             if(mAliasListNameComboBox.getItems().size() > 0)

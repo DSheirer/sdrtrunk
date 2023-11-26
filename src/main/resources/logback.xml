@@ -1,6 +1,6 @@
 <!--
   ~ ******************************************************************************
-  ~ Copyright (C) 2014-2022 Dennis Sheirer
+  ~ Copyright (C) 2014-2023 Dennis Sheirer
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU General Public License as published by
@@ -17,6 +17,11 @@
   ~ *****************************************************************************
   -->
 <configuration>
+
+  <!--  Disable logback startup and configuration status messages-->
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+
   <conversionRule conversionWord="memory_usage" converterClass="io.github.dsheirer.util.MemoryUsageLogger" />
 
   <timestamp key="appstart" datePattern="HHmmss"/>
@@ -26,12 +31,19 @@
       <pattern>%-12(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5level %logger{25} - %msg  %memory_usage%n</pattern>
     </encoder>
   </appender>
-          
-  <root level="DEBUG">
+
+  <appender name="IN-MEMORY" class="io.github.dsheirer.log.CachingLogAppender">
+    <encoder>
+      <pattern>%-12(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5level %logger{25} - %msg  %memory_usage%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="IN-MEMORY" />
   </root>
 
-  <!-- Apache Mina TCP/HTTP library -->
   <logger name="org.apache.mina" level="INFO" />
+  <logger name="org.springframework" level="INFO" />
 
 </configuration>

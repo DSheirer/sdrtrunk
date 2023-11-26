@@ -26,8 +26,9 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.icon.IconModel;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -80,9 +81,13 @@ public class AliasConfigurationEditor extends SplitPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(AliasConfigurationEditor.class);
 
-    private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private IconModel mIconModel;
+    @Resource
     private AliasItemEditor mAliasItemEditor;
+    @Resource
     private AliasBulkEditor mAliasBulkEditor;
     private Editor mCurrentEditor;
     private TableView<Alias> mAliasTableView;
@@ -100,11 +105,13 @@ public class AliasConfigurationEditor extends SplitPane
     private SortedList<Alias> mAliasSortedList;
     private AliasPredicate mAliasPredicate;
 
-    public AliasConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public AliasConfigurationEditor()
     {
-        mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         VBox leftBox = new VBox();
         VBox.setVgrow(getAliasTableView(), Priority.ALWAYS);
         leftBox.getChildren().addAll(getSearchAndListSelectionBox(), getAliasTableView());
@@ -209,21 +216,11 @@ public class AliasConfigurationEditor extends SplitPane
 
     private AliasItemEditor getAliasItemEditor()
     {
-        if(mAliasItemEditor == null)
-        {
-            mAliasItemEditor = new AliasItemEditor(mPlaylistManager, mUserPreferences);
-        }
-
         return mAliasItemEditor;
     }
 
     private AliasBulkEditor getAliasBulkEditor()
     {
-        if(mAliasBulkEditor == null)
-        {
-            mAliasBulkEditor = new AliasBulkEditor(mPlaylistManager);
-        }
-
         return mAliasBulkEditor;
     }
 
@@ -288,7 +285,7 @@ public class AliasConfigurationEditor extends SplitPane
     {
         if(mAliasListNameComboBox == null)
         {
-            mAliasListNameComboBox = new ComboBox<>(mPlaylistManager.getAliasModel().aliasListNames());
+            mAliasListNameComboBox = new ComboBox<>(mAliasModel.aliasListNames());
             mAliasListNameComboBox.getSelectionModel().selectedItemProperty()
                     .addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) ->
                     {
@@ -337,7 +334,7 @@ public class AliasConfigurationEditor extends SplitPane
                     if(name != null && !name.isEmpty())
                     {
                         name = name.trim();
-                        mPlaylistManager.getAliasModel().addAliasList(name);
+                        mAliasModel.addAliasList(name);
                         getAliasListNameComboBox().getSelectionModel().select(name);
                     }
                 });
@@ -436,7 +433,7 @@ public class AliasConfigurationEditor extends SplitPane
     {
         if(mAliasFilteredList == null)
         {
-            mAliasFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(), getAliasPredicate());
+            mAliasFilteredList = new FilteredList<>(mAliasModel.aliasList(), getAliasPredicate());
         }
 
         return mAliasFilteredList;
@@ -506,7 +503,7 @@ public class AliasConfigurationEditor extends SplitPane
             {
                 Alias alias = new Alias("New Alias");
                 alias.setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
-                mPlaylistManager.getAliasModel().addAlias(alias);
+                mAliasModel.addAlias(alias);
 
                 //Queue a select alias action to allow table to update filter predicate and display the alias
                 Platform.runLater(() ->
@@ -544,7 +541,7 @@ public class AliasConfigurationEditor extends SplitPane
                 if(result.get() == ButtonType.YES)
                 {
                     List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
-                    mPlaylistManager.getAliasModel().removeAliases(selectedAliases);
+                    mAliasModel.removeAliases(selectedAliases);
                 }
             });
         }
@@ -563,7 +560,7 @@ public class AliasConfigurationEditor extends SplitPane
             {
                 Alias original = getAliasTableView().getSelectionModel().getSelectedItem();
                 Alias copy = AliasFactory.shallowCopyOf(original);
-                mPlaylistManager.getAliasModel().addAlias(copy);
+                mAliasModel.addAlias(copy);
                 getAliasTableView().getSelectionModel().clearSelection();
                 getAliasTableView().getSelectionModel().select(copy);
                 getAliasTableView().scrollTo(copy);
@@ -587,7 +584,7 @@ public class AliasConfigurationEditor extends SplitPane
                 emptyItem.setDisable(true);
                 mMoveToAliasButton.getItems().addAll(emptyItem, new SeparatorMenuItem());
 
-                List<String> aliasLists = mPlaylistManager.getAliasModel().getListNames();
+                List<String> aliasLists = mAliasModel.getListNames();
 
                 for(String aliasList : aliasLists)
                 {
@@ -614,11 +611,11 @@ public class AliasConfigurationEditor extends SplitPane
                 List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
                 for(Alias selected : selectedAliases)
                 {
-                    AliasList existing = mPlaylistManager.getAliasModel().getAliasList(selected.getAliasListName());
+                    AliasList existing = mAliasModel.getAliasList(selected.getAliasListName());
                     existing.removeAlias(selected);
 
                     selected.setAliasListName(getText());
-                    AliasList moveToList = mPlaylistManager.getAliasModel().getAliasList(selected.getAliasListName());
+                    AliasList moveToList = mAliasModel.getAliasList(selected.getAliasListName());
                     moveToList.addAlias(selected);
                 }
             });
@@ -830,7 +827,7 @@ public class AliasConfigurationEditor extends SplitPane
 
                             if(alias != null)
                             {
-                                Icon icon = mPlaylistManager.getIconModel().getIcon(alias.getIconName());
+                                Icon icon = mIconModel.getIcon(alias.getIconName());
 
                                 if(icon != null && icon.getFxImage() != null)
                                 {

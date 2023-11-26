@@ -22,6 +22,7 @@ package io.github.dsheirer.monitor;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -42,6 +43,7 @@ import javafx.beans.property.StringProperty;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Provides real-time monitoring of application resource usage.
@@ -52,11 +54,13 @@ import org.slf4j.LoggerFactory;
  * - Drive Space - Event Logs
  * - Drive Space - Recordings
  */
+@Component("resourceMonitor")
 public class ResourceMonitor
 {
     private static final Logger sLog = LoggerFactory.getLogger(ResourceMonitor.class);
     private static final LoggingSuppressor sLogSuppressor = new LoggingSuppressor(sLog);
     private static final int SCALOR_MEGABYTE = 1024 * 1024;
+    @Resource
     private UserPreferences mUserPreferences;
     private ScheduledFuture<?> mMemoryCpuMonitorFuture;
     private ScheduledFuture<?> mStorageMonitorFuture;
@@ -76,10 +80,8 @@ public class ResourceMonitor
     /**
      * Constructs an instance
      */
-    public ResourceMonitor(UserPreferences userPreferences)
+    public ResourceMonitor()
     {
-        mUserPreferences = userPreferences;
-
         try
         {
             mOperatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();

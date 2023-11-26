@@ -1,34 +1,32 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
 import io.github.dsheirer.rrapi.type.Type;
 import io.github.dsheirer.rrapi.type.Voice;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.util.List;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -42,8 +40,6 @@ import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 
 /**
  * View for a radio reference trunked mobile radio system
@@ -51,30 +47,28 @@ import java.util.List;
 public class SystemSiteSelectionEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(SystemSiteSelectionEditor.class);
-
-    private UserPreferences mUserPreferences;
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private SiteEditor mSiteEditor;
     private ProgressIndicator mProgressIndicator;
     private Label mPlaceholderLabel;
     private Label mProtocolLabel;
     private Label mFlavorLabel;
     private Label mVoiceLabel;
     private TableView<EnrichedSite> mSiteTableView;
-    private SiteEditor mSiteEditor;
     private RadioReferenceDecoder mRadioReferenceDecoder;
     private System mCurrentSystem;
     private SystemInformation mCurrentSystemInformation;
 
     /**
      * Constructs an instance
-     * @param userPreferences for settings
-     * @param playlistManager to access radio reference
      */
-    public SystemSiteSelectionEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public SystemSiteSelectionEditor()
     {
-        mUserPreferences = userPreferences;
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         setPadding(new Insets(10,0,0,0));
         setHgap(10);
         setVgap(10);
@@ -146,11 +140,6 @@ public class SystemSiteSelectionEditor extends GridPane
 
     private SiteEditor getSiteEditor()
     {
-        if(mSiteEditor == null)
-        {
-            mSiteEditor = new SiteEditor(mUserPreferences, mPlaylistManager);
-        }
-
         return mSiteEditor;
     }
 

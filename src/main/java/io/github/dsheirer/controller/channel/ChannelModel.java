@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
@@ -26,29 +23,32 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import org.springframework.stereotype.Component;
 
 /**
  * Channel Model
  */
+@Component("channelModel")
 public class ChannelModel implements Listener<ChannelEvent>
 {
     private ObservableList<Channel> mChannels = FXCollections.observableArrayList(Channel.extractor());
     private ObservableList<Channel> mTrafficChannels = FXCollections.observableArrayList(Channel.extractor());
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
+    @Resource
     private AliasModel mAliasModel;
 
-    public ChannelModel(AliasModel aliasModel)
+    /**
+     * Constructs an instance
+     */
+    public ChannelModel()
     {
-        mAliasModel = aliasModel;
-
         //Register a listener to detect channel changes and broadcast change events to cause playlist save requests
         ChannelListChangeListener changeListener = new ChannelListChangeListener();
         mChannels.addListener(changeListener);

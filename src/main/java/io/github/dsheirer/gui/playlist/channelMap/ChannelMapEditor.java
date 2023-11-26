@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@ import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.controller.channel.map.ChannelRange;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.gui.playlist.Editor;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -52,16 +55,14 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
 
-import java.util.Optional;
-
 /**
  * JavaFX editor for channel maps
  */
 public class ChannelMapEditor extends SplitPane
 {
     private static final String COPY_NAME = " (copy)";
+    @Resource
     private ChannelMapModel mChannelMapModel;
-    private SplitPane mSplitPane;
     private MapEditor mMapEditor;
     private HBox mChannelMapManagerBox;
     private VBox mMapButtonsBox;
@@ -78,12 +79,14 @@ public class ChannelMapEditor extends SplitPane
 
     /**
      * Constructs an instance
-     *
-     * @param channelMapModel for accessing channel maps
      */
-    public ChannelMapEditor(ChannelMapModel channelMapModel)
+    public ChannelMapEditor()
     {
-        mChannelMapModel = channelMapModel;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
         setOrientation(Orientation.VERTICAL);
         getItems().addAll(getChannelMapManagerBox(), getMapEditor(), getChannelRangePane());
     }
@@ -123,15 +126,10 @@ public class ChannelMapEditor extends SplitPane
             mNewMapButton = new Button("New Map");
             mNewMapButton.setTooltip(new Tooltip("Create a new channel map"));
             mNewMapButton.setMaxWidth(Double.MAX_VALUE);
-            mNewMapButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    ChannelMap channelMap = new ChannelMap("New Channel Map");
-                    mChannelMapModel.addChannelMap(channelMap);
-                    getChannelMapListView().getSelectionModel().select(channelMap);
-                }
+            mNewMapButton.setOnAction(event -> {
+                ChannelMap channelMap = new ChannelMap("New Channel Map");
+                mChannelMapModel.addChannelMap(channelMap);
+                getChannelMapListView().getSelectionModel().select(channelMap);
             });
         }
 
@@ -146,32 +144,27 @@ public class ChannelMapEditor extends SplitPane
             mCloneMapButton.setTooltip(new Tooltip("Create a copy of the selected channel map"));
             mCloneMapButton.setDisable(true);
             mCloneMapButton.setMaxWidth(Double.MAX_VALUE);
-            mCloneMapButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mCloneMapButton.setOnAction(event -> {
+                ChannelMap selected = getChannelMapListView().getSelectionModel().getSelectedItem();
+
+                if(selected != null)
                 {
-                    ChannelMap selected = getChannelMapListView().getSelectionModel().getSelectedItem();
+                    ChannelMap copy = selected.copyOf();
 
-                    if(selected != null)
+                    String name = selected.getName();
+
+                    if(name == null)
                     {
-                        ChannelMap copy = selected.copyOf();
-
-                        String name = selected.getName();
-
-                        if(name == null)
-                        {
-                            name = COPY_NAME;
-                        }
-                        else if(!name.toLowerCase().endsWith(COPY_NAME))
-                        {
-                            name = name + COPY_NAME;
-                        }
-
-                        copy.setName(name);
-                        mChannelMapModel.addChannelMap(copy);
-                        getChannelMapListView().getSelectionModel().select(copy);
+                        name = COPY_NAME;
                     }
+                    else if(!name.toLowerCase().endsWith(COPY_NAME))
+                    {
+                        name = name + COPY_NAME;
+                    }
+
+                    copy.setName(name);
+                    mChannelMapModel.addChannelMap(copy);
+                    getChannelMapListView().getSelectionModel().select(copy);
                 }
             });
         }

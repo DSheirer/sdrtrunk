@@ -23,11 +23,9 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
 import javafx.scene.control.TitledPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,12 +40,15 @@ public class UnknownConfigurationEditor extends ChannelConfigurationEditor
 
     /**
      * Constructs an instance
-     * @param aliasModel
      */
-    public UnknownConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
+    public UnknownConfigurationEditor()
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        super.postConstruct();
         getTitledPanesBox().getChildren().add(getDecoderPane());
     }
 

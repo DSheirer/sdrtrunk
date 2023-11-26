@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,19 @@ package io.github.dsheirer.gui.preference.decoder;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.jmbe.JmbeCreator;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
 import io.github.dsheirer.jmbe.github.GitHub;
 import io.github.dsheirer.jmbe.github.Release;
 import io.github.dsheirer.jmbe.github.Version;
 import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -42,21 +47,16 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 
 /**
  * Preference settings for decoders
  */
-public class JmbeLibraryPreferenceEditor extends VBox
+public class JmbeLibraryPreferenceEditor extends PreferenceEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(JmbeLibraryPreferenceEditor.class);
 
@@ -64,8 +64,6 @@ public class JmbeLibraryPreferenceEditor extends VBox
     private static final String CREATE_LIBRARY = "Create Library";
     private static final String CHECK_FOR_UPDATE = "Check For Library Update";
     private static final String LIBRARY_NOT_SETUP = "None.  Click Select or Create Library button to setup.";
-
-    private UserPreferences mUserPreferences;
     private GridPane mEditorPane;
     private Label mJmbeLibraryLabel;
     private Label mJmbeVersionLabel;
@@ -76,16 +74,24 @@ public class JmbeLibraryPreferenceEditor extends VBox
     private HBox mButtonsBox;
     private CheckBox mAlertUserWhenMissingCheckBox;
 
-    public JmbeLibraryPreferenceEditor(UserPreferences userPreferences)
+    public JmbeLibraryPreferenceEditor()
     {
-        mUserPreferences = userPreferences;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         //Register to receive directory preference update notifications so we can update the path labels
         MyEventBus.getGlobalEventBus().register(this);
-
         setPadding(new Insets(10,10,10,10));
         setSpacing(10);
         getChildren().addAll(getEditorPane(), getButtonsBox(), getAlertUserWhenMissingCheckBox());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.JMBE_LIBRARY;
     }
 
     public void dispose()
@@ -98,11 +104,11 @@ public class JmbeLibraryPreferenceEditor extends VBox
         if(mAlertUserWhenMissingCheckBox == null)
         {
             mAlertUserWhenMissingCheckBox = new CheckBox("Alert when decoder requires missing JMBE library");
-            mAlertUserWhenMissingCheckBox.setSelected(mUserPreferences.getJmbeLibraryPreference()
+            mAlertUserWhenMissingCheckBox.setSelected(getUserPreferences().getJmbeLibraryPreference()
                 .getAlertIfMissingLibraryRequired());
             mAlertUserWhenMissingCheckBox.setOnAction(event -> {
                 boolean alert = mAlertUserWhenMissingCheckBox.isSelected();
-                mUserPreferences.getJmbeLibraryPreference().setAlertIfMissingLibraryRequired(alert);
+                getUserPreferences().getJmbeLibraryPreference().setAlertIfMissingLibraryRequired(alert);
             });
         }
 
@@ -154,7 +160,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
         if(mCreateButton == null)
         {
             mCreateButton = new Button();
-            mCreateButton.setText(mUserPreferences.getJmbeLibraryPreference()
+            mCreateButton.setText(getUserPreferences().getJmbeLibraryPreference()
                 .getPathJmbeLibrary() != null ? CHECK_FOR_UPDATE : CREATE_LIBRARY);
             mCreateButton.setOnAction(event -> checkForUpdatedLibrary());
         }
@@ -170,7 +176,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
         ThreadPool.CACHED.execute(() -> {
             try
             {
-                Version current = mUserPreferences.getJmbeLibraryPreference().getCurrentVersion();
+                Version current = getUserPreferences().getJmbeLibraryPreference().getCurrentVersion();
                 final Release release = GitHub.getLatestRelease(JmbeCreator.GITHUB_JMBE_RELEASES_URL);
 
                 mLog.info("Checking for JMBE Library Updates ...");
@@ -268,7 +274,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
         if(mJmbeVersionLabel == null)
         {
             mJmbeVersionLabel = new Label();
-            Version version = mUserPreferences.getJmbeLibraryPreference().getCurrentVersion();
+            Version version = getUserPreferences().getJmbeLibraryPreference().getCurrentVersion();
 
             if(version != null)
             {
@@ -296,7 +302,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
                     FileChooser fileChooser = new FileChooser();
                     fileChooser.setTitle("Select JMBE Audio Library Location");
 
-                    Path path = mUserPreferences.getDirectoryPreference().getDefaultJmbeDirectory();
+                    Path path = getUserPreferences().getDirectoryPreference().getDefaultJmbeDirectory();
 
                     if(Files.exists(path))
                     {
@@ -308,7 +314,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
 
                     if(selected != null)
                     {
-                        mUserPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(selected.toPath());
+                        getUserPreferences().getJmbeLibraryPreference().setPathJmbeLibrary(selected.toPath());
                     }
                 }
             });
@@ -322,7 +328,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
         if(mResetButton == null)
         {
             mResetButton = new Button("Reset");
-            mResetButton.setOnAction(event -> mUserPreferences.getJmbeLibraryPreference().resetPathJmbeLibrary());
+            mResetButton.setOnAction(event -> getUserPreferences().getJmbeLibraryPreference().resetPathJmbeLibrary());
         }
 
         return mResetButton;
@@ -332,7 +338,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
     {
         if(mPathToJmbeLibraryLabel == null)
         {
-            Path path = mUserPreferences.getJmbeLibraryPreference().getPathJmbeLibrary();
+            Path path = getUserPreferences().getJmbeLibraryPreference().getPathJmbeLibrary();
             mPathToJmbeLibraryLabel = new Label(path != null ? path.toString() : PATH_NOT_SET);
         }
 
@@ -344,13 +350,13 @@ public class JmbeLibraryPreferenceEditor extends VBox
     {
         if(preferenceType != null && preferenceType == PreferenceType.JMBE_LIBRARY)
         {
-            Path path = mUserPreferences.getJmbeLibraryPreference().getPathJmbeLibrary();
+            Path path = getUserPreferences().getJmbeLibraryPreference().getPathJmbeLibrary();
             getPathToJmbeLibraryLabel().setText(path != null ? path.toString() : PATH_NOT_SET);
-            Version version = mUserPreferences.getJmbeLibraryPreference().getCurrentVersion();
+            Version version = getUserPreferences().getJmbeLibraryPreference().getCurrentVersion();
             getJmbeVersionLabel().setText(version != null ? version.toString() : LIBRARY_NOT_SETUP);
-            getCreateButton().setText(mUserPreferences.getJmbeLibraryPreference()
+            getCreateButton().setText(getUserPreferences().getJmbeLibraryPreference()
                 .getPathJmbeLibrary() != null ? CHECK_FOR_UPDATE : CREATE_LIBRARY);
-            getAlertUserWhenMissingCheckBox().setSelected(mUserPreferences.getJmbeLibraryPreference()
+            getAlertUserWhenMissingCheckBox().setSelected(getUserPreferences().getJmbeLibraryPreference()
                 .getAlertIfMissingLibraryRequired());
         }
     }

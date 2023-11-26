@@ -18,20 +18,27 @@
  */
 package io.github.dsheirer.module.decode.event;
 
-import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import java.awt.EventQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Decode event table model
  */
-public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent> implements Listener<IDecodeEvent>
+@Component("decodeEventModel")
+public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent>
+        implements Listener<IDecodeEvent>, IPreferenceUpdateListener
 {
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(DecodeEventModel.class);
@@ -46,17 +53,31 @@ public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent> implem
     public static final int COLUMN_FREQUENCY = 8;
     public static final int COLUMN_DETAILS = 9;
     protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Details"};
+    @Resource
+    private UserPreferences mUserPreferences;
 
     public DecodeEventModel()
     {
         MyEventBus.getGlobalEventBus().register(this);
     }
 
+    @PostConstruct
+    public void postConstruct()
+    {
+        mUserPreferences.addUpdateListener(this);
+    }
+
+    @PreDestroy
+    public void preDestroy()
+    {
+        mUserPreferences.removeUpdateListener(this);
+    }
+
     /**
      * Receives preference update notifications via the event bus
      * @param preferenceType that was updated
      */
-    @Subscribe
+    @Override
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.TALKGROUP_FORMAT)

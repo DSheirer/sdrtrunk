@@ -333,7 +333,7 @@ public class ChannelizerViewer2 extends JFrame
         public PrimarySpectrumPanel(SettingsManager settingsManager, double sampleRate)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel);
 
@@ -371,7 +371,7 @@ public class ChannelizerViewer2 extends JFrame
         public ChannelPanel(SettingsManager settingsManager, double sampleRate, long frequency, int bandwidth)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[grow,fill][]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "span");
 

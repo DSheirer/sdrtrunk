@@ -30,12 +30,10 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.geometry.Insets;
@@ -63,13 +61,15 @@ public class PassportConfigurationEditor extends ChannelConfigurationEditor
 
     /**
      * Constructs an instance
-     * @param playlistManager
-     * @param userPreferences
      */
-    public PassportConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                       UserPreferences userPreferences, IFilterProcessor filterProcessor)
+    public PassportConfigurationEditor()
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        super.postConstruct();
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getAuxDecoderPane());

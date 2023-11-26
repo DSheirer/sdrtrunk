@@ -104,19 +104,28 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Factory for creating decoder modules to use in a processing chain for any supported protocols.
  */
+@Component("decoderFactory")
 public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
     private static final double FM_CHANNEL_BANDWIDTH = 12500.0;
     private static final boolean AUDIO_FILTER_ENABLE = true;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private ChannelMapModel mChannelMapModel;
+    @Resource
+    private UserPreferences mUserPreferences;
 
     /**
      * Returns a list of one primary decoder and any auxiliary decoders, as
@@ -124,12 +133,10 @@ public class DecoderFactory
      *
      * @return list of configured decoders
      */
-    public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
-                                          UserPreferences userPreferences, TrafficChannelManager trafficChannelManager,
-                                          IChannelDescriptor channelDescriptor)
+    public List<Module> getModules(Channel channel, TrafficChannelManager trafficChannelManager,
+                                   IChannelDescriptor channelDescriptor)
     {
-        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences,
-                trafficChannelManager, channelDescriptor);
+        List<Module> modules = getPrimaryModules(channel, trafficChannelManager, channelDescriptor);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
@@ -137,21 +144,17 @@ public class DecoderFactory
     /**
      * Constructs a primary decoder as specified in the decode configuration
      *
-     * @param channelMapModel for channel map lookups
      * @param channel configuration
-     * @param aliasModel for alias lookups
-     * @param userPreferences instance
      * @param trafficChannelManager optional traffic channel manager to use
      * @param channelDescriptor to preload into the decoder state as the current channel.
      * @return list of modules to use for a processing chain
      */
-    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
-                                                 UserPreferences userPreferences, TrafficChannelManager trafficChannelManager,
-                                                 IChannelDescriptor channelDescriptor)
+    public List<Module> getPrimaryModules(Channel channel, TrafficChannelManager trafficChannelManager,
+                                          IChannelDescriptor channelDescriptor)
     {
-        List<Module> modules = new ArrayList<Module>();
+        List<Module> modules = new ArrayList<>();
 
-        AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
+        AliasList aliasList = mAliasModel.getAliasList(channel.getAliasListName());
         modules.add(new AliasActionManager(aliasList));
 
         ChannelType channelType = channel.getChannelType();
@@ -165,7 +168,7 @@ public class DecoderFactory
                 processAM(channel, modules, aliasList, decodeConfig);
                 break;
             case DMR:
-                processDMR(channel, userPreferences, modules, aliasList, (DecodeConfigDMR)decodeConfig,
+                processDMR(channel, modules, aliasList, (DecodeConfigDMR)decodeConfig,
                     trafficChannelManager, channelDescriptor);
                 break;
             case NBFM:
@@ -178,16 +181,16 @@ public class DecoderFactory
                 processLTRNet(channel, modules, aliasList, (DecodeConfigLTRNet) decodeConfig);
                 break;
             case MPT1327:
-                processMPT1327(channelMapModel, channel, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
+                processMPT1327(channel, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
                 break;
             case PASSPORT:
                 processPassport(channel, modules, aliasList, decodeConfig);
                 break;
             case P25_PHASE1:
-                processP25Phase1(channel, userPreferences, modules, aliasList, channelType, (DecodeConfigP25Phase1) decodeConfig);
+                processP25Phase1(channel, modules, aliasList, channelType, (DecodeConfigP25Phase1) decodeConfig);
                 break;
             case P25_PHASE2:
-                processP25Phase2(channel, userPreferences, modules, aliasList);
+                processP25Phase2(channel, modules, aliasList);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
@@ -199,27 +202,25 @@ public class DecoderFactory
     /**
      * Creates decoder modules for APCO-25 Phase 2 decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
      */
-    private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList) {
+    private void processP25Phase2(Channel channel, List<Module> modules, AliasList aliasList) {
         modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
 
         modules.add(new P25P2DecoderState(channel, 0));
         modules.add(new P25P2DecoderState(channel, 1));
-        modules.add(new P25P2AudioModule(userPreferences, 0, aliasList));
-        modules.add(new P25P2AudioModule(userPreferences, 1, aliasList));
+        modules.add(new P25P2AudioModule(mUserPreferences, 0, aliasList));
+        modules.add(new P25P2AudioModule(mUserPreferences, 1, aliasList));
     }
 
     /**
      * Creates decoder modules for APCO-25 Phase 1 decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
      */
-    private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig) {
+    private void processP25Phase1(Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig) {
         DecodeConfigP25Phase1 p25Config = decodeConfig;
 
         switch(p25Config.getModulation())
@@ -246,7 +247,7 @@ public class DecoderFactory
             modules.add(new P25P1DecoderState(channel));
         }
 
-        modules.add(new P25P1AudioModule(userPreferences, aliasList));
+        modules.add(new P25P1AudioModule(mUserPreferences, aliasList));
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
@@ -278,16 +279,14 @@ public class DecoderFactory
 
     /**
      * Creates decoder modules for MPT-1327 decoder
-     * @param channelMapModel to use in calculating traffic channel frequencies
      * @param channel configuration
      * @param modules collection to add to
      * @param aliasList for the channel
      * @param channelType for control or traffic
-     * @param decodeConfig configuration
+     * @param mptConfig configuration
      */
-    private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
-        DecodeConfigMPT1327 mptConfig = decodeConfig;
-        ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
+    private void processMPT1327(Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 mptConfig) {
+        ChannelMap channelMap = mChannelMapModel.getChannelMap(mptConfig.getChannelMapName());
         Sync sync = mptConfig.getSync();
         modules.add(new MPT1327Decoder(sync));
 
@@ -371,16 +370,17 @@ public class DecoderFactory
      */
     private static void processNBFM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
     {
-        if(!(decodeConfig instanceof DecodeConfigNBFM))
+        if(decodeConfig instanceof DecodeConfigNBFM decodeConfigNBFM)
+        {
+            modules.add(new NBFMDecoder(decodeConfigNBFM));
+            modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
+            modules.add(new AudioModule(aliasList, 0, 60000, decodeConfigNBFM.isAudioFilter()));
+        }
+        else
         {
             throw new IllegalArgumentException("Can't create NBFM decoder - unrecognized decode config type: " +
                     (decodeConfig != null ? decodeConfig.getClass() : "null/empty"));
         }
-
-        DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
-        modules.add(new NBFMDecoder(decodeConfigNBFM));
-        modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
-        modules.add(new AudioModule(aliasList, 0, 60000, decodeConfigNBFM.isAudioFilter()));
     }
 
     /**
@@ -390,18 +390,19 @@ public class DecoderFactory
      * @param aliasList for the channel
      * @param decodeConfig for the channel
      */
-    private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
-
-        if(!(decodeConfig instanceof DecodeConfigAM))
+    private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
+    {
+        if(decodeConfig instanceof DecodeConfigAM decodeConfigAM)
+        {
+            modules.add(new AMDecoder(decodeConfigAM));
+            modules.add(new AMDecoderState(channel.getName(), decodeConfigAM));
+            modules.add(new AudioModule(aliasList, 0, 60000, AUDIO_FILTER_ENABLE));
+        }
+        else
         {
             throw new IllegalArgumentException("Can't create AM decoder - unrecognized decode config type: " +
                     (decodeConfig != null ? decodeConfig.getClass() : "null/empty"));
         }
-
-        DecodeConfigAM decodeConfigAM = (DecodeConfigAM) decodeConfig;
-        modules.add(new AMDecoder(decodeConfigAM));
-        modules.add(new AMDecoderState(channel.getName(), decodeConfigAM));
-        modules.add(new AudioModule(aliasList, 0, 60000, AUDIO_FILTER_ENABLE));
     }
 
     /**
@@ -411,14 +412,12 @@ public class DecoderFactory
      * changes) and so we reuse the traffic channel manager from the converted channel.
      *
      * @param channel for the DMR decoder
-     * @param userPreferences for access to JMBE audio library
      * @param modules list to add to
      * @param aliasList for the audio module
      * @param decodeConfig for the DMR configuration
      * @param trafficChannelManager optional traffic channel manager to re-use
      */
-    private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules,
-                                   AliasList aliasList, DecodeConfigDMR decodeConfig,
+    private void processDMR(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigDMR decodeConfig,
                                    TrafficChannelManager trafficChannelManager, IChannelDescriptor channelDescriptor)
     {
         modules.add(new DMRDecoder(decodeConfig));
@@ -495,8 +494,8 @@ public class DecoderFactory
 
         modules.add(state1);
         modules.add(state2);
-        modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
-        modules.add(new DMRAudioModule(userPreferences, aliasList, 2));
+        modules.add(new DMRAudioModule(mUserPreferences, aliasList, 1));
+        modules.add(new DMRAudioModule(mUserPreferences, aliasList, 2));
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&

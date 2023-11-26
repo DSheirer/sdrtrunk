@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.audio;
+package io.github.dsheirer.audio.call;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
@@ -29,6 +29,7 @@ import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -36,7 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -74,13 +74,13 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private List<float[]> mAudioBuffers = new CopyOnWriteArrayList();
-    private AtomicInteger mConsumerCount = new AtomicInteger();
     private AliasList mAliasList;
     private long mStartTimestamp = System.currentTimeMillis();
     private long mSampleCount = 0;
     private boolean mDisposing = false;
     private AudioSegment mLinkedAudioSegment;
     private int mTimeslot;
+    private List<String> mLeases = new ArrayList<>();
 
     /**
      * Constructs an instance
@@ -92,6 +92,50 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         mAliasList = aliasList;
         mTimeslot = timeslot;
         mIdentifierCollection.setTimeslot(timeslot);
+    }
+
+    /**
+     * Adds a lease to this audio segment.  This audio segment will remain alive until all leases are removed.
+     * @param lease to add
+     */
+    public void addLease(String lease)
+    {
+        synchronized(mLeases)
+        {
+            if(mLeases.contains(lease))
+            {
+                mLog.warn("Attempt to obtain duplicate lease: " + lease);
+            }
+            else
+            {
+                mLeases.add(lease);
+            }
+        }
+    }
+
+    /**
+     * Removes the lease from this audio segment.  Once all leases are removed, the audio segment is disposed.
+     * @param lease to remove
+     */
+    public void removeLease(String lease)
+    {
+        synchronized(mLeases)
+        {
+            if(mLeases.contains(lease))
+            {
+                mLeases.remove(lease);
+            }
+            else
+            {
+                mLog.warn("Attempt to remove a non-existent lease: " + lease);
+            }
+
+            if(mLeases.isEmpty())
+            {
+                mLog.warn("Invoking dispose() on non-leased audio segment - last lease was: " + lease);
+                dispose();
+            }
+        }
     }
 
     /**
@@ -147,28 +191,6 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public boolean isComplete()
     {
         return mComplete.get();
-    }
-
-    /**
-     * Duplicate call audio property.  This flag is set to true whenever a duplicate call detection function detects
-     * an audio segment is a duplicate.
-     */
-    public BooleanProperty duplicateProperty()
-    {
-        return mDuplicate;
-    }
-
-    /**
-     * An observable list of broadcast channels for this audio segment.  Broadcast channels are added to this segment
-     * across the life-cycle of the segment.  As each new alias identifier is added to the segment, any broadcast
-     * channels assigned to the alias are added to this list.  The audio segment producer can also add broadcast
-     * channels to this list.
-     *
-     * @return observable set of broadcast channels
-     */
-    public ObservableSet<BroadcastChannel> broadcastChannelsProperty()
-    {
-        return mBroadcastChannels;
     }
 
     /**
@@ -273,7 +295,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
      * Adds the collection of identifiers to this segment's identifier collection
      * @param identifiers to pre-load into this audio segment
      */
-    void addIdentifiers(Collection<Identifier> identifiers)
+    public void addIdentifiers(Collection<Identifier> identifiers)
     {
         for(Identifier identifier: identifiers)
         {
@@ -302,24 +324,6 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     }
 
     /**
-     * Gets the audio buffer at the specified index
-     * @param index of the buffer to fetch
-     * @return audio buffer
-     * @throws IllegalArgumentException if requested index is not valid
-     */
-    public float[] getAudioBuffer(int index)
-    {
-        if(0 <= index && index < getAudioBufferCount())
-        {
-            return mAudioBuffers.get(index);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Requested audio buffer at index [" + index + "] does not exist");
-        }
-    }
-
-    /**
      * Indicates if this audio segment has one or more audio buffers
      */
     public boolean hasAudio()
@@ -337,34 +341,6 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         mIdentifierCollection.clear();
         mIdentifierUpdateNotificationBroadcaster.clear();
         mLinkedAudioSegment = null;
-    }
-
-    /**
-     * Increments the consumer count to indicate that a consumer is currently processing this segment.  When the
-     * consumer count returns to zero, this indicates that all consumers are finished with the audio segment and the
-     * resources can be reclaimed.
-     *
-     * Consumer count should only be increased by the producer of the audio segment, or if a consumer distributes the
-     * segment to additional consumers.
-     */
-    public void incrementConsumerCount()
-    {
-        mConsumerCount.incrementAndGet();
-    }
-
-    /**
-     * Decrements the consumer count.  Consumers of this audio segment should invoke this method to signal that they
-     * will no longer need this audio segment.  When all consumers are finished with an audio segment, the audio
-     * segment resources will be reclaimed.
-     */
-    public void decrementConsumerCount()
-    {
-        int count = mConsumerCount.decrementAndGet();
-
-        if(count <= 0)
-        {
-            dispose();
-        }
     }
 
     /**

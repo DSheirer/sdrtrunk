@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,13 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.alias.ViewAliasRequest;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.Talkgroup;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Alert;
@@ -42,8 +43,8 @@ import org.slf4j.LoggerFactory;
 public class TalkgroupEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
-    private UserPreferences mUserPreferences;
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private AliasModel mAliasModel;
     private TextField mAlphaTagTextField;
     private TextField mDescriptionTextField;
     private TextField mTalkgroupTextField;
@@ -64,11 +65,13 @@ public class TalkgroupEditor extends GridPane
     private Alias mAlias;
     private boolean mSetEncryptedDoNotMonitor;
 
-    public TalkgroupEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public TalkgroupEditor()
     {
-        mUserPreferences = userPreferences;
-        mPlaylistManager = playlistManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         setHgap(5);
         setVgap(5);
 
@@ -149,7 +152,6 @@ public class TalkgroupEditor extends GridPane
         GridPane.setConstraints(getCreateAliasButton(), 1, ++row);
         getChildren().add(getCreateAliasButton());
     }
-
 
     public void setTalkgroup(Talkgroup talkgroup, System system, RadioReferenceDecoder decoder, Alias alias,
                              String aliasListName, String group, boolean setEncryptedDoNotMonitor)
@@ -292,7 +294,7 @@ public class TalkgroupEditor extends GridPane
                         alias.addAliasID(new io.github.dsheirer.alias.id.priority.Priority(priority));
                     }
 
-                    mPlaylistManager.getAliasModel().addAlias(alias);
+                    mAliasModel.addAlias(alias);
                 }
             });
         }

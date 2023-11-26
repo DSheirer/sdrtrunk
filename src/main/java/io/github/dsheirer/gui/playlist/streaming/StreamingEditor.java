@@ -22,12 +22,15 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFactory;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
+import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.rrapi.type.UserFeedBroadcast;
+import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -71,7 +74,15 @@ public class StreamingEditor extends SplitPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(StreamingEditor.class);
 
-    private final PlaylistManager mPlaylistManager;
+    @Resource
+    private BroadcastModel mBroadcastModel;
+    @Resource
+    private RadioReference mRadioReference;
+    @Resource
+    private StreamAliasSelectionEditor mStreamAliasSelectionEditor;
+    @Resource
+    private List<AbstractBroadcastEditor> mBroadcastEditors;
+
     private TableView<ConfiguredBroadcast> mConfiguredBroadcastTableView;
     private MenuButton mNewButton;
     private Button mDeleteButton;
@@ -81,24 +92,35 @@ public class StreamingEditor extends SplitPane
     private Tab mAliasTab;
     private Label mRadioReferenceLoginLabel;
     private AbstractBroadcastEditor<?> mCurrentEditor;
-    private final UnknownStreamEditor mUnknownEditor;
+    private UnknownStreamEditor mUnknownEditor;
     private Map<BroadcastServerType, AbstractBroadcastEditor<?>> mEditorMap = new EnumMap<>(BroadcastServerType.class);
     private final List<UserFeedBroadcast> mBroadcastifyFeeds = new ArrayList<>();
     private ScrollPane mEditorScrollPane;
-    private StreamAliasSelectionEditor mStreamAliasSelectionEditor;
     private final StreamConfigurationEditorModificationListener mStreamConfigurationEditorModificationListener =
         new StreamConfigurationEditorModificationListener();
 
     /**
      * Constructs an instance
-     * @param playlistManager for accessing streaming model
      */
-    public StreamingEditor(PlaylistManager playlistManager)
+    public StreamingEditor()
     {
-        mPlaylistManager = playlistManager;
-        mUnknownEditor = new UnknownStreamEditor(mPlaylistManager);
-        mPlaylistManager.getRadioReference().availableProperty()
-            .addListener((observable, oldValue, newValue) -> refreshBroadcastifyStreams());
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        //Spring instantiates stream editors and we load them into a lookup map
+        for(AbstractBroadcastEditor editor: mBroadcastEditors)
+        {
+            mEditorMap.put(editor.getBroadcastServerType(), editor);
+
+            if(editor instanceof UnknownStreamEditor unknown)
+            {
+                mUnknownEditor = unknown;
+            }
+        }
+
+        mRadioReference.availableProperty().addListener((observable, oldValue, newValue) -> refreshBroadcastifyStreams());
         refreshBroadcastifyStreams();
 
         VBox buttonsBox = new VBox();
@@ -200,16 +222,7 @@ public class StreamingEditor extends SplitPane
 
                     if(editor == null)
                     {
-                        editor = StreamEditorFactory.getEditor(configType, mPlaylistManager);
-
-                        if(editor != null)
-                        {
-                            mEditorMap.put(configType, editor);
-                        }
-                    }
-
-                    if(editor == null)
-                    {
+                        mLog.warn("Unable to find streaming editor for server type: " + editorType);
                         editor = mUnknownEditor;
                     }
 
@@ -230,12 +243,12 @@ public class StreamingEditor extends SplitPane
      */
     private void refreshBroadcastifyStreams()
     {
-        if(mPlaylistManager.getRadioReference().availableProperty().get())
+        if(mRadioReference.availableProperty().get())
         {
             ThreadPool.CACHED.submit(() -> {
                 try
                 {
-                    List<UserFeedBroadcast> feeds = mPlaylistManager.getRadioReference().getService().getUserFeeds();
+                    List<UserFeedBroadcast> feeds = mRadioReference.getService().getUserFeeds();
                     mBroadcastifyFeeds.clear();
                     mBroadcastifyFeeds.addAll(feeds);
                 }
@@ -249,11 +262,6 @@ public class StreamingEditor extends SplitPane
 
     private StreamAliasSelectionEditor getStreamAliasSelectionEditor()
     {
-        if(mStreamAliasSelectionEditor == null)
-        {
-            mStreamAliasSelectionEditor = new StreamAliasSelectionEditor(mPlaylistManager);
-        }
-
         return mStreamAliasSelectionEditor;
     }
 
@@ -262,7 +270,7 @@ public class StreamingEditor extends SplitPane
         if(mRadioReferenceLoginLabel == null)
         {
             mRadioReferenceLoginLabel = new Label("Note: use Radio Reference tab to login and access Broadcastify stream configuration(s)");
-            mRadioReferenceLoginLabel.visibleProperty().bind(mPlaylistManager.getRadioReference().availableProperty().not());
+            mRadioReferenceLoginLabel.visibleProperty().bind(mRadioReference.availableProperty().not());
         }
 
         return mRadioReferenceLoginLabel;
@@ -325,7 +333,7 @@ public class StreamingEditor extends SplitPane
                 for(UserFeedBroadcast feed: mBroadcastifyFeeds)
                 {
                     //Only show a menu item for the feed if it's not already defined
-                    if(mPlaylistManager.getBroadcastModel().getBroadcastConfiguration(feed.getDescription()) == null)
+                    if(mBroadcastModel.getBroadcastConfiguration(feed.getDescription()) == null)
                     {
                         mNewButton.getItems().add(new CreateBroadcastifyMenuItem(feed));
                     }
@@ -382,7 +390,7 @@ public class StreamingEditor extends SplitPane
 
                     if(result.get() == ButtonType.YES)
                     {
-                        mPlaylistManager.getBroadcastModel().removeBroadcastConfiguration(config);
+                        mBroadcastModel.removeBroadcastConfiguration(config);
                     }
                 }
             });
@@ -398,7 +406,7 @@ public class StreamingEditor extends SplitPane
             mConfiguredBroadcastTableView = new TableView<>();
             mConfiguredBroadcastTableView.setPlaceholder(new Label("Click the New button to create a new " +
                 "audio streaming configuration"));
-            mConfiguredBroadcastTableView.setItems(mPlaylistManager.getBroadcastModel().getConfiguredBroadcasts());
+            mConfiguredBroadcastTableView.setItems(mBroadcastModel.getConfiguredBroadcasts());
 
             TableColumn<ConfiguredBroadcast,Boolean> enabledColumn = new TableColumn("Enabled");
             enabledColumn.setCellValueFactory(new PropertyValueFactory<>("enabled"));
@@ -465,8 +473,7 @@ public class StreamingEditor extends SplitPane
 
                 if(configuration != null)
                 {
-                    ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
-                        .addBroadcastConfiguration(configuration);
+                    ConfiguredBroadcast configuredBroadcast = mBroadcastModel.addBroadcastConfiguration(configuration);
                     getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
                 }
             });
@@ -487,8 +494,7 @@ public class StreamingEditor extends SplitPane
 
             setOnAction(event -> {
                 BroadcastConfiguration config = BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
-                ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
-                    .addBroadcastConfiguration(config);
+                ConfiguredBroadcast configuredBroadcast = mBroadcastModel.addBroadcastConfiguration(config);
                 getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
             });
         }

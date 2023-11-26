@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,11 +46,10 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel state tracks the overall state of all processing modules and decoders configured for the channel and
@@ -96,7 +95,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     private StateMonitoringSquelchController mSquelchController = new StateMonitoringSquelchController(0);
     private DecoderStateNotificationEventCache mStateNotificationCache = new DecoderStateNotificationEventCache();
 
-    public SingleChannelState(Channel channel, AliasModel aliasModel)
+    public SingleChannelState(AliasModel aliasModel, Channel channel)
     {
         super(channel);
         mChannelMetadata = new ChannelMetadata(aliasModel);

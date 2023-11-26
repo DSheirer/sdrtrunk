@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,7 +150,7 @@ public class SynthesizerViewer extends JFrame
         public PrimarySpectrumPanel(SettingsManager settingsManager)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel);
 
@@ -181,7 +181,7 @@ public class SynthesizerViewer extends JFrame
         public ChannelPanel(SettingsManager settingsManager, ChannelControlPanel channelControlPanel)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill][]"));
-            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel = new SpectrumPanel();
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "wrap");
             add(channelControlPanel);

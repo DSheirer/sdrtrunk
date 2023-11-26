@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,11 @@ package io.github.dsheirer.gui.icon;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.icon.IconModel;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javafx.beans.binding.Bindings;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.HPos;
@@ -48,17 +53,16 @@ import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 /**
  * GUI manager/editor for standard and custom icons used in sdrtrunk
  */
 public class IconManager extends Editor<Icon>
 {
     private static final Logger mLog = LoggerFactory.getLogger(IconManager.class);
+
+    @Resource
     private IconModel mIconModel;
+
     private TableView<Icon> mIconTableView;
     private Button mAddButton;
     private Button mEditButton;
@@ -78,9 +82,13 @@ public class IconManager extends Editor<Icon>
     /**
      * Constructs an instance
      */
-    public IconManager(IconModel iconModel)
+    public IconManager()
     {
-        mIconModel = iconModel;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
         getChildren().addAll(getAccordion());
     }
 

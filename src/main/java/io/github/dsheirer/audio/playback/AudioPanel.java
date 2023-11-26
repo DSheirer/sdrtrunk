@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ package io.github.dsheirer.audio.playback;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.AudioException;
-import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
@@ -30,6 +29,15 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
@@ -49,59 +57,49 @@ import javax.swing.JSlider;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Color;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 public class AudioPanel extends JPanel implements Listener<AudioEvent>
 {
     private static final long serialVersionUID = 1L;
-
     private static final Logger mLog = LoggerFactory.getLogger(AudioPanel.class);
-
     private static ImageIcon MUTED_ICON = IconModel.getScaledIcon("images/audio_muted.png", 20);
     private static ImageIcon UNMUTED_ICON = IconModel.getScaledIcon("images/audio_unmuted.png", 20);
-
-    private IconModel mIconModel;
-    private SettingsManager mSettingsManager;
-    private IAudioController mController;
-    private AliasModel mAliasModel;
-    private UserPreferences mUserPreferences;
-
     private JButton mMuteButton;
     private AudioChannelsPanel mAudioChannelsPanel;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private AudioPlaybackManager mAudioPlaybackManager;
+    @Resource
+    private IconModel mIconModel;
+    @Resource
+    private UserPreferences mUserPreferences;
+    @Resource
+    private SettingsManager mSettingsManager;
 
-    public AudioPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
-                      IAudioController controller, AliasModel aliasModel)
+    public AudioPanel()
     {
-        mIconModel = iconModel;
-        mSettingsManager = settingsManager;
-        mController = controller;
-        mAliasModel = aliasModel;
-        mUserPreferences = userPreferences;
-
-        mController.addControllerListener(this);
-
-        init();
     }
 
+    @PostConstruct
     private void init()
     {
+        mAudioPlaybackManager.addControllerListener(this);
         setLayout(new MigLayout("insets 0 0 0 0", "[]0[grow,fill]", "[fill]0[]"));
         setBackground(Color.BLACK);
 
         mMuteButton = new MuteButton();
         mMuteButton.setBackground(getBackground());
         add(mMuteButton);
-
-        mAudioChannelsPanel = new AudioChannelsPanel(mIconModel, mUserPreferences, mSettingsManager, mController, mAliasModel);
-
+        mAudioChannelsPanel = new AudioChannelsPanel(mAudioPlaybackManager, mUserPreferences, mSettingsManager,
+                mAliasModel, mIconModel);
         add(mAudioChannelsPanel);
-
         addMouseListener(new MouseSelectionListener());
+    }
+
+    @PreDestroy
+    public void preDestroy()
+    {
     }
 
     @Override
@@ -112,19 +110,15 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
             case AUDIO_CONFIGURATION_CHANGE_STARTED:
                 break;
             case AUDIO_CONFIGURATION_CHANGE_COMPLETE:
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        remove(mAudioChannelsPanel);
-                        mAudioChannelsPanel.dispose();
-                        mAudioChannelsPanel = new AudioChannelsPanel(mIconModel, mUserPreferences, mSettingsManager, mController, mAliasModel);
-                        add(mAudioChannelsPanel);
-                        mAudioChannelsPanel.repaint();
-                        revalidate();
-                        repaint();
-                    }
+                EventQueue.invokeLater(() -> {
+                    remove(mAudioChannelsPanel);
+                    mAudioChannelsPanel.dispose();
+                    mAudioChannelsPanel = new AudioChannelsPanel(mAudioPlaybackManager, mUserPreferences, mSettingsManager,
+                            mAliasModel, mIconModel);
+                    add(mAudioChannelsPanel);
+                    mAudioChannelsPanel.repaint();
+                    revalidate();
+                    repaint();
                 });
                 break;
             default:
@@ -147,14 +141,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
             mAudioOutput = audioOutput;
 
-            addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    mAudioOutput.setMuted(!mAudioOutput.isMuted());
-                }
-            });
+            addActionListener(e -> mAudioOutput.setMuted(!mAudioOutput.isMuted()));
         }
     }
 
@@ -179,14 +166,14 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     @Override
                     public void actionPerformed(ActionEvent e)
                     {
-                        MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_OUTPUT));
+                        MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_PLAYBACK));
                     }
                 });
                 popup.add(outputMenu);
                 popup.add(new JPopupMenu.Separator());
 
 				/* Audio output mute and volume control */
-                for(AudioOutput output : mController.getAudioOutputs())
+                for(AudioOutput output : mAudioPlaybackManager.getAudioOutputs())
                 {
                     JMenu menu = new JMenu("Channel: " + output.getChannelName());
 
@@ -353,7 +340,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                 {
                     try
                     {
-                        mController.setMixerChannelConfiguration(mConfiguration);
+                        mAudioPlaybackManager.setMixerChannelConfiguration(mConfiguration);
                     }
                     catch(AudioException e1)
                     {
@@ -392,7 +379,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                 {
                     mMuted = !mMuted;
 
-                    for(AudioOutput output : mController.getAudioOutputs())
+                    for(AudioOutput output : mAudioPlaybackManager.getAudioOutputs())
                     {
                         output.setMuted(mMuted);
                     }

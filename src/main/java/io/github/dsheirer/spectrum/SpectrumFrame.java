@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,46 +18,57 @@
  */
 package io.github.dsheirer.spectrum;
 
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.Tuner;
-import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
-import net.miginfocom.swing.MigLayout;
-
-import javax.swing.JFrame;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.EventQueue;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import net.miginfocom.swing.MigLayout;
 
+import javax.swing.JFrame;
+
+/**
+ * Swing frame for showing a separate spectrum display for a tuner.
+ */
 public class SpectrumFrame extends JFrame implements WindowListener
 {
     private static final long serialVersionUID = 1L;
 
+    @Resource
     private SpectralDisplayPanel mSpectralDisplayPanel;
 
-    public SpectrumFrame(PlaylistManager playlistManager, SettingsManager settingsManager,
-                         DiscoveredTunerModel discoveredTunerModel, Tuner tuner)
+    /**
+     * Constructs an instance
+     */
+    public SpectrumFrame()
     {
-        setTitle("SDRTRunk [" + tuner.getPreferredName() + "]");
+    }
+
+    /**
+     * Post instantiation/startup steps.
+     */
+    @PostConstruct
+    public void postConstruct()
+    {
         setBounds(100, 100, 1280, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
         setLayout(new MigLayout("insets 0 0 0 0", "[grow]", "[grow]"));
-
-        mSpectralDisplayPanel = new SpectralDisplayPanel(playlistManager, settingsManager, discoveredTunerModel);
-
-        mSpectralDisplayPanel.showTuner(tuner);
         add(mSpectralDisplayPanel, "grow");
-
         /* Register a shutdown listener */
         this.addWindowListener(this);
+    }
 
-        EventQueue.invokeLater(new Runnable()
-        {
-            public void run()
-            {
-                setVisible(true);
-            }
+    /**
+     * Shows the specified tuner in this spectrum frame.
+     * @param tuner to show.
+     */
+    public void setTuner(Tuner tuner)
+    {
+        EventQueue.invokeLater(() -> {
+            setTitle("SDRTRunk [" + tuner.getPreferredName() + "]");
+            mSpectralDisplayPanel.showTuner(tuner);
+            setVisible(true);
         });
     }
 

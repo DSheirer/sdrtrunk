@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Image;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,9 +45,11 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.swing.ImageIcon;
 
+@Component("iconModel")
 public class IconModel
 {
     private final static Logger mLog = LoggerFactory.getLogger(IconModel.class);
@@ -63,8 +67,18 @@ public class IconModel
     private Map<String,ImageIcon> mResizedIcons = new HashMap<>();
     private Icon mDefaultIcon;
     private IconSet mStandardIcons;
+    @Resource
+    private UserPreferences mUserPreferences;
 
+    /**
+     * Icons model
+     */
     public IconModel()
+    {
+    }
+
+    @PostConstruct
+    public void postConstruct()
     {
         IconSet iconSet = load();
 
@@ -98,6 +112,63 @@ public class IconModel
 
         //Add a change detection listener to schedule saves when the list changes.
         mIcons.addListener((ListChangeListener<Icon>)c -> scheduleSave());
+
+    }
+
+    /**
+     * Loads icons from file or creates a default set of icons
+     */
+    public IconSet load()
+    {
+        mLog.info("loading icons file [" + getIconFilePath().toString() + "]");
+
+        IconSet iconSet = null;
+
+        //Check for a lock file that indicates the previous save attempt was incomplete or had an error
+        if(Files.exists(getIconLockFilePath()))
+        {
+            try
+            {
+                //Remove the previous icons file
+                Files.delete(getIconFilePath());
+
+                //Copy the backup file to restore the previous icons file
+                if(Files.exists(getIconBackupFilePath()))
+                {
+                    Files.copy(getIconBackupFilePath(), getIconFilePath());
+                }
+
+                //Remove the lock file
+                Files.delete(getIconLockFilePath());
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Previous icons save attempt was incomplete and there was an error restoring the " +
+                        "icons backup file", ioe);
+            }
+        }
+
+        if(Files.exists(getIconFilePath()))
+        {
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+
+            try(InputStream in = Files.newInputStream(getIconFilePath()))
+            {
+                iconSet = objectMapper.readValue(in, IconSet.class);
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("IO error while reading icons file", ioe);
+            }
+        }
+        else
+        {
+            mLog.info("Icons file not found at [" + getIconFilePath().toString() + "]");
+        }
+
+        return iconSet;
     }
 
     /**
@@ -256,9 +327,7 @@ public class IconModel
     {
         if(mIconFolderPath == null)
         {
-            SystemProperties props = SystemProperties.getInstance();
-
-            mIconFolderPath = props.getApplicationFolder("settings");
+            mIconFolderPath = mUserPreferences.getDirectoryPreference().getDirectoryApplicationRoot().resolve("settings");
         }
 
         return mIconFolderPath;
@@ -364,62 +433,6 @@ public class IconModel
         {
             mLog.error("Error while saving icons [" + getIconFilePath().toString() + "]", e);
         }
-    }
-
-    /**
-     * Loads icons from file or creates a default set of icons
-     */
-    public IconSet load()
-    {
-        mLog.info("loading icons file [" + getIconFilePath().toString() + "]");
-
-        IconSet iconSet = null;
-
-        //Check for a lock file that indicates the previous save attempt was incomplete or had an error
-        if(Files.exists(getIconLockFilePath()))
-        {
-            try
-            {
-                //Remove the previous icons file
-                Files.delete(getIconFilePath());
-
-                //Copy the backup file to restore the previous icons file
-                if(Files.exists(getIconBackupFilePath()))
-                {
-                    Files.copy(getIconBackupFilePath(), getIconFilePath());
-                }
-
-                //Remove the lock file
-                Files.delete(getIconLockFilePath());
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Previous icons save attempt was incomplete and there was an error restoring the " +
-                    "icons backup file", ioe);
-            }
-        }
-
-        if(Files.exists(getIconFilePath()))
-        {
-            JacksonXmlModule xmlModule = new JacksonXmlModule();
-            xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule);
-
-            try(InputStream in = Files.newInputStream(getIconFilePath()))
-            {
-                iconSet = objectMapper.readValue(in, IconSet.class);
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("IO error while reading icons file", ioe);
-            }
-        }
-        else
-        {
-            mLog.info("Icons file not found at [" + getIconFilePath().toString() + "]");
-        }
-
-        return iconSet;
     }
 
     /**

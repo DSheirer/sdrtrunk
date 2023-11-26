@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,9 @@ public enum PreferenceEditorType
     JMBE_LIBRARY("JMBE Audio Library"),
     AUDIO_MP3("MP3"),
     AUDIO_RECORD("Record"),
-    AUDIO_OUTPUT("Output/Tones"),
+    AUDIO_PLAYBACK("Playback/Tones"),
     AUDIO_CALL_MANAGEMENT("Call Management"),
-    SOURCE_TUNERS("Tuners"),
+    TUNERS("Tuners"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
     VECTOR_CALIBRATION("Vector Calibration"),
     DEFAULT("Default");

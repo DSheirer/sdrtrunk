@@ -23,7 +23,6 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageHistory;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
@@ -52,21 +51,18 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
     private JTable mTable = new JTable(mMessageModel);
     private TableRowSorter<TableModel> mTableRowSorter;
     private JTableColumnWidthMonitor mTableColumnWidthMonitor;
-    private UserPreferences mUserPreferences;
     private FilterSet<IMessage> mMessageFilterSet;
     private HistoryManagementPanel<IMessage> mHistoryManagementPanel;
 
     /**
      * Constructs an instance
-     * @param userPreferences
      */
-    public MessageActivityPanel(UserPreferences userPreferences)
+    public MessageActivityPanel()
     {
-        mUserPreferences = userPreferences;
         mTableRowSorter = new TableRowSorter<>(mMessageModel);
         mTableRowSorter.setRowFilter(new MessageRowFilter());
         mTable.setRowSorter(mTableRowSorter);
-        mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
+        mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mTable, TABLE_PREFERENCE_KEY);
         setLayout(new MigLayout("insets 0 0 0 0", "[][grow,fill]", "[]0[grow,fill]"));
         mHistoryManagementPanel = new HistoryManagementPanel<>(mMessageModel, "Message Filter Editor");
         add(mHistoryManagementPanel, "span,growx");

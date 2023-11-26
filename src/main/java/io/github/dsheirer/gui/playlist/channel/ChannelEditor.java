@@ -21,11 +21,12 @@ package io.github.dsheirer.gui.playlist.channel;
 
 import com.google.common.base.Joiner;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,9 +76,13 @@ import org.slf4j.LoggerFactory;
 public class ChannelEditor extends SplitPane implements IFilterProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelEditor.class);
-    private PlaylistManager mPlaylistManager;
-    private TunerManager mTunerManager;
-    private UserPreferences mUserPreferences;
+    @Resource
+    private ChannelModel mChannelModel;
+    @Resource
+    private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
+    private List<ChannelConfigurationEditor> mChannelConfigurationEditors;
+
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
     private MenuButton mNewButton;
@@ -91,22 +96,32 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
     private ToggleButton mAutoStartToggleButton;
     private ToggleButton mPlayingToggleButton;
     private ChannelConfigurationEditor mChannelConfigurationEditor;
-    private UnknownConfigurationEditor mUnknownConfigurationEditor;
+    private ChannelConfigurationEditor mUnknownConfigurationEditor;
     private Map<DecoderType,ChannelConfigurationEditor> mChannelConfigurationEditorMap = new HashMap();
     private FilteredList<Channel> mChannelFilteredList;
     private ChannelListFilter mChannelListFilter = new ChannelListFilter();
 
     /**
      * Constructs an instance
-     * @param playlistManager containing playlists and channel configurations
      */
-    public ChannelEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
+    public ChannelEditor()
     {
-        mPlaylistManager = playlistManager;
-        mTunerManager = tunerManager;
-        mUserPreferences = userPreferences;
-        mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager, mTunerManager,
-                userPreferences, this);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        //Spring instantiates all editors so place them into a lookup map
+        for(ChannelConfigurationEditor editor: mChannelConfigurationEditors)
+        {
+            mChannelConfigurationEditorMap.put(editor.getDecoderType(), editor);
+            editor.setFilterProcessor(this);
+
+            if(editor instanceof UnknownConfigurationEditor unknown)
+            {
+                mUnknownConfigurationEditor = unknown;
+            }
+        }
 
         HBox channelsBox = new HBox();
         channelsBox.setSpacing(10.0);
@@ -202,17 +217,12 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
 
                     if(editor == null)
                     {
-                        editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager,
-                            mTunerManager, mUserPreferences, this);
+                        mLog.warn("Unable to find channel configuration editor for " + channelDecoderType);
 
-                        if(editor != null)
+                        for(Map.Entry<DecoderType,ChannelConfigurationEditor> entry: mChannelConfigurationEditorMap.entrySet())
                         {
-                            mChannelConfigurationEditorMap.put(channelDecoderType, editor);
+                            System.out.println("Type: " + entry.getKey() + " Editor: " + entry.getValue().getClass());
                         }
-                    }
-
-                    if(editor == null)
-                    {
                         editor = mUnknownConfigurationEditor;
                     }
 
@@ -228,7 +238,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
     {
         Channel channel = new Channel();
         channel.setDecodeConfiguration(DecoderFactory.getDecodeConfiguration(decoderType));
-        mPlaylistManager.getChannelModel().addChannel(channel);
+        mChannelModel.addChannel(channel);
         getChannelTableView().getSelectionModel().select(channel);
         getChannelTableView().scrollTo(channel);
     }
@@ -498,7 +508,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
             mChannelTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
-            mChannelFilteredList = new FilteredList<>(mPlaylistManager.getChannelModel().channelList(), mChannelListFilter);
+            mChannelFilteredList = new FilteredList<>(mChannelModel.channelList(), mChannelListFilter);
             SortedList<Channel> sortedList = new SortedList<>(mChannelFilteredList);
             sortedList.comparatorProperty().bind(mChannelTableView.comparatorProperty());
             mChannelTableView.setItems(sortedList);
@@ -585,7 +595,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
                         {
                             try
                             {
-                                mPlaylistManager.getChannelProcessingManager().stop(selected);
+                                mChannelProcessingManager.stop(selected);
                             }
                             catch(Exception e)
                             {
@@ -593,7 +603,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
                             }
                         }
 
-                        mPlaylistManager.getChannelModel().removeChannel(selected);
+                        mChannelModel.removeChannel(selected);
                     }
                 }
             });
@@ -612,7 +622,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
             mCloneButton.setOnAction(event -> {
                 Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
                 Channel copy = selected.copyOf();
-                mPlaylistManager.getChannelModel().addChannel(copy);
+                mChannelModel.addChannel(copy);
                 getChannelTableView().getSelectionModel().select(copy);
             });
         }

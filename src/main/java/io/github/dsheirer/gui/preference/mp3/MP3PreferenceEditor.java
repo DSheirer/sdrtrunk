@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,10 @@ package io.github.dsheirer.gui.preference.mp3;
 
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.preference.mp3.MP3Preference;
+import jakarta.annotation.PostConstruct;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -39,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Preference settings for MP3
  */
-public class MP3PreferenceEditor extends HBox
+public class MP3PreferenceEditor extends PreferenceEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(MP3PreferenceEditor.class);
     private MP3Preference mMP3Preference;
@@ -50,13 +52,23 @@ public class MP3PreferenceEditor extends HBox
 
     /**
      * Constructs an instance
-     * @param userPreferences
      */
-    public MP3PreferenceEditor(UserPreferences userPreferences)
+    public MP3PreferenceEditor()
     {
-        mMP3Preference = userPreferences.getMP3Preference();
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mMP3Preference = getUserPreferences().getMP3Preference();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.AUDIO_MP3;
     }
 
     private GridPane getEditorPane()

@@ -19,11 +19,13 @@
 
 package io.github.dsheirer.gui.preference.directory;
 
-import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -45,7 +47,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Preference settings for channel event view
  */
-public class DirectoryPreferenceEditor extends HBox
+public class DirectoryPreferenceEditor extends PreferenceEditor implements IPreferenceUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(DirectoryPreferenceEditor.class);
 
@@ -100,20 +102,29 @@ public class DirectoryPreferenceEditor extends HBox
     private Spinner<Integer> mRecordingSpinner;
     private Spinner<Integer> mEventLogSpinner;
 
-    public DirectoryPreferenceEditor(UserPreferences userPreferences)
+    public DirectoryPreferenceEditor()
     {
-        mDirectoryPreference = userPreferences.getDirectoryPreference();
+    }
 
-        //Register to receive directory preference update notifications so we can update the path labels
-        MyEventBus.getGlobalEventBus().register(this);
-
+    @PostConstruct
+    public void postConstruct()
+    {
+        getUserPreferences().addUpdateListener(this);
+        mDirectoryPreference = getUserPreferences().getDirectoryPreference();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
     }
 
+    @PreDestroy
     public void dispose()
     {
-        MyEventBus.getGlobalEventBus().unregister(this);
+        getUserPreferences().removeUpdateListener(this);
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.DIRECTORY;
     }
 
     private GridPane getEditorPane()
@@ -886,7 +897,7 @@ public class DirectoryPreferenceEditor extends HBox
         return mStreamingPathLabel;
     }
 
-    @Subscribe
+    @Override
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType != null && preferenceType == PreferenceType.DIRECTORY)

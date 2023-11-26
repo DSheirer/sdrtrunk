@@ -27,8 +27,6 @@ import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.AudioRecording;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
-import io.github.dsheirer.audio.convert.InputAudioFormat;
-import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
@@ -40,6 +38,7 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -78,18 +77,16 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
         .build();
     private long mLastConnectionAttempt;
     private long mConnectionAttemptInterval = 5000; //Every 5 seconds
+    @Resource
     private AliasModel mAliasModel;
 
     /**
      * Constructs an instance of the broadcaster
      * @param config to use
-     * @param aliasModel for access to aliases
      */
-    public RdioScannerBroadcaster(RdioScannerConfiguration config, InputAudioFormat inputAudioFormat,
-                                       MP3Setting mp3Setting, AliasModel aliasModel)
+    public RdioScannerBroadcaster(RdioScannerConfiguration config)
     {
         super(config);
-        mAliasModel = aliasModel;
     }
 
     /**
@@ -440,7 +437,6 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
      */
     private String getTalkgroupLabel(AudioRecording audioRecording)
     {
-
         AliasList aliasList = mAliasModel.getAliasList(audioRecording.getIdentifierCollection());
         Identifier identifier = audioRecording.getIdentifierCollection().getToIdentifier();
 
@@ -465,7 +461,6 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
      */
     private String getTalkgroupGroup(AudioRecording audioRecording)
     {
-
         AliasList aliasList = mAliasModel.getAliasList(audioRecording.getIdentifierCollection());
         Identifier identifier = audioRecording.getIdentifierCollection().getToIdentifier();
 

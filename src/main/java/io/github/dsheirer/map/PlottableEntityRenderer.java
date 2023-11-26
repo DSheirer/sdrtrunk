@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.map;
 
@@ -23,10 +22,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.icon.IconModel;
-import org.jdesktop.swingx.JXMapViewer;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
-import javax.swing.ImageIcon;
+import jakarta.annotation.Resource;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -34,16 +30,26 @@ import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.util.Collections;
 import java.util.List;
+import org.jdesktop.swingx.JXMapViewer;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 
+import javax.swing.ImageIcon;
+
+/**
+ * Map entity renderer
+ */
 public class PlottableEntityRenderer
 {
+    @Resource
     private AliasModel mAliasModel;
+    @Resource
     private IconModel mIconModel;
 
-    public PlottableEntityRenderer(AliasModel aliasModel, IconModel iconModel)
+    /**
+     * Constructor
+     */
+    public PlottableEntityRenderer()
     {
-        mAliasModel = aliasModel;
-        mIconModel = iconModel;
     }
 
     public void paintPlottableEntity(Graphics2D g, JXMapViewer viewer, PlottableEntityHistory entity, boolean antiAliasing)

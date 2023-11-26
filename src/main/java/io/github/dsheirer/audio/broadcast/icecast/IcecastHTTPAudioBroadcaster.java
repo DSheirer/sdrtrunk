@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -54,7 +55,8 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
     private static final Logger mLog = LoggerFactory.getLogger(IcecastHTTPAudioBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
     private static final String HTTP_1_0_OK_HEX_DUMP = "48 54 54 50 2F 31 2E 30 20 32 30 30 20 4F 4B";
-
+    @Resource
+    private AliasModel mAliasModel;
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
     private Map<String,String> mHTTPHeaders;
@@ -74,9 +76,9 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
      * @param configuration for the Icecast stream
      */
     public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration, InputAudioFormat inputAudioFormat,
-                                       MP3Setting mp3Setting, AliasModel aliasModel)
+                                       MP3Setting mp3Setting)
     {
-        super(configuration, inputAudioFormat, mp3Setting, aliasModel);
+        super(configuration, inputAudioFormat, mp3Setting);
     }
 
     /**

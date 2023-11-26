@@ -37,12 +37,14 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.swing.table.AbstractTableModel;
 
 /**
  * Model for discovered tuners
  */
+@Component("discoveredTunerModel")
 public class DiscoveredTunerModel extends AbstractTableModel implements Listener<TunerEvent>,
         IDiscoveredTunerStatusListener
 {

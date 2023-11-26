@@ -457,10 +457,9 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         alias.addAliasID(new Record());
         alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
         aliasList.addAlias(alias);
-        AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
+        AudioRecordingManager recordingManager = new AudioRecordingManager();
         recordingManager.start();
-        ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
-        processingChain.addAudioSegmentListener(recordingManager);
+        ProcessingChain processingChain = new ProcessingChain(new AliasModel(), channel);
         processingChain.addModule(new P25P1DecoderState(channel));
         processingChain.addModule(new P25P1AudioModule(userPreferences, aliasList));
         MessageProviderModule messageProviderModule = new MessageProviderModule();

@@ -20,7 +20,7 @@
 package io.github.dsheirer.record;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.preference;
 
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.protocol.Protocol;
+import jakarta.annotation.PostConstruct;
+import java.util.Set;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -32,23 +32,31 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-
-import java.util.Set;
 
 
 /**
  * Preference settings for channel event view
  */
-public class TalkgroupFormatPreferenceEditor extends HBox
+public class TalkgroupFormatPreferenceEditor extends PreferenceEditor
 {
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private GridPane mEditorPane;
 
-    public TalkgroupFormatPreferenceEditor(UserPreferences userPreferences)
+    public TalkgroupFormatPreferenceEditor()
     {
-        mTalkgroupFormatPreference = userPreferences.getTalkgroupFormatPreference();
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mTalkgroupFormatPreference = getUserPreferences().getTalkgroupFormatPreference();
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.TALKGROUP_FORMAT;
     }
 
     private GridPane getEditorPane()

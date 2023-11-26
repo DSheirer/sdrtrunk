@@ -19,20 +19,27 @@
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 
 public class ChannelSelectionManager implements Listener<ChannelEvent>
 {
-    private Listener<ChannelEvent> mChannelEventListener;
+    @Resource
+    private ChannelModel mChannelModel;
     private Channel mSelectedChannel = null;
 
     /**
      * Manages channel selection state to ensure that only one channel is ever
      * in a selected state.
      */
-    public ChannelSelectionManager(ChannelModel channelModel)
+    public ChannelSelectionManager()
     {
-        mChannelEventListener = channelModel;
-        channelModel.addListener(ChannelSelectionManager.this);
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mChannelModel.addListener(ChannelSelectionManager.this);
     }
 
     @Override
@@ -44,13 +51,13 @@ public class ChannelSelectionManager implements Listener<ChannelEvent>
                 if(mSelectedChannel != null)
                 {
                     mSelectedChannel.setSelected(false);
-                    mChannelEventListener.receive(new ChannelEvent(mSelectedChannel, ChannelEvent.Event.NOTIFICATION_SELECTION_CHANGE));
+                    mChannelModel.receive(new ChannelEvent(mSelectedChannel, ChannelEvent.Event.NOTIFICATION_SELECTION_CHANGE));
                     mSelectedChannel = null;
                 }
 
                 mSelectedChannel = event.getChannel();
                 mSelectedChannel.setSelected(true);
-                mChannelEventListener.receive(new ChannelEvent(event.getChannel(), ChannelEvent.Event.NOTIFICATION_SELECTION_CHANGE));
+                mChannelModel.receive(new ChannelEvent(event.getChannel(), ChannelEvent.Event.NOTIFICATION_SELECTION_CHANGE));
                 break;
             case NOTIFICATION_PROCESSING_STOP:
             case REQUEST_DESELECT:
@@ -59,7 +66,7 @@ public class ChannelSelectionManager implements Listener<ChannelEvent>
                 {
                     mSelectedChannel.setSelected(false);
                     mSelectedChannel = null;
-                    mChannelEventListener.receive(new ChannelEvent(event.getChannel(), ChannelEvent.Event.NOTIFICATION_SELECTION_CHANGE));
+                    mChannelModel.receive(new ChannelEvent(event.getChannel(), ChannelEvent.Event.NOTIFICATION_SELECTION_CHANGE));
                 }
                 break;
             default:

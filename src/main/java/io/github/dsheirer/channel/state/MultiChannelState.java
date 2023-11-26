@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,13 +44,12 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Multi-Channel state tracks the overall state of all processing modules and decoders configured for the channel
@@ -91,10 +90,9 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     /**
      * Constructs an instance
      * @param channel configuration
-     * @param aliasModel for channel metadata and identifiers
      * @param timeslots array of timeslot numbers to use
      */
-    public MultiChannelState(Channel channel, AliasModel aliasModel, int[] timeslots)
+    public MultiChannelState(AliasModel aliasModel, Channel channel, int[] timeslots)
     {
         super(channel);
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,25 +19,25 @@
 
 package io.github.dsheirer.gui.preference.tuner;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.preference.source.TunerPreference;
+import jakarta.annotation.PostConstruct;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 
 
 /**
  * Preference settings for channel event view
  */
-public class TunerPreferenceEditor extends HBox
+public class TunerPreferenceEditor extends PreferenceEditor
 {
     private static final String HELP_TEXT_POLYPHASE = "Processes all channels from tuner.  This " +
         "channelizer is more efficient when decoding 3 or more channels.";
@@ -55,10 +55,24 @@ public class TunerPreferenceEditor extends HBox
     private ChoiceBox<RspDuoSelectionMode> mRspDuoTunerModeChoiceBox;
     private Label mRspDuoModeLabel;
 
-    public TunerPreferenceEditor(UserPreferences userPreferences)
+    /**
+     * Constructs an instance
+     */
+    public TunerPreferenceEditor()
     {
-        mTunerPreference = userPreferences.getTunerPreference();
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mTunerPreference = getUserPreferences().getTunerPreference();
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.TUNERS;
     }
 
     private GridPane getEditorPane()
@@ -116,7 +130,7 @@ public class TunerPreferenceEditor extends HBox
                 label.setWrapText(true);
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.getDialogPane().setContent(label);
-                alert.initOwner(((Node)getChannelizerTypeChoiceBox()).getScene().getWindow());
+                alert.initOwner((getChannelizerTypeChoiceBox()).getScene().getWindow());
                 alert.show();
             });
         }
@@ -184,7 +198,7 @@ public class TunerPreferenceEditor extends HBox
                 label.setWrapText(true);
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.getDialogPane().setContent(label);
-                alert.initOwner(((Node)getRspDuoTunerModeChoiceBox()).getScene().getWindow());
+                alert.initOwner((getRspDuoTunerModeChoiceBox()).getScene().getWindow());
                 alert.show();
             });
         }

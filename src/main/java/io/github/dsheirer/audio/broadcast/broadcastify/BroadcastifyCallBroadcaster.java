@@ -20,13 +20,10 @@
 package io.github.dsheirer.audio.broadcast.broadcastify;
 
 import com.google.common.net.HttpHeaders;
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.AudioRecording;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
-import io.github.dsheirer.audio.convert.InputAudioFormat;
-import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
@@ -80,10 +77,8 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     /**
      * Constructs an instance of the broadcaster
      * @param config to use
-     * @param aliasModel for access to aliases
      */
-    public BroadcastifyCallBroadcaster(BroadcastifyCallConfiguration config, InputAudioFormat inputAudioFormat,
-                                       MP3Setting mp3Setting, AliasModel aliasModel)
+    public BroadcastifyCallBroadcaster(BroadcastifyCallConfiguration config)
     {
         super(config);
     }

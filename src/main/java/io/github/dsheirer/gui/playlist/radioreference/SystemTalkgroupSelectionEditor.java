@@ -28,12 +28,13 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.Talkgroup;
 import io.github.dsheirer.rrapi.type.TalkgroupCategory;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -82,12 +83,15 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     private static final Logger mLog = LoggerFactory.getLogger(SystemTalkgroupSelectionEditor.class);
 
     private final TalkgroupCategory ALL_TALKGROUPS = new TalkgroupCategory();
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private TalkgroupEditor mTalkgroupEditor;
+    @Resource
     private UserPreferences mUserPreferences;
-    private PlaylistManager mPlaylistManager;
     private TableView<AliasedTalkgroup> mTalkgroupTableView;
     private ComboBox<TalkgroupCategory> mTalkgroupCategoryComboBox;
     private TextField mSearchField;
-    private TalkgroupEditor mTalkgroupEditor;
     private ComboBox<String> mAliasListNameComboBox;
     private Button mNewAliasListButton;
     private TalkgroupFilter mTalkgroupFilter = new TalkgroupFilter();
@@ -102,13 +106,15 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     private ProgressIndicator mProgressIndicator;
     private CheckBox mEncryptedAsDoNotMonitorCheckBox;
 
-    public SystemTalkgroupSelectionEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public SystemTalkgroupSelectionEditor()
+    {
+    }
+
+    @PostConstruct
+    public void postConstruct()
     {
         //Register to receive flash alias box requests
         MyEventBus.getGlobalEventBus().register(this);
-
-        mUserPreferences = userPreferences;
-        mPlaylistManager = playlistManager;
 
         ALL_TALKGROUPS.setName("(All Talkgroups)");
 
@@ -369,7 +375,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
             createdAliases.add(alias);
         }
 
-        mPlaylistManager.getAliasModel().addAliases(createdAliases);
+        mAliasModel.addAliases(createdAliases);
     }
 
     /**
@@ -433,11 +439,6 @@ public class SystemTalkgroupSelectionEditor extends GridPane
 
     private TalkgroupEditor getTalkgroupEditor()
     {
-        if(mTalkgroupEditor == null)
-        {
-            mTalkgroupEditor = new TalkgroupEditor(mUserPreferences, mPlaylistManager);
-        }
-
         return mTalkgroupEditor;
     }
 
@@ -458,7 +459,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         {
             Predicate<String> filterPredicate = s -> !s.contentEquals(AliasModel.NO_ALIAS_LIST);
             FilteredList<String> filteredChannelList =
-                new FilteredList<>(mPlaylistManager.getAliasModel().aliasListNames(), filterPredicate);
+                new FilteredList<>(mAliasModel.aliasListNames(), filterPredicate);
             mAliasListNameComboBox = new ComboBox<>(filteredChannelList);
             mAliasListNameComboBox.setPrefWidth(150);
             mAliasListNameComboBox.setOnAction(event -> updateAliasList(getAliasListNameComboBox()
@@ -487,7 +488,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
             mAliasList.aliases().removeListener(mAliasListChangeListener);
         }
 
-        mAliasList = mPlaylistManager.getAliasModel().getAliasList(aliasListName);
+        mAliasList = mAliasModel.getAliasList(aliasListName);
 
         if(mAliasList != null)
         {
@@ -583,7 +584,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
                     if(name != null && !name.isEmpty())
                     {
                         name = name.trim();
-                        mPlaylistManager.getAliasModel().addAliasList(name);
+                        mAliasModel.addAliasList(name);
                         getAliasListNameComboBox().getSelectionModel().select(name);
                     }
                 });

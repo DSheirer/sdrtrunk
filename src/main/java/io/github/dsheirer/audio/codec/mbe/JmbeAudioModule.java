@@ -19,16 +19,17 @@
 
 package io.github.dsheirer.audio.codec.mbe;
 
-import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
-import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
+import io.github.dsheirer.preference.IPreferenceUpdateListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -42,28 +43,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class JmbeAudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener,
-    ISquelchStateListener
+    ISquelchStateListener, IPreferenceUpdateListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(JmbeAudioModule.class);
     private static final String JMBE_AUDIO_LIBRARY = "JMBE";
     private static final List<String> mLibraryLoadStatusLogged = new ArrayList<>();
     private IAudioCodec mAudioCodec;
-    private final UserPreferences mUserPreferences;
+    private UserPreferences mUserPreferences;
     private static Class sLoadedJmbeAudioConverterClass;
 
     public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
         super(aliasList, timeslot, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
         mUserPreferences = userPreferences;
-        MyEventBus.getGlobalEventBus().register(this);
         loadConverter();
+    }
+
+    @PostConstruct
+    public void init()
+    {
+        mUserPreferences.addUpdateListener(this);
+    }
+
+    @PreDestroy
+    public void destroy()
+    {
+        mUserPreferences.removeUpdateListener(this);
     }
 
     @Override
     public void dispose()
     {
         super.dispose();
-        MyEventBus.getGlobalEventBus().unregister(this);
         mAudioCodec = null;
     }
 
@@ -91,7 +102,6 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
      *
      * @param preferenceType that was updated
      */
-    @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
         if(preferenceType == PreferenceType.JMBE_LIBRARY)

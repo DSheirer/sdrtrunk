@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.audio;
+package io.github.dsheirer.audio.call;
 
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -41,11 +41,8 @@ public class AudioSegmentBroadcaster<T extends AudioSegment> extends Broadcaster
     {
         for(Listener<T> listener : getListeners())
         {
-            audioSegment.incrementConsumerCount();
+            audioSegment.addLease(listener.getClass().toString());
             listener.receive(audioSegment);
         }
-
-        //Decrement consumer counter for this broadcaster
-        audioSegment.decrementConsumerCount();
     }
 }

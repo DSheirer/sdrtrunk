@@ -23,7 +23,9 @@ import com.google.common.collect.Ordering;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
-import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.icon.IconModel;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -52,7 +54,8 @@ import org.controlsfx.control.ToggleSwitch;
  */
 public class AliasBulkEditor extends Editor<List<Alias>>
 {
-    private PlaylistManager mPlaylistManager;
+    @Resource
+    private IconModel mIconModel;
     private Label mEditingLabel;
     private ColorPicker mColorPicker;
     private Button mApplyColorButton;
@@ -65,20 +68,19 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     private ToggleSwitch mRecordToggleSwitch;
     private Button mApplyRecordButton;
 
-    private BooleanProperty mChangeInProgressProperty;
+    private BooleanProperty mChangeInProgressProperty = new SimpleBooleanProperty();
     private ReadOnlyBooleanProperty mChangeInProgressROProperty;
 
     /**
      * Constructs an instance
-     *
-     * @param playlistManager for accessing icon manager
      */
-    public AliasBulkEditor(PlaylistManager playlistManager)
+    public AliasBulkEditor()
     {
-        mPlaylistManager = playlistManager;
+    }
 
-        mChangeInProgressProperty = new SimpleBooleanProperty();
-
+    @PostConstruct
+    public void postConstruct()
+    {
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(10, 10, 10, 10));
         gridPane.setHgap(10);
@@ -280,7 +282,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         {
             mIconNodeComboBox = new ComboBox<>();
             mIconNodeComboBox.setMaxWidth(Double.MAX_VALUE);
-            mIconNodeComboBox.setItems(new SortedList(mPlaylistManager.getIconModel().iconsProperty(), Ordering.natural()));
+            mIconNodeComboBox.setItems(new SortedList(mIconModel.iconsProperty(), Ordering.natural()));
             mIconNodeComboBox.setCellFactory(new IconCellFactory());
             mIconNodeComboBox.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) ->
@@ -298,25 +300,20 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         {
             mApplyIconButton = new Button("Apply");
             mApplyIconButton.setDisable(true);
-            mApplyIconButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mApplyIconButton.setOnAction(event -> {
+                startChange();
+
+                Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
+
+                if(icon != null)
                 {
-                    startChange();
-
-                    Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
-
-                    if(icon != null)
+                    for(Alias alias : getItem())
                     {
-                        for(Alias alias : getItem())
-                        {
-                            alias.setIconName(icon.getName());
-                        }
+                        alias.setIconName(icon.getName());
                     }
-
-                    endChange();
                 }
+
+                endChange();
             });
         }
 

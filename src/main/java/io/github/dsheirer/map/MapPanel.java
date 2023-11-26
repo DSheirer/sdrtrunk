@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.map;
 
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.settings.MapViewSetting;
 import io.github.dsheirer.settings.SettingsManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.awt.EventQueue;
 import net.miginfocom.swing.MigLayout;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.OSMTileFactoryInfo;
@@ -30,28 +31,26 @@ import org.jdesktop.swingx.input.ZoomMouseWheelListenerCursor;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
+import org.springframework.stereotype.Component;
 
 import javax.swing.JPanel;
-import java.awt.EventQueue;
 
+@Component("mapPanel")
 public class MapPanel extends JPanel implements IPlottableUpdateListener
 {
     private static final long serialVersionUID = 1L;
-
+    @Resource
     private SettingsManager mSettingsManager;
+    @Resource
     private MapService mMapService;
     private JXMapViewer mMapViewer = new JXMapViewer();
-    private PlottableEntityPainter mMapPainter;
+    private PlottableEntityPainter mMapPainter = new PlottableEntityPainter();
 
-    public MapPanel(MapService mapService, AliasModel aliasModel, IconModel iconModel, SettingsManager settingsManager)
+    public MapPanel()
     {
-        mSettingsManager = settingsManager;
-        mMapService = mapService;
-        mMapPainter = new PlottableEntityPainter(aliasModel, iconModel);
-
-        init();
     }
 
+    @PostConstruct
     private void init()
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));

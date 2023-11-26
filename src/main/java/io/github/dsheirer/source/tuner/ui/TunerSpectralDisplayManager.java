@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.ui;
 
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.Tuner;
@@ -29,37 +29,48 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.spectrum.SpectrumFrame;
 import io.github.dsheirer.util.SwingUtils;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
 
 /**
  * Spectral display manager for displaying tuner spectral content.
  */
+@Component("tunerSpectralDisplayManager")
 public class TunerSpectralDisplayManager implements Listener<TunerEvent>
 {
     private Logger mLog = LoggerFactory.getLogger(TunerSpectralDisplayManager.class);
+    @Resource
+    private PlaylistManager mPlaylistManager;
+    @Resource
+    private SettingsManager mSettingsManager;
+    @Resource
+    private DiscoveredTunerModel mDiscoveredTunerModel;
+    @Resource
+    private UserPreferences mUserPreferences;
+    @Resource
+    private ObjectProvider<SpectrumFrame> mSpectrumFrameObjectProvider;
 
     private SpectralDisplayPanel mSpectralDisplayPanel;
-    private PlaylistManager mPlaylistManager;
-    private SettingsManager mSettingsManager;
-    private DiscoveredTunerModel mDiscoveredTunerModel;
 
     /**
      * Constructs an instance
-     * @param panel to manage
-     * @param playlistManager for channel updates
-     * @param settingsManager for settings
-     * @param discoveredTunerModel to access tuners
      */
-    public TunerSpectralDisplayManager(SpectralDisplayPanel panel, PlaylistManager playlistManager,
-                                       SettingsManager settingsManager, DiscoveredTunerModel discoveredTunerModel)
+    public TunerSpectralDisplayManager()
     {
-        mSpectralDisplayPanel = panel;
-        mPlaylistManager = playlistManager;
-        mSettingsManager = settingsManager;
-        mDiscoveredTunerModel = discoveredTunerModel;
+    }
+
+    /**
+     * Sets the panel to be managed.
+     * @param spectralDisplayPanel to be managed
+     */
+    public void setSpectralDisplayPanel(SpectralDisplayPanel spectralDisplayPanel)
+    {
+        mSpectralDisplayPanel = spectralDisplayPanel;
     }
 
     /**
@@ -68,7 +79,9 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
     public Tuner showFirstTuner()
     {
         //Ensure spectral display is enabled before selecting first tuner
-        if(SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
+        boolean enabled = mUserPreferences.getApplicationPreference().isSpectralDisplayEnabled();
+
+        if(enabled)
         {
             List<DiscoveredTuner> availableTuners = mDiscoveredTunerModel.getAvailableTuners();
 
@@ -94,14 +107,16 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
                 SwingUtils.run(() -> mSpectralDisplayPanel.clearTuner());
                 break;
             case REQUEST_MAIN_SPECTRAL_DISPLAY:
-                if(SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
+                boolean enabled = mUserPreferences.getApplicationPreference().isSpectralDisplayEnabled();
+
+                if(enabled)
                 {
                     SwingUtils.run(() -> mSpectralDisplayPanel.showTuner(event.getTuner()));
                 }
                 break;
             case REQUEST_NEW_SPECTRAL_DISPLAY:
-                final SpectrumFrame frame = new SpectrumFrame(mPlaylistManager, mSettingsManager, mDiscoveredTunerModel, event.getTuner());
-                SwingUtils.run(() -> frame.setVisible(true));
+                final SpectrumFrame frame = mSpectrumFrameObjectProvider.getObject();
+                frame.setTuner(event.getTuner()); //This sets visible to true on the swing thread.
                 break;
             case NOTIFICATION_ERROR_STATE:
             case NOTIFICATION_SHUTTING_DOWN:
@@ -110,6 +125,7 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
                     SwingUtils.run(() ->
                     {
                         mSpectralDisplayPanel.clearTuner();
+                        //Request to show an alternate tuner since this (currently displayed) tuner is shutting down.
                         ThreadPool.SCHEDULED.schedule(() -> SwingUtils.run(() ->
                         {
                             showFirstTuner();

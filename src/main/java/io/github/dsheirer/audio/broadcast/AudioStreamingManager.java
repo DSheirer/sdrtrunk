@@ -22,7 +22,10 @@ package io.github.dsheirer.audio.broadcast;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.call.AudioSegment;
+import io.github.dsheirer.audio.call.Call;
+import io.github.dsheirer.audio.call.CompletedCall;
+import io.github.dsheirer.audio.call.ICallEventListener;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -32,14 +35,15 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.AudioSegmentRecorder;
 import io.github.dsheirer.record.RecordFormat;
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedTransferQueue;
@@ -47,59 +51,50 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Audio streaming manager monitors audio segments through completion and creates temporary streaming recordings on
  * disk and enqueues the temporary recording for streaming.
  */
-public class AudioStreamingManager implements Listener<AudioSegment>
+@Component("audioStreamingManager")
+public class AudioStreamingManager implements ICallEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioStreamingManager.class);
-    private LinkedTransferQueue<AudioSegment> mNewAudioSegments = new LinkedTransferQueue<>();
-    private List<AudioSegment> mAudioSegments = new ArrayList<>();
-    private Listener<AudioRecording> mAudioRecordingListener;
-    private BroadcastFormat mBroadcastFormat;
+    @Resource
+    private BroadcastModel mBroadcastModel;
+    @Resource
     private UserPreferences mUserPreferences;
+    private LinkedTransferQueue<CompletedCall> mCompletedCallQueue = new LinkedTransferQueue<>();
+    private List<CompletedCall> mCompletedCalls = new ArrayList<>();
+    private BroadcastFormat mBroadcastFormat = BroadcastFormat.MP3;
     private ScheduledFuture<?> mAudioSegmentProcessorFuture;
     private int mNextRecordingNumber = 1;
 
     /**
      * Constructs an instance
-     * @param listener to receive completed audio recordings
-     * @param broadcastFormat for temporary recordings
-     * @param userPreferences to manage recording directories
      */
-    public AudioStreamingManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, UserPreferences userPreferences)
+    public AudioStreamingManager()
     {
-        mAudioRecordingListener = listener;
-        mBroadcastFormat = broadcastFormat;
-        mUserPreferences = userPreferences;
-    }
-
-    /**
-     * Primary receive method
-     */
-    @Override
-    public void receive(AudioSegment audioSegment)
-    {
-        mNewAudioSegments.add(audioSegment);
     }
 
     /**
      * Starts the scheduled audio segment processor
      */
+    @PostConstruct
     public void start()
     {
         if(mAudioSegmentProcessorFuture == null)
         {
-            mAudioSegmentProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
-                0, 250, TimeUnit.MILLISECONDS);
+            mAudioSegmentProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new CompletedCallProcessor(),
+                    0, 250, TimeUnit.MILLISECONDS);
         }
     }
 
     /**
      * Stops the scheduled audio segment processor
      */
+    @PreDestroy
     public void stop()
     {
         if(mAudioSegmentProcessorFuture != null)
@@ -108,51 +103,60 @@ public class AudioStreamingManager implements Listener<AudioSegment>
             mAudioSegmentProcessorFuture = null;
         }
 
-        for(AudioSegment audioSegment: mNewAudioSegments)
+        for(CompletedCall completedCall: mCompletedCallQueue)
         {
-            audioSegment.decrementConsumerCount();
+            completedCall.audioSegment().removeLease(getClass().toString());
         }
 
-        mNewAudioSegments.clear();
+        mCompletedCallQueue.clear();
 
-        for(AudioSegment audioSegment: mAudioSegments)
+        for(CompletedCall completedCall: mCompletedCalls)
         {
-            audioSegment.decrementConsumerCount();
+            completedCall.audioSegment().removeLease(getClass().toString());
         }
 
-        mAudioSegments.clear();
+        mCompletedCalls.clear();
     }
+
+    /**
+     * Implements the ICallEventListener interface to receive and enqueue completed calls to process for streaming.
+     * @param call that was completed.
+     * @param audioSegment for the call
+     */
+    @Override
+    public void completed(Call call, AudioSegment audioSegment)
+    {
+        mCompletedCallQueue.add(new CompletedCall(call, audioSegment));
+    }
+
+    @Override
+    public void added(Call call) {} //Not implemented
+    @Override
+    public void updated(Call call) {} //Not implemented
+    @Override
+    public void deleted(Call call) {} //Not implemented
 
     /**
      * Main processing method to process audio segments
      */
-    private void processAudioSegments()
+    private void processCompletedCalls()
     {
-        mNewAudioSegments.drainTo(mAudioSegments);
+        CompletedCall completedCall = mCompletedCallQueue.poll();
 
-        Iterator<AudioSegment> it = mAudioSegments.iterator();
-        AudioSegment audioSegment;
-        while(it.hasNext())
+        while(completedCall != null)
         {
-            audioSegment = it.next();
+            AudioSegment audioSegment = completedCall.audioSegment();
 
-            if(audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference().isDuplicateStreamingSuppressionEnabled())
+            if(!(audioSegment.isDuplicate() && mUserPreferences.getCallManagementPreference().isDuplicateStreamingSuppressionEnabled()))
             {
-                it.remove();
-                audioSegment.decrementConsumerCount();
-            }
-            else if(audioSegment.completeProperty().get())
-            {
-                it.remove();
-
-                if(mAudioRecordingListener != null && audioSegment.hasBroadcastChannels())
+                if(mBroadcastModel != null && audioSegment.hasBroadcastChannels())
                 {
                     IdentifierCollection identifiers =
                             new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers());
 
                     if(identifiers.getToIdentifier() instanceof PatchGroupIdentifier patchGroupIdentifier)
                     {
-                        if(mUserPreferences.getDuplicateCallDetectionPreference()
+                        if(mUserPreferences.getCallManagementPreference()
                                 .getPatchGroupStreamingOption() == PatchGroupStreamingOption.TALKGROUPS)
                         {
                             //Decompose the patch group into the individual (patched) talkgroups and process the audio
@@ -203,9 +207,10 @@ public class AudioStreamingManager implements Listener<AudioSegment>
                         processAudioSegment(audioSegment, identifiers, audioSegment.getBroadcastChannels());
                     }
                 }
-
-                audioSegment.decrementConsumerCount();
             }
+
+            audioSegment.removeLease(getClass().toString());
+            completedCall = mCompletedCallQueue.poll();
         }
     }
 
@@ -235,7 +240,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
             AudioRecording audioRecording = new AudioRecording(path, broadcastChannels, identifierCollection,
                     audioSegment.getStartTimestamp(), length);
-            mAudioRecordingListener.receive(audioRecording);
+            mBroadcastModel.receive(audioRecording);
         }
         catch(IOException ioe)
         {
@@ -269,20 +274,20 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     }
 
     /**
-     * Scheduled runnable to process audio segments.
+     * Scheduled runnable to process completed calls.
      */
-    public class AudioSegmentProcessor implements Runnable
+    public class CompletedCallProcessor implements Runnable
     {
         @Override
         public void run()
         {
             try
             {
-                processAudioSegments();
+                processCompletedCalls();
             }
             catch(Throwable t)
             {
-                mLog.error("Error processing audio segments for streaming", t);
+                mLog.error("Error processing completed calls for streaming", t);
             }
         }
     }

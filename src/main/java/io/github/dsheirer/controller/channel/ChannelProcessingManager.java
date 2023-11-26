@@ -20,19 +20,20 @@ package io.github.dsheirer.controller.channel;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.AudioManager;
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.controller.channel.event.PreloadDataContent;
-import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
+import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
@@ -50,6 +51,8 @@ import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +66,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Channel processing manager handles all starting and stopping of channel decoding.  A processing chain is created
@@ -70,53 +74,49 @@ import org.slf4j.LoggerFactory;
  * channel and protocol along with all logging and baseband or bitstream recording.  Audio recording is handled outside
  * of this class by the RecorderManager.
  */
+@Component("channelProcessingManager")
 public class ChannelProcessingManager implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelProcessingManager.class);
     private static final String TUNER_UNAVAILABLE_DESCRIPTION = "TUNER UNAVAILABLE";
     private Map<Channel,ProcessingChain> mProcessingChains = new ConcurrentHashMap<>();
     private Lock mLock = new ReentrantLock();
-
     private ChannelSourceEventErrorListener mSourceErrorListener = new ChannelSourceEventErrorListener();
     private List<Listener<AudioSegment>> mAudioSegmentListeners = new CopyOnWriteArrayList<>();
     private List<Listener<IDecodeEvent>> mDecodeEventListeners = new CopyOnWriteArrayList<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
-
-    private ChannelMapModel mChannelMapModel;
-    private ChannelMetadataModel mChannelMetadataModel;
-    private EventLogManager mEventLogManager;
-    private TunerManager mTunerManager;
-    private AliasModel mAliasModel;
-    private UserPreferences mUserPreferences;
     private List<Long> mLoggedFrequencies = new ArrayList<>();
     private List<ScheduledFuture<?>> mDelayedChannelStartTasks = new ArrayList<>();
 
-    /**
-     * Constructs the channel processing manager
-     *
-     * @param channelMapModel containing channel maps defined by the user
-     * @param eventLogManager for adding event loggers to channels
-     * @param tunerManager for obtaining a tuner channel source for the channel
-     * @param aliasModel for aliasing of identifiers produced by the channel
-     * @param userPreferences for user defined behavior and settings
-     */
-    public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    TunerManager tunerManager, AliasModel aliasModel, UserPreferences userPreferences)
-    {
-        mChannelMapModel = channelMapModel;
-        mEventLogManager = eventLogManager;
-        mTunerManager = tunerManager;
-        mAliasModel = aliasModel;
-        mUserPreferences = userPreferences;
-        mChannelMetadataModel = new ChannelMetadataModel();
-    }
+    @Resource
+    private AudioManager mAudioManager;
+    @Resource
+    private AliasModel mAliasModel;
+    @Resource
+    private ChannelMetadataModel mChannelMetadataModel;
+    @Resource
+    private DecoderFactory mDecoderFactory;
+    @Resource
+    private EventLogManager mEventLogManager;
+    @Resource
+    private MapService mMapService;
+    @Resource
+    private TunerManager mTunerManager;
+    @Resource
+    private UserPreferences mUserPreferences;
 
     /**
-     * Channel metadata model containing metadata for each channel or channel time-slice that is currently processing.
+     * Constructs the channel processing manager
      */
-    public ChannelMetadataModel getChannelMetadataModel()
+    public ChannelProcessingManager()
     {
-        return mChannelMetadataModel;
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        addAudioSegmentListener(mAudioManager);
+        addDecodeEventListener(mMapService);
     }
 
     /**
@@ -398,7 +398,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             throw new ChannelException("No Tuner Available");
         }
 
-        ProcessingChain processingChain = new ProcessingChain(channel, mAliasModel);
+        ProcessingChain processingChain = new ProcessingChain(mAliasModel, channel);
 
         //Certain decoders aggregate the decode events in the parent channel that also includes any events produced
         //by the traffic channels.  Establish listener registration depending on if this channel is a traffic channel
@@ -441,8 +441,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         processingChain.addFrequencyChangeListener(channel);
 
         /* Processing Modules */
-        List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences,
-            request.getTrafficChannelManager(), request.getChannelDescriptor());
+        List<Module> modules = mDecoderFactory.getModules(channel, request.getTrafficChannelManager(),
+                request.getChannelDescriptor());
         processingChain.addModules(modules);
 
         //Post preload data from the request to the event bus.  Modules that can handle preload data will annotate
@@ -560,7 +560,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             {
                 added = true;
                 mProcessingChains.put(channel, processingChain);
-                getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
+                mChannelMetadataModel.add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
             }
         }
         finally
@@ -590,7 +590,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             {
                 for(ChannelMetadata channelMetadata: removed.getChannelState().getChannelMetadata())
                 {
-                    getChannelMetadataModel().remove(channelMetadata);
+                    mChannelMetadataModel.remove(channelMetadata);
                 }
             }
         }

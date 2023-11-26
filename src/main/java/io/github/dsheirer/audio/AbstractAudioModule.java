@@ -20,6 +20,7 @@
 package io.github.dsheirer.audio;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.audio.call.AudioSegment;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -89,7 +90,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             {
                 mAudioSegment.completeProperty().set(true);
                 mIdentifierUpdateNotificationBroadcaster.removeListener(mAudioSegment);
-                mAudioSegment.decrementConsumerCount();
+                mAudioSegment.removeLease(getClass().toString());
                 mAudioSegment = null;
             }
         }
@@ -112,7 +113,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             if(mAudioSegment == null)
             {
                 mAudioSegment = new AudioSegment(mAliasList, getTimeslot());
-                mAudioSegment.incrementConsumerCount();
+                mAudioSegment.addLease(getClass().toString());
                 mAudioSegment.addIdentifiers(mIdentifierCollection.getIdentifiers());
                 mIdentifierUpdateNotificationBroadcaster.addListener(mAudioSegment);
 
@@ -123,7 +124,6 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
                 if(mAudioSegmentListener != null)
                 {
-                    mAudioSegment.incrementConsumerCount();
                     mAudioSegmentListener.receive(mAudioSegment);
                 }
 
@@ -136,26 +136,33 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
     public void addAudio(float[] audioBuffer)
     {
-        AudioSegment audioSegment = getAudioSegment();
+        if(audioBuffer != null)
+        {
+            AudioSegment audioSegment = getAudioSegment();
 
-        //If the current segment exceeds the max samples length, close it so that a new segment gets generated
-        //and then link the segments together
-        if(mAudioSampleCount >= mMaxSegmentAudioSampleLength)
-        {
-            AudioSegment previous = getAudioSegment();
-            closeAudioSegment();
-            audioSegment = getAudioSegment();
-            audioSegment.linkTo(previous);
-        }
+            //If the current segment exceeds the max samples length, close it so that a new segment gets generated
+            //and then link the segments together
+            if(mAudioSampleCount >= mMaxSegmentAudioSampleLength)
+            {
+                AudioSegment previous = getAudioSegment();
+                closeAudioSegment();
+                audioSegment = getAudioSegment();
+                audioSegment.linkTo(previous);
+            }
 
-        try
-        {
-            audioSegment.addAudio(audioBuffer);
-            mAudioSampleCount += audioBuffer.length;
+            try
+            {
+                audioSegment.addAudio(audioBuffer);
+                mAudioSampleCount += audioBuffer.length;
+            }
+            catch(Exception e)
+            {
+                closeAudioSegment();
+            }
         }
-        catch(Exception e)
+        else
         {
-            closeAudioSegment();
+            mLog.info("Attempt to add null audio from " + getClass());
         }
     }
 

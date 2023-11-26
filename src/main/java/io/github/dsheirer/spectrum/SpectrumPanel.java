@@ -29,6 +29,8 @@ import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GradientPaint;
@@ -82,24 +84,24 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
 
     private int mZoom = 0;
     private int mZoomWindowOffset = 0;
-
+    @Resource
     private SettingsManager mSettingsManager;
 
-    public SpectrumPanel(SettingsManager settingsManager)
+    public SpectrumPanel()
     {
-        mSettingsManager = settingsManager;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         if(mSettingsManager != null)
         {
             mSettingsManager.addListener(this);
         }
 
         setSampleSize(16.0);
-
         mSmoothingFilter.setPointSize(SmoothingFilter.SMOOTHING_DEFAULT);
-
         getColors();
-
         setAveraging(mAveraging);
     }
 
@@ -195,8 +197,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
         GeneralPath spectrumShape = new GeneralPath();
 
         //Start at the lower right inset point
-        spectrumShape.moveTo(size.getWidth(),
-            size.getHeight() - mSpectrumInset);
+        spectrumShape.moveTo(size.getWidth(), size.getHeight() - mSpectrumInset);
 
         //Draw to the lower left
         spectrumShape.lineTo(0, size.getHeight() - mSpectrumInset);
@@ -204,7 +205,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
         float[] bins = getBins();
 
         //If we have FFT data to display ...
-        if(bins != null)
+        if(bins != null && bins.length > 1)
         {
             float insideHeight = size.height - mSpectrumInset;
 
@@ -234,21 +235,18 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
 
                 spectrumShape.lineTo(xAxis, height);
             }
+
+            //Draw Right Side
+            spectrumShape.lineTo(size.getWidth(), size.getHeight() - mSpectrumInset);
         }
         //Otherwise show an empty spectrum
         else
         {
-            //Draw Left Size
+            //Draw Left Side
             graphics.setPaint(gradient);
-            spectrumShape.lineTo(0, size.getHeight() - mSpectrumInset);
-            //Draw Middle
-            spectrumShape.lineTo(size.getWidth(),
-                size.getHeight() - mSpectrumInset);
+            spectrumShape.lineTo(0, 0);
+            spectrumShape.lineTo(size.getWidth(), 0);
         }
-
-        //Draw Right Side
-        spectrumShape.lineTo(size.getWidth(),
-            size.getHeight() - mSpectrumInset);
 
         graphics.setPaint(gradient);
         graphics.draw(spectrumShape);

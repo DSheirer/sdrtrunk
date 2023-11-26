@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
  */
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
@@ -26,6 +25,10 @@ import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -37,11 +40,6 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
 {
     private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV1AudioBroadcaster.class);
@@ -50,7 +48,6 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
     private IBroadcastMetadataUpdater mMetadataUpdater;
-    private AliasModel mAliasModel;
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
 
@@ -65,10 +62,9 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
      * @param configuration for the Shoutcast stream
      */
     public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration, InputAudioFormat inputAudioFormat,
-                                       MP3Setting mp3Setting, AliasModel aliasModel)
+                                       MP3Setting mp3Setting)
     {
         super(configuration, inputAudioFormat, mp3Setting);
-        mAliasModel = aliasModel;
     }
 
     /**
@@ -84,7 +80,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
     {
         if(mMetadataUpdater == null)
         {
-            mMetadataUpdater = new ShoutcastV1BroadcastMetadataUpdater(getConfiguration(), mAliasModel);
+            mMetadataUpdater = new ShoutcastV1BroadcastMetadataUpdater(getConfiguration());
         }
 
         return mMetadataUpdater;

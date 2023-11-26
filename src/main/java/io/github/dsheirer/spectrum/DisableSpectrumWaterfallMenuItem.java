@@ -18,7 +18,8 @@
  */
 package io.github.dsheirer.spectrum;
 
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.UserPreferences;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 
@@ -29,24 +30,31 @@ import javax.swing.JMenuItem;
  */
 public class DisableSpectrumWaterfallMenuItem extends JMenuItem
 {
-    private SpectralDisplayPanel mSpectralDisplayPanel;
+    private final SpectralDisplayPanel mSpectralDisplayPanel;
+    private final UserPreferences mUserPreferences;
 
     /**
      * Construct an instance
      * @param spectralDisplayPanel to disable.
      */
-    public DisableSpectrumWaterfallMenuItem(SpectralDisplayPanel spectralDisplayPanel)
+    public DisableSpectrumWaterfallMenuItem(SpectralDisplayPanel spectralDisplayPanel, UserPreferences userPreferences)
     {
         super("Disable Spectrum & Waterfall");
         setIcon(IconFontSwing.buildIcon(FontAwesome.EYE_SLASH, 12));
 
         mSpectralDisplayPanel = spectralDisplayPanel;
-
+        mUserPreferences = userPreferences;
+        mUserPreferences.addUpdateListener(preferenceType -> {
+            if(preferenceType == PreferenceType.APPLICATION)
+            {
+                setEnabled(mUserPreferences.getApplicationPreference().isSpectralDisplayEnabled());
+            }
+        });
         addActionListener(e -> {
-            SystemProperties properties = SystemProperties.getInstance();
-            properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, false);
+            mUserPreferences.getApplicationPreference().setSpectralDisplayEnabled(false);
             mSpectralDisplayPanel.clearTuner();
         });
+        setEnabled(mUserPreferences.getApplicationPreference().isSpectralDisplayEnabled());
     }
 }
 

@@ -31,6 +31,7 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 import io.github.dsheirer.preference.TimestampFormat;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.Resource;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -45,6 +46,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
     private SimpleDateFormat mTimestampFormat = TimestampFormat.TIMESTAMP_COLONS.getFormatter();
     private DecimalFormat mFrequencyFormat = new DecimalFormat("0.000000");
     private AliasList mAliasList;
+    @Resource
     private AliasModel mAliasModel;
 
     /**
@@ -57,16 +59,21 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
             .setQuoteMode(QuoteMode.ALL)
             .build();
 
-    public DecodeEventLogger(AliasModel aliasModel, Path logDirectory, String fileNameSuffix, long frequency)
+    /**
+     * Constructs an instance
+     * @param logDirectory where the logs will be created
+     * @param fileNameSuffix suffix to add to the file name
+     * @param frequency to include in the file name
+     */
+    public DecodeEventLogger(Path logDirectory, String fileNameSuffix, long frequency)
     {
         super(logDirectory, fileNameSuffix, frequency);
-        mAliasModel = aliasModel;
     }
 
     @Override
     public void receive(IDecodeEvent decodeEvent)
     {
-                write(toCSV(decodeEvent));
+        write(toCSV(decodeEvent));
     }
 
     @Override

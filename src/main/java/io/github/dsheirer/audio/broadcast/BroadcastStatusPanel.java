@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,12 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.icon.IconModel;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.ImageIcon;
@@ -42,23 +44,15 @@ public class BroadcastStatusPanel extends JPanel
     private JTable mTable;
     private JTableColumnWidthMonitor mColumnWidthMonitor;
     private JScrollPane mScrollPane;
+    @Resource
     private BroadcastModel mBroadcastModel;
-    private UserPreferences mUserPreferences;
-    private String mPreferenceKey;
+    private String mPreferenceKey = "application.broadcast.status.panel";
 
     /**
      * Constructs an instance
-     * @param broadcastModel to access the streams
-     * @param userPreferences for configuring the panel
-     * @param preferenceKey to store column preferences for this panel.
      */
-    public BroadcastStatusPanel(BroadcastModel broadcastModel, UserPreferences userPreferences, String preferenceKey)
+    public BroadcastStatusPanel()
     {
-        mBroadcastModel = broadcastModel;
-        mUserPreferences = userPreferences;
-        mPreferenceKey = preferenceKey;
-
-        init();
     }
 
     public JTable getTable()
@@ -66,21 +60,19 @@ public class BroadcastStatusPanel extends JPanel
         return mTable;
     }
 
-    private void init()
+    @PostConstruct
+    private void postConstruct()
     {
+        setPreferredSize(new Dimension(880, 70));
         setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
-
         mTable = new JTable(mBroadcastModel);
-
+        mTable.setEnabled(false);
         DefaultTableCellRenderer renderer = (DefaultTableCellRenderer)mTable.getDefaultRenderer(String.class);
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
-
         mTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCASTER_STATUS).setCellRenderer(new StatusCellRenderer());
         mTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCAST_SERVER_TYPE).setCellRenderer(new ServerTypeRenderer());
-        mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, mPreferenceKey);
-
+        mColumnWidthMonitor = new JTableColumnWidthMonitor(mTable, mPreferenceKey);
         mScrollPane = new JScrollPane(mTable);
-
         add(mScrollPane);
     }
 

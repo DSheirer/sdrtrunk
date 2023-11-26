@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,13 +34,13 @@ import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.icon.IconModel;
-import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.service.radioreference.RadioReference;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -54,26 +54,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.collections.ListChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Manages all aspects of playlists and related models
  */
+@Component("playlistManager")
 public class PlaylistManager implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaylistManager.class);
 
     public static final int PLAYLIST_CURRENT_VERSION = 4;
 
+    @Resource
     private AliasModel mAliasModel;
-    private ChannelMapModel mChannelMapModel = new ChannelMapModel();
+    @Resource
     private IconModel mIconModel;
-
+    @Resource
+    private ChannelMapModel mChannelMapModel;
+    @Resource
     private BroadcastModel mBroadcastModel;
+    @Resource
     private ChannelModel mChannelModel;
-    private ChannelProcessingManager mChannelProcessingManager;
-    private TunerManager mTunerManager;
-    private UserPreferences mUserPreferences;
+    @Resource
     private RadioReference mRadioReference;
+    @Resource
+    private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
+    private UserPreferences mUserPreferences;
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
     private ScheduledFuture<?> mPlaylistSaveFuture;
     private boolean mPlaylistLoading = false;
@@ -90,21 +98,13 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * @param eventLogManager for event logging
      * @param iconModel for icons
      */
-    public PlaylistManager(UserPreferences userPreferences, TunerManager tunerManager, AliasModel aliasModel,
-                           EventLogManager eventLogManager, IconModel iconModel)
+    public PlaylistManager()
     {
-        mUserPreferences = userPreferences;
-        mTunerManager = tunerManager;
-        mAliasModel = aliasModel;
-        mIconModel = iconModel;
+    }
 
-        mBroadcastModel = new BroadcastModel(mAliasModel, mIconModel, userPreferences);
-        mRadioReference = new RadioReference(mUserPreferences);
-
-        mChannelModel = new ChannelModel(mAliasModel);
-        mChannelProcessingManager = new ChannelProcessingManager(mChannelMapModel, eventLogManager, mTunerManager,
-            mAliasModel, mUserPreferences);
-
+    @PostConstruct
+    public void postConstruct()
+    {
         //Register the channel processing manager to receive global channel stop processing requests so that it can
         //respond to tuner shutdown (ie error) events
         MyEventBus.getGlobalEventBus().register(mChannelProcessingManager);
@@ -133,6 +133,18 @@ public class PlaylistManager implements Listener<ChannelEvent>
                     break;
             }
         });
+
+        init();
+    }
+
+    /**
+     * Loads playlist from the current playlist file, or the default playlist file,
+     * as specified in the current SDRTRunk system settings
+     */
+    private void init()
+    {
+        PlaylistV2 playlist = load();
+        transferPlaylistToModels(playlist);
     }
 
     /**
@@ -141,64 +153,6 @@ public class PlaylistManager implements Listener<ChannelEvent>
     public ChannelModel getChannelModel()
     {
         return mChannelModel;
-    }
-
-    /**
-     * Channel processing manager
-     */
-    public ChannelProcessingManager getChannelProcessingManager()
-    {
-        return mChannelProcessingManager;
-    }
-
-    /**
-     * Alias model managed by this playlist manager
-     */
-    public AliasModel getAliasModel()
-    {
-        return mAliasModel;
-    }
-
-    /**
-     * Icon manager
-     */
-    public IconModel getIconModel()
-    {
-        return mIconModel;
-    }
-
-    /**
-     * Radio Reference service interface
-     */
-    public RadioReference getRadioReference()
-    {
-        return mRadioReference;
-    }
-
-    /**
-     * Audio Broadcast (streaming) Model
-     */
-    public BroadcastModel getBroadcastModel()
-    {
-        return mBroadcastModel;
-    }
-
-    /**
-     * Channel Map model managed by this playlist manager
-     */
-    public ChannelMapModel getChannelMapModel()
-    {
-        return mChannelMapModel;
-    }
-
-    /**
-     * Loads playlist from the current playlist file, or the default playlist file,
-     * as specified in the current SDRTRunk system settings
-     */
-    public void init()
-    {
-        PlaylistV2 playlist = load();
-        transferPlaylistToModels(playlist);
     }
 
     /**

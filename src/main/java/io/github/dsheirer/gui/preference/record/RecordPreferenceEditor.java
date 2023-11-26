@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,11 @@
 
 package io.github.dsheirer.gui.preference.record;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.gui.preference.PreferenceEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.preference.record.RecordPreference;
 import io.github.dsheirer.record.RecordFormat;
+import jakarta.annotation.PostConstruct;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
@@ -37,18 +39,29 @@ import org.slf4j.LoggerFactory;
 /**
  * Preference settings for recording
  */
-public class RecordPreferenceEditor extends HBox
+public class RecordPreferenceEditor extends PreferenceEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger(RecordPreferenceEditor.class);
     private RecordPreference mRecordPreference;
     private GridPane mEditorPane;
     private ComboBox<RecordFormat> mRecordFormatComboBox;
 
-    public RecordPreferenceEditor(UserPreferences userPreferences)
+    public RecordPreferenceEditor()
     {
-        mRecordPreference = userPreferences.getRecordPreference();
+    }
+
+    @PostConstruct
+    public void postConstruct()
+    {
+        mRecordPreference = getUserPreferences().getRecordPreference();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
+    }
+
+    @Override
+    public PreferenceEditorType getPreferenceEditorType()
+    {
+        return PreferenceEditorType.AUDIO_RECORD;
     }
 
     private GridPane getEditorPane()

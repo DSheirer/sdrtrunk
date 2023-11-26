@@ -460,7 +460,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         {
             mTunerPreferencesButton = new JButton("RSPduo Preferences");
             mTunerPreferencesButton.addActionListener(e -> MyEventBus.getGlobalEventBus()
-                    .post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.SOURCE_TUNERS)));
+                    .post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.TUNERS)));
         }
 
         return mTunerPreferencesButton;

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +14,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.preference.swing;
 
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +35,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.TableColumnModel;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Monitors a JTable column model and persists column width changes to the user preferences.  Restores
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class JTableColumnWidthMonitor
 {
     private static final Logger mLog = LoggerFactory.getLogger(JTableColumnWidthMonitor.class);
+    @Resource
     private UserPreferences mUserPreferences;
     private JTable mTable;
     private String mKey;
@@ -49,25 +52,24 @@ public class JTableColumnWidthMonitor
 
     /**
      * Constructs a column width monitor.
-     *
-     * @param userPreferences to store column widths
      * @param table to monitor for column width changes
      * @param key that uniquely identifies the table to monitor
      */
-    public JTableColumnWidthMonitor(UserPreferences userPreferences, JTable table, String key)
+    public JTableColumnWidthMonitor(JTable table, String key)
     {
-        mUserPreferences = userPreferences;
         mTable = table;
         mKey = key;
+    }
 
+    @PostConstruct
+    public void postConstruct()
+    {
         restoreColumnWidths();
         mTable.getColumnModel().addColumnModelListener(mColumnResizeListener);
     }
 
-    /**
-     * Prepares this monitor for disposal by unregistering as a listener to the table column model.
-     */
-    public void dispose()
+    @PreDestroy
+    public void preDestroy()
     {
         if(mTable != null && mColumnResizeListener != null)
         {

@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.preference;
 
-import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.application.ApplicationPreference;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
@@ -36,7 +35,16 @@ import io.github.dsheirer.preference.record.RecordPreference;
 import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * User Preferences.  A collection of preferences that can be accessed by preference type.
@@ -54,25 +62,27 @@ import io.github.dsheirer.sample.Listener;
  * {
  * }
  */
+@Component("userPreferences")
 public class UserPreferences implements Listener<PreferenceType>
 {
+    private Logger mLog = LoggerFactory.getLogger(UserPreferences.class);
     private ApplicationPreference mApplicationPreference;
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
-    private CallManagementPreference mDuplicateCallDetectionPreference;
+    private CallManagementPreference mCallManagementPreference;
+    private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
     private JmbeLibraryPreference mJmbeLibraryPreference;
     private MP3Preference mMP3Preference;
     private PlaybackPreference mPlaybackPreference;
     private PlaylistPreference mPlaylistPreference;
     private RadioReferencePreference mRadioReferencePreference;
     private RecordPreference mRecordPreference;
+    private SwingPreference mSwingPreference = new SwingPreference();
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
     private VectorCalibrationPreference mVectorCalibrationPreference;
-
-    private SwingPreference mSwingPreference = new SwingPreference();
-    private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
+    private List<IPreferenceUpdateListener> mPreferenceUpdateListeners = new ArrayList<>();
 
     /**
      * Constructs a new user preferences instance
@@ -80,7 +90,41 @@ public class UserPreferences implements Listener<PreferenceType>
     public UserPreferences()
     {
         loadPreferenceTypes();
+        loadProperties();
     }
+
+    //TODO: get rid of the system properties class and related operations
+    /**
+     * Loads the application properties file from the user's home directory,
+     * creating the properties file for the first-time, if necessary
+     */
+    private void loadProperties()
+    {
+        Path propertiesPath = getDirectoryPreference().getDirectoryApplicationRoot().resolve("SDRTrunk.properties");
+
+        if(!Files.exists(propertiesPath))
+        {
+            try
+            {
+                mLog.info("SDRTrunk - creating application properties file [" + propertiesPath.toAbsolutePath() + "]");
+                Files.createFile(propertiesPath);
+            }
+            catch(IOException e)
+            {
+                mLog.error("SDRTrunk - couldn't create application properties file [" + propertiesPath.toAbsolutePath(), e);
+            }
+        }
+
+        if(Files.exists(propertiesPath))
+        {
+            SystemProperties.getInstance().load(propertiesPath);
+        }
+        else
+        {
+            mLog.error("SDRTrunk - couldn't find or recreate the SDRTrunk application properties file");
+        }
+    }
+
 
     /**
      * Application general/miscellaneous preferences.
@@ -208,9 +252,9 @@ public class UserPreferences implements Listener<PreferenceType>
     /**
      * Duplicate call detection preferences
      */
-    public CallManagementPreference getDuplicateCallDetectionPreference()
+    public CallManagementPreference getCallManagementPreference()
     {
-        return mDuplicateCallDetectionPreference;
+        return mCallManagementPreference;
     }
 
     /**
@@ -222,7 +266,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
         mDecodeEventPreference = new DecodeEventPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
-        mDuplicateCallDetectionPreference = new CallManagementPreference(this::receive);
+        mCallManagementPreference = new CallManagementPreference(this::receive);
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
         mMP3Preference = new MP3Preference(this::receive);
         mPlaybackPreference = new PlaybackPreference(this::receive);
@@ -243,6 +287,30 @@ public class UserPreferences implements Listener<PreferenceType>
     @Override
     public void receive(PreferenceType preferenceType)
     {
-        MyEventBus.getGlobalEventBus().post(preferenceType);
+        for(IPreferenceUpdateListener listener: mPreferenceUpdateListeners)
+        {
+            listener.preferenceUpdated(preferenceType);
+        }
+    }
+
+    /**
+     * Adds the listener to receive preference update notifications.
+     * @param listener to add
+     */
+    public void addUpdateListener(IPreferenceUpdateListener listener)
+    {
+        if(listener != null && !mPreferenceUpdateListeners.contains(listener))
+        {
+            mPreferenceUpdateListeners.add(listener);
+        }
+    }
+
+    /**
+     * Removes the listener from receiving preference update notifications
+     * @param listener to remove
+     */
+    public void removeUpdateListener(IPreferenceUpdateListener listener)
+    {
+        mPreferenceUpdateListeners.remove(listener);
     }
 }

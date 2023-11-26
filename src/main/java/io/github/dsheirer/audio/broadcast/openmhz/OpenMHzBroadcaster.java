@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,55 +19,43 @@
 
  package io.github.dsheirer.audio.broadcast.openmhz;
 
- import com.google.common.net.HttpHeaders;
- import com.google.common.base.Joiner;
- import io.github.dsheirer.alias.Alias;
- import io.github.dsheirer.alias.AliasList;
- import io.github.dsheirer.alias.AliasModel;
- import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
- import io.github.dsheirer.audio.broadcast.AudioRecording;
- import io.github.dsheirer.audio.broadcast.BroadcastEvent;
- import io.github.dsheirer.audio.broadcast.BroadcastState;
- import io.github.dsheirer.audio.convert.InputAudioFormat;
- import io.github.dsheirer.audio.convert.MP3Setting;
- import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
- import io.github.dsheirer.identifier.Form;
- import io.github.dsheirer.identifier.Identifier;
- import io.github.dsheirer.identifier.IdentifierClass;
- import io.github.dsheirer.identifier.MutableIdentifierCollection;
- import io.github.dsheirer.identifier.Role;
- import io.github.dsheirer.identifier.configuration.ConfigurationLongIdentifier;
- import io.github.dsheirer.identifier.patch.PatchGroup;
- import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
- import io.github.dsheirer.identifier.radio.RadioIdentifier;
- import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
- import io.github.dsheirer.util.ThreadPool;
- import org.slf4j.Logger;
- import org.slf4j.LoggerFactory;
+import com.google.common.net.HttpHeaders;
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
+import io.github.dsheirer.audio.broadcast.AudioRecording;
+import io.github.dsheirer.audio.broadcast.BroadcastEvent;
+import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.configuration.ConfigurationLongIdentifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.util.ThreadPool;
+import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
- import java.io.File;
- import java.nio.file.Files;
- import java.io.FileInputStream;
- import java.io.FileNotFoundException;
- import java.io.IOException;
- import java.io.PrintWriter;
- import java.io.BufferedReader;
- import java.io.InputStreamReader;
- import java.io.OutputStreamWriter;
- import java.net.ConnectException;
- import java.net.URI;
- import java.net.URL;
- import java.net.URLConnection;
- import java.net.http.HttpClient;
- import java.net.http.HttpRequest;
- import java.net.http.HttpResponse;
- import java.time.Duration;
- import java.util.List;
- import java.util.Queue;
- import java.util.concurrent.CompletionException;
- import java.util.concurrent.LinkedTransferQueue;
- import java.util.concurrent.ScheduledFuture;
- import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.time.Duration;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 
 
@@ -93,18 +81,16 @@
          .build();
      private long mLastConnectionAttempt;
      private long mConnectionAttemptInterval = 5000; //Every 5 seconds
+     @Resource
      private AliasModel mAliasModel;
 
      /**
       * Constructs an instance of the broadcaster
       * @param config to use
-      * @param aliasModel for access to aliases
       */
-     public OpenMHzBroadcaster(OpenMHzConfiguration config, InputAudioFormat inputAudioFormat,
-                                        MP3Setting mp3Setting, AliasModel aliasModel)
+     public OpenMHzBroadcaster(OpenMHzConfiguration config)
      {
          super(config);
-         mAliasModel = aliasModel;
      }
 
      /**
@@ -591,7 +577,7 @@
              return "No Response";
          }
          catch(Exception e)
-         {  
+         {
             Throwable throwableCause = e.getCause();
 
             if(throwableCause instanceof ConnectException)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.preference.playback;
 
+import io.github.dsheirer.audio.playbackfx.PlaybackView;
 import io.github.dsheirer.gui.preference.playback.ToneFrequency;
 import io.github.dsheirer.gui.preference.playback.ToneUtil;
 import io.github.dsheirer.gui.preference.playback.ToneVolume;
@@ -39,12 +40,11 @@ public class PlaybackPreference extends Preference
     private static final String PREFERENCE_KEY_USE_AUDIO_SEGMENT_DROP_TONE = "audio.playback.segment.drop.tone";
     private static final String PREFERENCE_KEY_DROP_TONE_FREQUENCY = "audio.playback.segment.drop.frequency";
     private static final String PREFERENCE_KEY_DROP_TONE_VOLUME = "audio.playback.segment.drop.volume";
-
     private static final String PREFERENCE_KEY_USE_AUDIO_SEGMENT_START_TONE = "audio.playback.segment.start.tone";
     private static final String PREFERENCE_KEY_START_TONE_FREQUENCY = "audio.playback.segment.start.frequency";
     private static final String PREFERENCE_KEY_START_TONE_VOLUME = "audio.playback.segment.start.volume";
-
     private static final String PREFERENCE_KEY_MIXER_CHANNEL_CONFIG = "audio.playback.mixer.channel.configuration";
+    private static final String PREFERENCE_KEY_PLAYBACK_VIEW = "audio.playback.view";
     private static final int TONE_LENGTH_SAMPLES = 180;
 
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackPreference.class);
@@ -56,6 +56,7 @@ public class PlaybackPreference extends Preference
     private ToneFrequency mDropToneFrequency;
     private ToneVolume mDropToneVolume;
     private MixerChannelConfiguration mMixerChannelConfiguration;
+    private PlaybackView mPlaybackView;
 
     /**
      * Constructs this preference with an update listener
@@ -70,6 +71,41 @@ public class PlaybackPreference extends Preference
     public PreferenceType getPreferenceType()
     {
         return PreferenceType.PLAYBACK;
+    }
+
+    /**
+     * Playback view preference
+     * @return playback view
+     */
+    public PlaybackView getPlaybackView()
+    {
+        if(mPlaybackView == null)
+        {
+            String raw = mPreferences.get(PREFERENCE_KEY_PLAYBACK_VIEW, PlaybackView.RICH.name());
+
+            try
+            {
+                mPlaybackView = PlaybackView.valueOf(raw);
+            }
+            catch(Exception e)
+            {
+                //Use a default value is we can't parse the value stored in the preferences
+                mPlaybackView = PlaybackView.RICH;
+            }
+        }
+
+        return mPlaybackView;
+    }
+
+    /**
+     * Sets the playback view preference.
+     * @param playbackView to use
+     */
+    public void setPlaybackView(PlaybackView playbackView)
+    {
+        mPlaybackView = playbackView;
+        mPreferences.put(PREFERENCE_KEY_PLAYBACK_VIEW, mPlaybackView.name());
+        notifyPreferenceUpdated();
     }
 
     /**

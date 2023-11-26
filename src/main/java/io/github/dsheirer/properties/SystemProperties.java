@@ -106,7 +106,8 @@ public class SystemProperties
         }
         catch (Exception e)
         {
-            mLog.error("Unable to load jar manifest - we're probably not running from a release jar");
+            //This is not really an error ... we just don't have the manifest
+            mLog.info("Unable to load jar manifest - we're probably not running from a release jar");
         }
 
         return null;
@@ -125,8 +126,7 @@ public class SystemProperties
 
         if(root.equalsIgnoreCase(DEFAULT_APP_ROOT))
         {
-            retVal = Paths.get(
-                System.getProperty("user.home"), DEFAULT_APP_ROOT);
+            retVal = Paths.get(System.getProperty("user.home"), DEFAULT_APP_ROOT);
         }
         else
         {

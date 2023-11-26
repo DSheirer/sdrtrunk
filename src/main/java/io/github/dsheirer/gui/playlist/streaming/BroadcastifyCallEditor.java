@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallBroadcaster;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
 import io.github.dsheirer.gui.control.IntegerTextField;
-import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -32,9 +31,9 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.controlsfx.control.ToggleSwitch;
 
 /**
  * Broadcastify calls API configuration editor
@@ -53,11 +52,9 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
 
     /**
      * Constructs an instance
-     * @param playlistManager for accessing the broadcast model
      */
-    public BroadcastifyCallEditor(PlaylistManager playlistManager)
+    public BroadcastifyCallEditor()
     {
-        super(playlistManager);
     }
 
     @Override

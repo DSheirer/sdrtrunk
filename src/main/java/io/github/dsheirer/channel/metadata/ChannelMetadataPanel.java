@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
@@ -32,12 +31,21 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,23 +60,19 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.text.DecimalFormat;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataPanel.class);
 
     private static final String TABLE_PREFERENCE_KEY = "channel.metadata.panel";
-    private ChannelModel mChannelModel;
+    @Resource
     private ChannelProcessingManager mChannelProcessingManager;
+    @Resource
     private IconModel mIconModel;
+    @Resource
+    private ChannelMetadataModel mChannelMetadataModel;
+    @Resource
     private UserPreferences mUserPreferences;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
@@ -80,25 +84,20 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     /**
      * Table view for currently decoding channel metadata
      */
-    public ChannelMetadataPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences)
+    public ChannelMetadataPanel()
     {
-        mChannelModel = playlistManager.getChannelModel();
-        mChannelProcessingManager = playlistManager.getChannelProcessingManager();
-        mIconModel = iconModel;
-        mUserPreferences = userPreferences;
-        init();
     }
 
     /**
      * Initializes the panel
      */
-    private void init()
+    @PostConstruct
+    private void postConstruct()
     {
         setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
-        mTable = new JTable(mChannelProcessingManager.getChannelMetadataModel());
-        mChannelProcessingManager.getChannelMetadataModel().setChannelAddListener(new ChannelAddListener());
-
+        mTable = new JTable(mChannelMetadataModel);
+        mChannelMetadataModel.setChannelAddListener(new ChannelAddListener());
         DefaultTableCellRenderer renderer = (DefaultTableCellRenderer)mTable.getDefaultRenderer(String.class);
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -119,7 +118,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             .setCellRenderer(new FrequencyCellRenderer());
 
         //Add a table column width monitor to store/restore column widths
-        mTableColumnMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
+        mTableColumnMonitor = new JTableColumnWidthMonitor(mTable, TABLE_PREFERENCE_KEY);
 
         JScrollPane scrollPane = new JScrollPane(mTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -167,14 +166,11 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             {
                 int selectedModelRow = mTable.convertRowIndexToModel(selectedViewRow);
 
-                ChannelMetadata selectedMetadata = mChannelProcessingManager.getChannelMetadataModel()
-                    .getChannelMetadata(selectedModelRow);
+                ChannelMetadata selectedMetadata = mChannelMetadataModel.getChannelMetadata(selectedModelRow);
 
                 if(selectedMetadata != null)
                 {
-                    mUserSelectedChannel = mChannelProcessingManager.getChannelMetadataModel()
-                        .getChannelFromMetadata(selectedMetadata);
-
+                    mUserSelectedChannel = mChannelMetadataModel.getChannelFromMetadata(selectedMetadata);
                     processingChain = mChannelProcessingManager.getProcessingChain(mUserSelectedChannel);
                 }
             }
@@ -404,12 +400,11 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                     if(modelRowIndex >= 0)
                     {
-                        ChannelMetadata metadata = mChannelProcessingManager.getChannelMetadataModel().getChannelMetadata(modelRowIndex);
+                        ChannelMetadata metadata = mChannelMetadataModel.getChannelMetadata(modelRowIndex);
 
                         if(metadata != null)
                         {
-                            Channel channel = mChannelProcessingManager.getChannelMetadataModel()
-                                .getChannelFromMetadata(metadata);
+                            Channel channel = mChannelMetadataModel.getChannelFromMetadata(metadata);
 
                             if(channel != null)
                             {
@@ -455,7 +450,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                 if(metadata.size() > 0)
                 {
-                    int modelRow = mChannelProcessingManager.getChannelMetadataModel().getRow(metadata.get(0));
+                    int modelRow = mChannelMetadataModel.getRow(metadata.get(0));
 
                     if(modelRow >= 0)
                     {

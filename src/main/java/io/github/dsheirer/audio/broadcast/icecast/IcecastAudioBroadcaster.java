@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
  */
 package io.github.dsheirer.audio.broadcast.icecast;
 
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
@@ -28,13 +27,11 @@ import io.github.dsheirer.audio.convert.MP3Setting;
 public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
 {
     private IBroadcastMetadataUpdater mMetadataUpdater;
-    protected AliasModel mAliasModel;
 
     public IcecastAudioBroadcaster(BroadcastConfiguration broadcastConfiguration, InputAudioFormat inputAudioFormat,
-                                   MP3Setting mp3Setting, AliasModel aliasModel)
+                                   MP3Setting mp3Setting)
     {
         super(broadcastConfiguration, inputAudioFormat, mp3Setting);
-        mAliasModel = aliasModel;
     }
 
     /**
@@ -50,7 +47,7 @@ public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
     {
         if(mMetadataUpdater == null)
         {
-            mMetadataUpdater = new IcecastBroadcastMetadataUpdater(getConfiguration(), mAliasModel);
+            mMetadataUpdater = new IcecastBroadcastMetadataUpdater(getConfiguration());
         }
 
         return mMetadataUpdater;

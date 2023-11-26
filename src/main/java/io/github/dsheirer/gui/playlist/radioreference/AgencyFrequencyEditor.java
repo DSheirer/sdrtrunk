@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
-import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Category;
 import io.github.dsheirer.rrapi.type.Frequency;
@@ -27,6 +27,11 @@ import io.github.dsheirer.rrapi.type.Mode;
 import io.github.dsheirer.rrapi.type.SubCategory;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -46,12 +51,6 @@ import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
 /**
  * Grid pane with components for visualizing and selecting categories of frequencies for an agency
  */
@@ -62,8 +61,8 @@ public class AgencyFrequencyEditor extends GridPane
     private static final SubCategory ALL_SUB_CATEGORIES = new AllSubCategories();
 
     private UserPreferences mUserPreferences;
+    private ChannelModel mChannelModel;
     private RadioReference mRadioReference;
-    private PlaylistManager mPlaylistManager;
     private Level mLevel;
     private ComboBox<Category> mCategoryComboBox;
     private ComboBox<SubCategory> mSubCategoryComboBox;
@@ -72,12 +71,17 @@ public class AgencyFrequencyEditor extends GridPane
     private ProgressIndicator mProgressIndicator;
     private FrequencyEditor mFrequencyEditor;
 
+    /**
+     * Constructs an instance
+     * @param radioReference to use for lookups
+     * @param level for this editor.
+     */
     public AgencyFrequencyEditor(UserPreferences userPreferences, RadioReference radioReference,
-                                 PlaylistManager playlistManager, Level level)
+                                 ChannelModel channelModel, Level level)
     {
         mUserPreferences = userPreferences;
+        mChannelModel = channelModel;
         mRadioReference = radioReference;
-        mPlaylistManager = playlistManager;
         mLevel = level;
 
         setPadding(new Insets(5, 5, 5,5));
@@ -175,7 +179,7 @@ public class AgencyFrequencyEditor extends GridPane
     {
         if(mFrequencyEditor == null)
         {
-            mFrequencyEditor = new FrequencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, mLevel);
+            mFrequencyEditor = new FrequencyEditor(mUserPreferences, mRadioReference, mChannelModel, mLevel);
         }
 
         return mFrequencyEditor;

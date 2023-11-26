@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,23 +14,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.map;
 
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+@Component("mapService")
 public class MapService implements Listener<IDecodeEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(MapService.class);
@@ -39,11 +38,9 @@ public class MapService implements Listener<IDecodeEvent>
     private int mMaxHistory = 2;
     private List<IPlottableUpdateListener> mListeners = new ArrayList<IPlottableUpdateListener>();
     private Map<Identifier,PlottableEntityHistory> mEntityHistories = new HashMap<>();
-    private IconModel mIconModel;
 
-    public MapService(IconModel resourceManager)
+    public MapService()
     {
-        mIconModel = resourceManager;
     }
 
     @Override
