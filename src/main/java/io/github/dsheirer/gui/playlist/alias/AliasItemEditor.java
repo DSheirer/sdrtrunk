@@ -37,11 +37,13 @@ import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioFormatter;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
+import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormatter;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
@@ -684,8 +686,10 @@ public class AliasItemEditor extends Editor<Alias>
             Menu p25Menu = new ProtocolMenu(Protocol.APCO25);
             p25Menu.getItems().add(new AddTalkgroupItem(Protocol.APCO25));
             p25Menu.getItems().add(new AddTalkgroupRangeItem(Protocol.APCO25));
+            p25Menu.getItems().add(new AddP25FullyQualifiedTalkgroupItem());
             p25Menu.getItems().add(new AddRadioIdItem(Protocol.APCO25));
             p25Menu.getItems().add(new AddRadioIdRangeItem(Protocol.APCO25));
+            p25Menu.getItems().add(new AddP25FullyQualifiedRadioIdItem());
             p25Menu.getItems().add(new SeparatorMenuItem());
             p25Menu.getItems().add(new AddUserStatusItem());
             p25Menu.getItems().add(new AddUnitStatusItem());
@@ -1323,6 +1327,44 @@ public class AliasItemEditor extends Editor<Alias>
     }
 
     /**
+     * Menu Item for adding a new protocol-specific Fully Qualified Radio ID alias identifier
+     */
+    public class AddP25FullyQualifiedRadioIdItem extends MenuItem
+    {
+        public AddP25FullyQualifiedRadioIdItem()
+        {
+            super("Fully Qualified Radio ID");
+            setOnAction(event -> {
+                P25FullyQualifiedRadio radioId = new P25FullyQualifiedRadio();
+                radioId.setProtocol(Protocol.APCO25);
+                getIdentifiersList().getItems().add(radioId);
+                getIdentifiersList().getSelectionModel().select(radioId);
+                getIdentifiersList().scrollTo(radioId);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
+     * Menu Item for adding a new protocol-specific Fully Qualified Talkgroup alias identifier
+     */
+    public class AddP25FullyQualifiedTalkgroupItem extends MenuItem
+    {
+        public AddP25FullyQualifiedTalkgroupItem()
+        {
+            super("Fully Qualified Talkgroup");
+            setOnAction(event -> {
+                P25FullyQualifiedTalkgroup talkgroup = new P25FullyQualifiedTalkgroup();
+                talkgroup.setProtocol(Protocol.APCO25);
+                getIdentifiersList().getItems().add(talkgroup);
+                getIdentifiersList().getSelectionModel().select(talkgroup);
+                getIdentifiersList().scrollTo(talkgroup);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
      * Menu Item for adding a new protocol-specific Radio ID range alias identifier
      */
     public class AddRadioIdRangeItem extends MenuItem
@@ -1505,7 +1547,25 @@ public class AliasItemEditor extends Editor<Alias>
 
             if(item != null)
             {
-                if(item instanceof Talkgroup)
+                if(item instanceof P25FullyQualifiedTalkgroup fqt)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("APCO-25 Fully Qualified Talkgroup:").append(fqt.getWacn());
+                    sb.append(".").append(fqt.getSystem());
+                    sb.append(".").append(fqt.getValue());
+
+                    if(fqt.overlapProperty().get())
+                    {
+                        sb.append(" - Error: Overlap");
+                    }
+
+                    if(!fqt.isValid())
+                    {
+                        sb.append(" **NOT VALID**");
+                    }
+                    setText(sb.toString());
+                }
+                else if(item instanceof Talkgroup)
                 {
                     Talkgroup talkgroup = (Talkgroup)item;
                     Protocol protocol = talkgroup.getProtocol();
@@ -1547,6 +1607,24 @@ public class AliasItemEditor extends Editor<Alias>
                     }
 
                     if(!talkgroupRange.isValid())
+                    {
+                        sb.append(" **NOT VALID**");
+                    }
+                    setText(sb.toString());
+                }
+                else if(item instanceof P25FullyQualifiedRadio fqr)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("APCO-25 Fully Qualified Radio ID:").append(fqr.getWacn());
+                    sb.append(".").append(fqr.getSystem());
+                    sb.append(".").append(fqr.getValue());
+
+                    if(fqr.overlapProperty().get())
+                    {
+                        sb.append(" - Error: Overlap");
+                    }
+
+                    if(!fqr.isValid())
                     {
                         sb.append(" **NOT VALID**");
                     }

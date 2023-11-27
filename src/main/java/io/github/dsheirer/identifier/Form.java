@@ -37,7 +37,6 @@ public enum Form
     DTMF,
     ENCRYPTION_KEY,
     ESN,
-    FULLY_QUALIFIED_IDENTIFIER,
     IPV4_ADDRESS,
     KNOX_TONE,
     LOCATION,
