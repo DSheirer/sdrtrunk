@@ -70,7 +70,7 @@
 
 
  /**
-  * Audio broadcaster to push completed audio recordings to the Rdio Scanner call upload API.
+  * Audio broadcaster to push completed audio recordings to the OpenMHz call upload API.
   *
   */
  public class OpenMHzBroadcaster extends AbstractAudioBroadcaster<OpenMHzConfiguration>
@@ -81,6 +81,7 @@
      private static final String MULTIPART_TYPE = "multipart";
      private static final String DEFAULT_SUBTYPE = "form-data";
      private static final String MULTIPART_FORM_DATA = MULTIPART_TYPE + "/" + DEFAULT_SUBTYPE;
+     private static final String APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
      private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
      private ScheduledFuture<?> mAudioRecordingProcessorFuture;
      private HttpClient mHttpClient = HttpClient.newBuilder()
@@ -115,16 +116,16 @@
          mLastConnectionAttempt = System.currentTimeMillis();
 
          /**
-          * Rdio Scanner API does not currently expose a test method.
+          * OpenMHz API does not currently expose a test method.
           * TODO: FIX THIS
           */
-         if(response != null)// && response.toLowerCase().startsWith("<head><title>502 bad gateway</title></head>"))
+         if(response == "OK")// && response.toLowerCase().startsWith("<head><title>502 bad gateway</title></head>"))
          {
              setBroadcastState(BroadcastState.CONNECTED);
          }
          else
          {
-             mLog.error("Error connecting to Rdio Scanner server on startup [" + response + "]");
+             mLog.error("Error connecting to OpenMHz server on startup [" + response + "]");
              setBroadcastState(BroadcastState.ERROR);
          }
 
@@ -170,7 +171,7 @@
       * server.  If there is a connectivity or other issue, the broadcast state is set to temporary error and
       * the audio processor thread will persistently invoke this method to attempt a reconnect.
       *
-      * Rdio Scanner does not have a test API endpoint, so we look for the incomplete call response.
+      * OpenMHz does not have a test API endpoint, so we look for the incomplete call response.
       */
      private boolean connected()
      {
@@ -182,7 +183,7 @@
              String response = testConnection(getBroadcastConfiguration());
              mLastConnectionAttempt = System.currentTimeMillis();
 
-             if(response != null && response.toLowerCase().startsWith("incomplete call data: no talkgroup"))
+             if(response != null && response == "200")
              {
                  setBroadcastState(BroadcastState.CONNECTED);
              }
@@ -256,11 +257,12 @@
                      }
                      catch(IOException e)
                      {
-                         mLog.error("Rdio Scanner API - audio recording file not found - ignoring upload");
+                         mLog.error("OpenMHz - audio recording file not found - ignoring upload");
                      }
 
                      if(audioBytes != null)
                      {
+                        String uri = getBroadcastConfiguration().getHost() + "/" + getBroadcastConfiguration().getSystemName() + "/upload";
 
                          OpenMHzBuilder bodyBuilder = new OpenMHzBuilder();
                              bodyBuilder
@@ -272,17 +274,14 @@
                              .addPart(FormField.TALKGROUP_NUM, talkgroup)
                              .addPart(FormField.EMERGENCY, 0)
                              .addPart(FormField.API_KEY, getBroadcastConfiguration().getApiKey())
-                             .addPart(FormField.PATCHES, patches)
+                             // For future use if OpenMHz supports patch information
+                             //.addPart(FormField.PATCHES, patches)
                              .addPart(FormField.SOURCE_LIST, "[{ \"pos\": 0.00, \"src\": " + radioId + "}]");
-                             //.addPart(FormField.FREQ_LIST, frequency)
-
-
 
                          HttpRequest fileRequest = HttpRequest.newBuilder()
-                             .uri(URI.create(getBroadcastConfiguration().getHost()))
+                             .uri(URI.create(uri))
                              .header(HttpHeaders.CONTENT_TYPE, MULTIPART_FORM_DATA + "; boundary=" + bodyBuilder.getBoundary())
                              .header(HttpHeaders.USER_AGENT, "sdrtrunk")
-                             //.header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
                              .POST(bodyBuilder.build())
                              .build();
 
@@ -295,14 +294,14 @@
                                          //We get socket reset exceptions occasionally when the remote server doesn't
                                          //fully read our request and immediately responds.
                                          setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                         mLog.error("Rdio Scanner API file upload fail [" +
+                                         mLog.error("OpenMHz API file upload fail [" +
                                              fileResponse.statusCode() + "] response [" +
                                              fileResponse.body() + "]");
                                      }
                                      else
                                      {
                                          setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                         mLog.error("Rdio Scanner API file upload fail [" +
+                                         mLog.error("OpenMHz API file upload fail [" +
                                              fileResponse.statusCode() + "] response [" +
                                              fileResponse.body() + "]");
                                      }
@@ -324,7 +323,7 @@
                                      else
                                      {
                                          setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                         mLog.error("Rdio Scanner API file upload fail [" +
+                                         mLog.error("OpenMHz API file upload fail [" +
                                              fileResponse.statusCode() + "] response [" +
                                              fileResponse.body() + "]");
                                      }
@@ -337,7 +336,7 @@
                      else
                      {
                          //Register an error for the file not found exception
-                         mLog.error("Rdio Scanner API - upload file not found [" +
+                         mLog.error("OpenMHz API - upload file not found [" +
                              audioRecording.getPath().toString() + "]");
                          incrementErrorAudioCount();
                          broadcast(new BroadcastEvent(OpenMHzBroadcaster.this,
@@ -547,21 +546,19 @@
       */
      public static String testConnection(OpenMHzConfiguration configuration)
      {
+         String uri = configuration.getHost() + "/" + configuration.getSystemName() + "/authorize";
+
          HttpClient httpClient = HttpClient.newBuilder()
              .version(HttpClient.Version.HTTP_1_1)
              .followRedirects(HttpClient.Redirect.NORMAL)
              .connectTimeout(Duration.ofSeconds(20))
              .build();
 
-         OpenMHzBuilder bodyBuilder = new OpenMHzBuilder();
-         bodyBuilder.addPart(FormField.API_KEY, configuration.getApiKey());
-
          HttpRequest request = HttpRequest.newBuilder()
-             .uri(URI.create(configuration.getHost()))
-             .header(HttpHeaders.CONTENT_TYPE, MULTIPART_FORM_DATA + "; boundary=" + bodyBuilder.getBoundary())
+             .uri(URI.create(uri))
+             .header(HttpHeaders.CONTENT_TYPE, APPLICATION_FORM_URLENCODED)
              .header(HttpHeaders.USER_AGENT, "sdrtrunk")
-             .header(HttpHeaders.ACCEPT, "*/*")
-             .POST(bodyBuilder.build())
+             .POST(HttpRequest.BodyPublishers.ofString("api_key="+configuration.getApiKey()))
              .build();
 
          HttpResponse.BodyHandler<String> responseHandler = HttpResponse.BodyHandlers.ofString();
@@ -570,7 +567,20 @@
          {
              HttpResponse<String> response = httpClient.send(request, responseHandler);
              String responseBody = response.body();
-             return (responseBody != null ? responseBody : "(no response)") + " Status Code:" + response.statusCode();
+             if (response.statusCode() == 200)
+             {
+                return "OK";
+             }
+             else if(response.statusCode() == 403)
+             {
+                return "Invalid API Key";
+             }
+             else if(response.statusCode() == 500)
+             {
+                return "Invalid System Name";
+             }
+
+             return "No Response";
          }
          catch(Exception e)
          {
@@ -597,20 +607,21 @@
          config.setSystemName("systemx");
 
          String response = testConnection(config);
+         mLog.error("Response: " + response);
 
-         if(response == null)
+         if(response == "OK")
          {
              mLog.debug("Test Successful!");
          }
          else
          {
-             if(response.contains("1 Invalid-API-Key"))
+             if(response.contains("Invalid API Key"))
              {
                  mLog.error("Invalid API Key");
              }
-             else if(response.contains("1 API-Key-Access-Denied"))
+             else if(response.contains("Invalid System Name"))
              {
-                 mLog.error("System ID not valid for API Key");
+                 mLog.error("Invalid System Name");
              }
              else
              {

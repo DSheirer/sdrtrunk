@@ -152,7 +152,7 @@
              GridPane.setConstraints(getApiKeyTextField(), 1, row);
              mEditorPane.getChildren().add(getApiKeyTextField());
 
-             Label systemNameLabel = new Label("System Name");
+             Label systemNameLabel = new Label("System Short Name");
              GridPane.setHalignment(systemNameLabel, HPos.RIGHT);
              GridPane.setConstraints(systemNameLabel, 0, ++row);
              mEditorPane.getChildren().add(systemNameLabel);
@@ -160,7 +160,7 @@
              GridPane.setConstraints(getSystemNameTextField(), 1, row);
              mEditorPane.getChildren().add(getSystemNameTextField());
 
-             Label hostLabel = new Label("OpenMHz URL");
+             Label hostLabel = new Label("OpenMHz Upload Server (API)");
              GridPane.setHalignment(hostLabel, HPos.RIGHT);
              GridPane.setConstraints(hostLabel, 0, ++row);
              mEditorPane.getChildren().add(hostLabel);

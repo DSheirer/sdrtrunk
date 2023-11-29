@@ -110,8 +110,7 @@
          }
          StringBuilder sb= new StringBuilder();
          sb.append(DASH_DASH).append(boundary).append("\r\n");
-         sb.append("Content-Disposition: form-data; name=\"").append("call").append("\"; filename=\"test.m4a\"\r\n");
-         sb.append("Content-Type: application/octet-stream\r\n\r\n");
+         sb.append("Content-Disposition: form-data; name=\"").append("call").append("\"; filename=\"audio.mp3\"\r\n\r\n");
          return sb.toString();
 
      }

@@ -39,6 +39,8 @@
   */
  public class OpenMHzConfiguration extends BroadcastConfiguration
  {
+    public static final String PRODUCTION_ENDPOINT = "https://api.openmhz.com";
+
      private StringProperty mSystemName = new SimpleStringProperty();
      private StringProperty mApiKey = new SimpleStringProperty();
 
@@ -57,6 +59,11 @@
      public OpenMHzConfiguration(BroadcastFormat format)
      {
          super(format);
+
+         if(getHost() == null)
+         {
+             setHost(PRODUCTION_ENDPOINT);
+         }
 
          //The parent class binds this property, so we unbind it and rebind it here
          mValid.unbind();
