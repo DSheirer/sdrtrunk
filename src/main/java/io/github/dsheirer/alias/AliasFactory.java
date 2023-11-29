@@ -30,11 +30,13 @@ import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.record.Record;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
+import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
@@ -77,6 +79,18 @@ public class AliasFactory
                 Min copyMin = new Min();
                 copyMin.setMin(originalMin.getMin());
                 return copyMin;
+            case P25_FULLY_QUALIFIED_RADIO_ID:
+                P25FullyQualifiedRadio originalP25 = (P25FullyQualifiedRadio) id;
+                P25FullyQualifiedRadio copyP25 = new P25FullyQualifiedRadio(originalP25.getWacn(),
+                        originalP25.getSystem(), originalP25.getValue());
+                copyP25.setOverlap(originalP25.overlapProperty().get());
+                return copyP25;
+            case P25_FULLY_QUALIFIED_TALKGROUP:
+                P25FullyQualifiedTalkgroup originalFqt = (P25FullyQualifiedTalkgroup) id;
+                P25FullyQualifiedTalkgroup copyFqt = new P25FullyQualifiedTalkgroup(originalFqt.getWacn(),
+                        originalFqt.getSystem(), originalFqt.getValue());
+                copyFqt.setOverlap(originalFqt.overlapProperty().get());
+                return copyFqt;
             case PRIORITY:
                 Priority originalPriority = (Priority)id;
                 Priority copyPriority = new Priority();
