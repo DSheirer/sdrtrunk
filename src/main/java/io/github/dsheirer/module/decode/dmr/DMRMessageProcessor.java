@@ -153,10 +153,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
         dispatch(message);
 
         //Extract the Full Link Control message fragment from the Voice with embedded signalling message
-        if(message instanceof VoiceEMBMessage)
+        if(message instanceof VoiceEMBMessage voice)
         {
-            VoiceEMBMessage voice = (VoiceEMBMessage)message;
-
             if(message.getTimeslot() == 1)
             {
                 FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
