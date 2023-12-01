@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,9 +91,17 @@ public enum DMRSyncPattern
     private static final EnumSet<DMRSyncPattern> CACH_PATTERNS = EnumSet.of(BASE_STATION_DATA, BASE_STATION_VOICE,
         BS_VOICE_FRAME_B, BS_VOICE_FRAME_C, BS_VOICE_FRAME_D, BS_VOICE_FRAME_E, BS_VOICE_FRAME_F);
 
-    //Direct Mode Sync Patterns
-    private static final EnumSet<DMRSyncPattern> DIRECT_MODE_PATTERNS = EnumSet.of(DIRECT_MODE_DATA_TIMESLOT_1,
-        DIRECT_MODE_DATA_TIMESLOT_2, DIRECT_MODE_VOICE_TIMESLOT_1, DIRECT_MODE_VOICE_TIMESLOT_2);
+    //Direct Mode TS 1 Sync Patterns
+    private static final EnumSet<DMRSyncPattern> DIRECT_MODE_TS1_PATTERNS = EnumSet.of(DIRECT_MODE_VOICE_TIMESLOT_1,
+            DIRECT_MODE_DATA_TIMESLOT_1);
+
+    //Direct Mode TS 2 Sync Patterns
+    private static final EnumSet<DMRSyncPattern> DIRECT_MODE_TS2_PATTERNS = EnumSet.of(DIRECT_MODE_VOICE_TIMESLOT_2,
+            DIRECT_MODE_DATA_TIMESLOT_2);
+
+    //Mobile Station Sync Patterns
+    private static final EnumSet<DMRSyncPattern> MOBILE_STATION_PATTERNS = EnumSet.of(MOBILE_STATION_DATA,
+            MOBILE_STATION_VOICE, MS_VOICE_FRAME_B, MS_VOICE_FRAME_C, MS_VOICE_FRAME_D, MS_VOICE_FRAME_E, MS_VOICE_FRAME_F);
 
     /**
      * Pattern that represents the enum entry
@@ -140,7 +148,43 @@ public enum DMRSyncPattern
      */
     public boolean isDirectMode()
     {
-        return DIRECT_MODE_PATTERNS.contains(this);
+        return isDirectModeTS1() || isDirectModeTS2();
+    }
+
+    /**
+     * Indicates if this is Direct Mode sync pattern for timestot 1
+     * @return true if DMTS1
+     */
+    public boolean isDirectModeTS1()
+    {
+        return DIRECT_MODE_TS1_PATTERNS.contains(this);
+    }
+
+    /**
+     * Indicates if this is Direct Mode sync pattern for timestot 2
+     * @return true if DMTS2
+     */
+    public boolean isDirectModeTS2()
+    {
+        return DIRECT_MODE_TS2_PATTERNS.contains(this);
+    }
+
+    /**
+     * Indicates if this is a mobile station sync pattern
+     * @return true if a mobile station sync pattern.
+     */
+    public boolean isMobileStationSyncPattern()
+    {
+        return MOBILE_STATION_PATTERNS.contains(this);
+    }
+
+    /**
+     * Indicates if this is a mobile sync pattern, either mobile station or direct mode.
+     * @return true if a mobile sync pattern.
+     */
+    public boolean isMobileSyncPattern()
+    {
+        return isMobileStationSyncPattern() || isDirectMode();
     }
 
     /**

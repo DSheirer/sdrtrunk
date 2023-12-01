@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -284,11 +284,27 @@ public class DMRBurstFramer implements Listener<Dibit>
             }
             else
             {
-                //When we don't have sufficient timeslot tracking data, dump the messages to timeslot 0 so that they
-                //don't corrupt the decoder states for either timeslot, until we positively regain timeslot tracking
+                //When we don't have sufficient timeslot tracking data, we either have misaligned timeslots from a
+                //repeater or we have some form of mobile burst.  If mobile, process to the correct timeslto, otherwise
+                //dump the messages to timeslot 0 so that the burst doesn't corrupt the decoder states for either
+                // timeslot, until we positively regain timeslot tracking
                 if(burst1 != null)
                 {
-                    mBurstDetectListener.burstDetected(burst1, mSyncTrackerTimeslot1.getSyncPattern(), 0);
+                    DMRSyncPattern sync1 = mSyncTrackerTimeslot1.getSyncPattern();
+
+                    if(sync1.isMobileStationSyncPattern() || sync1.isDirectModeTS1())
+                    {
+                        mBurstDetectListener.burstDetected(burst1, sync1, 1);
+                    }
+                    else if(sync1.isDirectModeTS2())
+                    {
+                        mBurstDetectListener.burstDetected(burst1, sync1, 2);
+                    }
+                    else
+                    {
+                        mBurstDetectListener.burstDetected(burst1, sync1, 0);
+                    }
+
                     mDibitCounter -= BURST_DIBIT_LENGTH;
                 }
                 else
@@ -298,7 +314,21 @@ public class DMRBurstFramer implements Listener<Dibit>
 
                 if(burst2 != null)
                 {
-                    mBurstDetectListener.burstDetected(burst2, mSyncTrackerTimeslot2.getSyncPattern(), 0);
+                    DMRSyncPattern sync2 = mSyncTrackerTimeslot2.getSyncPattern();
+
+                    if(sync2.isMobileStationSyncPattern() || sync2.isDirectModeTS1())
+                    {
+                        mBurstDetectListener.burstDetected(burst2, sync2, 1);
+                    }
+                    else if(sync2.isDirectModeTS2())
+                    {
+                        mBurstDetectListener.burstDetected(burst2, sync2, 2);
+                    }
+                    else
+                    {
+                        mBurstDetectListener.burstDetected(burst2, sync2, 0);
+                    }
+
                     mDibitCounter -= BURST_DIBIT_LENGTH;
                 }
                 else

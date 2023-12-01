@@ -48,14 +48,12 @@ public class VoiceAMessage extends VoiceMessage
     {
         StringBuilder sb = new StringBuilder();
 
-        if(getSyncPattern().isDirectMode())
+        if(!getSyncPattern().isMobileSyncPattern())
         {
-            sb.append(getSyncPattern());
+            sb.append("CC:- ");
         }
-        else
-        {
-            sb.append("CC:- ").append(getSyncPattern());
-        }
+
+        sb.append(getSyncPattern());
 
         return sb.toString();
     }

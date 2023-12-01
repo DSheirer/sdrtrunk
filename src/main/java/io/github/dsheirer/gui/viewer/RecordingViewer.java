@@ -69,9 +69,17 @@ public class RecordingViewer extends VBox
 
             Menu createNewViewerMenu = new Menu("New Viewer ...");
             MenuItem dmrMenuItem = new MenuItem("DMR");
-            dmrMenuItem.onActionProperty().set(event -> getTabPane().getTabs().add(new LabeledTab("DMR-" + mTabCounterDmr++, new DmrViewer())));
+            dmrMenuItem.onActionProperty().set(event -> {
+                Tab tab = new LabeledTab("DMR-" + mTabCounterDmr++, new DmrViewer());
+                getTabPane().getTabs().add(tab);
+                getTabPane().getSelectionModel().select(tab);
+            });
             MenuItem p25p1MenuItem = new MenuItem("P25P1");
-            p25p1MenuItem.onActionProperty().set(event -> getTabPane().getTabs().add(new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer())));
+            p25p1MenuItem.onActionProperty().set(event -> {
+                Tab tab = new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer());
+                getTabPane().getTabs().add(tab);
+                getTabPane().getSelectionModel().select(tab);
+            });
             createNewViewerMenu.getItems().addAll(dmrMenuItem, p25p1MenuItem);
 
             MenuItem exitMenu = new MenuItem("Exit");

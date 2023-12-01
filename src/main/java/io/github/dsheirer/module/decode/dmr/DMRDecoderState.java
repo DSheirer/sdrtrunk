@@ -445,11 +445,18 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void processVoice(VoiceMessage message)
     {
-        if(message.getSyncPattern().isDirectMode())
+        if(message.getSyncPattern().isMobileSyncPattern())
         {
-            updateCurrentCall(DecodeEventType.CALL, "DIRECT MODE", message.getTimestamp());
+            if(message.getSyncPattern().isDirectMode())
+            {
+                updateCurrentCall(DecodeEventType.CALL, "DIRECT MODE", message.getTimestamp());
+            }
+            else
+            {
+                updateCurrentCall(DecodeEventType.CALL, "REPEATER", message.getTimestamp());
+            }
 
-            //Use the timeslot as the talkgroup identifier since DCDM mode doesn't use talkgroups
+            //Use the timeslot as the talkgroup identifier since DCDM & simple repeater modes don't use talkgroups
             getIdentifierCollection().update(DMRTalkgroup.create(getTimeslot()));
         }
         else

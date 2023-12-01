@@ -56,7 +56,7 @@ public class VoiceEMBMessage extends VoiceMessage
     {
         StringBuilder sb = new StringBuilder();
 
-        if(getEMB().isValid())
+        if(!getSyncPattern().isMobileSyncPattern() && getEMB().isValid())
         {
             sb.append("CC:").append(getEMB().getColorCode()).append(" ");
         }
