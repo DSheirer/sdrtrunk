@@ -35,10 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSlider;
+import javax.swing.JToggleButton;
 
 /**
  * Abstract RSP tuner editor
@@ -48,7 +48,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     private Logger mLog = LoggerFactory.getLogger(RspTunerEditor.class);
     private JSlider mGainSlider;
     private JLabel mGainValueLabel;
-    private JComboBox<AgcMode> mAgcModeCombo;
+    private JToggleButton mAgcButton;
     private JButton mGainOverloadButton;
     private AtomicBoolean mGainOverloadAlert = new AtomicBoolean();
 
@@ -120,22 +120,20 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     }
 
     /**
-     * IF AGC mode combobox control
+     * IF AGC mode (enable/disable) toggle button
      */
-    protected JComboBox<AgcMode> getAgcModeCombo()
+    protected JToggleButton getAgcButton()
     {
-        if(mAgcModeCombo == null)
+        if(mAgcButton == null)
         {
-            mAgcModeCombo = new JComboBox<>(AgcMode.values());
-            mAgcModeCombo.setEnabled(false);
-            mAgcModeCombo.addActionListener(e -> {
+            mAgcButton = new JToggleButton("IF AGC");
+            mAgcButton.setEnabled(false);
+            mAgcButton.addActionListener(e -> {
                 if(hasTuner() && !isLoading())
                 {
-                    AgcMode selected = (AgcMode)mAgcModeCombo.getSelectedItem();
                     try
                     {
-                        getTunerController().getControlRsp().setAgcMode(selected);
-                        save();
+                        getTunerController().getControlRsp().setAgcMode(mAgcButton.isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
                     }
                     catch(SDRPlayException se)
                     {
@@ -146,7 +144,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
             });
         }
 
-        return mAgcModeCombo;
+        return mAgcButton;
     }
 
     /**

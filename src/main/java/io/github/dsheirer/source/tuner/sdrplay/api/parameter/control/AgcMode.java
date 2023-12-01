@@ -20,16 +20,19 @@
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.control;
 
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_h;
+import java.util.EnumSet;
 
 /**
  * Automatic Gain Control (AGC) Control (mode)
  */
 public enum AgcMode
 {
+    //Deprecated modes ... only use the ENABLE or DISABLE, in conjunction with the
+    AGC_100_HZ(sdrplay_api_h.sdrplay_api_AGC_100HZ(), "Deprecated - 100 Hz"),
+    AGC_50_HZ(sdrplay_api_h.sdrplay_api_AGC_50HZ(), "Deprecated 50 Hz"),
+    AGC_5_HZ(sdrplay_api_h.sdrplay_api_AGC_5HZ(), "Deprecated 5 Hz"),
+
     DISABLE(sdrplay_api_h.sdrplay_api_AGC_DISABLE(), "DISABLE"),
-    AGC_100_HZ(sdrplay_api_h.sdrplay_api_AGC_100HZ(), "100 Hz"),
-    AGC_50_HZ(sdrplay_api_h.sdrplay_api_AGC_50HZ(), "50 Hz"),
-    AGC_5_HZ(sdrplay_api_h.sdrplay_api_AGC_5HZ(), "5 Hz"),
     ENABLE(sdrplay_api_h.sdrplay_api_AGC_CTRL_EN(), "ENABLE");
 
     private int mValue;
@@ -41,12 +44,23 @@ public enum AgcMode
         mDescription = description;
     }
 
+    public static EnumSet<AgcMode> SUPPORTED_MODES = EnumSet.of(ENABLE, DISABLE);
+
     /**
      * Numeric value
      */
     public int getValue()
     {
         return mValue;
+    }
+
+    /**
+     * Indicates if the mode is a supported mode.
+     * @return true if it's a supported mode.
+     */
+    public boolean isSupported()
+    {
+        return SUPPORTED_MODES.contains(this);
     }
 
     /**
@@ -60,7 +74,16 @@ public enum AgcMode
         {
             if(status.getValue() == value)
             {
-                return status;
+                //legacy support in case some users had the deprecated values stored in their tuner configs.  In
+                //this situation we return ENABLED instead of one of these deprecated values.
+                if(status.isSupported())
+                {
+                    return status;
+                }
+                else
+                {
+                    return ENABLE;
+                }
             }
         }
         
