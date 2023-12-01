@@ -91,7 +91,7 @@ public class RspDxTunerEditor extends RspTunerEditor<RspDxTunerConfiguration>
         add(new JLabel("IF AGC Mode:"));
         JPanel gainPanel = new JPanel();
         gainPanel.setLayout(new MigLayout("insets 0","[grow,fill][]",""));
-        gainPanel.add(getAgcModeCombo());
+        gainPanel.add(getAgcButton());
         gainPanel.add(getGainOverloadButton());
         add(gainPanel, "wrap");
 
@@ -158,10 +158,11 @@ public class RspDxTunerEditor extends RspTunerEditor<RspDxTunerConfiguration>
         getSampleRateCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getSampleRateEnumeration() : null);
         updateSampleRateToolTip();
 
-        getAgcModeCombo().setEnabled(hasTuner());
+        getAgcButton().setEnabled(hasTuner());
         if(hasTuner())
         {
-            getAgcModeCombo().setSelectedItem(getTunerController().getControlRsp().getAgcMode());
+            AgcMode current = getTunerController().getControlRsp().getAgcMode();
+            getAgcButton().setSelected(current == null || current.equals(AgcMode.ENABLE));
             //Register to receive gain overload notifications
             getTunerController().getControlRsp().setGainOverloadListener(this);
         }
@@ -239,7 +240,7 @@ public class RspDxTunerEditor extends RspTunerEditor<RspDxTunerConfiguration>
             getConfiguration().setRfNotch(getRfNotchCheckBox().isSelected());
             getConfiguration().setAntenna((RspDxAntenna) getAntennaCombo().getSelectedItem());
             getConfiguration().setGain(getGainSlider().getValue());
-            getConfiguration().setAgcMode((AgcMode)getAgcModeCombo().getSelectedItem());
+            getConfiguration().setAgcMode(getAgcButton().isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
 
             saveConfiguration();
         }
