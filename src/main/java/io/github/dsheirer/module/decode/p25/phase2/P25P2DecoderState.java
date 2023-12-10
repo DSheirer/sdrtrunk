@@ -41,6 +41,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
@@ -87,8 +88,12 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToU
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelGrantUpdateExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisGpsLocation;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisRegroupCommand;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisTalkerAlias;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
+import io.github.dsheirer.protocol.Protocol;
+import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -392,6 +397,15 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case PHASE1_109_UNIT_REGISTRATION_COMMAND_ABBREVIATED:
                 broadcast(message, mac, getCurrentChannel(), DecodeEventType.COMMAND, "UNIT REGISTRATION");
                 break;
+            case PHASE1_128_L3HARRIS_GPS_LOCATION:
+                processL3HarrisGps(message, mac);
+                break;
+            case PHASE1_168_L3HARRIS_TALKER_ALIAS:
+                if(mac instanceof L3HarrisTalkerAlias talkerAlias)
+                {
+                    getIdentifierCollection().update(talkerAlias.getAlias());
+                }
+                break;
             case PHASE1_176_L3HARRIS_GROUP_REGROUP:
                 if(mac instanceof L3HarrisRegroupCommand regroup)
                 {
@@ -584,6 +598,25 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 ipm.isTalkgroupPriority3() || ipm.isTalkgroupPriority4();
             broadcast(message, mac, DecodeEventType.PAGE,
                 (priority ? "PRIORITY " : "") + "USER PAGE");
+        }
+    }
+
+    /**
+     * Broadcasts the L3Harris gps position report as a mappable/plottable event.
+     */
+    private void processL3HarrisGps(MacMessage message, MacStructure structure)
+    {
+        if(structure instanceof L3HarrisGpsLocation gps)
+        {
+            MutableIdentifierCollection collection = getUpdatedMutableIdentifierCollection(gps);
+
+            broadcast(PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, message.getTimestamp())
+                    .protocol(Protocol.APCO25)
+                    .location(gps.getGeoPosition())
+                    .channel(getCurrentChannel())
+                    .details(gps.getLocation().toString() + " " + new Date(gps.getTimestampMs()))
+                    .identifiers(collection)
+                    .build());
         }
     }
 

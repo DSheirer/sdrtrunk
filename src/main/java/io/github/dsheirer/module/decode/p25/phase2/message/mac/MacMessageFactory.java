@@ -85,6 +85,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToU
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnknownStructure;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnknownVendorMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisRegroupCommand;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisTalkerAlias;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -290,6 +291,8 @@ public class MacMessageFactory
                 return new AdjacentStatusBroadcastAbbreviated(message, offset);
             case PHASE1_125_IDENTIFIER_UPDATE:
                 return new FrequencyBandUpdate(message, offset);
+            case PHASE1_168_L3HARRIS_TALKER_ALIAS:
+                return new L3HarrisTalkerAlias(message, offset);
             case PHASE1_176_L3HARRIS_GROUP_REGROUP:
                 return new L3HarrisRegroupCommand(message, offset);
             case PHASE1_192_GROUP_VOICE_CHANNEL_GRANT_EXTENDED:
