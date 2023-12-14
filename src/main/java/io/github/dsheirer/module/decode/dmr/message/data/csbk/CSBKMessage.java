@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2020 Dennis Sheirer, Zhenyu Mao
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.dmr.message.data.csbk;
 
@@ -67,6 +66,17 @@ public abstract class CSBKMessage extends DataMessage
     public void checkCRC()
     {
         int correctedBitCount = CRCDMR.correctCCITT80(getMessage(), 0, 80, CSBK_CRC_MASK);
+
+        //Set message valid flag according to the corrected bit count for the CRC protected message
+        setValid(correctedBitCount < 2);
+    }
+
+    /**
+     * Checks CRC using an alternate mask value and sets the message valid flag according to the results.
+     */
+    public void checkCRC(int mask)
+    {
+        int correctedBitCount = CRCDMR.correctCCITT80(getMessage(), 0, 80, mask);
 
         //Set message valid flag according to the corrected bit count for the CRC protected message
         setValid(correctedBitCount < 2);

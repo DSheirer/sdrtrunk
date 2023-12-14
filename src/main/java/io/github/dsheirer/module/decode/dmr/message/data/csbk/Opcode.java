@@ -93,7 +93,7 @@ public enum Opcode
     //CSBKO 44 & 47 observed on Tier3 interleaved in voice group call terminator sequence.  44 was continuously transmitted
     //and 47 was only transmitted 3x times in succession in the middle of the terminators and CSBKO 44 messages.
     HYTERA_08_CSBKO_44(Vendor.HYTERA_8, 44, "HYTERA 08 CSBKO 44"),
-    HYTERA_08_CSBKO_47(Vendor.HYTERA_8, 47, "HYTERA 08 CSBKO 47"),
+    HYTERA_08_TRAFFIC_CHANNEL_TALKER_STATUS(Vendor.HYTERA_8, 47, "HYTERA 08 CSBKO 47"),
 
     HYTERA_68_XPT_SITE_STATE(Vendor.HYTERA_68, 10, "HYTERA 68 XPT SITE STATE"),
     HYTERA_68_ALOHA(Vendor.HYTERA_68, 25, "HYTERA 68 ALOHA"),
@@ -201,7 +201,7 @@ public enum Opcode
      * Hytera opcodes
      */
     public static final EnumSet<Opcode> HYTERA = EnumSet.of(HYTERA_08_ACKNOWLEDGE, HYTERA_08_ANNOUNCEMENT,
-            HYTERA_08_CSBKO_44, HYTERA_08_CSBKO_47, HYTERA_68_XPT_SITE_STATE, HYTERA_68_ALOHA,
+            HYTERA_08_CSBKO_44, HYTERA_08_TRAFFIC_CHANNEL_TALKER_STATUS, HYTERA_68_XPT_SITE_STATE, HYTERA_68_ALOHA,
             HYTERA_68_ACKNOWLEDGE, HYTERA_68_ANNOUNCEMENT, HYTERA_68_XPT_PREAMBLE, HYTERA_68_CSBKO_62);
 
     /**

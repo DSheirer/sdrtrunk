@@ -33,13 +33,14 @@ import java.util.List;
 /**
  * Hytera DMR Tier III - CSBKO 47 -
  *
- * Analysis: ... this was transmitted on the traffic channel while the mobile was at the end of a call, in the terminator
- * sequence.  Since this comes from the SMS gateway 16776906, I wonder if this is a traffic channel message waiting notification?
+ * Analysis: this message is transmitted three times at the beginning or end of a voice transmission and appears to
+ * indicate that the traffic channel continues active and signals the start/end of an active speaker.
  */
-public class HyteraCsbko47 extends CSBKMessage
+public class HyteraTrafficChannelTalkerStatus extends CSBKMessage
 {
     private static final int[] UNKNOWN_1 = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] UNKNOWN_2 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int TALKER_INACTIVE = 30;
     private static final int[] DESTINATION_RADIO = new int[]{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
             49, 50, 51, 52, 53, 54, 55};
     private static final int[] SOURCE_RADIO = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72,
@@ -59,7 +60,7 @@ public class HyteraCsbko47 extends CSBKMessage
      * @param timestamp
      * @param timeslot
      */
-    public HyteraCsbko47(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
+    public HyteraTrafficChannelTalkerStatus(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
     {
         super(syncPattern, message, cach, slotType, timestamp, timeslot);
     }
@@ -79,15 +80,37 @@ public class HyteraCsbko47 extends CSBKMessage
         {
             sb.append(" RAS:").append(getBPTCReservedBits());
         }
-        sb.append(" HYTERA CSBKO=47  #########  UNKNOWN");
+        sb.append(" HYTERA TRAFFIC CHANNEL");
+        if(isChannelInactive())
+        {
+            sb.append(" NOW AVAILABLE - PREVIOUS TALKER:").append(getDestinationRadio());
+        }
+        else
+        {
+            sb.append(" IN USE - CURRENT TALKER:").append(getDestinationRadio());
+        }
         sb.append(" FM:").append(getSourceRadio());
-        sb.append(" TO:").append(getDestinationRadio());
         sb.append(" UNK1:").append(getUnknown1());
         sb.append(" UNK2:").append(getUnknown2());
-
         sb.append(" MSG:").append(getMessage().toHexString());
 
         return sb.toString();
+    }
+
+    /**
+     * Indicates if the channel is inactive and available for use.
+     */
+    public boolean isChannelInactive()
+    {
+        return getMessage().get(TALKER_INACTIVE);
+    }
+
+    /**
+     * Indicates if the channel is active and in-use by the radio identifiers
+     */
+    public boolean isChannelActive()
+    {
+        return !isChannelInactive();
     }
 
     /**
@@ -108,7 +131,6 @@ public class HyteraCsbko47 extends CSBKMessage
     {
         return getMessage().getHex(UNKNOWN_1, 2);
     }
-
     public String getUnknown2()
     {
         return getMessage().getHex(UNKNOWN_2, 2);

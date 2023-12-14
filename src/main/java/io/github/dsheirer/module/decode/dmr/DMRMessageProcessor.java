@@ -27,6 +27,7 @@ import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.data.IDLEMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Aloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcement.Announcement;
@@ -71,6 +72,7 @@ public class DMRMessageProcessor implements Listener<IMessage>
     private TalkerAliasAssembler mTalkerAliasAssembler = new TalkerAliasAssembler();
     private Listener<IMessage> mMessageListener;
     private Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
+    private DmrCrcMaskManager mCrcMaskManager = new DmrCrcMaskManager();
 
     /**
      * Constructs an instance
@@ -93,6 +95,17 @@ public class DMRMessageProcessor implements Listener<IMessage>
     @Override
     public void receive(IMessage message)
     {
+        if(message == null)
+        {
+            return;
+        }
+
+        //Detect and correct messages employing an alternate CRC mask pattern.
+        if(!message.isValid() && message instanceof CSBKMessage csbk)
+        {
+            mCrcMaskManager.check(csbk);
+        }
+
         if(message instanceof FullLCMessage flc)
         {
             if(flc.getTimeslot() == 1)

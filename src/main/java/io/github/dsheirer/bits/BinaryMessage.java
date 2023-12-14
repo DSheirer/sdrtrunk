@@ -20,6 +20,7 @@ package io.github.dsheirer.bits;
 
 import io.github.dsheirer.edac.CRC;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.BitSet;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.util.FastMath;
@@ -1278,7 +1279,7 @@ public class BinaryMessage extends BitSet
             bytes[x] = getByte(CHARACTER_8_BIT, x * 8 + offset);
         }
 
-        return new String(bytes);
+        return new String(bytes, Charset.forName("UTF-16"));
     }
 
     /**

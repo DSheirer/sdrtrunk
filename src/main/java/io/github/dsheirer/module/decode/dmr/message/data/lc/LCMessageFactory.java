@@ -109,6 +109,15 @@ public class LCMessageFactory
 
         LCOpcode opcode = FullLCMessage.getOpcode(message);
 
+        //Some Hytera Tier-3 systems use a zero-valued mask when the FLC is carried in the voice header or terminator
+        //and in the same transmission it uses the standard mask when carried across the voice frames. It doesn't make
+        //sense, but maybe it's a bug in their software implementation?
+        if(!valid && opcode == LCOpcode.FULL_STANDARD_GROUP_VOICE_CHANNEL_USER)
+        {
+            //Retry the RS(12,9,4) with a mask value of zero
+            valid = REED_SOLOMON_12_9_4_DMR.correctFullLinkControl(message, 0);
+        }
+
         FullLCMessage flc = null;
 
         switch(opcode)

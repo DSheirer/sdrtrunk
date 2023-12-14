@@ -42,8 +42,11 @@ import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.wave.ComplexWaveSource;
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -331,5 +334,39 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     public Listener<ComplexSamples> getComplexSamplesListener()
     {
         return DMRDecoder.this;
+    }
+
+    public static void main(String[] args)
+    {
+        File file = new File("/home/denny/Downloads/TIII,HYT414.585000,.wav");
+
+        try
+        {
+            ComplexWaveSource source = new ComplexWaveSource(file);
+            source.open();
+            System.out.println("Source Sample Rate: " + source.getSampleRate());
+            DMRDecoder decoder = new DMRDecoder(new DecodeConfigDMR());
+            decoder.setMessageListener(message -> System.out.println("TS:" + message.getTimeslot() + " " + message));
+            source.setListener(iNativeBuffer -> {
+                Iterator<ComplexSamples> it = iNativeBuffer.iterator();
+                while(it.hasNext())
+                {
+                    ComplexSamples samples = it.next();
+                    decoder.receive(samples);
+                }
+            });
+            decoder.setSampleRate(source.getSampleRate());
+            decoder.start();
+            source.start();
+
+            while(true)
+            {
+                source.next(65535);
+            }
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 }

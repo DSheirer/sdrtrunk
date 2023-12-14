@@ -34,6 +34,9 @@ import java.util.List;
  * Analysis: ... this was transmitted on the Tier III traffic channel during call termination.  This CSBK was
  * interleaved with every other Terminator message, starting after the first 2x terminator messages.  This continued
  * through the final teardown which was 3x Clear messages.
+ *
+ * On a second example, there were 8 distinct configurations of this message that were repeated in-order, multiple times
+ * during the traffic channel shutdown ... a total of 51x of these messages were transmitted.
  */
 public class HyteraCsbko44 extends CSBKMessage
 {
