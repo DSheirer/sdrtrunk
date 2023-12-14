@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,35 +33,62 @@ public enum Vendor
     MOTOROLA_CONNECT_PLUS(6, "MOTOROLA CON+"),
     RADIO_DATA_GMBH(7, "RADIO DATA GMBH"),
     HYTERA_8(8, "HYTERA"),
+    ASELSAN(9, "ASELSAN"),
+    KIRISUN(10, "KIRISUN"),
+    DMR_ASSOCIATION(11, "DMR ASSOCIATION"),
+    SEPURA(12, "SEPURA"),
+    ITALIA_RED_CROSS(13, "ITALIA RED CROSS"),
     MOTOROLA_CAPACITY_PLUS(16, "MOTOROLA CAP+"),
-    EMC_SPA_19(19, "EMC SPA"),
-    EMC_SPA_28(28, "EMC SPA"),
-    RADIO_ACTIVITY_SRL_51(51, "RADIO ACTIVITY SRL"),
-    RADIO_ACTIVITY_SRL_60(60, "RADIO ACTIVITY SRL"),
+    MINISTERO_DELL_INTERNO(19, "ITALY MIN INTERIOR"),
+    EMC_COMM_SRL_28(28, "EMC COMM SRL 28"),
+    EMC_COMM_SRL_32(32, "EMC COMM SRL 32"),
+    JVC_KENWOOD(51, "JVC-KENWOOD"),
+    RADIO_ACTIVITY_SRL(60, "RADIO ACTIVITY SRL"),
+    ZTE_TRUNKING(84, "ZTE TRUNKING"),
     TAIT(88, "TAIT"),
     HYTERA_68(104, "HYTERA"),
     VERTEX_STANDARD(119, "VERTEX STANDARD"),
+    SIMOCO(120, "SIMOCO"),
+    TEST(121, "TEST"),
+    HYTERA_88(136, "HYTERA"),
     UNKNOWN(-1, "UNKNOWN");
 
     private int mValue;
     private String mLabel;
 
+    /**
+     * Constructs an instance
+     * @param value decimal for the vendor
+     * @param label for pretty print
+     */
     Vendor(int value, String label)
     {
         mValue = value;
         mLabel = label;
     }
 
+    /**
+     * Vendor ID value
+     * @return value
+     */
     public int getValue()
     {
         return mValue;
     }
 
+    /**
+     * Pretty print label
+     * @return label
+     */
     public String getLabel()
     {
         return mLabel;
     }
 
+    /**
+     * Overrides default to use the label value instead.
+     * @return string representation.
+     */
     @Override
     public String toString()
     {
@@ -69,7 +96,7 @@ public enum Vendor
     }
 
     /**
-     * Map of integer values to corresponding vendor entries
+     * Quick lookup map of integer values to corresponding vendor entries
      */
     private static final Map<Integer,Vendor> LOOKUP_MAP = new TreeMap<>();
 
