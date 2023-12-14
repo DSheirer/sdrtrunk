@@ -42,6 +42,7 @@ import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraTrafficChannelTalkerStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusNeighbors;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSiteStatus;
@@ -708,7 +709,22 @@ public class DMRDecoderState extends TimeslotDecoderState
             case HYTERA_08_ANNOUNCEMENT:
             case HYTERA_68_ANNOUNCEMENT:
             case HYTERA_68_XPT_SITE_STATE:
-
+                break;
+            case HYTERA_08_TRAFFIC_CHANNEL_TALKER_STATUS:
+                if(csbk instanceof HyteraTrafficChannelTalkerStatus status)
+                {
+                    if(status.isChannelActive())
+                    {
+                        getIdentifierCollection().update(status.getIdentifiers());
+                        updateCurrentCall(DecodeEventType.CALL_GROUP, "HYTERA TIER 3 CALL", status.getTimestamp());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(status.getDestinationRadio());
+                    }
+                }
+                break;
             case MOTOROLA_CAPPLUS_NEIGHBOR_REPORT:
                 if(csbk instanceof CapacityPlusNeighbors)
                 {

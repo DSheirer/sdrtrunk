@@ -118,7 +118,7 @@ public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
             sb.append(" ENCRYPTED");
         }
 
-        sb.append(" CLEAR - RETURN TO ").append(getMoveToChannel());
+        sb.append(" CLEAR - RETURN TO").append(getMoveToChannel());
         sb.append(" FM:").append(getSourceRadio());
         sb.append(" TO:").append(getDestinationId());
         sb.append(" MSG:").append(getMessage().toHexString());

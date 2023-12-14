@@ -29,8 +29,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAdjac
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAnnouncement;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraCsbko44;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraCsbko47;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraSmsAvailableNotification;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraTrafficChannelTalkerStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTPreamble;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTSiteState;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
@@ -250,8 +250,8 @@ public class CSBKMessageFactory
                 case HYTERA_08_CSBKO_44:
                     csbk = new HyteraCsbko44(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case HYTERA_08_CSBKO_47:
-                    csbk = new HyteraCsbko47(pattern, message, cach, slotType, timestamp, timeslot);
+                case HYTERA_08_TRAFFIC_CHANNEL_TALKER_STATUS:
+                    csbk = new HyteraTrafficChannelTalkerStatus(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
                 case HYTERA_68_ACKNOWLEDGE:
                     csbk = new Hytera68Acknowledge(pattern, message, cach, slotType, timestamp, timeslot);
