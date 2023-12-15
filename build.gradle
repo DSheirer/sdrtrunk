@@ -211,8 +211,8 @@ def jdk_download_base = "https://download.bell-sw.com/java/20.0.1+10/bellsoft-jd
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
 def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix
-def jdk_download_osx_x86_64 = jdk_download_base + "macos-aarch64" + jdk_download_suffix
-def jdk_download_osx_aarch64 = jdk_download_base + "macos-amd64" + jdk_download_suffix
+def jdk_download_osx_x86_64 = jdk_download_base + "macos-amd64" + jdk_download_suffix
+def jdk_download_osx_aarch64 = jdk_download_base + "macos-aarch64" + jdk_download_suffix
 def jdk_download_windows_x86_64 = jdk_download_base + "windows-amd64-full.zip"
 
 /**
@@ -341,7 +341,7 @@ tasks.register('runtimeZipOthers', org.beryx.runtime.RuntimeZipTask) {rt ->
             jdkHome = jdkDownload(jdk_download_osx_aarch64)
         }
     }
-    //Linux x86-64
+    //OSX x86-64
     if(file(jdk_osx_x86_64).exists()) {
         rt.extension.targetPlatform(targetOsxX86_64, jdk_osx_x86_64, [])
     }
@@ -353,4 +353,3 @@ tasks.register('runtimeZipOthers', org.beryx.runtime.RuntimeZipTask) {rt ->
 
     configure(rt, jvmArgsLinux);
 }
-
