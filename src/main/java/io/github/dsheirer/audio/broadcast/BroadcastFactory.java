@@ -25,6 +25,9 @@ import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfigura
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerFeedConfiguration;
+import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
+import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
+import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzFeedConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
@@ -67,6 +70,9 @@ public class BroadcastFactory
                 case RDIOSCANNER_CALL:
                     return new RdioScannerBroadcaster((RdioScannerConfiguration)configuration,
                             inputAudioFormat, mp3Setting, aliasModel);
+                case OPENMHZ:
+                    return new OpenMHzBroadcaster((OpenMHzConfiguration)configuration,
+                        inputAudioFormat, mp3Setting, aliasModel);
                 case BROADCASTIFY:
                     return new IcecastTCPAudioBroadcaster((BroadcastifyFeedConfiguration) configuration,
                             inputAudioFormat, mp3Setting, aliasModel);
@@ -109,6 +115,8 @@ public class BroadcastFactory
                 return new RdioScannerConfiguration(format);
             case BROADCASTIFY:
                 return new BroadcastifyFeedConfiguration(format);
+            case OPENMHZ:
+                return new OpenMHzConfiguration(format);
             case ICECAST_HTTP:
                 return new IcecastHTTPConfiguration(format);
             case ICECAST_TCP:
