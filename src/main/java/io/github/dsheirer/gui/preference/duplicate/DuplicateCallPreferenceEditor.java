@@ -90,16 +90,6 @@ public class DuplicateCallPreferenceEditor extends HBox
             GridPane.setConstraints(radioLabel, 1, row);
             mEditorPane.getChildren().add(radioLabel);
 
-            Label warningLabel = new Label("Note: be careful when enabling duplicate call detection by Radio ID " +
-                "because this can produce unintended side-effects.  For example, if you have two talkgroups with " +
-                "talkgroup 1 set to record and talkgroup 2 set to stream and dispatch radio ID 1234 makes a " +
-                "simultaneous call to both talkgroup 1 and talkgroup 2, there is no way to control which call audio " +
-                "(talkgroup 1 or 2) gets flagged as the duplicate call and therefore either the audio for talkgroup 1 " +
-                "doesn't record, or the audio for talkgroup 2 doesn't stream.");
-            warningLabel.setWrapText(true);
-            GridPane.setConstraints(warningLabel, 0, ++row, 2, 1);
-            mEditorPane.getChildren().add(warningLabel);
-
             Separator separator = new Separator();
             GridPane.setHgrow(separator, Priority.ALWAYS);
             GridPane.setConstraints(separator, 0, ++row, 2, 1);
