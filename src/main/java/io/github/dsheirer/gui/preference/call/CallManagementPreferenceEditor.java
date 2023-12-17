@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,16 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference.duplicate;
+package io.github.dsheirer.gui.preference.call;
 
+import io.github.dsheirer.audio.broadcast.PatchGroupStreamingOption;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.duplicate.DuplicateCallDetectionPreference;
+import io.github.dsheirer.preference.duplicate.CallManagementPreference;
 import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
@@ -33,23 +37,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Preference settings for duplicate call audio handling
+ * Preference settings for audio call management for duplicate calls and patch group streaming.
  */
-public class DuplicateCallPreferenceEditor extends HBox
+public class CallManagementPreferenceEditor extends HBox
 {
-    private final static Logger mLog = LoggerFactory.getLogger(DuplicateCallPreferenceEditor.class);
-    private DuplicateCallDetectionPreference mPreference;
+    private final static Logger mLog = LoggerFactory.getLogger(CallManagementPreferenceEditor.class);
+    private CallManagementPreference mPreference;
     private GridPane mEditorPane;
     private ToggleSwitch mDetectDuplicateTalkgroups;
     private ToggleSwitch mDetectDuplicateRadios;
     private ToggleSwitch mSuppressDuplicateListening;
     private ToggleSwitch mSuppressDuplicateRecording;
     private ToggleSwitch mSuppressDuplicateStreaming;
+    private ComboBox<PatchGroupStreamingOption> mPatchGroupStreamingOptionComboBox;
 
     /**
      * Constructs an instance
      */
-    public DuplicateCallPreferenceEditor(UserPreferences userPreferences)
+    public CallManagementPreferenceEditor(UserPreferences userPreferences)
     {
         mPreference = userPreferences.getDuplicateCallDetectionPreference();
 
@@ -134,6 +139,19 @@ public class DuplicateCallPreferenceEditor extends HBox
             streamingLabel.setWrapText(true);
             GridPane.setConstraints(streamingLabel, 1, row);
             mEditorPane.getChildren().add(streamingLabel);
+
+            Separator separator2 = new Separator();
+            GridPane.setHgrow(separator2, Priority.ALWAYS);
+            GridPane.setConstraints(separator2, 0, ++row, 2, 1);
+            mEditorPane.getChildren().add(separator2);
+
+            Label patchGroupLabel = new Label("Patch Group Streaming.  Stream a patch group call as:");
+            patchGroupLabel.setWrapText(true);
+            GridPane.setConstraints(patchGroupLabel, 0, ++row, 2, 1);
+            mEditorPane.getChildren().add(patchGroupLabel);
+
+            GridPane.setConstraints(getPatchGroupStreamingOptionComboBox(), 0, ++row, 2, 1);
+            mEditorPane.getChildren().add(getPatchGroupStreamingOptionComboBox());
         }
 
         return mEditorPane;
@@ -211,5 +229,24 @@ public class DuplicateCallPreferenceEditor extends HBox
         }
 
         return mSuppressDuplicateStreaming;
+    }
+
+    /**
+     * Combo box for presenting the patch group streaming options.
+     * @return combo box.
+     */
+    private ComboBox<PatchGroupStreamingOption> getPatchGroupStreamingOptionComboBox()
+    {
+        if(mPatchGroupStreamingOptionComboBox == null)
+        {
+            ObservableList<PatchGroupStreamingOption> options = FXCollections.observableArrayList();
+            options.addAll(PatchGroupStreamingOption.values());
+            mPatchGroupStreamingOptionComboBox = new ComboBox<>(options);
+            mPatchGroupStreamingOptionComboBox.getSelectionModel().select(mPreference.getPatchGroupStreamingOption());
+            mPatchGroupStreamingOptionComboBox.getSelectionModel().selectedItemProperty()
+                    .addListener((observable, oldValue, newValue) -> mPreference.setPatchGroupStreamingOption(newValue));
+        }
+
+        return mPatchGroupStreamingOptionComboBox;
     }
 }

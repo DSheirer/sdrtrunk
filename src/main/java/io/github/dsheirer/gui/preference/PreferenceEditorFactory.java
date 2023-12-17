@@ -21,9 +21,9 @@ package io.github.dsheirer.gui.preference;
 
 import io.github.dsheirer.gui.preference.application.ApplicationPreferenceEditor;
 import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
+import io.github.dsheirer.gui.preference.call.CallManagementPreferenceEditor;
 import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
-import io.github.dsheirer.gui.preference.duplicate.DuplicateCallPreferenceEditor;
 import io.github.dsheirer.gui.preference.mp3.MP3PreferenceEditor;
 import io.github.dsheirer.gui.preference.playback.PlaybackPreferenceEditor;
 import io.github.dsheirer.gui.preference.record.RecordPreferenceEditor;
@@ -42,8 +42,8 @@ public class PreferenceEditorFactory
         {
             case APPLICATION:
                 return new ApplicationPreferenceEditor(userPreferences);
-            case AUDIO_DUPLICATE_CALL_DETECTION:
-                return new DuplicateCallPreferenceEditor(userPreferences);
+            case AUDIO_CALL_MANAGEMENT:
+                return new CallManagementPreferenceEditor(userPreferences);
             case AUDIO_MP3:
                 return new MP3PreferenceEditor(userPreferences);
             case AUDIO_OUTPUT:
