@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,38 +19,40 @@
 
 package io.github.dsheirer.preference.duplicate;
 
+import io.github.dsheirer.audio.broadcast.PatchGroupStreamingOption;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
+import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.prefs.Preferences;
-
 /**
- * User preferences for duplicate call detection
+ * User preferences for call management
  */
-public class DuplicateCallDetectionPreference extends Preference
+public class CallManagementPreference extends Preference
 {
     private static final String PREFERENCE_KEY_DETECT_DUPLICATE_TALKGROUP = "duplicate.call.detect.talkgroup";
     private static final String PREFERENCE_KEY_DETECT_DUPLICATE_RADIO = "duplicate.call.detect.radio";
     private static final String PREFERENCE_KEY_SUPPRESS_DUPLICATE_PLAYBACK = "suppress.duplicate.audio.playback";
     private static final String PREFERENCE_KEY_SUPPRESS_DUPLICATE_RECORDING = "suppress.duplicate.audio.recording";
     private static final String PREFERENCE_KEY_SUPPRESS_DUPLICATE_STREAMING = "suppress.duplicate.audio.streaming";
+    private static final String PREFERENCE_KEY_PATCHGROUP_STREAMING = "patchgroup.streaming";
 
-    private final static Logger mLog = LoggerFactory.getLogger(DuplicateCallDetectionPreference.class);
-    private Preferences mPreferences = Preferences.userNodeForPackage(DuplicateCallDetectionPreference.class);
+    private final static Logger mLog = LoggerFactory.getLogger(CallManagementPreference.class);
+    private Preferences mPreferences = Preferences.userNodeForPackage(CallManagementPreference.class);
     private Boolean mDuplicateCallDetectionByTalkgroupEnabled;
     private Boolean mDuplicateCallDetectionByRadioEnabled;
     private Boolean mDuplicatePlaybackSuppressionEnabled;
     private Boolean mDuplicateRecordingSuppressionEnabled;
     private Boolean mDuplicateStreamingSuppressionEnabled;
+    private PatchGroupStreamingOption mPatchGroupStreamingOption;
 
     /**
      * Constructs an instance
      * @param updateListener to receive notifications that a preference has been updated
      */
-    public DuplicateCallDetectionPreference(Listener<PreferenceType> updateListener)
+    public CallManagementPreference(Listener<PreferenceType> updateListener)
     {
         super(updateListener);
     }
@@ -182,6 +184,51 @@ public class DuplicateCallDetectionPreference extends Preference
     {
         mPreferences.putBoolean(PREFERENCE_KEY_SUPPRESS_DUPLICATE_STREAMING, enabled);
         mDuplicateStreamingSuppressionEnabled = enabled;
-        notifyPreferenceUpdated();;
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Patch group streaming option preference.
+     * @return option.
+     */
+    public PatchGroupStreamingOption getPatchGroupStreamingOption()
+    {
+        if(mPatchGroupStreamingOption == null)
+        {
+            String option = mPreferences.get(PREFERENCE_KEY_PATCHGROUP_STREAMING, PatchGroupStreamingOption.PATCH_GROUP.name());
+
+            if(option != null)
+            {
+                try
+                {
+                    mPatchGroupStreamingOption = PatchGroupStreamingOption.valueOf(option);
+                }
+                catch(Exception e)
+                {
+                    //Ignore ... we'll use the default value.
+                }
+            }
+
+            if(mPatchGroupStreamingOption == null)
+            {
+                mPatchGroupStreamingOption = PatchGroupStreamingOption.PATCH_GROUP;
+            }
+        }
+
+        return mPatchGroupStreamingOption;
+    }
+
+    /**
+     * Sets the patch group streaming option preference.
+     * @param patchGroupStreamingOption preference
+     */
+    public void setPatchGroupStreamingOption(PatchGroupStreamingOption patchGroupStreamingOption)
+    {
+        if(patchGroupStreamingOption != null)
+        {
+            mPreferences.put(PREFERENCE_KEY_PATCHGROUP_STREAMING, patchGroupStreamingOption.name());
+            mPatchGroupStreamingOption = patchGroupStreamingOption;
+            notifyPreferenceUpdated();
+        }
     }
 }

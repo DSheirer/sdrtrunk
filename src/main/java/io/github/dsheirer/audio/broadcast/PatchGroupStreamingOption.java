@@ -17,33 +17,30 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference;
+package io.github.dsheirer.audio.broadcast;
 
 /**
- * Preference editor tree node enumeration.
+ * Options for streaming management of patch groups.  These options are used when streaming an audio call that is
+ * tagged to a patch group.  The audio will either be streamed once and identified as the patch group, or it will
+ * be streamed multiple times, once for each individual patched talkgroup.
  */
-public enum PreferenceEditorType
+public enum PatchGroupStreamingOption
 {
-    APPLICATION("Application"),
-    CHANNEL_EVENT("Channel Events"),
-    DIRECTORY("Directories"),
-    JMBE_LIBRARY("JMBE Audio Library"),
-    AUDIO_MP3("MP3"),
-    AUDIO_RECORD("Record"),
-    AUDIO_OUTPUT("Output/Tones"),
-    AUDIO_CALL_MANAGEMENT("Call Management"),
-    SOURCE_TUNERS("Tuners"),
-    TALKGROUP_FORMAT("Talkgroup & Radio ID"),
-    VECTOR_CALIBRATION("Vector Calibration"),
-    DEFAULT("Default");
+    PATCH_GROUP("Patch Group"),
+    TALKGROUPS("Individual Talkgroups");
 
     private String mLabel;
 
-    PreferenceEditorType(String label)
+    /**
+     * Constructs an instance
+     * @param label to display
+     */
+    PatchGroupStreamingOption(String label)
     {
         mLabel = label;
     }
 
+    @Override
     public String toString()
     {
         return mLabel;

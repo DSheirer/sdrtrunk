@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +28,9 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.duplicate.DuplicateCallDetectionPreference;
+import io.github.dsheirer.preference.duplicate.CallManagementPreference;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +39,8 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Detects duplicate calls that occur within the same system.  This detector is thread safe for the receive() method.
@@ -52,18 +51,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class DuplicateCallDetector implements Listener<AudioSegment>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DuplicateCallDetector.class);
-    private DuplicateCallDetectionPreference mDuplicateCallDetectionPreference;
+    private CallManagementPreference mCallManagementPreference;
     private Map<String,SystemDuplicateCallDetector> mDetectorMap = new HashMap();
 
     public DuplicateCallDetector(UserPreferences userPreferences)
     {
-        mDuplicateCallDetectionPreference = userPreferences.getDuplicateCallDetectionPreference();
+        mCallManagementPreference = userPreferences.getDuplicateCallDetectionPreference();
     }
 
     @Override
     public void receive(AudioSegment audioSegment)
     {
-        if(mDuplicateCallDetectionPreference.isDuplicateCallDetectionEnabled())
+        if(mCallManagementPreference.isDuplicateCallDetectionEnabled())
         {
             Identifier identifier = audioSegment.getIdentifierCollection()
                 .getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
@@ -137,7 +136,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
          */
         private boolean isDuplicate(AudioSegment segment1, AudioSegment segment2)
         {
-            if(mDuplicateCallDetectionPreference.isDuplicateCallDetectionByTalkgroupEnabled())
+            if(mCallManagementPreference.isDuplicateCallDetectionByTalkgroupEnabled())
             {
                 //Step 1 check for duplicate TO values
                 List<Identifier> to1 = segment1.getIdentifierCollection().getIdentifiers(Role.TO);
@@ -149,7 +148,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                 }
             }
 
-            if(mDuplicateCallDetectionPreference.isDuplicateCallDetectionByRadioEnabled())
+            if(mCallManagementPreference.isDuplicateCallDetectionByRadioEnabled())
             {
                 //Step 2 check for duplicate FROM values
                 List<Identifier> from1 = segment1.getIdentifierCollection().getIdentifiers(Role.FROM);

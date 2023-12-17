@@ -125,7 +125,7 @@ public class MBECallSequenceConverter
 
                 try
                 {
-                    AudioSegmentRecorder.recordWAVE(audioSegment, outputPath);
+                    AudioSegmentRecorder.recordWAVE(audioSegment, outputPath, audioSegment.getIdentifierCollection());
                 }
                 catch(IOException ioe)
                 {
