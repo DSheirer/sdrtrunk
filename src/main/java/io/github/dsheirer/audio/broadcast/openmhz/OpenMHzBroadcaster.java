@@ -54,6 +54,7 @@
  import java.io.BufferedReader;
  import java.io.InputStreamReader;
  import java.io.OutputStreamWriter;
+ import java.net.ConnectException;
  import java.net.URI;
  import java.net.URL;
  import java.net.URLConnection;
@@ -67,6 +68,7 @@
  import java.util.concurrent.LinkedTransferQueue;
  import java.util.concurrent.ScheduledFuture;
  import java.util.concurrent.TimeUnit;
+
 
 
  /**
@@ -115,13 +117,14 @@
          String response = testConnection(getBroadcastConfiguration());
          mLastConnectionAttempt = System.currentTimeMillis();
 
-         /**
-          * OpenMHz API does not currently expose a test method.
-          * TODO: FIX THIS
-          */
-         if(response == "OK")// && response.toLowerCase().startsWith("<head><title>502 bad gateway</title></head>"))
+         if(response == "OK")
          {
              setBroadcastState(BroadcastState.CONNECTED);
+         }
+         else if (response == "No Response")
+         {
+            setBroadcastState(BroadcastState.NO_SERVER);
+            mLog.error("Error connecting to OpenMHz server [Server not found or not reachable]");
          }
          else
          {
@@ -170,8 +173,6 @@
       * Indicates if this broadcaster continues to have successful connections to and transactions with the remote
       * server.  If there is a connectivity or other issue, the broadcast state is set to temporary error and
       * the audio processor thread will persistently invoke this method to attempt a reconnect.
-      *
-      * OpenMHz does not have a test API endpoint, so we look for the incomplete call response.
       */
      private boolean connected()
      {
@@ -183,14 +184,21 @@
              String response = testConnection(getBroadcastConfiguration());
              mLastConnectionAttempt = System.currentTimeMillis();
 
-             if(response != null && response == "200")
+             if(response == "OK")
              {
                  setBroadcastState(BroadcastState.CONNECTED);
+             }
+             else if (response == "No Response")
+             {
+                setBroadcastState(BroadcastState.NO_SERVER);
+                mLog.error("Error connecting to OpenMHz server [Server not found or not reachable]");
              }
              else
              {
                  setBroadcastState(BroadcastState.ERROR);
+                 mLog.error("Error reconnecting to OpenMHz server [" + response + "]");
              }
+
          }
 
          return getBroadcastState() == BroadcastState.CONNECTED;
@@ -565,8 +573,8 @@
 
          try
          {
-             HttpResponse<String> response = httpClient.send(request, responseHandler);
-             String responseBody = response.body();
+            HttpResponse<String> response = httpClient.send(request, responseHandler);
+
              if (response.statusCode() == 200)
              {
                 return "OK";
@@ -583,8 +591,16 @@
              return "No Response";
          }
          catch(Exception e)
-         {
-             return e.getLocalizedMessage();
+         {  
+            Throwable throwableCause = e.getCause();
+
+            if(throwableCause instanceof ConnectException)
+            {
+                return "No Response";
+            }
+
+            mLog.error("Exception connecting to OpenMHz server [" + e.toString() + "]");
+            return "Uknown Exception";
          }
      }
 
