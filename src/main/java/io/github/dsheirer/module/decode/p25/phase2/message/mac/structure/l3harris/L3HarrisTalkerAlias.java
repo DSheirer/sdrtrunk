@@ -78,15 +78,21 @@ public class L3HarrisTalkerAlias extends MacStructure
     {
         if(mAliasIdentifier == null)
         {
-            int length = getLength() * 8 + getOffset();
+            int length = getLength();
 
-            if(length > getMessage().size())
+            if(length > 0)
             {
-                length = getMessage().size();
-            }
+                length *= 8;
+                length += getOffset();
 
-            String alias = new String(getMessage().getSubMessage(ALIAS_START + getOffset(), length).getBytes()).trim();
-            mAliasIdentifier = P25TalkerAliasIdentifier.create(alias);
+                if(length > getMessage().size())
+                {
+                    length = getMessage().size();
+                }
+
+                String alias = new String(getMessage().getSubMessage(ALIAS_START + getOffset(), length).getBytes()).trim();
+                mAliasIdentifier = P25TalkerAliasIdentifier.create(alias);
+            }
         }
 
         return mAliasIdentifier;
