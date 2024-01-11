@@ -27,6 +27,7 @@ import io.github.dsheirer.audio.codec.mbe.MBECallSequence;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
@@ -152,6 +153,10 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
             else if(message instanceof MacMessage)
             {
                 process((MacMessage)message);
+            }
+            else if (message instanceof EncryptionSynchronizationSequence)
+            {
+                processEss((EncryptionSynchronizationSequence)message);
             }
         }
 
@@ -380,6 +385,19 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
             else
             {
                 mLog.warn("Expected push-to-talk structure but found: " + mac.getClass());
+            }
+        }
+
+        private void processEss(EncryptionSynchronizationSequence ess)
+        {
+            if(mCallSequence == null)
+            {
+                mCallSequence = new MBECallSequence(PROTOCOL);
+            }
+            if (ess.isEncrypted())
+            {
+                mCallSequence.setEncrypted(true);
+                mCallSequence.setEncryptionSyncParameters(ess);
             }
         }
     }
