@@ -123,6 +123,8 @@ public class P25P2MessageProcessor implements Listener<IMessage>
                     }
                     else if(timeslot instanceof AbstractVoiceTimeslot)
                     {
+                        mMessageListener.receive(timeslot);
+
                         if(timeslot.getTimeslot() == 0)
                         {
                             mESSProcessor0.process((AbstractVoiceTimeslot)timeslot);
@@ -155,8 +157,6 @@ public class P25P2MessageProcessor implements Listener<IMessage>
                                 mESSProcessor1.reset();
                             }
                         }
-
-                        mMessageListener.receive(timeslot);
 
                     }
                     else
