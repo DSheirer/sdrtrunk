@@ -101,6 +101,23 @@ public class P25P2MessageProcessor implements Listener<IMessage>
                                 mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
                             }
 
+                            switch(macMessage.getMacPduType())
+                            {
+                                case MAC_1_PTT:
+                                case MAC_2_END_PTT:
+                                case MAC_6_HANGTIME:
+                                case MAC_3_IDLE:
+                                    if (timeslot.getTimeslot() == 0)
+                                    {
+                                        mESSProcessor0.reset();
+                                    }
+                                    else
+                                    {
+                                        mESSProcessor1.reset();
+                                    }
+                                    break;
+                            }
+                            
                             mMessageListener.receive(macMessage);
                         }
                     }
