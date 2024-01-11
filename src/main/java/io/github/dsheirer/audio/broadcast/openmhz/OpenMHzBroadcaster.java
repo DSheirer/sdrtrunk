@@ -191,7 +191,7 @@
              else if (response == "No Response")
              {
                 setBroadcastState(BroadcastState.NO_SERVER);
-                mLog.error("Error connecting to OpenMHz server [Server not found or not reachable]");
+                mLog.error("Error reconnecting to OpenMHz server [Server not found or not reachable]");
              }
              else
              {
