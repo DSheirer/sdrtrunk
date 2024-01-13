@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.dmr.message.data.mbc;
 
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.data.header.MBCHeader;
@@ -34,13 +35,27 @@ public class MBCAssembler
     private MBCHeader mTS2Header;
     private List<MBCContinuationBlock> mTS1ContinuationBlocks = new ArrayList<>();
     private List<MBCContinuationBlock> mTS2ContinuationBlocks = new ArrayList<>();
+    private boolean mIgnoreCrcChecksums;
 
     /**
      * Constructs an instance
      */
-    public MBCAssembler()
+    public MBCAssembler(boolean ignoreCrcChecksums)
     {
+        mIgnoreCrcChecksums = ignoreCrcChecksums;
     }
+
+    /**
+     * Indicates if the message is valid or if the Ignore CRC Checksums feature is enabled.
+     * @param message to check
+     * @return true if ignore CRC checksums or if the message is valid.
+     */
+    private boolean isValid(IMessage message)
+    {
+        return mIgnoreCrcChecksums || message.isValid();
+    }
+
+
 
     /**
      * Processes the MBC header
@@ -48,7 +63,7 @@ public class MBCAssembler
      */
     public void process(MBCHeader header)
     {
-        if(header != null && header.isValid())
+        if(header != null && isValid(header))
         {
             reset(header.getTimeslot());
 

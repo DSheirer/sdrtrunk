@@ -66,6 +66,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasComp
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaGroupVoiceChannelUser;
@@ -143,6 +144,16 @@ public class DMRDecoderState extends TimeslotDecoderState
     }
 
     /**
+     * Indicates if the message is valid or if the Ignore CRC Checksums feature is enabled.
+     * @param message to check
+     * @return true if ignore CRC checksums or if the message is valid, meaning the message has passed CRC check.
+     */
+    private boolean isValid(IMessage message)
+    {
+        return mIgnoreCRCChecksums || message.isValid();
+    }
+
+    /**
      * Indicates if this decoder state has an (optional) traffic channel manager.
      */
     private boolean hasTrafficChannelManager()
@@ -206,21 +217,21 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         if(message.getTimeslot() == getTimeslot())
         {
-            if(message instanceof VoiceMessage)
+            if(message instanceof VoiceMessage voice)
             {
-                processVoice((VoiceMessage)message);
+                processVoice(voice);
             }
-            else if(message instanceof DataMessage)
+            else if(message instanceof DataMessage data)
             {
-                processData((DataMessage)message);
+                processData(data);
             }
-            else if((message.isValid() || mIgnoreCRCChecksums) && message instanceof LCMessage)
+            else if(isValid(message) && message instanceof LCMessage lcMessage)
             {
-                processLinkControl((LCMessage)message, false);
+                processLinkControl(lcMessage, false);
             }
-            else if(message.isValid() && message instanceof DMRPacketMessage)
+            else if(isValid(message) && message instanceof DMRPacketMessage packet)
             {
-                processPacket((DMRPacketMessage)message);
+                processPacket(packet);
             }
             else if(message instanceof UDTShortMessageService sms)
             {
@@ -232,16 +243,15 @@ public class DMRDecoderState extends TimeslotDecoderState
             }
         }
         //SLCO messages on timeslot 0 to catch capacity plus rest channel events
-        else if((message.isValid() || mIgnoreCRCChecksums) && message.getTimeslot() == 0 && message instanceof LCMessage)
+        else if(isValid(message) && message.getTimeslot() == 0 && message instanceof LCMessage lcMessage)
         {
-            processLinkControl((LCMessage)message, false);
+            processLinkControl(lcMessage, false);
         }
 
         //Pass the message to the network configuration monitor, if this decoder state has a non-null instance
-        if(mNetworkConfigurationMonitor != null && (message.isValid() || mIgnoreCRCChecksums) &&
-            message instanceof DMRMessage)
+        if(mNetworkConfigurationMonitor != null && isValid(message) && message instanceof DMRMessage dmrMessage)
         {
-            mNetworkConfigurationMonitor.process((DMRMessage)message);
+            mNetworkConfigurationMonitor.process(dmrMessage);
         }
     }
 
@@ -503,7 +513,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         //Process the link control message to get the identifiers
         LCMessage lc = header.getLCMessage();
 
-        if(lc.isValid())
+        if(isValid(lc))
         {
             processLinkControl(lc, false);
         }
@@ -520,15 +530,15 @@ public class DMRDecoderState extends TimeslotDecoderState
         switch(message.getSlotType().getDataType())
         {
             case CSBK:
-                if((message.isValid() || mIgnoreCRCChecksums) && message instanceof CSBKMessage)
+                if(isValid(message) && message instanceof CSBKMessage csbk)
                 {
-                    processCSBK((CSBKMessage)message);
+                    processCSBK(csbk);
                 }
                 break;
             case VOICE_HEADER:
-                if(message instanceof HeaderMessage)
+                if(message instanceof HeaderMessage header)
                 {
-                    processVoiceHeader((HeaderMessage)message);
+                    processVoiceHeader(header);
                 }
                 break;
             case USB_DATA:
@@ -539,9 +549,9 @@ public class DMRDecoderState extends TimeslotDecoderState
             case MBC_ENC_HEADER:
             case DATA_ENC_HEADER:
             case CHANNEL_CONTROL_ENC_HEADER:
-                if(message instanceof HeaderMessage)
+                if(message instanceof HeaderMessage header)
                 {
-                    processHeader((HeaderMessage)message);
+                    processHeader(header);
                 }
                 break;
             case SLOT_IDLE:
@@ -579,7 +589,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
         LCMessage lcMessage = terminator.getLCMessage();
 
-        if(lcMessage.isValid())
+        if(isValid(lcMessage))
         {
             processLinkControl(lcMessage, true);
         }
@@ -592,7 +602,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         LCMessage lcMessage = voiceHeader.getLCMessage();
 
-        if(lcMessage.isValid())
+        if(isValid(lcMessage))
         {
             processLinkControl(lcMessage, false);
         }
@@ -1130,6 +1140,23 @@ public class DMRDecoderState extends TimeslotDecoderState
                         ServiceOptions serviceOptions = cpgvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
                             DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                    }
+                }
+                break;
+            case FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER:
+                if(message instanceof CapacityMaxVoiceChannelUser cmvcu)
+                {
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(cmvcu.getTalkgroup());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = cmvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;

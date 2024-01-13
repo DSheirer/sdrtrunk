@@ -17,34 +17,40 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.grant;
+package io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
+import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
+import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
-import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Channel Grant - Voice - Talkgroup
+ * Motorola Capacity Max - Group Voice Channel Update (Opcode 33 / 0x21)
+ *
+ * Likely incomplete implementation.
  */
-public class TalkgroupVoiceChannelGrant extends ChannelGrant
+public class CapacityMaxGroupVoiceChannelUpdate extends CSBKMessage implements ITimeslotFrequencyReceiver
 {
-    private static final int EMERGENCY_FLAG = 30;
+    private static final int[] CHANNEL_NUMBER = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    private static final int[] TIMESLOT = new int[]{28}; //Logical guess - not seeing it set in the example Tier3 recording
 
+    private static final int[] TALKGROUP = new int[]{64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
+    private TalkgroupIdentifier mTalkgroup;
+    private DMRTier3Channel mChannel;
     private List<Identifier> mIdentifiers;
-    private RadioIdentifier mSourceRadio;
-    private TalkgroupIdentifier mDestinationTalkgroup;
 
     /**
-     * Constructs a single-block CSBK instance
+     * Constructs an instance
      *
      * @param syncPattern for the CSBK
      * @param message bits
@@ -53,26 +59,9 @@ public class TalkgroupVoiceChannelGrant extends ChannelGrant
      * @param timestamp
      * @param timeslot
      */
-    public TalkgroupVoiceChannelGrant(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
+    public CapacityMaxGroupVoiceChannelUpdate(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
     {
         super(syncPattern, message, cach, slotType, timestamp, timeslot);
-    }
-
-    /**
-     * Constructs a multi-block MBC instance
-     *
-     * @param syncPattern for the CSBK
-     * @param message bits
-     * @param cach for the DMR burst
-     * @param slotType for this message
-     * @param timestamp
-     * @param timeslot
-     * @param multiBlock containing absolute frequency parameters
-     */
-    public TalkgroupVoiceChannelGrant(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach,
-                                      SlotType slotType, long timestamp, int timeslot, MBCContinuationBlock multiBlock)
-    {
-        super(syncPattern, message, cach, slotType, timestamp, timeslot, multiBlock);
     }
 
     @Override
@@ -86,62 +75,67 @@ public class TalkgroupVoiceChannelGrant extends ChannelGrant
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-
         if(hasRAS())
         {
             sb.append(" RAS:").append(getBPTCReservedBits());
         }
 
-        if(isEmergency())
-        {
-            sb.append(" EMERGENCY");
-        }
-
-        if(isEncrypted())
-        {
-            sb.append(" ENCRYPTED");
-        }
-
-        sb.append(" TALKGROUP VOICE CHANNEL GRANT FM:").append(getSourceRadio());
-        sb.append(" TO:").append(getDestinationTalkgroup());
-        sb.append(" ").append(getChannel());
+        sb.append(" CSBK CAP-MAX GROUP VOICE CHANNEL UPDATE TALKGROUP:").append(getTalkgroup());
+        sb.append(" CHANNEL:").append(getChannel());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 
     /**
-     * Indicates if the emergency flag is set
+     * Talkgroup that is active on the channel.
      */
-    public boolean isEmergency()
+    public TalkgroupIdentifier getTalkgroup()
     {
-        return getMessage().get(EMERGENCY_FLAG);
+        if(mTalkgroup == null)
+        {
+            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(TALKGROUP));
+        }
+
+        return mTalkgroup;
     }
 
     /**
-     * Source radio identifier
-     * @return
+     * Channel the talkgroup is using.
+     * @return channel.
      */
-    public RadioIdentifier getSourceRadio()
+    public DMRTier3Channel getChannel()
     {
-        if(mSourceRadio == null)
+        if(mChannel == null)
         {
-            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE));
+            mChannel = new DMRTier3Channel(getMessage().getInt(CHANNEL_NUMBER), getChannelTimeslot());
         }
 
-        return mSourceRadio;
+        return mChannel;
     }
 
     /**
-     * Destination radio identifier
+     * Timeslot
      */
-    public TalkgroupIdentifier getDestinationTalkgroup()
+    private int getChannelTimeslot()
     {
-        if(mDestinationTalkgroup == null)
-        {
-            mDestinationTalkgroup = DMRTalkgroup.create(getMessage().getInt(DESTINATION));
-        }
+        return getMessage().getInt(TIMESLOT) + 1;
+    }
 
-        return mDestinationTalkgroup;
+    /**
+     * Assigns a timeslot frequency map for the DMR channel
+     *
+     * @param timeslotFrequencies that match the logical timeslots
+     */
+    @Override
+    public void apply(List<TimeslotFrequency> timeslotFrequencies)
+    {
+        getChannel().apply(timeslotFrequencies);
+    }
+
+    @Override
+    public int[] getLogicalChannelNumbers()
+    {
+        return getChannel().getLogicalChannelNumbers();
     }
 
     @Override
@@ -150,9 +144,8 @@ public class TalkgroupVoiceChannelGrant extends ChannelGrant
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getTalkgroup());
             mIdentifiers.add(getChannel());
-            mIdentifiers.add(getSourceRadio());
-            mIdentifiers.add(getDestinationTalkgroup());
         }
 
         return mIdentifiers;
