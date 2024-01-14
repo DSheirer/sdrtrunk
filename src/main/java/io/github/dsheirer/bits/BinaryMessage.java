@@ -307,8 +307,8 @@ public class BinaryMessage extends BitSet
 
     /**
      * Overrides the parent method which returns a BitSet so that we can return a BinaryMessage
-     * @param from
-     * @param to
+     * @param from inclusive
+     * @param to exclusive
      * @return
      */
     @Override
@@ -1198,9 +1198,22 @@ public class BinaryMessage extends BitSet
     {
         byte[] bytes = new byte[characterCount];
 
+        int index;
         for(int x = 0; x < characterCount; x++)
         {
-            bytes[x] = getByte(CHARACTER_7_BIT, x * 7 + offset);
+            index = x * 7 + offset;
+
+            if(index == 0)
+            {
+                bytes[x] = getByte(CHARACTER_8_BIT, index);
+                bytes[x] = (byte)((bytes[x] >> 1) & 0x7F);
+            }
+            else
+            {
+                index--;
+                bytes[x] = getByte(CHARACTER_8_BIT, index);
+                bytes[x] &= (byte)0x7F;  //mask off the high bit since we have to parse it as an 8-bit byte.
+            }
         }
 
         return new String(bytes);

@@ -88,7 +88,8 @@ public abstract class ShortLCMessage extends LCMessage implements IMessage
     {
         Vendor vendor = null;
 
-        if(binaryMessage.get(VENDOR_FLAG))
+        //If the first bit is set, consider this a vendor variant, unless the opcode is 10 for Connect Plus Control Channel.
+        if(binaryMessage.get(VENDOR_FLAG) && binaryMessage.getInt(OPCODE) != 10)
         {
             vendor = Vendor.fromValue(binaryMessage.getInt(VENDOR));
         }

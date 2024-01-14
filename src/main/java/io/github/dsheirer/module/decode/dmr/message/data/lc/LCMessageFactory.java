@@ -37,6 +37,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnknownFullLCMe
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraTerminator;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAlias;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAliasContinuation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
@@ -140,6 +142,12 @@ public class LCMessageFactory
                 break;
             case FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER:
                 flc = new CapacityMaxVoiceChannelUser(message, timestamp, timeslot);
+                break;
+            case FULL_CAPACITY_MAX_TALKER_ALIAS:
+                flc = new CapacityMaxTalkerAlias(message, timestamp, timeslot);
+                break;
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
+                flc = new CapacityMaxTalkerAliasContinuation(message, timestamp, timeslot);
                 break;
             case FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER:
                 flc = new CapacityPlusEncryptedVoiceChannelUser(message, timestamp, timeslot);

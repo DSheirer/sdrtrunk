@@ -52,6 +52,12 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
         mTimeslot = timeslot;
     }
 
+    /**
+     * Creates a channel of the same type, but for the alternate timeslot.
+     * @return sister timeslot channel
+     */
+    public abstract DMRChannel getSisterTimeslot();
+
     @Override
     public Protocol getProtocol()
     {
@@ -158,6 +164,15 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     public void setTimeslotFrequency(TimeslotFrequency timeslotFrequency)
     {
         mTimeslotFrequency = timeslotFrequency;
+    }
+
+    /**
+     * TimeslotFrequency for this channel.
+     * @return timeslot frequency instance, or null.
+     */
+    public TimeslotFrequency getTimeslotFrequency()
+    {
+        return mTimeslotFrequency;
     }
 
     @Override

@@ -149,6 +149,15 @@ public enum DecodeEventType
     }
 
     /**
+     * Indicates if this is a call event.
+     * @return true if this is a call event type.
+     */
+    public boolean isCallEvent()
+    {
+        return VOICE_CALLS.contains(this) || VOICE_CALLS_ENCRYPTED.contains(this) || DATA_CALLS.contains(this);
+    }
+
+    /**
      * Label or pretty value for the element
      * @return label
      */

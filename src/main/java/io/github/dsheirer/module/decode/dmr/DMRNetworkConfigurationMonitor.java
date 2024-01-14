@@ -59,6 +59,8 @@ public class DMRNetworkConfigurationMonitor
     private static final String BRAND_TIER_3_TRUNKING = "Tier III Trunking";
     private static final String BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING = "Capacity Max Tier III Trunking";
     private static final String BRAND_HYTERA_TIER_3_TRUNKING = "Hytera Tier III Trunking";
+    private static final String MODE_CAPACITY_MAX_OPEN_SYSTEM = "Open System";
+    private static final String MODE_CAPACITY_MAX_ADVANTAGE = "Advantage";
 
     private List<SiteIdentifier> mNeighborSites = new ArrayList<>();
     private Map<Integer,AdjacentSiteInformation> mTier3NeighborSites = new HashMap<>();
@@ -67,6 +69,7 @@ public class DMRNetworkConfigurationMonitor
     private DMRSite mDMRSite;
     private Model mTier3Model;
     private String mBrand;
+    private String mMode;
     private Integer mColorCode;
     private DMRChannel mCurrentChannel;
     private Channel mChannel;
@@ -94,13 +97,13 @@ public class DMRNetworkConfigurationMonitor
      */
     public void process(DMRMessage message)
     {
-        if(message instanceof CSBKMessage)
+        if(message instanceof CSBKMessage csbk)
         {
-            process((CSBKMessage)message);
+            process(csbk);
         }
-        else if(message instanceof LCMessage)
+        else if(message instanceof LCMessage lc)
         {
-            process((LCMessage)message);
+            process(lc);
         }
     }
 
@@ -172,6 +175,12 @@ public class DMRNetworkConfigurationMonitor
                     }
                 }
                 break;
+            case STANDARD_ANNOUNCEMENT:
+                if(csbk instanceof AdjacentSiteInformation neighbor)
+                {
+                    mTier3NeighborSites.put(neighbor.getNeighborSystemIdentityCode().getSite().getValue(), neighbor);
+                }
+                break;
             case HYTERA_08_ANNOUNCEMENT:
             case HYTERA_68_ANNOUNCEMENT:
                 if(csbk instanceof HyteraAnnouncement)
@@ -240,6 +249,12 @@ public class DMRNetworkConfigurationMonitor
                     }
                 }
                 break;
+            case MOTOROLA_CAPMAX_CHANNEL_UPDATE_ADVANTAGE_MODE:
+                mMode = MODE_CAPACITY_MAX_ADVANTAGE;
+                break;
+            case MOTOROLA_CAPMAX_CHANNEL_UPDATE_OPEN_MODE:
+                mMode = MODE_CAPACITY_MAX_OPEN_SYSTEM;
+                break;
             case MOTOROLA_CONPLUS_NEIGHBOR_REPORT:
                 if(mNeighborSites.isEmpty() && csbk instanceof ConnectPlusNeighborReport)
                 {
@@ -297,6 +312,11 @@ public class DMRNetworkConfigurationMonitor
         //DMR System Brand Name
         sb.append("\n\nBrand:").append((mBrand == null ? BRAND_STANDARD : mBrand));
 
+        if(mMode != null)
+        {
+            sb.append("\nConfigured Mode:").append(mMode);
+        }
+
         if(mDMRNetwork != null)
         {
             sb.append("\nNetwork:").append(mDMRNetwork);
@@ -347,6 +367,11 @@ public class DMRNetworkConfigurationMonitor
             {
                 sb.append("\tNeighbor: ").append(neighbor).append("\n");
             }
+        }
+
+        if(!mTier3NeighborSites.isEmpty())
+        {
+            sb.append("\nTier III Neighbor Sites\n");
 
             for(Map.Entry<Integer,AdjacentSiteInformation> neighbor: mTier3NeighborSites.entrySet())
             {
@@ -354,7 +379,16 @@ public class DMRNetworkConfigurationMonitor
                 sb.append("\tNeighbor: ").append("Network:").append(site.getNeighborSystemIdentityCode().getNetwork());
                 sb.append(" Site:").append(site.getNeighborSystemIdentityCode().getSite());
                 sb.append(" ").append(site.getNeighborSystemIdentityCode().getModel());
-                sb.append(" ").append(site.getNeighborChannel()).append("\n");
+
+                DMRChannel channel = site.getNeighborChannel();
+                sb.append(" ").append(channel);
+
+                if(channel.getDownlinkFrequency() > 0)
+                {
+                    sb.append(" ").append(channel.getDownlinkFrequency());
+                }
+
+                sb.append("\n");
             }
         }
 

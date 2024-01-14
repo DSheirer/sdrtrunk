@@ -16,53 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.identifier;
+
+package io.github.dsheirer.identifier.alias;
+
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.string.StringIdentifier;
 
 /**
- * Identifier form.  Indicates the type of identifier.
+ * Talker alias (alternate/second) value provided by the network for the current talker (ie FROM).
  */
-public enum Form
+public abstract class TalkerAlias2Identifier extends StringIdentifier
 {
-    ALIAS_LIST,
-    ARS_DEVICE,
-    ARS_USER,
-    ARS_PASSWORD,
-    CALL_PROGRESS_TONE,
-    CHANNEL,
-    CHANNEL_DESCRIPTOR,
-    CHANNEL_NAME,
-    CHANNEL_FREQUENCY,
-    DCS,
-    DECODER_TYPE,
-    DTMF,
-    ENCRYPTION_KEY,
-    ESN,
-    IPV4_ADDRESS,
-    KNOX_TONE,
-    LOCATION,
-    LOCATION_REGISTRATION_AREA,
-    LOJACK,
-    NEIGHBOR_SITE,
-    NETWORK,
-    NETWORK_ACCESS_CODE,
-    PATCH_GROUP,
-    RADIO,
-    RF_SUBSYSTEM,
-    SCRAMBLE_PARAMETERS,
-    SHORT_DATA_MESSAGE,
-    SITE,
-    STATE,
-    SYSTEM,
-    TALKER_ALIAS,
-    TALKER_ALIAS_2,
-    TALKGROUP,
-    TELEPHONE_NUMBER,
-    TONE,
-    UDP_PORT,
-    UNIT_IDENTIFIER,
-    UNIT_STATUS,
-    USER_STATUS,
-    UNIQUE_ID,
-    WACN,
-    ANY;
+    /**
+     * Constructs an instance.
+     * @param value of the string/alias identifier
+     */
+    public TalkerAlias2Identifier(String value)
+    {
+        super(value, IdentifierClass.USER, Form.TALKER_ALIAS_2, Role.FROM);
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return getValue() != null && !getValue().isEmpty();
+    }
 }
