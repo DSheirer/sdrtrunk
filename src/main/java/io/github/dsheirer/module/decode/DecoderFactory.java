@@ -47,7 +47,10 @@ import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
+import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.message.filter.DmrMessageFilterSet;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
 import io.github.dsheirer.module.decode.fleetsync2.FleetsyncMessageFilter;
@@ -416,22 +419,50 @@ public class DecoderFactory
 
         DMRTrafficChannelManager dmrTrafficChannelManager = null;
 
+        if(trafficChannelManager instanceof DMRTrafficChannelManager)
+        {
+            dmrTrafficChannelManager = (DMRTrafficChannelManager)trafficChannelManager;
+        }
+        else
+        {
+            dmrTrafficChannelManager = new DMRTrafficChannelManager(channel);
+        }
+
+        //Only register the traffic channel manager as a module if this is the parent control channel.
         if(channel.isStandardChannel())
         {
-            if(trafficChannelManager instanceof DMRTrafficChannelManager)
-            {
-                dmrTrafficChannelManager = (DMRTrafficChannelManager)trafficChannelManager;
-            }
-            else
-            {
-                dmrTrafficChannelManager = new DMRTrafficChannelManager(channel);
-            }
-
             modules.add(dmrTrafficChannelManager);
         }
 
-        modules.add(new DMRDecoderState(channel, 1, dmrTrafficChannelManager));
-        modules.add(new DMRDecoderState(channel, 2, dmrTrafficChannelManager));
+        DMRDecoderState state1 = new DMRDecoderState(channel, 1, dmrTrafficChannelManager);
+        DMRDecoderState state2 = new DMRDecoderState(channel, 2, dmrTrafficChannelManager);
+
+        if(decodeConfig.hasChannelGrantEvent())
+        {
+            DecodeEvent event = decodeConfig.getChannelGrantEvent();
+
+            if(decodeConfig.getChannelGrantEvent().getTimeslot() == 1)
+            {
+                state1.setCurrentCallEvent(event);
+
+                if(event.getChannelDescriptor() instanceof DMRChannel dmrChannel)
+                {
+                    state2.setCurrentChannel(dmrChannel.getSisterTimeslot());
+                }
+            }
+            else
+            {
+                state2.setCurrentCallEvent(event);
+
+                if(event.getChannelDescriptor() instanceof DMRChannel dmrChannel)
+                {
+                    state1.setCurrentChannel(dmrChannel.getSisterTimeslot());
+                }
+            }
+        }
+
+        modules.add(state1);
+        modules.add(state2);
         modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 2));
 

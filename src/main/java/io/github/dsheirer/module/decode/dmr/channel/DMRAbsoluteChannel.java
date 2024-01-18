@@ -74,4 +74,12 @@ public class DMRAbsoluteChannel extends DMRChannel
 
         return sb.toString();
     }
+
+    @Override
+    public DMRChannel getSisterTimeslot()
+    {
+        DMRAbsoluteChannel other = new DMRAbsoluteChannel(getChannelNumber(), getTimeslot() == 1 ? 2 : 1,
+                getDownlinkFrequency(), getUplinkFrequency());
+        return other;
+    }
 }

@@ -241,7 +241,8 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                         }
                         else
                         {
-                            String value = id.getValue().replace(" TS0", "").replace(" TS1", "");
+                            String value = id.getValue().replace(" TS1", "")
+                                    .replace(" TS2", "");
                             return value + " TS:" + channelMetadata.getTimeslot();
                         }
                     }

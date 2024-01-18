@@ -95,7 +95,7 @@ public abstract class DecoderState extends AbstractDecoderState
     /**
      * Sets the current channel descriptor
      */
-    protected void setCurrentChannel(IChannelDescriptor channel)
+    public void setCurrentChannel(IChannelDescriptor channel)
     {
         mCurrentChannel = channel;
     }

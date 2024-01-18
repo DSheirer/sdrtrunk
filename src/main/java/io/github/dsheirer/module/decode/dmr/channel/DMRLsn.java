@@ -69,4 +69,25 @@ public class DMRLsn extends DMRChannel
         return ((getChannelNumber() - 1) * 2) + getTimeslot();
     }
 
+    /**
+     * Creates a channel of the same type, but for the alternate timeslot.
+     * @return sister timeslot channel
+     */
+    public DMRChannel getSisterTimeslot()
+    {
+        int lsn;
+
+        if(getTimeslot() == 1)
+        {
+            lsn = getLsn() + 1;
+        }
+        else
+        {
+            lsn = getLsn() - 1;
+        }
+
+        DMRLsn other = new DMRLsn(lsn);
+        other.setTimeslotFrequency(getTimeslotFrequency());
+        return other;
+    }
 }

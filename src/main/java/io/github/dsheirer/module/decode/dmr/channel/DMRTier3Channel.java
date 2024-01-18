@@ -55,4 +55,12 @@ public class DMRTier3Channel extends DMRChannel
         sb.append(" CHANID:").append(getChannelId());
         return sb.toString();
     }
+
+    @Override
+    public DMRChannel getSisterTimeslot()
+    {
+        DMRTier3Channel other = new DMRTier3Channel(getChannelNumber(), getTimeslot() == 1 ? 2 : 1);
+        other.setTimeslotFrequency(getTimeslotFrequency());
+        return other;
+    }
 }
