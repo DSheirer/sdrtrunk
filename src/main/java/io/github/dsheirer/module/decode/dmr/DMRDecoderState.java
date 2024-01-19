@@ -1361,10 +1361,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
+                long previous = mCurrentFrequency;
                 mCurrentFrequency = event.getFrequency();
                 if(hasTrafficChannelManager())
                 {
-                    mTrafficChannelManager.setCurrentControlFrequency(mCurrentFrequency, mChannel);
+                    mTrafficChannelManager.setCurrentControlFrequency(previous, mCurrentFrequency, mChannel);
                 }
                 break;
             default:

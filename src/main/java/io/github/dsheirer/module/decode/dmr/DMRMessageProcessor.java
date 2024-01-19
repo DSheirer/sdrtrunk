@@ -25,6 +25,7 @@ import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
+import io.github.dsheirer.module.decode.dmr.message.data.DataMessageWithLinkControl;
 import io.github.dsheirer.module.decode.dmr.message.data.IDLEMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
@@ -48,12 +49,13 @@ import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceSuperFrameProcessor;
 import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Processes DMR messages and performs re-assembly of link control fragments
@@ -152,6 +154,12 @@ public class DMRMessageProcessor implements Listener<IMessage>
             {
                 mSuperFrameProcessor2.reset();
             }
+        }
+
+        //Process data messages carrying a link control payload so that the LC payload can be processed/enriched
+        if(message instanceof DataMessageWithLinkControl linkControlCarrier)
+        {
+            receive(linkControlCarrier.getLCMessage());
         }
 
         //Enrich messages that carry DMR Logical Channel Numbers with LCN to frequency mappings

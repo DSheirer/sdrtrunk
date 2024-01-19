@@ -134,12 +134,38 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     /**
      * Sets the current parent control channel frequency so that channel grants for the current frequency do not
      * produce an additional traffic channel allocation.
-     * @param currentControlFrequency for current control channel.
+     * @param previousControlFrequency for the current control channel (to remove from allocated channels)
+     * @param currentControlFrequency for current control channel (to add to allocated channels)
      * @param channel for the current control channel
      */
-    public void setCurrentControlFrequency(long currentControlFrequency, Channel channel)
+    public void setCurrentControlFrequency(long previousControlFrequency, long currentControlFrequency, Channel channel)
     {
-        mAllocatedChannelFrequencyMap.put(currentControlFrequency, channel);
+        if(previousControlFrequency == currentControlFrequency)
+        {
+            return;
+        }
+
+        mLock.lock();
+
+        try
+        {
+            Channel existing = mAllocatedChannelFrequencyMap.get(previousControlFrequency);
+
+            //Only remove the channel if it is non-null and it matches the current control channel.
+            if(channel.equals(existing))
+            {
+                //Unlock the frequency in the channel rotation monitor
+                getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(previousControlFrequency));
+                mAllocatedChannelFrequencyMap.remove(previousControlFrequency);
+            }
+
+            mAllocatedChannelFrequencyMap.put(currentControlFrequency, channel);
+            getInterModuleEventBus().post(FrequencyLockChangeRequest.lock(currentControlFrequency));
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
