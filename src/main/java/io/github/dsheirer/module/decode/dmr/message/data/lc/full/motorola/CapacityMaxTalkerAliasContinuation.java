@@ -1,9 +1,27 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.alias.DmrTalkerAlias2Identifier;
-
+import io.github.dsheirer.identifier.alias.DmrTalkerAliasIdentifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +32,7 @@ public class CapacityMaxTalkerAliasContinuation extends CapacityPlusVoiceChannel
 {
     private static final int ALIAS_START = 16;
     private static final int ALIAS_END = ALIAS_START + (7 * 8);
-    private DmrTalkerAlias2Identifier mTalkerAliasIdentifier;
+    private DmrTalkerAliasIdentifier mTalkerAliasIdentifier;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -56,12 +74,12 @@ public class CapacityMaxTalkerAliasContinuation extends CapacityPlusVoiceChannel
      * Talker alias identifier
      * @return identifier
      */
-    public DmrTalkerAlias2Identifier getTalkerAliasIdentifier()
+    public DmrTalkerAliasIdentifier getTalkerAliasIdentifier()
     {
         if(mTalkerAliasIdentifier == null)
         {
             String alias = new String(getMessage().get(ALIAS_START, ALIAS_END).getBytes()).trim();
-            mTalkerAliasIdentifier = DmrTalkerAlias2Identifier.create(alias);
+            mTalkerAliasIdentifier = DmrTalkerAliasIdentifier.create(alias);
         }
 
         return mTalkerAliasIdentifier;

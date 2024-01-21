@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -273,19 +273,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public long getFrequency()
     {
-        long frequency;
-
-        try
-        {
-            getFrequencyControllerLock().lock();
-            frequency = mFrequencyController.getFrequency();
-        }
-        finally
-        {
-            getFrequencyControllerLock().unlock();
-        }
-
-        return frequency;
+        return mFrequencyController.getFrequency();
     }
 
     @Override

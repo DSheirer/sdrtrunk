@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,13 +49,12 @@ import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceSuperFrameProcessor;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Processes DMR messages and performs re-assembly of link control fragments
@@ -159,30 +158,11 @@ public class DMRMessageProcessor implements Listener<IMessage>
         //Process data messages carrying a link control payload so that the LC payload can be processed/enriched
         if(message instanceof DataMessageWithLinkControl linkControlCarrier)
         {
-            receive(linkControlCarrier.getLCMessage());
+            enrich(linkControlCarrier.getLCMessage());
         }
 
         //Enrich messages that carry DMR Logical Channel Numbers with LCN to frequency mappings
-        if(message instanceof ITimeslotFrequencyReceiver)
-        {
-            ITimeslotFrequencyReceiver receiver = (ITimeslotFrequencyReceiver)message;
-            int[] lcns = receiver.getLogicalChannelNumbers();
-
-            List<TimeslotFrequency> timeslotFrequencies = new ArrayList<>();
-
-            for(int lcn: lcns)
-            {
-                if(mTimeslotFrequencyMap.containsKey(lcn))
-                {
-                    timeslotFrequencies.add(mTimeslotFrequencyMap.get(lcn));
-                }
-            }
-
-            if(!timeslotFrequencies.isEmpty())
-            {
-                receiver.apply(timeslotFrequencies);
-            }
-        }
+        enrich(message);
 
         //Now that the message has been (potentially) enriched, dispatch it to the modules
         dispatch(message);
@@ -275,6 +255,34 @@ public class DMRMessageProcessor implements Listener<IMessage>
         if(message instanceof FullLCMessage flc && flc.getOpcode().isTalkerAliasOpcode() && isValid(message))
         {
             dispatch(mTalkerAliasAssembler.process(flc));
+        }
+    }
+
+    /**
+     * Enrich messages that carry DMR Logical Channel Numbers with LCN to frequency mappings
+     * @param message to be enriched
+     */
+    private void enrich(IMessage message)
+    {
+        if(message instanceof ITimeslotFrequencyReceiver)
+        {
+            ITimeslotFrequencyReceiver receiver = (ITimeslotFrequencyReceiver)message;
+            int[] lcns = receiver.getLogicalChannelNumbers();
+
+            List<TimeslotFrequency> timeslotFrequencies = new ArrayList<>();
+
+            for(int lcn: lcns)
+            {
+                if(mTimeslotFrequencyMap.containsKey(lcn))
+                {
+                    timeslotFrequencies.add(mTimeslotFrequencyMap.get(lcn));
+                }
+            }
+
+            if(!timeslotFrequencies.isEmpty())
+            {
+                receiver.apply(timeslotFrequencies);
+            }
         }
     }
 

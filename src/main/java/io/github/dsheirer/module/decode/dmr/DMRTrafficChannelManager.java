@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.rotation.DisableChannelRotationMonitorRequest;
 import io.github.dsheirer.source.tuner.channel.rotation.FrequencyLockChangeRequest;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -65,7 +64,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -267,7 +265,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
                     //Dispatch request to persistently start the original channel with the rest channel frequency and reuse
                     //this traffic channel manager in the new processing chain.
-                    ChannelStartProcessingRequest request = new ChannelStartProcessingRequest(channel, this);
+                    ChannelStartProcessingRequest request = new ChannelStartProcessingRequest(channel, restChannel,
+                            null, this);
                     request.setPersistentAttempt(true);
                     request.setChildDecodeEventHistory(mTransientDecodeEventHistory);
 
