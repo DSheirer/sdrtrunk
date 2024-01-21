@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioModule;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
@@ -48,7 +49,8 @@ import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
+import io.github.dsheirer.module.decode.dmr.channel.DmrRestLsn;
 import io.github.dsheirer.module.decode.dmr.message.filter.DmrMessageFilterSet;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
@@ -123,9 +125,11 @@ public class DecoderFactory
      * @return list of configured decoders
      */
     public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
-                                          UserPreferences userPreferences, TrafficChannelManager trafficChannelManager)
+                                          UserPreferences userPreferences, TrafficChannelManager trafficChannelManager,
+                                          IChannelDescriptor channelDescriptor)
     {
-        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences, trafficChannelManager);
+        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences,
+                trafficChannelManager, channelDescriptor);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
@@ -138,10 +142,12 @@ public class DecoderFactory
      * @param aliasModel for alias lookups
      * @param userPreferences instance
      * @param trafficChannelManager optional traffic channel manager to use
+     * @param channelDescriptor to preload into the decoder state as the current channel.
      * @return list of modules to use for a processing chain
      */
     public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
-                                                 UserPreferences userPreferences, TrafficChannelManager trafficChannelManager)
+                                                 UserPreferences userPreferences, TrafficChannelManager trafficChannelManager,
+                                                 IChannelDescriptor channelDescriptor)
     {
         List<Module> modules = new ArrayList<Module>();
 
@@ -160,7 +166,7 @@ public class DecoderFactory
                 break;
             case DMR:
                 processDMR(channel, userPreferences, modules, aliasList, (DecodeConfigDMR)decodeConfig,
-                    trafficChannelManager);
+                    trafficChannelManager, channelDescriptor);
                 break;
             case NBFM:
                 processNBFM(channel, modules, aliasList, decodeConfig);
@@ -413,7 +419,7 @@ public class DecoderFactory
      */
     private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules,
                                    AliasList aliasList, DecodeConfigDMR decodeConfig,
-                                   TrafficChannelManager trafficChannelManager)
+                                   TrafficChannelManager trafficChannelManager, IChannelDescriptor channelDescriptor)
     {
         modules.add(new DMRDecoder(decodeConfig));
 
@@ -436,6 +442,32 @@ public class DecoderFactory
 
         DMRDecoderState state1 = new DMRDecoderState(channel, 1, dmrTrafficChannelManager);
         DMRDecoderState state2 = new DMRDecoderState(channel, 2, dmrTrafficChannelManager);
+
+        //Register the states with each other so that they can pass Cap+ site status messaging to resolve current channel
+        state1.setSisterDecoderState(state2);
+        state2.setSisterDecoderState(state1);
+
+        //If an LSN is provided, apply it to both of the decoder states.
+        if(channelDescriptor instanceof DMRLsn lsn)
+        {
+            //If this is a REST descriptor, change it to a standard LSN descriptor.
+            if(channelDescriptor instanceof DmrRestLsn rest)
+            {
+                lsn = new DMRLsn(rest.getLsn());
+                lsn.setTimeslotFrequency(rest.getTimeslotFrequency());
+            }
+
+            if(lsn.getTimeslot() == 1)
+            {
+                state1.setCurrentChannel(lsn);
+                state2.setCurrentChannel(lsn.getSisterTimeslot());
+            }
+            else
+            {
+                state1.setCurrentChannel(lsn.getSisterTimeslot());
+                state2.setCurrentChannel(lsn);
+            }
+        }
 
         if(decodeConfig.hasChannelGrantEvent())
         {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,19 +33,23 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.alias.DmrTalkerAliasIdentifier;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.event.DMRDecodeEvent;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraTrafficChannelTalkerStatus;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAdvantageModeVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxOpenModeVoiceChannelUpdate;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAdvantageModeVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusNeighbors;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSiteStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusDataChannelGrant;
@@ -97,11 +101,11 @@ import io.github.dsheirer.module.decode.ip.mototrbo.xcmp.XCMPPacket;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
 import io.github.dsheirer.util.PacketUtil;
+import java.util.List;
+import java.util.Map;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Decoder state for an DMR channel.  Maintains the call/data/idle state of the channel and produces events by
@@ -120,6 +124,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     private DecodeEvent mCurrentCallEvent;
     private long mCurrentFrequency;
     private boolean mIgnoreCRCChecksums;
+    private DMRDecoderState mSisterDecoderState;
 
     /**
      * Constructs an DMR decoder state with an optional traffic channel manager.
@@ -145,6 +150,54 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             mIgnoreCRCChecksums = ((DecodeConfigDMR)channel.getDecodeConfiguration()).getIgnoreCRCChecksums();
         }
+    }
+
+    /**
+     * Registers a reference to the decoder state that is processing the sisten timeslot.  If this state is covering
+     * timeslot 1, then the argument will be the state covering timeslot 2, and vice-versa.
+     */
+    public void setSisterDecoderState(DMRDecoderState state)
+    {
+        mSisterDecoderState = state;
+    }
+
+    /**
+     * Processes a map of active talkgroups received from the sister timeslot decoder state so that we can recover
+     * the current channel identifier to enable populating call events with accurate current channel info.
+     *
+     * This is used for Capacity Plus systems to recover the current channel.
+     *
+     * @param idMap to process
+     * @param lsnMap to process
+     */
+    public DMRChannel processActiveTalkgroups(Map<Integer, IntegerIdentifier> idMap, Map<Integer, DMRLsn> lsnMap)
+    {
+        if(mCurrentCallEvent != null)
+        {
+            List<Identifier> toIds = mCurrentCallEvent.getIdentifierCollection().getIdentifiers(Role.TO);
+
+            if(toIds.size() >= 1)
+            {
+                Identifier to = toIds.get(0);
+
+                if(to instanceof TalkgroupIdentifier talkgroup)
+                {
+                    Integer tgValue = talkgroup.getValue();
+
+                    for(Map.Entry<Integer,IntegerIdentifier> entry: idMap.entrySet())
+                    {
+                        if(tgValue != null && tgValue.equals(entry.getValue().getValue()))
+                        {
+                            DMRLsn lsn = lsnMap.get(entry.getKey());
+                            setCurrentChannel(lsn);
+                            return lsn;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -788,6 +841,20 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                     //Update state and rest channel
                     updateRestChannel(cpss.getRestChannel());
+
+                    //If the sister timeslot hasn't identified the current channel, attempt to identify the channel
+                    //from the current call activity map.
+                    if(cpss.hasVoiceTalkgroups() && mSisterDecoderState != null && mSisterDecoderState.getCurrentChannel() == null)
+                    {
+                        DMRChannel sisterChannel = mSisterDecoderState
+                                .processActiveTalkgroups(cpss.getActiveIdentifierMap(), cpss.getActiveLsnMap());
+
+                        //If the returned channel is non-null, set our own channel
+                        if(getCurrentChannel() == null && sisterChannel != null)
+                        {
+                            setCurrentChannel(sisterChannel.getSisterTimeslot());
+                        }
+                    }
                 }
                 break;
             case MOTOROLA_CONPLUS_NEIGHBOR_REPORT:
@@ -1098,7 +1165,22 @@ public class DMRDecoderState extends TimeslotDecoderState
             case FULL_CAPACITY_MAX_TALKER_ALIAS:
                 if(message instanceof CapacityMaxTalkerAlias alias)
                 {
-                    getIdentifierCollection().update(alias.getTalkerAliasIdentifier());
+                    //If we have a talker alias identifier, append this value.
+                    Identifier existing = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
+
+                    if(existing instanceof DmrTalkerAliasIdentifier talkerAlias &&
+                            !talkerAlias.equals(alias.getTalkerAliasIdentifier()) &&
+                            !talkerAlias.getValue().contains(alias.getTalkerAliasIdentifier().getValue()))
+                    {
+                        //Concatenate the existing talker alias fragment with the base alias value.
+                        DmrTalkerAliasIdentifier updated = DmrTalkerAliasIdentifier
+                                .create(alias.getTalkerAliasIdentifier().getValue() + talkerAlias.getValue());
+                        getIdentifierCollection().update(updated);
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(alias.getTalkerAliasIdentifier());
+                    }
 
                     if(mCurrentCallEvent != null)
                     {
@@ -1109,7 +1191,23 @@ public class DMRDecoderState extends TimeslotDecoderState
             case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
                 if(message instanceof CapacityMaxTalkerAliasContinuation alias)
                 {
-                    getIdentifierCollection().update(alias.getTalkerAliasIdentifier());
+                    //If we have a talker alias identifier, append this value.
+                    Identifier existing = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
+
+                    if(existing instanceof DmrTalkerAliasIdentifier talkerAlias &&
+                            !talkerAlias.equals(alias.getTalkerAliasIdentifier()) &&
+                            !talkerAlias.getValue().contains(alias.getTalkerAliasIdentifier().getValue()))
+                    {
+                        //Concatenate the existing talker alias value with the updated continuation fragment.
+                        DmrTalkerAliasIdentifier updated = DmrTalkerAliasIdentifier.create(talkerAlias.getValue() +
+                                alias.getTalkerAliasIdentifier().getValue());
+                        getIdentifierCollection().update(updated);
+                    }
+                    else
+                    {
+                        //Temporarily place the continuation fragment alias into the identifier collection.
+                        getIdentifierCollection().update(alias.getTalkerAliasIdentifier());
+                    }
 
                     if(mCurrentCallEvent != null)
                     {
@@ -1335,6 +1433,8 @@ public class DMRDecoderState extends TimeslotDecoderState
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
         }
+
+        getIdentifierCollection().remove(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
     }
 
     @Override
