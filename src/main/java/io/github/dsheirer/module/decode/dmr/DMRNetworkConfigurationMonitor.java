@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRNetwork;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAdjacentSiteInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAnnouncement;
@@ -36,6 +37,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcem
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ConnectPlusControlChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ConnectPlusTrafficChannel;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ControlChannelSystemParameters;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.TrafficChannelSystemParameters;
 import io.github.dsheirer.module.decode.dmr.message.type.Model;
 import io.github.dsheirer.module.decode.dmr.message.type.SystemIdentityCode;
 import java.util.ArrayList;
@@ -61,6 +64,9 @@ public class DMRNetworkConfigurationMonitor
     private static final String BRAND_HYTERA_TIER_3_TRUNKING = "Hytera Tier III Trunking";
     private static final String MODE_CAPACITY_MAX_OPEN_SYSTEM = "Open System";
     private static final String MODE_CAPACITY_MAX_ADVANTAGE = "Advantage";
+    private static final String CHANNEL_TYPE_CONTROL = "Control";
+    private static final String CHANNEL_TYPE_TRAFFIC = "Traffic";
+    private static final String UNKNOWN = "Unknown";
 
     private List<SiteIdentifier> mNeighborSites = new ArrayList<>();
     private Map<Integer,AdjacentSiteInformation> mTier3NeighborSites = new HashMap<>();
@@ -70,7 +76,9 @@ public class DMRNetworkConfigurationMonitor
     private Model mTier3Model;
     private String mBrand;
     private String mMode;
-    private Integer mColorCode;
+    private String mChannelType;
+    private Integer mColorCodeTS1;
+    private Integer mColorCodeTS2;
     private DMRChannel mCurrentChannel;
     private Channel mChannel;
 
@@ -105,6 +113,27 @@ public class DMRNetworkConfigurationMonitor
         {
             process(lc);
         }
+
+        if(message instanceof DataMessage dm)
+        {
+            process(dm);
+        }
+    }
+
+    /**
+     * Processes data messages to capture the color code for each timeslot.
+     * @param dm data message
+     */
+    public void process(DataMessage dm)
+    {
+        if(dm.getTimeslot() == 1)
+        {
+            mColorCodeTS1 = dm.getSlotType().getColorCode();
+        }
+        else if(dm.getTimeslot() == 2)
+        {
+            mColorCodeTS2 = dm.getSlotType().getColorCode();
+        }
     }
 
     /**
@@ -114,30 +143,59 @@ public class DMRNetworkConfigurationMonitor
     {
         switch(linkControl.getOpcode())
         {
+            case FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
+                mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
+                break;
+
             case SHORT_CONNECT_PLUS_CONTROL_CHANNEL:
-                if((mDMRNetwork == null || mDMRSite == null) && linkControl instanceof ConnectPlusControlChannel)
+                if(linkControl instanceof ConnectPlusControlChannel cpcc)
                 {
-                    ConnectPlusControlChannel cpcc = (ConnectPlusControlChannel)linkControl;
                     mDMRNetwork = cpcc.getNetwork();
                     mDMRSite = cpcc.getSite();
-                }
-                if(mBrand == null)
-                {
+                    mChannelType = CHANNEL_TYPE_CONTROL;
                     mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
                 }
                 break;
             case SHORT_CONNECT_PLUS_TRAFFIC_CHANNEL:
-                if((mDMRNetwork == null || mDMRSite == null) && linkControl instanceof ConnectPlusTrafficChannel)
+                if(linkControl instanceof ConnectPlusTrafficChannel cptc)
                 {
-                    ConnectPlusTrafficChannel cptc = (ConnectPlusTrafficChannel)linkControl;
                     mDMRNetwork = cptc.getNetwork();
                     mDMRSite = cptc.getSite();
-                }
-                if(mBrand == null)
-                {
+                    mChannelType = CHANNEL_TYPE_TRAFFIC;
                     mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
                 }
                 break;
+            case SHORT_STANDARD_CONTROL_CHANNEL_SYSTEM_PARAMETERS:
+                if(linkControl instanceof ControlChannelSystemParameters cc)
+                {
+                    SystemIdentityCode sic = cc.getSystemIdentityCode();
+                    mTier3Model = sic.getModel();
+                    mDMRNetwork = sic.getNetwork();
+                    mDMRSite = sic.getSite();
+                    mChannelType = CHANNEL_TYPE_CONTROL;
+
+                    if(mBrand == null)
+                    {
+                        mBrand = BRAND_TIER_3_TRUNKING;
+                    }
+                }
+                break;
+            case SHORT_STANDARD_TRAFFIC_CHANNEL_SYSTEM_PARAMETERS:
+                if(linkControl instanceof TrafficChannelSystemParameters tc)
+                {
+                    SystemIdentityCode sic = tc.getSystemIdentityCode();
+                    mTier3Model = sic.getModel();
+                    mDMRNetwork = sic.getNetwork();
+                    mDMRSite = sic.getSite();
+                    mChannelType = CHANNEL_TYPE_TRAFFIC;
+                }
+
+                if(mBrand == null)
+                {
+                    mBrand = BRAND_TIER_3_TRUNKING;
+                }
         }
     }
 
@@ -205,10 +263,7 @@ public class DMRNetworkConfigurationMonitor
                         mTier3Model = ha.getSystemIdentityCode().getModel();
                     }
 
-                    if(mBrand == null || mBrand != BRAND_HYTERA_TIER_3_TRUNKING)
-                    {
-                        mBrand = BRAND_HYTERA_TIER_3_TRUNKING;
-                    }
+                    mBrand = BRAND_HYTERA_TIER_3_TRUNKING;
                 }
                 if(csbk instanceof HyteraAdjacentSiteInformation)
                 {
@@ -243,16 +298,16 @@ public class DMRNetworkConfigurationMonitor
                         }
                     }
 
-                    if(mBrand == null || mBrand != BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING)
-                    {
-                        mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
-                    }
+                    mChannelType = CHANNEL_TYPE_CONTROL;
+                    mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
                 }
                 break;
             case MOTOROLA_CAPMAX_CHANNEL_UPDATE_ADVANTAGE_MODE:
+                mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
                 mMode = MODE_CAPACITY_MAX_ADVANTAGE;
                 break;
             case MOTOROLA_CAPMAX_CHANNEL_UPDATE_OPEN_MODE:
+                mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
                 mMode = MODE_CAPACITY_MAX_OPEN_SYSTEM;
                 break;
             case MOTOROLA_CONPLUS_NEIGHBOR_REPORT:
@@ -261,10 +316,7 @@ public class DMRNetworkConfigurationMonitor
                     ConnectPlusNeighborReport cpnr = (ConnectPlusNeighborReport)csbk;
                     mNeighborSites.addAll(cpnr.getNeighbors());
                 }
-                if(mBrand == null || mBrand != BRAND_MOTOROLA_CONNECT_PLUS)
-                {
-                    mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
-                }
+                mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
                 break;
             case MOTOROLA_CONPLUS_VOICE_CHANNEL_USER:
                 if(csbk instanceof ConnectPlusVoiceChannelUser)
@@ -272,16 +324,8 @@ public class DMRNetworkConfigurationMonitor
                     DMRChannel channel = ((ConnectPlusVoiceChannelUser)csbk).getChannel();
                     addDmrChannel(channel);
                 }
-                if(mBrand == null)
-                {
-                    mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
-                }
+                mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
                 break;
-        }
-
-        if(mColorCode == null)
-        {
-            mColorCode = csbk.getSlotType().getColorCode();
         }
     }
 
@@ -293,38 +337,31 @@ public class DMRNetworkConfigurationMonitor
         mObservedChannelMap.put(dmrChannel.getValue(), dmrChannel);
     }
 
-    public void reset()
-    {
-        mColorCode = null;
-        mDMRNetwork = null;
-        mDMRSite = null;
-        mNeighborSites.clear();
-        mTier3NeighborSites.clear();
-        mObservedChannelMap.clear();
-    }
-
     public String getActivitySummary()
     {
         StringBuilder sb = new StringBuilder();
 
         sb.append("Activity Summary - Decoder: DMR ");
 
-        //DMR System Brand Name
-        sb.append("\n\nBrand:").append((mBrand == null ? BRAND_STANDARD : mBrand));
+        sb.append("\n\nBrand: ").append((mBrand == null ? BRAND_STANDARD : mBrand));
 
         if(mMode != null)
         {
-            sb.append("\nConfigured Mode:").append(mMode);
+            sb.append("\nConfigured Mode: ").append(mMode);
         }
+
+        sb.append("\nChannel Type: ").append((mChannelType != null) ? mChannelType : UNKNOWN);
+        sb.append("\nColor Code Timeslot 1: ").append(mColorCodeTS1 != null ? mColorCodeTS1 : UNKNOWN);
+        sb.append("\nColor Code Timeslot 2: ").append(mColorCodeTS2 != null ? mColorCodeTS2 : UNKNOWN);
 
         if(mDMRNetwork != null)
         {
-            sb.append("\nNetwork:").append(mDMRNetwork);
+            sb.append("\nNetwork: ").append(mDMRNetwork);
         }
 
         if(mDMRSite != null)
         {
-            sb.append("\nSite:").append(mDMRSite);
+            sb.append("\nSite: ").append(mDMRSite);
         }
 
         if(mTier3Model != null)

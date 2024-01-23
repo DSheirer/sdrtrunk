@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ public enum LCOpcode
 
     FULL_MOTOROLA_GROUP_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 0, "GROUP VOICE CHANNEL USER"),
     FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 4, "WAN GROUP VOICE CHANNEL USER"),
+
     FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 16, "CAPMAX GROUP VOICE CHANNEL USER"),
     FULL_CAPACITY_MAX_TALKER_ALIAS(Vendor.MOTOROLA_CAPACITY_PLUS, true, 20, "CAPMAX TALKER ALIAS"),
     FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION(Vendor.MOTOROLA_CAPACITY_PLUS, true, 21, "CAPMAX TALKER ALIAS CONTINUATION"),

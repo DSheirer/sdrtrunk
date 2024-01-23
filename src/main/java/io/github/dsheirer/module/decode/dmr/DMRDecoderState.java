@@ -1455,10 +1455,6 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             case REQUEST_RESET:
                 resetState();
-                if(mNetworkConfigurationMonitor != null)
-                {
-                    mNetworkConfigurationMonitor.reset();
-                }
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 long previous = mCurrentFrequency;
