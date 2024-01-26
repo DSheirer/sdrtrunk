@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference.playback;
+package io.github.dsheirer.gui.preference.audio.playback;
 
 import io.github.dsheirer.dsp.oscillator.IRealOscillator;
 import io.github.dsheirer.dsp.oscillator.ScalarRealOscillator;

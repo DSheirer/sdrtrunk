@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,13 +27,20 @@ import io.github.dsheirer.audio.call.CallRepository;
 import io.github.dsheirer.audio.call.ICallEventListener;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.audio.playbackfx.AudioPlaybackController;
+import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.retention.AgeUnits;
+import io.github.dsheirer.preference.retention.RetentionPolicy;
+import io.github.dsheirer.preference.retention.RetentionPreference;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,9 +51,13 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -56,6 +67,8 @@ import org.springframework.stereotype.Component;
 public class AudioManager implements Listener<AudioSegment>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AudioManager.class);
+    private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LOGGER);
+    private static final long GIGABYTES = 1024l * 1024l * 1024l;
 
     @Resource
     private AudioPlaybackManager mAudioPlaybackManager;
@@ -71,8 +84,10 @@ public class AudioManager implements Listener<AudioSegment>
     private UserPreferences mUserPreferences;
     private CallRepository mCallRepository;
     private List<ICallEventListener> mCallListeners = new CopyOnWriteArrayList<>();
-    private ActiveAudioSegmentProcessor mProcessor = new ActiveAudioSegmentProcessor();
-    private ScheduledFuture<?> mProcessorFuture;
+    private ActiveAudioSegmentProcessor mAudioSegmentProcessor = new ActiveAudioSegmentProcessor();
+    private CallAgeOffProcessor mCallAgeOffProcessor = new CallAgeOffProcessor();
+    private ScheduledFuture<?> mAudioSegmentProcessorFuture;
+    private ScheduledFuture<?> mCallRetentionProcessorFuture;
 
     /**
      * Constructs an instance
@@ -86,7 +101,12 @@ public class AudioManager implements Listener<AudioSegment>
     @PostConstruct
     public void postConstruct()
     {
-        mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mProcessor, 100, 500, TimeUnit.MILLISECONDS);
+        LOGGER.info("Post constructing ......");
+        mAudioSegmentProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mAudioSegmentProcessor, 100,
+                500, TimeUnit.MILLISECONDS);
+        //Delay first run until 1-minute after startup.
+        mCallRetentionProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mCallAgeOffProcessor,
+                30, 30, TimeUnit.SECONDS);
 
         //Register call event listeners
         add(mAudioRecordingManager);
@@ -97,13 +117,20 @@ public class AudioManager implements Listener<AudioSegment>
     @PreDestroy
     public void preDestroy()
     {
-        if(mProcessorFuture != null)
-        {
-            mProcessorFuture.cancel(true);
-            mProcessorFuture = null;
-        }
         LOGGER.info("AudioManager shutting down");
-        mProcessor.shutdown();
+
+        if(mAudioSegmentProcessorFuture != null)
+        {
+            mAudioSegmentProcessorFuture.cancel(true);
+            mAudioSegmentProcessorFuture = null;
+        }
+        mAudioSegmentProcessor.shutdown();
+
+        if(mCallRetentionProcessorFuture != null)
+        {
+            mCallRetentionProcessorFuture.cancel(true);
+            mCallRetentionProcessorFuture = null;
+        }
     }
 
     /**
@@ -183,8 +210,8 @@ public class AudioManager implements Listener<AudioSegment>
         //Let the duplicate call detector process the segment first to detect duplicates.
         audioSegment.addLease(mDuplicateCallDetector.getClass().toString());
         mDuplicateCallDetector.receive(audioSegment);
-        audioSegment.addLease(mProcessor.getClass().toString());
-        mProcessor.add(audioSegment);
+        audioSegment.addLease(mAudioSegmentProcessor.getClass().toString());
+        mAudioSegmentProcessor.add(audioSegment);
 
         //TODO: remove for cleanup
 //        audioSegment.addLease(mAudioPlaybackManager.getClass().toString());
@@ -311,6 +338,165 @@ public class AudioManager implements Listener<AudioSegment>
                 }
 
                 mProcessing.set(false);
+            }
+        }
+    }
+
+    /**
+     * Call event retention and age-off processor.
+     */
+    public class CallAgeOffProcessor implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            RetentionPreference retentionPreference = mUserPreferences.getRetentionPreference();
+            RetentionPolicy policy = retentionPreference.getRetentionPolicy();
+
+            try
+            {
+                if(policy.isAgePolicy())
+                {
+                    AgeUnits ageUnits = retentionPreference.getAgeUnits();
+                    int ageValue = retentionPreference.getAgeValue();
+                    long threshold = System.currentTimeMillis() - ageUnits.getDuration(ageValue);
+                    PageRequest requestPage1 = PageRequest.of(0, 100);
+                    long start = 0;
+                    Page<Call> page = mCallRepository.findCallsByEventTimeBetweenOrderByEventTime(start, threshold, requestPage1);
+
+                    while(page.getTotalElements() > 0)
+                    {
+                        List<Call> calls = page.get().collect(Collectors.toList());
+
+                        for(Call call: calls)
+                        {
+                            //Keep adjusting the start time to 1 millisecond more than the current call so that
+                            //if there's an error deleting any given call, we don't get stuck processing it every time
+                            start = call.getEventTime() + 1;
+
+                            //Only evaluate calls that are complete
+                            if(call.isComplete())
+                            {
+                                boolean deleteFailed = false;
+                                File file = new File(call.getFile());
+                                if(file.exists())
+                                {
+                                    try
+                                    {
+                                        File parentDirectory = file.getParentFile();
+                                        Files.delete(file.toPath());
+
+                                        //Delete parent directory if it is now empty
+                                        if(parentDirectory.exists() && parentDirectory.isDirectory())
+                                        {
+                                            if(!Files.list(parentDirectory.toPath()).findFirst().isPresent())
+                                            {
+                                                Files.delete(parentDirectory.toPath());
+                                            }
+                                        }
+                                    }
+                                    catch(Exception io)
+                                    {
+                                        LOGGING_SUPPRESSOR.error("Call Event Delete", 5,
+                                                "Error deleting call event recording: " + call.getFile() +
+                                                        " - " + io.getLocalizedMessage());
+                                        deleteFailed = true;
+                                    }
+                                }
+
+                                if(!deleteFailed)
+                                {
+                                    mCallRepository.delete(call);
+                                    broadcastDeleted(call);
+                                }
+                            }
+                        }
+
+                        page = mCallRepository.findCallsByEventTimeBetweenOrderByEventTime(start, threshold, requestPage1);
+                    }
+                }
+
+                if(policy.isSizePolicy())
+                {
+                    Path callsDirectory = mUserPreferences.getDirectoryPreference().getDirectoryCalls();
+
+                    if(Files.exists(callsDirectory))
+                    {
+                        long currentSize = FileUtils.sizeOfDirectory(callsDirectory.toFile());
+                        long objectiveSize = retentionPreference.getObjectiveDirectorySize();
+
+                        if(currentSize >= objectiveSize)
+                        {
+                            long start = 0;
+                            long now = System.currentTimeMillis();
+                            PageRequest pageable = PageRequest.of(0, 100);
+                            Page<Call> page = mCallRepository.findCallsByEventTimeBetweenOrderByEventTime(start, now, pageable);
+
+                            while(currentSize >= objectiveSize && page.getTotalElements() > 0)
+                            {
+                                List<Call> calls = page.get().collect(Collectors.toList());
+
+                                for(Call call: calls)
+                                {
+                                    //Keep adjusting the start time to 1 millisecond more than the current call so that
+                                    //if there's an error deleting any given call, we don't get stuck processing it every time
+                                    start = call.getEventTime() + 1;
+
+                                    if(currentSize < objectiveSize)
+                                    {
+                                        start = now - 1;
+                                        break;
+                                    }
+
+                                    //Only evaluate calls that are complete
+                                    if(call.isComplete())
+                                    {
+                                        boolean deleteFailed = false;
+                                        File file = new File(call.getFile());
+                                        if(file.exists())
+                                        {
+                                            try
+                                            {
+                                                File parentDirectory = file.getParentFile();
+                                                long fileSize = FileUtils.sizeOf(file);
+                                                Files.delete(file.toPath());
+                                                currentSize -= fileSize;
+
+                                                //Delete parent directory if it is now empty
+                                                if(parentDirectory.exists() && parentDirectory.isDirectory())
+                                                {
+                                                    if(!Files.list(parentDirectory.toPath()).findFirst().isPresent())
+                                                    {
+                                                        Files.delete(parentDirectory.toPath());
+                                                    }
+                                                }
+                                            }
+                                            catch(Exception io)
+                                            {
+                                                LOGGING_SUPPRESSOR.error("Call Event Delete", 5,
+                                                        "Error deleting call event recording: " + call.getFile() +
+                                                                " - " + io.getLocalizedMessage());
+                                                deleteFailed = true;
+                                            }
+                                        }
+
+                                        if(!deleteFailed)
+                                        {
+                                            mCallRepository.delete(call);
+                                            broadcastDeleted(call);
+                                        }
+                                    }
+                                }
+
+                                page = mCallRepository.findCallsByEventTimeBetweenOrderByEventTime(start, now, pageable);
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Throwable t)
+            {
+                LOGGER.error("Unexpected error while deleting call events using retention policy: " + policy, t);
             }
         }
     }

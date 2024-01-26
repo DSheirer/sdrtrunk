@@ -172,8 +172,8 @@ public class UserPreferencesEditor extends BorderPane
             applicationItem.setExpanded(true);
 
             TreeItem<String> audioItem = new TreeItem<>("Audio");
-            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_CALL_MANAGEMENT));
-            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_MP3));
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_CALL_RETENTION));
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_DUPLICATE_MANAGEMENT));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_PLAYBACK));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_RECORD));
             treeRoot.getChildren().add(audioItem);

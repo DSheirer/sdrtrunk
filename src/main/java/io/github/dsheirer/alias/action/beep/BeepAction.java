@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,19 +24,19 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.action.AliasActionType;
 import io.github.dsheirer.alias.action.RecurringAction;
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.gui.preference.playback.ToneFrequency;
-import io.github.dsheirer.gui.preference.playback.ToneUtil;
-import io.github.dsheirer.gui.preference.playback.ToneVolume;
+import io.github.dsheirer.gui.preference.audio.playback.ToneFrequency;
+import io.github.dsheirer.gui.preference.audio.playback.ToneUtil;
+import io.github.dsheirer.gui.preference.audio.playback.ToneVolume;
 import io.github.dsheirer.message.IMessage;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 
 public class BeepAction extends RecurringAction
 {

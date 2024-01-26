@@ -87,8 +87,9 @@ public class TableViewColumnController implements ListChangeListener
     public void reset()
     {
         apply(mDefaultTableState);
+
         //Clear the preference since we're at default state
-        mPreferences.put(mPreferencePrefix + PREFERENCE_KEY_TABLE_STATE, null);
+        mPreferences.remove(mPreferencePrefix + PREFERENCE_KEY_TABLE_STATE);
     }
 
     /**
@@ -131,6 +132,12 @@ public class TableViewColumnController implements ListChangeListener
                 {
                     LOG.warn("Unable to find matching table column for id [" + columnState.id() + "]");
                 }
+            }
+
+            //If the table names got screwed up in the table state, just add the columns all back in.
+            if(mTableView.getColumns().isEmpty())
+            {
+                mTableView.getColumns().addAll(columns);
             }
 
             //Clear and restore the sort ordering

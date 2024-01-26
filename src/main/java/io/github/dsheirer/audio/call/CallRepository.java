@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,27 +29,35 @@ import org.springframework.data.jpa.repository.Query;
  */
 public interface CallRepository extends JpaRepository<Call,Long>
 {
-    @Query("SELECT t FROM Call t WHERE t.mToId like ?1 OR t.mToAlias like ?1 OR t.mFromId like ?1 OR t.mFromAlias like ?1")
+    @Query("SELECT t FROM Call t WHERE t.toId like ?1 OR t.toAlias like ?1 OR t.fromId like ?1 OR t.fromAlias like ?1")
     Page<Call> findByAnyIdWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mToId like ?1 OR t.mToAlias like ?1")
+    @Query("SELECT t FROM Call t WHERE t.toId like ?1 OR t.toAlias like ?1")
     Page<Call> findByToWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mFromId like ?1 OR t.mFromAlias like ?1")
+    @Query("SELECT t FROM Call t WHERE t.fromId like ?1 OR t.fromAlias like ?1")
     Page<Call> findByFromWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mCallType like ?1")
+    @Query("SELECT t FROM Call t WHERE t.callType like ?1")
     Page<Call> findByCallTypeWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mChannel like ?1")
+    @Query("SELECT t FROM Call t WHERE t.channel like ?1")
     Page<Call> findByChannelWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mProtocol like ?1")
+    @Query("SELECT t FROM Call t WHERE t.protocol like ?1")
     Page<Call> findByProtocolWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mSite like ?1")
+    @Query("SELECT t FROM Call t WHERE t.site like ?1")
     Page<Call> findBySiteWithPagination(String value, Pageable pageable);
 
-    @Query("SELECT t FROM Call t WHERE t.mSystem like ?1")
+    @Query("SELECT t FROM Call t WHERE t.system like ?1")
     Page<Call> findBySystemWithPagination(String value, Pageable pageable);
+
+    /**
+     * Find all calls between the timestamp range arguments.
+     * @param start timestamp
+     * @param end timestamp
+     * @return pageable set of calls.
+     */
+    Page<Call> findCallsByEventTimeBetweenOrderByEventTime(long start, long end, Pageable pageable);
 }

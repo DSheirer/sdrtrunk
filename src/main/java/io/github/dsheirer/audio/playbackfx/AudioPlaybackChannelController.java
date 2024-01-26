@@ -32,6 +32,7 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.media.Media;
+import javafx.scene.media.MediaException;
 import javafx.scene.media.MediaPlayer;
 
 /**
@@ -41,6 +42,7 @@ public class AudioPlaybackChannelController implements ChangeListener<MediaPlaye
 {
     private static final String EMPTY = new String("EMPTY");
     private static final String LOADED = new String("LOADED");
+    private static final String NO_FILE = new String("NO FILE");
 
     private ObjectProperty<MediaPlayer> mMediaPlayer = new SimpleObjectProperty<>();
     private StringProperty mFrequency = new SimpleStringProperty();
@@ -233,18 +235,31 @@ public class AudioPlaybackChannelController implements ChangeListener<MediaPlaye
     {
         if(mCall.getFile() != null)
         {
-            //Create a new media player
-            mMediaPlayer.set(new MediaPlayer(new Media(new File(mCall.getFile()).toURI().toString())));
-            //Register status listener
-            mMediaPlayer.get().statusProperty().addListener(this);
-            //Register runnable for end-of-media event
-            mMediaPlayer.get().onEndOfMediaProperty().set(mEndOfMediaRunnable);
-            //Set audio channel balance
-            mMediaPlayer.get().balanceProperty().set(mBalance);
-            //Set the media player to auto-start replay
-            mMediaPlayer.get().setAutoPlay(true);
+            File file = new File(mCall.getFile());
 
-            mMediaPlayerStatus.set(LOADED);
+            if(file.exists())
+            {
+                try
+                {
+                    MediaPlayer mediaPlayer = new MediaPlayer(new Media(file.toURI().toString()));
+                    //Create a new media player
+                    mMediaPlayer.set(mediaPlayer);
+                    //Register status listener
+                    mMediaPlayer.get().statusProperty().addListener(this);
+                    //Register runnable for end-of-media event
+                    mMediaPlayer.get().onEndOfMediaProperty().set(mEndOfMediaRunnable);
+                    //Set audio channel balance
+                    mMediaPlayer.get().balanceProperty().set(mBalance);
+                    //Set the media player to auto-start replay
+                    mMediaPlayer.get().setAutoPlay(true);
+                    mMediaPlayerStatus.set(LOADED);
+                }
+                catch(MediaException me)
+                {
+                    mMediaPlayer.set(null);
+                    mMediaPlayerStatus.set(NO_FILE);
+                }
+            }
 
             //Register a listener on the call's last updated property for update notifications.
             mCall.lastUpdatedProperty().addListener(mCallUpdateListener);

@@ -20,9 +20,9 @@
 package io.github.dsheirer.preference.playback;
 
 import io.github.dsheirer.audio.playbackfx.PlaybackView;
-import io.github.dsheirer.gui.preference.playback.ToneFrequency;
-import io.github.dsheirer.gui.preference.playback.ToneUtil;
-import io.github.dsheirer.gui.preference.playback.ToneVolume;
+import io.github.dsheirer.gui.preference.audio.playback.ToneFrequency;
+import io.github.dsheirer.gui.preference.audio.playback.ToneUtil;
+import io.github.dsheirer.gui.preference.audio.playback.ToneVolume;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;

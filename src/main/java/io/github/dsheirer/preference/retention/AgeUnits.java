@@ -17,26 +17,33 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.preference.retention;
+
+import java.time.Duration;
 
 /**
- * Types of preferences
+ * Age units
  */
-public enum PreferenceType
+public enum AgeUnits
 {
-    APPLICATION,
-    CALIBRATION,
-    DECODE_EVENT,
-    DIRECTORY,
-    DUPLICATE_CALL_DETECTION,
-    JMBE_LIBRARY,
-    MP3,
-    MULTI_FREQUENCY,
-    PLAYLIST,
-    PLAYBACK,
-    RADIO_REFERENCE,
-    RECORD,
-    RETENTION,
-    TALKGROUP_FORMAT,
-    TUNER;
+    DAYS,
+    WEEKS,
+    MONTHS,
+    YEARS;
+
+    /**
+     * Returns a duration value in milliseconds that represents the value in the current units.
+     * @param value to calculate
+     * @return milliseconds of duration representing the age unit and value.
+     */
+    public long getDuration(int value)
+    {
+        return switch(this)
+        {
+            case DAYS -> Duration.ofDays(value).toMillis();
+            case WEEKS -> Duration.ofDays(7).toMillis() * value;
+            case MONTHS -> Duration.ofDays(31).toMillis() * value;
+            case YEARS -> Duration.ofDays(365).toMillis() * value;
+        };
+    }
 }

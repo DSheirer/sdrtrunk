@@ -67,13 +67,13 @@ import io.github.dsheirer.gui.preference.DecodeEventViewPreferenceEditor;
 import io.github.dsheirer.gui.preference.TalkgroupFormatPreferenceEditor;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.application.ApplicationPreferenceEditor;
+import io.github.dsheirer.gui.preference.audio.call.CallManagementPreferenceEditor;
+import io.github.dsheirer.gui.preference.audio.playback.PlaybackPreferenceEditor;
+import io.github.dsheirer.gui.preference.audio.record.RecordPreferenceEditor;
+import io.github.dsheirer.gui.preference.audio.retention.RetentionPreferenceEditor;
 import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
-import io.github.dsheirer.gui.preference.call.CallManagementPreferenceEditor;
 import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
-import io.github.dsheirer.gui.preference.mp3.MP3PreferenceEditor;
-import io.github.dsheirer.gui.preference.playback.PlaybackPreferenceEditor;
-import io.github.dsheirer.gui.preference.record.RecordPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import java.awt.GraphicsEnvironment;
@@ -619,16 +619,6 @@ public class SpringJavaFxBeanFactory
     }
 
     /**
-     * Application preference editor
-     */
-    @Bean
-    @Lazy
-    public MP3PreferenceEditor getMp3PreferenceEditor()
-    {
-        return new MP3PreferenceEditor();
-    }
-
-    /**
      * Playback preference editor
      */
     @Bean
@@ -646,6 +636,16 @@ public class SpringJavaFxBeanFactory
     public RecordPreferenceEditor getRecordPreferenceEditor()
     {
         return new RecordPreferenceEditor();
+    }
+
+    /**
+     * Audio/call retention preference editor
+     */
+    @Bean
+    @Lazy
+    public RetentionPreferenceEditor getRetentionPreferenceEditor()
+    {
+        return new RetentionPreferenceEditor();
     }
 
     /**

@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference.playback;
+package io.github.dsheirer.gui.preference.audio.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
 import io.github.dsheirer.audio.playbackfx.PlaybackView;

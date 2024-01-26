@@ -17,35 +17,52 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference;
+package io.github.dsheirer.preference.retention;
+
+import java.util.EnumSet;
 
 /**
- * Preference editor tree node enumeration.
+ * Retention (ie age-off) policy for managing call events and related audio recording files.
  */
-public enum PreferenceEditorType
+public enum RetentionPolicy
 {
-    APPLICATION("Application"),
-    AUDIO_PLAYBACK("Playback"),
-    AUDIO_RECORD("Record"),
-    AUDIO_DUPLICATE_MANAGEMENT("Duplicate/Streaming"),
-    AUDIO_CALL_RETENTION("Call Retention"),
-    CHANNEL_EVENT("Channel Events"),
-    DIRECTORY("Directories"),
-    JMBE_LIBRARY("JMBE Audio Library"),
-    TUNERS("Tuners"),
-    TALKGROUP_FORMAT("Talkgroup & Radio ID"),
-    VECTOR_CALIBRATION("Vector Calibration"),
-    DEFAULT("Default");
+    AGE("Age"),
+    SIZE("Directory Size"),
+    AGE_AND_SIZE("Age & Directory Size");
 
     private String mLabel;
 
-    PreferenceEditorType(String label)
+    /**
+     * Constructs an instance
+     * @param label to display for the entry
+     */
+    RetentionPolicy(String label)
     {
         mLabel = label;
     }
 
+    public static EnumSet<RetentionPolicy> AGE_POLICIES = EnumSet.of(AGE, AGE_AND_SIZE);
+    public static EnumSet<RetentionPolicy> SIZE_POLICIES = EnumSet.of(SIZE, AGE_AND_SIZE);
+
+    @Override
     public String toString()
     {
         return mLabel;
+    }
+
+    /**
+     * Indicates if the entry is an age-based retention policy.
+     */
+    public boolean isAgePolicy()
+    {
+        return AGE_POLICIES.contains(this);
+    }
+
+    /**
+     * Indicates if the entry is a size-based retention policy.
+     */
+    public boolean isSizePolicy()
+    {
+        return SIZE_POLICIES.contains(this);
     }
 }

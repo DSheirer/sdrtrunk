@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.preference.record.RecordPreference;
+import io.github.dsheirer.preference.retention.RetentionPreference;
 import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
@@ -78,6 +79,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private PlaylistPreference mPlaylistPreference;
     private RadioReferencePreference mRadioReferencePreference;
     private RecordPreference mRecordPreference;
+    private RetentionPreference mRetentionPreference;
     private SwingPreference mSwingPreference = new SwingPreference();
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
@@ -217,6 +219,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Audio/call retention preferences
+     */
+    public RetentionPreference getRetentionPreference()
+    {
+        return mRetentionPreference;
+    }
+
+    /**
      * MP3 preferences
      */
     public MP3Preference getMP3Preference()
@@ -273,6 +283,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);
         mRecordPreference = new RecordPreference(this::receive);
+        mRetentionPreference = new RetentionPreference(this::receive);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this::receive);
         mTunerPreference = new TunerPreference(this::receive);
         mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);

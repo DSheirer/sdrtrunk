@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,20 +17,25 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference.mp3;
+package io.github.dsheirer.gui.preference.audio.record;
 
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.gui.preference.PreferenceEditor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.preference.mp3.MP3Preference;
+import io.github.dsheirer.preference.record.RecordPreference;
+import io.github.dsheirer.record.RecordFormat;
 import jakarta.annotation.PostConstruct;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -39,21 +44,20 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Preference settings for MP3
+ * Preference settings for recording
  */
-public class MP3PreferenceEditor extends PreferenceEditor
+public class RecordPreferenceEditor extends PreferenceEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(MP3PreferenceEditor.class);
+    private final static Logger mLog = LoggerFactory.getLogger(RecordPreferenceEditor.class);
+    private RecordPreference mRecordPreference;
     private MP3Preference mMP3Preference;
     private GridPane mEditorPane;
+    private ComboBox<RecordFormat> mRecordFormatComboBox;
     private ComboBox<MP3Setting> mMP3SettingComboBox;
     private ComboBox<InputAudioFormat> mAudioSampleRateComboBox;
     private CheckBox mNormalizeAudioCheckBox;
 
-    /**
-     * Constructs an instance
-     */
-    public MP3PreferenceEditor()
+    public RecordPreferenceEditor()
     {
     }
 
@@ -61,6 +65,7 @@ public class MP3PreferenceEditor extends PreferenceEditor
     public void postConstruct()
     {
         mMP3Preference = getUserPreferences().getMP3Preference();
+        mRecordPreference = getUserPreferences().getRecordPreference();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
     }
@@ -68,7 +73,7 @@ public class MP3PreferenceEditor extends PreferenceEditor
     @Override
     public PreferenceEditorType getPreferenceEditorType()
     {
-        return PreferenceEditorType.AUDIO_MP3;
+        return PreferenceEditorType.AUDIO_RECORD;
     }
 
     private GridPane getEditorPane()
@@ -81,15 +86,28 @@ public class MP3PreferenceEditor extends PreferenceEditor
             mEditorPane.setVgap(10);
 
             int row = 0;
+
+            Label label = new Label("Audio Recording Format:");
+            mEditorPane.add(label, 0, row);
+            mEditorPane.add(getRecordFormatComboBox(), 1, row);
+
+            row++;
+
+            Separator separator = new Separator();
+            GridPane.setHgrow(separator, Priority.ALWAYS);
+            GridPane.setConstraints(separator, 0, row, 2, 1);
+            mEditorPane.getChildren().add(separator);
+
+            row++;
+
             Label topLabel = new Label("MP3 Encoder Preferences");
             mEditorPane.add(topLabel, 0, row++, 2, 1);
 
-
             mEditorPane.add(getNormalizeAudioCheckBox(), 1, row++);
 
-            Label label = new Label("(LAME) Encoder Setting:");
-            GridPane.setHalignment(label, HPos.RIGHT);
-            mEditorPane.add(label, 0, row);
+            Label lameLabel = new Label("(LAME) Encoder Setting:");
+            GridPane.setHalignment(lameLabel, HPos.RIGHT);
+            mEditorPane.add(lameLabel, 0, row);
             mEditorPane.add(getMP3SettingComboBox(), 1, row++);
 
             Label sampleRateLabel = new Label("Input Audio Sample Rate:");
@@ -102,6 +120,26 @@ public class MP3PreferenceEditor extends PreferenceEditor
         }
 
         return mEditorPane;
+    }
+
+    private ComboBox<RecordFormat> getRecordFormatComboBox()
+    {
+        if(mRecordFormatComboBox == null)
+        {
+            mRecordFormatComboBox = new ComboBox<>();
+            mRecordFormatComboBox.getItems().addAll(RecordFormat.values());
+            mRecordFormatComboBox.getSelectionModel().select(mRecordPreference.getAudioRecordFormat());
+            mRecordFormatComboBox.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<RecordFormat>()
+            {
+                @Override
+                public void changed(ObservableValue<? extends RecordFormat> observable, RecordFormat oldValue, RecordFormat newValue)
+                {
+                    mRecordPreference.setAudioRecordFormat(newValue);
+                }
+            });
+        }
+
+        return mRecordFormatComboBox;
     }
 
     private ComboBox<MP3Setting> getMP3SettingComboBox()

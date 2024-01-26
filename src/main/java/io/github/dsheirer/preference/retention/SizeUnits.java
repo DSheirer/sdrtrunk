@@ -17,26 +17,13 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.preference.retention;
 
 /**
- * Types of preferences
+ * Size units
  */
-public enum PreferenceType
+public enum SizeUnits
 {
-    APPLICATION,
-    CALIBRATION,
-    DECODE_EVENT,
-    DIRECTORY,
-    DUPLICATE_CALL_DETECTION,
-    JMBE_LIBRARY,
-    MP3,
-    MULTI_FREQUENCY,
-    PLAYLIST,
-    PLAYBACK,
-    RADIO_REFERENCE,
-    RECORD,
-    RETENTION,
-    TALKGROUP_FORMAT,
-    TUNER;
+    MB,
+    GB;
 }

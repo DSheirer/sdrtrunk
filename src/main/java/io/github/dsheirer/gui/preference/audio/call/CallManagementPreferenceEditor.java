@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference.call;
+package io.github.dsheirer.gui.preference.audio.call;
 
 import io.github.dsheirer.audio.broadcast.PatchGroupStreamingOption;
 import io.github.dsheirer.gui.preference.PreferenceEditor;
@@ -71,7 +71,7 @@ public class CallManagementPreferenceEditor extends PreferenceEditor
     @Override
     public PreferenceEditorType getPreferenceEditorType()
     {
-        return PreferenceEditorType.AUDIO_CALL_MANAGEMENT;
+        return PreferenceEditorType.AUDIO_DUPLICATE_MANAGEMENT;
     }
 
     private GridPane getEditorPane()

@@ -63,41 +63,41 @@ public class Call
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_generator")
     @SequenceGenerator(name = "id_generator", allocationSize = 1)
     @Column(name=COLUMN_ID)
-    private long mId;
+    private long id;
     @Column(name=COLUMN_CALL_TYPE)
-    private String mCallType;
+    private String callType;
     @Column(name=COLUMN_CHANNEL)
-    private String mChannel;
+    private String channel;
     @Column(name=COLUMN_DUPLICATE)
-    private boolean mDuplicate;
+    private boolean duplicate;
     @Column(name=COLUMN_DURATION)
-    private double mDuration;
+    private double duration;
     @Column(name=COLUMN_EVENT_TIME)
-    private long mEventTime;
+    private long eventTime;
     @Column(name=COLUMN_FILE)
-    private String mFile;
+    private String file;
     @Column(name=COLUMN_FREQUENCY)
-    private double mFrequency;
+    private double frequency;
     @Column(name=COLUMN_FROM_ALIAS)
-    private String mFromAlias;
+    private String fromAlias;
     @Column(name=COLUMN_FROM_ID)
-    private String mFromId;
+    private String fromId;
     @Column(name=COLUMN_MONITOR)
-    private int mMonitor;
+    private int monitor;
     @Column(name=COLUMN_PROTOCOL)
-    private String mProtocol;
+    private String protocol;
     @Column(name=COLUMN_RECORD)
-    private boolean mRecord;
+    private boolean record;
     @Column(name=COLUMN_SITE)
-    private String mSite;
+    private String site;
     @Column(name=COLUMN_STREAM)
-    private boolean mStream;
+    private boolean stream;
     @Column(name=COLUMN_SYSTEM)
-    private String mSystem;
+    private String system;
     @Column(name=COLUMN_TO_ALIAS)
-    private String mToAlias;
+    private String toAlias;
     @Column(name=COLUMN_TO_ID)
-    private String mToId;
+    private String toId;
 
     @Transient
     private boolean mComplete = true;
@@ -119,7 +119,7 @@ public class Call
      */
     public long getId()
     {
-        return mId;
+        return id;
     }
 
     /**
@@ -128,7 +128,7 @@ public class Call
      */
     public long getEventTime()
     {
-        return mEventTime;
+        return eventTime;
     }
 
     /**
@@ -137,7 +137,7 @@ public class Call
      */
     public void setEventTime(long eventTime)
     {
-        mEventTime = eventTime;
+        this.eventTime = eventTime;
     }
 
     /**
@@ -146,7 +146,7 @@ public class Call
      */
     public String getFromId()
     {
-        return mFromId;
+        return fromId;
     }
 
     /**
@@ -155,7 +155,7 @@ public class Call
      */
     public void setFromId(String fromId)
     {
-        mFromId = fromId;
+        this.fromId = fromId;
         updateTimestamp();
     }
 
@@ -165,7 +165,7 @@ public class Call
      */
     public String getFromAlias()
     {
-        return mFromAlias;
+        return fromAlias;
     }
 
     /**
@@ -174,7 +174,7 @@ public class Call
      */
     public void setFromAlias(String fromAlias)
     {
-        mFromAlias = fromAlias;
+        this.fromAlias = fromAlias;
         updateTimestamp();
     }
 
@@ -184,7 +184,7 @@ public class Call
      */
     public String getToId()
     {
-        return mToId;
+        return toId;
     }
 
     /**
@@ -193,7 +193,7 @@ public class Call
      */
     public void setToId(String toId)
     {
-        mToId = toId;
+        this.toId = toId;
         updateTimestamp();
     }
 
@@ -203,7 +203,7 @@ public class Call
      */
     public String getToAlias()
     {
-        return mToAlias;
+        return toAlias;
     }
 
     /**
@@ -212,7 +212,7 @@ public class Call
      */
     public void setToAlias(String toAlias)
     {
-        mToAlias = toAlias;
+        this.toAlias = toAlias;
         updateTimestamp();
     }
 
@@ -222,7 +222,7 @@ public class Call
      */
     public String getSystem()
     {
-        return mSystem;
+        return system;
     }
 
     /**
@@ -231,7 +231,7 @@ public class Call
      */
     public void setSystem(String system)
     {
-        mSystem = system;
+        this.system = system;
     }
 
     /**
@@ -240,7 +240,7 @@ public class Call
      */
     public String getSite()
     {
-        return mSite;
+        return site;
     }
 
     /**
@@ -249,7 +249,7 @@ public class Call
      */
     public void setSite(String site)
     {
-        mSite = site;
+        this.site = site;
     }
 
     /**
@@ -258,7 +258,7 @@ public class Call
      */
     public String getChannel()
     {
-        return mChannel;
+        return channel;
     }
 
     /**
@@ -267,7 +267,7 @@ public class Call
      */
     public void setChannel(String channel)
     {
-        mChannel = channel;
+        this.channel = channel;
     }
 
     /**
@@ -276,7 +276,7 @@ public class Call
      */
     public double getFrequency()
     {
-        return mFrequency;
+        return frequency;
     }
 
     /**
@@ -285,7 +285,7 @@ public class Call
      */
     public void setFrequency(double frequency)
     {
-        mFrequency = frequency;
+        this.frequency = frequency;
     }
 
     /**
@@ -294,7 +294,7 @@ public class Call
      */
     public String getFile()
     {
-        return mFile;
+        return file;
     }
 
     /**
@@ -303,7 +303,7 @@ public class Call
      */
     public void setFile(String file)
     {
-        mFile = file;
+        this.file = file;
     }
 
     /**
@@ -312,7 +312,7 @@ public class Call
      */
     public double getDuration()
     {
-        return mDuration;
+        return duration;
     }
 
     /**
@@ -321,7 +321,7 @@ public class Call
      */
     public void setDuration(double duration)
     {
-        mDuration = duration;
+        this.duration = duration;
         updateTimestamp();
     }
 
@@ -331,7 +331,7 @@ public class Call
      */
     public String getProtocol()
     {
-        return mProtocol;
+        return protocol;
     }
 
     /**
@@ -340,7 +340,7 @@ public class Call
      */
     public void setProtocol(String protocol)
     {
-        mProtocol = protocol;
+        this.protocol = protocol;
     }
 
     /**
@@ -368,7 +368,7 @@ public class Call
      */
     public String getCallType()
     {
-        return mCallType;
+        return callType;
     }
 
     /**
@@ -377,7 +377,7 @@ public class Call
      */
     public void setCallType(String callType)
     {
-        mCallType = callType;
+        this.callType = callType;
     }
 
     /**
@@ -386,7 +386,7 @@ public class Call
      */
     public boolean isDuplicate()
     {
-        return mDuplicate;
+        return duplicate;
     }
 
     /**
@@ -395,7 +395,7 @@ public class Call
      */
     public void setDuplicate(boolean duplicate)
     {
-        mDuplicate = duplicate;
+        this.duplicate = duplicate;
     }
 
     /**
@@ -404,7 +404,7 @@ public class Call
      */
     public int getMonitor()
     {
-        return mMonitor;
+        return monitor;
     }
 
     /**
@@ -413,7 +413,7 @@ public class Call
      */
     public void setMonitor(int monitor)
     {
-        mMonitor = monitor;
+        this.monitor = monitor;
     }
 
     /**
@@ -422,7 +422,7 @@ public class Call
      */
     public boolean isRecord()
     {
-        return mRecord;
+        return record;
     }
 
     /**
@@ -431,7 +431,7 @@ public class Call
      */
     public void setRecord(boolean record)
     {
-        mRecord = record;
+        this.record = record;
     }
 
     /**
@@ -440,7 +440,7 @@ public class Call
      */
     public boolean isStream()
     {
-        return mStream;
+        return stream;
     }
 
     /**
@@ -449,7 +449,7 @@ public class Call
      */
     public void setStream(boolean stream)
     {
-        mStream = stream;
+        this.stream = stream;
     }
 
     /**
@@ -484,6 +484,12 @@ public class Call
     public StringProperty playbackChannelProperty()
     {
         return mPlaybackChannel;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        return obj instanceof Call c && getId() == c.getId();
     }
 }
 

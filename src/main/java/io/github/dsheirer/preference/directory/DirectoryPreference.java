@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ public class DirectoryPreference extends Preference
 
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
     private static final String DIRECTORY_APPLICATION_LOG = "logs";
+    private static final String DIRECTORY_CALL = "calls";
     private static final String DIRECTORY_CONFIGURATION = "configuration";
     private static final String DIRECTORY_EVENT_LOG = "event_logs";
     private static final String DIRECTORY_JMBE = "jmbe";
@@ -52,6 +53,7 @@ public class DirectoryPreference extends Preference
 
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT = "directory.application.root";
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS = "directory.application.logs";
+    private static final String PREFERENCE_KEY_DIRECTORY_CALLS = "directory.event.calls";
     private static final String PREFERENCE_KEY_DIRECTORY_CONFIGURATION = "directory.configuration";
     private static final String PREFERENCE_KEY_DIRECTORY_EVENT_LOGS = "directory.event.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_JMBE = "directory.jmbe";
@@ -64,6 +66,7 @@ public class DirectoryPreference extends Preference
 
     private Path mDirectoryApplicationRoot;
     private Path mDirectoryApplicationLogs;
+    private Path mDirectoryCalls;
     private Path mDirectoryConfiguration;
     private Path mDirectoryEventLogs;
     private Path mDirectoryJmbe;
@@ -125,6 +128,7 @@ public class DirectoryPreference extends Preference
     private void nullifyApplicationChildDirectories()
     {
         mDirectoryApplicationLogs = null;
+        mDirectoryCalls = null;
         mDirectoryEventLogs = null;
         mDirectoryJmbe = null;
         mDirectoryPlaylist = null;
@@ -231,6 +235,40 @@ public class DirectoryPreference extends Preference
     {
         mPreferences.remove(PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS);
         mDirectoryApplicationLogs = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Path to the folder for storing calls
+     */
+    public Path getDirectoryCalls()
+    {
+        if(mDirectoryCalls == null)
+        {
+            mDirectoryCalls = getPath(PREFERENCE_KEY_DIRECTORY_CALLS, getDefaultCallDirectory());
+            createDirectory(mDirectoryCalls);
+        }
+
+        return mDirectoryCalls;
+    }
+
+    /**
+     * Sets the path to the calls folder
+     */
+    public void setDirectoryCalls(Path path)
+    {
+        mDirectoryCalls = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_CALLS, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored call directory preference so that the default path can be used again
+     */
+    public void resetDirectoryCall()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_CALLS);
+        mDirectoryCalls = null;
         notifyPreferenceUpdated();
     }
 
@@ -486,6 +524,14 @@ public class DirectoryPreference extends Preference
     public Path getDefaultApplicationLogsDirectory()
     {
         return getDirectoryApplicationRoot().resolve(DIRECTORY_APPLICATION_LOG);
+    }
+
+    /**
+     * Default calls directory
+     */
+    public Path getDefaultCallDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_CALL);
     }
 
     /**

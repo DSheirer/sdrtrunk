@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,6 @@ public class ActiveAudioSegment
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LOGGER);
     private static final SimpleDateFormat DIRECTORY_SDF = new SimpleDateFormat("yyyyMMdd");
     private static final SimpleDateFormat FILE_NAME_SDF = new SimpleDateFormat("yyyyMMdd_HHmmss");
-    private static final String CALLS_DIRECTORY_FOLDER = "calls";
     private static int sFileNameCounter = 1;
 
     private AudioSegment mAudioSegment;
@@ -152,8 +151,8 @@ public class ActiveAudioSegment
     {
         Date now = new Date();
         String dailyFolder = DIRECTORY_SDF.format(now);
-        Path recordingDirectory = mUserPreferences.getDirectoryPreference().getDirectoryRecording()
-                .resolve(CALLS_DIRECTORY_FOLDER).resolve(dailyFolder);
+        Path recordingDirectory = mUserPreferences.getDirectoryPreference().getDirectoryCalls()
+                .resolve(dailyFolder);
 
         if(!Files.exists(recordingDirectory))
         {

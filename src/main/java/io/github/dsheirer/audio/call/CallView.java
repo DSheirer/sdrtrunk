@@ -78,7 +78,7 @@ import org.springframework.data.domain.Sort;
 public class CallView extends VBox implements IPageRequestListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CallView.class);
-    private static final Sort DEFAULT_SORT = Sort.by("mEventTime").descending();
+    private static final Sort DEFAULT_SORT = Sort.by("eventTime").descending();
 
     @Resource
     private AudioManager mAudioManager;
@@ -613,7 +613,7 @@ public class CallView extends VBox implements IPageRequestListener
 
             TableColumn playbackColumn = new TableColumn();
             playbackColumn.setSortable(false);
-            playbackColumn.setId("mPlayback");
+            playbackColumn.setId("playback");
             playbackColumn.sortTypeProperty().addListener(mSortOrderListener);
             IconNode iconNode = new IconNode(Elusive.VOLUME_UP);
             iconNode.setIconSize(16);
@@ -623,7 +623,7 @@ public class CallView extends VBox implements IPageRequestListener
             playbackColumn.setPrefWidth(40);
 
             TableColumn eventTimeColumn = new TableColumn();
-            eventTimeColumn.setId("mEventTime");
+            eventTimeColumn.setId("eventTime");
             eventTimeColumn.sortTypeProperty().addListener(mSortOrderListener);
             eventTimeColumn.setText("Date/Time");
             eventTimeColumn.setCellValueFactory(new PropertyValueFactory<Call, Long>(Call.COLUMN_EVENT_TIME));
@@ -631,63 +631,63 @@ public class CallView extends VBox implements IPageRequestListener
             eventTimeColumn.setPrefWidth(160);
 
             TableColumn durationColumn = new TableColumn();
-            durationColumn.setId("mDuration");
+            durationColumn.setId("duration");
             durationColumn.sortTypeProperty().addListener(mSortOrderListener);
             durationColumn.setText("Duration");
             durationColumn.setCellValueFactory(new PropertyValueFactory<Call, Double>(Call.COLUMN_DURATION));
             durationColumn.setPrefWidth(70);
 
             TableColumn callTypeColumn = new TableColumn();
-            callTypeColumn.setId("mCallType");
+            callTypeColumn.setId("callType");
             callTypeColumn.sortTypeProperty().addListener(mSortOrderListener);
             callTypeColumn.setText("Type");
             callTypeColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_CALL_TYPE));
             callTypeColumn.setPrefWidth(85);
 
             TableColumn toIdColumn = new TableColumn();
-            toIdColumn.setId("mToId");
+            toIdColumn.setId("toId");
             toIdColumn.sortTypeProperty().addListener(mSortOrderListener);
             toIdColumn.setText("To");
             toIdColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_TO_ID));
             toIdColumn.setPrefWidth(80);
 
             TableColumn toAliasColumn = new TableColumn();
-            toAliasColumn.setId("mToAlias");
+            toAliasColumn.setId("toAlias");
             toAliasColumn.sortTypeProperty().addListener(mSortOrderListener);
             toAliasColumn.setText("To Alias");
             toAliasColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_TO_ALIAS));
             toAliasColumn.setPrefWidth(100);
 
             TableColumn fromIdColumn = new TableColumn();
-            fromIdColumn.setId("mFromId");
+            fromIdColumn.setId("fromId");
             fromIdColumn.sortTypeProperty().addListener(mSortOrderListener);
             fromIdColumn.setText("From");
             fromIdColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_FROM_ID));
             fromIdColumn.setPrefWidth(70);
 
             TableColumn fromAliasColumn = new TableColumn();
-            fromAliasColumn.setId("mFromAlias");
+            fromAliasColumn.setId("fromAlias");
             fromAliasColumn.sortTypeProperty().addListener(mSortOrderListener);
             fromAliasColumn.setText("From Alias");
             fromAliasColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_FROM_ALIAS));
             fromAliasColumn.setPrefWidth(100);
 
             TableColumn protocolColumn = new TableColumn();
-            protocolColumn.setId("mProtocol");
+            protocolColumn.setId("protocol");
             protocolColumn.sortTypeProperty().addListener(mSortOrderListener);
             protocolColumn.setText("Protocol");
             protocolColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_PROTOCOL));
             protocolColumn.setPrefWidth(90);
 
             TableColumn frequencyColumn = new TableColumn();
-            frequencyColumn.setId("mFrequency");
+            frequencyColumn.setId("frequency");
             frequencyColumn.sortTypeProperty().addListener(mSortOrderListener);
             frequencyColumn.setText("Frequency");
             frequencyColumn.setCellValueFactory(new PropertyValueFactory<Call, Double>(Call.COLUMN_FREQUENCY));
             frequencyColumn.setPrefWidth(80);
 
             TableColumn systemColumn = new TableColumn();
-            systemColumn.setId("mSystem");
+            systemColumn.setId("system");
             systemColumn.sortTypeProperty().addListener(mSortOrderListener);
             systemColumn.setText("System");
             systemColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_SYSTEM));
@@ -703,7 +703,7 @@ public class CallView extends VBox implements IPageRequestListener
 
             TableColumn channelColumn = new TableColumn();
             channelColumn.setVisible(false);
-            channelColumn.setId("mChannel");
+            channelColumn.setId("channel");
             channelColumn.sortTypeProperty().addListener(mSortOrderListener);
             channelColumn.setText("Channel");
             channelColumn.setCellValueFactory(new PropertyValueFactory<Call, String>(Call.COLUMN_CHANNEL));
@@ -711,7 +711,7 @@ public class CallView extends VBox implements IPageRequestListener
 
             TableColumn duplicateColumn = new TableColumn();
             duplicateColumn.setVisible(false);
-            duplicateColumn.setId("mDuplicate");
+            duplicateColumn.setId("duplicate");
             duplicateColumn.sortTypeProperty().addListener(mSortOrderListener);
             duplicateColumn.setText("Duplicate");
             duplicateColumn.setCellValueFactory(new PropertyValueFactory<Call, Boolean>(Call.COLUMN_DUPLICATE));
@@ -719,7 +719,7 @@ public class CallView extends VBox implements IPageRequestListener
 
             TableColumn recordColumn = new TableColumn();
             recordColumn.setVisible(false);
-            recordColumn.setId("mRecord");
+            recordColumn.setId("record");
             recordColumn.sortTypeProperty().addListener(mSortOrderListener);
             recordColumn.setText("Record");
             recordColumn.setCellValueFactory(new PropertyValueFactory<Call, Boolean>(Call.COLUMN_RECORD));
@@ -727,7 +727,7 @@ public class CallView extends VBox implements IPageRequestListener
 
             TableColumn streamColumn = new TableColumn();
             streamColumn.setVisible(false);
-            streamColumn.setId("mStream");
+            streamColumn.setId("stream");
             streamColumn.sortTypeProperty().addListener(mSortOrderListener);
             streamColumn.setText("Stream");
             streamColumn.setCellValueFactory(new PropertyValueFactory<Call, Boolean>(Call.COLUMN_STREAM));
@@ -735,7 +735,7 @@ public class CallView extends VBox implements IPageRequestListener
 
             TableColumn monitorColumn = new TableColumn();
             monitorColumn.setVisible(false);
-            monitorColumn.setId("mMonitor");
+            monitorColumn.setId("monitor");
             monitorColumn.sortTypeProperty().addListener(mSortOrderListener);
             monitorColumn.setText("Monitor");
             monitorColumn.setCellValueFactory(new PropertyValueFactory<Call, Integer>(Call.COLUMN_MONITOR));
@@ -751,6 +751,11 @@ public class CallView extends VBox implements IPageRequestListener
                 if(selectedCall != null)
                 {
                     mAudioPlaybackController.replay(MixerChannel.LEFT, selectedCall);
+                }
+                else if(oldValue != null && selectedCall == null)
+                {
+                    //We were in replay but now we don't have a selected call
+                    mAudioPlaybackController.auto(MixerChannel.LEFT, null, null);
                 }
 
                 AudioPlaybackChannelController left = mAudioPlaybackController.getChannelController(MixerChannel.LEFT);
@@ -911,6 +916,8 @@ public class CallView extends VBox implements IPageRequestListener
                 {
                     mCalls.remove(call);
                 }
+
+                mCallCount.set(mCallCount.get() - 1);
             });
         }
     }

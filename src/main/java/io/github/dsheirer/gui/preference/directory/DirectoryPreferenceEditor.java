@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,11 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
     private Button mChangeApplicationLogsButton;
     private Button mResetApplicationLogsButton;
     private Label mApplicationLogsPathLabel;
+
+    private Label mCallLabel;
+    private Button mChangeCallButton;
+    private Button mResetCallButton;
+    private Label mCallPathLabel;
 
     private Label mConfigurationLabel;
     private Button mChangeConfigurationButton;
@@ -170,6 +175,19 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
 
             GridPane.setMargin(getResetApplicationLogsButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetApplicationLogsButton(), 3, row++);
+
+
+            GridPane.setMargin(getCallLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getCallLabel(), 0, row);
+
+            GridPane.setMargin(getCallPathLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getCallPathLabel(), 1, row);
+
+            GridPane.setMargin(getChangeCallButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeCallButton(), 2, row);
+
+            GridPane.setMargin(getResetCallButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetCallButton(), 3, row++);
 
 
             GridPane.setMargin(getConfigurationLabel(), new Insets(0, 10, 0, 0));
@@ -440,6 +458,71 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
         }
 
         return mApplicationLogsPathLabel;
+    }
+
+    private Label getCallLabel()
+    {
+        if(mCallLabel == null)
+        {
+            mCallLabel = new Label("Calls");
+        }
+
+        return mCallLabel;
+    }
+
+    private Button getChangeCallButton()
+    {
+        if(mChangeCallButton == null)
+        {
+            mChangeCallButton = new Button("Change...");
+            mChangeCallButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Calls Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryCalls().toFile());
+                    Stage stage = (Stage)getChangeCallButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryCalls(selected.toPath());
+                    }
+                }
+            });
+        }
+
+        return mChangeCallButton;
+    }
+
+    private Button getResetCallButton()
+    {
+        if(mResetCallButton == null)
+        {
+            mResetCallButton = new Button("Reset");
+            mResetCallButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryCall();
+                }
+            });
+        }
+
+        return mResetCallButton;
+    }
+
+    private Label getCallPathLabel()
+    {
+        if(mCallPathLabel == null)
+        {
+            mCallPathLabel = new Label(mDirectoryPreference.getDirectoryCalls().toString());
+        }
+
+        return mCallPathLabel;
     }
 
     private Label getConfigurationLabel()
@@ -904,6 +987,7 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
         {
             getApplicationRootPathLabel().setText(mDirectoryPreference.getDirectoryApplicationRoot().toString());
             getApplicationLogsPathLabel().setText(mDirectoryPreference.getDirectoryApplicationLog().toString());
+            getCallPathLabel().setText(mDirectoryPreference.getDirectoryCalls().toString());
             getEventLogsPathLabel().setText(mDirectoryPreference.getDirectoryEventLog().toString());
             getPlaylistPathLabel().setText(mDirectoryPreference.getDirectoryPlaylist().toString());
             getRecordingPathLabel().setText(mDirectoryPreference.getDirectoryRecording().toString());
