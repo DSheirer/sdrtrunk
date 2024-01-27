@@ -31,6 +31,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -73,6 +74,11 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
     private Button mChangeConfigurationButton;
     private Button mResetConfigurationButton;
     private Label mConfigurationPathLabel;
+
+    private Label mDatabaseLabel;
+    private Button mChangeDatabaseButton;
+    private Button mResetDatabaseButton;
+    private Label mDatabasePathLabel;
 
     private Label mEventLogsLabel;
     private Button mChangeEventLogsButton;
@@ -201,6 +207,19 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
 
             GridPane.setMargin(getResetConfigurationButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetConfigurationButton(), 3, row++);
+
+
+            GridPane.setMargin(getDatabaseLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getDatabaseLabel(), 0, row);
+
+            GridPane.setMargin(getDatabasePathLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getDatabasePathLabel(), 1, row);
+
+            GridPane.setMargin(getChangeDatabaseButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeDatabaseButton(), 2, row);
+
+            GridPane.setMargin(getResetDatabaseButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetDatabaseButton(), 3, row++);
 
 
             GridPane.setMargin(getEventLogsLabel(), new Insets(0, 10, 0, 0));
@@ -588,6 +607,66 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
         }
 
         return mConfigurationPathLabel;
+    }
+
+
+    private Label getDatabaseLabel()
+    {
+        if(mDatabaseLabel == null)
+        {
+            mDatabaseLabel = new Label("Database");
+        }
+
+        return mDatabaseLabel;
+    }
+
+    private Button getChangeDatabaseButton()
+    {
+        if(mChangeDatabaseButton == null)
+        {
+            mChangeDatabaseButton = new Button("Change...");
+            mChangeDatabaseButton.setOnAction(event -> {
+                DirectoryChooser directoryChooser = new DirectoryChooser();
+                directoryChooser.setTitle("Select Database Folder");
+                directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryDatabase().toFile());
+                Stage stage = (Stage)getChangeCallButton().getScene().getWindow();
+                File selected = directoryChooser.showDialog(stage);
+
+                if(selected != null)
+                {
+                    mDirectoryPreference.setDirectoryDatabase(selected.toPath());
+
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Directory Updated");
+                    alert.setHeaderText("Database Directory Updated");
+                    alert.setContentText("Please restart the application for the change to take effect.");
+                    alert.showAndWait();
+                }
+            });
+        }
+
+        return mChangeDatabaseButton;
+    }
+
+    private Button getResetDatabaseButton()
+    {
+        if(mResetDatabaseButton == null)
+        {
+            mResetDatabaseButton = new Button("Reset");
+            mResetDatabaseButton.setOnAction(event -> mDirectoryPreference.resetDirectoryDatabase());
+        }
+
+        return mResetDatabaseButton;
+    }
+
+    private Label getDatabasePathLabel()
+    {
+        if(mDatabasePathLabel == null)
+        {
+            mDatabasePathLabel = new Label(mDirectoryPreference.getDirectoryDatabase().toString());
+        }
+
+        return mDatabasePathLabel;
     }
 
     private Label getEventLogsLabel()
@@ -988,6 +1067,7 @@ public class DirectoryPreferenceEditor extends PreferenceEditor implements IPref
             getApplicationRootPathLabel().setText(mDirectoryPreference.getDirectoryApplicationRoot().toString());
             getApplicationLogsPathLabel().setText(mDirectoryPreference.getDirectoryApplicationLog().toString());
             getCallPathLabel().setText(mDirectoryPreference.getDirectoryCalls().toString());
+            getDatabasePathLabel().setText(mDirectoryPreference.getDirectoryDatabase().toString());
             getEventLogsPathLabel().setText(mDirectoryPreference.getDirectoryEventLog().toString());
             getPlaylistPathLabel().setText(mDirectoryPreference.getDirectoryPlaylist().toString());
             getRecordingPathLabel().setText(mDirectoryPreference.getDirectoryRecording().toString());

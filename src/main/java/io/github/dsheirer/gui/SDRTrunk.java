@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -157,7 +157,8 @@ public class SDRTrunk
         boolean headless = GraphicsEnvironment.isHeadless();
 
         //Set the user's preferred location for the database prior to starting the application
-        String dbpath = new UserPreferences().getDirectoryPreference().getDirectoryApplicationRoot().toString();
+//        String dbpath = new UserPreferences().getDirectoryPreference().getDirectoryApplicationRoot().toString();
+        String dbpath = new UserPreferences().getDirectoryPreference().getDirectoryDatabase().getParent().toString();
         System.setProperty("derby.system.home", dbpath);
 
         ConfigurableApplicationContext context = new SpringApplicationBuilder(SDRTrunk.class)

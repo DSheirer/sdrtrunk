@@ -44,6 +44,7 @@ public class DirectoryPreference extends Preference
     private static final String DIRECTORY_APPLICATION_LOG = "logs";
     private static final String DIRECTORY_CALL = "calls";
     private static final String DIRECTORY_CONFIGURATION = "configuration";
+    private static final String DIRECTORY_DATABASE = "database";
     private static final String DIRECTORY_EVENT_LOG = "event_logs";
     private static final String DIRECTORY_JMBE = "jmbe";
     private static final String DIRECTORY_PLAYLIST = "playlist";
@@ -53,8 +54,9 @@ public class DirectoryPreference extends Preference
 
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT = "directory.application.root";
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS = "directory.application.logs";
-    private static final String PREFERENCE_KEY_DIRECTORY_CALLS = "directory.event.calls";
+    private static final String PREFERENCE_KEY_DIRECTORY_CALLS = "directory.calls";
     private static final String PREFERENCE_KEY_DIRECTORY_CONFIGURATION = "directory.configuration";
+    private static final String PREFERENCE_KEY_DIRECTORY_DATABASE = "directory.database";
     private static final String PREFERENCE_KEY_DIRECTORY_EVENT_LOGS = "directory.event.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_JMBE = "directory.jmbe";
     private static final String PREFERENCE_KEY_DIRECTORY_PLAYLIST = "directory.playlist";
@@ -68,6 +70,7 @@ public class DirectoryPreference extends Preference
     private Path mDirectoryApplicationLogs;
     private Path mDirectoryCalls;
     private Path mDirectoryConfiguration;
+    private Path mDirectoryDatabase;
     private Path mDirectoryEventLogs;
     private Path mDirectoryJmbe;
     private Path mDirectoryPlaylist;
@@ -129,6 +132,7 @@ public class DirectoryPreference extends Preference
     {
         mDirectoryApplicationLogs = null;
         mDirectoryCalls = null;
+        mDirectoryDatabase = null;
         mDirectoryEventLogs = null;
         mDirectoryJmbe = null;
         mDirectoryPlaylist = null;
@@ -303,6 +307,41 @@ public class DirectoryPreference extends Preference
     {
         mPreferences.remove(PREFERENCE_KEY_DIRECTORY_CONFIGURATION);
         mDirectoryConfiguration = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Path to the folder for the database
+     */
+    public Path getDirectoryDatabase()
+    {
+        if(mDirectoryDatabase == null)
+        {
+            mDirectoryDatabase = getPath(PREFERENCE_KEY_DIRECTORY_DATABASE, getDefaultDatabaseDirectory());
+            //Don't autocreate this directory ... spring will fail to initialize and start the database if the
+            //directory already exists but doesn't contain any database files.
+        }
+
+        return mDirectoryDatabase;
+    }
+
+    /**
+     * Sets the path to the database folder
+     */
+    public void setDirectoryDatabase(Path path)
+    {
+        mDirectoryDatabase = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_DATABASE, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored database directory preference so that the default path can be used again
+     */
+    public void resetDirectoryDatabase()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_DATABASE);
+        mDirectoryDatabase = null;
         notifyPreferenceUpdated();
     }
 
@@ -540,6 +579,14 @@ public class DirectoryPreference extends Preference
     public Path getDefaultConfigurationDirectory()
     {
         return getDirectoryApplicationRoot().resolve(DIRECTORY_CONFIGURATION);
+    }
+
+    /**
+     * Default database directory
+     */
+    public Path getDefaultDatabaseDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_DATABASE);
     }
 
     /**
