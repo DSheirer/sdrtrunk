@@ -416,8 +416,7 @@ public abstract class AbstractTileFactory extends TileFactory
 
 				try
 				{
-					//Java 13 uses TLSv1.3 by default and fails to connect to tile server, so force TLS 1.2
-					SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+					SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
 					sslContext.init(null, null, new SecureRandom());
 					conn.setSSLSocketFactory(sslContext.getSocketFactory());
 				}
@@ -427,7 +426,7 @@ public abstract class AbstractTileFactory extends TileFactory
 				}
 				catch(NoSuchAlgorithmException nsae)
 				{
-					mLog.error("Unable to use TLSv1.2 for openstreetmap tiles");
+					mLog.error("Unable to use TLSv1.3 for OpenStreetMap tiles");
 				}
 
 				InputStream is = conn.getInputStream();
