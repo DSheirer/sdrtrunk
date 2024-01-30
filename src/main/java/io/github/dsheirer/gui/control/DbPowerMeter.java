@@ -39,7 +39,7 @@ public class DbPowerMeter extends JComponent
      */
     public DbPowerMeter()
     {
-        setPreferredSize(new Dimension(80, 100));
+        setPreferredSize(new Dimension(90, 100));
         setBorder(BorderFactory.createTitledBorder("Power (dB)"));
     }
 
