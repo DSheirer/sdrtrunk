@@ -309,6 +309,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     broadcast(event);
                     SourceConfigTuner sourceConfig = new SourceConfigTuner();
                     sourceConfig.setFrequency(frequency);
+                    if(mParentChannel.getSourceConfiguration() instanceof  SourceConfigTuner parentConfigTuner)
+                    {
+                        sourceConfig.setPreferredTuner(parentConfigTuner.getPreferredTuner());
+                    }
                     trafficChannel.setSourceConfiguration(sourceConfig);
                     mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
 
@@ -356,6 +360,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             SourceConfigTuner sourceConfig = new SourceConfigTuner();
             sourceConfig.setFrequency(frequency);
+            if(mParentChannel.getSourceConfiguration() instanceof  SourceConfigTuner parentConfigTuner)
+            {
+                sourceConfig.setPreferredTuner(parentConfigTuner.getPreferredTuner());
+            }
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
 
@@ -455,6 +463,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     broadcast(event);
                     SourceConfigTuner sourceConfig = new SourceConfigTuner();
                     sourceConfig.setFrequency(frequency);
+                    if(mParentChannel.getSourceConfiguration() instanceof  SourceConfigTuner parentConfigTuner)
+                    {
+                        sourceConfig.setPreferredTuner(parentConfigTuner.getPreferredTuner());
+                    }
                     trafficChannel.setSourceConfiguration(sourceConfig);
                     mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
 
@@ -517,6 +529,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             SourceConfigTuner sourceConfig = new SourceConfigTuner();
             sourceConfig.setFrequency(frequency);
+            if(mParentChannel.getSourceConfiguration() instanceof  SourceConfigTuner parentConfigTuner)
+            {
+                sourceConfig.setPreferredTuner(parentConfigTuner.getPreferredTuner());
+            }
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
 
