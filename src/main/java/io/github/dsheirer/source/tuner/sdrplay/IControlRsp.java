@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -116,16 +116,36 @@ public interface IControlRsp
     double getCurrentSampleRate();
 
     /**
-     * Sets the gain index value.
-     * @param gain index value (0 - 28)
+     * Set the lna state and gain reduction dB values separately.
+     * @param lna state (varies by tuner and frequency range)
+     * @param basebandGainReduction setting (20-59)
+     * @throws SDRPlayException
      */
-    void setGain(int gain) throws SDRPlayException;
+    void setGain(int lna, int basebandGainReduction) throws SDRPlayException;
 
     /**
-     * Current gain index value
-     * @return gain index value (0 - 28)
+     * Current gain setting as reported by the device.
+     * @return gain value in decibels
      */
-    int getGain();
+    float getCurrentGain() throws SDRPlayException;
+
+    /**
+     * Current LNA gain index value
+     * @return LNA gain value.
+     */
+    int getLNA();
+
+    /**
+     * Maximum LNA setting index value.
+     * @return max LNA that varies by tuner type.
+     */
+    int getMaximumLNASetting();
+
+    /**
+     * Current gain reduction value.
+     * @return gain reduction value.
+     */
+    int getBasebandGainReduction();
 
     /**
      * Current IF AGC mode setting.
@@ -143,5 +163,5 @@ public interface IControlRsp
      * Registers a listener to receive notifications of gain overload.
      * @param listener to register
      */
-    void setGainOverloadListener(IGainOverloadListener listener);
+    void setGainOverloadListener(ITunerStatusListener listener);
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,11 +91,13 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
 
             try
             {
-                getControlRsp().setGain(rtc.getGain());
+                int lna = rtc.getLNA();
+                int gr = rtc.getBasebandGainReduction();
+                getControlRsp().setGain(lna, gr);
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSP gain index to " + rtc.getGain());
+                mLog.error("Error setting RSP LNA [" + rtc.getLNA() + "] and baseband [" + rtc.getBasebandGainReduction() + "]");
             }
         }
     }

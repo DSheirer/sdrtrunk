@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite;
 
+import io.github.dsheirer.source.tuner.sdrplay.api.Version;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -30,29 +31,34 @@ public class CompositeParametersFactory
 {
     /**
      * Creates a composite parameters instance for the specified device type
+     * @param version of the api
      * @param deviceType to create
      * @param memorySegment of foreign memory structure for the composite parameters
      * @param arena to allocate additional memory structures
      * @return instance
      */
-    public static CompositeParameters create(DeviceType deviceType, MemorySegment memorySegment, Arena arena)
+    public static CompositeParameters create(Version version, DeviceType deviceType, MemorySegment memorySegment,
+                                             Arena arena)
     {
         switch(deviceType)
         {
             case RSP1 -> {
-                return new Rsp1CompositeParameters(memorySegment, arena);
+                return new Rsp1CompositeParameters(version, memorySegment, arena);
             }
             case RSP1A -> {
-                return new Rsp1aCompositeParameters(memorySegment, arena);
+                return new Rsp1aCompositeParameters(version, memorySegment, arena);
+            }
+            case RSP1B -> {
+                return new Rsp1bCompositeParameters(version, memorySegment, arena);
             }
             case RSP2 -> {
-                return new Rsp2CompositeParameters(memorySegment, arena);
+                return new Rsp2CompositeParameters(version, memorySegment, arena);
             }
             case RSPduo -> {
-                return new RspDuoCompositeParameters(memorySegment, arena);
+                return new RspDuoCompositeParameters(version, memorySegment, arena);
             }
             case RSPdx -> {
-                return new RspDxCompositeParameters(memorySegment, arena);
+                return new RspDxCompositeParameters(version, memorySegment, arena);
             }
         }
 

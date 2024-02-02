@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ import io.github.dsheirer.source.tuner.sdrplay.api.callback.IStreamListener;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.Device;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
 import io.github.dsheirer.util.ThreadPool;
@@ -45,10 +44,11 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
     private static final Logger mLog = LoggerFactory.getLogger(ControlRsp.class);
     private T mDevice;
     protected RspSampleRate mSampleRate = RspSampleRate.RATE_8_000;
-    protected int mGain;
+    protected int mLNA;
+    protected int mBasebandGainReduction;
     private IDeviceEventListener mDeviceEventListener;
     private IStreamListener mStreamListener;
-    protected WeakReference<IGainOverloadListener> mGainOverloadReference;
+    protected WeakReference<ITunerStatusListener> mGainOverloadReference;
 
     //Streaming control lock and boolean status indicator.  Access to the boolean indicator is protected by the lock.
     protected ReentrantLock mStreamingLock = new ReentrantLock();
@@ -242,21 +242,28 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
         }
     }
 
-    /**
-     * Sets the gain index
-     * @param gain index value (0 - 28)
-     * @throws SDRPlayException
-     */
     @Override
-    public void setGain(int gain) throws SDRPlayException
+    public void setGain(int lna, int gr) throws SDRPlayException
     {
-        validateGain(gain);
+        int lnaLimited = Math.max(lna, 0);
+        lnaLimited = Math.min(lnaLimited, getMaximumLNASetting());
 
-        if(gain != mGain)
+        int grLimited = Math.max(gr, 20);
+        grLimited = Math.min(grLimited, 59);
+
+        if(lna != lnaLimited || gr != grLimited)
         {
-            mGain = gain;
-            getDevice().getTuner().setGain(mGain);
+            mLog.warn("Setting gain - adjusted LNA from [" + lna + "] to [" + lnaLimited + "] and GR from [" + gr + "] to [" + grLimited + "]");
         }
+        getDevice().getTuner().setGain(lnaLimited, grLimited);
+        mLNA = lnaLimited;
+        mBasebandGainReduction = grLimited;
+    }
+
+    @Override
+    public float getCurrentGain() throws SDRPlayException
+    {
+        return getDevice().getTuner().getGain().getGainValues().getCurrent();
     }
 
     /**
@@ -264,7 +271,7 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
      * @param listener to register
      */
     @Override
-    public void setGainOverloadListener(IGainOverloadListener listener)
+    public void setGainOverloadListener(ITunerStatusListener listener)
     {
         if(mGainOverloadReference != null && mGainOverloadReference.get() != null)
         {
@@ -289,7 +296,7 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
         //Notify an optional weakly referenced, registered listener that gain overload has been acknowledged.
         if(mGainOverloadReference != null)
         {
-            IGainOverloadListener listener = mGainOverloadReference.get();
+            ITunerStatusListener listener = mGainOverloadReference.get();
 
             if(listener != null)
             {
@@ -317,6 +324,17 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
         if(hasDevice())
         {
             getDevice().getTuner().setFrequency(frequency);
+
+            //Notify an optional weakly referenced, registered listener that gain overload has been acknowledged.
+            if(mGainOverloadReference != null)
+            {
+                ITunerStatusListener listener = mGainOverloadReference.get();
+
+                if(listener != null)
+                {
+                    ThreadPool.CACHED.submit(() -> listener.frequencyUpdated());
+                }
+            }
         }
         else
         {
@@ -343,27 +361,23 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
     }
 
     /**
-     * Current gain index
-     * @return gain index
+     * Current LNA gain setting
+     * @return LNA gain
      */
     @Override
-    public int getGain()
+    public int getLNA()
     {
-        return mGain;
+        return mLNA;
     }
 
     /**
-     * Verifies that the requested gain index setting is within the range of valid gain values.
-     * @param gain to validate
-     * @throws SDRPlayException if the gain index value is outside the range of valid values.
+     * Current Baseband gain reduction setting
+     * @return baseband gain reduction
      */
-    protected void validateGain(int gain) throws SDRPlayException
+    @Override
+    public int getBasebandGainReduction()
     {
-        if(gain < GainReduction.MIN_GAIN_INDEX || gain > GainReduction.MAX_GAIN_INDEX)
-        {
-            throw new SDRPlayException("Invalid gain index value [" + gain + "].  Valid range is " +
-                    GainReduction.MIN_GAIN_INDEX + " - " + GainReduction.MAX_GAIN_INDEX);
-        }
+        return mBasebandGainReduction;
     }
 
     /**

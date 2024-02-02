@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlPara
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.device.DeviceParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Bandwidth;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Gain;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
@@ -48,8 +47,6 @@ public abstract class RspTuner<D extends DeviceParameters, T extends TunerParame
     private final D mDeviceParameters;
     private final T mTunerParameters;
     private final ControlParameters mControlParameters;
-
-    private GainReduction mGainReduction;
 
     RspTuner(Device device, SDRplay sdrplay, TunerSelect tunerSelect, D deviceParameters, T tunerParameters,
              ControlParameters controlParameters)
@@ -180,7 +177,6 @@ public abstract class RspTuner<D extends DeviceParameters, T extends TunerParame
         try
         {
             getTunerParameters().getRfFrequency().setFrequency(frequency, false);
-            updateGainReduction(frequency);
             return updateAsync(UpdateReason.TUNER_FREQUENCY_RF, UpdateReason.TUNER_FREQUENCY_RF);
         }
         catch(SDRPlayException se)
@@ -193,39 +189,15 @@ public abstract class RspTuner<D extends DeviceParameters, T extends TunerParame
     }
 
     /**
-     * Gain reduction in use for this device with the current RF frequency
+     * Sets the LNA state and Baseband Gain Reduction values.
+     * @param lna state (varies by tuner and frequency range)
+     * @param basebandGainReduction in range 20-59 dB
+     * @throws SDRPlayException
      */
-    public GainReduction getGainReduction()
+    public void setGain(int lna, int basebandGainReduction) throws SDRPlayException
     {
-        if(mGainReduction == null)
-        {
-            updateGainReduction(getFrequency());
-        }
-
-        return mGainReduction;
-    }
-
-    /**
-     * Updates the gain reduction, if necessary, for the specified RF frequency
-     *
-     * @param frequency value
-     */
-    private void updateGainReduction(long frequency)
-    {
-        if(mGainReduction == null || !mGainReduction.isValidFor(frequency))
-        {
-            mGainReduction = GainReduction.lookup(getDevice().getDeviceType(), frequency);
-        }
-    }
-
-    /**
-     * Selects a gain value index from the current gain reduction values
-     *
-     * @param index of the gain reduction values to use
-     */
-    public void setGain(int index) throws SDRPlayException
-    {
-        getTunerParameters().getGain().setGain(getGainReduction(), index);
+        getTunerParameters().getGain().setLNA(lna);
+        getTunerParameters().getGain().setGainReductionDb(basebandGainReduction);
         update(UpdateReason.TUNER_GAIN_REDUCTION);
     }
 
@@ -255,16 +227,6 @@ public abstract class RspTuner<D extends DeviceParameters, T extends TunerParame
     public Gain getGain()
     {
         return getTunerParameters().getGain();
-    }
-
-    /**
-     * Current gain index value.
-     * @return current gain index value or -1 if the current gain setting does not match the possible gain reduction options.
-     */
-    public int getGainIndex()
-    {
-        int gainDb = getGain().getGainReductionDb();
-        return getGainReduction().getGainIndex(gainDb);
     }
 
     /**

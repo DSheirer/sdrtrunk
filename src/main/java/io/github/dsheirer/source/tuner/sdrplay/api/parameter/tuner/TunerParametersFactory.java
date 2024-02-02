@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner;
 
+import io.github.dsheirer.source.tuner.sdrplay.api.Version;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_RxChannelParamsT;
 import java.lang.foreign.MemorySegment;
@@ -34,7 +35,7 @@ public class TunerParametersFactory
      * @param memorySegment for the sdrplay_api_RxChannelParamsT structure
      * @return tuner parameters
      */
-    public static TunerParameters create(DeviceType deviceType, MemorySegment memorySegment)
+    public static TunerParameters create(Version version, DeviceType deviceType, MemorySegment memorySegment)
     {
         MemorySegment tunerParametersMemorySegment = sdrplay_api_RxChannelParamsT.tunerParams$slice(memorySegment);
 
@@ -43,7 +44,8 @@ public class TunerParametersFactory
             case RSP1 -> {
                 return new Rsp1TunerParameters(tunerParametersMemorySegment);
             }
-            case RSP1A -> {
+            //RSP1A and RSP1B share the same tuner parameters structures
+            case RSP1A, RSP1B -> {
                 MemorySegment rsp1AMemorySegment = sdrplay_api_RxChannelParamsT.rsp1aTunerParams$slice(memorySegment);
                 return new Rsp1aTunerParameters(memorySegment, rsp1AMemorySegment);
             }
@@ -52,8 +54,20 @@ public class TunerParametersFactory
                 return new Rsp2TunerParameters(memorySegment, rsp2MemorySegment);
             }
             case RSPduo -> {
-                MemorySegment rspDuoMemorySegment = sdrplay_api_RxChannelParamsT.rspDuoTunerParams$slice(memorySegment);
-                return new RspDuoTunerParameters(memorySegment, rspDuoMemorySegment);
+                if(version.gte(Version.V3_14))
+                {
+                    MemorySegment rspDuoMemorySegment = io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_RxChannelParamsT.rspDuoTunerParams$slice(memorySegment);
+                    return new RspDuoTunerParametersV3_14(memorySegment, rspDuoMemorySegment);
+                }
+                else if(version.gte(Version.V3_07))
+                {
+                    MemorySegment rspDuoMemorySegment = sdrplay_api_RxChannelParamsT.rspDuoTunerParams$slice(memorySegment);
+                    return new RspDuoTunerParametersV3_07(memorySegment, rspDuoMemorySegment);
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Unrecognized API version: " + version);
+                }
             }
             case RSPdx -> {
                 MemorySegment rspDxMemorySegment = sdrplay_api_RxChannelParamsT.rspDxTunerParams$slice(memorySegment);

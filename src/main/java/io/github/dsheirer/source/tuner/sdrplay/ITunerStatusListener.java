@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,16 @@ import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
 /**
  * Listener interface to receive notifications of gain overload in the RSP device.
  */
-public interface IGainOverloadListener
+public interface ITunerStatusListener
 {
+    /**
+     * Notify that there is a gain overload event in the specified tuner
+     * @param tunerSelect to id the tuner
+     */
     void notifyGainOverload(TunerSelect tunerSelect);
+
+    /**
+     * Notify that the tuner's frequency has changed.
+     */
+    void frequencyUpdated();
 }

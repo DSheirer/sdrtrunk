@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,11 +30,17 @@ public enum EventType
     POWER_OVERLOAD_CHANGE(sdrplay_api_h.sdrplay_api_PowerOverloadChange(), "POWER OVERLOAD CHANGE"),
     DEVICE_REMOVED(sdrplay_api_h.sdrplay_api_DeviceRemoved(), "DEVICE REMOVED"),
     RSP_DUO_MODE_CHANGE(sdrplay_api_h.sdrplay_api_RspDuoModeChange(), "RSP-DUO MODE CHANGE"),
+    DEVICE_FAILURE(io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_h.sdrplay_api_DeviceFailure(), "DEVICE FAILURE"),
     UNKNOWN(-1, "UNKNOWN");
 
     private int mValue;
     private String mDescription;
 
+    /**
+     * Constructs an instance
+     * @param value of the entry
+     * @param description for the entry
+     */
     EventType(int value, String description)
     {
         mValue = value;

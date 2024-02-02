@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -352,7 +352,7 @@ public class SDRplay
      *
      * @param deviceType to load parameters
      * @param deviceHandle to device
-     * @return constructed device composite paramaters
+     * @return constructed device composite parameters
      */
     public CompositeParameters getCompositeParameters(DeviceType deviceType, MemorySegment deviceHandle) throws SDRPlayException
     {
@@ -367,7 +367,7 @@ public class SDRplay
 
             //The structure's memory is already allocated ... wrap a memory segment around it
             MemorySegment memorySegment = sdrplay_api_DeviceT.ofAddress(memoryAddress, getArena().scope());
-            return CompositeParametersFactory.create(deviceType, memorySegment, getArena());
+            return CompositeParametersFactory.create(getVersion(), deviceType, memorySegment, getArena());
         }
         else
         {

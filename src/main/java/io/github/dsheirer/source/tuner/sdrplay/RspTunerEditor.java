@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,32 +24,37 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
 import io.github.dsheirer.util.ThreadPool;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 
 /**
  * Abstract RSP tuner editor
  */
-public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends TunerEditor<RspTuner,C> implements IGainOverloadListener
+public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends TunerEditor<RspTuner,C> implements ITunerStatusListener
 {
     private Logger mLog = LoggerFactory.getLogger(RspTunerEditor.class);
-    private JSlider mGainSlider;
-    private JLabel mGainValueLabel;
+    protected static final String MANUAL = "Manual";
+    protected static final String AUTOMATIC = "Automatic";
     private JToggleButton mAgcButton;
+    private JLabel mGainValueLabel;
+    private LnaSlider mLNASlider;
+    private GainReductionSlider mBasebandSlider;
     private JButton mGainOverloadButton;
+    private JPanel mGainPanel;
     private AtomicBoolean mGainOverloadAlert = new AtomicBoolean();
 
     /**
@@ -69,40 +74,23 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     }
 
     /**
-     * Gain reduction slider control
+     * Gain controls panel
+     * @return gain panel
      */
-    protected JSlider getGainSlider()
+    protected JPanel getGainPanel()
     {
-        if(mGainSlider == null)
+        if(mGainPanel == null)
         {
-            mGainSlider = new JSlider(JSlider.HORIZONTAL, GainReduction.MIN_GAIN_INDEX,
-                    GainReduction.MAX_GAIN_INDEX, GainReduction.MIN_GAIN_INDEX);
-            mGainSlider.setEnabled(false);
-            mGainSlider.setMajorTickSpacing(1);
-            mGainSlider.setPaintTicks(true);
-            mGainSlider.addChangeListener(event ->
-            {
-                int gain = mGainSlider.getValue();
-
-                if(hasTuner() && !isLoading())
-                {
-                    try
-                    {
-                        getTunerController().getControlRsp().setGain(gain);
-                        save();
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.error("Couldn't set RSP gain to:" + gain, e);
-                        JOptionPane.showMessageDialog(mGainSlider, "Couldn't set RSP gain value to " + gain);
-                    }
-                }
-
-                getGainValueLabel().setText(String.valueOf(gain));
-            });
+            mGainPanel = new JPanel();
+            mGainPanel.setLayout(new MigLayout("insets 0","[][][grow,fill][][]",""));
+            mGainPanel.add(getGainValueLabel());
+            mGainPanel.add(getGainOverloadButton());
+            mGainPanel.add(new JLabel()); //empty label to grow to fill space
+            mGainPanel.add(new JLabel("IF Gain Mode:"));
+            mGainPanel.add(getAgcButton());
         }
 
-        return mGainSlider;
+        return mGainPanel;
     }
 
     /**
@@ -126,7 +114,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     {
         if(mAgcButton == null)
         {
-            mAgcButton = new JToggleButton("IF AGC");
+            mAgcButton = new JToggleButton(MANUAL);
             mAgcButton.setEnabled(false);
             mAgcButton.addActionListener(e -> {
                 if(hasTuner() && !isLoading())
@@ -134,12 +122,22 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
                     try
                     {
                         getTunerController().getControlRsp().setAgcMode(mAgcButton.isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
+                        updateGainLabel();
                     }
                     catch(SDRPlayException se)
                     {
                         mLog.error("Error setting AGC mode on RSP device");
                     }
                     save();
+                }
+
+                if(mAgcButton.isSelected())
+                {
+                    getAgcButton().setText(AUTOMATIC);
+                }
+                else
+                {
+                    getAgcButton().setText(MANUAL);
                 }
             });
         }
@@ -175,6 +173,12 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
         }
     }
 
+    @Override
+    public void frequencyUpdated()
+    {
+        updateLnaSlider();
+    }
+
     /**
      * Toggles the alert styling of the disabled gain overload button to indicate an alert condition or a normal
      * operating condition.
@@ -197,6 +201,175 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
         else
         {
             mLog.info("Ignoring duplicate gain alerting - alert[" + alert + "] atomic [" + mGainOverloadAlert.get() + "]");
+        }
+    }
+
+    protected void updateLnaSlider()
+    {
+        if(hasTuner())
+        {
+            int max = getTunerController().getControlRsp().getMaximumLNASetting();
+            if(max != getLNASlider().getMaximum())
+            {
+                EventQueue.invokeLater(() -> {
+                    setLoading(true);
+                    //Adjust the value if it's less than max
+                    getLNASlider().setValue(Math.min(getLNASlider().getValue(), max));
+                    getLNASlider().setMaximum(max);
+                    setLoading(false);
+                });
+            }
+        }
+    }
+
+    /**
+     * LNA Gain Slider
+     */
+    protected LnaSlider getLNASlider()
+    {
+        if(mLNASlider == null)
+        {
+            mLNASlider = new LnaSlider();
+            mLNASlider.setEnabled(true);
+            mLNASlider.setMajorTickSpacing(1);
+            mLNASlider.setPaintTicks(true);
+            mLNASlider.addChangeListener(event ->
+            {
+                JSlider source = (JSlider)event.getSource();
+
+                if(!source.getValueIsAdjusting())
+                {
+                    updateGain();
+                }
+            });
+        }
+
+        return mLNASlider;
+    }
+
+    /**
+     * Updates the gain settings when the LNA or Baseband gain value is changed by the user.
+     */
+    private void updateGain()
+    {
+        int lna = getLNASlider().getLNA();
+        int gr = getBasebandSlider().getGR();
+
+        if(hasTuner() && !isLoading())
+        {
+            try
+            {
+                getTunerController().getControlRsp().setGain(lna, gr);
+                save();
+                updateGainLabel();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Couldn't set RSP gain to LNA:" + lna + " Gain Reduction:" + gr, e);
+                JOptionPane.showMessageDialog(mBasebandSlider, "Couldn't set RSP gain value to LNA:" + lna + " Gain Reduction:" + gr);
+            }
+        }
+    }
+
+    protected void updateGainLabel()
+    {
+        try
+        {
+            float currentGain = getTunerController().getControlRsp().getCurrentGain();
+            getGainValueLabel().setText((int)currentGain + " dB");
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.error("Error accessing current gain value from RSP tuner", se);
+        }
+    }
+
+    /**
+     * Baseband Gain Reduction Slider
+     */
+    protected GainReductionSlider getBasebandSlider()
+    {
+        if(mBasebandSlider == null)
+        {
+            mBasebandSlider = new GainReductionSlider();
+            mBasebandSlider.setEnabled(true);
+            mBasebandSlider.setMajorTickSpacing(1);
+            mBasebandSlider.setPaintTicks(true);
+            mBasebandSlider.addChangeListener(event ->
+            {
+                JSlider source = (JSlider)event.getSource();
+
+                if(!source.getValueIsAdjusting())
+                {
+                    updateGain();
+                }
+            });
+        }
+
+        return mBasebandSlider;
+    }
+
+    /**
+     * JSlider implementation that inverts the scale to support LNA values.
+     */
+    public class LnaSlider extends JSlider
+    {
+        /**
+         * Constructs an instance
+         */
+        public LnaSlider()
+        {
+            super(JSlider.HORIZONTAL, 0,9,9);
+        }
+
+        /**
+         * Slider value converted to the LNA scale.
+         * @return lna value.
+         */
+        public int getLNA()
+        {
+             return getMaximum() - getValue();
+        }
+
+        /**
+         * Sets the slider with the value converted from the provided LNA value.
+         * @param lna value to apply
+         */
+        public void setLNA(int lna)
+        {
+            setValue(getMaximum() - lna);
+        }
+    }
+
+    /**
+     * JSlider implementation that inverts the scale to support Gain Reduction values.
+     */
+    public class GainReductionSlider extends JSlider
+    {
+        /**
+         * Constructs an instance
+         */
+        public GainReductionSlider()
+        {
+            super(JSlider.HORIZONTAL, 0, 39, 30);
+        }
+
+        /**
+         * Slider value converted to the gain reduction scale.
+         * @return gain reduction value.
+         */
+        public int getGR()
+        {
+            return getBasebandSlider().getMaximum() - getBasebandSlider().getValue() + 20;
+        }
+
+        /**
+         * Sets the slider with the value converted from the provided gain reduction value.
+         * @param gainReduction value to apply
+         */
+        public void setGR(int gainReduction)
+        {
+            setValue(getMaximum() - (gainReduction - 20));
         }
     }
 }

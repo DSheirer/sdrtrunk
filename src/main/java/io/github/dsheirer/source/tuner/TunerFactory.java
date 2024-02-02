@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,6 +87,7 @@ import io.github.dsheirer.source.tuner.sdrplay.rsp1a.IControlRsp1a;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerController;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerEditor;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.Rsp1bTunerEditor;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.ControlRsp2;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.DiscoveredRsp2Tuner;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.IControlRsp2;
@@ -451,6 +452,8 @@ public class TunerFactory
                             return new Rsp1TunerEditor(userPreferences, tunerManager, discoveredRspTuner);
                         case RSP1A:
                             return new Rsp1aTunerEditor(userPreferences, tunerManager, discoveredRspTuner);
+                        case RSP1B:
+                            return new Rsp1bTunerEditor(userPreferences, tunerManager, discoveredRspTuner);
                         case RSP2:
                             return new Rsp2TunerEditor(userPreferences, tunerManager, discoveredRspTuner);
                         case RSPdx:

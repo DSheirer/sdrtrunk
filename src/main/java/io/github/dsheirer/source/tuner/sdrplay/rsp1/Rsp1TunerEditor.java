@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.SpinnerNumberModel;
 
@@ -61,7 +60,7 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
-                "[][][][][][][][][][][][][grow]"));
+                "[][][][][][][][][][][grow]"));
 
         add(new JLabel("Tuner:"));
         add(getTunerIdLabel(), "wrap");
@@ -79,16 +78,12 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
         add(new JLabel("Sample Rate:"));
         add(getSampleRateCombo(), "wrap");
 
-        add(new JLabel("IF AGC Mode:"));
-        JPanel gainPanel = new JPanel();
-        gainPanel.setLayout(new MigLayout("insets 0","[grow,fill][]",""));
-        gainPanel.add(getAgcButton());
-        gainPanel.add(getGainOverloadButton());
-        add(gainPanel, "wrap");
-
         add(new JLabel("Gain:"));
-        add(getGainSlider());
-        add(getGainValueLabel());
+        add(getGainPanel(), "wrap");
+        add(new JLabel("LNA:"));
+        add(getLNASlider(), "wrap");
+        add(new JLabel("Baseband:"));
+        add(getBasebandSlider(), "wrap");
 
         add(new JSeparator(), "span,growx,push");
     }
@@ -139,13 +134,18 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
         {
             AgcMode current = getTunerController().getControlRsp().getAgcMode();
             getAgcButton().setSelected(current == null || current.equals(AgcMode.ENABLE));
+            getAgcButton().setText((current == null || current.equals(AgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
+            getLNASlider().setLNA(getTunerController().getControlRsp().getLNA());
+            getBasebandSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
+
             //Register to receive gain overload notifications
             getTunerController().getControlRsp().setGainOverloadListener(this);
+            updateGainLabel();
         }
 
-        getGainSlider().setEnabled(hasTuner());
+        getLNASlider().setEnabled(hasTuner());
+        getBasebandSlider().setEnabled(hasTuner());
         getGainValueLabel().setEnabled(hasTuner());
-        getGainSlider().setValue(hasTuner() ? getTunerController().getControlRsp().getGain() : 0);
 
         setLoading(false);
     }
@@ -160,7 +160,8 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
             getConfiguration().setFrequencyCorrection(value);
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
             getConfiguration().setSampleRate((RspSampleRate)getSampleRateCombo().getSelectedItem());
-            getConfiguration().setGain(getGainSlider().getValue());
+            getConfiguration().setLNA(getLNASlider().getLNA());
+            getConfiguration().setBasebandGainReduction(getBasebandSlider().getGR());
             getConfiguration().setAgcMode(getAgcButton().isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
 
             saveConfiguration();

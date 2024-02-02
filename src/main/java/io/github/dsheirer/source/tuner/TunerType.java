@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ public enum TunerType
     RAFAELMICRO_R828D("R828D"),
     RSP_1("RSP1"),
     RSP_1A("RSP1A"),
+    RSP_1B("RSP1B"),
     RSP_2("RSP2"),
     RSP_DUO_1("RSPduo Tuner 1"),
     RSP_DUO_2("RSPduo Tuner 2"),
