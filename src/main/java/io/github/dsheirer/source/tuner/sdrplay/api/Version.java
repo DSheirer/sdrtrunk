@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,9 @@ public enum Version
     V3_09(3.09f, true),
     V3_10(3.10f, true),
     V3_11(3.11f, true),
-    V3_12(3.12f, true);
+    V3_12(3.12f, true),
+    V3_13(3.13f, true), //No changes - OSX build only.
+    V3_14(3.14f, true);
 
     private float mValue;
     private boolean mSupported;

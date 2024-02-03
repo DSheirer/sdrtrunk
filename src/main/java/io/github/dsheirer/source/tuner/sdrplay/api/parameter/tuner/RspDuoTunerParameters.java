@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,12 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.util.Flag;
-import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_RspDuoTunerParamsT;
 import java.lang.foreign.MemorySegment;
 
 /**
- * RSPduo Tuner Parameters structure
+ * RSPduo abstract Tuner Parameters structure
  */
-public class RspDuoTunerParameters extends TunerParameters
+public abstract class RspDuoTunerParameters extends TunerParameters
 {
     private MemorySegment mRspDuoMemorySegment;
 
@@ -44,7 +42,7 @@ public class RspDuoTunerParameters extends TunerParameters
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getRspDuoMemorySegment()
+    MemorySegment getRspDuoMemorySegment()
     {
         return mRspDuoMemorySegment;
     }
@@ -52,80 +50,50 @@ public class RspDuoTunerParameters extends TunerParameters
     /**
      * Indicates if the Bias-T is enabled
      */
-    public boolean isBiasT()
-    {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.biasTEnable$get(getRspDuoMemorySegment()));
-    }
+    public abstract boolean isBiasT();
 
     /**
      * Enables or disables the Bias-T
      */
-    public void setBiasT(boolean enable)
-    {
-        sdrplay_api_RspDuoTunerParamsT.biasTEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
-    }
+    public abstract void setBiasT(boolean enable);
 
     /**
      * Tuner 1 AM port setting
      */
-    public RspDuoAmPort getTuner1AmPort()
-    {
-        return RspDuoAmPort.fromValue(sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$get(getRspDuoMemorySegment()));
-    }
+    public abstract RspDuoAmPort getTuner1AmPort();
 
     /**
      * Set Tuner 1 AM port setting
      */
-    public void setTuner1AmPort(RspDuoAmPort amPort)
-    {
-        sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$set(getRspDuoMemorySegment(), amPort.getValue());
-    }
+    public abstract void setTuner1AmPort(RspDuoAmPort amPort);
 
     /**
      * Indicates if Tuner 1 AM notch is enabled
      */
-    public boolean isTuner1AmNotch()
-    {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$get(getRspDuoMemorySegment()));
-    }
+    public abstract boolean isTuner1AmNotch();
 
     /**
      * Enables or disables the Tuner 1 AM notch
      */
-    public void setTuner1AmNotch(boolean enable)
-    {
-        sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
-    }
+    public abstract void setTuner1AmNotch(boolean enable);
 
     /**
      * Indicates if the RF notch is enabled
      */
-    public boolean isRfNotch()
-    {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$get(getRspDuoMemorySegment()));
-    }
+    public abstract boolean isRfNotch();
 
     /**
      * Enables or disables the RF notch
      */
-    public void setRfNotch(boolean enable)
-    {
-        sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
-    }
+    public abstract void setRfNotch(boolean enable);
 
     /**
      * Indicates if the RF DAB notch is enabled
      */
-    public boolean isRfDabNotch()
-    {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$get(getRspDuoMemorySegment()));
-    }
+    public abstract boolean isRfDabNotch();
 
     /**
      * Enables or disables the RF DAB notch
      */
-    public void setRfDabNotch(boolean enable)
-    {
-        sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
-    }
+    public abstract void setRfDabNotch(boolean enable);
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -117,5 +117,38 @@ public class ControlRsp1a extends ControlRsp<Rsp1aDevice> implements IControlRsp
         {
             throw new SDRPlayException("Device is not initialized");
         }
+    }
+
+    /**
+     * Maximum LNA index value as determined by frequency range using the API section 5. Gain Reduction Table values.
+     * @return maximum (valid) LNA index value.
+     */
+    @Override
+    public int getMaximumLNASetting()
+    {
+        try
+        {
+            long frequency = getTunedFrequency();
+
+            if(frequency < 60_000_000)
+            {
+                return 6;
+            }
+            else if(frequency < 1_000_000_000)
+            {
+                return 9;
+            }
+            else
+            {
+                return 8;
+            }
+
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
+        }
+
+        return 6; //Use the most restrictive setting as a default.
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.IGainOverloadListener;
+import io.github.dsheirer.source.tuner.sdrplay.ITunerStatusListener;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
@@ -211,20 +211,14 @@ public abstract class ControlRspDuo<T extends RspDuoTuner> extends ControlRsp<Rs
         }
     }
 
-    /**
-     * Sets the gain index
-     * @param gain index value (0 - 28)
-     * @throws SDRPlayException for errors setting gain value.
-     */
     @Override
-    public void setGain(int gain) throws SDRPlayException
+    public void setGain(int lna, int gr) throws SDRPlayException
     {
-        validateGain(gain);
-
-        if(gain != mGain)
+        if(mLNA != lna && mBasebandGainReduction != gr)
         {
-            mGain = gain;
-            getTuner().setGain(mGain);
+            mLNA = lna;
+            mBasebandGainReduction = gr;
+            getTuner().setGain(lna, gr);
         }
     }
 
@@ -243,7 +237,7 @@ public abstract class ControlRspDuo<T extends RspDuoTuner> extends ControlRsp<Rs
         //Notify an optional weakly referenced, registered listener that gain overload has been acknowledged.
         if(mGainOverloadReference != null)
         {
-            IGainOverloadListener listener = mGainOverloadReference.get();
+            ITunerStatusListener listener = mGainOverloadReference.get();
 
             if(listener != null)
             {

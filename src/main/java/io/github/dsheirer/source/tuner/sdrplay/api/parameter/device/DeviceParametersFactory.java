@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ public class DeviceParametersFactory
             case RSP1 -> {
                 return new Rsp1DeviceParameters(memorySegment);
             }
-            case RSP1A -> {
+            //RSP1A and RSP1B share the same device parameters structures
+            case RSP1A, RSP1B -> {
                 return new Rsp1aDeviceParameters(memorySegment);
             }
             case RSP2 -> {

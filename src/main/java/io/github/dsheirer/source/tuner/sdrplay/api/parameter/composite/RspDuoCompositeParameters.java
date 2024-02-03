@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite;
 
+import io.github.dsheirer.source.tuner.sdrplay.api.Version;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.device.RspDuoDeviceParameters;
@@ -40,16 +41,17 @@ public class RspDuoCompositeParameters extends CompositeParameters<RspDuoDeviceP
     /**
      * Constructs an instance from the foreign memory segment
      *
+     * @param version for constructing the correct version structure.
      * @param memorySegment for the composite structure in foreign memory
      * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public RspDuoCompositeParameters(MemorySegment memorySegment, Arena arena)
+    public RspDuoCompositeParameters(Version version, MemorySegment memorySegment, Arena arena)
     {
-        super(DeviceType.RSPduo, memorySegment, arena);
+        super(version, DeviceType.RSPduo, memorySegment, arena);
 
         MemorySegment memoryAddressRxB = sdrplay_api_DeviceParamsT.rxChannelB$get(memorySegment);
         MemorySegment memorySegmentRxB = sdrplay_api_RxChannelParamsT.ofAddress(memoryAddressRxB, arena.scope());
-        mTunerBParameters = (RspDuoTunerParameters) TunerParametersFactory.create(DeviceType.RSPduo, memorySegmentRxB);
+        mTunerBParameters = (RspDuoTunerParameters) TunerParametersFactory.create(version, DeviceType.RSPduo, memorySegmentRxB);
 
         MemorySegment tunerBControlParametersMemorySegment = sdrplay_api_RxChannelParamsT.ctrlParams$slice(memorySegmentRxB);
         mControlBParameters = new ControlParameters(tunerBControlParametersMemorySegment);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ public enum DeviceType
 {
     RSP1(sdrplay_api_h.SDRPLAY_RSP1_ID(), "RSP1"),
     RSP1A(sdrplay_api_h.SDRPLAY_RSP1A_ID(), "RSP1A"),
+    RSP1B(io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_h.SDRPLAY_RSP1B_ID(), "RSP1B"),
     RSP2(sdrplay_api_h.SDRPLAY_RSP2_ID(), "RSP2"),
     RSPduo(sdrplay_api_h.SDRPLAY_RSPduo_ID(), "RSPduo"),
     RSPdx(sdrplay_api_h.SDRPLAY_RSPdx_ID(), "RSPdx"),

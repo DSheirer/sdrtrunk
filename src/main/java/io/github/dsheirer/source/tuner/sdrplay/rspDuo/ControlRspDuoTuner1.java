@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -129,5 +129,44 @@ public abstract class ControlRspDuoTuner1 extends ControlRspDuo<RspDuoTuner1> im
         {
             throw new SDRPlayException("Device is not initialized");
         }
+    }
+
+    /**
+     * Maximum LNA index value as determined by frequency range using the API section 5. Gain Reduction Table values.
+     * @return maximum (valid) LNA index value.
+     */
+    @Override
+    public int getMaximumLNASetting()
+    {
+        try
+        {
+            long frequency = getTunedFrequency();
+            RspDuoAmPort port = getAmPort();
+
+            if(port == RspDuoAmPort.PORT_1) //Hi-Z Port
+            {
+                return 4;
+            }
+
+            if(frequency < 60_000_000)
+            {
+                return 6;
+            }
+            else if(frequency < 1_000_000_000)
+            {
+                return 9;
+            }
+            else
+            {
+                return 6;
+            }
+
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
+        }
+
+        return 4; //Use the most restrictive setting as a default.
     }
 }

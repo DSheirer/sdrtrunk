@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ package io.github.dsheirer.source.tuner.sdrplay.rsp2;
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp2Device;
+import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AmPort;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AntennaSelection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,5 +141,39 @@ public class ControlRsp2 extends ControlRsp<Rsp2Device> implements IControlRsp2
         {
             throw new SDRPlayException("Device is not initialized");
         }
+    }
+
+    /**
+     * Maximum LNA index value as determined by frequency range using the API section 5. Gain Reduction Table values.
+     * @return maximum (valid) LNA index value.
+     */
+    @Override
+    public int getMaximumLNASetting()
+    {
+        try
+        {
+            long frequency = getTunedFrequency();
+            Rsp2AmPort port = getAntennaSelection().getAmPort();
+
+            if(port == Rsp2AmPort.PORT_1_HIGH_Z)
+            {
+                return 4;
+            }
+
+            if(frequency < 420_000_000)
+            {
+                return 8;
+            }
+            else
+            {
+                return 5;
+            }
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
+        }
+
+        return 4; //Use the most restrictive setting as a default.
     }
 }

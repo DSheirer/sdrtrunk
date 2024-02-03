@@ -30,7 +30,11 @@ typedef void *HANDLE;
 ..\SDRtrunk\sdrplay-api\src\main\java
 
 4. Generate the code:
-c:\Users\Denny\Downloads\jdk-19-ea2-panama\bin\jextract "C:\Users\Denny\git\sdrtrunk\sdrplay-api\api\v3_11\sdrplay_api.h" -l libsdrplay_api --source
+Windows:
+c:\Users\Denny\Downloads\jdk-19-ea2-panama\bin\jextract "C:\Users\Denny\git\sdrtrunk\sdrplay-api\api\v3_11\sdrplay_api.h" -l libsdrplay_api --source -t io.github.dsheirer.source.tuner.sdrplay.api.v3_14
 
-5. Do this for all versions of the API.
+Linux:
+~/Downloads/jextract-20/bin/jextract ~/IdeaProjects/sdrtrunk/artifacts/sdrplay-api-headers/v3_14/sdrplay_api.h -l libsdrplay_api --source -t io.github.dsheirer.source.tuner.sdrplay.api.v3_14
 
+5. Compare the 3.07 header files to the newest version header files.  Delete any auto-generated files that have not
+changed and then update the factory class to construct variation classes where there are differences.

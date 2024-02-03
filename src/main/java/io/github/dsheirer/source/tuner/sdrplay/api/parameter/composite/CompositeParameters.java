@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite;
 
+import io.github.dsheirer.source.tuner.sdrplay.api.Version;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.device.DeviceParameters;
@@ -47,11 +48,12 @@ public class CompositeParameters<D extends DeviceParameters, T extends TunerPara
     /**
      * Constructs an instance from the foreign memory segment
      *
+     * @param version of the API
      * @param deviceType to create
      * @param memorySegment for the composite structure in foreign memory
      * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public CompositeParameters(DeviceType deviceType, MemorySegment memorySegment, Arena arena)
+    public CompositeParameters(Version version, DeviceType deviceType, MemorySegment memorySegment, Arena arena)
     {
         MemorySegment parametersMemoryAddress = sdrplay_api_DeviceParamsT.devParams$get(memorySegment);
         MemorySegment parametersMemorySegment = sdrplay_api_DevParamsT.ofAddress(parametersMemoryAddress, arena.scope());
@@ -59,7 +61,7 @@ public class CompositeParameters<D extends DeviceParameters, T extends TunerPara
 
         MemorySegment memoryAddressRxA = sdrplay_api_DeviceParamsT.rxChannelA$get(memorySegment);
         MemorySegment memorySegmentRxA = sdrplay_api_RxChannelParamsT.ofAddress(memoryAddressRxA, arena.scope());
-        mTunerAParameters = (T) TunerParametersFactory.create(deviceType, memorySegmentRxA);
+        mTunerAParameters = (T) TunerParametersFactory.create(version, deviceType, memorySegmentRxA);
 
         MemorySegment tunerAControlParametersMemorySegment = sdrplay_api_RxChannelParamsT.ctrlParams$slice(memorySegmentRxA);
         mControlAParameters = new ControlParameters(tunerAControlParametersMemorySegment);

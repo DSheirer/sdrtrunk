@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,17 +50,6 @@ public class Gain
     private MemorySegment getMemorySegment()
     {
         return mMemorySegment;
-    }
-
-    /**
-     * Sets the LNA state and gain reduction from the set of gain reduction values using the specified index
-     * @param gainReduction for the current frequency band
-     * @param index into the gain values to use for LNA state and gain reduction
-     */
-    public void setGain(GainReduction gainReduction, int index)
-    {
-        setLNA(gainReduction.getLnaState(index));
-        setGainReductionDb(gainReduction.getGainReduction(index));
     }
 
     /**

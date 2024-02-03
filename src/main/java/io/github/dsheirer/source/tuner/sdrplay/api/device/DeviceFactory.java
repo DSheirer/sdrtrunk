@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,6 +124,9 @@ public class DeviceFactory
             }
             case RSP1A -> {
                 return new Rsp1aDevice(sdrPlay, deviceStruct);
+            }
+            case RSP1B -> {
+                return new Rsp1bDevice(sdrPlay, deviceStruct);
             }
             case RSP2 -> {
                 return new Rsp2Device(sdrPlay, deviceStruct);

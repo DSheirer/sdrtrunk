@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1.Rsp1TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.Rsp1bTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.Rsp2TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.RspDuoTuner1Configuration;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.RspDuoTuner2Configuration;
@@ -39,6 +39,7 @@ import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerConfiguration;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Rsp1TunerConfiguration.class, name = "rsp1TunerConfiguration"),
         @JsonSubTypes.Type(value = Rsp1aTunerConfiguration.class, name = "rsp1aTunerConfiguration"),
+        @JsonSubTypes.Type(value = Rsp1bTunerConfiguration.class, name = "rsp1bTunerConfiguration"),
         @JsonSubTypes.Type(value = Rsp2TunerConfiguration.class, name = "rsp2TunerConfiguration"),
         @JsonSubTypes.Type(value = RspDuoTuner1Configuration.class, name = "rspDuoTuner1Configuration"),
         @JsonSubTypes.Type(value = RspDuoTuner2Configuration.class, name = "rspDuoTuner2Configuration"),
@@ -50,7 +51,8 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
     public static final RspSampleRate DEFAULT_DUAL_TUNER_SAMPLE_RATE = RspSampleRate.DUO_RATE_2_000;
 
     private RspSampleRate mRspSampleRate = DEFAULT_SINGLE_TUNER_SAMPLE_RATE;
-    private int mGain = 24;
+    private int mLNA = 0;
+    private int mBasebandGainReduction = 50;
     private AgcMode mAgcMode = AgcMode.ENABLE;
 
     /**
@@ -87,25 +89,41 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
     }
 
     /**
-     * Gain index to use
-     * @return gain index, 0 - 28
+     * LNA setting
+     * @return LNA setting
      */
-    @JacksonXmlProperty(isAttribute = true, localName = "gain")
-    public int getGain()
+    @JacksonXmlProperty(isAttribute = true, localName = "lna")
+    public int getLNA()
     {
-        return mGain;
+        return mLNA;
     }
 
     /**
-     * Sets the gain index
-     * @param gain index, 0 - 28
+     * Sets the LNA state
+     * @param LNA state, 0 - xx, varies by tuner and frequency range.
      */
-    public void setGain(int gain)
+    public void setLNA(int lna)
     {
-        if(GainReduction.MIN_GAIN_INDEX <= gain && gain <= GainReduction.MAX_GAIN_INDEX)
-        {
-            mGain = gain;
-        }
+        mLNA = lna;
+    }
+
+    /**
+     * Baseband gain reduction
+     * @return gain reduction in range 20-59 dB
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "gr")
+    public int getBasebandGainReduction()
+    {
+        return mBasebandGainReduction;
+    }
+
+    /**
+     * Sets the baseband gain reduction value.
+     * @param basebandGainReduction value
+     */
+    public void setBasebandGainReduction(int basebandGainReduction)
+    {
+        mBasebandGainReduction = basebandGainReduction;
     }
 
     /**
