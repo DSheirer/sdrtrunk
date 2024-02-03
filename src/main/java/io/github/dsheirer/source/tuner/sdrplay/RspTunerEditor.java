@@ -52,7 +52,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     private JToggleButton mAgcButton;
     private JLabel mGainValueLabel;
     private LnaSlider mLNASlider;
-    private GainReductionSlider mBasebandSlider;
+    private IfGainSlider mIfGainSlider;
     private JButton mGainOverloadButton;
     private JPanel mGainPanel;
     private AtomicBoolean mGainOverloadAlert = new AtomicBoolean();
@@ -131,6 +131,8 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
                     save();
                 }
 
+                getIfGainSlider().setEnabled(!getAgcButton().isSelected());
+
                 if(mAgcButton.isSelected())
                 {
                     getAgcButton().setText(AUTOMATIC);
@@ -198,12 +200,11 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
             getGainOverloadButton().setForeground(getForeground());
             getGainOverloadButton().setBackground(getBackground());
         }
-        else
-        {
-            mLog.info("Ignoring duplicate gain alerting - alert[" + alert + "] atomic [" + mGainOverloadAlert.get() + "]");
-        }
     }
 
+    /**
+     * Updates the LNA slider with the number of LNA states available for the current frequency.
+     */
     protected void updateLnaSlider()
     {
         if(hasTuner())
@@ -253,7 +254,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     private void updateGain()
     {
         int lna = getLNASlider().getLNA();
-        int gr = getBasebandSlider().getGR();
+        int gr = getIfGainSlider().getGR();
 
         if(hasTuner() && !isLoading())
         {
@@ -266,7 +267,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
             catch(Exception e)
             {
                 mLog.error("Couldn't set RSP gain to LNA:" + lna + " Gain Reduction:" + gr, e);
-                JOptionPane.showMessageDialog(mBasebandSlider, "Couldn't set RSP gain value to LNA:" + lna + " Gain Reduction:" + gr);
+                JOptionPane.showMessageDialog(mIfGainSlider, "Couldn't set RSP gain value to LNA:" + lna + " Gain Reduction:" + gr);
             }
         }
     }
@@ -285,17 +286,17 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     }
 
     /**
-     * Baseband Gain Reduction Slider
+     * IF Gain Slider
      */
-    protected GainReductionSlider getBasebandSlider()
+    protected IfGainSlider getIfGainSlider()
     {
-        if(mBasebandSlider == null)
+        if(mIfGainSlider == null)
         {
-            mBasebandSlider = new GainReductionSlider();
-            mBasebandSlider.setEnabled(true);
-            mBasebandSlider.setMajorTickSpacing(1);
-            mBasebandSlider.setPaintTicks(true);
-            mBasebandSlider.addChangeListener(event ->
+            mIfGainSlider = new IfGainSlider();
+            mIfGainSlider.setEnabled(true);
+            mIfGainSlider.setMajorTickSpacing(1);
+            mIfGainSlider.setPaintTicks(true);
+            mIfGainSlider.addChangeListener(event ->
             {
                 JSlider source = (JSlider)event.getSource();
 
@@ -306,7 +307,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
             });
         }
 
-        return mBasebandSlider;
+        return mIfGainSlider;
     }
 
     /**
@@ -342,14 +343,14 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     }
 
     /**
-     * JSlider implementation that inverts the scale to support Gain Reduction values.
+     * JSlider implementation that inverts the scale to support IF Gain (aka Gain Reduction) values.
      */
-    public class GainReductionSlider extends JSlider
+    public class IfGainSlider extends JSlider
     {
         /**
          * Constructs an instance
          */
-        public GainReductionSlider()
+        public IfGainSlider()
         {
             super(JSlider.HORIZONTAL, 0, 39, 30);
         }
@@ -360,7 +361,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
          */
         public int getGR()
         {
-            return getBasebandSlider().getMaximum() - getBasebandSlider().getValue() + 20;
+            return getIfGainSlider().getMaximum() - getIfGainSlider().getValue() + 20;
         }
 
         /**

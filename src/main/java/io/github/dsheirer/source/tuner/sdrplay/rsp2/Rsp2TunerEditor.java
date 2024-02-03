@@ -88,8 +88,8 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         add(getGainPanel(), "wrap");
         add(new JLabel("LNA:"));
         add(getLNASlider(), "wrap");
-        add(new JLabel("Baseband:"));
-        add(getBasebandSlider(), "wrap");
+        add(new JLabel("IF:"));
+        add(getIfGainSlider(), "wrap");
 
         add(new JSeparator(), "span,growx,push");
 
@@ -151,7 +151,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
             getAgcButton().setSelected(current == null || current.equals(AgcMode.ENABLE));
             getAgcButton().setText((current == null || current.equals(AgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
             getLNASlider().setLNA(getTunerController().getControlRsp().getLNA());
-            getBasebandSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
+            getIfGainSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
 
             //Register to receive gain overload notifications
             getTunerController().getControlRsp().setGainOverloadListener(this);
@@ -159,7 +159,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         }
 
         getLNASlider().setEnabled(hasTuner());
-        getBasebandSlider().setEnabled(hasTuner());
+        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != AgcMode.ENABLE);
         getGainValueLabel().setEnabled(hasTuner());
 
         getBiasTCheckBox().setEnabled(hasTuner());
@@ -219,7 +219,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
             getConfiguration().setRfNotch(getRfNotchCheckBox().isSelected());
             getConfiguration().setAntennaSelection((Rsp2AntennaSelection)getAntennaSelectionCombo().getSelectedItem());
             getConfiguration().setLNA(getLNASlider().getLNA());
-            getConfiguration().setBasebandGainReduction(getBasebandSlider().getGR());
+            getConfiguration().setBasebandGainReduction(getIfGainSlider().getGR());
             getConfiguration().setAgcMode(getAgcButton().isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
 
             saveConfiguration();
