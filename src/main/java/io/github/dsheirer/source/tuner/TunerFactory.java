@@ -72,6 +72,7 @@ import io.github.dsheirer.source.tuner.sdrplay.api.device.Device;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp1Device;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp1aDevice;
+import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp1bDevice;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp2Device;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDxDevice;
@@ -87,6 +88,11 @@ import io.github.dsheirer.source.tuner.sdrplay.rsp1a.IControlRsp1a;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerController;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerEditor;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.ControlRsp1b;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.DiscoveredRsp1bTuner;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.IControlRsp1b;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.Rsp1bTunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1b.Rsp1bTunerController;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1b.Rsp1bTunerEditor;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.ControlRsp2;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.DiscoveredRsp2Tuner;
@@ -148,6 +154,9 @@ public class TunerFactory
                 break;
             case RSP1A:
                 tuners.add(new DiscoveredRsp1aTuner(deviceInfo, channelizerType));
+                break;
+            case RSP1B:
+                tuners.add(new DiscoveredRsp1bTuner(deviceInfo, channelizerType));
                 break;
             case RSP2:
                 tuners.add(new DiscoveredRsp2Tuner(deviceInfo, channelizerType));
@@ -227,6 +236,14 @@ public class TunerFactory
                         IControlRsp1a controlRsp1a = new ControlRsp1a(rsp1aDevice);
                         Rsp1aTunerController rsp1aTunerController = new Rsp1aTunerController(controlRsp1a, tunerErrorListener);
                         return new RspTuner(rsp1aTunerController, tunerErrorListener, channelizerType);
+                    }
+                    break;
+                case RSP1B:
+                    if(device instanceof Rsp1bDevice rsp1bDevice)
+                    {
+                        IControlRsp1b controlRsp1b = new ControlRsp1b(rsp1bDevice);
+                        Rsp1bTunerController rsp1bTunerController = new Rsp1bTunerController(controlRsp1b, tunerErrorListener);
+                        return new RspTuner(rsp1bTunerController, tunerErrorListener, channelizerType);
                     }
                     break;
                 case RSP2:
@@ -412,6 +429,8 @@ public class TunerFactory
                 return new Rsp1TunerConfiguration(uniqueID);
             case RSP_1A:
                 return new Rsp1aTunerConfiguration(uniqueID);
+            case RSP_1B:
+                return new Rsp1bTunerConfiguration(uniqueID);
             case RSP_2:
                 return new Rsp2TunerConfiguration(uniqueID);
             case RSP_DUO_1:
