@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,6 +72,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                     .append("] Frequency [").append(channelSource.getFrequency())
                     .append("] Mixer [").append(channelSource.getMixerFrequency())
                     .append("]");
+            sb.append(" HASH:").append(Integer.toHexString(channelSource.hashCode()).toUpperCase());
         }
 
         return sb.toString();

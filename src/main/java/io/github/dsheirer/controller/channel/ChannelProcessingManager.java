@@ -24,6 +24,7 @@ import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
+import io.github.dsheirer.channel.state.AbstractChannelState;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.controller.channel.event.PreloadDataContent;
@@ -52,6 +53,7 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,9 +74,10 @@ import org.slf4j.LoggerFactory;
  */
 public class ChannelProcessingManager implements Listener<ChannelEvent>
 {
+    private static final String DIVIDER = "-------------------------------------------------------------------------\n";
     private final static Logger mLog = LoggerFactory.getLogger(ChannelProcessingManager.class);
     private static final String TUNER_UNAVAILABLE_DESCRIPTION = "TUNER UNAVAILABLE";
-    private Map<Channel,ProcessingChain> mProcessingChains = new ConcurrentHashMap<>();
+    private Map<Channel,ProcessingChain> mProcessingChainsMap = new ConcurrentHashMap<>();
     private Lock mLock = new ReentrantLock();
 
     private ChannelSourceEventErrorListener mSourceErrorListener = new ChannelSourceEventErrorListener();
@@ -131,7 +134,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
-            isProcessing = mProcessingChains.containsKey(channel) && mProcessingChains.get(channel).isProcessing();
+            isProcessing = mProcessingChainsMap.containsKey(channel) && mProcessingChainsMap.get(channel).isProcessing();
         }
         finally
         {
@@ -147,7 +150,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public boolean isProcessing()
     {
-        return !mProcessingChains.isEmpty();
+        return !mProcessingChainsMap.isEmpty();
     }
 
     /**
@@ -156,7 +159,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public ProcessingChain getProcessingChain(Channel channel)
     {
-        return mProcessingChains.get(channel);
+        return mProcessingChainsMap.get(channel);
     }
 
     /**
@@ -175,7 +178,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
             try
             {
-                for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
+                for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChainsMap.entrySet())
                 {
                     if(entry.getValue() == processingChain)
                     {
@@ -206,7 +209,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
-            for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
+            for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChainsMap.entrySet())
             {
                 if(entry.getValue().hasSource(tunerChannelSource))
                 {
@@ -556,10 +559,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
-            if(!mProcessingChains.containsKey(channel))
+            if(!mProcessingChainsMap.containsKey(channel))
             {
                 added = true;
-                mProcessingChains.put(channel, processingChain);
+                mProcessingChainsMap.put(channel, processingChain);
                 getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
             }
         }
@@ -584,7 +587,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
-            removed = mProcessingChains.remove(channel);
+            removed = mProcessingChainsMap.remove(channel);
 
             if(removed != null)
             {
@@ -660,7 +663,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             mDelayedChannelStartTasks.remove(delayedTask);
         }
 
-        List<Channel> channelsToStop = new ArrayList<>(mProcessingChains.keySet());
+        List<Channel> channelsToStop = new ArrayList<>(mProcessingChainsMap.keySet());
 
         for(Channel channel : channelsToStop)
         {
@@ -683,7 +686,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     public void convertToTrafficChannel(ChannelConversionRequest request)
     {
         //Update the channel to processing chain map.
-        ProcessingChain processingChain = mProcessingChains.remove(request.getCurrentChannel());
+        ProcessingChain processingChain = mProcessingChainsMap.remove(request.getCurrentChannel());
 
         if(processingChain != null)
         {
@@ -697,7 +700,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 request.getTrafficChannel().setProcessing(true);
             });
 
-            mProcessingChains.put(request.getTrafficChannel(), processingChain);
+            mProcessingChainsMap.put(request.getTrafficChannel(), processingChain);
             mChannelMetadataModel.updateChannelMetadataToChannelMap(processingChain.getChannelState().getChannelMetadata(),
                 request.getTrafficChannel());
 
@@ -803,7 +806,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
                 try
                 {
-                    for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChains.entrySet())
+                    for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChainsMap.entrySet())
                     {
                         if(entry.getValue().hasSource(sourceEvent.getSource()))
                         {
@@ -840,5 +843,55 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 }
             }
         }
+    }
+
+    /**
+     * Creates a diagnostic report.
+     * @return report text.
+     */
+    public String getDiagnosticInformation()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Channel Processing Manager - Diagnostics Report\n\n");
+        sb.append(DIVIDER);
+        sb.append("\tChannel to Processing Chain Map Contents\n");
+        Map<Channel,ProcessingChain> mapCopy = new HashMap<>(mProcessingChainsMap);
+        for(Map.Entry<Channel,ProcessingChain> entry: mapCopy.entrySet())
+        {
+            sb.append("\n\n--------------- CHANNEL:PROCESSING CHAIN MAP ENTRY --------------------\n");
+            try
+            {
+                Channel channel = entry.getKey();
+                sb.append("\tChannel: " + channel).append("\n");
+                sb.append("\t\tSource Configuration: " + channel.getSourceConfiguration()).append("\n");
+                ProcessingChain chain = entry.getValue();
+                sb.append("\tProcessing Chain - Processing: ").append(chain.isProcessing()).append("\n");
+                AbstractChannelState state = chain.getChannelState();
+                sb.append("Channel State: ").append(state.getClass()).append("\n");
+                for(ChannelMetadata metadata: state.getChannelMetadata())
+                {
+                    sb.append(metadata.getDescription()).append("\n");
+                }
+
+                Source source = chain.getSource();
+
+                if(source != null)
+                {
+                    sb.append("Channel Source Class: " + source.getClass()).append("\n");
+                    sb.append("\t\tTo String:").append(source).append("\n");
+                    sb.append("\t\tHash:").append(Integer.toHexString(source.hashCode()).toUpperCase()).append("\n");
+                }
+                else
+                {
+                    sb.append("Channel Source: (null)\n");
+                }
+            }
+            catch(Throwable t)
+            {
+                sb.append("\tError while logging diagnostics of map entry - " + t.getMessage()).append("\n");
+            }
+        }
+
+        return sb.toString();
     }
 }

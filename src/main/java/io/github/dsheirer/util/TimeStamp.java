@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.util;
 
@@ -26,8 +25,9 @@ public class TimeStamp
 {
     public static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
     public static SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HHmmss");
-    public static SimpleDateFormat DATE_WITH_MILLISECONDS_FORMAT = new SimpleDateFormat("HHmmss.SSS");
+    public static SimpleDateFormat TIME_WITH_MILLISECONDS_FORMAT = new SimpleDateFormat("HHmmss.SSS");
     public static SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+    public static SimpleDateFormat DATE_TIME_FORMAT_FILE = new SimpleDateFormat("yyyyMMdd_HHmmss");
     public static SimpleDateFormat DATE_TIME_MILLIS_FORMAT = new SimpleDateFormat("yyyyMMdd HHmmss.SSS");
 
     /**
@@ -44,6 +44,44 @@ public class TimeStamp
     public static synchronized String getFormattedDate(long timestamp)
     {
         return DATE_FORMAT.format(new Date(timestamp));
+    }
+
+    /**
+     * Date time formatted for use in a file.
+     * @param timestamp to format
+     * @return format string
+     */
+    public static String getFileFormattedDateTime(long timestamp)
+    {
+        return DATE_TIME_FORMAT_FILE.format(new Date(timestamp));
+    }
+
+    /**
+     * Current date and time formatted for use in a file.
+     * @return format string
+     */
+    public static String getFileFormattedDateTime()
+    {
+        return getFileFormattedDateTime(System.currentTimeMillis());
+    }
+
+    /**
+     * Creates formatted date and timestamp
+     * @param timestamp to format
+     * @return formatted date and time
+     */
+    public static String getFormattedDateTime(long timestamp)
+    {
+        return DATE_TIME_FORMAT.format(new Date(timestamp));
+    }
+
+    /**
+     * Creates formatted date and timestamp using now as the timestamp.
+     * @return formatted date and time
+     */
+    public static String getFormattedDateTime()
+    {
+        return getFormattedDateTime(System.currentTimeMillis());
     }
 
     /**
@@ -67,7 +105,7 @@ public class TimeStamp
      */
     public static synchronized String getFormattedTimeWithMilliseconds(long timestamp)
     {
-        return DATE_WITH_MILLISECONDS_FORMAT.format(new Date(timestamp));
+        return TIME_WITH_MILLISECONDS_FORMAT.format(new Date(timestamp));
     }
 
     /**

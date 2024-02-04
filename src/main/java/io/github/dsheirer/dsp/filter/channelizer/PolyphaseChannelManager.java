@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -147,6 +147,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             sb.append(" REQUESTED CF: ").append(FREQUENCY_FORMAT.format(requestedCenterFrequency / 1E6d));
             sb.append(" MIXER:").append(FREQUENCY_FORMAT.format(appliedFrequencyOffset / 1E6d));
             sb.append(" | Polyphase Indices: ").append(indexes);
+            sb.append(" HASH:").append(Integer.toHexString(pcs.hashCode()).toUpperCase());
         }
 
         return sb.toString();
