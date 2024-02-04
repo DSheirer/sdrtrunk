@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -525,5 +525,24 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     public String getColumnName(int columnIndex)
     {
         return COLUMN_HEADERS[columnIndex];
+    }
+
+    /**
+     * Generates a diagnostic report for all discovered tuners.
+     */
+    public String getDiagnosticReport()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Discovered Tuner Model Diagnostic Report\n");
+
+        List<DiscoveredTuner> tunersCopy = new ArrayList<>(mDiscoveredTuners);
+
+        for(DiscoveredTuner tuner: tunersCopy)
+        {
+            sb.append("\n\n--------------- DISCOVERED TUNER --------------------\n\n");
+            sb.append(tuner.getDiagnosticReport()).append("\n");
+        }
+
+        return sb.toString();
     }
 }

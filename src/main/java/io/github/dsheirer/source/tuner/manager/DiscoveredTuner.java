@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,12 +60,26 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
      */
     public void logState()
     {
+        mLog.info(getDiagnosticReport());
+    }
+
+    /**
+     * Generates a state report for this tuner.
+     * @return
+     */
+    public String getDiagnosticReport()
+    {
         StringBuilder sb = new StringBuilder();
         sb.append("Discovered Tuner: ").append(getId());
+        sb.append("\n\tClass:").append(getClass());
 
         if(hasTuner())
         {
-            sb.append("\n\tTuner - Frequency:").append(getTuner().getTunerController().getFrequency());
+            sb.append("\n\tTuner Class:").append(getTuner().getClass());
+            sb.append("\n\tTuner Controller Class:").append(getTuner().getTunerController().getClass());
+            sb.append("\n\tFrequency:").append(getTuner().getTunerController().getFrequency());
+            sb.append("\n\tError:").append(getErrorMessage());
+            sb.append("\n\tChannel Manager Class:").append(getTuner().getChannelSourceManager().getClass());
             sb.append("\n\tChannel Manager:").append(getTuner().getChannelSourceManager().getStateDescription());
         }
         else
@@ -73,7 +87,7 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
             sb.append("\n\tTuner - no tuner");
         }
 
-        mLog.info(sb.toString());
+        return sb.toString();
     }
 
     /**
