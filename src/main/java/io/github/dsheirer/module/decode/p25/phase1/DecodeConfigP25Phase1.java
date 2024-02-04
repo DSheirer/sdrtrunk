@@ -38,6 +38,8 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
+    private boolean mIgnoreEncryptedChannels = false;
+    private boolean mIgnoreMutedTalkgroups = false;
 
     public DecodeConfigP25Phase1()
     {
@@ -69,6 +71,28 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
     public void setIgnoreDataCalls(boolean ignore)
     {
         mIgnoreDataCalls = ignore;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "ignore_encrypted_channels")
+    public boolean getIgnoreEncryptedChannels()
+    {
+        return mIgnoreEncryptedChannels;
+    }
+
+    public void setIgnoreEncryptedChannels(boolean ignore)
+    {
+        mIgnoreEncryptedChannels = ignore;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "ignore_muted_talkgroups")
+    public boolean getIgnoreMutedTalkgroups()
+    {
+        return mIgnoreMutedTalkgroups;
+    }
+
+    public void setIgnoreMutedTalkgroups(boolean ignore)
+    {
+        mIgnoreMutedTalkgroups = ignore;
     }
 
 

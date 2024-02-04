@@ -70,6 +70,8 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private ToggleSwitch mIgnoreDataCallsButton;
+    private ToggleSwitch mIgnoreEncryptedChannelsButton;
+    private ToggleSwitch mIgnoreMutedTalkgroupsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private SegmentedButton mModulationSegmentedButton;
     private ToggleButton mC4FMToggleButton;
@@ -145,9 +147,25 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(directionLabel, 5, 0);
             gridPane.getChildren().add(directionLabel);
 
+            GridPane.setConstraints(getIgnoreEncryptedChannelsButton(), 6, 0);
+            gridPane.getChildren().add(getIgnoreEncryptedChannelsButton());
+
+            Label ignoreEncryptedChannelsLabel = new Label("Ignore Encrypted Channels");
+            GridPane.setHalignment(ignoreEncryptedChannelsLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreEncryptedChannelsLabel, 7, 0);
+            gridPane.getChildren().add(ignoreEncryptedChannelsLabel);
+
             Label modulationHelpLabel = new Label("C4FM: repeaters and non-simulcast trunked systems.  LSM: simulcast trunked systems.");
-            GridPane.setConstraints(modulationHelpLabel, 0, 1, 6, 1);
+            GridPane.setConstraints(modulationHelpLabel, 0, 1, 4, 1);
             gridPane.getChildren().add(modulationHelpLabel);
+
+            GridPane.setConstraints(getIgnoreMutedTalkgroupsButton(), 4, 1);
+            gridPane.getChildren().add(getIgnoreMutedTalkgroupsButton());
+
+            Label ignoreMutedTalkgroupsLabel = new Label("Ignore Muted Talkgroups");
+            GridPane.setHalignment(ignoreMutedTalkgroupsLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreMutedTalkgroupsLabel, 5, 1);
+            gridPane.getChildren().add(ignoreMutedTalkgroupsLabel);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -283,6 +301,32 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         return mIgnoreDataCallsButton;
     }
 
+    private ToggleSwitch getIgnoreEncryptedChannelsButton()
+    {
+        if(mIgnoreEncryptedChannelsButton == null)
+        {
+            mIgnoreEncryptedChannelsButton = new ToggleSwitch();
+            mIgnoreEncryptedChannelsButton.setDisable(true);
+            mIgnoreEncryptedChannelsButton.selectedProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreEncryptedChannelsButton;
+    }
+
+    private ToggleSwitch getIgnoreMutedTalkgroupsButton()
+    {
+        if(mIgnoreMutedTalkgroupsButton == null)
+        {
+            mIgnoreMutedTalkgroupsButton = new ToggleSwitch();
+            mIgnoreMutedTalkgroupsButton.setDisable(true);
+            mIgnoreMutedTalkgroupsButton.selectedProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreMutedTalkgroupsButton;
+    }
+
     private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
     {
         if(mTrafficChannelPoolSizeSpinner == null)
@@ -325,12 +369,16 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
         getIgnoreDataCallsButton().setDisable(config == null);
+        getIgnoreEncryptedChannelsButton().setDisable(config == null);
+        getIgnoreMutedTalkgroupsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
 
         if(config instanceof DecodeConfigP25Phase1)
         {
             DecodeConfigP25Phase1 decodeConfig = (DecodeConfigP25Phase1)config;
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
+            getIgnoreEncryptedChannelsButton().setSelected(decodeConfig.getIgnoreEncryptedChannels());
+            getIgnoreMutedTalkgroupsButton().setSelected(decodeConfig.getIgnoreMutedTalkgroups());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             if(decodeConfig.getModulation() == P25P1Decoder.Modulation.C4FM)
             {
@@ -346,6 +394,8 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         else
         {
             getIgnoreDataCallsButton().setSelected(false);
+            getIgnoreEncryptedChannelsButton().setSelected(false);
+            getIgnoreMutedTalkgroupsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
         }
     }
@@ -365,6 +415,8 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         }
 
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
+        config.setIgnoreEncryptedChannels(getIgnoreEncryptedChannelsButton().isSelected());
+        config.setIgnoreMutedTalkgroups(getIgnoreMutedTalkgroupsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setModulation(getC4FMToggleButton().isSelected() ? P25P1Decoder.Modulation.C4FM : P25P1Decoder.Modulation.CQPSK);
         getItem().setDecodeConfiguration(config);
