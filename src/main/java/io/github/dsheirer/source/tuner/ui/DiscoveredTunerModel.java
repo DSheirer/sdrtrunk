@@ -243,7 +243,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
                 }
                 else
                 {
-                    EventQueue.invokeAndWait(() ->
+                    EventQueue.invokeLater(() ->
                     {
                         try
                         {
