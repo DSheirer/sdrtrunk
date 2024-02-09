@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1948,6 +1948,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void start()
     {
+        super.start();
         mPatchGroupManager.clear();
 
         //Change the default (45-second) traffic channel timeout to 1 second
@@ -1965,6 +1966,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void stop()
     {
+        super.stop();
         mPatchGroupManager.clear();
     }
 }

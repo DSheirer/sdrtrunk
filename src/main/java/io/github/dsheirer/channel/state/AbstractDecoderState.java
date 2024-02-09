@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.channel.state;
@@ -47,8 +44,36 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
     protected Broadcaster<IDecodeEvent> mDecodeEventBroadcaster = new Broadcaster<>();
     protected Listener<DecoderStateEvent> mDecoderStateListener;
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
+    private boolean mRunning;
 
     public abstract DecoderType getDecoderType();
+
+    /**
+     * Implements module start and sets the mRunning flag to true so that messages can be processed.
+     */
+    @Override
+    public void start()
+    {
+        mRunning = true;
+    }
+
+    /**
+     * Implements the module stop and sets the mRunning flag to false to stop message processing
+     */
+    @Override
+    public void stop()
+    {
+        mRunning = false;
+    }
+
+    /**
+     * Indicates if this module is running and can process/pass messages down to sub-class implementations.
+     * @return true if running
+     */
+    public boolean isRunning()
+    {
+        return mRunning;
+    }
 
     /**
      * Provides subclass reference to the decode event broadcaster
@@ -145,4 +170,22 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
         }
     }
 
+    /**
+     * Message listener that only passes messages while we're running.  This is important because each of the decoders
+     * can process blocks of samples and that can result in additional messages being generated even after shutdown
+     * and so we shut off the processing of decoded messages when we're commanded to stop.  The sample processing thread
+     * cannot be shutdown or forcefully interrupted because downstream decoder and channel states may have acquired
+     * locks that have to be properly released.
+     */
+    private class MessageListener implements Listener<IMessage>
+    {
+        @Override
+        public void receive(IMessage message)
+        {
+            if(isRunning())
+            {
+                receive(message);
+            }
+        }
+    }
 }

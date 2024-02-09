@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,11 +113,6 @@ public class DCSDecoderState extends DecoderState
 
     @Override
     public void init()
-    {
-    }
-
-    @Override
-    public void stop()
     {
     }
 }

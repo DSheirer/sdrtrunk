@@ -1472,6 +1472,8 @@ public class DMRDecoderState extends TimeslotDecoderState
     @Override
     public void start()
     {
+        super.start();
+
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannel.isTrafficChannel())
         {
@@ -1481,11 +1483,6 @@ public class DMRDecoderState extends TimeslotDecoderState
 
     @Override
     public void init()
-    {
-    }
-
-    @Override
-    public void stop()
     {
     }
 }
