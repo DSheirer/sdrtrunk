@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.dsp.oscillator;
 
+import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -45,7 +46,15 @@ public class VectorRealOscillator extends AbstractOscillator implements IRealOsc
     @Override
     public float[] generate(int sampleCount)
     {
-        float[] samples = new float[sampleCount];
+        int length = sampleCount;
+
+        //Increase the length until it aligns as a multiple of the vector species length
+        while(length % VECTOR_SPECIES.length() != 0)
+        {
+            length++;
+        }
+
+        float[] samples = new float[length];
 
         for(int samplePointer = 0; samplePointer < sampleCount; samplePointer += VECTOR_SPECIES.length())
         {
@@ -58,6 +67,7 @@ public class VectorRealOscillator extends AbstractOscillator implements IRealOsc
             generated.intoArray(samples, samplePointer);
         }
 
-        return samples;
+        //Truncate the array to the requested length, if we increased it for SIMD alignment.
+        return Arrays.copyOf(samples, sampleCount);
     }
 }
