@@ -189,10 +189,13 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
         mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, mIconModel);
 
-        mDiagnosticMonitor = new DiagnosticMonitor(mUserPreferences, mPlaylistManager.getChannelProcessingManager(),
-                mTunerManager);
+        boolean headless = GraphicsEnvironment.isHeadless();
 
-        if(!GraphicsEnvironment.isHeadless())
+        mDiagnosticMonitor = new DiagnosticMonitor(mUserPreferences, mPlaylistManager.getChannelProcessingManager(),
+                mTunerManager, headless);
+        mDiagnosticMonitor.start();
+
+        if(!headless)
         {
             mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
         }
@@ -420,7 +423,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         processingStatusReportMenuItem.addActionListener(e -> {
             try
             {
-                Path path = mDiagnosticMonitor.generateProcessingDiagnosticReport();
+                Path path = mDiagnosticMonitor.generateProcessingDiagnosticReport("User initiated diagnostic report");
 
                 JOptionPane.showMessageDialog(mMainGui, "Report created: " +
                         path.toString(), "Processing Status Report Created", JOptionPane.INFORMATION_MESSAGE);
@@ -623,6 +626,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void processShutdown()
     {
         mLog.info("Application shutdown started ...");
+        mDiagnosticMonitor.stop();
         mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
         mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
         mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,

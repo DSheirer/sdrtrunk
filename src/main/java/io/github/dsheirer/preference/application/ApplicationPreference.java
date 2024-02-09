@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,11 +31,13 @@ import org.slf4j.LoggerFactory;
  */
 public class ApplicationPreference extends Preference
 {
+    private static final String PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING = "automatic.diagnostic.monitoring";
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_START_TIMEOUT = "channel.auto.start.timeout";
 
     private final static Logger mLog = LoggerFactory.getLogger(ApplicationPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(ApplicationPreference.class);
     private Integer mChannelAutoStartTimeout;
+    private Boolean mAutomaticDiagnosticMonitoring;
 
     /**
      * Constructs an instance
@@ -75,6 +77,31 @@ public class ApplicationPreference extends Preference
     {
         mChannelAutoStartTimeout = timeout;
         mPreferences.putInt(PREFERENCE_KEY_CHANNEL_AUTO_START_TIMEOUT, timeout);
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Indicates if automatic diagnostic monitoring is enabled.
+     * @return enabled.
+     */
+    public boolean isAutomaticDiagnosticMonitoring()
+    {
+        if(mAutomaticDiagnosticMonitoring == null)
+        {
+            mAutomaticDiagnosticMonitoring = mPreferences.getBoolean(PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING, true);
+        }
+
+        return mAutomaticDiagnosticMonitoring;
+    }
+
+    /**
+     * Sets the enabled state for automatic diagnostic monitoring.
+     * @param enabled true to turn on monitoring.
+     */
+    public void setAutomaticDiagnosticMonitoring(boolean enabled)
+    {
+        mAutomaticDiagnosticMonitoring = enabled;
+        mPreferences.putBoolean(PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING, enabled);
         notifyPreferenceUpdated();
     }
 }
