@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -220,6 +220,7 @@ public class MPT1327DecoderState extends DecoderState
     @Override
     public void start()
     {
+        super.start();
         //Send call start event for traffic channels to unsquelch the audio.  Decoded return to channel message
         //or fade timeout expire will end the call event.
         if(mChannelType == ChannelType.TRAFFIC)
@@ -228,18 +229,8 @@ public class MPT1327DecoderState extends DecoderState
             broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
         }
     }
-
     @Override
-    public void stop()
-    {
-
-    }
-
-    @Override
-    public void init()
-    {
-
-    }
+    public void init() {}
 
     protected void resetState()
     {

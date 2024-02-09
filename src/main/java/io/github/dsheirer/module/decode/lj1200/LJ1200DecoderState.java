@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,20 +150,5 @@ public class LJ1200DecoderState extends DecoderState
     }
 
     @Override
-    public void start()
-    {
-
-    }
-
-    @Override
-    public void stop()
-    {
-
-    }
-
-    @Override
-    public void init()
-    {
-
-    }
+    public void init() {}
 }

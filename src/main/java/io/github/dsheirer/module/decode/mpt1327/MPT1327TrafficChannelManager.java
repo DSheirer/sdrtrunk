@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -301,6 +301,13 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
      */
     public class TrafficChannelTeardownMonitor implements Listener<ChannelEvent>
     {
+
+        /**
+         * Process channel events from the ChannelProcessingManager to account for owned child traffic channels.
+         * Note: this method sees events for ALL channels and not just MPT1327 channels managed by this instance.
+         *
+         * @param channelEvent to process
+         */
         @Override
         public synchronized void receive(ChannelEvent channelEvent)
         {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ public abstract class DecoderState extends AbstractDecoderState
     @Override
     public void start()
     {
+        super.start();
         //Broadcast the existing identifiers (as add events) so that they can be received by external listeners
         mIdentifierCollection.broadcastIdentifiers();
     }

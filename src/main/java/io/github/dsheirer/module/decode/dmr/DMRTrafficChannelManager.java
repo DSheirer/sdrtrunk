@@ -201,6 +201,9 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             }
 
             mAvailableTrafficChannels.addAll(trafficChannelList);
+
+            //Keep track of the complete list so that we can check channel events to determine if the channel event
+            //is for a traffic channel owned by this traffic channel manager.
             mAllocatedTrafficChannels = Collections.unmodifiableList(trafficChannelList);
         }
     }
@@ -795,7 +798,10 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         }
 
         /**
-         * Process traffic channel processing stop or processing start rejected events.
+         /**
+         * Process channel events from the ChannelProcessingManager to account for owned child traffic channels.
+         * Note: this method sees events for ALL channels and not just DMR channels managed by this instance.
+         *
          * @param channelEvent to process
          */
         @Override
@@ -803,7 +809,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         {
             Channel channel = channelEvent.getChannel();
 
-            if(channel.isTrafficChannel())
+            //Only process the event if it's one of the traffic channels managed by this instance.
+            if(mAllocatedTrafficChannels.contains(channel))
             {
                 switch(channelEvent.getEvent())
                 {
