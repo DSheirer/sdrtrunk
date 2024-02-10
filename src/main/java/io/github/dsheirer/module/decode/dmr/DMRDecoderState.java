@@ -46,6 +46,7 @@ import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.UnknownCSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraTrafficChannelTalkerStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAdvantageModeVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
@@ -886,7 +887,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 else
                 {
-                    mLog.error("Unrecognized DMR channel grant CSBK ignored: " + csbk.getClass());
+                    //Log when a CSBK that is not the Unknown CSBK is processed, to detect when new opcodes are added
+                    //that are not ChannelGrant subclass implementations.
+                    if(!(csbk instanceof UnknownCSBKMessage))
+                    {
+                        mLog.error("Unrecognized DMR channel grant CSBK ignored: " + csbk.getClass());
+                    }
                 }
                 break;
             case MOTOROLA_CAPMAX_ALOHA:
