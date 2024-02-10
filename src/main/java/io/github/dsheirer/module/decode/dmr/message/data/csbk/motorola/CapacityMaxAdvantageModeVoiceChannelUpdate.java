@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,6 @@ import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -281,18 +280,19 @@ public class CapacityMaxAdvantageModeVoiceChannelUpdate extends CSBKMessage impl
     public int[] getLogicalChannelNumbers()
     {
         //Since both timeslots share the same LCN, we use just TS1's channel for both channel 1 and channel 2
-        if(hasChannel1Timeslot1() && hasChannel2Timeslot1())
+        if((hasChannel1Timeslot1() || hasChannel1Timeslot2()) && (hasChannel2Timeslot1() || hasChannel2Timeslot2()))
         {
             return new int[]{getChannel1TS1().getChannelId(), getChannel2TS1().getChannelId()};
         }
-        else if(hasChannel1Timeslot1())
+        else if((hasChannel1Timeslot1() || hasChannel1Timeslot2()))
         {
             return new int[]{getChannel1TS1().getChannelId()};
         }
-        else if(hasChannel2Timeslot1())
+        else if((hasChannel2Timeslot1() || hasChannel2Timeslot2()))
         {
             return new int[]{getChannel2TS1().getChannelId()};
         }
+
         return getChannel1TS1().getLogicalChannelNumbers();
     }
 
