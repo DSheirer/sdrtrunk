@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,13 +59,15 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
      * @param tunerChannel that details the desired channel frequency and bandwidth
      * @param sampleRate of the incoming sample stream
      * @param channelSpecification for the requested channel.
+     * @param threadName for the dispatcher
      * @throws FilterDesignException if a final cleanup filter cannot be designed using the remez filter
      *                               designer and the filter parameters.
      */
     public HalfBandTunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
-                                      double sampleRate, ChannelSpecification channelSpecification) throws FilterDesignException
+                                      double sampleRate, ChannelSpecification channelSpecification, String threadName)
+                                            throws FilterDesignException
     {
-        super(producerSourceEventListener, tunerChannel);
+        super(producerSourceEventListener, tunerChannel, threadName);
 
         int desiredDecimation = (int)(sampleRate / channelSpecification.getMinimumSampleRate());
         int decimation = DecimationFilterFactory.getDecimationRate(desiredDecimation);
@@ -74,7 +76,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
         mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
         //Set dispatcher to process 1/10 of estimated sample arrival rate, 20 times per second (up to 200% per interval)
-        mBufferDispatcher = new Dispatcher("sdrtrunk heterodyne channel " + tunerChannel.getFrequency(), 50, getHeartbeatManager());
+        mBufferDispatcher = new Dispatcher(threadName, 50, getHeartbeatManager());
         mBufferDispatcher.setListener(new NativeBufferProcessor());
 
         //Setup the frequency mixer to the current source frequency

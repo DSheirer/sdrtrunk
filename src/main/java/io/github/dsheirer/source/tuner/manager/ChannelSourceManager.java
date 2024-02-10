@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,9 +77,11 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      *
      * @param tunerChannel for requested source
      * @param channelSpecification for the requested channel
+     * @param threadName for the source thread pool
      * @return tuner channel source or null
      */
-    public abstract TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification);
+    public abstract TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification,
+                                                 String threadName);
 
     /**
      * Signals that the complex buffer provider has an error and can no long provider buffers.  The subclass should

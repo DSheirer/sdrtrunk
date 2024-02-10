@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     protected TunerChannel mTunerChannel;
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
+    protected String mThreadName;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -43,12 +44,15 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      *
      * @param producerSourceEventListener to receive source event requests (e.g. start/stop sample stream)
      * @param tunerChannel describing the desired channel frequency and bandwidth/minimum sample rate
+     * @param threadName for the channel's dispatcher
      */
-    public TunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel)
+    public TunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
+                              String threadName)
     {
         mProducerSourceEventListener = producerSourceEventListener;
         mTunerChannel = tunerChannel;
         mConsumerSourceEventListenerAdapter = new SourceEventListenerToProcessorAdapter(this);
+        mThreadName = threadName;
     }
 
     @Override

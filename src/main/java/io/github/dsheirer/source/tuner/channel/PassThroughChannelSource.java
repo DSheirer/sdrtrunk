@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,14 +48,14 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
      * @param listener to receive source events
      * @param tunerController that provides current sample rate
      * @param tunerChannel requested for this channel
+     * @param threadName for the dispatcher
      */
     public PassThroughChannelSource(Listener<SourceEvent> listener, TunerController tunerController,
-                                    TunerChannel tunerChannel)
+                                    TunerChannel tunerChannel, String threadName)
     {
-        super(listener, tunerChannel);
+        super(listener, tunerChannel, threadName);
         mTunerController = tunerController;
-        mBufferDispatcher = new Dispatcher<>("sdrtrunk pass-through channel " + tunerChannel.getFrequency(),
-                50, getHeartbeatManager());
+        mBufferDispatcher = new Dispatcher<>(threadName, 50, getHeartbeatManager());
         mBufferDispatcher.setListener(new BufferProcessor());
     }
 

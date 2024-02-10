@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,16 +41,15 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * oscillator support to apply frequency correction to the channel sample stream as requested by sample consumer.
      *
      * @param inputChannelCount is the number of input channels for this output processor
-     * @param sampleRate of the output channel.  This is used to match the oscillator's sample rate to the output
-     * channel sample rate for frequency translation/correction.
      * @param heartbeatManager to receive pings on the dispatcher thread
+     * @param threadName for the dispatcher
      */
-    public ChannelOutputProcessor(int inputChannelCount, double sampleRate, HeartbeatManager heartbeatManager)
+    public ChannelOutputProcessor(int inputChannelCount, HeartbeatManager heartbeatManager, String threadName)
     {
         mInputChannelCount = inputChannelCount;
         //Process 1/10th of the sample rate per second at a rate of 20 times a second (200% of anticipated rate)
         mHeartbeatManager = heartbeatManager;
-        mChannelResultsDispatcher = new Dispatcher("sdrtrunk polyphase channel",50, mHeartbeatManager);
+        mChannelResultsDispatcher = new Dispatcher(threadName,50, mHeartbeatManager);
         mChannelResultsDispatcher.setListener(floats -> {
             try
             {

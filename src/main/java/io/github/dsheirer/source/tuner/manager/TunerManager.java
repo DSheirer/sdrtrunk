@@ -515,7 +515,16 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         return mDiscoveredTunerModel.getAvailableTuners();
     }
 
-    public Source getSource(SourceConfiguration config, ChannelSpecification channelSpecification) throws SourceException
+    /**
+     * Obtain a channel (sample stream) source from one of the tuners.
+     * @param config for the source
+     * @param channelSpecification required by the decoder
+     * @param thread name to apply for the channel's scheduled executor
+     * @return a configured source or null if there aren't any tuners that can provide the source.
+     * @throws SourceException if there is an issue.
+     */
+    public Source getSource(SourceConfiguration config, ChannelSpecification channelSpecification,
+                            String threadName) throws SourceException
     {
         Source retVal = null;
 
@@ -530,7 +539,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                     SourceConfigTuner sourceConfigTuner = (SourceConfigTuner)config;
                     TunerChannel tunerChannel = sourceConfigTuner.getTunerChannel(channelSpecification.getBandwidth());
                     String preferredTuner = sourceConfigTuner.getPreferredTuner();
-                    retVal = getSource(tunerChannel, channelSpecification, preferredTuner);
+                    retVal = getSource(tunerChannel, channelSpecification, preferredTuner, threadName +
+                            " " + tunerChannel.getFrequency());
                 }
                 break;
             case TUNER_MULTIPLE_FREQUENCIES:
@@ -540,12 +550,13 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                     TunerChannel tunerChannel = sourceConfigTuner.getTunerChannel(channelSpecification.getBandwidth());
                     String preferredTuner = sourceConfigTuner.getPreferredTuner();
 
-                    Source source = getSource(tunerChannel, channelSpecification, preferredTuner);
+                    Source source = getSource(tunerChannel, channelSpecification, preferredTuner, threadName);
 
                     if(source instanceof TunerChannelSource)
                     {
                         retVal = new MultiFrequencyTunerChannelSource(this, (TunerChannelSource)source,
-                                sourceConfigTuner.getFrequencies(), channelSpecification, sourceConfigTuner.getPreferredTuner());
+                                sourceConfigTuner.getFrequencies(), channelSpecification,
+                                sourceConfigTuner.getPreferredTuner(), threadName + " MULTI FREQ");
                     }
                 }
                 break;
@@ -558,10 +569,15 @@ public class TunerManager implements IDiscoveredTunerStatusListener
 
     /**
      * Iterates current available tuners to get a tuner channel source for the specified frequency and bandwidth
+     * @param tunerChannel requested
+     * @param channelSpecification from the decoder
+     * @param preferredTuner name
+     * @param threadName to assign to the channel's thread pool
      *
      * Returns null if no tuner can source the channel
      */
-    public Source getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification, String preferredTuner)
+    public Source getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification, String preferredTuner,
+                            String threadName)
     {
         TunerChannelSource source = null;
 
@@ -577,7 +593,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 {
                     try
                     {
-                        source = discoveredTuner.getTuner().getChannelSourceManager().getSource(tunerChannel, channelSpecification);
+                        source = discoveredTuner.getTuner().getChannelSourceManager().getSource(tunerChannel,
+                                channelSpecification, threadName);
 
                         if(source != null)
                         {
@@ -604,7 +621,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 {
                     try
                     {
-                        source = discoveredTuner.getTuner().getChannelSourceManager().getSource(tunerChannel, channelSpecification);
+                        source = discoveredTuner.getTuner().getChannelSourceManager().getSource(tunerChannel,
+                                channelSpecification, threadName);
                     }
                     catch(Exception e)
                     {

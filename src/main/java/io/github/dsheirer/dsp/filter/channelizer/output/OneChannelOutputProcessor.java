@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,11 +38,12 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * @param channelIndexes containing a single channel index.
      * @param gain value to apply.  This is typically the same as the channelizer's channel count.
      * @param heartbeatManager to receive heartbeats on the dispatch thread
+     * @param threadName to use for this processor
      */
     public OneChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float gain,
-                                     HeartbeatManager heartbeatManager)
+                                     HeartbeatManager heartbeatManager, String threadName)
     {
-        super(1, sampleRate, heartbeatManager);
+        super(1, heartbeatManager, threadName);
         setPolyphaseChannelIndices(channelIndexes);
         mMixerAssembler = new OneChannelMixerAssembler(gain);
         mMixerAssembler.getMixer().setSampleRate(sampleRate);

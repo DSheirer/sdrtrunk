@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,15 +37,17 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      *
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing two channel indices.
+     * @param filter to use
      * @param gain to apply to output.  Typically this is equal to the channelizer's channel count.
      * @param heartbeatManager to be pinged on the dispatcher thread
+     * @param threadName for the dispatcher
      */
     public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float[] filter, float gain,
-                                     HeartbeatManager heartbeatManager)
+                                     HeartbeatManager heartbeatManager, String threadName)
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels
-        super(2, sampleRate, heartbeatManager);
+        super(2, heartbeatManager, threadName);
         setPolyphaseChannelIndices(channelIndexes);
         mMixerAssembler = new TwoChannelMixerAssembler(gain);
         mMixerAssembler.getMixer().setSampleRate(sampleRate);

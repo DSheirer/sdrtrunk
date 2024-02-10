@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,13 @@ import io.github.dsheirer.spectrum.ComplexDftProcessor;
 import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.SpectrumPanel;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +55,6 @@ import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class HeterodyneChannelizerViewer extends JFrame
 {
@@ -261,7 +261,8 @@ public class HeterodyneChannelizerViewer extends JFrame
             for(int x = 0; x < mChannelCount; x++)
             {
                 TunerChannel tunerChannel = new TunerChannel(100000000, 12500);
-                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
+                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSource(tunerChannel,
+                        channelSpecification, "test");
                 DiscreteChannelPanel channelPanel = new DiscreteChannelPanel(mSettingsManager, source, x);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 
@@ -362,7 +363,7 @@ public class HeterodyneChannelizerViewer extends JFrame
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
             ChannelSpecification channelSpecification = new ChannelSpecification(25000.0, 12500, 6000.0, 6250.0);
-            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
+            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification, "test");
 
             if(mSource != null)
             {
@@ -533,7 +534,8 @@ public class HeterodyneChannelizerViewer extends JFrame
             {
                 if(sourceCount < maxSourceCount)
                 {
-                    TunerChannelSource source = tuner.getChannelSourceManager().getSource(tunerChannel, null);
+                    TunerChannelSource source = tuner.getChannelSourceManager().getSource(tunerChannel,
+                            null, "test");
 
                     if(source != null)
                     {
