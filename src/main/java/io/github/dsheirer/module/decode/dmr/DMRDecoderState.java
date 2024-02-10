@@ -39,6 +39,7 @@ import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.dmr.channel.DMRAbsoluteChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.event.DMRDecodeEvent;
@@ -645,6 +646,10 @@ public class DMRDecoderState extends TimeslotDecoderState
                 closeCurrentCallEvent(message.getTimestamp());
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
+                if(mNetworkConfigurationMonitor != null)
+                {
+                    mNetworkConfigurationMonitor.process(message);
+                }
                 break;
             case TLC:
                 if(message instanceof Terminator)
@@ -1393,6 +1398,12 @@ public class DMRDecoderState extends TimeslotDecoderState
     private void updateCurrentCall(DecodeEventType type, String details, long timestamp)
     {
         Event event = (mCurrentCallEvent == null ? Event.START : Event.CONTINUATION);
+
+        //Create a repeater channel descriptor if we don't have one
+        if(mCurrentChannel == null && mCurrentFrequency > 0)
+        {
+            mCurrentChannel = new DMRAbsoluteChannel(getTimeslot(), getTimeslot(), mCurrentFrequency, 0);
+        }
 
         if(mCurrentCallEvent == null)
         {
