@@ -1441,6 +1441,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         }
 
         getIdentifierCollection().remove(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
+        getIdentifierCollection().remove(IdentifierClass.USER, Form.TONE, Role.FROM);
     }
 
     @Override
