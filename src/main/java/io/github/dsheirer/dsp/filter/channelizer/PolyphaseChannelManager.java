@@ -189,9 +189,10 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * Provides a Digital Drop Channel (DDC) for the specified tuner channel or returns null if the channel can't be
      * sourced due to the current center frequency and/or sample rate.
      * @param tunerChannel specifying center frequency and bandwidth.
+     * @param threadName for the channel's dispatcher
      * @return source or null.
      */
-    public TunerChannelSource getChannel(TunerChannel tunerChannel)
+    public TunerChannelSource getChannel(TunerChannel tunerChannel, String threadName)
     {
         PolyphaseChannelSource channelSource = null;
 
@@ -200,7 +201,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             try
             {
                 channelSource = new PolyphaseChannelSource(tunerChannel, mChannelCalculator, mFilterManager,
-                        mChannelSourceEventListener);
+                        mChannelSourceEventListener, threadName);
 
                 mChannelSources.add(channelSource);
             }

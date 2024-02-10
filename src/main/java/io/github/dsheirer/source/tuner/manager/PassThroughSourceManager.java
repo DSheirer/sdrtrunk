@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,8 @@ public class PassThroughSourceManager extends ChannelSourceManager
     }
 
     @Override
-    public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
+    public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification,
+                                        String threadName)
     {
 
         if(!mRunning)
@@ -107,7 +108,7 @@ public class PassThroughSourceManager extends ChannelSourceManager
         {
             mTunerController.getFrequencyControllerLock().lock();
             PassThroughChannelSource channelSource = new PassThroughChannelSource(new SourceEventProxy(),
-                    mTunerController, tunerChannel);
+                    mTunerController, tunerChannel, threadName);
 
             mTunerChannels.add(tunerChannel);
             mTunerChannelSources.add(channelSource);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,9 +60,9 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
 
     public MultiFrequencyTunerChannelSource(TunerManager tunerManager, TunerChannelSource tunerChannelSource,
                                             List<Long> frequencies, ChannelSpecification channelSpecification,
-                                            String preferredTuner)
+                                            String preferredTuner, String threadName)
     {
-        super(null, tunerChannelSource.getTunerChannel());
+        super(null, tunerChannelSource.getTunerChannel(), threadName);
         mTunerManager = tunerManager;
         mTunerChannelSource = tunerChannelSource;
         mTunerChannelSource.setSourceEventListener(mConsumerSourceEventAdapter);
@@ -114,7 +114,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     {
         if(mStarted)
         {
-            Source source = mTunerManager.getSource(nextChannel, mChannelSpecification, mPreferredTuner);
+            Source source = mTunerManager.getSource(nextChannel, mChannelSpecification, mPreferredTuner, mThreadName);
 
             if(source instanceof TunerChannelSource)
             {

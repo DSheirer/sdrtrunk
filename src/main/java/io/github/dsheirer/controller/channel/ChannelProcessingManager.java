@@ -382,8 +382,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
+            String threadName = "sdrtrunk channel [" + channel.getChannelID() + "/" +
+                    channel.getDecodeConfiguration().getDecoderType().getShortDisplayString() + "]";
             source = mTunerManager.getSource(channel.getSourceConfiguration(),
-                channel.getDecodeConfiguration().getChannelSpecification());
+                channel.getDecodeConfiguration().getChannelSpecification(), threadName);
         }
         catch(SourceException se)
         {

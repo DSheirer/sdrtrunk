@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -379,7 +379,8 @@ public class ChannelizerViewer2 extends JFrame
             mComplexDecibelConverter.addListener(mSpectrumPanel);
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
-            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, new ChannelSpecification(50000, 12500, 6000, 7000));
+            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel,
+                    new ChannelSpecification(50000, 12500, 6000, 7000), "test");
 
             if(mSource != null)
             {

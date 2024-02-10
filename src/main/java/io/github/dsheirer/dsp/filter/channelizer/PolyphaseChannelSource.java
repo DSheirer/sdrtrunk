@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,12 +56,14 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      * @param channelCalculator for current channel center frequency and sample rate and index calculations
      * @param filterManager for access to new or cached synthesis filters
      * @param producerSourceEventListener to receive source event requests (e.g. start/stop sample stream)
+     * @param threadName for the channel's dispatcher
      * @throws IllegalArgumentException if a channel low pass filter can't be designed to the channel specification
      */
     public PolyphaseChannelSource(TunerChannel tunerChannel, ChannelCalculator channelCalculator, SynthesisFilterManager filterManager,
-                                  Listener<SourceEvent> producerSourceEventListener) throws IllegalArgumentException
+                                  Listener<SourceEvent> producerSourceEventListener, String threadName)
+            throws IllegalArgumentException
     {
-        super(producerSourceEventListener, tunerChannel);
+        super(producerSourceEventListener, tunerChannel, threadName);
         mChannelSampleRate = channelCalculator.getChannelSampleRate();
         doUpdateOutputProcessor(channelCalculator, filterManager);
     }
@@ -222,7 +224,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
             {
                 case 1:
                     mPolyphaseChannelOutputProcessor = new OneChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                            indexes, channelCalculator.getChannelCount(), getHeartbeatManager());
+                            indexes, channelCalculator.getChannelCount(), getHeartbeatManager(), mThreadName);
                     mPolyphaseChannelOutputProcessor.setListener(this);
                     mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                     mPolyphaseChannelOutputProcessor.start();
@@ -233,7 +235,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                         float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
                                 channelCalculator.getChannelBandwidth(), 2);
                         mPolyphaseChannelOutputProcessor = new TwoChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                                indexes, filter, channelCalculator.getChannelCount(), getHeartbeatManager());
+                                indexes, filter, channelCalculator.getChannelCount(), getHeartbeatManager(), mThreadName);
                         mPolyphaseChannelOutputProcessor.setListener(this);
                         mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                         mPolyphaseChannelOutputProcessor.start();
