@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
@@ -35,13 +32,16 @@ import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigFactory;
 import io.github.dsheirer.source.config.SourceConfigRecording;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import java.beans.Transient;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import javafx.beans.Observable;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -54,9 +54,6 @@ import javafx.collections.ObservableList;
 import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.beans.Transient;
-import java.util.Objects;
 
 @JacksonXmlRootElement(localName = "channel")
 public class Channel extends Configuration implements Listener<SourceEvent>
@@ -88,7 +85,7 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     private BooleanProperty mAutoStart = new SimpleBooleanProperty();
     private IntegerProperty mAutoStartOrder = new SimpleIntegerProperty();
     private boolean mSelected;
-    private TunerChannel mTunerChannel = null;
+    private List<TunerChannel> mTunerChannels = null;
 
     private ChannelType mChannelType = ChannelType.STANDARD;
 
@@ -634,9 +631,8 @@ public class Channel extends Configuration implements Listener<SourceEvent>
 
         updateFrequencies();
 
-        //Clear the tune channel object so that it can be recreated if the
-        //source configuration changes
-        mTunerChannel = null;
+        //Clear the tune channels object so that it can be recreated if the source configuration changes
+        mTunerChannels = null;
     }
 
     /**
@@ -680,35 +676,50 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     }
 
     /**
-     * Convenience method to construct a tuner channel object representing a
-     * tuner or recording source frequency and bandwidth that can be used by
-     * application components for graphically representing this channel.
+     * Convenience method to construct a tuner channel object representing a tuner or recording source frequency and
+     * bandwidth that can be used by application components for graphically representing this channel.
      *
-     * If the source configuration is not a tuner or recording, this method
-     * returns null.
+     * If the source configuration is not a tuner or recording, this method returns an empty list.
      */
     @JsonIgnore
-    public TunerChannel getTunerChannel()
+    public List<TunerChannel> getTunerChannels()
     {
-        if(mTunerChannel == null)
+        if(mTunerChannels == null && mSourceConfiguration != null)
         {
-            if(mSourceConfiguration.getSourceType() == SourceType.TUNER)
-            {
-                SourceConfigTuner config = (SourceConfigTuner)mSourceConfiguration;
+            mTunerChannels = new ArrayList<>();
 
-                mTunerChannel = new TunerChannel(config.getFrequency(),
-                    mDecodeConfiguration.getChannelSpecification().getBandwidth());
-            }
-            else if(mSourceConfiguration.getSourceType() == SourceType.RECORDING)
+            switch(mSourceConfiguration.getSourceType())
             {
-                SourceConfigRecording config = (SourceConfigRecording)mSourceConfiguration;
-
-                mTunerChannel = new TunerChannel(config.getFrequency(),
-                    mDecodeConfiguration.getChannelSpecification().getBandwidth());
+                case TUNER:
+                    if(mSourceConfiguration instanceof SourceConfigTuner tunerConfig)
+                    {
+                        mTunerChannels.add(new TunerChannel(tunerConfig.getFrequency(),
+                                mDecodeConfiguration.getChannelSpecification().getBandwidth()));
+                    }
+                    break;
+                case TUNER_MULTIPLE_FREQUENCIES:
+                    if(mSourceConfiguration instanceof SourceConfigTunerMultipleFrequency multiConfig)
+                    {
+                        for(long frequency: multiConfig.getFrequencies())
+                        {
+                            mTunerChannels.add(new TunerChannel(frequency,
+                                    mDecodeConfiguration.getChannelSpecification().getBandwidth()));
+                        }
+                    }
+                    break;
+                case RECORDING:
+                    if(mSourceConfiguration instanceof  SourceConfigRecording recordingConfig)
+                    {
+                        mTunerChannels.add(new TunerChannel(recordingConfig.getFrequency(),
+                                mDecodeConfiguration.getChannelSpecification().getBandwidth()));
+                    }
+                    break;
+                default:
+                    mLog.warn("Unrecognized channel source type: " + mSourceConfiguration.getSourceType());
             }
         }
 
-        return mTunerChannel;
+        return mTunerChannels;
     }
 
     /**
@@ -717,9 +728,15 @@ public class Channel extends Configuration implements Listener<SourceEvent>
      */
     public boolean isWithin(long minimum, long maximum)
     {
-        TunerChannel tunerChannel = getTunerChannel();
+        for(TunerChannel tunerChannel: getTunerChannels())
+        {
+            if(tunerChannel.overlaps(minimum, maximum))
+            {
+                return true;
+            }
+        }
 
-        return tunerChannel != null && tunerChannel.overlaps(minimum, maximum);
+        return false;
     }
 
     /**
