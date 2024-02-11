@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.map;
@@ -23,11 +22,9 @@ package io.github.dsheirer.map;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 /**
  * Plottable entity history with location history.
@@ -52,7 +49,7 @@ public class PlottableEntityHistory
      */
     public List<GeoPosition> getLocationHistory()
     {
-        return Collections.unmodifiableList(mLocationHistory);
+        return new ArrayList<>(mLocationHistory);
     }
 
     /**
