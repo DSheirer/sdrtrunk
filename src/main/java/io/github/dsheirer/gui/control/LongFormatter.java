@@ -21,38 +21,43 @@ package io.github.dsheirer.gui.control;
 
 import java.util.function.UnaryOperator;
 import javafx.scene.control.TextFormatter;
-import javafx.util.converter.IntegerStringConverter;
+import javafx.util.converter.LongStringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Text formatter for integer values that constrains values to specified minimum and maximum valid values.
+ * Text formatter for long values that constrains values to specified minimum and maximum valid values.
  */
-public class IntegerFormatter extends TextFormatter<Integer>
+public class LongFormatter extends TextFormatter<Long>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(IntegerFormatter.class);
+    private static final Logger mLog = LoggerFactory.getLogger(LongFormatter.class);
 
     /**
      * Constructs an instance
      * @param minimum allowed value
      * @param maximum allowed value
      */
-    public IntegerFormatter(int minimum, int maximum)
+    public LongFormatter(int minimum, int maximum)
     {
-        super(new IntegerStringConverter(), null, new IntegerFilter(minimum, maximum));
+        super(new LongStringConverter(), null, new LongFilter(minimum, maximum));
     }
 
     /**
      * Formatted text change filter that only allows hexadecimal characters where the converted decimal value
      * is also constrained within minimum and maximum valid values.
      */
-    public static class IntegerFilter implements UnaryOperator<Change>
+    public static class LongFilter implements UnaryOperator<Change>
     {
         private String DECIMAL_REGEX = "\\-?[0-9].*";
         private int mMinimum;
         private int mMaximum;
 
-        public IntegerFilter(int minimum, int maximum)
+        /**
+         * Constructs an instance
+         * @param minimum value
+         * @param maximum value
+         */
+        public LongFilter(int minimum, int maximum)
         {
             mMinimum = minimum;
             mMaximum = maximum;
@@ -70,7 +75,7 @@ public class IntegerFormatter extends TextFormatter<Integer>
 
             try
             {
-                int parsed = Integer.parseInt(value);
+                long parsed = Long.parseLong(value);
                 return mMinimum <= parsed && parsed <= mMaximum;
             }
             catch(Exception e)

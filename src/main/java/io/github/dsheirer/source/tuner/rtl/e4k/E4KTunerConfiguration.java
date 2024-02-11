@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ public class E4KTunerConfiguration extends RTL2832TunerConfiguration
      */
     public E4KTunerConfiguration()
     {
+        super(E4KEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ, E4KEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ);
     }
 
     @JsonIgnore

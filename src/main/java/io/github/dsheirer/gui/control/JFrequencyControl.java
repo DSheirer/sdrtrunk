@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -434,8 +434,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
 
                     if(se instanceof InvalidFrequencyException ife)
                     {
-                        JOptionPane.showMessageDialog(this, "Frequency [" + ife.getInvalidFrequency() +
-                            "] exceeds the frequency limit [" + ife.getValidFrequency() + "] for this tuner.");
+                        JOptionPane.showMessageDialog(this, ife.getMessage() + " for this tuner.");
                     }
                 }
             }

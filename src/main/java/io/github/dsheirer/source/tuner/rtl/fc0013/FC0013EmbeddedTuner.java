@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,8 +61,8 @@ public class FC0013EmbeddedTuner extends EmbeddedTuner
 {
     private final static Logger mLog = LoggerFactory.getLogger(FC0013EmbeddedTuner.class);
     private DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.000000");
-    private static final long MINIMUM_SUPPORTED_FREQUENCY = 13_500_000;
-    private static final long MAXIMUM_SUPPORTED_FREQUENCY = 1_907_999_890l;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 13_500_000;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1_907_999_890l;
     private static final double USABLE_BANDWIDTH_PERCENT = 0.95;
     private static final int DC_SPIKE_AVOID_BUFFER = 15000;
     //Hardware I2C address
@@ -74,7 +74,7 @@ public class FC0013EmbeddedTuner extends EmbeddedTuner
     private static byte[] REGISTERS = {(byte) 0x00, (byte) 0x09, (byte) 0x16, (byte) 0x00, (byte) 0x00, (byte) 0x17,
             (byte) 0x02, (byte) 0x2A, (byte) 0xFF, (byte) 0x6E, (byte) 0xB8, (byte) 0x82, (byte) 0xFE, (byte) 0x01,
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x50, (byte) 0x01};
-    private long mTunedFrequency = MINIMUM_SUPPORTED_FREQUENCY;
+    private long mTunedFrequency = MINIMUM_TUNABLE_FREQUENCY_HZ;
 
     /**
      * Constructs an instance
@@ -95,13 +95,13 @@ public class FC0013EmbeddedTuner extends EmbeddedTuner
     @Override
     public long getMinimumFrequencySupported()
     {
-        return MINIMUM_SUPPORTED_FREQUENCY;
+        return MINIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
     public long getMaximumFrequencySupported()
     {
-        return MAXIMUM_SUPPORTED_FREQUENCY;
+        return MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ public abstract class R8xTunerConfiguration extends RTL2832TunerConfiguration
      */
     public R8xTunerConfiguration()
     {
+        super(R8xEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ, R8xEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ);
     }
 
     /**

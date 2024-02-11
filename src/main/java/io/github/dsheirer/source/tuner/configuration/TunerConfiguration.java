@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,16 +56,21 @@ import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
 @JacksonXmlRootElement(localName = "tuner_configuration")
 public abstract class TunerConfiguration
 {
+    public static final long DEFAULT_FREQUENCY = 101_100_000;
     private String mUniqueID;
-    private long mFrequency = 101100000;
+    private long mFrequency = DEFAULT_FREQUENCY;
+    private long mMinimumFrequency;
+    private long mMaximumFrequency;
     private double mFrequencyCorrection = 0.0d;
     private boolean mAutoPPMCorrection = true;
 
     /**
      * Default constructor to support Jackson
      */
-    public TunerConfiguration()
+    public TunerConfiguration(long minimumFrequency, long maximumFrequency)
     {
+        mMinimumFrequency = minimumFrequency;
+        mMaximumFrequency = maximumFrequency;
     }
 
     /**
@@ -123,7 +128,7 @@ public abstract class TunerConfiguration
     /**
      * Indicates if automatic correction of PPM from measured frequency error is enabled/disabled.
      *
-     * @return true if auto-correction is enabled.
+     * @return true if autocorrection is enabled.
      */
     @JacksonXmlProperty(isAttribute = true, localName = "auto_ppm_correction_enabled")
     public boolean getAutoPPMCorrectionEnabled()
@@ -139,5 +144,43 @@ public abstract class TunerConfiguration
     public void setAutoPPMCorrectionEnabled(boolean enabled)
     {
         mAutoPPMCorrection = enabled;
+    }
+
+    /**
+     * Minimum tunable frequency.
+     * @return minimum frequency
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "min_frequency")
+    public long getMinimumFrequency()
+    {
+        return mMinimumFrequency;
+    }
+
+    /**
+     * Sets the minimum tunable frequency
+     * @param minimumFrequency to set
+     */
+    public void setMinimumFrequency(long minimumFrequency)
+    {
+        mMinimumFrequency = minimumFrequency;
+    }
+
+    /**
+     * Maximum tunable frequency.
+     * @return maximum frequency
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "max_frequency")
+    public long getMaximumFrequency()
+    {
+        return mMaximumFrequency;
+    }
+
+    /**
+     * Sets the maximum tunable frequency
+     * @param maximumFrequency to set
+     */
+    public void setMaximumFrequency(long maximumFrequency)
+    {
+        mMaximumFrequency = maximumFrequency;
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,8 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     public static final byte[] BIT_REV_LOOKUP_TABLE = {(byte) 0x0, (byte) 0x8, (byte) 0x4, (byte) 0xC, (byte) 0x2,
             (byte) 0xA, (byte) 0x6, (byte) 0xE, (byte) 0x1, (byte) 0x9, (byte) 0x5, (byte) 0xD, (byte) 0x3, (byte) 0xB,
             (byte) 0x7, (byte) 0xF};
-    private static final long MINIMUM_SUPPORTED_FREQUENCY = 3180000;
-    private static final long MAXIMUM_SUPPORTED_FREQUENCY = 1782030000;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 3180000;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1782030000;
     private static final double USABLE_BANDWIDTH_PERCENT = 0.98;
     private static final int DC_SPIKE_AVOID_BUFFER = 5000;
     private static final byte VERSION = (byte) 49;
@@ -147,13 +147,13 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     @Override
     public long getMinimumFrequencySupported()
     {
-        return MINIMUM_SUPPORTED_FREQUENCY;
+        return MINIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
     public long getMaximumFrequencySupported()
     {
-        return MAXIMUM_SUPPORTED_FREQUENCY;
+        return MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override

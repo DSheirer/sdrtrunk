@@ -73,6 +73,18 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
         return (RspTunerController) getTuner().getTunerController();
     }
 
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return RspTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return RspTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
     /**
      * Gain controls panel
      * @return gain panel

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,8 +59,8 @@ public class AirspyTunerController extends USBTunerController
     public static final int IF_GAIN_MIN = 0;
     public static final int IF_GAIN_MAX = 15;
     public static final int IF_GAIN_DEFAULT = 9;
-    public static final long FREQUENCY_MIN = 24000000l;
-    public static final long FREQUENCY_MAX = 1800000000l;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 24000000l;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1800000000l;
     public static final long FREQUENCY_DEFAULT = 101100000;
     public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
     private static final long USB_TIMEOUT_MS = 2000l; //milliseconds
@@ -82,7 +82,7 @@ public class AirspyTunerController extends USBTunerController
      */
     public AirspyTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, portAddress, FREQUENCY_MIN, FREQUENCY_MAX, 0, USABLE_BANDWIDTH_PERCENT, tunerErrorListener);
+        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, 0, USABLE_BANDWIDTH_PERCENT, tunerErrorListener);
     }
 
     @Override
@@ -233,7 +233,7 @@ public class AirspyTunerController extends USBTunerController
     @Override
     public synchronized void setTunedFrequency(long frequency) throws SourceException
     {
-        if(FREQUENCY_MIN <= frequency && frequency <= FREQUENCY_MAX)
+        if(MINIMUM_TUNABLE_FREQUENCY_HZ <= frequency && frequency <= MAXIMUM_TUNABLE_FREQUENCY_HZ)
         {
             ByteBuffer buffer = ByteBuffer.allocateDirect(4);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -252,7 +252,7 @@ public class AirspyTunerController extends USBTunerController
         }
         else
         {
-            throw new SourceException("Frequency [" + frequency + "] outside " + "of tunable range " + FREQUENCY_MIN + "-" + FREQUENCY_MAX);
+            throw new SourceException("Frequency [" + frequency + "] outside " + "of tunable range " + MINIMUM_TUNABLE_FREQUENCY_HZ + "-" + MAXIMUM_TUNABLE_FREQUENCY_HZ);
         }
     }
 

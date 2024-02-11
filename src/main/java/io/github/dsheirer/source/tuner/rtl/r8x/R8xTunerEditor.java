@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,6 +67,18 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
         super(userPreferences, tunerManager, discoveredTuner);
         init();
         tunerStatusUpdated();
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return R8xEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return R8xEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     /**
@@ -329,6 +341,8 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
                     try
                     {
                         getTuner().getController().setSampleRate(sampleRate);
+                        //Adjust the min/max values for the sample rate.
+                        adjustForSampleRate(sampleRate.getRate());
                         save();
                     }
                     catch(SourceException | LibUsbException eSampleRate)
@@ -521,6 +535,8 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
             R8xTunerConfiguration config = getConfiguration();
             config.setBiasT(getTuner().getController().isBiasT());
             config.setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
             config.setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());

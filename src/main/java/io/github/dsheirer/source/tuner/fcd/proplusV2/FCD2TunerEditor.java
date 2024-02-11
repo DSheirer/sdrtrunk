@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,6 +67,18 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         }
 
         return null;
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return FCD2TunerController.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return FCD2TunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
@@ -236,6 +248,8 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         if(hasConfiguration() && !isLoading())
         {
             getConfiguration().setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             getConfiguration().setFrequencyCorrection(value);
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());

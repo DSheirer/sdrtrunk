@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,9 +46,12 @@ public abstract class RTL2832TunerConfiguration extends TunerConfiguration
 
     /**
      * Default constructor to support Jackson
+     * @param minimumFrequency tunable
+     * @param maximumFrequency tunable
      */
-    public RTL2832TunerConfiguration()
+    public RTL2832TunerConfiguration(long minimumFrequency, long maximumFrequency)
     {
+        super(minimumFrequency, maximumFrequency);
     }
 
     public RTL2832TunerConfiguration(String uniqueID)

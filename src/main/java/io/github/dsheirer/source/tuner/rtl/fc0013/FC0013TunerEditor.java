@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,6 +66,18 @@ public class FC0013TunerEditor extends TunerEditor<RTL2832Tuner, FC0013TunerConf
         super(userPreferences, tunerManager, discoveredTuner);
         init();
         tunerStatusUpdated();
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return FC0013EmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return FC0013EmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     /**
@@ -263,6 +275,8 @@ public class FC0013TunerEditor extends TunerEditor<RTL2832Tuner, FC0013TunerConf
                     try
                     {
                         getTuner().getController().setSampleRate(sampleRate);
+                        //Adjust the min/max values for the sample rate.
+                        adjustForSampleRate(sampleRate.getRate());
                         save();
                     }
                     catch(SourceException | LibUsbException eSampleRate)
@@ -390,6 +404,8 @@ public class FC0013TunerEditor extends TunerEditor<RTL2832Tuner, FC0013TunerConf
             FC0013TunerConfiguration config = getConfiguration();
             config.setBiasT(getTuner().getController().isBiasT());
             config.setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
             config.setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());

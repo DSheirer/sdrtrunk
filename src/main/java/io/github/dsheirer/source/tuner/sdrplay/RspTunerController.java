@@ -45,8 +45,8 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         implements IDeviceEventListener, IStreamListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(RspTunerController.class);
-    protected static final long MINIMUM_FREQUENCY = 100_000;
-    protected static final long MAXIMUM_FREQUENCY = 2_000_000_000;
+    protected static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 100_000;
+    protected static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 2_000_000_000;
     protected static final int MIDDLE_UNUSABLE_BANDWIDTH = 0;
     private I mControlRsp;
     private RspNativeBufferFactory mNativeBufferFactory = new RspNativeBufferFactory(RspSampleRate.RATE_8_000);
@@ -66,8 +66,8 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         //Register this controller to receive device events and sample streams when startStream() is invoked.
         mControlRsp.resister(this, this);
 
-        setMinimumFrequency(MINIMUM_FREQUENCY);
-        setMaximumFrequency(MAXIMUM_FREQUENCY);
+        setMinimumFrequency(MINIMUM_TUNABLE_FREQUENCY_HZ);
+        setMaximumFrequency(MAXIMUM_TUNABLE_FREQUENCY_HZ);
         setMiddleUnusableHalfBandwidth(MIDDLE_UNUSABLE_BANDWIDTH);
         setUsableBandwidthPercentage(1.0); //Initial value
     }

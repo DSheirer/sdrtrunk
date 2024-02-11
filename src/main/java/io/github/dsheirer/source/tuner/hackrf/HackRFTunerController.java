@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@ public class HackRFTunerController extends USBTunerController
     public static final byte REQUEST_TYPE_IN = (byte)(LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     public static final byte REQUEST_TYPE_OUT = (byte)(LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
 
-    public static final long MINIMUM_TUNABLE_FREQUENCY = 10000000l;
-    public static final long MAXIMUM_TUNABLE_FREQUENCY = 6000000000l;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 10000000l;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 6000000000l;
     public static final long DEFAULT_FREQUENCY = 101100000;
     public static final double USABLE_BANDWIDTH = 0.90;
     public static final int DC_HALF_BANDWIDTH = 5000;
@@ -64,7 +64,7 @@ public class HackRFTunerController extends USBTunerController
      */
     public HackRFTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, DC_HALF_BANDWIDTH, USABLE_BANDWIDTH,
+        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, DC_HALF_BANDWIDTH, USABLE_BANDWIDTH,
                 tunerErrorListener);
     }
 

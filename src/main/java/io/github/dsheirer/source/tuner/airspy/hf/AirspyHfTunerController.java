@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,8 +46,8 @@ public class AirspyHfTunerController extends USBTunerController
     private static final AirspyHfSampleRate DEFAULT_SAMPLE_RATE = new AirspyHfSampleRate(0, 768_000, false);
     private static final long IF_SHIFT_LIF = 0;
     private static final long IF_SHIFT_ZIF = 5_000;
-    private static final long MINIMUM_FREQUENCY_HZ = 500_000;
-    private static final long MAXIMUM_FREQUENCY_HZ = 260_000_000;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 500_000;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 260_000_000;
     private static final byte REQUEST_TYPE_IN = LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE;
     private static final byte REQUEST_TYPE_OUT = LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE;
     private static final int BUFFER_SAMPLE_COUNT = 1024;
@@ -75,8 +75,8 @@ public class AirspyHfTunerController extends USBTunerController
     public AirspyHfTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
         super(bus, portAddress, tunerErrorListener);
-        setMinimumFrequency(MINIMUM_FREQUENCY_HZ);
-        setMaximumFrequency(MAXIMUM_FREQUENCY_HZ);
+        setMinimumFrequency(MINIMUM_TUNABLE_FREQUENCY_HZ);
+        setMaximumFrequency(MAXIMUM_TUNABLE_FREQUENCY_HZ);
         setUsableBandwidthPercentage(.9); //90% usable after filter rolloff
         setMiddleUnusableHalfBandwidth(3000);
     }
