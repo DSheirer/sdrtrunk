@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,18 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         super(userPreferences, tunerManager, discoveredTuner);
         init();
         tunerStatusUpdated();
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return AirspyTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return AirspyTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
@@ -472,6 +484,10 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
                         try
                         {
                             getTuner().getController().setSampleRate(rate);
+
+                            //Adjust the min/max values for the sample rate.
+                            adjustForSampleRate(rate.getRate());
+
                             save();
                         }
                         catch(Exception e1)
@@ -578,6 +594,8 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         if(hasConfiguration() && !isLoading())
         {
             getConfiguration().setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             getConfiguration().setFrequencyCorrection(value);
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,6 +71,18 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         super(userPreferences, tunerManager, discoveredTuner);
         init();
         tunerStatusUpdated();
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return E4KEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return E4KEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     /**
@@ -373,6 +385,8 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
                     try
                     {
                         getTuner().getController().setSampleRate(sampleRate);
+                        //Adjust the min/max values for the sample rate.
+                        adjustForSampleRate(sampleRate.getRate());
                         save();
                     }
                     catch(SourceException | LibUsbException eSampleRate)
@@ -485,6 +499,8 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         {
             E4KTunerConfiguration config = getConfiguration();
             config.setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
             config.setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());

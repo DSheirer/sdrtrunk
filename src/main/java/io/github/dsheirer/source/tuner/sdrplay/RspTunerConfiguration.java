@@ -60,6 +60,7 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
      */
     public RspTunerConfiguration()
     {
+        super(RspTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ, RspTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ);
     }
 
     /**

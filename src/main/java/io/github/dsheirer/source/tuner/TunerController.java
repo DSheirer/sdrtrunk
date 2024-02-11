@@ -75,6 +75,17 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
+     * Updates the frequency controller with the new minimum and maximum values.
+     * @param minimum frequency Hertz
+     * @param maximum frequency Hertz
+     */
+    public void setFrequencyExtents(long minimum, long maximum)
+    {
+        mFrequencyController.setMinimumFrequency(minimum);
+        mFrequencyController.setMaximumFrequency(maximum);
+    }
+
+    /**
      * Lock for the frequency controller.  This should only be used by the channel source manager to lock access to the
      * frequency controller while creating a channel source, to block multi-threaded access to the frequency controller
      * which might put the center tuned frequency value in an indeterminant state.
@@ -175,7 +186,31 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void apply(TunerConfiguration config) throws SourceException
     {
-        setFrequency(config.getFrequency());
+        //Set the frequency from the config.  If the config frequency generates an error, try setting the default
+        //frequency before we give up on the tuner as having an error.
+        try
+        {
+            setFrequency(config.getFrequency());
+        }
+        catch(Exception e)
+        {
+            mLog.warn("Unable to restore previous frequency [" + config.getFrequency() + "] trying default frequency");
+            if(config.getFrequency() != TunerConfiguration.DEFAULT_FREQUENCY)
+            {
+                setFrequency(TunerConfiguration.DEFAULT_FREQUENCY);
+                //If we're successful to here, update the config with the default frequency.
+                config.setFrequency(TunerConfiguration.DEFAULT_FREQUENCY);
+            }
+        }
+
+        if(config.getMinimumFrequency() > 0)
+        {
+            setMinimumFrequency(config.getMinimumFrequency());
+        }
+        if(config.getMaximumFrequency() > 0)
+        {
+            setMaximumFrequency(config.getMaximumFrequency());
+        }
         setFrequencyCorrection(config.getFrequencyCorrection());
         getFrequencyErrorCorrectionManager().setEnabled(config.getAutoPPMCorrectionEnabled());
     }

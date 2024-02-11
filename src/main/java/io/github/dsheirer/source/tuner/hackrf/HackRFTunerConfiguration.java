@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ public class HackRFTunerConfiguration extends TunerConfiguration
      */
     public HackRFTunerConfiguration()
     {
+        super(HackRFTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ, HackRFTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ);
     }
 
     public HackRFTunerConfiguration(String uniqueID)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,13 +23,13 @@ import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.EmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
+import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import javax.usb.UsbException;
-import java.util.EnumSet;
 
 /**
  * Elonic E4000 Tuner
@@ -38,8 +38,8 @@ public class E4KEmbeddedTuner extends EmbeddedTuner
 {
     private final static Logger mLog = LoggerFactory.getLogger(E4KEmbeddedTuner.class);
 
-    public static final long MINIMUM_SUPPORTED_FREQUENCY = 52000000;
-    public static final long MAXIMUM_SUPPORTED_FREQUENCY = 2200000000l;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 52000000;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 2200000000l;
     public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
     public static final int DC_SPIKE_AVOID_BUFFER = 15000;
 
@@ -99,13 +99,13 @@ public class E4KEmbeddedTuner extends EmbeddedTuner
     @Override
     public long getMinimumFrequencySupported()
     {
-        return MINIMUM_SUPPORTED_FREQUENCY;
+        return MINIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
     public long getMaximumFrequencySupported()
     {
-        return MAXIMUM_SUPPORTED_FREQUENCY;
+        return MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
@@ -1039,7 +1039,7 @@ public class E4KEmbeddedTuner extends EmbeddedTuner
         NO_FILTER(0, 0, 0),
 
         //VHF-II Filters (0.0 - 140.0) Optimal (64-108)
-        LP268(0, MINIMUM_SUPPORTED_FREQUENCY, 86_000_000),  //Values 0 - 7 are all the same
+        LP268(0, MINIMUM_TUNABLE_FREQUENCY_HZ, 86_000_000),  //Values 0 - 7 are all the same
         LP299(8, 86_000_000, 140_000_000), //Values 8 - 15 are all the same
 
         //VHF-III Filters (140.0 - 350.0) Optimal (170-240)
@@ -1080,7 +1080,7 @@ public class E4KEmbeddedTuner extends EmbeddedTuner
         BP1680(12, 1670000000, 1690000000),
         BP1700(13, 1690000000, 1710000000),
         BP1720(14, 1710000000, 1735000000),
-        BP1750(15, 1735000000, MAXIMUM_SUPPORTED_FREQUENCY);
+        BP1750(15, 1735000000, MAXIMUM_TUNABLE_FREQUENCY_HZ);
 
         private int mValue;
         private long mMinFrequency;

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,12 +26,12 @@ import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.fcd.FCDCommand;
 import io.github.dsheirer.source.tuner.fcd.FCDTunerController;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.TargetDataLine;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Funcube Dongle Pro Plus tuner controller.  Combines USB HID control with Audio Mixer for data streaming.
@@ -40,8 +40,8 @@ public class FCD2TunerController extends FCDTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(FCD2TunerController.class);
 
-    public static final int MINIMUM_TUNABLE_FREQUENCY = 150000;
-    public static final int MAXIMUM_TUNABLE_FREQUENCY = 2050000000;
+    public static final int MINIMUM_TUNABLE_FREQUENCY_HZ = 150000;
+    public static final int MAXIMUM_TUNABLE_FREQUENCY_HZ = 2050000000;
     public static final int SAMPLE_RATE = 192000;
 
     /**
@@ -53,8 +53,8 @@ public class FCD2TunerController extends FCDTunerController
      */
     public FCD2TunerController(TargetDataLine mixerTDL, int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, bus, portAddress, MINIMUM_TUNABLE_FREQUENCY,
-                MAXIMUM_TUNABLE_FREQUENCY, tunerErrorListener);
+        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ,
+                MAXIMUM_TUNABLE_FREQUENCY_HZ, tunerErrorListener);
     }
 
     protected void deviceStart() throws SourceException

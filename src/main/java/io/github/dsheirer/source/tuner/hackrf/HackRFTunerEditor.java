@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,18 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         super(userPreferences, tunerManager, discoveredTuner);
         init();
         tunerStatusUpdated();
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return HackRFTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return HackRFTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     private void init()
@@ -258,6 +270,8 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                     try
                     {
                         getTuner().getController().setSampleRate(sampleRate);
+                        //Adjust the min/max values for the sample rate.
+                        adjustForSampleRate(sampleRate.getRate());
                         save();
                     }
                     catch(SourceException | UsbException e2)
@@ -400,6 +414,8 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         if(hasConfiguration() && !isLoading())
         {
             getConfiguration().setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             getConfiguration().setFrequencyCorrection(value);
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());

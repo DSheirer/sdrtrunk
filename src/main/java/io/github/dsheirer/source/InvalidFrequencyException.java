@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source;
 
 public class InvalidFrequencyException extends SourceException
@@ -53,12 +53,5 @@ public class InvalidFrequencyException extends SourceException
     public long getValidFrequency()
     {
         return mValidFrequency;
-    }
-
-    @Override
-    public String getMessage()
-    {
-        return super.getMessage() + " Invalid Frequency: " + getInvalidFrequency() +
-            " - current valid frequency:" + getValidFrequency();
     }
 }

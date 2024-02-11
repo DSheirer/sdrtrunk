@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -182,21 +182,20 @@ public class FrequencyController
      */
     private void setFrequency(long frequency, boolean broadcastChange) throws SourceException
     {
-        long tunedFrequency = getTunedFrequency(frequency);
-
-        if(tunedFrequency < mMinimumFrequency)
+        if(frequency < mMinimumFrequency)
         {
-            throw new InvalidFrequencyException("Requested frequency not valid", frequency, mMinimumFrequency);
+            throw new InvalidFrequencyException("Frequency [" + frequency + "] is below the minimum [" +
+                    mMinimumFrequency + "]", frequency, mMinimumFrequency);
         }
 
-        if(tunedFrequency > mMaximumFrequency)
+        if(frequency > mMaximumFrequency)
         {
-            throw new InvalidFrequencyException("Requested frequency not valid", frequency, mMaximumFrequency);
+            throw new InvalidFrequencyException("Frequency [" + frequency + "] is above the maximum [" +
+                    mMaximumFrequency + "]", frequency, mMaximumFrequency);
         }
 
         mFrequency = frequency;
-
-        mTunedFrequency = tunedFrequency;
+        mTunedFrequency = getTunedFrequency(frequency);
 
         if(mTunable != null)
         {
@@ -230,7 +229,7 @@ public class FrequencyController
      */
     public void setMinimumFrequency(long minimum)
     {
-        mMaximumFrequency = minimum;
+        mMinimumFrequency = minimum;
     }
 
     /**
@@ -252,15 +251,12 @@ public class FrequencyController
     }
 
     /**
-     * Calculate the tuned frequency by adding frequency correction to the
-     * corrected frequency.
-     *
+     * Calculate the tuned frequency by adding frequency correction to the corrected frequency.
      * @param correctedFrequency
      */
     private long getTunedFrequency(long correctedFrequency)
     {
-        return (long)((double)correctedFrequency /
-            (1.0 + (mFrequencyCorrection / 1000000.0)));
+        return (long)((double)correctedFrequency / (1.0 + (mFrequencyCorrection / 1000000.0)));
     }
 
     /**

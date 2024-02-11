@@ -215,7 +215,7 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
             catch(SourceException se)
             {
                 mLog.error("Error applying tuner configuration [" + mTunerConfiguration.getClass() +
-                        "] to discovered tuner [" + getId() + "}");
+                        "] to discovered tuner [" + getId() + "}", se);
             }
         }
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,14 +26,14 @@ import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.fcd.FCDCommand;
 import io.github.dsheirer.source.tuner.fcd.FCDTunerController;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.TargetDataLine;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Funcube Dongle Pro tuner controller.  Combines USB HID control with Audio Mixer data streaming interface.
@@ -41,8 +41,8 @@ import java.nio.ByteOrder;
 public class FCD1TunerController extends FCDTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(FCD1TunerController.class);
-    public static final int MINIMUM_TUNABLE_FREQUENCY = 64000000;
-    public static final int MAXIMUM_TUNABLE_FREQUENCY = 1700000000;
+    public static final int MINIMUM_TUNABLE_FREQUENCY_HZ = 64000000;
+    public static final int MAXIMUM_TUNABLE_FREQUENCY_HZ = 1700000000;
     public static final int SAMPLE_RATE = 96000;
     private double mDCCorrectionInPhase = 0.0;
     private double mDCCorrectionQuadrature = 0.0;
@@ -61,8 +61,8 @@ public class FCD1TunerController extends FCDTunerController
      */
     public FCD1TunerController(TargetDataLine mixerTDL, int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(MixerTunerType.FUNCUBE_DONGLE_PRO, mixerTDL, bus, portAddress, MINIMUM_TUNABLE_FREQUENCY,
-                MAXIMUM_TUNABLE_FREQUENCY, tunerErrorListener);
+        super(MixerTunerType.FUNCUBE_DONGLE_PRO, mixerTDL, bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ,
+                MAXIMUM_TUNABLE_FREQUENCY_HZ, tunerErrorListener);
     }
 
     protected void deviceStart() throws SourceException

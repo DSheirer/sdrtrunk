@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ package io.github.dsheirer.source.tuner.rtl;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.rtl.r8x.R8xEmbeddedTuner;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
 import net.miginfocom.swing.MigLayout;
 
@@ -63,13 +64,20 @@ public class RTL2832UnknownTunerEditor extends TunerEditor<RTL2832Tuner, RTL2832
 
         add(new JSeparator(), "span,growx,push");
 
-//        add(new JLabel("Frequency (MHz):"));
-//        add(getFrequencyPanel(), "wrap");
-//
-//        add(new JLabel("Sample Rate:"));
-////        add(getSampleRateCombo(), "wrap");
-//
-//        add(new JSeparator(), "span,growx,push");
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        //Bogus value.
+        return R8xEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        //Bogus value.
+        return R8xEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,18 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
     public void setTunerLockState(boolean locked)
     {
         getFrequencyPanel().updateControls();
+    }
+
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return Long.MAX_VALUE;
     }
 
     @Override
@@ -125,6 +137,8 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
         {
             RecordingTunerConfiguration config = getConfiguration();
             config.setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             saveConfiguration();
         }
     }

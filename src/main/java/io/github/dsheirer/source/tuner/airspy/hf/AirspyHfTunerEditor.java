@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,18 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         tunerStatusUpdated();
     }
 
+    @Override
+    public long getMinimumTunableFrequency()
+    {
+        return AirspyHfTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
+    @Override
+    public long getMaximumTunableFrequency()
+    {
+        return AirspyHfTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ;
+    }
+
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
@@ -102,6 +114,8 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         if(hasConfiguration() && !isLoading())
         {
             getConfiguration().setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             getConfiguration().setFrequencyCorrection(value);
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
@@ -216,6 +230,10 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                         try
                         {
                             getTuner().getController().setSampleRate(sampleRate);
+
+                            //Adjust the min/max values for the sample rate.
+                            adjustForSampleRate(sampleRate.getSampleRate());
+
                             save();
                         }
                         catch(SourceException se)

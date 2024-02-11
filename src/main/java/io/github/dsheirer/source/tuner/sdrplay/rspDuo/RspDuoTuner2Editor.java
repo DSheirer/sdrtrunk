@@ -246,6 +246,8 @@ public class RspDuoTuner2Editor extends RspTunerEditor<RspDuoTuner2Configuration
         if(hasConfiguration() && !isLoading())
         {
             getConfiguration().setFrequency(getFrequencyControl().getFrequency());
+            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
+            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
             double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
             getConfiguration().setFrequencyCorrection(value);
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
@@ -308,6 +310,8 @@ public class RspDuoTuner2Editor extends RspTunerEditor<RspDuoTuner2Configuration
                     try
                     {
                         getTunerController().setSampleRate(selected);
+                        //Adjust the min/max values for the sample rate.
+                        adjustForSampleRate((int)selected.getSampleRate());
                         save();
                     }
                     catch(SDRPlayException se)
