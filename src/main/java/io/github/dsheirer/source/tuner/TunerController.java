@@ -648,45 +648,6 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
-     * Indicates if the current center frequency and bandwidth is correct to source the tuner channel
-     *
-     * @param tunerChannel to test
-     * @return true if the current center frequency and bandwidth is correct for the channel
-     */
-    public boolean isTunedFor(TunerChannel tunerChannel)
-    {
-        try
-        {
-            if(tunerChannel.getMinFrequency() < getMinTunedFrequency())
-            {
-                return false;
-            }
-
-            if(tunerChannel.getMaxFrequency() > getMaxTunedFrequency())
-            {
-                return false;
-            }
-
-            if(hasMiddleUnusableBandwidth())
-            {
-                long minAvoid = getFrequency() - getMiddleUnusableHalfBandwidth();
-                long maxAvoid = getFrequency() + getMiddleUnusableHalfBandwidth();
-
-                if(tunerChannel.overlaps(minAvoid, maxAvoid))
-                {
-                    return false;
-                }
-            }
-        }
-        catch(SourceException se)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Indicates if the current center frequency and bandwidth is correct to source the tuner channel set
      *
      * @param tunerChannels to test

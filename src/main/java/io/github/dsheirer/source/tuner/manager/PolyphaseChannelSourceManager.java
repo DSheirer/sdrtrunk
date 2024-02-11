@@ -195,14 +195,13 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
             throw new IllegalArgumentException("Channel set bandwidth is greater than tuner's available bandwidth");
         }
 
-        long bestIntegralFrequency = getIntegralFrequency(channels);
-
-        //Strategy 1: reuse the current frequency if it's a good integral and the channels fit
-        if(isIntegralSpacing(currentCenterFrequency, bestIntegralFrequency) &&
-            isValidCenterFrequency(channels, currentCenterFrequency))
+        //Strategy 1: reuse the current frequency if the channels fit
+        if(isValidCenterFrequency(channels, currentCenterFrequency))
         {
             return currentCenterFrequency;
         }
+
+        long bestIntegralFrequency = getIntegralFrequency(channels);
 
         double usableHalfBandwidth = mTunerController.getUsableHalfBandwidth();
 
