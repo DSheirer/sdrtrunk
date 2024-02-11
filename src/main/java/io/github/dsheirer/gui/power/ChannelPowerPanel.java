@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -444,11 +444,11 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
 
             if(channel != null)
             {
-                TunerChannel tunerChannel = channel.getTunerChannel();
+                List<TunerChannel> tunerChannels = channel.getTunerChannels();
 
-                if(tunerChannel != null)
+                if(!tunerChannels.isEmpty())
                 {
-                    mFrequencyOverlayPanel.setChannelBandwidth(tunerChannel.getBandwidth());
+                    mFrequencyOverlayPanel.setChannelBandwidth(tunerChannels.get(0).getBandwidth());
                 }
             }
         }
