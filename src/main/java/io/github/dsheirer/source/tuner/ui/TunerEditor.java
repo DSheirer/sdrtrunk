@@ -67,7 +67,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         implements IDiscoveredTunerStatusListener, Listener<TunerEvent>
 {
     private Logger mLog = LoggerFactory.getLogger(TunerEditor.class);
-    private static final long DEFAULT_MINIMUM_FREQUENCY = 1_000_000;
+    private static final long DEFAULT_MINIMUM_FREQUENCY = 1;
     private static final long DEFAULT_MAXIMUM_FREQUENCY = 9_999_999_999l;
     private static final String BUTTON_STATUS_ENABLE = "Enable";
     private static final String BUTTON_STATUS_DISABLE = "Disable";

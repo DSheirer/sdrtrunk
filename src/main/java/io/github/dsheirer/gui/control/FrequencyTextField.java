@@ -38,7 +38,10 @@ import javax.swing.text.PlainDocument;
 public class FrequencyTextField extends JTextField
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrequencyTextField.class);
-    private static final String REGEX = "[1-9][0-9]{0,3}(\\.[0-9]{0,6})?";
+    //Value range: 0.000001 to 9999.999999
+    private static final String REGEX = "^[0-9]{0,4}[.]?[0-9]{0,6}$";
+    //This lets users start typing a really small number like 1 Hertz ... 0.00000
+    private static final String ZEROS_REGEX = "^0?([.]0{0,5})?$";
     private double mMinimum;
     private double mMaximum;
 
@@ -110,7 +113,7 @@ public class FrequencyTextField extends JTextField
      */
     private boolean isValid(String value)
     {
-        if(value == null || value.isEmpty())
+        if(value == null || value.isEmpty() || value.matches(ZEROS_REGEX))
         {
             return true;
         }
@@ -183,7 +186,7 @@ public class FrequencyTextField extends JTextField
     {
         JFrame frame = new JFrame("Frequency Control Test");
         frame.setSize(300, 200);
-        FrequencyTextField ftf = new FrequencyTextField(20, 2_000_000_000, 101_100_000);
+        FrequencyTextField ftf = new FrequencyTextField(1, 9_999_999_999l, 101_100_000);
         frame.setLayout(new MigLayout());
         frame.add(ftf);
 
