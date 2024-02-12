@@ -50,14 +50,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.JPanel;
 
 public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISourceEventProcessor, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
-
-//    private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
+    private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
     private final DecimalFormat PPM_FORMATTER = new DecimalFormat( "#.0" );
 
     private final static RenderingHints RENDERING_HINTS = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
@@ -533,39 +534,36 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
     {
         for(Channel channel : mVisibleChannels)
         {
-            if(mChannelDisplay == ChannelDisplay.ALL ||
-                (mChannelDisplay == ChannelDisplay.ENABLED && channel.isProcessing()))
+            if(mChannelDisplay == ChannelDisplay.ALL || (mChannelDisplay == ChannelDisplay.ENABLED && channel.isProcessing()))
             {
-                //Choose the correct background color to use
-                if(channel.isSelected())
-                {
-                    graphics.setColor(mColorChannelConfigSelected);
-                }
-                else if(channel.isProcessing())
-                {
-                    graphics.setColor(mColorChannelConfigProcessing);
-                }
-                else
-                {
-                    graphics.setColor(mColorChannelConfig);
-                }
-
                 List<TunerChannel> tunerChannels = channel.getTunerChannels();
 
                 for(TunerChannel tunerChannel: tunerChannels)
                 {
                     if(tunerChannel.overlaps(getMinDisplayFrequency(), getMaxDisplayFrequency()))
                     {
-                        double xAxis = getAxisFromFrequency(tunerChannel.getFrequency());
+                        //Choose the correct background color to use
+                        if(channel.isSelected())
+                        {
+                            graphics.setColor(mColorChannelConfigSelected);
+                        }
+                        else if(channel.isProcessing())
+                        {
+                            graphics.setColor(mColorChannelConfigProcessing);
+                        }
+                        else
+                        {
+                            graphics.setColor(mColorChannelConfig);
+                        }
 
+                        double xAxis = getAxisFromFrequency(tunerChannel.getFrequency());
                         double width = (double)(tunerChannel.getBandwidth()) / (double)getDisplayBandwidth() * getSize().getWidth();
 
-                        Rectangle2D.Double box =
-                                new Rectangle2D.Double(xAxis - (width / 2.0d), 0.0d, width, getSize().getHeight() - mSpectrumInset);
+                        Rectangle2D.Double box = new Rectangle2D.Double(xAxis - (width / 2.0d), 0.0d, width,
+                                getSize().getHeight() - mSpectrumInset);
 
                         //Fill the box with the correct color
                         graphics.fill(box);
-
                         graphics.draw(box);
 
                         //Change to the line color to render the channel name, etc.
@@ -590,11 +588,8 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
                         //Draw the decoder label
                         drawLabel(graphics, channel.getDecodeConfiguration().getDecoderType().getShortDisplayString(),
                                 this.getFont(), xAxis, yAxis, width);
-
                         long frequency = tunerChannel.getFrequency();
-
                         double frequencyAxis = getAxisFromFrequency(frequency);
-
                         drawChannelCenterLine(graphics, frequencyAxis);
 
                         /* Draw Automatic Frequency Control line */
@@ -603,7 +598,6 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
                         if(correction != 0)
                         {
                             long error = frequency + correction;
-
                             drawAFC(graphics, frequencyAxis, getAxisFromFrequency(error), width, correction,
                                     tunerChannel.getFrequency());
                         }
