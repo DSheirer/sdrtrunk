@@ -805,7 +805,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
          * @param channelEvent to process
          */
         @Override
-        public synchronized void receive(ChannelEvent channelEvent)
+        public void receive(ChannelEvent channelEvent)
         {
             Channel channel = channelEvent.getChannel();
 
