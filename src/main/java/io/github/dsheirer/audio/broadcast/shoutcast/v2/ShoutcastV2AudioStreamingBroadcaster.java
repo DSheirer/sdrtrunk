@@ -109,7 +109,7 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection, long startTime)
     {
         //Dispatch any queued metadata messages
         UltravoxMessage metadataMessage = mMetadataMessageQueue.poll();
@@ -131,7 +131,7 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
     }
 
     @Override
-    public void update(IdentifierCollection identifierCollection)
+    public void update(IdentifierCollection identifierCollection, long startTime)
     {
         List<UltravoxMessage> metadataMessages = getMetadataMessages(identifierCollection);
 

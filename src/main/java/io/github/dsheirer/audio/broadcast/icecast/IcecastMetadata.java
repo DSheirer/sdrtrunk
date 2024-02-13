@@ -37,92 +37,85 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import io.pebbletemplates.pebble.PebbleEngine;
+import io.pebbletemplates.pebble.loader.StringLoader;
+import io.pebbletemplates.pebble.template.PebbleTemplate;
 
 public class IcecastMetadata
 {
     private final static Logger mLog = LoggerFactory.getLogger(IcecastMetadata.class);
+    private AliasModel mAliasModel;
+    private IcecastConfiguration mIcecastConfiguration;
+    private PebbleEngine mEngine;
+
+    public IcecastMetadata(IcecastConfiguration icecastConfiguration, AliasModel aliasModel)
+    {
+        mAliasModel = aliasModel;
+        mIcecastConfiguration = icecastConfiguration;
+        mEngine = new PebbleEngine.Builder().loader(new StringLoader()).autoEscaping(false).build();
+    }
 
     /**
      * Creates the title for a metadata update
+     * @param identifierCollection object
+     * @param time as ms since epoch
      */
-    public static String getTitle(IdentifierCollection identifierCollection, AliasModel AliasModel)
+    public String getTitle(IdentifierCollection identifierCollection, long time)
     {
-        StringBuilder sb = new StringBuilder();
 
         if(identifierCollection != null)
         {
-            AliasList aliasList = AliasModel.getAliasList(identifierCollection);
+            Map<String, Object> params = new HashMap<>();
 
-            Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
+            AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
 
-            if(to == null)
+            List<String> from = new ArrayList<>();
+            List<String> to = identifierCollection.getToIdentifiers().stream().map(i -> formatIdentifier(i, aliasList)).toList();
+            List<String> tone = new ArrayList<>();
+            List<String> site = identifierCollection.getIdentifiers(Form.SITE).stream().map(i -> i.toString()).toList();
+            List<String> system = identifierCollection.getIdentifiers(Form.SYSTEM).stream().map(i -> i.toString()).toList();
+
+            for(Identifier identifier: identifierCollection.getFromIdentifiers())
             {
-                to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
-            }
-
-            if(to == null)
-            {
-                List<Identifier> toIdentifiers = identifierCollection.getIdentifiers(Role.TO);
-                if(!toIdentifiers.isEmpty())
+                switch(identifier.getForm())
                 {
-                    to = toIdentifiers.get(0);
+                    case TONE:
+                        tone.add(formatIdentifier(identifier, aliasList));
+                        break;
+                    default:
+                        from.add(formatIdentifier(identifier, aliasList));
                 }
             }
 
-            if(to != null)
-            {
-                sb.append("TO:").append(to);
+            params.put("FROM", Joiner.on("; ").skipNulls().join(from).trim());
+            params.put("TIME", formatTime(mIcecastConfiguration.getMetadataTimeFormat(), time));
+            params.put("TO", Joiner.on("; ").skipNulls().join(to).trim());
+            params.put("TONE", Joiner.on("; ").skipNulls().join(tone).trim());
+            params.put("SITE", Joiner.on("; ").skipNulls().join(site).trim());
+            params.put("SYSTEM", Joiner.on("; ").skipNulls().join(system).trim());
 
-                List<Alias> aliases = aliasList.getAliases(to);
-
-                if(aliases != null && !aliases.isEmpty())
-                {
-                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
-                }
-            }
-            else
-            {
-                sb.append("TO:UNKNOWN");
-            }
-
-            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
-
-            if(from == null)
-            {
-                List<Identifier> fromIdentifiers = identifierCollection.getIdentifiers(Role.FROM);
-
-                if(!fromIdentifiers.isEmpty())
-                {
-                    from = fromIdentifiers.get(0);
-                }
-            }
-
-            if(from != null)
-            {
-                sb.append(" FROM:").append(from);
-
-                List<Alias> aliases = aliasList.getAliases(from);
-
-                if(aliases != null && !aliases.isEmpty())
-                {
-                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
-                }
-            }
-            else
-            {
-                sb.append(" FROM:UNKNOWN");
-            }
-        }
-        else
-        {
-            sb.append("Scanning...");
+            return renderTemplate(mIcecastConfiguration.getMetadataFormat(), params);
         }
 
-        return sb.toString();
+        Map<String, Object> params = new HashMap<>();
+        params.put("TIME", formatTime(mIcecastConfiguration.getMetadataTimeFormat(), System.currentTimeMillis()));
+        return renderTemplate(mIcecastConfiguration.getMetadataIdleMessage(), params);
     }
 
+    /**
+     * @param title
+     * @return title formatted as inline icecast metadata
+     */
     public static String formatInline(String title)
     {
         title = "StreamTitle='" + title + "';";
@@ -133,6 +126,85 @@ public class IcecastMetadata
         StringBuilder sb = new StringBuilder();
         sb.append((char)chunks).append(title).append(padding);
         return sb.toString();
+    }
+
+    /**
+     * @param identifier object
+     * @param aliasList object
+     * @return identifier formatted per configuration
+     */
+    private String formatIdentifier(Identifier identifier, AliasList aliasList)
+    {
+        Map<String, Object> params = new HashMap<>();
+
+        params.put("ID", identifier.toString());
+
+        List<Alias> aliases = aliasList.getAliases(identifier);
+
+        if(aliases != null && !aliases.isEmpty())
+        {
+            params.put("ALIAS", Joiner.on(", ").skipNulls().join(aliases).trim());
+            params.put("ALIAS_LIST", Joiner.on(", ").skipNulls().join(aliases.stream().map(alias -> alias.getAliasListName()).toArray()).trim());
+            params.put("GROUP", Joiner.on(", ").skipNulls().join(aliases.stream().map(alias -> alias.getGroup()).toArray()).trim());
+        }
+
+        if((!mIcecastConfiguration.getMetadataTalkgroupFormat().isBlank())&&((identifier.getForm() == Form.PATCH_GROUP)||(identifier.getForm() == Form.TALKGROUP)))
+        {
+            return renderTemplate(mIcecastConfiguration.getMetadataTalkgroupFormat(), params);
+        }
+        else if((!mIcecastConfiguration.getMetadataRadioFormat().isBlank())&&(identifier.getForm() == Form.RADIO))
+        {
+            return renderTemplate(mIcecastConfiguration.getMetadataRadioFormat(), params);
+        }
+        else if((!mIcecastConfiguration.getMetadataToneFormat().isBlank())&&(identifier.getForm() == Form.TONE))
+        {
+            return renderTemplate(mIcecastConfiguration.getMetadataToneFormat(), params);
+        }
+
+        return renderTemplate(mIcecastConfiguration.getMetadataDefaultFormat(), params);
+    }
+
+    /**
+     * @param format to use with SimpleDataFormat
+     * @param time as ms since epoch
+     * @return formatted time as a string
+     */
+    private String formatTime(String format, long time)
+    {
+        try {
+            return new SimpleDateFormat(format).format(new Date(time));
+        }
+        catch (IllegalArgumentException e)
+        {
+            mLog.warn("Invalid metadata time format: " + format);
+        }
+        return "";
+    }
+
+    /**
+     * @param templateString Pebble template as a string
+     * @param params to use for replacement
+     * @return rendered template as a string
+     */
+    private String renderTemplate(String templateString, Map<String, Object> params)
+    {
+        try
+        {
+            PebbleTemplate template = mEngine.getTemplate(templateString);
+            Writer writer = new StringWriter();
+            template.evaluate(writer, params);
+            return writer.toString();
+        }
+        catch (io.pebbletemplates.pebble.error.PebbleException pe)
+        {
+            mLog.warn("Invalid metadata format: " + pe.getMessage());
+        }
+        catch (IOException e)
+        {
+            mLog.warn("Error processing metadata template: ", e);
+        }
+
+        return "";
     }
 
 }

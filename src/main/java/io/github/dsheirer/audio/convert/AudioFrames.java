@@ -18,6 +18,9 @@
  */
 package io.github.dsheirer.audio.convert;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.util.FastMath;
 
@@ -26,6 +29,7 @@ public abstract class AudioFrames
     protected final int audioDuration;
     protected final List<byte[]> audioFrames;
     protected int mCurrentFrame = -1;
+    protected int mCurrentTime = 0;
 
     /**
      * Create new AudioFrame
@@ -57,12 +61,47 @@ public abstract class AudioFrames
     }
 
     /**
+     * Get object representing a segment of audio exceeding the specified duration
+     * and advance position in current object to match end of segment
+     * @param duration to return in ms
+     * @return AudioFrames object representing the audio segment
+     */
+    public AudioFrames getSegment(int duration) throws IllegalArgumentException
+    {
+        List<byte[]> frames = new ArrayList<byte[]>();
+        int time = 0;
+        while(hasNextFrame() && time < duration)
+        {
+            nextFrame();
+            frames.add(getCurrentFrame());
+            time += getCurrentFrameDuration();
+        }
+        if(this instanceof MP3AudioFrames)
+        {
+            return new MP3AudioFrames(time, frames);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unsupported class [" + this.getClass().toString() + "]");
+        }
+    }
+
+    /**
      * Get current frame
      * @return byte array with the current frame of audio
      */
     public byte[] getCurrentFrame()
     {
         return audioFrames.get(mCurrentFrame);
+    }
+
+    /**
+     * Get current position time
+     * @return int representing current position in ms since start
+     */
+    public int getCurrentPositionTime()
+    {
+        return mCurrentTime;
     }
 
     /**
@@ -96,6 +135,7 @@ public abstract class AudioFrames
      */
     public void prevFrame()
     {
+        mCurrentTime -= getCurrentFrameDuration();
         mCurrentFrame -= 1;
     }
 
@@ -105,6 +145,7 @@ public abstract class AudioFrames
     public void nextFrame()
     {
         mCurrentFrame += 1;
+        mCurrentTime += getCurrentFrameDuration();
     }
 
     /**
@@ -114,6 +155,7 @@ public abstract class AudioFrames
     public void restart()
     {
         mCurrentFrame = -1;
+        mCurrentTime = 0;
     }
 
     /**
@@ -126,8 +168,25 @@ public abstract class AudioFrames
         int actual_ms = 0;
         while(FastMath.abs(actual_ms) < FastMath.abs(duration_ms))
         {
+            int frameDuration = getCurrentFrameDuration();
             mCurrentFrame += step;
-            actual_ms += getCurrentFrameDuration();
+            mCurrentTime += (frameDuration * step);
+            actual_ms += frameDuration;
         }
+    }
+
+    /**
+     * Get audio frames as a single byte array
+     * @return byte[] representing the entire audio stream
+     * @throws IOException
+     */
+    public byte[] toByteArray() throws IOException
+    {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        for(byte[] frame: getFrames())
+        {
+            stream.write(frame);
+        }
+        return stream.toByteArray();
     }
 }

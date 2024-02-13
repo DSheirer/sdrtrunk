@@ -120,6 +120,7 @@ dependencies {
     implementation 'org.usb4java:usb4java-javax:1.3.0'
     implementation 'io.github.dsheirer:libusb4java-darwin-aarch64:1.3.1' //usb4java native lib for OSX M1 cpu
     implementation 'pl.edu.icm:JLargeArrays:1.6'
+    implementation 'io.pebbletemplates:pebble:3.2.0'
 }
 
 def os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem

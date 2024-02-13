@@ -41,6 +41,13 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
     private GridPane mEditorPane;
     private TextField mMountPointTextField;
     private IntegerTextField mFeedIdTextField;
+    private TextField mMetadataDefaultFormatField;
+    private TextField mMetadataFormatField;
+    private TextField mMetadataIdleMessageField;
+    private TextField mMetadataRadioFormatField;
+    private TextField mMetadataTalkgroupFormatField;
+    private TextField mMetadataTimeFormatField;
+    private TextField mMetadataToneFormatField;
 
     public BroadcastifyStreamEditor(PlaylistManager playlistManager)
     {
@@ -54,16 +61,37 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
 
         getFeedIdTextField().setDisable(item == null);
         getMountPointTextField().setDisable(item == null);
+        getMetadataDefaultFormatField().setDisable(item == null);
+        getMetadataFormatField().setDisable(item == null);
+        getMetadataIdleMessageField().setDisable(item == null);
+        getMetadataRadioFormatField().setDisable(item == null);
+        getMetadataTalkgroupFormatField().setDisable(item == null);
+        getMetadataTimeFormatField().setDisable(item == null);
+        getMetadataToneFormatField().setDisable(item == null);
 
         if(item != null)
         {
             getFeedIdTextField().set(item.getFeedID());
             getMountPointTextField().setText(item.getMountPoint());
+            getMetadataDefaultFormatField().setText(item.getMetadataDefaultFormat());
+            getMetadataFormatField().setText(item.getMetadataFormat());
+            getMetadataIdleMessageField().setText(item.getMetadataIdleMessage());
+            getMetadataRadioFormatField().setText(item.getMetadataRadioFormat());
+            getMetadataTalkgroupFormatField().setText(item.getMetadataTalkgroupFormat());
+            getMetadataTimeFormatField().setText(item.getMetadataTimeFormat());
+            getMetadataToneFormatField().setText(item.getMetadataToneFormat());
         }
         else
         {
             getFeedIdTextField().set(0);
             getMountPointTextField().setText(null);
+            getMetadataDefaultFormatField().setText(null);
+            getMetadataFormatField().setText(null);
+            getMetadataIdleMessageField().setText(null);
+            getMetadataRadioFormatField().setText(null);
+            getMetadataTalkgroupFormatField().setText(null);
+            getMetadataTimeFormatField().setText(null);
+            getMetadataToneFormatField().setText(null);
         }
 
         modifiedProperty().set(false);
@@ -76,6 +104,13 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
         {
             getItem().setFeedID(getFeedIdTextField().get());
             getItem().setMountPoint(getMountPointTextField().getText());
+            getItem().setMetadataDefaultFormat(getMetadataDefaultFormatField().getText());
+            getItem().setMetadataFormat(getMetadataFormatField().getText());
+            getItem().setMetadataIdleMessage(getMetadataIdleMessageField().getText());
+            getItem().setMetadataRadioFormat(getMetadataRadioFormatField().getText());
+            getItem().setMetadataTalkgroupFormat(getMetadataTalkgroupFormatField().getText());
+            getItem().setMetadataTimeFormat(getMetadataTimeFormatField().getText());
+            getItem().setMetadataToneFormat(getMetadataToneFormatField().getText());
         }
 
         super.save();
@@ -178,6 +213,97 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
 
             GridPane.setConstraints(getFeedIdTextField(), 1, 5);
             getEditorPane().getChildren().add(getFeedIdTextField());
+
+            Label metadataSectionLabel = new Label("Metadata Customization");
+            GridPane.setHalignment(metadataSectionLabel, HPos.CENTER);
+            GridPane.setConstraints(metadataSectionLabel, 0, 6, 5, 1);
+            mEditorPane.getChildren().add(metadataSectionLabel);
+
+            Label metadataFormatLabel = new Label("Message Format");
+            GridPane.setHalignment(metadataFormatLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataFormatLabel, 0, 7);
+            mEditorPane.getChildren().add(metadataFormatLabel);
+
+            GridPane.setConstraints(getMetadataFormatField(), 1, 7, 3, 1);
+            mEditorPane.getChildren().add(getMetadataFormatField());
+
+            Label metadataFormatVarsLabel = new Label("Variables: FROM, TO, TIME, TONE, SITE, SYSTEM");
+            GridPane.setHalignment(metadataFormatVarsLabel, HPos.LEFT);
+            GridPane.setConstraints(metadataFormatVarsLabel, 4, 7);
+            mEditorPane.getChildren().add(metadataFormatVarsLabel);
+
+            Label metadataDefaultFormatLabel = new Label("Default Identifier Format");
+            GridPane.setHalignment(metadataDefaultFormatLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataDefaultFormatLabel, 0, 8);
+            mEditorPane.getChildren().add(metadataDefaultFormatLabel);
+
+            GridPane.setConstraints(getMetadataDefaultFormatField(), 1, 8, 3, 1);
+            mEditorPane.getChildren().add(getMetadataDefaultFormatField());
+
+            Label metadataDefaultFormatVarsLabel = new Label("Variables: ALIAS, ALIAS_LIST, GROUP, ID");
+            GridPane.setHalignment(metadataDefaultFormatVarsLabel, HPos.LEFT);
+            GridPane.setConstraints(metadataDefaultFormatVarsLabel, 4, 8);
+            mEditorPane.getChildren().add(metadataDefaultFormatVarsLabel);
+
+            Label metadataRadioFormatLabel = new Label("Override Radio Identifier Format");
+            GridPane.setHalignment(metadataRadioFormatLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataRadioFormatLabel, 0, 9);
+            mEditorPane.getChildren().add(metadataRadioFormatLabel);
+
+            GridPane.setConstraints(getMetadataRadioFormatField(), 1, 9, 3, 1);
+            mEditorPane.getChildren().add(getMetadataRadioFormatField());
+
+            Label metadataRadioFormatVarsLabel = new Label("Variables: ALIAS, ALIAS_LIST, GROUP, ID");
+            GridPane.setHalignment(metadataRadioFormatVarsLabel, HPos.LEFT);
+            GridPane.setConstraints(metadataRadioFormatVarsLabel, 4, 9);
+            mEditorPane.getChildren().add(metadataRadioFormatVarsLabel);
+
+            Label metadataTalkgroupFormatLabel = new Label("Override Talkgroup Identifier Format");
+            GridPane.setHalignment(metadataTalkgroupFormatLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataTalkgroupFormatLabel, 0, 10);
+            mEditorPane.getChildren().add(metadataTalkgroupFormatLabel);
+
+            GridPane.setConstraints(getMetadataTalkgroupFormatField(), 1, 10, 3, 1);
+            mEditorPane.getChildren().add(getMetadataTalkgroupFormatField());
+
+            Label metadataTalkgroupFormatVarsLabel = new Label("Variables: ALIAS, ALIAS_LIST, GROUP, ID");
+            GridPane.setHalignment(metadataTalkgroupFormatVarsLabel, HPos.LEFT);
+            GridPane.setConstraints(metadataTalkgroupFormatVarsLabel, 4, 10);
+            mEditorPane.getChildren().add(metadataTalkgroupFormatVarsLabel);
+
+            Label metadataToneFormatLabel = new Label("Override Tone Identifier Format");
+            GridPane.setHalignment(metadataToneFormatLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataToneFormatLabel, 0, 11);
+            mEditorPane.getChildren().add(metadataToneFormatLabel);
+
+            GridPane.setConstraints(getMetadataToneFormatField(), 1, 11, 3, 1);
+            mEditorPane.getChildren().add(getMetadataToneFormatField());
+
+            Label metadataToneFormatVarsLabel = new Label("Variables: ALIAS, ALIAS_LIST, GROUP, ID");
+            GridPane.setHalignment(metadataToneFormatVarsLabel, HPos.LEFT);
+            GridPane.setConstraints(metadataToneFormatVarsLabel, 4, 11);
+            mEditorPane.getChildren().add(metadataToneFormatVarsLabel);
+
+            Label metadataIdleMessageLabel = new Label("Idle Message");
+            GridPane.setHalignment(metadataIdleMessageLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataIdleMessageLabel, 0, 12);
+            mEditorPane.getChildren().add(metadataIdleMessageLabel);
+
+            GridPane.setConstraints(getMetadataIdleMessageField(), 1, 12, 3, 1);
+            mEditorPane.getChildren().add(getMetadataIdleMessageField());
+
+            Label metadataIdleMessageVarsLabel = new Label("Variables: TIME");
+            GridPane.setHalignment(metadataIdleMessageVarsLabel, HPos.LEFT);
+            GridPane.setConstraints(metadataIdleMessageVarsLabel, 4, 12);
+            mEditorPane.getChildren().add(metadataIdleMessageVarsLabel);
+
+            Label metadataTimeFormatLabel = new Label("Time Format");
+            GridPane.setHalignment(metadataTimeFormatLabel, HPos.RIGHT);
+            GridPane.setConstraints(metadataTimeFormatLabel, 0, 13);
+            mEditorPane.getChildren().add(metadataTimeFormatLabel);
+
+            GridPane.setConstraints(getMetadataTimeFormatField(), 1, 13);
+            mEditorPane.getChildren().add(getMetadataTimeFormatField());
         }
 
         return mEditorPane;
@@ -205,5 +331,89 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
         }
 
         return mFeedIdTextField;
+    }
+
+    private TextField getMetadataDefaultFormatField()
+    {
+        if(mMetadataDefaultFormatField == null)
+        {
+            mMetadataDefaultFormatField = new TextField();
+            mMetadataDefaultFormatField.setDisable(true);
+            mMetadataDefaultFormatField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataDefaultFormatField;
+    }
+
+    private TextField getMetadataFormatField()
+    {
+        if(mMetadataFormatField == null)
+        {
+            mMetadataFormatField = new TextField();
+            mMetadataFormatField.setDisable(true);
+            mMetadataFormatField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataFormatField;
+    }
+
+    private TextField getMetadataIdleMessageField()
+    {
+        if(mMetadataIdleMessageField == null)
+        {
+            mMetadataIdleMessageField = new TextField();
+            mMetadataIdleMessageField.setDisable(true);
+            mMetadataIdleMessageField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataIdleMessageField;
+    }
+
+    private TextField getMetadataRadioFormatField()
+    {
+        if(mMetadataRadioFormatField == null)
+        {
+            mMetadataRadioFormatField = new TextField();
+            mMetadataRadioFormatField.setDisable(true);
+            mMetadataRadioFormatField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataRadioFormatField;
+    }
+
+    private TextField getMetadataTalkgroupFormatField()
+    {
+        if(mMetadataTalkgroupFormatField == null)
+        {
+            mMetadataTalkgroupFormatField = new TextField();
+            mMetadataTalkgroupFormatField.setDisable(true);
+            mMetadataTalkgroupFormatField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataTalkgroupFormatField;
+    }
+
+    private TextField getMetadataTimeFormatField()
+    {
+        if(mMetadataTimeFormatField == null)
+        {
+            mMetadataTimeFormatField = new TextField();
+            mMetadataTimeFormatField.setDisable(true);
+            mMetadataTimeFormatField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataTimeFormatField;
+    }
+
+    private TextField getMetadataToneFormatField()
+    {
+        if(mMetadataToneFormatField == null)
+        {
+            mMetadataToneFormatField = new TextField();
+            mMetadataToneFormatField.setDisable(true);
+            mMetadataToneFormatField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mMetadataToneFormatField;
     }
 }

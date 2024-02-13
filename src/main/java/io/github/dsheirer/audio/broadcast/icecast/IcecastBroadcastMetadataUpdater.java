@@ -52,6 +52,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     private IcecastConfiguration mIcecastConfiguration;
     private AliasModel mAliasModel;
     private boolean mConnectionLoggingSuppressed = false;
+    private IcecastMetadata mIcecastMetadata;
 
     /**
      * Icecast song metadata updater.  Each metadata update is processed in the order received and the dispatch of
@@ -63,6 +64,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     {
         mIcecastConfiguration = icecastConfiguration;
         mAliasModel = aliasModel;
+        mIcecastMetadata = new IcecastMetadata(icecastConfiguration, aliasModel);
     }
 
     /**
@@ -73,7 +75,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      * and will remain in the update queue until the next metadata update is requested.  However, this is a design
      * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
      */
-    public void update(IdentifierCollection identifierCollection)
+    public void update(IdentifierCollection identifierCollection, long startTime)
     {
         if(mIcecastConfiguration.hasInline())
         {
@@ -92,7 +94,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             sb.append("/admin/metadata?mode=updinfo&mount=");
             sb.append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
             sb.append("&charset=UTF%2d8");
-            sb.append("&song=").append(URLEncoder.encode(IcecastMetadata.getTitle(identifierCollection, mAliasModel), UTF8));
+            sb.append("&song=").append(URLEncoder.encode(mIcecastMetadata.getTitle(identifierCollection, startTime), UTF8));
         }
         catch(UnsupportedEncodingException uee)
         {

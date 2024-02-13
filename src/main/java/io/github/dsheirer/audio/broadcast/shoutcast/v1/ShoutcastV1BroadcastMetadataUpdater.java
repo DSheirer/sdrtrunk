@@ -120,7 +120,7 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
      * and will remain in the update queue until the next metadata update is requested.  However, this is a design
      * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
      */
-    public void update(IdentifierCollection identifierCollection)
+    public void update(IdentifierCollection identifierCollection, long startTime)
     {
         mMetadataQueue.offer(getSong(identifierCollection));
 

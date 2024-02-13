@@ -94,7 +94,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection, long startTime)
     {
         if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {

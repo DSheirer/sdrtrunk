@@ -79,13 +79,13 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection, long time)
     {
         if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
             if(mInlineActive)
             {
-                byte[] metadata = IcecastMetadata.formatInline(IcecastMetadata.getTitle(identifierCollection, mAliasModel)).getBytes();
+                byte[] metadata = IcecastMetadata.formatInline(mIcecastMetadata.getTitle(identifierCollection, time)).getBytes();
                 if (mInlineRemaining == -1)
                 {
                     mInlineRemaining = mInlineInterval;

@@ -26,6 +26,7 @@ public interface IBroadcastMetadataUpdater
      * Updates broadcast audio metadata
      *
      * @param identifierCollection containing metadata attributes
+     * @param startTime containing recording start time as MS since epoch
      */
-    void update(IdentifierCollection identifierCollection);
+    void update(IdentifierCollection identifierCollection, long startTime);
 }
