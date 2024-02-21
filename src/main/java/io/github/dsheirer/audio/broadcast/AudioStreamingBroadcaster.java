@@ -211,9 +211,17 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
             super.setBroadcastState(state);
 
-            if(mBroadcastState.get() != null && mBroadcastState.get().isErrorState())
+            if(mBroadcastState.get() != null)
             {
-                stop();
+                if(mBroadcastState.get().isErrorState())
+                {
+                    mLog.error("[" + getStreamName() + "] status: " + mBroadcastState.get().toString());
+                    stop();
+                }
+                else if(mBroadcastState.get().isWarningState())
+                {
+                    mLog.warn("[" + getStreamName() + "] status: " + mBroadcastState.get().toString());
+                }
             }
 
             if(!connected())

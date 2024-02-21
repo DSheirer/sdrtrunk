@@ -37,6 +37,7 @@ public class ConfiguredBroadcast
     private BroadcastConfiguration mBroadcastConfiguration;
     private AbstractAudioBroadcaster mAudioBroadcaster;
     private ObjectProperty<BroadcastState> mBroadcastState = new SimpleObjectProperty<>();
+    private ObjectProperty<BroadcastState> mLastBadBroadcastState = new SimpleObjectProperty<>();
 
     /**
      * Constructs an instance
@@ -90,17 +91,27 @@ public class ConfiguredBroadcast
     }
 
     /**
+     * Last bad broadcast state of the configured audio broadcaster (optional)
+     */
+    public ObjectProperty<BroadcastState> lastBadBroadcastStateProperty()
+    {
+        return mLastBadBroadcastState;
+    }
+
+    /**
      * Sets the audio broadcaster
      * @param audioBroadcaster to use for this configuration
      */
     public void setAudioBroadcaster(AbstractAudioBroadcaster audioBroadcaster)
     {
         mBroadcastState.unbind();
+        mLastBadBroadcastState.unbind();
         mAudioBroadcaster = audioBroadcaster;
 
         if(audioBroadcaster != null)
         {
             mBroadcastState.bind(mAudioBroadcaster.broadcastStateProperty());
+            mLastBadBroadcastState.bind(mAudioBroadcaster.lastBadBroadcastStateProperty());
         }
         else
         {
@@ -120,6 +131,7 @@ public class ConfiguredBroadcast
             {
                 mBroadcastState.setValue(BroadcastState.CONFIGURATION_ERROR);
             }
+            mLastBadBroadcastState.setValue(null);
         }
     }
 

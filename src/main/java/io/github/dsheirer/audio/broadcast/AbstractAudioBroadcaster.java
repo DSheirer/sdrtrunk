@@ -34,6 +34,7 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
     private Listener<BroadcastEvent> mBroadcastEventListener;
     private T mBroadcastConfiguration;
     protected ObjectProperty<BroadcastState> mBroadcastState = new SimpleObjectProperty<>(BroadcastState.READY);
+    protected ObjectProperty<BroadcastState> mLastBadBroadcastState = new SimpleObjectProperty<>();
     protected int mStreamedAudioCount = 0;
     protected int mErrorAudioCount = 0;
     protected int mAgedOffAudioCount = 0;
@@ -56,6 +57,14 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
     }
 
     /**
+     * Observable last bad broadcast state property
+     */
+    public ObjectProperty<BroadcastState> lastBadBroadcastStateProperty()
+    {
+        return mLastBadBroadcastState;
+    }
+
+    /**
      * Current state of the broadcastAudio connection
      */
     public BroadcastState getBroadcastState()
@@ -68,8 +77,24 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
      */
     public void setBroadcastState(BroadcastState broadcastState)
     {
+        if(broadcastState == BroadcastState.CONNECTED)
+        {
+            mLastBadBroadcastState.setValue(null);
+        }
+        else if(broadcastState.isErrorState() || broadcastState.isWarningState())
+        {
+            mLastBadBroadcastState.setValue(broadcastState);
+        }
         mBroadcastState.setValue(broadcastState);
         broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));
+    }
+
+    /**
+     * Last bad state of the broadcastAudio connection
+     */
+    public BroadcastState getLastBadBroadcastState()
+    {
+        return mLastBadBroadcastState.get();
     }
 
     /**
