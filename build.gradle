@@ -46,6 +46,7 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.beryx.runtime' version '1.12.7'
+    id 'org.openjfx.javafxplugin' version '0.0.12'
 }
 
 repositories {
@@ -162,6 +163,12 @@ application {
     else {
         applicationDefaultJvmArgs = jvmArgsLinux
     }
+}
+
+
+javafx {
+    version = '17'
+    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
 jar {
