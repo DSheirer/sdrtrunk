@@ -279,7 +279,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 break;
             case REQUEST_DISABLE:
             case NOTIFICATION_DELETE:
-                if(channel.isProcessing())
+                if(channel != null && channel.isProcessing())
                 {
                     try
                     {

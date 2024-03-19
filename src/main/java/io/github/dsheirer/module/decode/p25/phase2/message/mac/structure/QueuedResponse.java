@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,11 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.QueuedResponseReason;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,12 +34,10 @@ import java.util.List;
 public class QueuedResponse extends MacStructure
 {
     private static final int ADDITIONAL_INFORMATION_INDICATOR = 8;
-    private static final int[] SERVICE_TYPE = {10, 11, 12, 13, 14, 15};
-    private static final int[] REASON = {24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] ADDITIONAL_INFO = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-        49, 50, 51, 52, 53, 54, 55};
-    private static final int[] TARGET_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
-        74, 75, 76, 77, 78, 79};
+    private static final IntField SERVICE_TYPE = IntField.range(10, 15);
+    private static final IntField REASON = IntField.length8(OCTET_3_BIT_16);
+    private static final IntField ADDITIONAL_INFO = IntField.length24(OCTET_4_BIT_24);
+    private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_7_BIT_48);
 
     private QueuedResponseReason mQueuedResponseReason;
     private String mAdditionalInfo;
@@ -86,8 +83,7 @@ public class QueuedResponse extends MacStructure
     {
         if(mAdditionalInfo == null)
         {
-            int arguments = getMessage().getInt(ADDITIONAL_INFO, getOffset());
-            mAdditionalInfo = Integer.toHexString(arguments).toUpperCase();
+            mAdditionalInfo = Integer.toHexString(getInt(ADDITIONAL_INFO)).toUpperCase();
         }
 
         return mAdditionalInfo;
@@ -98,14 +94,14 @@ public class QueuedResponse extends MacStructure
      */
     public MacOpcode getQueuedResponseServiceType()
     {
-        return MacOpcode.fromValue(getMessage().getInt(SERVICE_TYPE, getOffset()));
+        return MacOpcode.fromValue(getInt(SERVICE_TYPE));
     }
 
     public QueuedResponseReason getQueuedResponseReason()
     {
         if(mQueuedResponseReason == null)
         {
-            mQueuedResponseReason = QueuedResponseReason.fromCode(getMessage().getInt(REASON, getOffset()));
+            mQueuedResponseReason = QueuedResponseReason.fromCode(getInt(REASON));
         }
 
         return mQueuedResponseReason;
@@ -115,7 +111,7 @@ public class QueuedResponse extends MacStructure
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;

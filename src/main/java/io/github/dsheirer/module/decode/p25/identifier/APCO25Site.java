@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.identifier;
 
 import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
@@ -42,8 +40,14 @@ public class APCO25Site extends IntegerIdentifier
     /**
      * Creates a new APCO-25 site identifier
      */
-    public static Identifier create(int site)
+    public static IntegerIdentifier create(int site)
     {
         return new APCO25Site(site);
+    }
+
+    @Override
+    public String toString()
+    {
+        return getValue() + "/x" + String.format("%02X", getValue());
     }
 }

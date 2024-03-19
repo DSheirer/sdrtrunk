@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,16 +45,15 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SND
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SystemServiceBroadcast;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tracks the network configuration details of a P25 Phase 1 network from the broadcast messages
@@ -236,7 +235,7 @@ public class P25P1NetworkConfigurationMonitor
                     }
                     break;
                 case CHANNEL_IDENTIFIER_UPDATE:
-                case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
+                case CHANNEL_IDENTIFIER_UPDATE_VU:
                     if(lcw instanceof IFrequencyBand)
                     {
                         IFrequencyBand band = (IFrequencyBand)lcw;

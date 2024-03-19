@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ public class BinaryReader implements Iterator<ByteBuffer>, AutoCloseable
     private InputStream mInputStream;
     private Path mPath;
     private ByteBuffer mNextBuffer;
+    private long mByteCounter;
 
     /**
      * Constructs a binary reader
@@ -84,6 +85,14 @@ public class BinaryReader implements Iterator<ByteBuffer>, AutoCloseable
     }
 
     /**
+     * Total number of bytes read from file
+     */
+    public long getByteCounter()
+    {
+        return mByteCounter;
+    }
+
+    /**
      * Loads the next buffer
      */
     private void getNext()
@@ -92,6 +101,7 @@ public class BinaryReader implements Iterator<ByteBuffer>, AutoCloseable
         {
             byte[] readBytes = new byte[mBufferSize];
             int bytesRead = mInputStream.read(readBytes);
+            mByteCounter += bytesRead;
 
             if(bytesRead < readBytes.length && bytesRead > 0)
             {

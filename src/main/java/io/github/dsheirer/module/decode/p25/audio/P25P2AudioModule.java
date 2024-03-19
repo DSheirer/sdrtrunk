@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructure;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToTalk;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.preference.UserPreferences;
@@ -111,10 +113,8 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     {
         if(message.getTimeslot() == getTimeslot())
         {
-            if(message instanceof AbstractVoiceTimeslot)
+            if(message instanceof AbstractVoiceTimeslot abstractVoiceTimeslot)
             {
-                AbstractVoiceTimeslot abstractVoiceTimeslot = (AbstractVoiceTimeslot)message;
-
                 if(mEncryptedCallStateEstablished)
                 {
                     if(!mEncryptedCall)
@@ -128,13 +128,18 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                     mQueuedAudioTimeslots.offer(abstractVoiceTimeslot);
                 }
             }
-            else if(message instanceof PushToTalk && message.isValid())
+            else if(message instanceof MacMessage macMessage && message.isValid())
             {
-                mEncryptedCallStateEstablished = true;
-                mEncryptedCall = ((PushToTalk)message).isEncrypted();
+                MacStructure macStructure = macMessage.getMacStructure();
 
-                //There should not be any pending voice timeslots to process since the PTT message is the first in
-                //the audio call sequence
+                if(macStructure instanceof PushToTalk pushToTalk)
+                {
+                    mEncryptedCallStateEstablished = true;
+                    mEncryptedCall = pushToTalk.isEncrypted();
+                    //There should not be any pending voice timeslots to process since the PTT message is the first in
+                    //the audio call sequence.
+                    clearPendingVoiceTimeslots();
+                }
             }
             else if(message instanceof EncryptionSynchronizationSequence && message.isValid())
             {
@@ -157,6 +162,14 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
             receive(timeslot);
             timeslot = mQueuedAudioTimeslots.poll();
         }
+    }
+
+    /**
+     * Clears/deletes any pending voice timeslots
+     */
+    private void clearPendingVoiceTimeslots()
+    {
+        mQueuedAudioTimeslots.clear();
     }
 
     /**

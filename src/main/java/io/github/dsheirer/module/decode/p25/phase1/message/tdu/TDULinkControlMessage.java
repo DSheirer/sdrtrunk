@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1.message.tdu;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.edac.Golay24;
@@ -27,14 +25,13 @@ import io.github.dsheirer.edac.ReedSolomon_24_12_13_P25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWordFactory;
-
 import java.util.Collections;
 import java.util.List;
 
-public class TDULinkControlMessage extends P25Message implements IFrequencyBandReceiver
+public class TDULinkControlMessage extends P25P1Message implements IFrequencyBandReceiver
 {
     public static final int[] LC_HEX_0 = {0, 1, 2, 3, 4, 5};
     public static final int[] LC_HEX_1 = {6, 7, 8, 9, 10, 11};
@@ -149,7 +146,7 @@ public class TDULinkControlMessage extends P25Message implements IFrequencyBandR
         boolean irrecoverableErrors = REED_SOLOMON_24_12_13_P25.decode(input, output);
 
         //Transfer error corrected output to a new binary message
-        BinaryMessage binaryMessage = new BinaryMessage(72);
+        CorrectedBinaryMessage binaryMessage = new CorrectedBinaryMessage(72);
 
         int pointer = 0;
 
@@ -164,11 +161,7 @@ public class TDULinkControlMessage extends P25Message implements IFrequencyBandR
         }
 
         mLinkControlWord = LinkControlWordFactory.create(binaryMessage);
-
-        if(irrecoverableErrors)
-        {
-            mLinkControlWord.setValid(false);
-        }
+        mLinkControlWord.setValid(!irrecoverableErrors);
 
         //If we corrected any bit errors, update the original message with the bit error count
         for(int x = 0; x < 23; x++)

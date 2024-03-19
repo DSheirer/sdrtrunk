@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.edac;
 
+import io.github.dsheirer.log.LoggingSuppressor;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public class BerlekempMassey
 {
     private final static Logger mLog = LoggerFactory.getLogger(BerlekempMassey.class);
+    private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(mLog);
 
     /* Golay field size GF( 2 ** MM ) */
     private int MM;
@@ -234,7 +236,16 @@ public class BerlekempMassey
         /* put recd[i] into index form (ie as powers of alpha) */
         for(int i = 0; i < NN; i++)
         {
-            output[i] = index_of[input[i]];
+            try
+            {
+                output[i] = index_of[input[i]];
+            }
+            catch(Exception e)
+            {
+                LOGGING_SUPPRESSOR.error(getClass().toString(), 2, "Reed Solomon Decoder error for " +
+                        "class [" + getClass() + "] there may be an issue with the message parser class indices - " +
+                        "ensure the hex bit values are not larger 63", e);
+            }
         }
 
         /* first form the syndromes */

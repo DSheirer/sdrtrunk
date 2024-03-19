@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.audio;
@@ -30,20 +27,19 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.EndPushToTalk;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelUserExtended;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructure;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToTalk;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.TelephoneInterconnectVoiceChannelUser;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.preference.UserPreferences;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * P25 Phase 2 AMBE Frame recorder generates P25 call sequence recordings containing JSON representations of audio
@@ -229,19 +225,19 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                     case END_PUSH_TO_TALK:
                         processEndPTT(mac);
                         break;
-                    case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
+                    case TDMA_01_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
                         processGVCUA(mac);
                         break;
-                    case TDMA_2_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
+                    case TDMA_02_UNIT_TO_UNIT_VOICE_CHANNEL_USER_ABBREVIATED:
                         processUTUVCU(mac);
                         break;
-                    case TDMA_3_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
+                    case TDMA_03_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
                         processTIVCU(mac);
                         break;
-                    case TDMA_33_GROUP_VOICE_CHANNEL_USER_EXTENDED:
+                    case TDMA_21_GROUP_VOICE_CHANNEL_USER_EXTENDED:
                         processGVCUE(mac);
                         break;
-                    case TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
+                    case TDMA_22_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                         processUTUVCUE(mac);
                         break;
                 }
@@ -258,7 +254,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
             if(mac instanceof UnitToUnitVoiceChannelUserExtended)
             {
                 UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
-                mCallSequence.setFromIdentifier(uuvcue.getSourceAddress().toString());
+                mCallSequence.setFromIdentifier(uuvcue.getSource().toString());
                 mCallSequence.setToIdentifier(uuvcue.getTargetAddress().toString());
                 mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
                 if(uuvcue.getServiceOptions().isEncrypted())
@@ -276,7 +272,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
             if(mac instanceof GroupVoiceChannelUserExtended)
             {
                 GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
-                mCallSequence.setFromIdentifier(gvcue.getSourceAddress().toString());
+                mCallSequence.setFromIdentifier(gvcue.getSource().toString());
                 mCallSequence.setToIdentifier(gvcue.getGroupAddress().toString());
                 mCallSequence.setCallType(CALL_TYPE_GROUP);
                 if(gvcue.getServiceOptions().isEncrypted())
@@ -294,7 +290,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
             if(mac instanceof TelephoneInterconnectVoiceChannelUser)
             {
                 TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
-                mCallSequence.setToIdentifier(tivcu.getToOrFromAddress().toString());
+                mCallSequence.setToIdentifier(tivcu.getTargetAddress().toString());
                 mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
                 if(tivcu.getServiceOptions().isEncrypted())
                 {

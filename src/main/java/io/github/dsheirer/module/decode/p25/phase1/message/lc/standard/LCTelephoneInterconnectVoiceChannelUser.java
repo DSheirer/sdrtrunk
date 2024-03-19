@@ -1,49 +1,39 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
-
-import java.util.ArrayList;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.VoiceLinkControlMessage;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Current user of an APCO25 channel on both inbound and outbound channels
+ * Telephone interconnect voice channel user
  */
-public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
+public class LCTelephoneInterconnectVoiceChannelUser extends VoiceLinkControlMessage
 {
-    private static final int[] RESERVED_1 = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int[] RESERVED_2 = {24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] CALL_TIMER = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-            65, 66, 67, 68, 69, 70, 71};
-
-    private VoiceServiceOptions mVoiceServiceOptions;
+    private static final IntField CALL_TIMER = IntField.length16(OCTET_4_BIT_32);
+    private static final IntField ADDRESS = IntField.length24(OCTET_6_BIT_48);
     private Identifier mAddress;
     private List<Identifier> mIdentifiers;
 
@@ -52,7 +42,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
      *
      * @param message
      */
-    public LCTelephoneInterconnectVoiceChannelUser(BinaryMessage message)
+    public LCTelephoneInterconnectVoiceChannelUser(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -63,22 +53,9 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
         sb.append(getMessageStub());
         sb.append(" ID:").append(getAddress());
         sb.append(" CALL TIMER:").append(getCallTimerDuration()).append("MS");
-        sb.append(" ").append(getVoiceServiceOptions());
+        sb.append(" ").append(getServiceOptions());
 
         return sb.toString();
-    }
-
-    /**
-     * Service Options for this channel
-     */
-    public VoiceServiceOptions getVoiceServiceOptions()
-    {
-        if(mVoiceServiceOptions == null)
-        {
-            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
-        }
-
-        return mVoiceServiceOptions;
     }
 
     /**
@@ -87,7 +64,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
     public long getCallTimerDuration()
     {
         //Convert from 100 millisecond intervals to milliseconds.
-        return getMessage().getInt(CALL_TIMER) * 100;
+        return getInt(CALL_TIMER) * 100;
     }
 
     /**
@@ -97,7 +74,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
     {
         if(mAddress == null)
         {
-            mAddress = APCO25Talkgroup.create(getMessage().getInt(ADDRESS));
+            mAddress = APCO25Talkgroup.create(getInt(ADDRESS));
         }
 
         return mAddress;
@@ -111,8 +88,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
     {
         if(mIdentifiers == null)
         {
-            mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getAddress());
+            mIdentifiers = Collections.singletonList(getAddress());
         }
 
         return mIdentifiers;

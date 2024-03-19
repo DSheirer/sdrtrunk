@@ -1,43 +1,48 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.isp.UnknownHarrisISPMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.HarrisGroupRegroupExplicitEncryptionCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.L3HarrisGroupRegroupExplicitEncryptionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.UnknownHarrisOSPMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.MotorolaExtendedFunctionResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.MotorolaGroupRegroupVoiceRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.UnknownMotorolaISPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelLoading;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaAcknowledgeResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaEmergencyAlarmActivation;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExtendedFunctionCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupAddCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelGrant;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupDeleteCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaOpcode15;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaQueuedResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaTrafficChannel;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupAdd;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupDelete;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PlannedChannelShutdown;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.UnknownMotorolaOSPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.isp.AuthenticationQuery;
@@ -103,7 +108,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Sec
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusUpdate;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SyncBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SynchronizationBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.TelephoneInterconnectAnswerRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.TelephoneInterconnectVoiceChannelGrant;
@@ -144,203 +149,328 @@ public class TSBKMessageFactory
             return null;
         }
 
+        //The CRC-CCITT can correct up to 1 bit error or detect 2 or more errors.  We mark the message as
+        //invalid if the algorithm detects more than 1 correctable error.
+        int errors = CRCP25.correctCCITT80(message, 0, 80);
+
         Vendor vendor = TSBKMessage.getVendor(message);
         Opcode opcode = TSBKMessage.getOpcode(message, direction, vendor);
+
+        TSBKMessage tsbk = null;
 
         switch(opcode)
         {
             case ISP_AUTHENTICATION_QUERY_OBSOLETE:
-                return new AuthenticationQuery(dataUnitID, message, nac, timestamp);
+                tsbk = new AuthenticationQuery(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_CALL_ALERT_REQUEST:
-                return new CallAlertRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new CallAlertRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_CANCEL_SERVICE_REQUEST:
-                return new CancelServiceRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new CancelServiceRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_EMERGENCY_ALARM_REQUEST:
-                return new EmergencyAlarmRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new EmergencyAlarmRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_EXTENDED_FUNCTION_RESPONSE:
-                return new ExtendedFunctionResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new ExtendedFunctionResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_GROUP_AFFILIATION_QUERY_RESPONSE:
-                return new GroupAffiliationQueryResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupAffiliationQueryResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_GROUP_AFFILIATION_REQUEST:
-                return new GroupAffiliationRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupAffiliationRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_GROUP_VOICE_SERVICE_REQUEST:
-                return new GroupVoiceServiceRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupVoiceServiceRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_IDENTIFIER_UPDATE_REQUEST:
-                return new FrequencyBandUpdateRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new FrequencyBandUpdateRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_INDIVIDUAL_DATA_SERVICE_REQUEST:
-                return new IndividualDataServiceRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new IndividualDataServiceRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_LOCATION_REGISTRATION_REQUEST:
-                return new LocationRegistrationRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new LocationRegistrationRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_MESSAGE_UPDATE_REQUEST:
-                return new MessageUpdateRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new MessageUpdateRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_PROTECTION_PARAMETER_REQUEST:
-                return new ProtectionParameterRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new ProtectionParameterRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_RADIO_UNIT_MONITOR_REQUEST:
-                return new RadioUnitMonitorRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new RadioUnitMonitorRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_ROAMING_ADDRESS_REQUEST:
-                return new RoamingAddressRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new RoamingAddressRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_ROAMING_ADDRESS_RESPONSE:
-                return new RoamingAddressResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new RoamingAddressResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_SNDCP_DATA_CHANNEL_REQUEST:
-                return new SNDCPDataChannelRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new SNDCPDataChannelRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_SNDCP_DATA_PAGE_RESPONSE:
-                return new SNDCPDataPageResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new SNDCPDataPageResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_SNDCP_RECONNECT_REQUEST:
-                return new SNDCPReconnectRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new SNDCPReconnectRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_STATUS_QUERY_REQUEST:
-                return new StatusQueryRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new StatusQueryRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_STATUS_QUERY_RESPONSE:
-                return new StatusQueryResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new StatusQueryResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_STATUS_UPDATE_REQUEST:
-                return new StatusUpdateRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new StatusUpdateRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_TELEPHONE_INTERCONNECT_ANSWER_RESPONSE:
-                return new TelephoneInterconnectAnswerResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new TelephoneInterconnectAnswerResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_TELEPHONE_INTERCONNECT_PSTN_REQUEST:
-                return new TelephoneInterconnectPstnRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new TelephoneInterconnectPstnRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_UNIT_ACKNOWLEDGE_RESPONSE:
-                return new UnitAcknowledgeResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitAcknowledgeResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_UNIT_REGISTRATION_REQUEST:
-                return new UnitRegistrationRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitRegistrationRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_UNIT_DE_REGISTRATION_REQUEST:
-                return new UnitDeRegistrationRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitDeRegistrationRequest(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_UNIT_TO_UNIT_ANSWER_RESPONSE:
-                return new UnitToUnitVoiceServiceAnswerResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitToUnitVoiceServiceAnswerResponse(dataUnitID, message, nac, timestamp);
+                break;
             case ISP_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST:
-                return new UnitToUnitVoiceServiceRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitToUnitVoiceServiceRequest(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_ACKNOWLEDGE_RESPONSE:
-                return new AcknowledgeResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new AcknowledgeResponse(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_ADJACENT_STATUS_BROADCAST:
-                return new AdjacentStatusBroadcast(dataUnitID, message, nac, timestamp);
+                tsbk = new AdjacentStatusBroadcast(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_AUTHENTICATION_COMMAND:
-                return new AuthenticationCommand(dataUnitID, message, nac, timestamp);
+                tsbk = new AuthenticationCommand(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_CALL_ALERT:
-                return new CallAlert(dataUnitID, message, nac, timestamp);
+                tsbk = new CallAlert(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_DENY_RESPONSE:
-                return new DenyResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new DenyResponse(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_EXTENDED_FUNCTION_COMMAND:
-                return new ExtendedFunctionCommand(dataUnitID, message, nac, timestamp);
+                tsbk = new ExtendedFunctionCommand(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_AFFILIATION_QUERY:
-                return new GroupAffiliationQuery(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupAffiliationQuery(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_AFFILIATION_RESPONSE:
-                return new GroupAffiliationResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupAffiliationResponse(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT:
-                return new GroupDataChannelAnnouncement(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupDataChannelAnnouncement(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
-                return new GroupDataChannelAnnouncementExplicit(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupDataChannelAnnouncementExplicit(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_DATA_CHANNEL_GRANT:
-                return new GroupDataChannelGrant(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupDataChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_VOICE_CHANNEL_GRANT:
-                return new GroupVoiceChannelGrant(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupVoiceChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
-                return new GroupVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
-                return new GroupVoiceChannelGrantUpdateExplicit(dataUnitID, message, nac, timestamp);
+                tsbk = new GroupVoiceChannelGrantUpdateExplicit(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_IDENTIFIER_UPDATE:
-                return new FrequencyBandUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new FrequencyBandUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_IDENTIFIER_UPDATE_TDMA:
-                return new FrequencyBandUpdateTDMA(dataUnitID, message, nac, timestamp);
+                tsbk = new FrequencyBandUpdateTDMA(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_IDENTIFIER_UPDATE_VHF_UHF_BANDS:
-                return new FrequencyBandUpdateVUHF(dataUnitID, message, nac, timestamp);
+                tsbk = new FrequencyBandUpdateVUHF(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
-                return new IndividualDataChannelGrant(dataUnitID, message, nac, timestamp);
+                tsbk = new IndividualDataChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_LOCATION_REGISTRATION_RESPONSE:
-                return new LocationRegistrationResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new LocationRegistrationResponse(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_MESSAGE_UPDATE:
-                return new MessageUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new MessageUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_NETWORK_STATUS_BROADCAST:
-                return new NetworkStatusBroadcast(dataUnitID, message, nac, timestamp);
-            case OSP_PROTECTION_PARAMETER_UPDATE:
-                return new ProtectionParameterUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new NetworkStatusBroadcast(dataUnitID, message, nac, timestamp);
+                break;
+            case OSP_RESERVED_3F:
+                tsbk = new ProtectionParameterUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_RADIO_UNIT_MONITOR_COMMAND:
-                return new RadioUnitMonitorCommand(dataUnitID, message, nac, timestamp);
+                tsbk = new RadioUnitMonitorCommand(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_QUEUED_RESPONSE:
-                return new QueuedResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new QueuedResponse(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_ROAMING_ADDRESS_COMMAND:
-                return new RoamingAddressCommand(dataUnitID, message, nac, timestamp);
+                tsbk = new RoamingAddressCommand(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_RFSS_STATUS_BROADCAST:
-                return new RFSSStatusBroadcast(dataUnitID, message, nac, timestamp);
+                tsbk = new RFSSStatusBroadcast(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST:
-                return new SecondaryControlChannelBroadcast(dataUnitID, message, nac, timestamp);
+                tsbk = new SecondaryControlChannelBroadcast(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
-                return new SecondaryControlChannelBroadcastExplicit(dataUnitID, message, nac, timestamp);
+                tsbk = new SecondaryControlChannelBroadcastExplicit(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
-                return new SNDCPDataChannelAnnouncementExplicit(dataUnitID, message, nac, timestamp);
+                tsbk = new SNDCPDataChannelAnnouncementExplicit(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_SNDCP_DATA_CHANNEL_GRANT:
-                return new SNDCPDataChannelGrant(dataUnitID, message, nac, timestamp);
+                tsbk = new SNDCPDataChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_SNDCP_DATA_PAGE_REQUEST:
-                return new SNDCPDataPageRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new SNDCPDataPageRequest(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_STATUS_QUERY:
-                return new StatusQuery(dataUnitID, message, nac, timestamp);
+                tsbk = new StatusQuery(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_STATUS_UPDATE:
-                return new StatusUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new StatusUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_TDMA_SYNC_BROADCAST:
-                return new SyncBroadcast(dataUnitID, message, nac, timestamp);
+                tsbk = new SynchronizationBroadcast(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_SYSTEM_SERVICE_BROADCAST:
-                return new SystemServiceBroadcast(dataUnitID, message, nac, timestamp);
+                tsbk = new SystemServiceBroadcast(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-                return new TelephoneInterconnectAnswerRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new TelephoneInterconnectAnswerRequest(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                return new TelephoneInterconnectVoiceChannelGrant(dataUnitID, message, nac, timestamp);
+                tsbk = new TelephoneInterconnectVoiceChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-                return new TelephoneInterconnectVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new TelephoneInterconnectVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_UNIT_DEREGISTRATION_ACKNOWLEDGE:
-                return new UnitDeRegistrationAcknowledge(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitDeRegistrationAcknowledge(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_UNIT_REGISTRATION_COMMAND:
-                return new UnitRegistrationCommand(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitRegistrationCommand(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_UNIT_REGISTRATION_RESPONSE:
-                return new UnitRegistrationResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitRegistrationResponse(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
-                return new UnitToUnitAnswerRequest(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitToUnitAnswerRequest(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                return new UnitToUnitVoiceChannelGrant(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitToUnitVoiceChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-                return new UnitToUnitVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new UnitToUnitVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                break;
 
             case HARRIS_ISP_UNKNOWN:
-                return new UnknownHarrisISPMessage(dataUnitID, message, nac, timestamp);
+                tsbk = new UnknownHarrisISPMessage(dataUnitID, message, nac, timestamp);
+                break;
             case HARRIS_OSP_GRG_EXENC_CMD:
-                return new HarrisGroupRegroupExplicitEncryptionCommand(dataUnitID, message, nac, timestamp);
+                tsbk = new L3HarrisGroupRegroupExplicitEncryptionCommand(dataUnitID, message, nac, timestamp);
+                break;
             case HARRIS_OSP_UNKNOWN:
-                return new UnknownHarrisOSPMessage(dataUnitID, message, nac, timestamp);
+                tsbk = new UnknownHarrisOSPMessage(dataUnitID, message, nac, timestamp);
+                break;
 
             case MOTOROLA_ISP_UNKNOWN:
-                return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
+                tsbk = new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_ISP_EXTENDED_FUNCTION_RESPONSE:
+                tsbk = new MotorolaExtendedFunctionResponse(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_ISP_GROUP_REGROUP_VOICE_REQUEST:
+                tsbk = new MotorolaGroupRegroupVoiceRequest(dataUnitID, message, nac, timestamp);
+                break;
             case MOTOROLA_OSP_BASE_STATION_ID:
-                return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
+                tsbk = new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
+                break;
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
-                return new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);
+                tsbk = new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);
+                break;
             case MOTOROLA_OSP_DENY_RESPONSE:
-                return new MotorolaDenyResponse(dataUnitID, message, nac, timestamp);
+                tsbk = new MotorolaDenyResponse(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_QUEUED_RESPONSE:
+                tsbk = new MotorolaQueuedResponse(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_ACKNOWLEDGE_RESPONSE:
+                tsbk = new MotorolaAcknowledgeResponse(dataUnitID, message, nac, timestamp);
+                break;
             case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
-                return new MotorolaTrafficChannel(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_ADD:
-                return new PatchGroupAdd(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_DELETE:
-                return new PatchGroupDelete(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT:
-                return new PatchGroupVoiceChannelGrant(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE:
-                return new PatchGroupVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+                tsbk = new MotorolaTrafficChannel(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_GROUP_REGROUP_ADD:
+                tsbk = new MotorolaGroupRegroupAddCommand(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_GROUP_REGROUP_DELETE:
+                tsbk = new MotorolaGroupRegroupDeleteCommand(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_GROUP_REGROUP_CHANNEL_GRANT:
+                tsbk = new MotorolaGroupRegroupChannelGrant(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_GROUP_REGROUP_CHANNEL_UPDATE:
+                tsbk = new MotorolaGroupRegroupChannelUpdate(dataUnitID, message, nac, timestamp);
+                break;
             case MOTOROLA_OSP_SYSTEM_LOADING:
-                return new ChannelLoading(dataUnitID, message, nac, timestamp);
+                tsbk = new ChannelLoading(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_EXTENDED_FUNCTION_COMMAND:
+                tsbk = new MotorolaExtendedFunctionCommand(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_EMERGENCY_ALARM_ACTIVATION:
+                tsbk = new MotorolaEmergencyAlarmActivation(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_OPCODE_15:
+                tsbk = new MotorolaOpcode15(dataUnitID, message, nac, timestamp);
+                break;
             case MOTOROLA_OSP_UNKNOWN:
-                return new UnknownMotorolaOSPMessage(dataUnitID, message, nac, timestamp);
+                tsbk = new UnknownMotorolaOSPMessage(dataUnitID, message, nac, timestamp);
+                break;
 
             case UNKNOWN_VENDOR_ISP:
-                return new UnknownVendorISPMessage(dataUnitID, message, nac, timestamp);
+                tsbk = new UnknownVendorISPMessage(dataUnitID, message, nac, timestamp);
+                break;
 
             case UNKNOWN_VENDOR_OSP:
-                return new UnknownVendorOSPMessage(dataUnitID, message, nac, timestamp);
+                tsbk = new UnknownVendorOSPMessage(dataUnitID, message, nac, timestamp);
+                break;
 
             default:
                 if(direction == Direction.INBOUND)
                 {
-                    return new UnknownISPMessage(dataUnitID, message, nac, timestamp);
+                    tsbk = new UnknownISPMessage(dataUnitID, message, nac, timestamp);
                 }
                 else
                 {
-                    return new UnknownOSPMessage(dataUnitID, message, nac, timestamp);
+                    tsbk = new UnknownOSPMessage(dataUnitID, message, nac, timestamp);
                 }
+                break;
         }
+
+        if(tsbk != null && errors > 1)
+        {
+            tsbk.setValid(false);
+        }
+
+        return tsbk;
     }
+
 }

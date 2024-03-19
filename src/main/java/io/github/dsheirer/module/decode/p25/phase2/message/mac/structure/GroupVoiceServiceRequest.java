@@ -1,51 +1,39 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Group voice service request - abbreviated format
+ * Group voice service request
  */
-public class GroupVoiceServiceRequest extends MacStructure
+public class GroupVoiceServiceRequest extends MacStructureGroupVoiceService
 {
-    private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] GROUP_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-        49, 50, 51, 52, 53, 54, 55};
-
+    private static final IntField SOURCE_ADDRESS = IntField.length24(OCTET_5_BIT_32);
     private List<Identifier> mIdentifiers;
-    private Identifier mGroupAddress;
     private Identifier mSourceAddress;
-    private VoiceServiceOptions mServiceOptions;
 
     /**
      * Constructs the message
@@ -72,39 +60,13 @@ public class GroupVoiceServiceRequest extends MacStructure
     }
 
     /**
-     * Voice channel service options
-     */
-    public VoiceServiceOptions getServiceOptions()
-    {
-        if(mServiceOptions == null)
-        {
-            mServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS, getOffset()));
-        }
-
-        return mServiceOptions;
-    }
-
-    /**
-     * To Talkgroup
-     */
-    public Identifier getGroupAddress()
-    {
-        if(mGroupAddress == null)
-        {
-            mGroupAddress = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS, getOffset()));
-        }
-
-        return mGroupAddress;
-    }
-
-    /**
      * From Radio Unit
      */
     public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getInt(SOURCE_ADDRESS));
         }
 
         return mSourceAddress;

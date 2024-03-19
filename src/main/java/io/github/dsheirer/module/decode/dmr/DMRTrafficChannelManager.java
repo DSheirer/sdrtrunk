@@ -132,13 +132,13 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     /**
      * Sets the current parent control channel frequency so that channel grants for the current frequency do not
      * produce an additional traffic channel allocation.
-     * @param previousControlFrequency for the current control channel (to remove from allocated channels)
-     * @param currentControlFrequency for current control channel (to add to allocated channels)
+     * @param previous for the current control channel (to remove from allocated channels)
+     * @param current for current control channel (to add to allocated channels)
      * @param channel for the current control channel
      */
-    public void setCurrentControlFrequency(long previousControlFrequency, long currentControlFrequency, Channel channel)
+    public void processControlFrequencyUpdate(long previous, long current, Channel channel)
     {
-        if(previousControlFrequency == currentControlFrequency)
+        if(previous == current)
         {
             return;
         }
@@ -147,18 +147,18 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            Channel existing = mAllocatedChannelFrequencyMap.get(previousControlFrequency);
+            Channel existing = mAllocatedChannelFrequencyMap.get(previous);
 
             //Only remove the channel if it is non-null and it matches the current control channel.
             if(channel.equals(existing))
             {
                 //Unlock the frequency in the channel rotation monitor
-                getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(previousControlFrequency));
-                mAllocatedChannelFrequencyMap.remove(previousControlFrequency);
+                getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(previous));
+                mAllocatedChannelFrequencyMap.remove(previous);
             }
 
-            mAllocatedChannelFrequencyMap.put(currentControlFrequency, channel);
-            getInterModuleEventBus().post(FrequencyLockChangeRequest.lock(currentControlFrequency));
+            mAllocatedChannelFrequencyMap.put(current, channel);
+            getInterModuleEventBus().post(FrequencyLockChangeRequest.lock(current));
         }
         finally
         {

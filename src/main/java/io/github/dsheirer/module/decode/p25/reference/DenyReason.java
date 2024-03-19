@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.reference;
@@ -46,15 +45,48 @@ public enum DenyReason
     DUPLEX_SERVICE_OPTION_NOT_VALID(0xF2),
     CIRCUIT_OR_PACKET_MODE_OPTION_NOT_VALID(0xF3),
     SYSTEM_DOES_NOT_SUPPORT_SERVICE(0xFF),
+    SECURE_REQUEST_ON_CLEAR_SUPERGROUP(0x00), //Custom: Motorola & L3Harris
+    CLEAR_REQUEST_ON_SECURE_SUPERGROUP(0x01), //Custom: Motorola & L3Harris
     UNKNOWN(-1);
 
     private int mCode;
 
-    private DenyReason(int code)
+    DenyReason(int code)
     {
         mCode = code;
     }
 
+    /**
+     * Utility method to lookup the entry from the code that is custom for a vendor.
+     * @param code to lookup
+     * @param vendor identity
+     * @return matching enum entry or UNKNOWN.
+     */
+    public static DenyReason fromCustomCode(int code, Vendor vendor)
+    {
+        switch(vendor)
+        {
+            case MOTOROLA:
+            case HARRIS:
+                if(code == 0x00)
+                {
+                    return SECURE_REQUEST_ON_CLEAR_SUPERGROUP;
+                }
+                else if(code == 0x01)
+                {
+                    return CLEAR_REQUEST_ON_SECURE_SUPERGROUP;
+                }
+                //Deliberate fall-through
+            default:
+                return fromCode(code);
+        }
+    }
+
+    /**
+     * Utility method to lookup the entry from the code.
+     * @param code to lookup
+     * @return matching enum entry or UNKNOWN.
+     */
     public static DenyReason fromCode(int code)
     {
         if(code == 0x10)

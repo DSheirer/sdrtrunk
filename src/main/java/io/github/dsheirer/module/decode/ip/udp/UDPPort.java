@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ public class UDPPort extends IntegerIdentifier
      */
     public UDPPort(int value, Role role)
     {
-        super(value, IdentifierClass.NETWORK, Form.UDP_PORT, role);
+        super(value, IdentifierClass.USER_NETWORK_PORT, Form.UDP_PORT, role);
     }
 
     @Override

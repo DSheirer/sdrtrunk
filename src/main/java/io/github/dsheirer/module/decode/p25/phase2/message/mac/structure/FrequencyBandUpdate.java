@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.bits.LongField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,13 +32,12 @@ import java.util.List;
  */
 public class FrequencyBandUpdate extends MacStructure implements IFrequencyBand
 {
-    private static final int[] FREQUENCY_BAND_IDENTIFIER = {8, 9, 10, 11};
-    private static final int[] BANDWIDTH = {12, 13, 14, 15, 16, 17, 18, 19, 20};
+    private static final IntField FREQUENCY_BAND_IDENTIFIER = IntField.length4(OCTET_2_BIT_8);
+    private static final IntField BANDWIDTH = IntField.range(12, 20);
     private static final int TRANSMIT_OFFSET_SIGN = 21;
-    private static final int[] TRANSMIT_OFFSET = {22, 23, 24, 25, 26, 27, 28, 29};
-    private static final int[] CHANNEL_SPACING = {30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] BASE_FREQUENCY = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
-        57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    private static final LongField TRANSMIT_OFFSET = LongField.range(22, 29);
+    private static final LongField CHANNEL_SPACING = LongField.range(30, 39);
+    private static final LongField BASE_FREQUENCY = LongField.range(40, 71);
 
     /**
      * Constructs the message
@@ -68,31 +68,31 @@ public class FrequencyBandUpdate extends MacStructure implements IFrequencyBand
     @Override
     public int getIdentifier()
     {
-        return getMessage().getInt(FREQUENCY_BAND_IDENTIFIER, getOffset());
+        return getInt(FREQUENCY_BAND_IDENTIFIER);
     }
 
     @Override
     public long getChannelSpacing()
     {
-        return getMessage().getInt(CHANNEL_SPACING, getOffset()) * 125;
+        return getLong(CHANNEL_SPACING) * 125;
     }
 
     @Override
     public long getBaseFrequency()
     {
-        return getMessage().getLong(BASE_FREQUENCY, getOffset()) * 5;
+        return getLong(BASE_FREQUENCY) * 5;
     }
 
     @Override
     public int getBandwidth()
     {
-        return getMessage().getInt(BANDWIDTH, getOffset()) * 125;
+        return getInt(BANDWIDTH) * 125;
     }
 
     @Override
     public long getTransmitOffset()
     {
-        long offset = getMessage().getLong(TRANSMIT_OFFSET, getOffset()) * 250000;
+        long offset = getLong(TRANSMIT_OFFSET) * 250000;
 
         if(!getMessage().get(TRANSMIT_OFFSET_SIGN + getOffset()))
         {
@@ -107,7 +107,7 @@ public class FrequencyBandUpdate extends MacStructure implements IFrequencyBand
      */
     public boolean hasTransmitOffset()
     {
-        return getMessage().getInt(TRANSMIT_OFFSET, getOffset()) != 0x80;
+        return getLong(TRANSMIT_OFFSET) != 0x80;
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,21 +23,23 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.VendorOSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DenyReason;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Deny response
+ * Motorola Deny response
  */
-public class MotorolaDenyResponse extends OSPMessage
+public class MotorolaDenyResponse extends VendorOSPMessage
 {
-    private static final int ADDITIONAL_INFORMATION_FLAG = 16;
+    //true = motorola custom reason code, false = standard reason code
+    private static final int RC = 16;
+    //true = non-motorola service type, false = motorola service type (ie opcode)
+    private static final int STP = 17;
     private static final int[] SERVICE_TYPE = {18, 19, 20, 21, 22, 23};
     private static final int[] REASON = {24, 25, 26, 27, 28, 29, 30, 31};
     private static final int[] ADDITIONAL_INFO = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
@@ -65,18 +67,13 @@ public class MotorolaDenyResponse extends OSPMessage
         sb.append(" TO:").append(getTargetAddress());
         sb.append(" SERVICE:").append(getDeniedServiceType());
         sb.append(" REASON:").append(getDenyReason());
-
-        if(hasAdditionalInformation())
-        {
-            sb.append(" INFO:").append(getAdditionalInfo());
-        }
-
+        sb.append(" INFO:").append(getAdditionalInfo());
         return sb.toString();
     }
 
     private boolean hasAdditionalInformation()
     {
-        return getMessage().get(ADDITIONAL_INFORMATION_FLAG);
+        return getMessage().get(RC);
     }
 
     public String getAdditionalInfo()
@@ -101,7 +98,15 @@ public class MotorolaDenyResponse extends OSPMessage
     {
         if(mDenyReason == null)
         {
-            mDenyReason = DenyReason.fromCode(getMessage().getInt(REASON));
+            //When RC is true it indicates that the reason code is a custom vendor reason.
+            if(getMessage().get(RC))
+            {
+                mDenyReason = DenyReason.fromCustomCode(getMessage().getInt(REASON), Vendor.MOTOROLA);
+            }
+            else
+            {
+                mDenyReason = DenyReason.fromCode(getMessage().getInt(REASON));
+            }
         }
 
         return mDenyReason;

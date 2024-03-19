@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -449,6 +449,16 @@ public class RadioReferenceDecoder
      * @return decoder type or null.
      */
     public DecoderType getDecoderType(System system)
+    {
+        return getDecoderType(system, null);
+    }
+
+    /**
+     * Decoder type for the specified system, if supported.
+     * @param system requiring a decoder type
+     * @return decoder type or null.
+     */
+    public DecoderType getDecoderType(System system, Site site)
     {
         Type type = getType(system);
         Flavor flavor = getFlavor(system);

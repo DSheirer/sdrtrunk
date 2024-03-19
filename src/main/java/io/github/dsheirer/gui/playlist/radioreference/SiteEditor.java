@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.RadioNetwork;
 import io.github.dsheirer.rrapi.type.Site;
 import io.github.dsheirer.rrapi.type.SiteFrequency;
@@ -42,6 +43,13 @@ import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.animation.RotateTransition;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
@@ -74,14 +82,6 @@ import org.controlsfx.control.SegmentedButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-
 public class SiteEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(SiteEditor.class);
@@ -90,6 +90,8 @@ public class SiteEditor extends GridPane
     private static final String PRIMARY_CONTROL_CHANNEL = "d";
     private static final String TOGGLE_BUTTON_CONTROL = "Control";
     private static final String TOGGLE_BUTTON_P25_VOICE = "All P25 Voice";
+    private static final String PHASE_2_TDMA_MODULATION = "TDMA";
+    private static final String PHASE_2_FLAVOR = "Phase II";
 
     private UserPreferences mUserPreferences;
     private PlaylistManager mPlaylistManager;
@@ -115,6 +117,10 @@ public class SiteEditor extends GridPane
     private SystemInformation mCurrentSystemInformation;
     private ComboBox mAliasListNameComboBox;
     private Button mNewAliasListButton;
+    private Label mP25ControlLabel;
+    private SegmentedButton mP25ControlSegmentedButton;
+    private ToggleButton mFdmaControlToggleButton;
+    private ToggleButton mTdmaControlToggleButton;
 
     public SiteEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
     {
@@ -163,6 +169,13 @@ public class SiteEditor extends GridPane
         GridPane.setConstraints(getConfigurationsSegmentedButton(), 2, row);
         getChildren().add(getConfigurationsSegmentedButton());
 
+        GridPane.setConstraints(getP25ControlLabel(), 1, ++row);
+        GridPane.setHalignment(getP25ControlLabel(), HPos.RIGHT);
+        getChildren().add(getP25ControlLabel());
+
+        GridPane.setConstraints(getP25ControlSegmentedButton(), 2, row);
+        getChildren().add(getP25ControlSegmentedButton());
+
         Label systemLabel = new Label("System");
         GridPane.setConstraints(systemLabel, 1, ++row);
         GridPane.setHalignment(systemLabel, HPos.RIGHT);
@@ -206,7 +219,7 @@ public class SiteEditor extends GridPane
         createBox.setAlignment(Pos.CENTER_LEFT);
         createBox.setSpacing(10);
         createBox.getChildren().addAll(getCreateChannelConfigurationButton(), getGoToChannelEditorCheckBox());
-        GridPane.setConstraints(createBox, 2, ++row + 1);
+        GridPane.setConstraints(createBox, 2, ++row);
         getChildren().addAll(createBox);
 
         //Note: the following label node is added to the same location as the buttons and visibility is toggled
@@ -215,6 +228,13 @@ public class SiteEditor extends GridPane
         getChildren().add(getProtocolNotSupportedLabel());
     }
 
+    /**
+     * Creates a channel decode configuration for the specified site.
+     * @param decoderType to create
+     * @param site information and frequencies
+     * @param systemInformation with frequency mapping
+     * @return decode configuration
+     */
     private DecodeConfiguration getDecodeConfiguration(DecoderType decoderType, Site site, SystemInformation systemInformation)
     {
         if(decoderType == null)
@@ -298,7 +318,13 @@ public class SiteEditor extends GridPane
         }
     }
 
-
+    /**
+     * Loads the user selected site info into this editor.
+     * @param site to load
+     * @param system for the site
+     * @param systemInformation for the site
+     * @param decoder to lookup supplemental information
+     */
     public void setSite(EnrichedSite site, System system, SystemInformation systemInformation, RadioReferenceDecoder decoder)
     {
         mCurrentSite = site;
@@ -346,6 +372,29 @@ public class SiteEditor extends GridPane
             }
             else
             {
+                Flavor flavor = decoder.getFlavor(system);
+
+                if(flavor != null && flavor.getName() != null && flavor.getName().equals(PHASE_2_FLAVOR))
+                {
+                    getP25ControlLabel().setVisible(true);
+                    getTdmaControlToggleButton().setVisible(true);
+                    getFdmaControlToggleButton().setVisible(true);
+                    if(site.getSite().getModulation() != null && site.getSite().getModulation().contains(PHASE_2_TDMA_MODULATION))
+                    {
+                        getTdmaControlToggleButton().setSelected(true);
+                    }
+                    else
+                    {
+                        getFdmaControlToggleButton().setSelected(true);
+                    }
+                }
+                else
+                {
+                    getP25ControlLabel().setVisible(false);
+                    getTdmaControlToggleButton().setVisible(false);
+                    getFdmaControlToggleButton().setVisible(false);
+                }
+
                 getCreateChannelConfigurationButton().setVisible(true);
                 getGoToChannelEditorCheckBox().setVisible(true);
                 getSystemTextField().setText(system.getName());
@@ -514,10 +563,13 @@ public class SiteEditor extends GridPane
 
             DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
 
-            //Change a phase 2 system to use the phase 1 control channel
+            //Phase 2 - inspect the site modulation and use Phase 2 for TDMA control channel, otherwise Phase 1
             if(decoderType == DecoderType.P25_PHASE2)
             {
-                decoderType = DecoderType.P25_PHASE1;
+                if(getFdmaControlToggleButton().isSelected())
+                {
+                    decoderType = DecoderType.P25_PHASE1;
+                }
             }
 
             channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(), mCurrentSystemInformation));
@@ -587,10 +639,13 @@ public class SiteEditor extends GridPane
 
                 DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
 
-                //Change a phase 2 system to use the phase 1 control channel
+                //Phase 2 - inspect the site modulation and use Phase 2 for TDMA control channel, otherwise Phase 1
                 if(decoderType == DecoderType.P25_PHASE2)
                 {
-                    decoderType = DecoderType.P25_PHASE1;
+                    if(getFdmaControlToggleButton().isSelected())
+                    {
+                        decoderType = DecoderType.P25_PHASE1;
+                    }
                 }
 
                 channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
@@ -685,6 +740,16 @@ public class SiteEditor extends GridPane
                 Channel channel = getChannelTemplate();
 
                 DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
+
+                //Phase 2 - inspect the site modulation and use Phase 2 for TDMA control channel, otherwise Phase 1
+                if(decoderType == DecoderType.P25_PHASE2)
+                {
+                    if(getFdmaControlToggleButton().isSelected())
+                    {
+                        decoderType = DecoderType.P25_PHASE1;
+                    }
+                }
+
                 channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
                     mCurrentSystemInformation));
 
@@ -748,6 +813,70 @@ public class SiteEditor extends GridPane
     private static long getFrequency(SiteFrequency siteFrequency)
     {
         return (long)(siteFrequency.getFrequency() * 1E6);
+    }
+
+    /**
+     * P25 Phase 2 control channel label.
+     */
+    private Label getP25ControlLabel()
+    {
+        if(mP25ControlLabel == null)
+        {
+            mP25ControlLabel = new Label("Control");
+            mP25ControlLabel.setVisible(false);
+        }
+
+        return mP25ControlLabel;
+    }
+
+    /**
+     * P25 Phase 2 control channel type (TDMA vs FDMA) selection buttons.
+     */
+    private SegmentedButton getP25ControlSegmentedButton()
+    {
+        if(mP25ControlSegmentedButton == null)
+        {
+            mP25ControlSegmentedButton = new SegmentedButton(getFdmaControlToggleButton(), getTdmaControlToggleButton());
+            mP25ControlSegmentedButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
+            mP25ControlSegmentedButton.getToggleGroup().selectedToggleProperty()
+                    .addListener((observable, oldValue, newValue) -> {
+                        //Ensure that one button is always selected
+                        if(newValue == null)
+                        {
+                            oldValue.setSelected(true);
+                        }
+                    });
+        }
+
+        return mP25ControlSegmentedButton;
+    }
+
+    /**
+     * P25 Phase 2 with FDMA (phase 1) control channel selection button.
+     */
+    private ToggleButton getFdmaControlToggleButton()
+    {
+        if(mFdmaControlToggleButton == null)
+        {
+            mFdmaControlToggleButton = new ToggleButton("FDMA Phase 1");
+            mFdmaControlToggleButton.setVisible(false);
+        }
+
+        return mFdmaControlToggleButton;
+    }
+
+    /**
+     * P25 Phase 2 with TDMA (phase 2) control channel selection button.
+     */
+    private ToggleButton getTdmaControlToggleButton()
+    {
+        if(mTdmaControlToggleButton == null)
+        {
+            mTdmaControlToggleButton = new ToggleButton("TDMA Phase 2");
+            mTdmaControlToggleButton.setVisible(false);
+        }
+
+        return mTdmaControlToggleButton;
     }
 
     /**

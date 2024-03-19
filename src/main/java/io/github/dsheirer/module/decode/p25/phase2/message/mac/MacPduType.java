@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac;
  */
 public enum MacPduType
 {
-    MAC_0_RESERVED("RESERVED-0"),
+    MAC_0_SIGNAL("SIGNAL"),
     MAC_1_PTT("PUSH-TO-TALK"),
     MAC_2_END_PTT("END PUSH-TO-TALK"),
     MAC_3_IDLE("IDLE"),

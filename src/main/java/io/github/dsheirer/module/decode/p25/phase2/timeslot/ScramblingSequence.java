@@ -1,34 +1,30 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * APCO-25 Phase II scrambling sequence utility that provides scrambling sequence snippets for each of the 12 timeslots
@@ -55,19 +51,21 @@ public class ScramblingSequence
     /**
      * Updates this scrambling sequence with the specified seed parameters
      */
-    public void update(ScrambleParameters parameters)
+    public boolean update(ScrambleParameters parameters)
     {
         if(parameters != null)
         {
-            update(parameters.getWACN(), parameters.getSystem(), parameters.getNAC());
+            return update(parameters.getWACN(), parameters.getSystem(), parameters.getNAC());
         }
+
+        return false;
     }
 
     /**
      * Updates this scrambling sequence with the specified parameters from the Network Broadcast Status message and
      * generates 12 x 320-bit scrambling sequences for each of the superframe's 12 timeslots.
      */
-    public void update(int wacn, int system, int nac)
+    public boolean update(int wacn, int system, int nac)
     {
         if(!mShiftRegister.isCurrent(wacn, system, nac))
         {
@@ -81,7 +79,12 @@ public class ScramblingSequence
             {
                 mScramblingSegments.add(scramblingSequence.getSubMessage(x, x + 320));
             }
+
+            //Return true to indicate that the sequence was updated
+            return true;
         }
+
+        return false;
     }
 
     /**

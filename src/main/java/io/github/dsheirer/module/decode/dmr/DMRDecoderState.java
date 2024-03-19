@@ -124,7 +124,6 @@ public class DMRDecoderState extends TimeslotDecoderState
     private DMRNetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
-    private long mCurrentFrequency;
     private boolean mIgnoreCRCChecksums;
     private DMRDecoderState mSisterDecoderState;
 
@@ -275,8 +274,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         super.reset();
         resetState();
-
-        mCurrentFrequency = 0;
+        setCurrentFrequency(0);
     }
 
     /**
@@ -347,11 +345,11 @@ public class DMRDecoderState extends TimeslotDecoderState
     private void updateRestChannel(DMRChannel restChannel)
     {
         //Only respond if this is a standard/control channel (not a traffic channel).
-        if(mChannel.isStandardChannel() && mCurrentFrequency > 0 &&
+        if(mChannel.isStandardChannel() && getCurrentFrequency() > 0 &&
             restChannel.getDownlinkFrequency() > 0 &&
-            restChannel.getDownlinkFrequency() != mCurrentFrequency && mTrafficChannelManager != null)
+            restChannel.getDownlinkFrequency() != getCurrentFrequency() && mTrafficChannelManager != null)
         {
-            mTrafficChannelManager.convertToTrafficChannel(mChannel, mCurrentFrequency, restChannel,
+            mTrafficChannelManager.convertToTrafficChannel(mChannel, getCurrentFrequency(), restChannel,
                 mNetworkConfigurationMonitor);
         }
     }
@@ -1400,9 +1398,9 @@ public class DMRDecoderState extends TimeslotDecoderState
         Event event = (mCurrentCallEvent == null ? Event.START : Event.CONTINUATION);
 
         //Create a repeater channel descriptor if we don't have one
-        if(mCurrentChannel == null && mCurrentFrequency > 0)
+        if(mCurrentChannel == null && getCurrentFrequency() > 0)
         {
-            mCurrentChannel = new DMRAbsoluteChannel(getTimeslot(), getTimeslot(), mCurrentFrequency, 0);
+            mCurrentChannel = new DMRAbsoluteChannel(getTimeslot(), getTimeslot(), getCurrentFrequency(), 0);
         }
 
         if(mCurrentCallEvent == null)
@@ -1475,11 +1473,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                 resetState();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
-                long previous = mCurrentFrequency;
-                mCurrentFrequency = event.getFrequency();
-                if(hasTrafficChannelManager())
+                setCurrentFrequency(event.getFrequency());
+
+                //Only update the traffic channel manager if we're not a traffic channel.
+                if(hasTrafficChannelManager() && mChannel.isStandardChannel())
                 {
-                    mTrafficChannelManager.setCurrentControlFrequency(previous, mCurrentFrequency, mChannel);
+                    mTrafficChannelManager.setCurrentControlFrequency(getCurrentFrequency(), mChannel);
                 }
                 break;
             default:

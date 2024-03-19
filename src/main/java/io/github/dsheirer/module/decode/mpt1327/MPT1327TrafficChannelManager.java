@@ -77,6 +77,32 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     }
 
     /**
+     * Notification that the control frequency is updated.
+     * @param previous frequency for the control channel (to remove from allocated channels)
+     * @param current frequency for the control channel (to add to allocated channels)
+     * @param channel for the current control channel
+     */
+    @Override
+    protected void processControlFrequencyUpdate(long previous, long current, Channel channel)
+    {
+        MPT1327Channel toRemove = null;
+
+        for(MPT1327Channel mpt: mAllocatedTrafficChannelMap.keySet())
+        {
+            if(mpt.getDownlinkFrequency() == current)
+            {
+                toRemove = mpt;
+                break;
+            }
+        }
+
+        if(toRemove != null)
+        {
+            broadcast(new ChannelEvent(mAllocatedTrafficChannelMap.get(toRemove), ChannelEvent.Event.REQUEST_DISABLE));
+        }
+    }
+
+    /**
      * Processes channel grants to allocate traffic channels and track overall channel usage.  Generates
      * decode events for each new channel that is allocated.
      */

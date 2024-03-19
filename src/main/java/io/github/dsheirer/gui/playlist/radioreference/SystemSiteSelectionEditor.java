@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
+import com.google.common.collect.Ordering;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Flavor;
@@ -42,6 +43,8 @@ import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -126,6 +129,7 @@ public class SystemSiteSelectionEditor extends GridPane
         getFlavorLabel().setText(flavor != null ? flavor.getName() : null);
         Voice voice = decoder.getVoice(system);
         getVoiceLabel().setText(voice != null ? voice.getName() : null);
+        Collections.sort(sites, Ordering.natural());
         getSiteTableView().getItems().addAll(sites);
         setLoading(false);
     }
@@ -212,27 +216,33 @@ public class SystemSiteSelectionEditor extends GridPane
             mSiteTableView = new TableView<>();
             mSiteTableView.setPlaceholder(getPlaceholderLabel());
 
-            TableColumn numberColumn = new TableColumn();
-            numberColumn.setText("Site");
-            numberColumn.setCellValueFactory(new PropertyValueFactory<>("siteNumber"));
-            numberColumn.setPrefWidth(75);
+            TableColumn systemColumn = new TableColumn();
+            systemColumn.setText("System");
+            systemColumn.setCellValueFactory(new PropertyValueFactory<>("systemFormatted"));
+            systemColumn.setPrefWidth(60);
 
             TableColumn rfssColumn = new TableColumn();
             rfssColumn.setText("RFSS");
-            rfssColumn.setCellValueFactory(new PropertyValueFactory<>("rfss"));
+            rfssColumn.setCellValueFactory(new PropertyValueFactory<>("rfssFormatted"));
             rfssColumn.setPrefWidth(60);
 
-            TableColumn countyColumn = new TableColumn();
-            countyColumn.setText("County");
-            countyColumn.setCellValueFactory(new PropertyValueFactory<>("countyName"));
-            countyColumn.setPrefWidth(125);
+            TableColumn siteColumn = new TableColumn();
+            siteColumn.setText("Site");
+            siteColumn.setCellValueFactory(new PropertyValueFactory<>("siteFormatted"));
+            siteColumn.setPrefWidth(75);
+
+            TableColumn countyNameColumn = new TableColumn();
+            countyNameColumn.setText("County");
+            countyNameColumn.setCellValueFactory(new PropertyValueFactory<>("countyName"));
+            countyNameColumn.setPrefWidth(125);
 
             TableColumn descriptionColumn = new TableColumn();
             descriptionColumn.setText("Name");
             descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
             descriptionColumn.setPrefWidth(400);
 
-            mSiteTableView.getColumns().addAll(numberColumn, rfssColumn, countyColumn, descriptionColumn);
+            mSiteTableView.getColumns().addAll(systemColumn, rfssColumn, siteColumn, countyNameColumn,
+                    descriptionColumn);
             mSiteTableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             mSiteTableView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, selected) ->

@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harr
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.alias.P25TalkerAliasIdentifier;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureVendor;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +30,9 @@ import java.util.List;
 /**
  * L3Harris Talker Alias.
  */
-public class L3HarrisTalkerAlias extends MacStructure
+public class L3HarrisTalkerAlias extends MacStructureVendor
 {
-    private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] LENGTH = {16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int ALIAS_START = 24;
-
+    private static final int ALIAS_START = OCTET_4_BIT_24;
     private List<Identifier> mIdentifiers;
     private P25TalkerAliasIdentifier mAliasIdentifier;
 
@@ -59,7 +56,7 @@ public class L3HarrisTalkerAlias extends MacStructure
 
         if(getVendor() == Vendor.HARRIS)
         {
-            sb.append("L3HARRIS ");
+            sb.append("L3HARRIS");
         }
         else
         {
@@ -78,7 +75,7 @@ public class L3HarrisTalkerAlias extends MacStructure
     {
         if(mAliasIdentifier == null)
         {
-            int length = getLength();
+            int length = getLength() - 2;
 
             if(length > 0)
             {
@@ -96,24 +93,6 @@ public class L3HarrisTalkerAlias extends MacStructure
         }
 
         return mAliasIdentifier;
-    }
-
-    /**
-     * Vendor ID.  This should be L3Harris unless another vendor is also using this Opcode.
-     */
-    public Vendor getVendor()
-    {
-        return Vendor.fromValue(getMessage().getInt(VENDOR, getOffset()));
-    }
-
-    /**
-     * Message length.
-     *
-     * @return length in bytes, including the opcode.
-     */
-    public int getLength()
-    {
-        return getMessage().getInt(LENGTH, getOffset());
     }
 
     @Override

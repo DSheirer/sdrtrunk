@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.edac.Hamming10;
@@ -30,12 +28,11 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWordFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * LDU Message is formatted as:
@@ -180,7 +177,7 @@ public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
         boolean irrecoverableErrors = REED_SOLOMON_24_12_13_P25.decode(input, output);
 
         //Transfer error corrected output to a new binary message
-        BinaryMessage binaryMessage = new BinaryMessage(72);
+        CorrectedBinaryMessage binaryMessage = new CorrectedBinaryMessage(72);
 
         int pointer = 0;
 
@@ -199,11 +196,7 @@ public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
         }
 
         mLinkControlWord = LinkControlWordFactory.create(binaryMessage);
-
-        if(irrecoverableErrors)
-        {
-            mLinkControlWord.setValid(false);
-        }
+        mLinkControlWord.setValid(!irrecoverableErrors);
 
         //If we corrected any bit errors, update the original message with the bit error count
         for(int x = 0; x < 23; x++)

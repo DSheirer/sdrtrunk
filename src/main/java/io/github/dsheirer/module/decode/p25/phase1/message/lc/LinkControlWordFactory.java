@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,17 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc;
 
-import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode10;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisReturnToControlChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode42;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode43;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupAdd;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupDelete;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupVoiceChannelUpdate;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaEmergencyAlarmActivation;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupGroupDelete;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupAdd;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupVoiceChannelUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaRadioReprogramHeader;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaRadioReprogramRecord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaTalkComplete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaUnitGPS;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaUnknownOpcode;
@@ -34,14 +37,17 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCAdjacen
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCAdjacentSiteStatusBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCCallAlert;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCCallTermination;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCChannelIdentifierUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCChannelIdentifierUpdateVU;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCConventionalFallback;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCExtendedFunctionCommand;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCFrequencyBandUpdate;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCFrequencyBandUpdateExplicit;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCExtendedFunctionCommandExtended;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupAffiliationQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUpdateExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCMessageUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCMessageUpdateExtended;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCNetworkStatusBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCProtectionParameterBroadcast;
@@ -49,8 +55,10 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCRFSSSta
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCRFSSStatusBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSecondaryControlChannelBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSecondaryControlChannelBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSourceIDExtension;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCStatusQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCStatusUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCStatusUpdateExtended;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCTelephoneInterconnectAnswerRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCTelephoneInterconnectVoiceChannelUser;
@@ -58,6 +66,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitAut
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitRegistrationCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitToUnitAnswerRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitToUnitVoiceChannelUserExtended;
 
 /**
  * Factory class for creating link control word (LCW) message parsers.
@@ -67,96 +76,114 @@ public class LinkControlWordFactory
     /**
      * Creates a link control word from the binary message sequence.
      *
-     * @param binaryMessage containing the LCW binary message sequence.
+     * @param message containing the LCW binary message sequence.
      */
-    public static LinkControlWord create(BinaryMessage binaryMessage)
+    public static LinkControlWord create(CorrectedBinaryMessage message)
     {
-        LinkControlOpcode opcode = LinkControlWord.getOpcode(binaryMessage);
+        LinkControlOpcode opcode = LinkControlWord.getOpcode(message);
         switch(opcode)
         {
             case ADJACENT_SITE_STATUS_BROADCAST:
-                return new LCAdjacentSiteStatusBroadcast(binaryMessage);
+                return new LCAdjacentSiteStatusBroadcast(message);
             case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-                return new LCAdjacentSiteStatusBroadcastExplicit(binaryMessage);
+                return new LCAdjacentSiteStatusBroadcastExplicit(message);
             case CALL_ALERT:
-                return new LCCallAlert(binaryMessage);
+                return new LCCallAlert(message);
             case CALL_TERMINATION_OR_CANCELLATION:
-                return new LCCallTermination(binaryMessage);
+                return new LCCallTermination(message);
             case CHANNEL_IDENTIFIER_UPDATE:
-                return new LCFrequencyBandUpdate(binaryMessage);
-            case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-                return new LCFrequencyBandUpdateExplicit(binaryMessage);
+                return new LCChannelIdentifierUpdate(message);
+            case CHANNEL_IDENTIFIER_UPDATE_VU:
+                return new LCChannelIdentifierUpdateVU(message);
+            case CONVENTIONAL_FALLBACK_INDICATION:
+                return new LCConventionalFallback(message);
             case EXTENDED_FUNCTION_COMMAND:
-                return new LCExtendedFunctionCommand(binaryMessage);
+                return new LCExtendedFunctionCommand(message);
+            case EXTENDED_FUNCTION_COMMAND_EXTENDED:
+                return new LCExtendedFunctionCommandExtended(message);
             case GROUP_AFFILIATION_QUERY:
-                return new LCGroupAffiliationQuery(binaryMessage);
+                return new LCGroupAffiliationQuery(message);
             case GROUP_VOICE_CHANNEL_USER:
-                return new LCGroupVoiceChannelUser(binaryMessage);
+                return new LCGroupVoiceChannelUser(message);
             case GROUP_VOICE_CHANNEL_UPDATE:
-                return new LCGroupVoiceChannelUpdate(binaryMessage);
+                return new LCGroupVoiceChannelUpdate(message);
             case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
-                return new LCGroupVoiceChannelUpdateExplicit(binaryMessage);
+                return new LCGroupVoiceChannelUpdateExplicit(message);
             case MESSAGE_UPDATE:
-                return new LCMessageUpdate(binaryMessage);
+                return new LCMessageUpdate(message);
+            case MESSAGE_UPDATE_EXTENDED:
+                return new LCMessageUpdateExtended(message);
             case NETWORK_STATUS_BROADCAST:
-                return new LCNetworkStatusBroadcast(binaryMessage);
+                return new LCNetworkStatusBroadcast(message);
             case NETWORK_STATUS_BROADCAST_EXPLICIT:
-                return new LCNetworkStatusBroadcastExplicit(binaryMessage);
+                return new LCNetworkStatusBroadcastExplicit(message);
             case PROTECTION_PARAMETER_BROADCAST:
-                return new LCProtectionParameterBroadcast(binaryMessage);
+                return new LCProtectionParameterBroadcast(message);
             case RFSS_STATUS_BROADCAST:
-                return new LCRFSSStatusBroadcast(binaryMessage);
+                return new LCRFSSStatusBroadcast(message);
             case RFSS_STATUS_BROADCAST_EXPLICIT:
-                return new LCRFSSStatusBroadcastExplicit(binaryMessage);
+                return new LCRFSSStatusBroadcastExplicit(message);
             case SECONDARY_CONTROL_CHANNEL_BROADCAST:
-                return new LCSecondaryControlChannelBroadcast(binaryMessage);
+                return new LCSecondaryControlChannelBroadcast(message);
             case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
-                return new LCSecondaryControlChannelBroadcastExplicit(binaryMessage);
+                return new LCSecondaryControlChannelBroadcastExplicit(message);
+            case SOURCE_ID_EXTENSION:
+                return new LCSourceIDExtension(message);
             case STATUS_QUERY:
-                return new LCStatusQuery(binaryMessage);
+                return new LCStatusQuery(message);
             case STATUS_UPDATE:
-                return new LCStatusUpdate(binaryMessage);
+                return new LCStatusUpdate(message);
+            case STATUS_UPDATE_EXTENDED:
+                return new LCStatusUpdateExtended(message);
             case SYSTEM_SERVICE_BROADCAST:
-                return new LCSystemServiceBroadcast(binaryMessage);
+                return new LCSystemServiceBroadcast(message);
             case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-                return new LCTelephoneInterconnectAnswerRequest(binaryMessage);
+                return new LCTelephoneInterconnectAnswerRequest(message);
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-                return new LCTelephoneInterconnectVoiceChannelUser(binaryMessage);
+                return new LCTelephoneInterconnectVoiceChannelUser(message);
             case UNIT_AUTHENTICATION_COMMAND:
-                return new LCUnitAuthenticationCommand(binaryMessage);
+                return new LCUnitAuthenticationCommand(message);
             case UNIT_REGISTRATION_COMMAND:
-                return new LCUnitRegistrationCommand(binaryMessage);
+                return new LCUnitRegistrationCommand(message);
             case UNIT_TO_UNIT_ANSWER_REQUEST:
-                return new LCUnitToUnitAnswerRequest(binaryMessage);
+                return new LCUnitToUnitAnswerRequest(message);
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-                return new LCUnitToUnitVoiceChannelUser(binaryMessage);
+                return new LCUnitToUnitVoiceChannelUser(message);
+            case UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
+                return new LCUnitToUnitVoiceChannelUserExtended(message);
 
-            case L3HARRIS_UNKNOWN_0A:
-                return new LCHarrisUnknownOpcode10(binaryMessage);
+            case L3HARRIS_RETURN_TO_CONTROL_CHANNEL:
+                return new LCHarrisReturnToControlChannel(message);
             case L3HARRIS_UNKNOWN_2A:
-                return new LCHarrisUnknownOpcode42(binaryMessage);
+                return new LCHarrisUnknownOpcode42(message);
             case L3HARRIS_UNKNOWN_2B:
-                return new LCHarrisUnknownOpcode43(binaryMessage);
+                return new LCHarrisUnknownOpcode43(message);
             case L3HARRIS_UNKNOWN:
-                return new UnknownLinkControlWord(binaryMessage);
+                return new UnknownLinkControlWord(message);
 
-            case MOTOROLA_PATCH_GROUP_ADD:
-                return new LCMotorolaPatchGroupAdd(binaryMessage);
-            case MOTOROLA_PATCH_GROUP_DELETE:
-                return new LCMotorolaPatchGroupDelete(binaryMessage);
-            case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER:
-                return new LCMotorolaPatchGroupVoiceChannelUser(binaryMessage);
+            case MOTOROLA_GROUP_REGROUP_ADD:
+                return new LCMotorolaGroupRegroupAdd(message);
+            case MOTOROLA_GROUP_REGROUP_DELETE:
+                return new LCMotorolaGroupGroupDelete(message);
+            case MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_USER:
+                return new LCMotorolaGroupRegroupVoiceChannelUser(message);
             case MOTOROLA_TALK_COMPLETE:
-                return new LCMotorolaTalkComplete(binaryMessage);
-            case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE:
-                return new LCMotorolaPatchGroupVoiceChannelUpdate(binaryMessage);
+                return new LCMotorolaTalkComplete(message);
+            case MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_UPDATE:
+                return new LCMotorolaGroupRegroupVoiceChannelUpdate(message);
             case MOTOROLA_UNIT_GPS:
-                return new LCMotorolaUnitGPS(binaryMessage);
+                return new LCMotorolaUnitGPS(message);
+            case MOTOROLA_RADIO_REPROGRAM_HEADER:
+                return new LCMotorolaRadioReprogramHeader(message);
+            case MOTOROLA_RADIO_REPROGRAM_RECORD:
+                return new LCMotorolaRadioReprogramRecord(message);
+            case MOTOROLA_EMERGENCY_ALARM_ACTIVATION:
+                return new LCMotorolaEmergencyAlarmActivation(message);
             case MOTOROLA_UNKNOWN:
-                return new LCMotorolaUnknownOpcode(binaryMessage);
+                return new LCMotorolaUnknownOpcode(message);
 
             default:
-                return new UnknownLinkControlWord(binaryMessage);
+                return new UnknownLinkControlWord(message);
         }
     }
 }

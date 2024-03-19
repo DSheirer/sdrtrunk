@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,7 +113,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         if(mDecoderPane == null)
         {
             mDecoderPane = new TitledPane();
-            mDecoderPane.setText("Decoder: P25 Phase 1 (or P25 Phase 2 Control Channel)");
+            mDecoderPane.setText("Decoder: P25 Phase 1 (also used for P25 Phase 2 system with FDMA control channels)");
             mDecoderPane.setExpanded(true);
 
             GridPane gridPane = new GridPane();
@@ -355,9 +355,9 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     {
         DecodeConfigP25Phase1 config;
 
-        if(getItem().getDecodeConfiguration() instanceof DecodeConfigP25Phase1)
+        if(getItem().getDecodeConfiguration() instanceof DecodeConfigP25Phase1 p1)
         {
-            config = (DecodeConfigP25Phase1)getItem().getDecodeConfiguration();
+            config = p1;
         }
         else
         {

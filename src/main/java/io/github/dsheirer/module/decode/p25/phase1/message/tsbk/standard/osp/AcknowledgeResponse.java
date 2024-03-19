@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,7 +70,7 @@ public class AcknowledgeResponse extends OSPMessage
             sb.append(" FM:").append(getSourceAddress());
         }
         sb.append(" TO:").append(getTargetAddress());
-        sb.append(" ACKNOWLEDGING:").append(getAcknowledgedServiceType());
+        sb.append(" ACKNOWLEDGING:").append(getAcknowledgedService());
         if(hasWACN())
         {
             sb.append(" WACN:").append(getWACN());
@@ -136,7 +135,7 @@ public class AcknowledgeResponse extends OSPMessage
     /**
      * Opcode representing the service type that is being acknowledged by the radio unit.
      */
-    public Opcode getAcknowledgedServiceType()
+    public Opcode getAcknowledgedService()
     {
         return Opcode.fromValue(getMessage().getInt(SERVICE_TYPE), Direction.INBOUND, Vendor.STANDARD);
     }

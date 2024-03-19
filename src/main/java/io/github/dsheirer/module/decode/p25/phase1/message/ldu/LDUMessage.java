@@ -20,14 +20,14 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * LDU voice frame
  */
-public abstract class LDUMessage extends P25Message
+public abstract class LDUMessage extends P25P1Message
 {
     public static final int IMBE_FRAME_1 = 0;
     public static final int IMBE_FRAME_2 = 144;

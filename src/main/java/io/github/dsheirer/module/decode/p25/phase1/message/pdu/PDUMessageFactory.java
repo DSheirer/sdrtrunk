@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu;
 
@@ -27,7 +24,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCHeader;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCAuthenticationQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCAuthenticationResponse;
@@ -41,7 +38,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCSt
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCStatusQueryResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCStatusUpdateRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitAcknowledgeResponse;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceAnswerResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitAnswerResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCCallAlert;
@@ -51,6 +48,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGr
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCIndividualDataChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMessageUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMotorolaGroupRegroupChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCProtectionParameterBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
@@ -74,10 +72,9 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.response.Response
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
+import java.util.BitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.BitSet;
 
 public class PDUMessageFactory
 {
@@ -113,7 +110,7 @@ public class PDUMessageFactory
      * @param pduSequence
      * @return
      */
-    public static P25Message create(PDUSequence pduSequence, int nac, long timestamp)
+    public static P25P1Message create(PDUSequence pduSequence, int nac, long timestamp)
     {
         switch(pduSequence.getHeader().getFormat())
         {
@@ -156,7 +153,7 @@ public class PDUMessageFactory
      * @param timestamp of the packet sequence
      * @return packet data message parser
      */
-    public static P25Message createPacketData(PDUSequence pduSequence, int nac, long timestamp)
+    public static P25P1Message createPacketData(PDUSequence pduSequence, int nac, long timestamp)
     {
         PacketHeader packetHeader = (PacketHeader)pduSequence.getHeader();
 
@@ -201,7 +198,7 @@ public class PDUMessageFactory
          * @param timestamp of the packet sequence
          * @return AMBTC message parser for the specific opcode
          */
-    public static P25Message createAMBTC(PDUSequence pduSequence, int nac, long timestamp)
+    public static P25P1Message createAMBTC(PDUSequence pduSequence, int nac, long timestamp)
     {
         AMBTCHeader ambtcHeader = (AMBTCHeader)pduSequence.getHeader();
 
@@ -234,7 +231,7 @@ public class PDUMessageFactory
             case ISP_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST:
                 return new AMBTCUnitToUnitVoiceServiceRequest(pduSequence, nac, timestamp);
             case ISP_UNIT_TO_UNIT_ANSWER_RESPONSE:
-                return new AMBTCUnitToUnitVoiceServiceAnswerResponse(pduSequence, nac, timestamp);
+                return new AMBTCUnitToUnitAnswerResponse(pduSequence, nac, timestamp);
 
             case OSP_ADJACENT_STATUS_BROADCAST:
                 return new AMBTCAdjacentStatusBroadcast(pduSequence, nac, timestamp);
@@ -254,7 +251,7 @@ public class PDUMessageFactory
                 return new AMBTCMessageUpdate(pduSequence, nac, timestamp);
             case OSP_NETWORK_STATUS_BROADCAST:
                 return new AMBTCNetworkStatusBroadcast(pduSequence, nac, timestamp);
-            case OSP_PROTECTION_PARAMETER_BROADCAST:
+            case OSP_ADJACENT_STATUS_BROADCAST_UNCOORDINATED_BAND_PLAN:
                 return new AMBTCProtectionParameterBroadcast(pduSequence, nac, timestamp);
             case OSP_RFSS_STATUS_BROADCAST:
                 return new AMBTCRFSSStatusBroadcast(pduSequence, nac, timestamp);
@@ -278,6 +275,8 @@ public class PDUMessageFactory
                 return new AMBTCUnitToUnitVoiceServiceChannelGrant(pduSequence, nac, timestamp);
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                 return new AMBTCUnitToUnitVoiceServiceChannelGrantUpdate(pduSequence, nac, timestamp);
+            case MOTOROLA_OSP_GROUP_REGROUP_CHANNEL_GRANT:
+                return new AMBTCMotorolaGroupRegroupChannelGrant(pduSequence, nac, timestamp);
             default:
                 return new PDUSequenceMessage(pduSequence, nac, timestamp);
         }
@@ -291,7 +290,7 @@ public class PDUMessageFactory
      * @param timestamp of the packet sequence
      * @return UMBTC message parser for the specific opcode
      */
-    public static P25Message createUMBTC(PDUSequence pduSequence, int nac, long timestamp)
+    public static P25P1Message createUMBTC(PDUSequence pduSequence, int nac, long timestamp)
     {
         Opcode opcode = Opcode.OSP_UNKNOWN;
 

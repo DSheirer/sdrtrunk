@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,17 +35,16 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Monitors audio segments and upon completion records any audio segments that have been flagged as recordable
@@ -112,14 +111,14 @@ public class AudioRecordingManager implements Listener<AudioSegment>
         //Debug
         if(audioSegment.getAudioBufferCount() == 0)
         {
-            mLog.debug("Audio Segment detected with 0 audio buffers");
+//            mLog.debug("Audio Segment detected with 0 audio buffers");
         }
 
         List<Identifier> toIdentifiers = audioSegment.getIdentifierCollection().getIdentifiers(Role.TO);
 
         if(toIdentifiers.isEmpty())
         {
-            mLog.debug("Audio Segment detected with NO TO identifiers");
+//            mLog.debug("Audio Segment detected with NO TO identifiers");
         }
 
         if(audioSegment.recordAudioProperty().get())

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.filter.SyncLossMessageFilter;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 
 /**
  * Filter set for P25 messages
@@ -53,6 +53,6 @@ public class P25P1MessageFilterSet extends FilterSet<IMessage>
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof P25Message || message instanceof SyncLossMessage;
+        return message instanceof P25P1Message || message instanceof SyncLossMessage;
     }
 }

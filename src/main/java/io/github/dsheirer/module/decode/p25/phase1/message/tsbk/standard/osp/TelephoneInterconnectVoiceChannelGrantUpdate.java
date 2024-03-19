@@ -25,6 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
@@ -38,7 +39,7 @@ import java.util.List;
 /**
  * Telephone interconnect voice call channel grant.
  */
-public class TelephoneInterconnectVoiceChannelGrantUpdate extends OSPMessage implements IFrequencyBandReceiver
+public class TelephoneInterconnectVoiceChannelGrantUpdate extends OSPMessage implements IFrequencyBandReceiver, IServiceOptionsProvider
 {
     private static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] FREQUENCY_BAND = {24, 25, 26, 27};
@@ -67,14 +68,14 @@ public class TelephoneInterconnectVoiceChannelGrantUpdate extends OSPMessage imp
         sb.append(" RADIO:").append(getAnyAddress());
         sb.append(" TIMER:").append(getCallTimer());
         sb.append("ms CHAN:").append(getChannel());
-        sb.append(" ").append(getVoiceServiceOptions().toString());
+        sb.append(" ").append(getServiceOptions().toString());
         return sb.toString();
     }
 
     /**
      * Service options for the request
      */
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

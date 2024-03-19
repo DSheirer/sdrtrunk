@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ public enum DecodeEventType
     DATA_CALL_ENCRYPTED("Encrypted Data Call"),
     DATA_PACKET("Data Packet"),
     DEREGISTER("Deregister"),
+    DYNAMIC_REGROUP("Dynamic Regroup"),
     EMERGENCY("EMERGENCY"),
     FUNCTION("Function"),
     GPS("GPS"),
@@ -106,7 +107,7 @@ public enum DecodeEventType
     public static final EnumSet<DecodeEventType> COMMANDS = EnumSet.of(DecodeEventType.ANNOUNCEMENT,
             DecodeEventType.STATION_ID, DecodeEventType.ACKNOWLEDGE, DecodeEventType.PAGE, DecodeEventType.QUERY,
             DecodeEventType.RADIO_CHECK, DecodeEventType.STATUS, DecodeEventType.COMMAND, DecodeEventType.EMERGENCY,
-            DecodeEventType.NOTIFICATION, DecodeEventType.FUNCTION);
+            DecodeEventType.NOTIFICATION, DecodeEventType.FUNCTION, DecodeEventType.DYNAMIC_REGROUP);
 
     /**
      * Data call event types for filtering
@@ -130,6 +131,13 @@ public enum DecodeEventType
             .filter(decodeEventType -> !decodeEventType.isGrouped()).toList());
 
     /**
+     * Voice call event types.
+     */
+    public static final EnumSet<DecodeEventType> VOICE_CALL_EVENTS = EnumSet.of(CALL, CALL_ENCRYPTED, CALL_GROUP,
+            CALL_GROUP_ENCRYPTED, CALL_PATCH_GROUP, CALL_PATCH_GROUP_ENCRYPTED, CALL_INTERCONNECT,
+            CALL_INTERCONNECT_ENCRYPTED, CALL_UNIT_TO_UNIT, CALL_UNIT_TO_UNIT_ENCRYPTED);
+
+    /**
      * Constructor
      * @param label for the element
      */
@@ -149,12 +157,12 @@ public enum DecodeEventType
     }
 
     /**
-     * Indicates if this is a call event.
-     * @return true if this is a call event type.
+     * Indicates if this is a voice call event.
+     * @return true if this is a voice call event type.
      */
-    public boolean isCallEvent()
+    public boolean isVoiceCallEvent()
     {
-        return VOICE_CALLS.contains(this) || VOICE_CALLS_ENCRYPTED.contains(this) || DATA_CALLS.contains(this);
+        return VOICE_CALL_EVENTS.contains(this);
     }
 
     /**

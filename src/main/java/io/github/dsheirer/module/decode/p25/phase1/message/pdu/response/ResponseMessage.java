@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,17 +20,28 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.response;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequenceMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.DataBlock;
 import io.github.dsheirer.module.decode.p25.reference.PacketResponse;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Response message
+ */
 public class ResponseMessage extends PDUSequenceMessage
 {
+    private List<Identifier> mIdentifiers;
+
+    /**
+     * Construct an instance
+     * @param PDUSequence containing the response message
+     * @param nac value
+     * @param timestamp for the message
+     */
     public ResponseMessage(PDUSequence PDUSequence, int nac, long timestamp)
     {
         super(PDUSequence, nac, timestamp);
@@ -46,8 +57,28 @@ public class ResponseMessage extends PDUSequenceMessage
         StringBuilder sb = new StringBuilder();
 
         sb.append("NAC:").append(getNAC());
+        if(!isValid())
+        {
+            sb.append("***CRC-FAIL*** ");
+        }
 
-        sb.append(" ").append(getHeader().toString());
+        sb.append("PDU RESPONSE");
+
+        if(getHeader().hasSourceLLID())
+        {
+            sb.append(" FROM:").append(getHeader().getSourceLLID());
+        }
+
+        sb.append(" TO:").append(getHeader().getTargetLLID());
+        sb.append(" ").append(getResponseText());
+        return sb.toString();
+    }
+
+    public String getResponseText()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(getHeader().getResponse());
 
         if(getPDUSequence().isComplete())
         {
@@ -60,7 +91,6 @@ public class ResponseMessage extends PDUSequenceMessage
                 if(getPDUSequence().getDataBlocks().size() > 0)
                 {
                     sb.append(" BLOCKS TO FOLLOW:").append(getPDUSequence().getDataBlocks().size());
-
                     sb.append(" DATA BLOCKS:").append(getPDUSequence().getDataBlocks().size());
 
                     if(!getPDUSequence().getDataBlocks().isEmpty())
@@ -78,9 +108,8 @@ public class ResponseMessage extends PDUSequenceMessage
         else
         {
             sb.append(" *INCOMPLETE - RECEIVED ").append(getPDUSequence().getDataBlocks().size()).append("/")
-                .append(getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
+                    .append(getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
         }
-
 
         return sb.toString();
     }
@@ -152,5 +181,22 @@ public class ResponseMessage extends PDUSequenceMessage
         }
 
         return missingBlockNumbers;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getHeader().getTargetLLID());
+
+            if(getHeader().hasSourceLLID())
+            {
+                mIdentifiers.add(getHeader().getSourceLLID());
+            }
+        }
+
+        return mIdentifiers;
     }
 }

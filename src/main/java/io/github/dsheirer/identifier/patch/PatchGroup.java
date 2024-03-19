@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -95,25 +95,44 @@ public class PatchGroup
     /**
      * Adds the talkgroup identifier to this patched group.
      * @param patchedGroupIdentifier to add
+     * @return true if the patched group identifier is new and was added
      */
-    public void addPatchedTalkgroup(TalkgroupIdentifier patchedGroupIdentifier)
+    public boolean addPatchedTalkgroup(TalkgroupIdentifier patchedGroupIdentifier)
     {
+        boolean added = false;
+
         if(!mPatchedTalkgroupIdentifiers.contains(patchedGroupIdentifier))
         {
-            mPatchedTalkgroupIdentifiers.add(patchedGroupIdentifier);
+            added |= mPatchedTalkgroupIdentifiers.add(patchedGroupIdentifier);
         }
+
+        return added;
     }
+
+    /**
+     * Removes the patched talkgroup from this patch group.
+     * @param talkgroup to remove
+     */
+    public void removePatchedTalkgroup(TalkgroupIdentifier talkgroup)
+    {
+        mPatchedTalkgroupIdentifiers.remove(talkgroup);
+    }
+
 
     /**
      * Adds a list of talkgroup identifiers to this patched group.
      * @param patchedGroupIdentifiers to add
      */
-    public void addPatchedTalkgroups(List<TalkgroupIdentifier> patchedGroupIdentifiers)
+    public boolean addPatchedTalkgroups(List<TalkgroupIdentifier> patchedGroupIdentifiers)
     {
+        boolean added = false;
+
         for(TalkgroupIdentifier identifier : patchedGroupIdentifiers)
         {
-            addPatchedTalkgroup(identifier);
+            added |= addPatchedTalkgroup(identifier);
         }
+
+        return added;
     }
 
     /**
@@ -129,24 +148,41 @@ public class PatchGroup
      * Adds the radio identifier to this patched group.
      * @param patchedRadioIdentifier to add
      */
-    public void addPatchedRadio(RadioIdentifier patchedRadioIdentifier)
+    public boolean addPatchedRadio(RadioIdentifier patchedRadioIdentifier)
     {
         if(!mPatchedRadioIdentifiers.contains(patchedRadioIdentifier))
         {
             mPatchedRadioIdentifiers.add(patchedRadioIdentifier);
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * Removes the patched radio from this patch group.
+     * @param radioIdentifier to remove
+     */
+    public void removePatchedRadio(RadioIdentifier radioIdentifier)
+    {
+        mPatchedRadioIdentifiers.remove(radioIdentifier);
     }
 
     /**
      * Adds a list of radio identifiers to this patched group.
      * @param patchedRadioIdentifiers to add
+     * @return true if any new identifiers were added
      */
-    public void addPatchedRadios(List<RadioIdentifier> patchedRadioIdentifiers)
+    public boolean addPatchedRadios(List<RadioIdentifier> patchedRadioIdentifiers)
     {
+        boolean added = false;
+
         for(RadioIdentifier identifier : patchedRadioIdentifiers)
         {
-            addPatchedRadio(identifier);
+            added |= addPatchedRadio(identifier);
         }
+
+        return added;
     }
 
     /**

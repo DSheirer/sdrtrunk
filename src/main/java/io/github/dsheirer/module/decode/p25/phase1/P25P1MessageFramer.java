@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,6 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageProviderModule;
 import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
@@ -40,8 +39,8 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
@@ -73,7 +72,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     private P25P1DataUnitDetector mDataUnitDetector;
     private P25P1ChannelStatusProcessor mChannelStatusProcessor = new P25P1ChannelStatusProcessor();
-    private Listener<Message> mMessageListener;
+    private Listener<IMessage> mMessageListener;
     private boolean mAssemblingMessage = false;
     private CorrectedBinaryMessage mBinaryMessage;
     private P25P1DataUnitID mDataUnitID;
@@ -153,7 +152,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
      *
      * @param messageListener to receive framed and decoded messages
      */
-    public void setListener(Listener<Message> messageListener)
+    public void setListener(Listener<IMessage> messageListener)
     {
         mMessageListener = messageListener;
     }
@@ -346,7 +345,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                     }
                     break;
                 default:
-                    P25Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
+                    P25P1Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
                     mMessageListener.receive(message);
                     reset(mDataUnitID.getMessageLength());
                     break;

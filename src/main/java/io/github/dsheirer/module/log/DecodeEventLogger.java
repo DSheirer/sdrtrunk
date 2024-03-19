@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
     @Override
     public void receive(IDecodeEvent decodeEvent)
     {
-                write(toCSV(decodeEvent));
+        write(toCSV(decodeEvent));
     }
 
     @Override
@@ -88,7 +88,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
     public static String getCSVHeader()
     {
-        return "TIMESTAMP,DURATION_MS,PROTOCOL,EVENT,FROM,TO,CHANNEL_NUMBER,FREQUENCY,TIMESLOT,DETAILS";
+        return "TIMESTAMP,DURATION_MS,PROTOCOL,EVENT,FROM,TO,CHANNEL_NUMBER,FREQUENCY,TIMESLOT,DETAILS,EVENT_ID";
     }
 
     private String toCSV(IDecodeEvent event)
@@ -137,18 +137,25 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         IChannelDescriptor descriptor = event.getChannelDescriptor();
         cells.add(descriptor != null ? descriptor : "");
 
-        Identifier frequency = event.getIdentifierCollection()
-            .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
-
-        if(frequency instanceof FrequencyConfigurationIdentifier)
+        if(descriptor != null)
         {
-            cells.add(mFrequencyFormat
-                    .format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d));
-
+            cells.add(mFrequencyFormat.format(descriptor.getDownlinkFrequency() / 1e6d));
         }
         else
         {
-            cells.add("");
+            Identifier frequency = event.getIdentifierCollection()
+                    .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
+
+            if(frequency instanceof FrequencyConfigurationIdentifier)
+            {
+                cells.add(mFrequencyFormat
+                        .format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d));
+
+            }
+            else
+            {
+                cells.add("");
+            }
         }
 
         if(event.hasTimeslot())
@@ -162,6 +169,8 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
         String details = event.getDetails();
         cells.add(details != null ? details : "");
+
+        cells.add(event.hashCode());
 
         return mCsvFormat.format(cells.toArray());
     }

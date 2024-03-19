@@ -540,8 +540,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         {
             mResetFrequenciesButton = new JButton("Reset");
             mResetFrequenciesButton.addActionListener(e -> {
-                getMinimumFrequencyTextField().setFrequency(getMinimumTunableFrequency());
-                getMaximumFrequencyTextField().setFrequency(getMaximumTunableFrequency());
+
+                long min = getMinimumTunableFrequency();
+                long max = getMaximumTunableFrequency();
+                getTuner().getTunerController().setFrequencyExtents(min, max);
+                getMinimumFrequencyTextField().setFrequency(min);
+                getMaximumFrequencyTextField().setFrequency(max);
+                save();
             });
         }
 

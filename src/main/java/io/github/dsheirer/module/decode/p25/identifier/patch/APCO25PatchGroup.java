@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.identifier.patch;
 
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
@@ -42,5 +42,10 @@ public class APCO25PatchGroup extends PatchGroupIdentifier
     public static APCO25PatchGroup create(PatchGroup patchGroup)
     {
         return new APCO25PatchGroup(patchGroup);
+    }
+
+    public static APCO25PatchGroup create(int supergroup)
+    {
+        return new APCO25PatchGroup(new PatchGroup(APCO25Talkgroup.create(supergroup)));
     }
 }
