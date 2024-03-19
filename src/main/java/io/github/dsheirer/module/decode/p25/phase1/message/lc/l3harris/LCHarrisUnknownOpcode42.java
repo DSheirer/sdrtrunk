@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import java.util.Collections;
@@ -38,7 +38,7 @@ public class LCHarrisUnknownOpcode42 extends LinkControlWord
      *
      * @param message
      */
-    public LCHarrisUnknownOpcode42(BinaryMessage message)
+    public LCHarrisUnknownOpcode42(CorrectedBinaryMessage message)
     {
         super(message);
     }

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message;
@@ -23,20 +22,19 @@ package io.github.dsheirer.module.decode.p25.phase1.message;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-
 import java.util.Collections;
 import java.util.List;
 
 /**
  * P25 Message with unknown or unrecognized data unit id
  */
-public class UnknownP25Message extends P25Message
+public class UnknownP25Message extends P25P1Message
 {
     private P25P1DataUnitID mDataUnitID;
 
     public UnknownP25Message(CorrectedBinaryMessage message, int nac, long timestamp, P25P1DataUnitID dataUnitID)
     {
-        super(message, nac);
+        super(message, nac, timestamp);
         mDataUnitID = dataUnitID;
     }
 

@@ -1,34 +1,62 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.p25.reference;
 
 public enum ExtendedFunction
 {
-    RADIO_CHECK(0x0000, "RADIO CHECK"),
-    RADIO_DETACH(0x007D, "RADIO DETACH"),
-    RADIO_UNINHIBIT(0x007E, "RADIO UNINHIBIT"),
-    RADIO_INHIBIT(0x007F, "RADIO INHIBIT"),
-    RADIO_CHECK_ACK(0x0080, "RADIO CHECK ACK"),
-    RADIO_DETACH_ACK(0x00FD, "RADIO DETACH ACK"),
-    RADIO_UNINHIBIT_ACK(0x00FE, "RADIO UNINHIBIT ACK"),
-    RADIO_INHIBIT_ACK(0x00FF, "RADIO INHIBIT ACK"),
-
-    GROUP_CONTROL_COMMAND(0x0100, "GROUP CONTROL COMMAND"),
-    UNIT_DYNAMIC_COMMAND(0x0200, "UNIT DYNAMIC COMMAND"),
-    GROUP_DYNAMIC_COMMAND(0x0300, "GROUP DYNAMIC COMMAND"),
-
-    UNKNOWN(-1, "UNKNOWN");
+    RADIO_CHECK(0x0000, "RADIO CHECK FROM RADIO:", ArgumentType.SOURCE_RADIO),
+    RADIO_DETACH(0x007D, "RADIO DETACH FROM RADIO:", ArgumentType.SOURCE_RADIO ),
+    RADIO_UNINHIBIT(0x007E, "RADIO UNINHIBIT FROM RADIO:", ArgumentType.SOURCE_RADIO),
+    RADIO_INHIBIT(0x007F, "RADIO INHIBIT FROM RADIO:", ArgumentType.SOURCE_RADIO),
+    RADIO_CHECK_ACK(0x0080, "RADIO CHECK ACK TO RADIO:", ArgumentType.TARGET_RADIO),
+    RADIO_DETACH_ACK(0x00FD, "RADIO DETACH ACK TO RADIO:", ArgumentType.TARGET_RADIO),
+    RADIO_UNINHIBIT_ACK(0x00FE, "RADIO UNINHIBIT ACK TO RADIO:", ArgumentType.TARGET_RADIO),
+    RADIO_INHIBIT_ACK(0x00FF, "RADIO INHIBIT ACK TO RADIO:", ArgumentType.TARGET_RADIO),
+    GROUP_REGROUP_CREATE_SUPERGROUP(0x0200, "GROUP REGROUP CREATE SUPERGROUP:", ArgumentType.TALKGROUP),
+    GROUP_REGROUP_CANCEL_SUPERGROUP(0x0201, "GROUP REGROUP CANCEL SUPERGROUP", ArgumentType.NONE),
+    GROUP_REGROUP_ACK_CREATE_SUPERGROUP(0x0280, "GROUP REGROUP ACK CREATE SUPERGROUP:", ArgumentType.TALKGROUP),
+    GROUP_REGROUP_ACK_CANCEL_SUPERGROUP(0x0281, "GROUP REGROUP ACK CANCEL SUPERGROUP:", ArgumentType.TALKGROUP),
+    UNKNOWN(-1, "UNKNOWN", ArgumentType.NONE);
 
     private int mFunction;
     private String mLabel;
+    private ArgumentType mArgumentType;
 
-    ExtendedFunction(int function, String label)
+    ExtendedFunction(int function, String label, ArgumentType argumentType)
     {
         mFunction = function;
         mLabel = label;
+        mArgumentType = argumentType;
     }
 
     public String getLabel()
     {
         return mLabel;
+    }
+
+    /**
+     * Indicates the type of address carried in the argument field.
+     */
+    public ArgumentType getArgumentType()
+    {
+        return mArgumentType;
     }
 
     @Override
@@ -57,19 +85,14 @@ public enum ExtendedFunction
                 return RADIO_UNINHIBIT_ACK;
             case 0x00FF:
                 return RADIO_INHIBIT_ACK;
-        }
-
-        if((function & 0x0100) == 0x0100)
-        {
-            return GROUP_CONTROL_COMMAND;
-        }
-        if((function & 0x0200) == 0x0200)
-        {
-            return UNIT_DYNAMIC_COMMAND;
-        }
-        if((function & 0x0300) == 0x0300)
-        {
-            return GROUP_DYNAMIC_COMMAND;
+            case 0x0200:
+                return GROUP_REGROUP_CREATE_SUPERGROUP;
+            case 0x0201:
+                return GROUP_REGROUP_CANCEL_SUPERGROUP;
+            case 0x0280:
+                return GROUP_REGROUP_ACK_CREATE_SUPERGROUP;
+            case 0x0281:
+                return GROUP_REGROUP_ACK_CANCEL_SUPERGROUP;
         }
 
         return UNKNOWN;

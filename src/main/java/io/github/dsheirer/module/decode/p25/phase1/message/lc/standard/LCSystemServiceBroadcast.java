@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,16 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.Service;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -33,18 +32,16 @@ import java.util.List;
  */
 public class LCSystemServiceBroadcast extends LinkControlWord
 {
-    private static final int[] REQUEST_PRIORITY_LEVEL = {20, 21, 22, 23};
-    private static final int[] AVAILABLE_SERVICES = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
-            45, 46, 47};
-    private static final int[] SUPPORTED_SERVICES = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
-            62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    private static final IntField REQUEST_PRIORITY_LEVEL = IntField.length4(OCTET_2_BIT_16 + 4);
+    private static final IntField AVAILABLE_SERVICES = IntField.length24(OCTET_3_BIT_24);
+    private static final IntField SUPPORTED_SERVICES = IntField.length24(OCTET_6_BIT_48);
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
      *
      * @param message
      */
-    public LCSystemServiceBroadcast(BinaryMessage message)
+    public LCSystemServiceBroadcast(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -64,20 +61,18 @@ public class LCSystemServiceBroadcast extends LinkControlWord
      */
     public int getRequestPriorityLevel()
     {
-        return getMessage().getInt(REQUEST_PRIORITY_LEVEL);
+        return getInt(REQUEST_PRIORITY_LEVEL);
     }
 
 
     public List<Service> getAvailableServices()
     {
-        long bitmap = getMessage().getLong(AVAILABLE_SERVICES);
-        return Service.getServices(bitmap);
+        return Service.getServices(getInt(AVAILABLE_SERVICES));
     }
 
     public List<Service> getSupportedServices()
     {
-        long bitmap = getMessage().getLong(SUPPORTED_SERVICES);
-        return Service.getServices(bitmap);
+        return Service.getServices(getInt(SUPPORTED_SERVICES));
     }
 
     /**

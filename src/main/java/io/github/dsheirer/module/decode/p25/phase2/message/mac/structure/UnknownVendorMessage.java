@@ -1,43 +1,34 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.Vendor;
-
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Unknown Vendor Message
+ * Manufacturer / Vendor Custom Message - All Mac Opcodes from 128 - 191
  */
-public class UnknownVendorMessage extends MacStructure
+public class UnknownVendorMessage extends MacStructureVendor
 {
-    private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] LENGTH = {18, 19, 20, 21, 22, 23};
-
     /**
      * Constructs the message
      *
@@ -55,26 +46,15 @@ public class UnknownVendorMessage extends MacStructure
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("MANUFACTURER MESSAGE VENDOR:").append(getVendor());
-        sb.append(" LENGTH:").append(getMessageLength());
-        sb.append(" MSG:").append(getMessage().getSubMessage(getOffset(), getMessage().size()).toHexString());
+        sb.append("CUSTOM/UNKNOWN");
+        sb.append(" VENDOR:").append(getVendor());
+        sb.append(" ID:").append(String.format("%02X", getVendorID()));
+        sb.append(" OPCODE:").append(getOpcodeNumber());
+        sb.append(" LENGTH:").append(getLength());
+        sb.append(" MSG:").append(getMessage().getSubMessage(getOffset(), getOffset() + (getLength() * 8)).toHexString());
 
         return sb.toString();
     }
-
-    public Vendor getVendor()
-    {
-        return Vendor.fromValue(getMessage().getInt(VENDOR, getOffset()));
-    }
-
-    /**
-     * Length of this message
-     */
-    public int getMessageLength()
-    {
-        return getMessage().getInt(LENGTH, getOffset());
-    }
-
 
     @Override
     public List<Identifier> getIdentifiers()

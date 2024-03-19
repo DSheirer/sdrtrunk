@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
@@ -27,17 +24,22 @@ import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.isp.UnknownHarrisISPMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.HarrisGroupRegroupExplicitEncryptionCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.L3HarrisGroupRegroupExplicitEncryptionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.UnknownHarrisOSPMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.MotorolaExtendedFunctionResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.MotorolaGroupRegroupVoiceRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.UnknownMotorolaISPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelLoading;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaAcknowledgeResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExtendedFunctionCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupAddCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelGrant;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupDeleteCommand;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaQueuedResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaTrafficChannel;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupAdd;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupDelete;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PlannedChannelShutdown;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.UnknownMotorolaOSPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.isp.AuthenticationQuery;
@@ -103,7 +105,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Sec
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusUpdate;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SyncBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SynchronizationBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.TelephoneInterconnectAnswerRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.TelephoneInterconnectVoiceChannelGrant;
@@ -274,7 +276,7 @@ public class TSBKMessageFactory
             case OSP_STATUS_UPDATE:
                 return new StatusUpdate(dataUnitID, message, nac, timestamp);
             case OSP_TDMA_SYNC_BROADCAST:
-                return new SyncBroadcast(dataUnitID, message, nac, timestamp);
+                return new SynchronizationBroadcast(dataUnitID, message, nac, timestamp);
             case OSP_SYSTEM_SERVICE_BROADCAST:
                 return new SystemServiceBroadcast(dataUnitID, message, nac, timestamp);
             case OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
@@ -299,30 +301,40 @@ public class TSBKMessageFactory
             case HARRIS_ISP_UNKNOWN:
                 return new UnknownHarrisISPMessage(dataUnitID, message, nac, timestamp);
             case HARRIS_OSP_GRG_EXENC_CMD:
-                return new HarrisGroupRegroupExplicitEncryptionCommand(dataUnitID, message, nac, timestamp);
+                return new L3HarrisGroupRegroupExplicitEncryptionCommand(dataUnitID, message, nac, timestamp);
             case HARRIS_OSP_UNKNOWN:
                 return new UnknownHarrisOSPMessage(dataUnitID, message, nac, timestamp);
 
             case MOTOROLA_ISP_UNKNOWN:
                 return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_ISP_EXTENDED_FUNCTION_RESPONSE:
+                return new MotorolaExtendedFunctionResponse(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_ISP_GROUP_REGROUP_VOICE_REQUEST:
+                return new MotorolaGroupRegroupVoiceRequest(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_BASE_STATION_ID:
                 return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
                 return new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_DENY_RESPONSE:
                 return new MotorolaDenyResponse(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_QUEUED_RESPONSE:
+                return new MotorolaQueuedResponse(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_ACKNOWLEDGE_RESPONSE:
+                return new MotorolaAcknowledgeResponse(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
                 return new MotorolaTrafficChannel(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_ADD:
-                return new PatchGroupAdd(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_DELETE:
-                return new PatchGroupDelete(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT:
-                return new PatchGroupVoiceChannelGrant(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE:
-                return new PatchGroupVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_GROUP_REGROUP_ADD:
+                return new MotorolaGroupRegroupAddCommand(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_GROUP_REGROUP_DELETE:
+                return new MotorolaGroupRegroupDeleteCommand(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_GROUP_REGROUP_CHANNEL_GRANT:
+                return new MotorolaGroupRegroupChannelGrant(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_GROUP_REGROUP_CHANNEL_UPDATE:
+                return new MotorolaGroupRegroupChannelUpdate(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_SYSTEM_LOADING:
                 return new ChannelLoading(dataUnitID, message, nac, timestamp);
+            case MOTOROLA_OSP_EXTENDED_FUNCTION_COMMAND:
+                return new MotorolaExtendedFunctionCommand(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_UNKNOWN:
                 return new UnknownMotorolaOSPMessage(dataUnitID, message, nac, timestamp);
 

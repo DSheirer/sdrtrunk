@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1.message.hdu;
 
@@ -27,20 +24,19 @@ import io.github.dsheirer.edac.Golay18;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17_P25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
-public class HDUMessage extends P25Message
+public class HDUMessage extends P25P1Message
 {
     private final static Logger mLog = LoggerFactory.getLogger(HDUMessage.class);
 
     private static final int[] GOLAY_WORD_STARTS = {0, 18, 36, 54, 72, 90, 108, 126, 144, 162, 180, 198, 216, 234, 252,
         270, 288, 306, 324, 342, 360, 278, 396, 414, 432, 450, 468, 486, 504, 522, 540, 558, 576, 594, 612, 630};
 
-    private static final int[] CW_HEX_0 = {0, 1, 2, 3, 4, 5, 6};
+    private static final int[] CW_HEX_0 = {0, 1, 2, 3, 4, 5};
     private static final int[] CW_HEX_1 = {18, 19, 20, 21, 22, 23};
     private static final int[] CW_HEX_2 = {36, 37, 38, 39, 40, 41};
     private static final int[] CW_HEX_3 = {54, 55, 56, 57, 58, 59};

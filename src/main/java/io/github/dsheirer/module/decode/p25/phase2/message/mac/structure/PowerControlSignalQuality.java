@@ -1,35 +1,31 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.BER;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.RFLevel;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,10 +33,9 @@ import java.util.List;
  */
 public class PowerControlSignalQuality extends MacStructure
 {
-    private static final int[] TARGET_ADDRESS = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-        26, 27, 28, 29, 30, 31};
-    private static final int[] RF_LEVEL = {32, 33, 34, 35};
-    private static final int[] BIT_ERROR_RATE = {36, 37, 38, 39};
+    private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_2_BIT_8);
+    private static final IntField RF_LEVEL = IntField.length4(OCTET_5_BIT_32);
+    private static final IntField BIT_ERROR_RATE = IntField.length4(OCTET_5_BIT_32 + 4);
 
     private List<Identifier> mIdentifiers;
     private Identifier mTargetAddress;
@@ -76,7 +71,7 @@ public class PowerControlSignalQuality extends MacStructure
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;
@@ -84,12 +79,12 @@ public class PowerControlSignalQuality extends MacStructure
 
     public RFLevel getRFLevel()
     {
-        return RFLevel.fromValue(getMessage().getInt(RF_LEVEL, getOffset()));
+        return RFLevel.fromValue(getInt(RF_LEVEL));
     }
 
     public BER getBitErrorRate()
     {
-        return BER.fromValue(getMessage().getInt(BIT_ERROR_RATE, getOffset()));
+        return BER.fromValue(getInt(BIT_ERROR_RATE));
     }
 
     @Override
@@ -97,8 +92,7 @@ public class PowerControlSignalQuality extends MacStructure
     {
         if(mIdentifiers == null)
         {
-            mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getTargetAddress());
+            mIdentifiers = Collections.singletonList(getTargetAddress());
         }
 
         return mIdentifiers;

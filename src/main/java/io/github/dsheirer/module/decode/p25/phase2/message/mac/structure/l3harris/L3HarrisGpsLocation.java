@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.identifier.P25Location;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureVendor;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -32,11 +33,11 @@ import java.util.TimeZone;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 /**
- * L3Harris GPS Location.
+ * L3Harris Talker GPS Location.
  *
  * Bit field definitions are best-guess from observed samples.
  */
-public class L3HarrisGpsLocation extends MacStructure
+public class L3HarrisGpsLocation extends MacStructureVendor
 {
     public static final SimpleDateFormat SDF = new SimpleDateFormat("HH:mm:ss");
     static {
@@ -44,35 +45,28 @@ public class L3HarrisGpsLocation extends MacStructure
     }
     private static final DecimalFormat GPS_FORMAT = new DecimalFormat("0.000000");
     private static final DecimalFormat FIXED = new DecimalFormat("000");
-    private static final int[] OPCODE = {0, 1, 2, 3, 4, 5, 6, 7};
-    private static final int[] UNKNOWN = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] VENDOR = {16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int[] LENGTH = {24, 25, 26, 27, 28, 29, 30, 31}; //Length is 17.5 bytes ... observed 17 here
 
-    //Bits 32 & 33 not set in sample data - seems unused for a 1/5000th of a minute number system
-    private static final int[] LATITUDE_MINUTES_FRACTIONAL = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46};
-    private static final int LATITUDE_HEMISPHERE = 48;
-    //Bit 47 & 49 not set in sample data
-    private static final int[] LATITUDE_MINUTES = {50, 51, 52, 53, 54, 55};
-    private static final int[] LATITUDE_DEGREES = {56, 57, 58, 59, 60, 61, 62, 63};
+    //Bits 24 & 25 not set in sample data - seems unused for a 1/5000th of a minute number system
+    private static final IntField LATITUDE_MINUTES_FRACTIONAL = IntField.range(24, 38);
+    private static final int LATITUDE_HEMISPHERE = 40;
+    //Bit 39 & 41 not set in sample data
+    private static final IntField LATITUDE_MINUTES = IntField.range(42, 47);
+    private static final IntField LATITUDE_DEGREES = IntField.range(48, 55);
 
-    //Bits 64 & 65 not set in sample data - seems unused for a 1/5000th of a minute number system
-    private static final int[] LONGITUDE_MINUTES_FRACTIONAL = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78};
-    private static final int LONGITUDE_HEMISPHERE = 80;
-    //Bit 79 & 81 not set in sample data
-    private static final int[] LONGITUDE_MINUTES = {82, 83, 84, 85, 86, 87};
-    private static final int[] LONGITUDE_DEGREES = {88, 89, 90, 91, 92, 93, 94, 95};
+    //Bits 56 & 57 not set in sample data - seems unused for a 1/5000th of a minute number system
+    private static final IntField LONGITUDE_MINUTES_FRACTIONAL = IntField.range(56, 70);
+    private static final int LONGITUDE_HEMISPHERE = 72;
+    //Bit 71 & 73 not set in sample data
+    private static final IntField LONGITUDE_MINUTES = IntField.range(74, 79);
+    private static final IntField LONGITUDE_DEGREES = IntField.range(80, 87);
 
     //There's a leading bit missing from GPS Time to get from (2^16) to (2^17) needed address space (86,400 total seconds)
-    private static final int[] GPS_TIME = {96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111};
+    private static final IntField GPS_TIME = IntField.range(88, 103);
 
-    private static final int[] U2 = {112, 113, 114, 115, 116, 117, 118, 119};
-    private static final int[] U3 = {120, 121, 122, 123, 124, 125, 126, 127};
-    private static final int[] U4 = {128, 129, 130, 131, 132, 133, 134, 135};
-    private static final int[] U5 = {136, 137, 138, 139, 140, 141, 142, 143};
-    private static final int[] U6 = {144, 145, 146, 147, 148, 149, 150, 151};
-    private static final int[] U7 = {152, 153, 154, 155, 156, 157, 158, 159};
-    private static final int[] U8 = {160, 161, 162, 163, 164, 165, 166, 167};
+    private static final IntField U1 = IntField.length8(OCTET_14_BIT_104);
+    private static final IntField U2 = IntField.length8(OCTET_15_BIT_112);
+    private static final IntField U3 = IntField.length8(OCTET_16_BIT_120);
+    private static final IntField U4 = IntField.length8(OCTET_17_BIT_128);
 
     private P25Location mLocation;
     private List<Identifier> mIdentifiers;
@@ -95,7 +89,7 @@ public class L3HarrisGpsLocation extends MacStructure
      */
     public long getTimestampMs()
     {
-        return getMessage().getInt(GPS_TIME, getOffset()) * 1000; //Convert seconds to milliseconds.
+        return getInt(GPS_TIME) * 1000; //Convert seconds to milliseconds.
     }
 
     /**
@@ -140,7 +134,7 @@ public class L3HarrisGpsLocation extends MacStructure
      */
     private double getLatitudeDegrees()
     {
-        return getMessage().getInt(LATITUDE_DEGREES, getOffset());
+        return getInt(LATITUDE_DEGREES);
     }
 
     /**
@@ -148,8 +142,7 @@ public class L3HarrisGpsLocation extends MacStructure
      */
     private double getLatitudeMinutes()
     {
-        return getMessage().getInt(LATITUDE_MINUTES, getOffset()) +
-                getMessage().getInt(LATITUDE_MINUTES_FRACTIONAL, getOffset()) / 5000d;
+        return getInt(LATITUDE_MINUTES) + getInt(LATITUDE_MINUTES_FRACTIONAL) / 5000d;
     }
 
     /**
@@ -166,7 +159,7 @@ public class L3HarrisGpsLocation extends MacStructure
      */
     private double getLongitudeDegrees()
     {
-        return getMessage().getInt(LONGITUDE_DEGREES, getOffset());
+        return getInt(LONGITUDE_DEGREES);
     }
 
     /**
@@ -174,8 +167,7 @@ public class L3HarrisGpsLocation extends MacStructure
      */
     private double getLongitudeMinutes()
     {
-        return getMessage().getInt(LONGITUDE_MINUTES, getOffset()) +
-                getMessage().getInt(LONGITUDE_MINUTES_FRACTIONAL, getOffset()) / 5000d;
+        return getInt(LONGITUDE_MINUTES) + getInt(LONGITUDE_MINUTES_FRACTIONAL) / 5000d;
     }
 
     /**
@@ -197,24 +189,6 @@ public class L3HarrisGpsLocation extends MacStructure
         sb.append(GPS_FORMAT.format(getLatitude())).append(" ").append(GPS_FORMAT.format(getLongitude()));
         sb.append(" TIME:").append(SDF.format(getTimestampMs()));
         return sb.toString();
-    }
-
-    /**
-     * Vendor ID.  This should be L3Harris unless another vendor is also using this Opcode.
-     */
-    public Vendor getVendor()
-    {
-        return Vendor.fromValue(getMessage().getInt(VENDOR, getOffset()));
-    }
-
-    /**
-     * Message length.
-     *
-     * @return length in bytes, including the opcode.
-     */
-    public int getLength()
-    {
-        return getMessage().getInt(LENGTH, getOffset());
     }
 
     @Override
@@ -295,7 +269,7 @@ public class L3HarrisGpsLocation extends MacStructure
         for(String example: examples)
         {
             CorrectedBinaryMessage cbm = new CorrectedBinaryMessage(CorrectedBinaryMessage.loadHex(example));
-            L3HarrisGpsLocation gps = new L3HarrisGpsLocation(cbm, 8);
+            L3HarrisGpsLocation gps = new L3HarrisGpsLocation(cbm, 16);
             System.out.println(gps);
         }
     }

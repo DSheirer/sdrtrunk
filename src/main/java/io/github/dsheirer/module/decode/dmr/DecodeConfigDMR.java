@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
+import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import java.util.ArrayList;
@@ -64,10 +65,7 @@ public class DecodeConfigDMR extends DecodeConfiguration
     @Override
     public int[] getTimeslots()
     {
-        int[] timeslots = new int[2];
-        timeslots[0] = 1;
-        timeslots[1] = 2;
-        return timeslots;
+        return new int[]{DMRMessage.TIMESLOT_1, DMRMessage.TIMESLOT_2};
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")

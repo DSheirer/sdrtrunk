@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,14 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.FragmentedIntField;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.edac.ReedSolomon_63_35_29_P25;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.UnknownMacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureFailedRS;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,52 +39,53 @@ import org.slf4j.LoggerFactory;
 public class FacchTimeslot extends AbstractSignalingTimeslot
 {
     private final static Logger mLog = LoggerFactory.getLogger(FacchTimeslot.class);
+    private static final int MAX_OCTET_INDEX = 144; //156-12 = message length minus CRC-12 checksum.
 
-    private static final int[] INFO_1 = {2,3,4,5,6,7};
-    private static final int[] INFO_2 = {8,9,10,11,12,13};
-    private static final int[] INFO_3 = {14,15,16,17,18,19};
-    private static final int[] INFO_4 = {20,21,22,23,24,25};
-    private static final int[] INFO_5 = {26,27,28,29,30,31};
-    private static final int[] INFO_6 = {32,33,34,35,36,37};
-    private static final int[] INFO_7 = {38,39,40,41,42,43};
-    private static final int[] INFO_8 = {44,45,46,47,48,49};
-    private static final int[] INFO_9 = {50,51,52,53,54,55};
-    private static final int[] INFO_10 = {56,57,58,59,60,61};
-    private static final int[] INFO_11 = {62,63,64,65,66,67};
-    private static final int[] INFO_12 = {68,69,70,71,72,73}; //Gap for duid 74-75
-    private static final int[] INFO_13 = {76,77,78,79,80,81};
-    private static final int[] INFO_14 = {82,83,84,85,86,87};
-    private static final int[] INFO_15 = {88,89,90,91,92,93};
-    private static final int[] INFO_16 = {94,95,96,97,98,99};
-    private static final int[] INFO_17 = {100,101,102,103,104,105};
-    private static final int[] INFO_18 = {106,107,108,109,110,111};
-    private static final int[] INFO_19 = {112,113,114,115,116,117};
-    private static final int[] INFO_20 = {118,119,120,121,122,123};
-    private static final int[] INFO_21 = {124,125,126,127,128,129};
-    private static final int[] INFO_22 = {130,131,132,133,134,135};
-    private static final int[] INFO_23 = {136,137,180,181,182,183}; //Gap for sync 138-179
-    private static final int[] INFO_24 = {184,185,186,187,188,189};
-    private static final int[] INFO_25 = {190,191,192,193,194,195};
-    private static final int[] INFO_26 = {196,197,198,199,200,201};
-    private static final int[] PARITY_1 = {202,203,204,205,206,207};
-    private static final int[] PARITY_2 = {208,209,210,211,212,213};
-    private static final int[] PARITY_3 = {214,215,216,217,218,219};
-    private static final int[] PARITY_4 = {220,221,222,223,224,225};
-    private static final int[] PARITY_5 = {226,227,228,229,230,231};
-    private static final int[] PARITY_6 = {232,233,234,235,236,237};
-    private static final int[] PARITY_7 = {238,239,240,241,242,243}; //Gap for duid 244-245
-    private static final int[] PARITY_8 = {246,247,248,249,250,251};
-    private static final int[] PARITY_9 = {252,253,254,255,256,257};
-    private static final int[] PARITY_10 = {258,259,260,261,262,263};
-    private static final int[] PARITY_11 = {264,265,266,267,268,269};
-    private static final int[] PARITY_12 = {270,271,272,273,274,275};
-    private static final int[] PARITY_13 = {276,277,278,279,280,281};
-    private static final int[] PARITY_14 = {282,283,284,285,286,287};
-    private static final int[] PARITY_15 = {288,289,290,291,292,293};
-    private static final int[] PARITY_16 = {294,295,296,297,298,299};
-    private static final int[] PARITY_17 = {300,301,302,303,304,305};
-    private static final int[] PARITY_18 = {306,307,308,309,310,311};
-    private static final int[] PARITY_19 = {312,313,314,315,316,317};
+    private static final IntField INFO_1 = IntField.range(2, 7);
+    private static final IntField INFO_2 = IntField.range(8, 13);
+    private static final IntField INFO_3 = IntField.range(14, 19);
+    private static final IntField INFO_4 = IntField.range(20, 25);
+    private static final IntField INFO_5 = IntField.range(26, 31);
+    private static final IntField INFO_6 = IntField.range(32, 37);
+    private static final IntField INFO_7 = IntField.range(38, 43);
+    private static final IntField INFO_8 = IntField.range(44, 49);
+    private static final IntField INFO_9 = IntField.range(50, 55);
+    private static final IntField INFO_10 = IntField.range(56, 61);
+    private static final IntField INFO_11 = IntField.range(62, 67);
+    private static final IntField INFO_12 = IntField.range(68, 73); //Gap for duid 74-75
+    private static final IntField INFO_13 = IntField.range(76, 81);
+    private static final IntField INFO_14 = IntField.range(82, 87);
+    private static final IntField INFO_15 = IntField.range(88, 93);
+    private static final IntField INFO_16 = IntField.range(94, 99);
+    private static final IntField INFO_17 = IntField.range(100, 105);
+    private static final IntField INFO_18 = IntField.range(106, 111);
+    private static final IntField INFO_19 = IntField.range(112, 117);
+    private static final IntField INFO_20 = IntField.range(118, 123);
+    private static final IntField INFO_21 = IntField.range(124, 129);
+    private static final IntField INFO_22 = IntField.range(130, 135);
+    private static final FragmentedIntField INFO_23 = FragmentedIntField.of(136, 137, 180, 181, 182, 183); //Gap for sync 138-179
+    private static final IntField INFO_24 = IntField.range(184, 189);
+    private static final IntField INFO_25 = IntField.range(190, 195);
+    private static final IntField INFO_26 = IntField.range(196, 201);
+    private static final IntField PARITY_1 = IntField.range(202, 207);
+    private static final IntField PARITY_2 = IntField.range(208, 213);
+    private static final IntField PARITY_3 = IntField.range(214, 219);
+    private static final IntField PARITY_4 = IntField.range(220, 225);
+    private static final IntField PARITY_5 = IntField.range(226, 231);
+    private static final IntField PARITY_6 = IntField.range(232, 237);
+    private static final IntField PARITY_7 = IntField.range(238, 243); //Gap for duid 244-245
+    private static final IntField PARITY_8 = IntField.range(246, 251);
+    private static final IntField PARITY_9 = IntField.range(252, 257);
+    private static final IntField PARITY_10 = IntField.range(258, 263);
+    private static final IntField PARITY_11 = IntField.range(264, 269);
+    private static final IntField PARITY_12 = IntField.range(270, 275);
+    private static final IntField PARITY_13 = IntField.range(276, 281);
+    private static final IntField PARITY_14 = IntField.range(282, 287);
+    private static final IntField PARITY_15 = IntField.range(288, 293);
+    private static final IntField PARITY_16 = IntField.range(294, 299);
+    private static final IntField PARITY_17 = IntField.range(300, 305);
+    private static final IntField PARITY_18 = IntField.range(306, 311);
+    private static final IntField PARITY_19 = IntField.range(312, 317);
 
     private List<MacMessage> mMacMessages;
 
@@ -145,51 +149,51 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
 //            input[6] = 0; //Punctured
 //            input[7] = 0; //Punctured
 //            input[8] = 0; //Punctured
-            input[9] = getMessage().getInt(PARITY_19);
-            input[10] = getMessage().getInt(PARITY_18);
-            input[11] = getMessage().getInt(PARITY_17);
-            input[12] = getMessage().getInt(PARITY_16);
-            input[13] = getMessage().getInt(PARITY_15);
-            input[14] = getMessage().getInt(PARITY_14);
-            input[15] = getMessage().getInt(PARITY_13);
-            input[16] = getMessage().getInt(PARITY_12);
-            input[17] = getMessage().getInt(PARITY_11);
-            input[18] = getMessage().getInt(PARITY_10);
-            input[19] = getMessage().getInt(PARITY_9);
-            input[20] = getMessage().getInt(PARITY_8);
-            input[21] = getMessage().getInt(PARITY_7);
-            input[22] = getMessage().getInt(PARITY_6);
-            input[23] = getMessage().getInt(PARITY_5);
-            input[24] = getMessage().getInt(PARITY_4);
-            input[25] = getMessage().getInt(PARITY_3);
-            input[26] = getMessage().getInt(PARITY_2);
-            input[27] = getMessage().getInt(PARITY_1);
-            input[28] = getMessage().getInt(INFO_26);
-            input[29] = getMessage().getInt(INFO_25);
-            input[30] = getMessage().getInt(INFO_24);
-            input[27] = getMessage().getInt(INFO_23);
-            input[32] = getMessage().getInt(INFO_22);
-            input[33] = getMessage().getInt(INFO_21);
-            input[34] = getMessage().getInt(INFO_20);
-            input[35] = getMessage().getInt(INFO_19);
-            input[36] = getMessage().getInt(INFO_18);
-            input[37] = getMessage().getInt(INFO_17);
-            input[38] = getMessage().getInt(INFO_16);
-            input[39] = getMessage().getInt(INFO_15);
-            input[40] = getMessage().getInt(INFO_14);
-            input[41] = getMessage().getInt(INFO_13);
-            input[42] = getMessage().getInt(INFO_12);
-            input[43] = getMessage().getInt(INFO_11);
-            input[44] = getMessage().getInt(INFO_10);
-            input[45] = getMessage().getInt(INFO_9);
-            input[46] = getMessage().getInt(INFO_8);
-            input[47] = getMessage().getInt(INFO_7);
-            input[48] = getMessage().getInt(INFO_6);
-            input[49] = getMessage().getInt(INFO_5);
-            input[50] = getMessage().getInt(INFO_4);
-            input[51] = getMessage().getInt(INFO_3);
-            input[52] = getMessage().getInt(INFO_2);
-            input[53] = getMessage().getInt(INFO_1);
+            input[9] = getInt(PARITY_19);
+            input[10] = getInt(PARITY_18);
+            input[11] = getInt(PARITY_17);
+            input[12] = getInt(PARITY_16);
+            input[13] = getInt(PARITY_15);
+            input[14] = getInt(PARITY_14);
+            input[15] = getInt(PARITY_13);
+            input[16] = getInt(PARITY_12);
+            input[17] = getInt(PARITY_11);
+            input[18] = getInt(PARITY_10);
+            input[19] = getInt(PARITY_9);
+            input[20] = getInt(PARITY_8);
+            input[21] = getInt(PARITY_7);
+            input[22] = getInt(PARITY_6);
+            input[23] = getInt(PARITY_5);
+            input[24] = getInt(PARITY_4);
+            input[25] = getInt(PARITY_3);
+            input[26] = getInt(PARITY_2);
+            input[27] = getInt(PARITY_1);
+            input[28] = getInt(INFO_26);
+            input[29] = getInt(INFO_25);
+            input[30] = getInt(INFO_24);
+            input[31] = getInt(INFO_23);
+            input[32] = getInt(INFO_22);
+            input[33] = getInt(INFO_21);
+            input[34] = getInt(INFO_20);
+            input[35] = getInt(INFO_19);
+            input[36] = getInt(INFO_18);
+            input[37] = getInt(INFO_17);
+            input[38] = getInt(INFO_16);
+            input[39] = getInt(INFO_15);
+            input[40] = getInt(INFO_14);
+            input[41] = getInt(INFO_13);
+            input[42] = getInt(INFO_12);
+            input[43] = getInt(INFO_11);
+            input[44] = getInt(INFO_10);
+            input[45] = getInt(INFO_9);
+            input[46] = getInt(INFO_8);
+            input[47] = getInt(INFO_7);
+            input[48] = getInt(INFO_6);
+            input[49] = getInt(INFO_5);
+            input[50] = getInt(INFO_4);
+            input[51] = getInt(INFO_3);
+            input[52] = getInt(INFO_2);
+            input[53] = getInt(INFO_1);
 //            input[54] = 0; //Shortened
 //            input[55] = 0; //Shortened
 //            input[56] = 0; //Shortened
@@ -210,8 +214,8 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
             }
             catch(Exception e)
             {
-                irrecoverableErrors = true;
                 mLog.error("Error", e);
+                irrecoverableErrors = true;
             }
 
             CorrectedBinaryMessage binaryMessage = new CorrectedBinaryMessage(156);
@@ -228,13 +232,12 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
                 pointer += 6;
             }
 
-            mMacMessages = MacMessageFactory.create(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp());
-
             if(irrecoverableErrors)
             {
-                mMacMessages.clear();
-                MacMessage macMessage = new UnknownMacMessage(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp());
+                MacMessage macMessage = new MacMessage(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp(),
+                        new MacStructureFailedRS(binaryMessage, 0));
                 macMessage.setValid(false);
+                mMacMessages = new ArrayList<>();
                 mMacMessages.add(macMessage);
             }
             else
@@ -249,6 +252,8 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
                 }
             }
 
+            mMacMessages = MacMessageFactory.create(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp(),
+                    MAX_OCTET_INDEX);
         }
 
         return mMacMessages;

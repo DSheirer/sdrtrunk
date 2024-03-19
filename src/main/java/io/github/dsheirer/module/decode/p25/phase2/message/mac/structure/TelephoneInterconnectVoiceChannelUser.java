@@ -1,49 +1,40 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Telephone interconnect voice channel user
  */
-public class TelephoneInterconnectVoiceChannelUser extends MacStructure
+public class TelephoneInterconnectVoiceChannelUser extends MacStructureVoiceService
 {
-    private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] CALL_TIMER = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-        49, 50, 51, 52, 53, 54, 55};
-
+    private static final IntField CALL_TIMER = IntField.range(16, 31);
+    private static final IntField TARGET_ADDRESS = IntField.range(32, 55);
     private List<Identifier> mIdentifiers;
-    private Identifier mToOrFromAddress;
-    private VoiceServiceOptions mServiceOptions;
+    private Identifier mTargetAddress;
 
     /**
      * Constructs the message
@@ -63,35 +54,20 @@ public class TelephoneInterconnectVoiceChannelUser extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO/FROM:").append(getToOrFromAddress());
+        sb.append(" TO/FROM:").append(getTargetAddress());
 
-        long timer = getCallTimer();
-
-        if(timer == 0)
+        if(hasCallTimer())
         {
-            sb.append(" TIMER:none");
+            sb.append(" TIMER:").append(getCallTimer() / 1000d).append("seconds");
         }
         else
         {
-            sb.append(" TIMER:").append(timer / 1000d).append("seconds");
+            sb.append(" TIMER:none");
         }
 
         sb.append(" ").append(getServiceOptions());
 
         return sb.toString();
-    }
-
-    /**
-     * Voice channel service options
-     */
-    public VoiceServiceOptions getServiceOptions()
-    {
-        if(mServiceOptions == null)
-        {
-            mServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS, getOffset()));
-        }
-
-        return mServiceOptions;
     }
 
     /**
@@ -101,20 +77,28 @@ public class TelephoneInterconnectVoiceChannelUser extends MacStructure
      */
     public long getCallTimer()
     {
-        return getMessage().getInt(CALL_TIMER, getOffset()) * 100; //milliseconds
+        return getInt(CALL_TIMER) * 100; //milliseconds
     }
 
     /**
-     * From Radio Unit
+     * Indicates if this message has a non-zero call timer value.
      */
-    public Identifier getToOrFromAddress()
+    public boolean hasCallTimer()
     {
-        if(mToOrFromAddress == null)
+        return hasInt(CALL_TIMER);
+    }
+
+    /**
+     * The Radio Unit talking to a landline.  The role can be either TO or FROM, but we use the TO role for consistency.
+     */
+    public Identifier getTargetAddress()
+    {
+        if(mTargetAddress == null)
         {
-            mToOrFromAddress = APCO25RadioIdentifier.createAny(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mTargetAddress = APCO25RadioIdentifier.createFrom(getInt(TARGET_ADDRESS));
         }
 
-        return mToOrFromAddress;
+        return mTargetAddress;
     }
 
     @Override
@@ -123,7 +107,7 @@ public class TelephoneInterconnectVoiceChannelUser extends MacStructure
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getToOrFromAddress());
+            mIdentifiers.add(getTargetAddress());
         }
 
         return mIdentifiers;

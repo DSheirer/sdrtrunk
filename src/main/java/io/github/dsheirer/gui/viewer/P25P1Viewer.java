@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -245,7 +245,7 @@ public class P25P1Viewer extends VBox
     }
 
     /**
-     * List view control with DMR messages
+     * List view control with messages
      */
     private TableView<IMessage> getMessageTableView()
     {
@@ -343,7 +343,7 @@ public class P25P1Viewer extends VBox
             mSelectFileButton = new Button("Select ...");
             mSelectFileButton.onActionProperty().set(event -> {
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Select DMR .bits Recording");
+                fileChooser.setTitle("Select P25 Phase 1 .bits Recording");
                 String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
                 if(lastDirectory != null)
                 {

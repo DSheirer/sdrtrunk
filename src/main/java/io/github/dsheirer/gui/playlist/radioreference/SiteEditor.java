@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,13 @@ import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.animation.RotateTransition;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
@@ -74,14 +81,6 @@ import org.controlsfx.control.SegmentedButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-
 public class SiteEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(SiteEditor.class);
@@ -90,6 +89,7 @@ public class SiteEditor extends GridPane
     private static final String PRIMARY_CONTROL_CHANNEL = "d";
     private static final String TOGGLE_BUTTON_CONTROL = "Control";
     private static final String TOGGLE_BUTTON_P25_VOICE = "All P25 Voice";
+    private static final String PHASE_2_TDMA_CONTROL_CHANNEL = "TDMA CC";
 
     private UserPreferences mUserPreferences;
     private PlaylistManager mPlaylistManager;
@@ -297,7 +297,6 @@ public class SiteEditor extends GridPane
                 return DecoderFactory.getDecodeConfiguration(decoderType);
         }
     }
-
 
     public void setSite(EnrichedSite site, System system, SystemInformation systemInformation, RadioReferenceDecoder decoder)
     {
@@ -514,10 +513,13 @@ public class SiteEditor extends GridPane
 
             DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
 
-            //Change a phase 2 system to use the phase 1 control channel
+            //Phase 2 - inspect the site modulation and use Phase 2 for TDMA control channel, otherwise Phase 1
             if(decoderType == DecoderType.P25_PHASE2)
             {
-                decoderType = DecoderType.P25_PHASE1;
+                if(!"TDMA CC".equals(mCurrentSite.getSite().getModulation()))
+                {
+                    decoderType = DecoderType.P25_PHASE1;
+                }
             }
 
             channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(), mCurrentSystemInformation));

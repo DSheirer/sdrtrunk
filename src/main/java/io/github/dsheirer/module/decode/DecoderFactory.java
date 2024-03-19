@@ -51,6 +51,7 @@ import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.DmrRestLsn;
+import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.filter.DmrMessageFilterSet;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
@@ -90,6 +91,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25P1MessageFi
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
+import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.filter.P25P2MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
@@ -187,7 +189,7 @@ public class DecoderFactory
                 processP25Phase1(channel, userPreferences, modules, aliasList, channelType, (DecodeConfigP25Phase1) decodeConfig);
                 break;
             case P25_PHASE2:
-                processP25Phase2(channel, userPreferences, modules, aliasList);
+                processP25Phase2(channel, userPreferences, modules, aliasList, trafficChannelManager);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
@@ -202,14 +204,32 @@ public class DecoderFactory
      * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param trafficChannelManager from parent, if this is for a traffic channel, otherwise this can be null and it
+     * will be created automatically.
      */
-    private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList) {
+    private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules,
+                                         AliasList aliasList, TrafficChannelManager trafficChannelManager)
+    {
+
         modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
 
-        modules.add(new P25P2DecoderState(channel, 0));
-        modules.add(new P25P2DecoderState(channel, 1));
-        modules.add(new P25P2AudioModule(userPreferences, 0, aliasList));
-        modules.add(new P25P2AudioModule(userPreferences, 1, aliasList));
+        P25TrafficChannelManager p25TrafficChannelManager = null;
+
+        if(channel.getChannelType() == ChannelType.STANDARD)
+        {
+            p25TrafficChannelManager = new P25TrafficChannelManager(channel);
+        }
+        else if(trafficChannelManager instanceof P25TrafficChannelManager p25)
+        {
+            p25TrafficChannelManager = p25;
+        }
+
+        modules.add(p25TrafficChannelManager);
+
+        modules.add(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_1, p25TrafficChannelManager));
+        modules.add(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_2, p25TrafficChannelManager));
+        modules.add(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList));
+        modules.add(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList));
     }
 
     /**
@@ -219,7 +239,8 @@ public class DecoderFactory
      * @param modules collection to add to
      * @param aliasList for the channel
      */
-    private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig) {
+    private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig)
+    {
         DecodeConfigP25Phase1 p25Config = decodeConfig;
 
         switch(p25Config.getModulation())
@@ -440,8 +461,8 @@ public class DecoderFactory
             modules.add(dmrTrafficChannelManager);
         }
 
-        DMRDecoderState state1 = new DMRDecoderState(channel, 1, dmrTrafficChannelManager);
-        DMRDecoderState state2 = new DMRDecoderState(channel, 2, dmrTrafficChannelManager);
+        DMRDecoderState state1 = new DMRDecoderState(channel, DMRMessage.TIMESLOT_1, dmrTrafficChannelManager);
+        DMRDecoderState state2 = new DMRDecoderState(channel, DMRMessage.TIMESLOT_2, dmrTrafficChannelManager);
 
         //Register the states with each other so that they can pass Cap+ site status messaging to resolve current channel
         state1.setSisterDecoderState(state2);
@@ -457,7 +478,7 @@ public class DecoderFactory
                 lsn.setTimeslotFrequency(rest.getTimeslotFrequency());
             }
 
-            if(lsn.getTimeslot() == 1)
+            if(lsn.getTimeslot() == DMRMessage.TIMESLOT_1)
             {
                 state1.setCurrentChannel(lsn);
                 state2.setCurrentChannel(lsn.getSisterTimeslot());
@@ -473,7 +494,7 @@ public class DecoderFactory
         {
             DecodeEvent event = decodeConfig.getChannelGrantEvent();
 
-            if(decodeConfig.getChannelGrantEvent().getTimeslot() == 1)
+            if(decodeConfig.getChannelGrantEvent().getTimeslot() == DMRMessage.TIMESLOT_1)
             {
                 state1.setCurrentCallEvent(event);
 
@@ -495,8 +516,8 @@ public class DecoderFactory
 
         modules.add(state1);
         modules.add(state2);
-        modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
-        modules.add(new DMRAudioModule(userPreferences, aliasList, 2));
+        modules.add(new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_1));
+        modules.add(new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_2));
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&

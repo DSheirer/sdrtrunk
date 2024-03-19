@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,28 +14,28 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * Unknown link control word.
  */
-public class LCMotorolaUnknownOpcode extends MotorolaLinkControlWord
+public class LCMotorolaUnknownOpcode extends LinkControlWord
 {
     /**
      * Constructs a Link Control Word from the binary message sequence.
      *
      * @param message
      */
-    public LCMotorolaUnknownOpcode(BinaryMessage message)
+    public LCMotorolaUnknownOpcode(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -51,7 +50,7 @@ public class LCMotorolaUnknownOpcode extends MotorolaLinkControlWord
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(" MOTOROLA UNKNOWN/UNRECOGNIZED OPCODE:").append(getOpcode());
+        sb.append(" MOTOROLA UNKNOWN OPCODE:").append(getOpcodeNumber());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }

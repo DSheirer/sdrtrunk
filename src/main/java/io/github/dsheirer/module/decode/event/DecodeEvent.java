@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -238,7 +238,8 @@ public class DecodeEvent implements IDecodeEvent
             sb.append(" IDS:").append(Joiner.on(",").join(mIdentifierCollection.getIdentifiers()));
         }
         sb.append(" DURATION:").append(getDuration());
-        sb.append(" CHANNEL:").append(mChannelDescriptor);
+        sb.append(" CHANNEL:").append(getChannelDescriptor());
+        sb.append(" TIMESLOT:").append(getTimeslot());
         return sb.toString();
     }
 

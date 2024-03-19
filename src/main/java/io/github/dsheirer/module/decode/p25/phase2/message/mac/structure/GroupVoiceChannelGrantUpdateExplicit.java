@@ -1,28 +1,26 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
@@ -30,26 +28,22 @@ import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitCha
 import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Group voice channel grant update - explicit channel format
  */
-public class GroupVoiceChannelGrantUpdateExplicit extends MacStructure implements IFrequencyBandReceiver
+public class GroupVoiceChannelGrantUpdateExplicit extends MacStructureVoiceService implements IFrequencyBandReceiver
 {
-    private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] TRANSMIT_FREQUENCY_BAND = {16, 17, 18, 19};
-    private static final int[] TRANSMIT_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] RECEIVE_FREQUENCY_BAND = {32, 33, 34, 35};
-    private static final int[] RECEIVE_CHANNEL_NUMBER = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] GROUP_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
+    private static final IntField TRANSMIT_FREQUENCY_BAND = IntField.range(16, 19);
+    private static final IntField TRANSMIT_CHANNEL_NUMBER = IntField.range(20, 31);
+    private static final IntField RECEIVE_FREQUENCY_BAND = IntField.range(32, 35);
+    private static final IntField RECEIVE_CHANNEL_NUMBER = IntField.range(36, 47);
+    private static final IntField GROUP_ADDRESS = IntField.length16(48);
 
     private List<Identifier> mIdentifiers;
-    private VoiceServiceOptions mVoiceServiceOptions;
     private Identifier mGroupAddress;
     private APCO25Channel mChannel;
 
@@ -76,24 +70,12 @@ public class GroupVoiceChannelGrantUpdateExplicit extends MacStructure implement
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
-    {
-        if(mVoiceServiceOptions == null)
-        {
-            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS, getOffset()));
-        }
-
-        return mVoiceServiceOptions;
-    }
-
     public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {
-            mChannel = new APCO25ExplicitChannel(new P25P2ExplicitChannel(getMessage().getInt(TRANSMIT_FREQUENCY_BAND, getOffset()),
-                getMessage().getInt(TRANSMIT_CHANNEL_NUMBER, getOffset()),
-                getMessage().getInt(RECEIVE_FREQUENCY_BAND, getOffset()),
-                getMessage().getInt(RECEIVE_CHANNEL_NUMBER, getOffset())));
+            mChannel = new APCO25ExplicitChannel(new P25P2ExplicitChannel(getInt(TRANSMIT_FREQUENCY_BAND),
+                getInt(TRANSMIT_CHANNEL_NUMBER), getInt(RECEIVE_FREQUENCY_BAND), getInt(RECEIVE_CHANNEL_NUMBER)));
         }
 
         return mChannel;
@@ -106,7 +88,7 @@ public class GroupVoiceChannelGrantUpdateExplicit extends MacStructure implement
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mGroupAddress = APCO25Talkgroup.create(getInt(GROUP_ADDRESS));
         }
 
         return mGroupAddress;
@@ -128,8 +110,6 @@ public class GroupVoiceChannelGrantUpdateExplicit extends MacStructure implement
     @Override
     public List<IChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
-        channels.add(getChannel());
-        return channels;
+        return Collections.singletonList(getChannel());
     }
 }

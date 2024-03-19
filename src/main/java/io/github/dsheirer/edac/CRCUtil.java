@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +33,7 @@ public class CRCUtil
                                   long initialFill,
                                   boolean includeCRCBitErrors)
     {
-        long[] crcTable = new long[messageSize +
-            (includeCRCBitErrors ? crcSize : 0)];
+        long[] crcTable = new long[messageSize + (includeCRCBitErrors ? crcSize : 0)];
 
         int[] checksumIndexes = new int[crcSize];
 
@@ -132,20 +132,12 @@ public class CRCUtil
      * @return message with all message bits zeroed out, and the remainder
      * placed in the crc field which starts at index messageLength
      */
-    public static BinaryMessage decode(BinaryMessage message,
-                                       int messageStart,
-                                       int messageSize,
-                                       long polynomial,
-                                       int crcSize)
+    public static BinaryMessage decode(BinaryMessage message, int messageStart, int messageSize, long polynomial, int crcSize)
     {
-        for(int i = message.nextSetBit(messageStart);
-            i >= messageStart && i < messageSize;
-            i = message.nextSetBit(i + 1))
+        for(int i = message.nextSetBit(messageStart); i >= messageStart && i < messageSize; i = message.nextSetBit(i + 1))
         {
             BinaryMessage polySet = new BinaryMessage(crcSize + i + 1);
-
             polySet.load(i, crcSize + 1, polynomial);
-
             message.xor(polySet);
             System.out.println(message.toString());
         }
@@ -226,8 +218,11 @@ public class CRCUtil
     {
         mLog.debug("Starting");
 
-        long poly = 0x13l;
-        long[] checksums = generate(32, 4, poly, 0, true);
+        int messageSize = 164;
+        int crcSize = 16;
+        long poly = 0x11021l;
+        long initialFill = 0x0l;
+        long[] checksums = CRCUtil.generate(messageSize, crcSize, poly, initialFill, true);
 
         StringBuilder sb = new StringBuilder();
         sb.append("private static int[] CHECKSUMS = new int[]{");
@@ -238,7 +233,29 @@ public class CRCUtil
         }
 
         sb.append("};");
-
         System.out.println("Checksums:\n" + sb);
+
+        String hex = "7CFC0039420170452A4F9970000000000000000000D05";
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage(BinaryMessage.loadHex(hex));
+
+
+        int calculated = 0xFFF; //Initial fill of all ones
+
+        int messageStart = 0;
+        /* Iterate the set bits and XOR running checksum with lookup value */
+        for(int i = message.nextSetBit(messageStart);
+            i >= messageStart && i < messageSize;
+            i = message.nextSetBit(i + 1))
+        {
+            System.out.println("Bit [" + i + "] is set");
+            calculated ^= checksums[i];
+        }
+
+        int checksum = message.getInt(messageSize, messageSize + crcSize - 1);
+        int residual = calculated ^ checksum;
+
+        mLog.debug("CALC:" + Integer.toHexString(calculated).toUpperCase() +
+                " CHECK:" + Integer.toHexString(checksum).toUpperCase() +
+                " RESIDUAL:" + Integer.toHexString(residual).toUpperCase());
     }
 }
