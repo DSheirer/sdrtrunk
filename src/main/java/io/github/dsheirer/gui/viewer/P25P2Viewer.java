@@ -19,9 +19,13 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import com.google.common.eventbus.EventBus;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.control.IntegerTextField;
-import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.StuffBitsMessage;
+import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2MessageFramer;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2MessageProcessor;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
@@ -79,9 +83,9 @@ public class P25P2Viewer extends VBox
     private Preferences mPreferences = Preferences.userNodeForPackage(P25P2Viewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
-    private TableView<IMessage> mMessageTableView;
-    private ObservableList<IMessage> mMessages = FXCollections.observableArrayList();
-    private FilteredList<IMessage> mFilteredMessages = new FilteredList<>(mMessages);
+    private TableView<MessagePackage> mMessagePackageTableView;
+    private ObservableList<MessagePackage> mMessagePackages = FXCollections.observableArrayList();
+    private FilteredList<MessagePackage> mFilteredMessagePackages = new FilteredList<>(mMessagePackages);
     private CheckBox mShowTS0;
     private CheckBox mShowTS1;
     private CheckBox mShowTS2;
@@ -95,6 +99,7 @@ public class P25P2Viewer extends VBox
     private IntegerTextField mNACTextField;
     private Button mReloadButton;
     private StringProperty mLoadedFile = new SimpleStringProperty();
+    private MessagePackageViewer mMessagePackageViewer;
 
     public P25P2Viewer()
     {
@@ -141,9 +146,10 @@ public class P25P2Viewer extends VBox
         VBox.setVgrow(fileBox, Priority.NEVER);
         VBox.setVgrow(filterBox, Priority.NEVER);
         VBox.setVgrow(scrambleSettingsBox, Priority.NEVER);
-        VBox.setVgrow(getMessageTableView(), Priority.ALWAYS);
+        VBox.setVgrow(getMessagePackageTableView(), Priority.ALWAYS);
+        VBox.setVgrow(getMessagePackageViewer(), Priority.NEVER);
 
-        getChildren().addAll(fileBox, scrambleSettingsBox, filterBox, getMessageTableView());
+        getChildren().addAll(fileBox, scrambleSettingsBox, filterBox, getMessagePackageTableView(), getMessagePackageViewer());
     }
 
     /**
@@ -160,7 +166,7 @@ public class P25P2Viewer extends VBox
         if(file != null && file.exists())
         {
             mLoadedFile.set(file.toString());
-            mMessages.clear();
+            mMessagePackages.clear();
             getLoadingIndicator().setVisible(true);
             getSelectedFileLabel().setText("Loading ...");
 
@@ -170,15 +176,49 @@ public class P25P2Viewer extends VBox
             ScrambleParameters scrambleParameters = new ScrambleParameters(wacn, system, nac);
 
             ThreadPool.CACHED.submit(() -> {
-                List<IMessage> messages = new ArrayList<>();
+                List<MessagePackage> messages = new ArrayList<>();
                 P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, 9600);
                 messageFramer.setScrambleParameters(scrambleParameters);
                 P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
                 messageFramer.setListener(messageProcessor);
+                Channel empty = new Channel("Empty");
+                empty.setDecodeConfiguration(new DecodeConfigP25Phase2());
+
+                MessagePackager messagePackager = new MessagePackager();
+
+                //Setup a temporary event bus to capture channel start processing requests
+                EventBus eventBus = new EventBus("debug");
+                eventBus.register(messagePackager);
+                P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(empty);
+                trafficChannelManager.setInterModuleEventBus(eventBus);
+
+                //Register to receive events
+                trafficChannelManager.addDecodeEventListener(decodeEvent -> messagePackager.add(decodeEvent));
+                P25P2DecoderState decoderState1 = new P25P2DecoderState(empty, 1, trafficChannelManager);
+                decoderState1.setDecoderStateListener(decoderStateEvent -> messagePackager.add(decoderStateEvent));
+                decoderState1.addDecodeEventListener(decodeEvent -> messagePackager.add(decodeEvent));
+                P25P2DecoderState decoderState2 = new P25P2DecoderState(empty, 2, trafficChannelManager);
+                decoderState2.setDecoderStateListener(decoderStateEvent -> messagePackager.add(decoderStateEvent));
+                decoderState2.addDecodeEventListener(decodeEvent -> messagePackager.add(decodeEvent));
+                decoderState1.start();
+                decoderState2.start();
+
                 messageProcessor.setMessageListener(message -> {
                     if(!(message instanceof StuffBitsMessage))
                     {
-                        messages.add(message);
+                        //Add the initial message to the packager so that it can be combined with any decoder state events.
+                        messagePackager.add(message);
+                        if(message.getTimeslot() == 1)
+                        {
+                            decoderState1.receive(message);
+                        }
+                        else if(message.getTimeslot() == 2)
+                        {
+                            decoderState2.receive(message);
+                        }
+
+                        //Collect the packaged message with events
+                        messages.add(messagePackager.getMessageWithEvents());
                     }
                 });
 
@@ -198,8 +238,8 @@ public class P25P2Viewer extends VBox
                 Platform.runLater(() -> {
                     getLoadingIndicator().setVisible(false);
                     getSelectedFileLabel().setText(file.getName());
-                    mMessages.addAll(messages);
-                    getMessageTableView().scrollTo(0);
+                    mMessagePackages.addAll(messages);
+                    getMessagePackageTableView().scrollTo(0);
                 });
             });
         }
@@ -214,7 +254,7 @@ public class P25P2Viewer extends VBox
      */
     private void updateFilters()
     {
-        Predicate<IMessage> timeslotPredicate = message ->
+        Predicate<MessagePackage> timeslotPredicate = message ->
                 (getShowTS0().isSelected() && (message.getTimeslot() == 0)) ||
                         (getShowTS1().isSelected() && (message.getTimeslot() == 1)) ||
                         (getShowTS2().isSelected() && (message.getTimeslot() == 2));
@@ -223,12 +263,12 @@ public class P25P2Viewer extends VBox
 
         if(filterText == null || filterText.isEmpty())
         {
-            mFilteredMessages.setPredicate(timeslotPredicate);
+            mFilteredMessagePackages.setPredicate(timeslotPredicate);
         }
         else
         {
-            Predicate<IMessage> textPredicate = message -> message.toString().toLowerCase().contains(filterText.toLowerCase());
-            mFilteredMessages.setPredicate(timeslotPredicate.and(textPredicate));
+            Predicate<MessagePackage> textPredicate = message -> message.toString().toLowerCase().contains(filterText.toLowerCase());
+            mFilteredMessagePackages.setPredicate(timeslotPredicate.and(textPredicate));
         }
     }
 
@@ -240,12 +280,12 @@ public class P25P2Viewer extends VBox
     {
         if(text != null && !text.isEmpty())
         {
-            for(IMessage message: mFilteredMessages)
+            for(MessagePackage messagePackage: mFilteredMessagePackages)
             {
-                if(message.toString().toLowerCase().contains(text.toLowerCase()))
+                if(messagePackage.toString().toLowerCase().contains(text.toLowerCase()))
                 {
-                    getMessageTableView().getSelectionModel().select(message);
-                    getMessageTableView().scrollTo(message);
+                    getMessagePackageTableView().getSelectionModel().select(messagePackage);
+                    getMessagePackageTableView().scrollTo(messagePackage);
                     return;
                 }
             }
@@ -260,7 +300,7 @@ public class P25P2Viewer extends VBox
     {
         if(text != null && !text.isEmpty())
         {
-            IMessage selected = getMessageTableView().getSelectionModel().getSelectedItem();
+            MessagePackage selected = getMessagePackageTableView().getSelectionModel().getSelectedItem();
 
             if(selected == null)
             {
@@ -268,23 +308,38 @@ public class P25P2Viewer extends VBox
                 return;
             }
 
-            int row = mFilteredMessages.indexOf(selected);
+            int row = mFilteredMessagePackages.indexOf(selected);
 
-            for(int x = row + 1; x < mFilteredMessages.size(); x++)
+            for(int x = row + 1; x < mFilteredMessagePackages.size(); x++)
             {
-                if(x < mFilteredMessages.size())
+                if(x < mFilteredMessagePackages.size())
                 {
-                    IMessage message = mFilteredMessages.get(x);
+                    MessagePackage messagePackage = mFilteredMessagePackages.get(x);
 
-                    if(message.toString().toLowerCase().contains(text.toLowerCase()))
+                    if(messagePackage.toString().toLowerCase().contains(text.toLowerCase()))
                     {
-                        getMessageTableView().getSelectionModel().select(message);
-                        getMessageTableView().scrollTo(message);
+                        getMessagePackageTableView().getSelectionModel().select(messagePackage);
+                        getMessagePackageTableView().scrollTo(messagePackage);
                         return;
                     }
                 }
             }
         }
+    }
+
+    private MessagePackageViewer getMessagePackageViewer()
+    {
+        if(mMessagePackageViewer == null)
+        {
+            mMessagePackageViewer = new MessagePackageViewer();
+            mMessagePackageViewer.setMaxWidth(Double.MAX_VALUE);
+
+            //Register for table selection events to display the selected value.
+            getMessagePackageTableView().getSelectionModel().selectedItemProperty()
+                    .addListener((observable, oldValue, newValue) -> getMessagePackageViewer().set(newValue));
+        }
+
+        return mMessagePackageViewer;
     }
 
     private IntegerTextField getWACNTextField()
@@ -330,24 +385,24 @@ public class P25P2Viewer extends VBox
     }
 
     /**
-     * List view control with DMR messages
+     * List view control with message packages
      */
-    private TableView<IMessage> getMessageTableView()
+    private TableView<MessagePackage> getMessagePackageTableView()
     {
-        if(mMessageTableView == null)
+        if(mMessagePackageTableView == null)
         {
-            mMessageTableView = new TableView<>();
-            mMessageTableView.setPlaceholder(getLoadingIndicator());
-            SortedList<IMessage> sortedList = new SortedList<>(mFilteredMessages);
-            sortedList.comparatorProperty().bind(mMessageTableView.comparatorProperty());
-            mMessageTableView.setItems(sortedList);
+            mMessagePackageTableView = new TableView<>();
+            mMessagePackageTableView.setPlaceholder(getLoadingIndicator());
+            SortedList<MessagePackage> sortedList = new SortedList<>(mFilteredMessagePackages);
+            sortedList.comparatorProperty().bind(mMessagePackageTableView.comparatorProperty());
+            mMessagePackageTableView.setItems(sortedList);
 
-            mMessageTableView.setOnKeyPressed(event ->
+            mMessagePackageTableView.setOnKeyPressed(event ->
             {
                 if(KEY_CODE_COPY.match(event))
                 {
                     final Set<Integer> rows = new TreeSet<>();
-                    for (final TablePosition tablePosition : mMessageTableView.getSelectionModel().getSelectedCells())
+                    for (final TablePosition tablePosition : mMessagePackageTableView.getSelectionModel().getSelectedCells())
                     {
                         rows.add(tablePosition.getRow());
                     }
@@ -367,7 +422,7 @@ public class P25P2Viewer extends VBox
 
                         boolean firstCol = true;
 
-                        for (final TableColumn<?, ?> column : mMessageTableView.getColumns())
+                        for (final TableColumn<?, ?> column : mMessagePackageTableView.getColumns())
                         {
                             if(firstCol)
                             {
@@ -404,22 +459,38 @@ public class P25P2Viewer extends VBox
             timeslotColumn.setCellValueFactory(new PropertyValueFactory<>("timeslot"));
 
             TableColumn messageColumn = new TableColumn();
-            messageColumn.setPrefWidth(1000);
+            messageColumn.setPrefWidth(900);
             messageColumn.setText("Message");
             messageColumn.setCellValueFactory((Callback<TableColumn.CellDataFeatures, ObservableValue>) param -> {
                 SimpleStringProperty property = new SimpleStringProperty();
-                if(param.getValue() instanceof IMessage message)
+                if(param.getValue() instanceof MessagePackage messagePackage)
                 {
-                    property.set(message.toString());
+                    property.set(messagePackage.toString());
                 }
 
                 return property;
             });
 
-            mMessageTableView.getColumns().addAll(timestampColumn, validColumn, timeslotColumn, messageColumn);
+            TableColumn decodeEventCountColumn = new TableColumn();
+            decodeEventCountColumn.setPrefWidth(50);
+            decodeEventCountColumn.setText("Events");
+            decodeEventCountColumn.setCellValueFactory(new PropertyValueFactory<>("decodeEventCount"));
+
+            TableColumn decoderStateEventCountColumn = new TableColumn();
+            decoderStateEventCountColumn.setPrefWidth(50);
+            decoderStateEventCountColumn.setText("States");
+            decoderStateEventCountColumn.setCellValueFactory(new PropertyValueFactory<>("decoderStateEventCount"));
+
+            TableColumn channelStartCountColumn = new TableColumn();
+            channelStartCountColumn.setPrefWidth(50);
+            channelStartCountColumn.setText("Starts");
+            channelStartCountColumn.setCellValueFactory(new PropertyValueFactory<>("channelStartProcessingRequestCount"));
+
+            mMessagePackageTableView.getColumns().addAll(timestampColumn, validColumn, timeslotColumn, messageColumn,
+                    decodeEventCountColumn, decoderStateEventCountColumn, channelStartCountColumn);
         }
 
-        return mMessageTableView;
+        return mMessagePackageTableView;
     }
 
     /**

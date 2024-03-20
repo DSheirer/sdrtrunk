@@ -39,12 +39,19 @@ public abstract class DecoderState extends AbstractDecoderState
     protected Listener<IdentifierUpdateNotification> mConfigurationIdentifierListener;
     protected IChannelDescriptor mCurrentChannel;
 
+    /**
+     * Constructs an instance
+     * @param mutableIdentifierCollection to preload into this decoder state
+     */
     public DecoderState(MutableIdentifierCollection mutableIdentifierCollection)
     {
         mIdentifierCollection = mutableIdentifierCollection;
         mIdentifierCollection.update(new DecoderTypeConfigurationIdentifier(getDecoderType()));
     }
 
+    /**
+     * Constructs an instance using an empty identifier collection.
+     */
     public DecoderState()
     {
         this(new MutableIdentifierCollection());
