@@ -23,7 +23,10 @@ import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventSnapshot;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 
 /**
  * Utility for combining a message and decoder state events.
@@ -77,7 +80,18 @@ public class MessagePackager
     {
         if(mMessagePackage != null)
         {
-            mMessagePackage.add(event);
+            if(event instanceof DecodeEvent decodeEvent)
+            {
+                try
+                {
+                    DecodeEventSnapshot snapshot = decodeEvent.getSnapshot();
+                    mMessagePackage.add(snapshot);
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

@@ -26,7 +26,14 @@ import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 
+/**
+ * Radio identifier.
+ *
+ * Note: this class overrides the .equals method to ensure that all radios and subclasses can be compared using
+ * the radio value, regardless if it is a simple radio or a fully qualified radio identifier.
+ */
 public abstract class RadioIdentifier extends IntegerIdentifier
 {
     public RadioIdentifier(Integer value, Role role)
@@ -38,5 +45,29 @@ public abstract class RadioIdentifier extends IntegerIdentifier
     public boolean isValid()
     {
         return getValue() > 0;
+    }
+
+    /**
+     * Overrides to compare just the radio value, class, form, role and protocol.  This allows a fully qualified
+     * radio identifier to be equivalent to a standard radio identifier for the traffic channel manager.
+     */
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+
+        if(o instanceof RadioIdentifier radio)
+        {
+            return (getValue().intValue() == radio.getValue().intValue()) &&
+                    getIdentifierClass() == radio.getIdentifierClass() &&
+                    getForm() == radio.getForm() &&
+                    getRole() == radio.getRole() &&
+                    getProtocol() == radio.getProtocol();
+        }
+
+        return false;
     }
 }

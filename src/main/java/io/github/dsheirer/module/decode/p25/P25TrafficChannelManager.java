@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
@@ -214,13 +215,18 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     /**
      * Processes a P25 Phase 2 channel update for any channel.  If the initial channel grant was not detected, invokes
      * the process channel grant method to auto-create the channel.
+     *
+     * For the update message, we normally only get the TO talkgroup value, so we'll do a comparison of the event using
+     * just the TO identifier.
+     *
      * @param channel where the activity is taking place.
-     * @param source identifier (optional, can be null)
-     * @param target identifier
-     * @param opcode for the update message
+     * @param serviceOptions for the call
+     * @param ic identifier collection
+     * @param macOpcode for the update message
+     * @param timestamp of the message
      */
-    public DecodeEvent processChannelUpdate(APCO25Channel channel, ServiceOptions serviceOptions, IdentifierCollection ic,
-                                            MacOpcode macOpcode, long timestamp)
+    public DecodeEvent processP2ChannelUpdate(APCO25Channel channel, ServiceOptions serviceOptions,
+                                              IdentifierCollection ic, MacOpcode macOpcode, long timestamp)
     {
         DecodeEvent event = null;
 
@@ -232,13 +238,14 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     mTS1ChannelGrantEventMap.get(channel.getDownlinkFrequency()) :
                     mTS2ChannelGrantEventMap.get(channel.getDownlinkFrequency());
 
-            if(event != null)
+            if(event != null && isSameCallUpdate(event.getIdentifierCollection(), ic))
             {
                 event.update(timestamp);
+                broadcast(event);
             }
             else
             {
-                event = processChannelGrant(channel, serviceOptions, ic, macOpcode, timestamp);
+                event = processP2ChannelGrant(channel, serviceOptions, ic, macOpcode, timestamp);
             }
         }
         finally
@@ -250,6 +257,100 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Closes the call event for the specified channel frequency and timeslot.
+     * @param frequency for the channel
+     * @param timeslot for the channel.
+     */
+    public void closeP2CallEvent(long frequency, int timeslot, long timestamp)
+    {
+        mLock.lock();
+
+        try
+        {
+            DecodeEvent event;
+
+            if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
+            {
+                event = mTS1ChannelGrantEventMap.remove(frequency);
+            }
+            else
+            {
+                event = mTS2ChannelGrantEventMap.remove(frequency);
+            }
+
+            if(event != null)
+            {
+                event.end(timestamp);
+                broadcast(event);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+    }
+
+    /**
+     * Processes a call on the current channel
+     * @param frequency of the current channel
+     * @param timeslot of the current channel
+     * @param serviceOptions for the call
+     * @param ic for the call
+     * @param timestamp for the message that is being processed
+     * @return
+     */
+    public IChannelDescriptor processP2CurrentUser(long frequency, int timeslot, ServiceOptions serviceOptions,
+                                                   MacOpcode macOpcode, IdentifierCollection ic, long timestamp)
+    {
+        DecodeEvent event = timeslot == P25P1Message.TIMESLOT_1 ?
+                mTS1ChannelGrantEventMap.get(frequency) : mTS2ChannelGrantEventMap.get(frequency);
+
+        if(event != null)
+        {
+            if(isSameCallFull(event.getIdentifierCollection(), ic))
+            {
+                //Update the event with the current FROM identifier
+                List<Identifier> currentFromIds = event.getIdentifierCollection().getIdentifiers(Role.FROM);
+
+                if(currentFromIds.isEmpty())
+                {
+                    MutableIdentifierCollection mic = new MutableIdentifierCollection(event.getIdentifierCollection().getIdentifiers());
+                    List<Identifier> updatedFromIds = ic.getIdentifiers(Role.FROM);
+                    for(Identifier identifier: updatedFromIds)
+                    {
+                        mic.update(identifier);
+                    }
+
+                    event.setIdentifierCollection(mic);
+                    event.update(timestamp);
+                    event.setDecodeEventType(getEventType(macOpcode, serviceOptions));
+                    broadcast(event);
+                    return event.getChannelDescriptor();
+                }
+            }
+        }
+
+        //Create a new event for the current call.
+        DecodeEventType eventType = getEventType(macOpcode, serviceOptions);
+        P25ChannelGrantEvent callEvent = P25ChannelGrantEvent.builder(eventType, timestamp, serviceOptions)
+                .details("PHASE 2 CALL " + (serviceOptions != null ? serviceOptions : ""))
+                .identifiers(ic)
+                .build();
+
+        if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
+        {
+            mTS1ChannelGrantEventMap.put(frequency, callEvent);
+        }
+        else
+        {
+            mTS2ChannelGrantEventMap.put(frequency, callEvent);
+        }
+
+        broadcast(callEvent);
+        return null;
+    }
+
+    /**
      * Processes phase 2 channel grants to allocate traffic channels and track overall channel usage.  Generates and
      * tracks decode events for each new channel that is allocated.
      *
@@ -258,8 +359,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param identifierCollection associated with the channel grant
      * @param macOpcode to identify the call type for the event description
      */
-    public DecodeEvent processChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
-                                           IdentifierCollection identifierCollection, MacOpcode macOpcode, long timestamp)
+    public DecodeEvent processP2ChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
+                                             IdentifierCollection identifierCollection, MacOpcode macOpcode, long timestamp)
     {
         DecodeEvent event = null;
 
@@ -317,8 +418,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
          * @param identifierCollection associated with the channel grant
          * @param opcode to identify the call type for the event description
          */
-    public void processChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
-                                    IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
+    public void processP1ChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
+                                      IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
     {
         mLock.lock();
 
@@ -384,7 +485,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         P25ChannelGrantEvent event = mTS1ChannelGrantEventMap.get(frequency);
 
-        if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
+        if(event != null && isSameCallUpdate(identifierCollection, event.getIdentifierCollection()))
         {
             Identifier from = getIdentifier(identifierCollection, Role.FROM);
 
@@ -396,7 +497,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     event.end(timestamp);
 
                     P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-                        .channel(apco25Channel)
+                        .channelDescriptor(apco25Channel)
                         .details("CONTINUE - PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(identifierCollection)
                         .build();
@@ -443,7 +544,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         if(mIgnoreDataCalls && isDataChannelGrant)
         {
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-                .channel(apco25Channel)
+                .channelDescriptor(apco25Channel)
                 .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -454,7 +555,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         }
 
         P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-            .channel(apco25Channel)
+            .channelDescriptor(apco25Channel)
             .details("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
             .identifiers(identifierCollection)
             .build();
@@ -493,6 +594,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
 
+
+
     /**
      * Processes Phase 2 channel grants to allocate traffic channels and track overall channel usage.  Generates
      * decode events for each new channel that is allocated.
@@ -520,7 +623,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         P25ChannelGrantEvent event = null;
 
-        if(timeslot == P25P1Message.TIMESLOT_1)
+        if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
         {
             event = mTS1ChannelGrantEventMap.get(frequency);
         }
@@ -536,7 +639,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         identifierCollection.setTimeslot(timeslot);
 
-        if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
+        if(event != null && isSameCallUpdate(identifierCollection, event.getIdentifierCollection()))
         {
             Identifier from = getIdentifier(identifierCollection, Role.FROM);
 
@@ -548,12 +651,12 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     event.end(timestamp);
 
                     P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-                        .channel(apco25Channel)
+                        .channelDescriptor(apco25Channel)
                         .details("CONTINUE - PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(identifierCollection)
                         .build();
 
-                    if(timeslot == 0)
+                    if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
                     {
                         mTS1ChannelGrantEventMap.put(frequency, continuationGrantEvent);
                     }
@@ -568,6 +671,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             //update the ending timestamp so that the duration value is correctly calculated
             event.update(timestamp);
+
+            //Update the event type in case this they change from unencrypted to encrypted.
+            event.setDecodeEventType(decodeEventType);
             broadcast(event);
 
             //Even though we have an event, the initial channel grant may have been rejected.  Check to see if there
@@ -610,7 +716,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         if(mIgnoreDataCalls && isDataChannelGrant)
         {
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-                .channel(apco25Channel)
+                .channelDescriptor(apco25Channel)
                 .details("PHASE 2 DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -622,12 +728,12 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         }
 
         P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-            .channel(apco25Channel)
+            .channelDescriptor(apco25Channel)
             .details("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
             .identifiers(identifierCollection)
             .build();
 
-        if(timeslot == 0)
+        if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
         {
             mTS1ChannelGrantEventMap.put(frequency, channelGrantEvent);
         }
@@ -823,17 +929,52 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
-     * Compares the TO role identifier(s) from each collection for equality
+     * Compares the TO role identifier(s) from each collection for equality.  This is normally used to compare a call
+     * update where we only compare the TO role.
      *
      * @param collection1 containing a TO identifier
      * @param collection2 containing a TO identifier
      * @return true if both collections contain a TO identifier and the TO identifiers are the same value
      */
-    private boolean isSameCall(IdentifierCollection collection1, IdentifierCollection collection2)
+    private boolean isSameCallUpdate(IdentifierCollection collection1, IdentifierCollection collection2)
     {
         Identifier toIdentifier1 = getIdentifier(collection1, Role.TO);
         Identifier toIdentifier2 = getIdentifier(collection2, Role.TO);
         return Objects.equals(toIdentifier1, toIdentifier2);
+    }
+
+    /**
+     * Compares the TO role identifier(s) from each collection for equality.  This is normally used to compare a call
+     * update where we only compare the TO role.
+     *
+     * @param collection1 containing a TO identifier
+     * @param collection2 containing a TO identifier
+     * @return true if both collections contain a TO identifier and the TO identifiers are the same value
+     */
+    private boolean isSameCallFull(IdentifierCollection collection1, IdentifierCollection collection2)
+    {
+        Identifier to1 = getIdentifier(collection1, Role.TO);
+        Identifier to2 = getIdentifier(collection2, Role.TO);
+
+        if(to1 != null && to2 != null && to1.equals(to2))
+        {
+            Identifier from1 = getIdentifier(collection1, Role.FROM);
+
+            //If the FROM identifier hasn't yet been established, then this is the same call
+            if(from1 == null)
+            {
+                return true;
+            }
+
+            Identifier from2 = getIdentifier(collection2, Role.FROM);
+
+            if(from2 != null && from1.equals(from2))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

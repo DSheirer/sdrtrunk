@@ -27,8 +27,19 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 
+/**
+ * Talkgroup identifier.
+ *
+ * Note: this class overrides the .equals method to ensure that all talkgroups and subclasses can be compared using
+ * the talkgroup value, regardless if it is a simple talkgroup or a fully qualified talkgroup identifier.
+ */
 public abstract class TalkgroupIdentifier extends IntegerIdentifier
 {
+    /**
+     * Constructs an instance
+     * @param value for the talkgroup
+     * @param role for the talkgroup
+     */
     public TalkgroupIdentifier(Integer value, Role role)
     {
         super(value, IdentifierClass.USER, Form.TALKGROUP, role);
@@ -38,5 +49,29 @@ public abstract class TalkgroupIdentifier extends IntegerIdentifier
     public boolean isValid()
     {
         return getValue() > 0;
+    }
+
+    /**
+     * Overrides to compare just the talkgroup value, class, form, role and protocol.  This allows a fully qualified
+     * talkgroup identifier to be equivalent to a standard talkgroup identifier for the traffic channel manager.
+     */
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+
+        if(o instanceof TalkgroupIdentifier tg)
+        {
+            return (getValue().intValue() == tg.getValue().intValue()) &&
+                    getIdentifierClass() == tg.getIdentifierClass() &&
+                    getForm() == tg.getForm() &&
+                    getRole() == tg.getRole() &&
+                    getProtocol() == tg.getProtocol();
+        }
+
+        return false;
     }
 }

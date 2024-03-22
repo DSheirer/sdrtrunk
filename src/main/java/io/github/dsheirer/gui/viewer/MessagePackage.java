@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.viewer;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.event.DecodeEventSnapshot;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class MessagePackage
 {
     private IMessage mMessage;
     private List<DecoderStateEvent> mDecoderStateEvents = new ArrayList<>();
-    private List<IDecodeEvent> mDecodeEvents = new ArrayList<>();
+    private List<DecodeEventSnapshot> mDecodeEvents = new ArrayList<>();
     private ChannelStartProcessingRequest mChannelStartProcessingRequest;
 
     /**
@@ -71,9 +72,9 @@ public class MessagePackage
     }
 
     /**
-     * List of decode events
+     * List of decode event snapshots
      */
-    public List<IDecodeEvent> getDecodeEvents()
+    public List<DecodeEventSnapshot> getDecodeEvents()
     {
         return mDecodeEvents;
     }
@@ -81,7 +82,7 @@ public class MessagePackage
     /**
      * Adds the decode event to this instance
      */
-    public void add(IDecodeEvent event)
+    public void add(DecodeEventSnapshot event)
     {
         mDecodeEvents.add(event);
     }
@@ -149,5 +150,10 @@ public class MessagePackage
     public int getChannelStartProcessingRequestCount()
     {
         return mChannelStartProcessingRequest == null ? 0 : 1;
+    }
+
+    public ChannelStartProcessingRequest getChannelStartProcessingRequest()
+    {
+        return mChannelStartProcessingRequest;
     }
 }

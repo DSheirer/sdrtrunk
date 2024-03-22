@@ -339,7 +339,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         if(mTrafficChannelManager != null && apco25Channel.getValue().getFrequencyBand() != null)
         {
-            mTrafficChannelManager.processChannelGrant(apco25Channel, serviceOptions, identifierCollection, opcode,
+            mTrafficChannelManager.processP1ChannelGrant(apco25Channel, serviceOptions, identifierCollection, opcode,
                     timestamp);
         }
     }

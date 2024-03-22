@@ -51,6 +51,28 @@ public class DecodeEvent implements IDecodeEvent
     }
 
     /**
+     * Sets or changes the decode event type.
+     * @param type to set.
+     */
+    public void setDecodeEventType(DecodeEventType type)
+    {
+        if(type == null)
+        {
+            throw new IllegalArgumentException("Decode event type cannot be null");
+        }
+
+        mDecodeEventType = type;
+    }
+
+    /**
+     * Creates a snapshot of this decode event for offline analysis
+     */
+    public DecodeEventSnapshot getSnapshot()
+    {
+        return new DecodeEventSnapshot(this);
+    }
+
+    /**
      * Creates a new decode event builder with the specified start timestamp.
      * @param decodeEventType for the event
      * @param timeStart for the event

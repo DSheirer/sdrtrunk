@@ -37,7 +37,6 @@ public abstract class IntegerIdentifier extends Identifier<Integer>
         super(value, identifierClass, form, role);
     }
 
-
     @Override
     public boolean equals(Object o)
     {

@@ -25,7 +25,10 @@ import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.SourceEvent;
 
 /**
  * Channel state monitors the stream of decoded messages produced by the
@@ -33,11 +36,13 @@ import io.github.dsheirer.sample.Listener;
  *
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState extends AbstractDecoderState
+public abstract class DecoderState extends AbstractDecoderState implements ISourceEventListener
 {
     private MutableIdentifierCollection mIdentifierCollection;
     protected Listener<IdentifierUpdateNotification> mConfigurationIdentifierListener;
+    private Listener<SourceEvent> mSourceEventListener = new SourceEventListener();
     protected IChannelDescriptor mCurrentChannel;
+    private long mCurrentFrequency;
 
     /**
      * Constructs an instance
@@ -64,6 +69,23 @@ public abstract class DecoderState extends AbstractDecoderState
         super.start();
         //Broadcast the existing identifiers (as add events) so that they can be received by external listeners
         mIdentifierCollection.broadcastIdentifiers();
+    }
+
+    /**
+     * Source event listener to receive notification of the current frequency.
+     */
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
+    {
+        return mSourceEventListener;
+    }
+
+    /**
+     * Current frequency for this channel.
+     */
+    public long getCurrentFrequency()
+    {
+        return mCurrentFrequency;
     }
 
     /**
@@ -160,9 +182,31 @@ public abstract class DecoderState extends AbstractDecoderState
         {
             getIdentifierCollection().receive(identifierUpdateNotification);
 
-            if(identifierUpdateNotification.getIdentifier() instanceof ChannelDescriptorConfigurationIdentifier)
+            if(identifierUpdateNotification.getIdentifier() instanceof ChannelDescriptorConfigurationIdentifier cdci)
             {
-                setCurrentChannel(((ChannelDescriptorConfigurationIdentifier)identifierUpdateNotification.getIdentifier()).getValue());
+                setCurrentChannel(cdci.getValue());
+            }
+            else if(identifierUpdateNotification.getIdentifier() instanceof FrequencyConfigurationIdentifier fci)
+            {
+                System.out.println("Setting current frequency to: " + mCurrentFrequency);
+                mCurrentFrequency = fci.getValue();
+            }
+        }
+    }
+
+    /**
+     * Listener to receive source events, specifically the current frequency value.
+     */
+    public class SourceEventListener implements Listener<SourceEvent>
+    {
+        @Override
+        public void receive(SourceEvent sourceEvent)
+        {
+            switch(sourceEvent.getEvent())
+            {
+                case NOTIFICATION_FREQUENCY_CHANGE:
+                    mCurrentFrequency = sourceEvent.getValue().longValue();
+                    break;
             }
         }
     }
