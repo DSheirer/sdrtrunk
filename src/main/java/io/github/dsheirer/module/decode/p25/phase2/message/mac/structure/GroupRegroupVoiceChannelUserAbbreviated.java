@@ -24,21 +24,26 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Group Regroup Voice Channel User Abbreviated
  */
-public class GroupRegroupVoiceChannelUserAbbreviated extends MacStructure
+public class GroupRegroupVoiceChannelUserAbbreviated extends MacStructure implements IServiceOptionsProvider
 {
     private static final IntField TALKGROUP = IntField.length16(OCTET_3_BIT_16);
     private static final IntField RADIO = IntField.length24(OCTET_5_BIT_32);
     private List<Identifier> mIdentifiers;
     private TalkgroupIdentifier mTalkgroup;
     private RadioIdentifier mRadio;
+    private ServiceOptions mServiceOptions = new VoiceServiceOptions(0);
 
     /**
      * Constructs the message
@@ -65,6 +70,12 @@ public class GroupRegroupVoiceChannelUserAbbreviated extends MacStructure
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public ServiceOptions getServiceOptions()
+    {
+        return mServiceOptions;
     }
 
     /**

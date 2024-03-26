@@ -73,7 +73,11 @@ public class PushToTalk extends MacStructure
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FM:").append(getSourceAddress());
+        if(hasSourceAddress())
+        {
+            sb.append("FM:").append(getSourceAddress());
+        }
+
         sb.append(" TO:").append(getGroupAddress());
 
         if(isEncrypted())
@@ -125,6 +129,11 @@ public class PushToTalk extends MacStructure
         return mEncryptionKey;
     }
 
+    public boolean hasSourceAddress()
+    {
+        return getMessage().getInt(SOURCE_ADDRESS, getOffset()) > 0;
+    }
+
     /**
      * Calling (source) radio identifier
      */
@@ -160,7 +169,10 @@ public class PushToTalk extends MacStructure
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceAddress());
+            if(hasSourceAddress())
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
             mIdentifiers.add(getGroupAddress());
             mIdentifiers.add(getEncryptionKey());
         }

@@ -542,7 +542,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             MutableIdentifierCollection identifierCollection = getMutableIdentifierCollection(uuvscgu.getIdentifiers());
 
-            processChannelGrant(uuvscgu.getChannel(), uuvscgu.getVoiceServiceOptions(),
+            processChannelGrant(uuvscgu.getChannel(), uuvscgu.getServiceOptions(),
                     identifierCollection, ambtc.getHeader().getOpcode(),
                     ambtc.getTimestamp());
         }
@@ -555,7 +555,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             MutableIdentifierCollection identifierCollection = getMutableIdentifierCollection(uuvscg.getIdentifiers());
 
-            processChannelGrant(uuvscg.getChannel(), uuvscg.getVoiceServiceOptions(),
+            processChannelGrant(uuvscg.getChannel(), uuvscg.getServiceOptions(),
                     identifierCollection, ambtc.getHeader().getOpcode(),
                     ambtc.getTimestamp());
         }
@@ -568,7 +568,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             MutableIdentifierCollection identifierCollection = getMutableIdentifierCollection(ticgu.getIdentifiers());
 
-            processChannelGrant(ticgu.getChannel(), ticgu.getVoiceServiceOptions(),
+            processChannelGrant(ticgu.getChannel(), ticgu.getServiceOptions(),
                     identifierCollection, ambtc.getHeader().getOpcode(),
                     ambtc.getTimestamp());
         }
@@ -581,7 +581,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             MutableIdentifierCollection identifierCollection = getMutableIdentifierCollection(ticg.getIdentifiers());
 
-            processChannelGrant(ticg.getChannel(), ticg.getVoiceServiceOptions(),
+            processChannelGrant(ticg.getChannel(), ticg.getServiceOptions(),
                     identifierCollection, ambtc.getHeader().getOpcode(),
                     ambtc.getTimestamp());
         }
@@ -605,7 +605,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         {
             MutableIdentifierCollection identifierCollection = getMutableIdentifierCollection(gvcg.getIdentifiers());
 
-            processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
+            processChannelGrant(gvcg.getChannel(), gvcg.getServiceOptions(),
                     identifierCollection, ambtc.getHeader().getOpcode(),
                     ambtc.getTimestamp());
         }
@@ -620,7 +620,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 identifierCollection.update(mPatchGroupManager.update(identifier));
             }
 
-            processChannelGrant(mgrcge.getChannel(), mgrcge.getVoiceServiceOptions(), identifierCollection, ambtc.getHeader().getOpcode(), ambtc.getTimestamp());
+            processChannelGrant(mgrcge.getChannel(), mgrcge.getServiceOptions(), identifierCollection, ambtc.getHeader().getOpcode(), ambtc.getTimestamp());
         }
     }
 
@@ -641,7 +641,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         {
             AMBTCUnitToUnitVoiceServiceAnswerResponse uuvsar = (AMBTCUnitToUnitVoiceServiceAnswerResponse)ambtc;
             processBroadcast(ambtc, DecodeEventType.RESPONSE,
-                uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getVoiceServiceOptions());
+                uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getServiceOptions());
         }
     }
 
@@ -1262,14 +1262,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     if(tsbk instanceof GroupVoiceServiceRequest)
                     {
                         GroupVoiceServiceRequest gvsr = (GroupVoiceServiceRequest)tsbk;
-                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "GROUP VOICE SERVICE " + gvsr.getVoiceServiceOptions());
+                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "GROUP VOICE SERVICE " + gvsr.getServiceOptions());
                     }
                     break;
                 case ISP_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST:
                     if(tsbk instanceof UnitToUnitVoiceServiceRequest)
                     {
                         UnitToUnitVoiceServiceRequest uuvsr = (UnitToUnitVoiceServiceRequest)tsbk;
-                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "UNIT-2-UNIT VOICE SERVICE " + uuvsr.getVoiceServiceOptions());
+                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "UNIT-2-UNIT VOICE SERVICE " + uuvsr.getServiceOptions());
                     }
                     break;
                 case ISP_UNIT_TO_UNIT_ANSWER_RESPONSE:
@@ -1285,14 +1285,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     if(tsbk instanceof IndividualDataServiceRequest)
                     {
                         IndividualDataServiceRequest idsr = (IndividualDataServiceRequest)tsbk;
-                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "INDIVIDUAL DATA SERVICE " + idsr.getVoiceServiceOptions());
+                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "INDIVIDUAL DATA SERVICE " + idsr.getServiceOptions());
                     }
                     break;
                 case ISP_GROUP_DATA_SERVICE_REQUEST:
                     if(tsbk instanceof GroupDataServiceRequest)
                     {
                         GroupDataServiceRequest gdsr = (GroupDataServiceRequest)tsbk;
-                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "GROUP DATA SERVICE " + gdsr.getVoiceServiceOptions());
+                        processBroadcast(tsbk.getIdentifiers(), tsbk.getTimestamp(), DecodeEventType.REQUEST, "GROUP DATA SERVICE " + gdsr.getServiceOptions());
                     }
                     break;
                 case ISP_SNDCP_DATA_CHANNEL_REQUEST:
@@ -1495,7 +1495,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof TelephoneInterconnectAnswerResponse tiar)
         {
             processBroadcast(tsbk, DecodeEventType.RESPONSE,
- 		tiar.getAnswerResponse() + " TELEPHONE INTERCONNECT " + tiar.getVoiceServiceOptions());
+ 		tiar.getAnswerResponse() + " TELEPHONE INTERCONNECT " + tiar.getServiceOptions());
         }
     }
 
@@ -1504,7 +1504,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof UnitToUnitVoiceServiceAnswerResponse uuvsar)
         {
             processBroadcast(tsbk, DecodeEventType.RESPONSE,
- 		uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getVoiceServiceOptions());
+ 		uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getServiceOptions());
         }
     }
 
@@ -1659,7 +1659,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 identifiers.update(mPatchGroupManager.update(identifier));
             }
 
-            processChannelGrant(mgrcg.getChannel(), mgrcg.getVoiceServiceOptions(),
+            processChannelGrant(mgrcg.getChannel(), mgrcg.getServiceOptions(),
                     identifiers, tsbk.getOpcode(), mgrcg.getTimestamp());
         }
     }
@@ -1671,7 +1671,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             //Make a copy of current identifiers and remove current user identifiers and replace from message
             MutableIdentifierCollection identifiers = getMutableIdentifierCollection(tivcgu.getIdentifiers());
 
-            processChannelGrant(tivcgu.getChannel(), tivcgu.getVoiceServiceOptions(),
+            processChannelGrant(tivcgu.getChannel(), tivcgu.getServiceOptions(),
                     identifiers, tsbk.getOpcode(), tivcgu.getTimestamp());
         }
     }
@@ -1695,7 +1695,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             //Make a copy of current identifiers and remove current user identifiers and replace from message
             MutableIdentifierCollection identifiers = getMutableIdentifierCollection(tivcg.getIdentifiers());
 
-            processChannelGrant(tivcg.getChannel(), tivcg.getVoiceServiceOptions(),
+            processChannelGrant(tivcg.getChannel(), tivcg.getServiceOptions(),
                     identifiers, tsbk.getOpcode(), tivcg.getTimestamp());
         }
     }
@@ -1733,7 +1733,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             identifiers.remove(IdentifierClass.USER);
             identifiers.update(mPatchGroupManager.update(gvcgue.getGroupAddress()));
 
-            processChannelGrant(gvcgue.getChannel(), gvcgue.getVoiceServiceOptions(),
+            processChannelGrant(gvcgue.getChannel(), gvcgue.getServiceOptions(),
                     identifiers, tsbk.getOpcode(), gvcgue.getTimestamp());
         }
     }
@@ -1775,7 +1775,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 identifiers.update(mPatchGroupManager.update(identifier));
             }
 
-            processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
+            processChannelGrant(gvcg.getChannel(), gvcg.getServiceOptions(),
                     identifiers, tsbk.getOpcode(), gvcg.getTimestamp());
         }
     }

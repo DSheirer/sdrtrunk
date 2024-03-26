@@ -21,12 +21,13 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 /**
  * Voice service mac structure - for opcodes that start with Voice Service Options.
  */
-public abstract class MacStructureVoiceService extends MacStructure
+public abstract class MacStructureVoiceService extends MacStructure implements IServiceOptionsProvider
 {
     private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_2_BIT_8);
     private VoiceServiceOptions mServiceOptions;

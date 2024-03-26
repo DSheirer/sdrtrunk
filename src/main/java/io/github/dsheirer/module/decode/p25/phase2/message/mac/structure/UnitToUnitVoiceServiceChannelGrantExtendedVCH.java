@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
@@ -38,7 +39,7 @@ import java.util.List;
  * Unit-to-Unit voice service channel grant extended VCH
  */
 public class UnitToUnitVoiceServiceChannelGrantExtendedVCH extends MacStructure
-        implements IFrequencyBandReceiver, IP25ChannelGrantDetailProvider
+        implements IFrequencyBandReceiver, IP25ChannelGrantDetailProvider, IServiceOptionsProvider
 {
     private static final IntField TRANSMIT_FREQUENCY_BAND = IntField.range(8, 11);
     private static final IntField TRANSMIT_CHANNEL_NUMBER = IntField.range(12, 23);

@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.FullyQualifiedRadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureVendor;
@@ -34,7 +35,7 @@ import java.util.List;
 /**
  * Motorola Group Regroup Voice Channel User Extended
  */
-public class MotorolaGroupRegroupVoiceChannelUserExtended extends MacStructureVendor
+public class MotorolaGroupRegroupVoiceChannelUserExtended extends MacStructureVendor implements IServiceOptionsProvider
 {
     private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_4_BIT_24);
     private static final IntField SUPERGROUP_ADDRESS = IntField.length16(OCTET_5_BIT_32);

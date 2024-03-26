@@ -53,7 +53,7 @@ public class LCMotorolaGroupRegroupVoiceChannelUser extends VoiceLinkControlMess
         StringBuilder sb = new StringBuilder();
         sb.append("MOTOROLA GROUP REGROUP VOICE CHANNEL USER FM:").append(getSourceAddress());
         sb.append(" TO:").append(getSupergroupAddress());
-        sb.append(" ").append(getVoiceServiceOptions());
+        sb.append(" ").append(getServiceOptions());
 
         return sb.toString();
     }

@@ -55,7 +55,7 @@ public class LCGroupVoiceChannelUser extends VoiceLinkControlMessage
         sb.append(getMessageStub());
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" TO:").append(getGroupAddress());
-        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
 

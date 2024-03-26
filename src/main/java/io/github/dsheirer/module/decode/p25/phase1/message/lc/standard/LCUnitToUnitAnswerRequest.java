@@ -54,7 +54,7 @@ public class LCUnitToUnitAnswerRequest extends VoiceLinkControlMessage
         sb.append(getMessageStub());
         sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceAddress());
-        sb.append(" ").append(getVoiceServiceOptions());
+        sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }
 

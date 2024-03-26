@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
@@ -28,7 +29,7 @@ import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AMBTCUnitToUnitAnswerRequest extends AMBTCMessage
+public class AMBTCUnitToUnitAnswerRequest extends AMBTCMessage implements IServiceOptionsProvider
 {
     private static final int[] HEADER_SERVICE_OPTIONS = {64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] HEADER_RESERVED = {72, 73, 74, 75, 76, 77, 78, 79};
@@ -58,11 +59,11 @@ public class AMBTCUnitToUnitAnswerRequest extends AMBTCMessage
             sb.append(" FM:").append(getSourceAddress());
         }
         sb.append(" TO:").append(getTargetAddress());
-        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

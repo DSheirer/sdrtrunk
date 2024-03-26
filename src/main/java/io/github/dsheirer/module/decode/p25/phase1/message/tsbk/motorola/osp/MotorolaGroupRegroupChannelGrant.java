@@ -23,6 +23,7 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
@@ -34,7 +35,7 @@ import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MotorolaGroupRegroupChannelGrant extends VendorOSPMessage implements IFrequencyBandReceiver
+public class MotorolaGroupRegroupChannelGrant extends VendorOSPMessage implements IFrequencyBandReceiver, IServiceOptionsProvider
 {
     public static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     public static final int[] FREQUENCY_BAND = {24, 25, 26, 27};
@@ -62,12 +63,12 @@ public class MotorolaGroupRegroupChannelGrant extends VendorOSPMessage implement
         sb.append(getMessageStub());
         sb.append(" PATCH GROUP:").append(getPatchGroup());
         sb.append(" FROM:").append(getSourceAddress());
-        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
 
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

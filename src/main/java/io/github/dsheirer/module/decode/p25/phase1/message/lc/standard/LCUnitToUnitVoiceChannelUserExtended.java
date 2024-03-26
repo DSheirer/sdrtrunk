@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.ExtendedSourceLinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
@@ -31,7 +32,7 @@ import java.util.List;
 /**
  * Unit to Unit voice channel user with extended SUID
  */
-public class LCUnitToUnitVoiceChannelUserExtended extends ExtendedSourceLinkControlWord
+public class LCUnitToUnitVoiceChannelUserExtended extends ExtendedSourceLinkControlWord implements IServiceOptionsProvider
 {
     private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_1_BIT_8);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_3_BIT_24);
@@ -59,11 +60,11 @@ public class LCUnitToUnitVoiceChannelUserExtended extends ExtendedSourceLinkCont
         {
             sb.append(" FM:").append(getSourceAddress());
         }
-        sb.append(" ").append(getVoiceServiceOptions());
+        sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mServiceOptions == null)
         {

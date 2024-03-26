@@ -89,6 +89,15 @@ public abstract class DecoderState extends AbstractDecoderState implements ISour
     }
 
     /**
+     * Sets the current frequency for this channel.
+     * @param frequency to set.
+     */
+    public void setCurrentFrequency(long frequency)
+    {
+        mCurrentFrequency = frequency;
+    }
+
+    /**
      * Registers the listener to receive identifier update notifications
      */
     @Override

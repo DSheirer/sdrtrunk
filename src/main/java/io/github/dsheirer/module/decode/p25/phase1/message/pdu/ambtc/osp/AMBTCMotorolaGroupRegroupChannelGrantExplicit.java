@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
@@ -37,7 +38,7 @@ import java.util.List;
 /**
  * Motorola group regroup channel grant - explicit channel format
  */
-public class AMBTCMotorolaGroupRegroupChannelGrantExplicit extends AMBTCMessage implements IFrequencyBandReceiver
+public class AMBTCMotorolaGroupRegroupChannelGrantExplicit extends AMBTCMessage implements IFrequencyBandReceiver, IServiceOptionsProvider
 {
     private static final IntField HEADER_SERVICE_OPTIONS = IntField.length8(OCTET_8_BIT_64);
     private static final IntField BLOCK_0_DOWNLINK_FREQUENCY_BAND = IntField.length4(OCTET_0_BIT_0);
@@ -71,11 +72,11 @@ public class AMBTCMotorolaGroupRegroupChannelGrantExplicit extends AMBTCMessage 
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" TO:").append(getGroupAddress());
         sb.append(" CHAN:").append(getChannel());
-        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

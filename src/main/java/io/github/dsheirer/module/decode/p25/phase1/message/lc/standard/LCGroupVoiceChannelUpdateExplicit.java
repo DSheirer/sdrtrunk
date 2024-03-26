@@ -59,7 +59,7 @@ public class LCGroupVoiceChannelUpdateExplicit extends VoiceLinkControlMessage i
         sb.append(getMessageStub());
         sb.append(" TALKGROUP:").append(getGroupAddress());
         sb.append(" ").append(getChannel());
-        sb.append(" ").append(getVoiceServiceOptions());
+        sb.append(" ").append(getServiceOptions());
 
         return sb.toString();
     }

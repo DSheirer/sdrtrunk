@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
@@ -32,7 +33,7 @@ import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AMBTCUnitToUnitVoiceServiceChannelGrant extends AMBTCMessage implements IFrequencyBandReceiver
+public class AMBTCUnitToUnitVoiceServiceChannelGrant extends AMBTCMessage implements IFrequencyBandReceiver, IServiceOptionsProvider
 {
     private static final int[] HEADER_SERVICE_OPTIONS = {64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] HEADER_TARGET_WACN = {72, 73, 74, 75, 76, 77, 78, 79};
@@ -77,11 +78,11 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrant extends AMBTCMessage implem
             sb.append(" TO:").append(getTargetAddress());
         }
         sb.append(" CHANNEL:").append(getChannel());
-        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

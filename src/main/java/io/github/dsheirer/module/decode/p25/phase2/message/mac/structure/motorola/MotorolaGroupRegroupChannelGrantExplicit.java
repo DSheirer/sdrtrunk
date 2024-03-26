@@ -25,6 +25,7 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
@@ -41,7 +42,7 @@ import java.util.List;
  * Motorola Group Regroup Channel Grant Explicit
  */
 public class MotorolaGroupRegroupChannelGrantExplicit extends MacStructureVendor
-        implements IFrequencyBandReceiver, IP25ChannelGrantDetailProvider
+        implements IFrequencyBandReceiver, IP25ChannelGrantDetailProvider, IServiceOptionsProvider
 {
     private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_4_BIT_24);
     private static final IntField TRANSMIT_FREQUENCY_BAND = IntField.length4(OCTET_5_BIT_32);

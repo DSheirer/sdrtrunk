@@ -22,6 +22,8 @@ package io.github.dsheirer.gui.viewer;
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.control.IntegerTextField;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
@@ -39,6 +41,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.prefs.Preferences;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
@@ -69,6 +74,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.Callback;
+import org.apache.commons.math3.exception.util.ExceptionContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +86,7 @@ public class P25P2Viewer extends VBox
     private static final Logger mLog = LoggerFactory.getLogger(P25P2Viewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
     private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.p25p2";
+    private static final String FILE_FREQUENCY_REGEX = ".*\\d{8}_\\d{6}_(\\d{9}).*";
     private Preferences mPreferences = Preferences.userNodeForPackage(P25P2Viewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
@@ -153,6 +160,40 @@ public class P25P2Viewer extends VBox
     }
 
     /**
+     * Extracts the channel frequency value from the bits file name to broadcast as the current frequency for each of
+     * the decoder states.
+     * @param file name to parse
+     * @return parsed frequency or zero.
+     */
+    private static long getFrequencyFromFile(String file)
+    {
+        if(file == null || file.isEmpty())
+        {
+            return 0;
+        }
+
+        if(file.matches(FILE_FREQUENCY_REGEX))
+        {
+            Pattern p = Pattern.compile(FILE_FREQUENCY_REGEX);
+            Matcher m = p.matcher(file);
+            if(m.find())
+            {
+                try
+                {
+                    String raw = m.group(1);
+                    return Long.parseLong(raw);
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Couldn't parse frequency from bits file [" + file + "]");
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    /**
      * Processes the recording file and loads the content into the viewer
      *
      * Note: invoke this method off of the UI thread in a thread pool executor and the results will be loaded into the
@@ -202,6 +243,18 @@ public class P25P2Viewer extends VBox
                 decoderState2.addDecodeEventListener(decodeEvent -> messagePackager.add(decodeEvent));
                 decoderState1.start();
                 decoderState2.start();
+
+                long frequency = getFrequencyFromFile(mLoadedFile.get());
+
+                if(frequency > 0)
+                {
+                    FrequencyConfigurationIdentifier id = FrequencyConfigurationIdentifier.create(frequency);
+                    IdentifierUpdateNotification update1 = new IdentifierUpdateNotification(id, IdentifierUpdateNotification.Operation.ADD, 1);
+                    IdentifierUpdateNotification update2 = new IdentifierUpdateNotification(id, IdentifierUpdateNotification.Operation.ADD, 2);
+
+                    decoderState1.getConfigurationIdentifierListener().receive(update1);
+                    decoderState2.getConfigurationIdentifierListener().receive(update2);
+                }
 
                 messageProcessor.setMessageListener(message -> {
                     if(!(message instanceof StuffBitsMessage))

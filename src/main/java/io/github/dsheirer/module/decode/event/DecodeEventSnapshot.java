@@ -38,4 +38,13 @@ public class DecodeEventSnapshot extends DecodeEvent
         return mOriginalHashCode;
     }
 
+    /**
+     * Frequency for the channel descriptor
+     * @return frequency or zero.
+     */
+    public long getFrequency()
+    {
+        return getChannelDescriptor() != null ? getChannelDescriptor().getDownlinkFrequency() : 0;
+    }
+
 }

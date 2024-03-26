@@ -46,6 +46,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
@@ -54,6 +55,7 @@ import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.IP25ChannelGrantDetailProvider;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacPduType;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.AcknowledgeResponseFNEAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.AcknowledgeResponseFNEExtended;
@@ -117,6 +119,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorol
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.module.decode.p25.reference.ExtendedFunction;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.Collections;
@@ -246,8 +249,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
                     }
                 }
-
-                updateCurrentCall(null, null, message.getTimestamp());
             }
             else if(message instanceof EncryptionSynchronizationSequence)
             {
@@ -316,8 +317,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 processNullInformation(message, mac);
                 break;
             case TDMA_01_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
-                processChannelUser(message, mac);
-                break;
             case TDMA_02_UNIT_TO_UNIT_VOICE_CHANNEL_USER_ABBREVIATED:
             case TDMA_03_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
                 processChannelUser(message, mac);
@@ -943,21 +942,11 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
     /**
      * Channel user (ie current user on this channel).
+     *
+     * Note: calling code should ensure that the mac structure argument implements the IServiceOptionsProvider interface.
      */
     private void processChannelUser(MacMessage message, MacStructure mac)
     {
-
-//        mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot() )
-//TODO:
-//        TDMA_01_GROUP_VOICE_CHANNEL_USER_ABBREVIATED
-//        TDMA_02_UNIT_TO_UNIT_VOICE_CHANNEL_USER_ABBREVIATED:
-//        TDMA_03_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER
-//        TDMA_21_GROUP_VOICE_CHANNEL_USER_EXTENDED:
-//        TDMA_22_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
-//        PHASE1_90_GROUP_REGROUP_VOICE_CHANNEL_USER_ABBREVIATED
-//        MOTOROLA_80_GROUP_REGROUP_VOICE_CHANNEL_USER_ABBREVIATED:
-//        MOTOROLA_A0_GROUP_REGROUP_VOICE_CHANNEL_USER_EXTENDED
-
         if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
         {
             closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
@@ -976,173 +965,25 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 getIdentifierCollection().update(mPatchGroupManager.update(identifier));
             }
 
-            if(mac instanceof GroupVoiceChannelUserAbbreviated gvcua)
+            if(mac instanceof IServiceOptionsProvider sop)
             {
-                if(gvcua.getServiceOptions().isEncrypted())
+                IChannelDescriptor currentChannel = mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(),
+                        getTimeslot(), sop.getServiceOptions(), mac.getOpcode(), getIdentifierCollection().copyOf(),
+                        message.getTimestamp(), null);
+
+                if(getCurrentChannel() == null)
                 {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
+                    setCurrentChannel(currentChannel);
                 }
             }
-            else if(mac instanceof GroupRegroupVoiceChannelUserAbbreviated grvcua)
+            else
             {
-                updateCurrentCall(DecodeEventType.CALL_GROUP, "SUPERGROUP", message.getTimestamp());
-            }
-            else if(mac instanceof MotorolaGroupRegroupVoiceChannelUserAbbreviated mgrvcua)
-            {
-                if(mgrvcua.getServiceOptions().isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, "SUPERGROUP", message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP, "SUPERGROUP", message.getTimestamp());
-                }
+                LOGGING_SUPPRESSOR.error("Unrecognized Service Options Not Implemented:" + mac.getClass().getName(),
+                        1, "Unrecognized voice channel user MAC message.  Please notify the developer " +
+                                "that this class should implement the IServiceOptionsProvider interface.  Class: " +
+                                mac.getClass());
             }
         }
-
-        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-        {
-            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-        }
-        else
-        {
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-
-            if(mac instanceof UnitToUnitVoiceChannelUserAbbreviated)
-            {
-                UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
-
-                if(uuvcua.getServiceOptions().isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
-                }
-            }
-        }
-
-
-        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-        {
-            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-        }
-        else
-        {
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-
-            if(mac instanceof TelephoneInterconnectVoiceChannelUser tivcu)
-            {
-                if(tivcu.getServiceOptions().isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_INTERCONNECT_ENCRYPTED, null, message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_INTERCONNECT, null, message.getTimestamp());
-                }
-            }
-        }
-
-        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-        {
-            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-        }
-        else
-        {
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-
-            if(mac instanceof GroupVoiceChannelUserExtended gvcue)
-            {
-                if(gvcue.getServiceOptions().isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
-                }
-            }
-            else if(mac instanceof MotorolaGroupRegroupVoiceChannelUserExtended mgrvcue)
-            {
-                if(mgrvcue.getServiceOptions().isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
-                }
-            }
-        }
-
-
-        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-        {
-            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-        }
-        else
-        {
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-
-            if(mac instanceof UnitToUnitVoiceChannelUserExtended uuvcue)
-            {
-                if(uuvcue.getServiceOptions().isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
-                }
-            }
-        }
-
     }
 
     /**
@@ -1160,11 +1001,16 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
         if(ptt.isEncrypted())
         {
-            updateCurrentCall(DecodeEventType.CALL_ENCRYPTED, ptt.getEncryptionKey().toString(), message.getTimestamp());
+            mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), null, mac.getOpcode(),
+                    getIdentifierCollection().copyOf(), message.getTimestamp(), ptt.getEncryptionKey().toString());
+            broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED, getTimeslot()));
+
         }
         else
         {
-            updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
+            mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), null, mac.getOpcode(),
+                    getIdentifierCollection().copyOf(), message.getTimestamp(), null);
+            broadcast(new DecoderStateEvent(this, Event.START, State.CALL, getTimeslot()));
         }
     }
 
@@ -1603,7 +1449,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     {
         if(mac instanceof L3HarrisTalkerAlias talkerAlias)
         {
-            getIdentifierCollection().update(talkerAlias.getAlias());
+            Identifier alias = talkerAlias.getAlias();
+            getIdentifierCollection().update(alias);
+            mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), alias, message.getTimestamp());
         }
     }
 
@@ -1701,44 +1549,21 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      * @param details of the call (optional)
      * @param timestamp of the message indicating a call or continuation
      */
-    private void updateCurrentCall(DecodeEventType type, String details, long timestamp)
+    private void updateCurrentCall(MacOpcode macOpcode, ServiceOptions serviceOptions,
+                                   String details, long timestamp)
     {
-        if(mCurrentCallEvent == null)
+        mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), serviceOptions, macOpcode,
+                getIdentifierCollection().copyOf(), timestamp, details);
+
+        if(isEncrypted())
         {
-            if(type == null)
-            {
-                type = DecodeEventType.CALL;
-            }
-
-            mCurrentCallEvent = P25DecodeEvent.builder(type, timestamp)
-                    .channel(getCurrentChannel())
-                    .details(details)
-                    .identifiers(getIdentifierCollection().copyOf())
-                    .timeslot(getTimeslot())
-                    .build();
-
-            broadcast(mCurrentCallEvent);
-
-            if(isEncrypted())
-            {
-                broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED, getTimeslot()));
-            }
-            else
-            {
-                broadcast(new DecoderStateEvent(this, Event.START, State.CALL, getTimeslot()));
-            }
+            broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED, getTimeslot()));
         }
         else
         {
-            if(details != null)
-            {
-                mCurrentCallEvent.setDetails(details);
-            }
-
-            mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
-            mCurrentCallEvent.end(timestamp);
-            broadcast(mCurrentCallEvent);
+            broadcast(new DecoderStateEvent(this, Event.START, State.CALL, getTimeslot()));
         }
+
     }
 
     /**

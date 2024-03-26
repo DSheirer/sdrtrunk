@@ -53,7 +53,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends VoiceLinkControlMes
         sb.append(getMessageStub());
         sb.append(" ID:").append(getAddress());
         sb.append(" CALL TIMER:").append(getCallTimerDuration()).append("MS");
-        sb.append(" ").append(getVoiceServiceOptions());
+        sb.append(" ").append(getServiceOptions());
 
         return sb.toString();
     }

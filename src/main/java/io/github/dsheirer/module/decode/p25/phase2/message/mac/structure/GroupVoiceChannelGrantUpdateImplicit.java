@@ -23,17 +23,21 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Group voice channel grant update - Implicit
  */
-public class GroupVoiceChannelGrantUpdateImplicit extends MacStructure implements IFrequencyBandReceiver
+public class GroupVoiceChannelGrantUpdateImplicit extends MacStructure implements IFrequencyBandReceiver, IServiceOptionsProvider
 {
     private static final IntField FREQUENCY_BAND_1 = IntField.range(8, 11);
     private static final IntField CHANNEL_NUMBER_1 = IntField.range(12, 23);
@@ -47,6 +51,9 @@ public class GroupVoiceChannelGrantUpdateImplicit extends MacStructure implement
     private APCO25Channel mChannel1;
     private Identifier mGroupAddress2;
     private APCO25Channel mChannel2;
+
+    //Empty, non-encrypted service options instance.
+    private ServiceOptions mServiceOptions = new VoiceServiceOptions(0);
 
     /**
      * Constructs the message
@@ -75,6 +82,12 @@ public class GroupVoiceChannelGrantUpdateImplicit extends MacStructure implement
             sb.append(" CHAN-2:").append(getChannel2());
         }
         return sb.toString();
+    }
+
+    @Override
+    public ServiceOptions getServiceOptions()
+    {
+        return mServiceOptions;
     }
 
     /**

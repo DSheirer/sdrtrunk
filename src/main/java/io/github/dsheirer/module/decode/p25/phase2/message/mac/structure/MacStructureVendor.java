@@ -44,6 +44,15 @@ public abstract class MacStructureVendor extends MacStructureVariableLength
     }
 
     /**
+     * Overrides the primary method to ensure we get the correct vendor mac opcode representation
+     */
+    @Override
+    public MacOpcode getOpcode()
+    {
+        return MacOpcode.fromValue(getOpcodeNumber(), getVendor());
+    }
+
+    /**
      * Utility method to lookup vendor specified for this message
      * @param message bits
      * @param offset to the start of the structure

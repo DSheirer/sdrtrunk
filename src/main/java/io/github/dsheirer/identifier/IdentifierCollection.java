@@ -274,27 +274,59 @@ public class IdentifierCollection
     }
 
     /**
-     * Returns the first identifier in this collection that is assigned a FROM role
+     * Indicates if this collection has an identifier that matches the specified identiifer.
+     * @param toCheck identifier
+     * @return true if the identifier already exists in the collection.
+     */
+    public boolean hasIdentifier(Identifier toCheck)
+    {
+        if(toCheck == null)
+        {
+            return false;
+        }
+
+        for(Identifier identifier : mIdentifiers)
+        {
+            if(identifier.equals(toCheck))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the first entity identifier in this collection that is assigned a FROM role
      */
     public Identifier getFromIdentifier()
     {
         Identifier from = getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
 
-        if(from == null)
+        if(from != null)
         {
-            List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
-
-            if(!fromIdentifiers.isEmpty())
-            {
-                from = fromIdentifiers.get(0);
-            }
+            return from;
         }
 
-        return from;
+        List<Identifier> identifiers = getIdentifiers(Form.TELEPHONE_NUMBER);
+
+        if(!identifiers.isEmpty())
+        {
+            return identifiers.get(0);
+        }
+
+        List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
+
+        if(!fromIdentifiers.isEmpty())
+        {
+            return fromIdentifiers.get(0);
+        }
+
+        return null;
     }
 
     /**
-     * Returns the first identifier in this collection that is assigned a TO role
+     * Returns the first entity identifier in this collection that is assigned a TO role
      */
     public Identifier getToIdentifier()
     {

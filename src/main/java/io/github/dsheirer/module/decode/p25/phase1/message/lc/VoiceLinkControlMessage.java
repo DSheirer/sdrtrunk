@@ -21,12 +21,13 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 /**
  * Base voice call link control word
  */
-public abstract class VoiceLinkControlMessage extends LinkControlWord
+public abstract class VoiceLinkControlMessage extends LinkControlWord implements IServiceOptionsProvider
 {
     private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_2_BIT_16);
     private VoiceServiceOptions mVoiceServiceOptions;
@@ -44,7 +45,7 @@ public abstract class VoiceLinkControlMessage extends LinkControlWord
     /**
      * Service Options for this channel
      */
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

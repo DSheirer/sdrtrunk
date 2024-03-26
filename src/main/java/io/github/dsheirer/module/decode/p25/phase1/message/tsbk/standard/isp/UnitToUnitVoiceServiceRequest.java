@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.ISPMessage;
@@ -31,7 +32,7 @@ import java.util.List;
 /**
  * Voice call service request between two subscriber units.
  */
-public class UnitToUnitVoiceServiceRequest extends ISPMessage
+public class UnitToUnitVoiceServiceRequest extends ISPMessage implements IServiceOptionsProvider
 {
     private static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] RESERVED = {24, 25, 26, 27, 28, 29, 30, 31};
@@ -59,14 +60,14 @@ public class UnitToUnitVoiceServiceRequest extends ISPMessage
         sb.append(getMessageStub());
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" TO:").append(getTargetId());
-        sb.append(" ").append(getVoiceServiceOptions().toString());
+        sb.append(" ").append(getServiceOptions().toString());
         return sb.toString();
     }
 
     /**
      * Service options for the request
      */
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null)
         {

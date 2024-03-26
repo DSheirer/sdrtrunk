@@ -179,6 +179,11 @@ public class MessagePackageViewer extends VBox
             channelDescriptorColumn.setText("Channel");
             channelDescriptorColumn.setCellValueFactory(new PropertyValueFactory<>("channelDescriptor"));
 
+            TableColumn frequencyColumn = new TableColumn();
+            frequencyColumn.setPrefWidth(110);
+            frequencyColumn.setText("Frequency");
+            frequencyColumn.setCellValueFactory(new PropertyValueFactory<>("frequency"));
+
             TableColumn hashcodeColumn = new TableColumn();
             hashcodeColumn.setPrefWidth(100);
             hashcodeColumn.setText("Hash ID");
@@ -189,8 +194,8 @@ public class MessagePackageViewer extends VBox
             detailsColumn.setText("Details");
             detailsColumn.setCellValueFactory(new PropertyValueFactory<>("details"));
 
-            mDecodeEventTableView.getColumns().addAll(startTimeColumn, durationColumn, typeColumn,
-                    channelDescriptorColumn, hashcodeColumn, detailsColumn);
+            mDecodeEventTableView.getColumns().addAll(startTimeColumn, durationColumn, typeColumn, channelDescriptorColumn,
+                    frequencyColumn, hashcodeColumn, detailsColumn);
 
             mDecodeEventTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
             {

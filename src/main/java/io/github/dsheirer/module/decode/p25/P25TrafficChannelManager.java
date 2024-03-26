@@ -26,6 +26,7 @@ import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -291,6 +292,39 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Updates an identifier for an ongoing call event on the frequency and timeslot.
+     *
+     * Note: if this manager does not have an existing call event for the frequency and timeslot, the update is ignored
+     * because we don't have enough detail to create a call event.
+     *
+     * This is used primarily to add a talker alias, but can be used for any identifier update.
+     *
+     * @param frequency for the call event
+     * @param timeslot for the call event
+     * @param identifier to update within the event.
+     * @param timestamp for the update
+     */
+    public void processP2CurrentUser(long frequency, int timeslot, Identifier identifier, long timestamp)
+    {
+        DecodeEvent event = timeslot == P25P1Message.TIMESLOT_1 ?
+                mTS1ChannelGrantEventMap.get(frequency) : mTS2ChannelGrantEventMap.get(frequency);
+
+        if(event != null)
+        {
+            if(!event.getIdentifierCollection().hasIdentifier(identifier))
+            {
+                MutableIdentifierCollection mic = new MutableIdentifierCollection(event.getIdentifierCollection()
+                        .getIdentifiers());
+                mic.update(identifier);
+                event.setIdentifierCollection(mic);
+            }
+
+            event.update(timestamp);
+            broadcast(event);
+        }
+    }
+
+    /**
      * Processes a call on the current channel
      * @param frequency of the current channel
      * @param timeslot of the current channel
@@ -300,7 +334,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @return
      */
     public IChannelDescriptor processP2CurrentUser(long frequency, int timeslot, ServiceOptions serviceOptions,
-                                                   MacOpcode macOpcode, IdentifierCollection ic, long timestamp)
+                                                   MacOpcode macOpcode, IdentifierCollection ic, long timestamp,
+                                                   String additionalDetails)
     {
         DecodeEvent event = timeslot == P25P1Message.TIMESLOT_1 ?
                 mTS1ChannelGrantEventMap.get(frequency) : mTS2ChannelGrantEventMap.get(frequency);
@@ -309,10 +344,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             if(isSameCallFull(event.getIdentifierCollection(), ic))
             {
-                //Update the event with the current FROM identifier
-                List<Identifier> currentFromIds = event.getIdentifierCollection().getIdentifiers(Role.FROM);
-
-                if(currentFromIds.isEmpty())
+                //Update the event if the current set of FROM IDs is more than the event is aware of (size wise).
+                if(event.getIdentifierCollection().getIdentifiers(Role.FROM).size() < ic.getIdentifiers(Role.FROM).size())
                 {
                     MutableIdentifierCollection mic = new MutableIdentifierCollection(event.getIdentifierCollection().getIdentifiers());
                     List<Identifier> updatedFromIds = ic.getIdentifiers(Role.FROM);
@@ -322,11 +355,25 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     }
 
                     event.setIdentifierCollection(mic);
-                    event.update(timestamp);
-                    event.setDecodeEventType(getEventType(macOpcode, serviceOptions));
-                    broadcast(event);
-                    return event.getChannelDescriptor();
                 }
+
+                event.update(timestamp);
+                event.setDecodeEventType(getEventType(macOpcode, serviceOptions));
+
+                if(additionalDetails != null)
+                {
+                    if(event.getDetails() == null)
+                    {
+                        event.setDetails(additionalDetails);
+                    }
+                    else if(!event.getDetails().endsWith(additionalDetails))
+                    {
+                        event.setDetails(event.getDetails() + " " + additionalDetails);
+                    }
+                }
+
+                broadcast(event);
+                return event.getChannelDescriptor();
             }
         }
 
@@ -487,12 +534,12 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         if(event != null && isSameCallUpdate(identifierCollection, event.getIdentifierCollection()))
         {
-            Identifier from = getIdentifier(identifierCollection, Role.FROM);
+            Identifier from = identifierCollection.getFromIdentifier();
 
             if(from != null)
             {
-                Identifier currentFrom = getIdentifier(event.getIdentifierCollection(), Role.FROM);
-                if(currentFrom != null && !Objects.equals(from, currentFrom))
+                Identifier currentFrom = event.getIdentifierCollection().getFromIdentifier();
+                if(currentFrom != null && from.equals(currentFrom))
                 {
                     event.end(timestamp);
 
@@ -641,12 +688,12 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         if(event != null && isSameCallUpdate(identifierCollection, event.getIdentifierCollection()))
         {
-            Identifier from = getIdentifier(identifierCollection, Role.FROM);
+            Identifier from = identifierCollection.getFromIdentifier();
 
             if(from != null)
             {
-                Identifier currentFrom = getIdentifier(event.getIdentifierCollection(), Role.FROM);
-                if(currentFrom != null && !Objects.equals(from, currentFrom))
+                Identifier currentFrom = event.getIdentifierCollection().getFromIdentifier();
+                if(currentFrom != null && from.equals(currentFrom))
                 {
                     event.end(timestamp);
 
@@ -938,9 +985,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      */
     private boolean isSameCallUpdate(IdentifierCollection collection1, IdentifierCollection collection2)
     {
-        Identifier toIdentifier1 = getIdentifier(collection1, Role.TO);
-        Identifier toIdentifier2 = getIdentifier(collection2, Role.TO);
-        return Objects.equals(toIdentifier1, toIdentifier2);
+        Identifier toIdentifier1 = collection1.getToIdentifier();
+        Identifier toIdentifier2 = collection2.getToIdentifier();
+        return toIdentifier1 != null && toIdentifier1.equals(toIdentifier2);
     }
 
     /**
@@ -953,46 +1000,27 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      */
     private boolean isSameCallFull(IdentifierCollection collection1, IdentifierCollection collection2)
     {
-        Identifier to1 = getIdentifier(collection1, Role.TO);
-        Identifier to2 = getIdentifier(collection2, Role.TO);
+        Identifier to1 = collection1.getToIdentifier();
+        Identifier to2 = collection2.getToIdentifier();
 
-        if(to1 != null && to2 != null && to1.equals(to2))
+        if(to1 != null && to1.equals(to2))
         {
-            Identifier from1 = getIdentifier(collection1, Role.FROM);
+            Identifier from1 = collection1.getFromIdentifier();
 
-            //If the FROM identifier hasn't yet been established, then this is the same call
-            if(from1 == null)
+            //If the FROM identifier hasn't yet been established, then this is the same call.  We also ignore the
+            //talker alias as a call identifier since on L3Harris systems they can transmit the talker alias before
+            //they transmit the radio ID.
+            if(from1 == null || from1.getForm() == Form.TALKER_ALIAS)
             {
                 return true;
             }
 
-            Identifier from2 = getIdentifier(collection2, Role.FROM);
+            Identifier from2 = collection2.getFromIdentifier();
 
-            if(from2 != null && from1.equals(from2))
-            {
-                return true;
-            }
+            return from1.equals(from2);
         }
 
         return false;
-    }
-
-    /**
-     * Retrieves the first identifier with a TO role.
-     *
-     * @param collection containing a TO identifier
-     * @return TO identifier or null
-     */
-    private Identifier getIdentifier(IdentifierCollection collection, Role role)
-    {
-        List<Identifier> identifiers = collection.getIdentifiers(role);
-
-        if(identifiers.size() >= 1)
-        {
-            return identifiers.get(0);
-        }
-
-        return null;
     }
 
     /**

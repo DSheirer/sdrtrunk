@@ -26,6 +26,7 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -91,6 +92,10 @@ public abstract class TimeslotDecoderState extends DecoderState
                     else if(identifier instanceof IChannelDescriptor)
                     {
                         setCurrentChannel((IChannelDescriptor)identifier);
+                    }
+                    else if(identifier instanceof FrequencyConfigurationIdentifier fci)
+                    {
+                        setCurrentFrequency(fci.getValue());
                     }
                 }
             }
