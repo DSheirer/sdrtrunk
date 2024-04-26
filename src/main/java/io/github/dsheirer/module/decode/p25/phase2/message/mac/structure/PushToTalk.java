@@ -1,29 +1,27 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.audio.codec.mbe.IEncryptionSyncParameters;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.audio.Phase2EncryptionSyncParameters;
@@ -31,25 +29,20 @@ import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25Encrypti
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Call start.
- *
- * Similar to a P25 Phase 1 Header Data Unit (HDU).
+ * Push-To-Talk, Call start.
  */
 public class PushToTalk extends MacStructure
 {
     private static int MESSAGE_INDICATOR_START = 8;
     private static int MESSAGE_INDICATOR_END = 79;
-    private static int[] ALGORITHM_ID = {80, 81, 82, 83, 84, 85, 86, 87};
-    private static int[] KEY_ID = {88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103};
-    private static int[] SOURCE_ADDRESS = {104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118,
-        119, 120, 121, 122, 123, 124, 125, 126, 127};
-    private static int[] GROUP_ADDRESS = {128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143};
+    private static final IntField ALGORITHM_ID = IntField.length8(OCTET_11_BIT_80);
+    private static final IntField KEY_ID = IntField.length16(OCTET_12_BIT_88);
+    private static final IntField SOURCE_ADDRESS = IntField.length24(OCTET_14_BIT_104);
+    private static final IntField GROUP_ADDRESS = IntField.length16(OCTET_17_BIT_128);
 
     private EncryptionKeyIdentifier mEncryptionKey;
     private Identifier mSourceAddress;
@@ -78,8 +71,12 @@ public class PushToTalk extends MacStructure
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FM:").append(getSourceAddress());
-        sb.append(" TO:").append(getGroupAddress());
+        if(hasSourceAddress())
+        {
+            sb.append("FM:").append(getSourceAddress()).append(" ");
+        }
+
+        sb.append("TO:").append(getGroupAddress());
 
         if(isEncrypted())
         {
@@ -123,11 +120,15 @@ public class PushToTalk extends MacStructure
     {
         if(mEncryptionKey == null)
         {
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getMessage().getInt(ALGORITHM_ID, getOffset()),
-                getMessage().getInt(KEY_ID, getOffset())));
+            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getInt(ALGORITHM_ID), getInt(KEY_ID)));
         }
 
         return mEncryptionKey;
+    }
+
+    public boolean hasSourceAddress()
+    {
+        return getInt(SOURCE_ADDRESS) > 0;
     }
 
     /**
@@ -137,7 +138,7 @@ public class PushToTalk extends MacStructure
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getInt(SOURCE_ADDRESS));
         }
 
         return mSourceAddress;
@@ -150,7 +151,7 @@ public class PushToTalk extends MacStructure
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mGroupAddress = APCO25Talkgroup.create(getInt(GROUP_ADDRESS));
         }
 
         return mGroupAddress;
@@ -165,7 +166,10 @@ public class PushToTalk extends MacStructure
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceAddress());
+            if(hasSourceAddress())
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
             mIdentifiers.add(getGroupAddress());
             mIdentifiers.add(getEncryptionKey());
         }

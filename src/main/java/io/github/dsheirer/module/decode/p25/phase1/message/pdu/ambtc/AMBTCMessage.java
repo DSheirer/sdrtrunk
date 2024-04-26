@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,25 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc;
 
-import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.DataBlock;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.UnconfirmedDataBlock;
-
 import java.util.List;
 
-public abstract class AMBTCMessage extends P25Message implements IBitErrorProvider
+public abstract class AMBTCMessage extends P25P1Message implements IBitErrorProvider
 {
     protected static final int[] HEADER_ADDRESS = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
         40, 41, 42, 43, 44, 45, 46, 47};
@@ -127,53 +123,6 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
     public PDUSequence getPDUSequence()
     {
         return mPDUSequence;
-    }
-
-    private void extractMessage()
-    {
-        //There are 16 bits in the header
-        int length = 16;
-
-        int blockCount = getPDUSequence().getHeader().getBlocksToFollowCount();
-
-        //Each block provides 108 bits/12 bytes and the final block uses 32-bits for CRC
-        length += (blockCount * 96);
-
-        CorrectedBinaryMessage consolidatedMessage = new CorrectedBinaryMessage(length);
-
-        //Transfer 2 octets from header
-        AMBTCHeader header = (AMBTCHeader)getPDUSequence().getHeader();
-
-        int dataOctetsValue = header.getDataOctets();
-        consolidatedMessage.load(0, 16, dataOctetsValue);
-
-        if(getPDUSequence().isComplete())
-        {
-            int offset = 16;
-            for(DataBlock dataBlock: getPDUSequence().getDataBlocks())
-            {
-                if(dataBlock instanceof UnconfirmedDataBlock)
-                {
-                    BinaryMessage dataBlockMessage = dataBlock.getMessage();
-
-                    for(int x = 0; x < dataBlockMessage.size(); x++)
-                    {
-                        if(dataBlockMessage.get(x))
-                        {
-                            consolidatedMessage.set(x + offset);
-                        }
-                    }
-
-                    offset += dataBlockMessage.size();
-                }
-            }
-        }
-        else
-        {
-            setValid(false);
-        }
-
-        setMessage(consolidatedMessage);
     }
 
     @Override

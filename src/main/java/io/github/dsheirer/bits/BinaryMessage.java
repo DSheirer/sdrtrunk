@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -452,6 +452,203 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Returns the integer value of the message field described by the field argument.
+     * @param intField with start and end indices (inclusive).
+     * @return integer field value.
+     */
+    public int getInt(IntField intField)
+    {
+        int value = 0;
+
+        for(int index = intField.start(); index <= intField.end(); index++)
+        {
+            value = Integer.rotateLeft(value, 1);
+
+            if(get(index))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Returns the integer value of the message field described by the field argument.
+     * @param fragmentedField with an array of message indices
+     * @return integer field value.
+     */
+    public int getInt(FragmentedIntField fragmentedField)
+    {
+        int value = 0;
+
+        for(int index: fragmentedField.indices())
+        {
+            value = Integer.rotateLeft(value, 1);
+
+            if(get(index))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Indicates if the message field contains a non-zero value indicated by any bits set in the int field indices.
+     * @param intField to inspect
+     * @return true if any of the bits are set, indicating a non-zero value.
+     */
+    public boolean hasInt(IntField intField)
+    {
+        return nextSetBit(intField.start()) <= intField.end();
+    }
+
+    /**
+     * Indicates if the message field contains a non-zero value indicated by any bits set in the int field indices.
+     * @param intField to inspect
+     * @return true if any of the bits are set, indicating a non-zero value.
+     */
+    public boolean hasInt(FragmentedIntField fragmentedField)
+    {
+        for(int index: fragmentedField.indices())
+        {
+            if(get(index))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the integer value of the message field described by the field argument where the message start index is
+     * offset within this binary message.
+     * @param intField with start and end indices (inclusive).
+     * @param offset to the start of the first message index.
+     * @return integer field value.
+     */
+    public int getInt(IntField intField, int offset)
+    {
+        int value = 0;
+
+        for(int index = intField.start() + offset; index <= intField.end() + offset; index++)
+        {
+            value = Integer.rotateLeft(value, 1);
+
+            if(get(index))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Returns the integer value of the message field described by the field argument where the message start index is
+     * offset within this binary message.
+     * @param fragmentedField with an array of field indices
+     * @param offset to the start of the first message index.
+     * @return integer field value.
+     */
+    public int getInt(FragmentedIntField fragmentedField, int offset)
+    {
+        int value = 0;
+
+        for(int index: fragmentedField.indices())
+        {
+            value = Integer.rotateLeft(value, 1);
+
+            if(get(index + offset))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Indicates if the message field contains a non-zero value indicated by any bits set in the int field indices.
+     * @param intField to inspect
+     * @param offset to the first bit of the message.
+     * @return true if any of the bits are set, indicating a non-zero value.
+     */
+    public boolean hasInt(IntField intField, int offset)
+    {
+        return nextSetBit(intField.start() + offset) <= (intField.end() + offset);
+    }
+
+    /**
+     * Indicates if the message field contains a non-zero value indicated by any bits set in the int field indices.
+     * @param intField to inspect
+     * @param offset to the first bit of the message.
+     * @return true if any of the bits are set, indicating a non-zero value.
+     */
+    public boolean hasInt(FragmentedIntField fragmentedField, int offset)
+    {
+        for(int index: fragmentedField.indices())
+        {
+            if(get(index + offset))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the long value of the message field described by the field argument.
+     * @param intField with start and end indices (inclusive).
+     * @return integer field value.
+     */
+    public long getLong(LongField intField)
+    {
+        long value = 0;
+
+        for(int index = intField.start(); index <= intField.end(); index++)
+        {
+            value = Long.rotateLeft(value, 1);
+
+            if(get(index))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Returns the long value of the message field described by the field argument where the message start index is
+     * offset within this binary message.
+     * @param intField with start and end indices (inclusive).
+     * @param offset to the start of the first message index.
+     * @return field value.
+     */
+    public long getLong(LongField intField, int offset)
+    {
+        long value = 0;
+
+        for(int index = intField.start() + offset; index <= intField.end() + offset; index++)
+        {
+            value = Long.rotateLeft(value, 1);
+
+            if(get(index))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+
+    /**
      * Returns the integer value represented by the bit array
      *
      * @param bits - an array of bit positions that will be treated as if they
@@ -740,6 +937,18 @@ public class BinaryMessage extends BitSet
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Returns the integer field formatted as a hex value using zero prefixes to pad the hex character count to fully
+     * represent the size (width) of the field.
+     * @param field to parse as hex
+     * @return hex value.
+     */
+    public String getHex(IntField field)
+    {
+        int width = Math.ceilDiv(field.width(), 4);
+        return String.format("%0" + width + "X", getInt(field));
     }
 
     /**

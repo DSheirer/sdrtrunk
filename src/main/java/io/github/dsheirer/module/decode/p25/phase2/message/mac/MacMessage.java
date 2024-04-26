@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,14 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.Voice4VOffset;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
-
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructure;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,14 +35,12 @@ import java.util.List;
  */
 public class MacMessage extends P25P2Message
 {
-    private static int[] PDU_TYPE = {0, 1, 2};
-    private static int[] OFFSET_TO_NEXT_VOICE_4V_START = {3, 4, 5};
-    private static int[] RESERVED = {6, 7};
-
-    private int mChannelNumber;
+    private static final IntField PDU_TYPE = IntField.range(0, 2);
+    private static final IntField OFFSET_TO_NEXT_VOICE_4V_START = IntField.range(3, 5);
+    private static final IntField RESERVED = IntField.range(6, 7);
     private DataUnitID mDataUnitID;
-    private CorrectedBinaryMessage mMessage;
     private MacStructure mMacStructure;
+    private Identifier mNAC;
 
     /**
      * Constructs the message
@@ -52,11 +53,36 @@ public class MacMessage extends P25P2Message
     public MacMessage(int timeslot, DataUnitID dataUnitID, CorrectedBinaryMessage message,
                       long timestamp, MacStructure macStructure)
     {
-        super(timestamp);
-        mChannelNumber = timeslot;
+        super(message, 0, timeslot, timestamp);
         mDataUnitID = dataUnitID;
-        mMessage = message;
         mMacStructure = macStructure;
+    }
+
+    /**
+     * Assigns the NAC value that is optionally decoded from the LCCH mac structure.
+     * @param nac value to assign
+     */
+    public void setNAC(int nac)
+    {
+        mNAC = APCO25Nac.create(nac);
+    }
+
+    /**
+     * NAC value when available.
+     * @return NAC value or zero if the value is unavailable (@code hasNAC()).
+     */
+    public Identifier getNAC()
+    {
+        return mNAC;
+    }
+
+    /**
+     * Indicates if this mac message has a non-zero NAC value.
+     * @return true if available.
+     */
+    public boolean hasNAC()
+    {
+        return mNAC != null;
     }
 
     /**
@@ -68,14 +94,6 @@ public class MacMessage extends P25P2Message
     }
 
     /**
-     * Timeslot / Channel number for this message
-     */
-    public int getTimeslot()
-    {
-        return mChannelNumber;
-    }
-
-    /**
      * Data Unit ID or timeslot type for this message
      */
     public DataUnitID getDataUnitID()
@@ -84,19 +102,20 @@ public class MacMessage extends P25P2Message
     }
 
     /**
-     * Underlying binary message as transmitted and error-correctede
-     */
-    protected CorrectedBinaryMessage getMessage()
-    {
-        return mMessage;
-    }
-
-    /**
      * MAC structure parser/payload for this message
      */
     public MacStructure getMacStructure()
     {
         return mMacStructure;
+    }
+
+    /**
+     * Assigns a new mac structure to this mac message.
+     * @param macStructure to assign.
+     */
+    public void setMacStructure(MacStructure macStructure)
+    {
+        mMacStructure = macStructure;
     }
 
     /**
@@ -128,7 +147,14 @@ public class MacMessage extends P25P2Message
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return getMacStructure().getIdentifiers();
+        List<Identifier> identifiers = new ArrayList<>();
+        identifiers.addAll(getMacStructure().getIdentifiers());
+        if(hasNAC())
+        {
+            identifiers.add(getNAC());
+        }
+
+        return identifiers;
     }
 
     @Override
@@ -138,15 +164,18 @@ public class MacMessage extends P25P2Message
         sb.append("TS").append(getTimeslot());
         sb.append(" ").append(getDataUnitID());
 
-        if(isValid())
+        if(!isValid())
         {
-            sb.append(" ").append(getMacPduType().toString());
-            sb.append(" ").append(getMacStructure().toString());
+            sb.append(" [CRC ERROR]");
         }
-        else
+
+        if(hasNAC())
         {
-            sb.append(" INVALID/CRC ERROR");
+            sb.append(" NAC:").append(getNAC());
         }
+
+        sb.append(" ").append(getMacPduType().toString());
+        sb.append(" ").append(getMacStructure().toString());
 
         return sb.toString();
     }

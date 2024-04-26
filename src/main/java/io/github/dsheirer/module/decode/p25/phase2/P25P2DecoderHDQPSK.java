@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,10 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.channel.state.MultiChannelState;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
@@ -32,12 +36,24 @@ import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.patch.PatchGroupManager;
+import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
+import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.wave.ComplexWaveSource;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,5 +240,122 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
                 }
             }
         };
+    }
+
+    public static void main(String[] args)
+    {
+        UserPreferences userPreferences = new UserPreferences();
+        userPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(Path.of("/home/denny/SDRTrunk/jmbe/jmbe-1.0.9.jar"));
+
+        Channel channel = new Channel("Phase 2 Test", Channel.ChannelType.TRAFFIC);
+        DecodeConfigP25Phase2 config = new DecodeConfigP25Phase2();
+        channel.setDecodeConfiguration(config);
+
+        Path path = Paths.get("/home/denny/temp/20240309_054833_855787500_Duke_Energy_Monroe_Dicks_Creek_Site_201-24_1_baseband.wav");
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(0x91F14, 0x201, 0x00A);
+//        config.setScrambleParameters(scrambleParameters);
+
+//        Path path = Paths.get("/home/denny/temp/PA-STARNet_ECEN_TRAFFIC_10_baseband_20220610_104744.wav");
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 2370, 2369);
+//        config.setScrambleParameters(scrambleParameters);
+
+//        Path path = Paths.get("/home/denny/temp/20240303_203244_859412500_Duke_Energy_P25_Lake_Control_28_baseband.wav");
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(0x91F14, 0x2D7, 0x00A);
+//        config.setScrambleParameters(scrambleParameters);
+
+        AliasList aliasList = new AliasList("bogus");
+        ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
+        P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
+        PatchGroupManager patchGroupManager = new PatchGroupManager();
+        P25P2DecoderState ds1 = new P25P2DecoderState(channel, P25P2Message.TIMESLOT_1, trafficChannelManager,
+                patchGroupManager);
+//        Listener<IDecodeEvent> listener = event -> mLog.info("\n>>>>>>> Event: " + event + "\n");
+//        ds1.addDecodeEventListener(listener);
+        ds1.start();
+        P25P2DecoderState ds2 = new P25P2DecoderState(channel, P25P2Message.TIMESLOT_2, trafficChannelManager,
+                patchGroupManager);
+//        ds2.addDecodeEventListener(listener);
+        ds2.start();
+        processingChain.addModule(ds1);
+        processingChain.addModule(ds2);
+        P25P2AudioModule am1 = new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList);
+        am1.start();
+        P25P2AudioModule am2 = new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList);
+        am2.start();
+        processingChain.addModule(am1);
+        processingChain.addModule(am2);
+//        processingChain.addAudioSegmentListener(audioSegment -> mLog.info("**** Audio Segment *** " + audioSegment));
+        MultiChannelState multiChannelState = new MultiChannelState(channel, null, config.getTimeslots());
+        multiChannelState.start();
+//        Broadcaster<SquelchStateEvent> squelchBroadcaster = new Broadcaster<>();
+//        multiChannelState.setSquelchStateListener(squelchBroadcaster);
+//        squelchBroadcaster.addListener(am1.getSquelchStateListener());
+//        squelchBroadcaster.addListener(am2.getSquelchStateListener());
+
+        try(ComplexWaveSource source = new ComplexWaveSource(path.toFile(), false))
+        {
+            P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK(config);
+            decoder.setMessageListener(message -> {
+                mLog.info(message.toString());
+
+                if(message.getTimeslot() == P25P2Message.TIMESLOT_1)
+                {
+                    ds1.receive(message);
+                    am1.receive(message);
+                }
+                else
+                {
+                    ds2.receive(message);
+                    am2.receive(message);
+                }
+
+                if(message.toString().contains("GPS LOCATION"))
+                {
+                    if(message instanceof MacMessage mac)
+                    {
+                        mLog.warn("Mac Structure Class: " + mac.getMacStructure().getClass());
+                        mLog.warn("Opcode:" + mac.getMacStructure().getOpcode().name());
+                    }
+                    else
+                    {
+                        mLog.warn("Class: " + message.getClass());
+                    }
+                }
+            });
+            source.setSourceEventListener(decoder.getSourceEventListener());
+
+            source.setListener(iNativeBuffer -> {
+                Iterator<ComplexSamples> it = iNativeBuffer.iterator();
+                while(it.hasNext())
+                {
+                    ComplexSamples samples = it.next();
+                    decoder.receive(samples);
+                }
+            });
+
+            source.open();
+            decoder.setSampleRate(source.getSampleRate());
+            decoder.start();
+
+            while(true)
+            {
+                source.next(2048, true);
+            }
+        }
+        catch(IOException ioe)
+        {
+            if(ioe.getMessage().contains("End of file reached"))
+            {
+                mLog.info("End of file");
+            }
+            else
+            {
+                mLog.error("I/O Error", ioe);
+            }
+        }
+        catch(Exception ioe)
+        {
+            mLog.error("Error", ioe);
+        }
     }
 }

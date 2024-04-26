@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
-import io.github.dsheirer.gui.viewer.RecordingViewer;
+import io.github.dsheirer.gui.viewer.MessageRecordingViewer;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.jmbe.JmbeEditor;
@@ -84,7 +84,7 @@ public class JavaFxWindowManager extends Application
     private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private UserPreferencesEditor mUserPreferencesEditor;
-    private RecordingViewer mRecordingViewer;
+    private MessageRecordingViewer mMessageRecordingViewer;
 
     private Stage mChannelMapStage;
     private Stage mIconManagerStage;
@@ -216,14 +216,14 @@ public class JavaFxWindowManager extends Application
         return mRecordingViewerStage;
     }
 
-    public RecordingViewer getRecordingViewer()
+    public MessageRecordingViewer getRecordingViewer()
     {
-        if(mRecordingViewer == null)
+        if(mMessageRecordingViewer == null)
         {
-            mRecordingViewer = new RecordingViewer();
+            mMessageRecordingViewer = new MessageRecordingViewer();
         }
 
-        return mRecordingViewer;
+        return mMessageRecordingViewer;
     }
 
     public Stage getIconManagerStage()

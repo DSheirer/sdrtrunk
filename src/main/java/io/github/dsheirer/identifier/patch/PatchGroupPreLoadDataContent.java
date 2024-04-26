@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,13 +27,25 @@ import io.github.dsheirer.identifier.IdentifierCollection;
  */
 public class PatchGroupPreLoadDataContent extends PreloadDataContent<IdentifierCollection>
 {
+    private long mTimestamp;
+
     /**
      * Constructs an instance
      *
      * @param data to preload
      */
-    public PatchGroupPreLoadDataContent(IdentifierCollection data)
+    public PatchGroupPreLoadDataContent(IdentifierCollection data, long timestamp)
     {
         super(data);
+        mTimestamp = timestamp;
+    }
+
+    /**
+     * Freshness timestamp for the preload data.
+     * @return timestamp milliseconds.
+     */
+    public long getTimestamp()
+    {
+        return mTimestamp;
     }
 }

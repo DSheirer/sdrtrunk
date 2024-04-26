@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.identifier.channel;
@@ -25,7 +22,6 @@ package io.github.dsheirer.module.decode.p25.identifier.channel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.protocol.Protocol;
-
 import java.util.Objects;
 
 public class P25Channel implements IChannelDescriptor
@@ -151,17 +147,24 @@ public class P25Channel implements IChannelDescriptor
     }
 
     /**
-     * Timeslot for a TDMA channel
-     * @return timeslot or 0 if the channel is not a TDMA channel
+     * Timeslot for a TDMA channel, 1 or 2
+     *
+     * Note: the ICD uses Logical Channel 0 (LCH 0) and Logical Channel 1 (LCH 1) but we refer to them as TS1 and TS2
+     * so that timeslot 0 can be used for non timeslot signalling like Sync Loss messages.
+     *
+     * @return timeslot or 1 if the channel is not a TDMA channel
      */
     public int getTimeslot()
     {
         if(isTDMAChannel())
         {
-            return getDownlinkChannelNumber() % getTimeslotCount();
+            if(getDownlinkChannelNumber() % getTimeslotCount() == 1)
+            {
+                return 2;
+            }
         }
 
-        return 0;
+        return 1;
     }
 
     /**

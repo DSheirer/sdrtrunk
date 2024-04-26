@@ -117,7 +117,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
          * Sets the channel descriptor for this event
          * @param channelDescriptor
          */
-        public P25ChannelGrantDecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
+        public P25ChannelGrantDecodeEventBuilder channelDescriptor(IChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
             return this;

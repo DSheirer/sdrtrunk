@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet;
@@ -27,21 +26,20 @@ import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.PacketMessageFactory;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.ConfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.DataBlock;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPPacketHeader;
 import io.github.dsheirer.module.decode.p25.reference.IPHeaderCompression;
 import io.github.dsheirer.module.decode.p25.reference.UDPHeaderCompression;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Packet Data Unit (PDU) sequence containing IP packet data.
  */
-public class PacketMessage extends P25Message
+public class PacketMessage extends P25P1Message
 {
 //    private final static Logger mLog = LoggerFactory.getLogger(PacketMessage.class);
 
@@ -111,7 +109,7 @@ public class PacketMessage extends P25Message
 
         if(getPacket() instanceof IPV4Packet)
         {
-            sb.append(" LLID:").append(getHeader().getLLID());
+            sb.append(" LLID:").append(getHeader().getTargetLLID());
 
             SNDCPPacketHeader sndcpPacketHeader = getSNDCPPacketHeader();
             sb.append(" NSAPI:").append(sndcpPacketHeader.getNSAPI());
@@ -264,7 +262,7 @@ public class PacketMessage extends P25Message
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getPDUSequence().getHeader().getLLID());
+            mIdentifiers.add(getHeader().getTargetLLID());
 
             if(getPacket() != null)
             {

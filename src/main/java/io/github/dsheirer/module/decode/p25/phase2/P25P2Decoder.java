@@ -18,11 +18,13 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
+import io.github.dsheirer.module.decode.p25.P25FrequencyBandPreloadDataContent;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -52,6 +54,18 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
         mMessageProcessor = new P25P2MessageProcessor();
         mMessageProcessor.setMessageListener(getMessageListener());
         getDibitBroadcaster().addListener(mByteBufferAssembler);
+    }
+
+    /**
+     * Preloads P25 frequency bands when this is a traffic channel, since they are not transmitted on the traffic
+     * channel and the decoder state needs accurate frequency values to pass to the traffic channel manager for
+     * call event tracking.
+     * @param preLoadDataContent with known frequency bands.
+     */
+    @Subscribe
+    public void process(P25FrequencyBandPreloadDataContent preLoadDataContent)
+    {
+        mMessageProcessor.preload(preLoadDataContent);
     }
 
     @Override

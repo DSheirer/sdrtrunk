@@ -1,32 +1,29 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,10 +32,9 @@ import java.util.List;
  */
 public class LCMotorolaTalkComplete extends LinkControlWord
 {
-    private static final int[] UNKNOWN_FIELD_1 = {16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int[] UNKNOWN_FIELD_2 = {40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
-        67, 68, 69, 70, 71};
+    private static final IntField UNKNOWN_FIELD_1 = IntField.length8(OCTET_2_BIT_16);
+    private static final IntField UNKNOWN_FIELD_2 = IntField.length8(OCTET_2_BIT_16);
+    private static final IntField ADDRESS = IntField.length24(OCTET_6_BIT_48);
 
     private Identifier mAddress;
     private List<Identifier> mIdentifiers;
@@ -48,7 +44,7 @@ public class LCMotorolaTalkComplete extends LinkControlWord
      *
      * @param message
      */
-    public LCMotorolaTalkComplete(BinaryMessage message)
+    public LCMotorolaTalkComplete(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -72,19 +68,18 @@ public class LCMotorolaTalkComplete extends LinkControlWord
             sb.append(" BY:").append(getAddress());
             sb.append(" UNK1:").append(getUnknownField1());
             sb.append(" UNK2:").append(getUnknownField2());
-            sb.append(" MSG:").append(getMessage().toHexString());
         }
         return sb.toString();
     }
 
     public String getUnknownField1()
     {
-        return getMessage().getHex(UNKNOWN_FIELD_1, 2);
+        return getMessage().getHex(UNKNOWN_FIELD_1);
     }
 
     public String getUnknownField2()
     {
-        return getMessage().getHex(UNKNOWN_FIELD_2, 2);
+        return getMessage().getHex(UNKNOWN_FIELD_2);
     }
 
     /**
@@ -94,7 +89,7 @@ public class LCMotorolaTalkComplete extends LinkControlWord
     {
         if(mAddress == null)
         {
-            mAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(ADDRESS));
+            mAddress = APCO25RadioIdentifier.createFrom(getInt(ADDRESS));
         }
 
         return mAddress;

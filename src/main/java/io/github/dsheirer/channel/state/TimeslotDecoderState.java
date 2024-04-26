@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,12 +26,20 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.sample.Listener;
 
+/**
+ * Base decoder state implementation for a multi-timeslot protocol that tracks the state for a single timeslot.
+ */
 public abstract class TimeslotDecoderState extends DecoderState
 {
     private int mTimeslot;
 
+    /**
+     * Constructs an instance
+     * @param timeslot to monitor/maintain state.
+     */
     public TimeslotDecoderState(int timeslot)
     {
         super(new MutableIdentifierCollection(timeslot));
@@ -39,6 +47,9 @@ public abstract class TimeslotDecoderState extends DecoderState
         mConfigurationIdentifierListener = new TimeslotConfigurationIdentifierListener();
     }
 
+    /**
+     * Monitored timeslot for this decoder state instance.
+     */
     protected int getTimeslot()
     {
         return mTimeslot;
@@ -81,6 +92,10 @@ public abstract class TimeslotDecoderState extends DecoderState
                     else if(identifier instanceof IChannelDescriptor)
                     {
                         setCurrentChannel((IChannelDescriptor)identifier);
+                    }
+                    else if(identifier instanceof FrequencyConfigurationIdentifier fci)
+                    {
+                        setCurrentFrequency(fci.getValue());
                     }
                 }
             }

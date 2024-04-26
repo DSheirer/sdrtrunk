@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.reference;
@@ -37,7 +36,7 @@ public enum ServiceAccessPoint
     SAP_12("12", 12),
     SAP_13("13", 13),
     SAP_14("14", 14),
-    SAP_15("15", 15),
+    PACKET_DATA_SCAN_PREAMBLE("PACKET DATA SCAN PREAMBLE", 15),
     SAP_16("16", 16),
     SAP_17("17", 17),
     SAP_18("18", 18),
@@ -51,9 +50,9 @@ public enum ServiceAccessPoint
     SAP_26("26", 26),
     SAP_27("27", 27),
     SAP_28("28", 28),
-    SAP_29("29", 29),
+    PACKET_DATA_ENCRYPTION_SUPPORT("PACKET DATA ENCRYPTION SUPPORT", 29),
     SAP_30("30", 30),
-    EXTENDED_ADDRESS("EXTENDED ADDRESS", 31),
+    EXTENDED_ADDRESS("EXTENDED ADDRESS FOR SYMMETRIC ADDRESSING", 31),
     REGISTRATION_AND_AUTHORIZATION("REGISTRATION AND AUTHORIZATION", 32),
     CHANNEL_REASSIGNMENT("CHANNEL REASSIGNMENT", 33),
     SYSTEM_CONFIGURATION("SYSTEM CONFIGURATION", 34),
@@ -70,7 +69,7 @@ public enum ServiceAccessPoint
     SAP_45("45", 45),
     SAP_46("46", 46),
     SAP_47("47", 47),
-    SAP_48("48", 48),
+    LOCATION_SERVICE("LOCATION SERVICE", 48),
     SAP_49("49", 49),
     SAP_50("50", 50),
     SAP_51("51", 51),

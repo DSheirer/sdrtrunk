@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.service.radioreference;
@@ -29,16 +26,18 @@ import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.UserInfo;
-import javafx.beans.property.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Scanner;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service interface to radioreference.com data API with caching for Flavor, Mode, Type and Tag values.
@@ -66,7 +65,7 @@ public class RadioReference
         UNKNOWN,
         INVALID_LOGIN,
         EXPIRED_PREMIUM,
-        VALID_PREMIUM
+        VALID_PREMIUM;
     }
 
     /**
@@ -188,6 +187,11 @@ public class RadioReference
             RadioReferenceService service = new RadioReferenceService(credentials);
             UserInfo ui = service.getUserInfo();
 
+            if(ui == null)
+            {
+                throw new RadioReferenceException("The Radio Reference service is not providing user account details");
+            }
+
             return CheckExpDate(ui.getExpirationDate());
         }
         catch (RadioReferenceException rre)
@@ -266,9 +270,18 @@ public class RadioReference
         try
         {
             UserInfo userInfo = getService().getUserInfo();
-            accountExpiresProperty().setValue(userInfo.getExpirationDate());
 
-            mLoginStatus = CheckExpDate(userInfo.getExpirationDate());
+            if(userInfo != null)
+            {
+                accountExpiresProperty().setValue(userInfo.getExpirationDate());
+                mLoginStatus = CheckExpDate(userInfo.getExpirationDate());
+            }
+            else
+            {
+                accountExpiresProperty().setValue(null);
+                mLoginStatus = LoginStatus.UNKNOWN;
+            }
+
             if(mLoginStatus == LoginStatus.VALID_PREMIUM)
             {
                 availableProperty().set(true);

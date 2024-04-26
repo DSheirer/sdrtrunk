@@ -1,57 +1,51 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
-
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.IP25ChannelGrantDetailProvider;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * SNDCP data channel grant
  */
-public class SNDCPDataChannelGrant extends MacStructure implements IFrequencyBandReceiver
+public class SNDCPDataChannelGrant extends MacStructureDataService
+        implements IFrequencyBandReceiver, IP25ChannelGrantDetailProvider
 {
-    private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] TRANSMIT_FREQUENCY_BAND = {16, 17, 18, 19};
-    private static final int[] TRANSMIT_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] RECEIVE_FREQUENCY_BAND = {32, 33, 34, 35};
-    private static final int[] RECEIVE_CHANNEL_NUMBER = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] TARGET_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-        65, 66, 67, 68, 69, 70, 71};
-
+    private static final IntField TRANSMIT_FREQUENCY_BAND = IntField.length4(OCTET_3_BIT_16);
+    private static final IntField TRANSMIT_CHANNEL_NUMBER = IntField.length12(OCTET_3_BIT_16 + 4);
+    private static final IntField RECEIVE_FREQUENCY_BAND = IntField.length4(OCTET_5_BIT_32);
+    private static final IntField RECEIVE_CHANNEL_NUMBER = IntField.length12(OCTET_5_BIT_32 + 4);
+    private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_7_BIT_48);
     private List<Identifier> mIdentifiers;
     private APCO25Channel mChannel;
     private Identifier mTargetAddress;
-    private DataServiceOptions mServiceOptions;
 
     /**
      * Constructs the message
@@ -78,29 +72,14 @@ public class SNDCPDataChannelGrant extends MacStructure implements IFrequencyBan
     }
 
     /**
-     * Voice channel service options
-     */
-    public DataServiceOptions getServiceOptions()
-    {
-        if(mServiceOptions == null)
-        {
-            mServiceOptions = new DataServiceOptions(getMessage().getInt(SERVICE_OPTIONS, getOffset()));
-        }
-
-        return mServiceOptions;
-    }
-
-    /**
      * Channel
      */
     public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {
-            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(TRANSMIT_FREQUENCY_BAND, getOffset()),
-                getMessage().getInt(TRANSMIT_CHANNEL_NUMBER, getOffset()),
-                getMessage().getInt(RECEIVE_FREQUENCY_BAND, getOffset()),
-                getMessage().getInt(RECEIVE_CHANNEL_NUMBER, getOffset()));
+            mChannel = APCO25ExplicitChannel.create(getInt(TRANSMIT_FREQUENCY_BAND), getInt(TRANSMIT_CHANNEL_NUMBER),
+                getInt(RECEIVE_FREQUENCY_BAND), getInt(RECEIVE_CHANNEL_NUMBER));
         }
 
         return mChannel;
@@ -113,10 +92,18 @@ public class SNDCPDataChannelGrant extends MacStructure implements IFrequencyBan
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;
+    }
+
+    /**
+     * Implements the channel grant detail provider interface but always returns null.
+     */
+    public Identifier getSourceAddress()
+    {
+        return null;
     }
 
     @Override
@@ -135,8 +122,6 @@ public class SNDCPDataChannelGrant extends MacStructure implements IFrequencyBan
     @Override
     public List<IChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
-        channels.add(getChannel());
-        return channels;
+        return Collections.singletonList(getChannel());
     }
 }

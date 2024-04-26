@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,22 +25,22 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageProviderModule;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -49,6 +49,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
@@ -74,11 +76,6 @@ public class P25P2MessageFramer implements Listener<Dibit>
     {
         mSuperFrameDetector = new P25P2SuperFrameDetector(phaseLockedLoop);
         mBitRate = bitRate;
-    }
-
-    public P25P2MessageFramer(int bitRate)
-    {
-        this(null, bitRate);
     }
 
     /**
@@ -233,10 +230,14 @@ public class P25P2MessageFramer implements Listener<Dibit>
         ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
 
         processingChain.addAudioSegmentListener(recordingManager);
-        processingChain.addModule(new P25P2DecoderState(channel, 0));
-        processingChain.addModule(new P25P2DecoderState(channel, 1));
-        processingChain.addModule(new P25P2AudioModule(userPreferences, 0, aliasList));
-        processingChain.addModule(new P25P2AudioModule(userPreferences, 1, aliasList));
+        P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
+        PatchGroupManager patchGroupManager = new PatchGroupManager();
+        processingChain.addModule(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_1, trafficChannelManager,
+                patchGroupManager));
+        processingChain.addModule(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_2, trafficChannelManager,
+                patchGroupManager));
+        processingChain.addModule(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList));
+        processingChain.addModule(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList));
         MessageProviderModule messageProviderModule = new MessageProviderModule();
         processingChain.addModule(messageProviderModule);
 

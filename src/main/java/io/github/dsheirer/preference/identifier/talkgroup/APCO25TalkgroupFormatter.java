@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,31 +21,41 @@ package io.github.dsheirer.preference.identifier.talkgroup;
 
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.radio.FullyQualifiedRadioIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
+import io.github.dsheirer.identifier.talkgroup.FullyQualifiedTalkgroupIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 
 public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
 {
-    public static final int GROUP_DECIMAL_WIDTH = 5;
-    public static final int UNIT_DECIMAL_WIDTH = 8;
-    public static final int GROUP_HEXADECIMAL_WIDTH = 4;
-    public static final int UNIT_HEXADECIMAL_WIDTH = 6;
+    public static final int RADIO_DECIMAL_WIDTH = 8;
+    public static final int RADIO_HEXADECIMAL_WIDTH = 6;
+    public static final int SYSTEM_HEXADECIMAL_WIDTH = 3;
+    public static final int TALKGROUP_DECIMAL_WIDTH = 5;
+    public static final int TALKGROUP_HEXADECIMAL_WIDTH = 4;
+    public static final int WACN_HEXADECIMAL_WIDTH = 5;
+
 
     /**
      * Formats the individual or group identifier to the specified format and width.
      */
     public static String format(TalkgroupIdentifier identifier, IntegerFormat format, boolean fixedWidth)
     {
+        if(identifier instanceof FullyQualifiedTalkgroupIdentifier fqti)
+        {
+            return format(fqti, format, fixedWidth);
+        }
+
         if(fixedWidth)
         {
             switch(format)
             {
                 case DECIMAL:
                 case FORMATTED:
-                    return toDecimal(identifier.getValue(), GROUP_DECIMAL_WIDTH);
+                    return toDecimal(identifier.getValue(), TALKGROUP_DECIMAL_WIDTH);
                 case HEXADECIMAL:
-                    return toHex(identifier.getValue(), GROUP_HEXADECIMAL_WIDTH);
+                    return toHex(identifier.getValue(), TALKGROUP_HEXADECIMAL_WIDTH);
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
@@ -59,6 +69,62 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
                     return identifier.getValue().toString();
                 case HEXADECIMAL:
                     return toHex(identifier.getValue());
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+    }
+
+    /**
+     * Formats the fully qualified group identifier to the specified format and width.
+     */
+    public static String format(FullyQualifiedTalkgroupIdentifier identifier, IntegerFormat format, boolean fixedWidth)
+    {
+        int id = identifier.getValue();
+        int wacn = identifier.getWacn();
+        int system = identifier.getSystem();
+        int talkgroup = identifier.getTalkgroup();
+
+        StringBuilder sb = new StringBuilder();
+
+        if(fixedWidth)
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    sb.append(toDecimal(id, TALKGROUP_DECIMAL_WIDTH));
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toDecimal(talkgroup, TALKGROUP_DECIMAL_WIDTH)).append(")");
+                    return sb.toString();
+                case HEXADECIMAL:
+                    sb.append(toHex(id, TALKGROUP_HEXADECIMAL_WIDTH));
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(talkgroup, TALKGROUP_HEXADECIMAL_WIDTH)).append(")");
+                    return sb.toString();
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+        else
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    sb.append(id);
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(talkgroup).append(")");
+                    return sb.toString();
+                case HEXADECIMAL:
+                    sb.append(toHex(id));
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(talkgroup)).append(")");
+                    return sb.toString();
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
@@ -110,15 +176,20 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
      */
     public static String format(RadioIdentifier identifier, IntegerFormat format, boolean fixedWidth)
     {
+        if(identifier instanceof FullyQualifiedRadioIdentifier fqri)
+        {
+            return format(fqri, format, fixedWidth);
+        }
+
         if(fixedWidth)
         {
             switch(format)
             {
                 case DECIMAL:
                 case FORMATTED:
-                    return toDecimal(identifier.getValue(), UNIT_DECIMAL_WIDTH);
+                    return toDecimal(identifier.getValue(), RADIO_DECIMAL_WIDTH);
                 case HEXADECIMAL:
-                    return toHex(identifier.getValue(), UNIT_HEXADECIMAL_WIDTH);
+                    return toHex(identifier.getValue(), RADIO_HEXADECIMAL_WIDTH);
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
@@ -132,6 +203,62 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
                     return identifier.getValue().toString();
                 case HEXADECIMAL:
                     return toHex(identifier.getValue());
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+    }
+
+    /**
+     * Formats the fully qualified radio identifier to the specified format and width.
+     */
+    public static String format(FullyQualifiedRadioIdentifier identifier, IntegerFormat format, boolean fixedWidth)
+    {
+        int id = identifier.getValue();
+        int wacn = identifier.getWacn();
+        int system = identifier.getSystem();
+        int radio = identifier.getRadio();
+
+        StringBuilder sb = new StringBuilder();
+
+        if(fixedWidth)
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    sb.append(toDecimal(id, RADIO_DECIMAL_WIDTH));
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toDecimal(radio, RADIO_DECIMAL_WIDTH)).append(")");
+                    return sb.toString();
+                case HEXADECIMAL:
+                    sb.append(toHex(id, RADIO_HEXADECIMAL_WIDTH));
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(radio, RADIO_HEXADECIMAL_WIDTH)).append(")");
+                    return sb.toString();
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+        else
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    sb.append(id);
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(radio).append(")");
+                    return sb.toString();
+                case HEXADECIMAL:
+                    sb.append(toHex(id));
+                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(".").append(toHex(radio)).append(")");
+                    return sb.toString();
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }

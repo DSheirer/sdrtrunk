@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -647,11 +647,13 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
         public NewP25P2ChannelMenu()
         {
             setText(DecoderType.P25_PHASE2.getDisplayString());
-            MenuItem trunked = new MenuItem("Trunked System");
-            trunked.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE1));
-            MenuItem channel = new MenuItem("Individual Channel");
+            MenuItem trunkedP1 = new MenuItem("Trunked System - FDMA Phase 1 Control Channel");
+            trunkedP1.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE1));
+            MenuItem trunkedP2 = new MenuItem("Trunked System - TDMA Phase 2 Control Channel");
+            trunkedP2.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE2));
+            MenuItem channel = new MenuItem("Individual Phase 2 Channel");
             channel.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE2));
-            getItems().addAll(trunked, channel);
+            getItems().addAll(trunkedP1, trunkedP2, channel);
         }
     }
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,14 +20,13 @@
 package io.github.dsheirer.identifier;
 
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * (Immutable) Collection of identifiers with convenient accessor methods
@@ -274,43 +273,90 @@ public class IdentifierCollection
     }
 
     /**
-     * Returns the first identifier in this collection that is assigned a FROM role
+     * Indicates if this collection has an identifier that matches the specified identiifer.
+     * @param toCheck identifier
+     * @return true if the identifier already exists in the collection.
+     */
+    public boolean hasIdentifier(Identifier toCheck)
+    {
+        if(toCheck == null)
+        {
+            return false;
+        }
+
+        for(Identifier identifier : mIdentifiers)
+        {
+            if(identifier.equals(toCheck))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the first entity identifier in this collection that is assigned a FROM role
      */
     public Identifier getFromIdentifier()
     {
         Identifier from = getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
 
-        if(from == null)
+        if(from != null)
         {
-            List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
-
-            if(!fromIdentifiers.isEmpty())
-            {
-                from = fromIdentifiers.get(0);
-            }
+            return from;
         }
 
-        return from;
+        List<Identifier> identifiers = getIdentifiers(Form.TELEPHONE_NUMBER);
+
+        if(!identifiers.isEmpty())
+        {
+            return identifiers.get(0);
+        }
+
+        List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
+
+        if(!fromIdentifiers.isEmpty())
+        {
+            return fromIdentifiers.get(0);
+        }
+
+        return null;
     }
 
     /**
-     * Returns the first identifier in this collection that is assigned a TO role
+     * Returns the first entity identifier in this collection that is assigned a TO role
      */
     public Identifier getToIdentifier()
     {
         Identifier to = getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
 
-        if(to == null)
+        if(to != null)
         {
-            to = getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
+            return to;
         }
 
-        if(to == null)
+        to = getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
+
+        if(to != null)
         {
-            List<Identifier> toIdentifiers = getIdentifiers(Role.TO);
-            if(!toIdentifiers.isEmpty())
+            return to;
+        }
+
+        to = getIdentifier(IdentifierClass.USER, Form.RADIO, Role.TO);
+
+        if(to != null)
+        {
+            return to;
+        }
+
+        List<Identifier> toIdentifiers = getIdentifiers(Role.TO);
+
+        for(Identifier identifier: toIdentifiers)
+        {
+            if(identifier.getForm() != Form.ENCRYPTION_KEY)
             {
-                to = toIdentifiers.get(0);
+                return identifier;
             }
         }
 

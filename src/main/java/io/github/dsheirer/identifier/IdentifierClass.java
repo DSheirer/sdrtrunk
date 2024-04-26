@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,12 @@ public enum IdentifierClass
 
     //Communication network identifier
     NETWORK,
+
+    //User network address
+    USER_NETWORK_ADDRESS,
+
+    //User network port
+    USER_NETWORK_PORT,
 
     //Communication user identifier
     USER;

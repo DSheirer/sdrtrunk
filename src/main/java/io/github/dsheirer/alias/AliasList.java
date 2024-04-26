@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -663,11 +663,13 @@ public class AliasList
 
         public Alias getAlias(TalkgroupIdentifier identifier)
         {
+            //Attempt to do a fully qualified identifier match first.
             if(identifier instanceof FullyQualifiedTalkgroupIdentifier fqti)
             {
-                return mFullyQualifiedTalkgroupAliasMap.get(fqti.toString());
+                return mFullyQualifiedTalkgroupAliasMap.get(fqti.getFullyQualifiedTalkgroupAddress());
             }
 
+            //Then try to match it by it's locally assigned (temporary) address.
             int value = identifier.getValue();
 
             Alias mapValue = mTalkgroupAliasMap.get(value);
@@ -676,6 +678,7 @@ public class AliasList
                 return mapValue;
             }
 
+            //Finally, match the locally assigned address against any talkgroup ranges
             for(Map.Entry<TalkgroupRange, Alias> entry : mTalkgroupRangeAliasMap.entrySet())
             {
                 if(entry.getKey().contains(value))
@@ -780,11 +783,13 @@ public class AliasList
 
         public Alias getAlias(RadioIdentifier identifier)
         {
+            //Attempt to do a fully qualified identifier match first.
             if(identifier instanceof FullyQualifiedRadioIdentifier fqri)
             {
-                return mFullyQualifiedRadioAliasMap.get(fqri.toString());
+                return mFullyQualifiedRadioAliasMap.get(fqri.getFullyQualifiedRadioAddress());
             }
 
+            //Then match against the locally assigned (temporary) address
             int value = identifier.getValue();
 
             Alias mapValue = mRadioAliasMap.get(value);
@@ -793,6 +798,7 @@ public class AliasList
                 return mapValue;
             }
 
+            //Finally, attempt to match the locally assigned (temporary) address against any radio ranges.
             for(Map.Entry<RadioRange, Alias> entry : mRadioRangeAliasMap.entrySet())
             {
                 if(entry.getKey().contains(value))

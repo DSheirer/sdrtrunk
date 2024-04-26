@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.response;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUHeader;
 import io.github.dsheirer.module.decode.p25.reference.PacketResponse;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -28,7 +29,8 @@ public class ResponseHeader extends PDUHeader
 {
     public static final int[] RESPONSE = {8,9,10,11,12,13,14,15};
     public static final int SOURCE_LLID_FLAG = 48;
-    public static final int[] FROM_LOGICAL_LINK_ID = {56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79};
+    public static final int[] SOURCE_LOGICAL_LINK_ID = {56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79};
+    private Identifier mSourceLLID;
 
     public ResponseHeader(CorrectedBinaryMessage message, boolean passesCRC)
     {
@@ -45,14 +47,14 @@ public class ResponseHeader extends PDUHeader
             sb.append("***CRC-FAIL*** ");
         }
 
-        sb.append("PDU   RESPONSE");
+        sb.append("PDU RESPONSE");
 
         if(hasSourceLLID())
         {
-            sb.append(" FROM:").append(getFromLogicalLinkID());
+            sb.append(" FROM:").append(getSourceLLID());
         }
 
-        sb.append(" TO:").append(getLLID());
+        sb.append(" TO:").append(getTargetLLID());
 
         sb.append(" ").append(getResponse());
 
@@ -85,8 +87,13 @@ public class ResponseHeader extends PDUHeader
     /**
      * Source Logical Link Identifier (ie FROM radio identifier)
      */
-    public String getFromLogicalLinkID()
+    public Identifier getSourceLLID()
     {
-        return getMessage().getHex(FROM_LOGICAL_LINK_ID, 6);
+        if(mSourceLLID == null)
+        {
+            mSourceLLID = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_LOGICAL_LINK_ID));
+        }
+
+        return mSourceLLID;
     }
 }

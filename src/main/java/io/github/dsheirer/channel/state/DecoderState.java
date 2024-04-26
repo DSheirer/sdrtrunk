@@ -25,6 +25,7 @@ import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -38,13 +39,21 @@ public abstract class DecoderState extends AbstractDecoderState
     private MutableIdentifierCollection mIdentifierCollection;
     protected Listener<IdentifierUpdateNotification> mConfigurationIdentifierListener;
     protected IChannelDescriptor mCurrentChannel;
+    private long mCurrentFrequency;
 
+    /**
+     * Constructs an instance
+     * @param mutableIdentifierCollection to preload into this decoder state
+     */
     public DecoderState(MutableIdentifierCollection mutableIdentifierCollection)
     {
         mIdentifierCollection = mutableIdentifierCollection;
         mIdentifierCollection.update(new DecoderTypeConfigurationIdentifier(getDecoderType()));
     }
 
+    /**
+     * Constructs an instance using an empty identifier collection.
+     */
     public DecoderState()
     {
         this(new MutableIdentifierCollection());
@@ -57,6 +66,23 @@ public abstract class DecoderState extends AbstractDecoderState
         super.start();
         //Broadcast the existing identifiers (as add events) so that they can be received by external listeners
         mIdentifierCollection.broadcastIdentifiers();
+    }
+
+    /**
+     * Current frequency for this channel.
+     */
+    public long getCurrentFrequency()
+    {
+        return mCurrentFrequency;
+    }
+
+    /**
+     * Sets the current frequency for this channel.
+     * @param frequency to set.
+     */
+    public void setCurrentFrequency(long frequency)
+    {
+        mCurrentFrequency = frequency;
     }
 
     /**
@@ -153,9 +179,13 @@ public abstract class DecoderState extends AbstractDecoderState
         {
             getIdentifierCollection().receive(identifierUpdateNotification);
 
-            if(identifierUpdateNotification.getIdentifier() instanceof ChannelDescriptorConfigurationIdentifier)
+            if(identifierUpdateNotification.getIdentifier() instanceof ChannelDescriptorConfigurationIdentifier cdci)
             {
-                setCurrentChannel(((ChannelDescriptorConfigurationIdentifier)identifierUpdateNotification.getIdentifier()).getValue());
+                setCurrentChannel(cdci.getValue());
+            }
+            else if(identifierUpdateNotification.getIdentifier() instanceof FrequencyConfigurationIdentifier fci)
+            {
+                setCurrentFrequency(fci.getValue());
             }
         }
     }

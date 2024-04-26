@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
@@ -26,21 +25,21 @@ import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
-
 import java.util.List;
 
 /**
  * APCO 25 Trunking Signalling Block (TSBK)
  */
-public abstract class TSBKMessage extends P25Message
+public abstract class TSBKMessage extends P25P1Message
 {
     private static final int LAST_BLOCK_FLAG = 0;
     private static final int ENCRYPTION_FLAG = 1;
     private static final int[] OPCODE = {2, 3, 4, 5, 6, 7};
     private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
+    //16-bit CRC starts at OCTET 10, Bits 80-95
 
     private P25P1DataUnitID mDataUnitID;
 
@@ -56,14 +55,6 @@ public abstract class TSBKMessage extends P25Message
     {
         super(message, nac, timestamp);
         mDataUnitID = dataUnitID;
-
-        //The CRC-CCITT can correct up to 1 bit error or detect 2 or more errors.  We mark the message as
-        //invalid if the algorithm detects more than 1 correctable error.
-        int errors = CRCP25.correctCCITT80(message, 0, 80);
-        if(errors > 1)
-        {
-            setValid(false);
-        }
     }
 
     @Override

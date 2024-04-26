@@ -1,35 +1,29 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
-import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.ISPMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,9 +39,7 @@ public class RoamingAddressResponse extends ISPMessage
     private static final int[] SOURCE_ID = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
             74, 75, 76, 77, 78, 79};
 
-    private Identifier mWACN;
-    private Identifier mSystem;
-    private Identifier mSourceAddress;
+    private APCO25FullyQualifiedRadioIdentifier mRoamingAddress;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -62,10 +54,8 @@ public class RoamingAddressResponse extends ISPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" FM:").append(getSourceAddress());
-        sb.append(" WACN:").append(getWACN());
-        sb.append(" SYSTEM:").append(getSystem());
-        sb.append(" MESSAGE NUMBER:").append(getMessageSequenceNumber());
+        sb.append(" ROAMING AS:").append(getRoamingAddress());
+        sb.append(" MESSAGE #").append(getMessageSequenceNumber());
         if(isLastMessage())
         {
             sb.append("-FINAL ");
@@ -83,34 +73,17 @@ public class RoamingAddressResponse extends ISPMessage
         return getMessage().getInt(MESSAGE_SEQUENCE_NUMBER);
     }
 
-    public Identifier getWACN()
+    public Identifier getRoamingAddress()
     {
-        if(mWACN == null)
+        if(mRoamingAddress == null)
         {
-            mWACN = APCO25Wacn.create(getMessage().getInt(WACN));
+            int wacn = getMessage().getInt(WACN);
+            int system = getMessage().getInt(SYSTEM);
+            int id = getMessage().getInt(SOURCE_ID);
+            mRoamingAddress = APCO25FullyQualifiedRadioIdentifier.createTo(id, wacn, system, id);
         }
 
-        return mWACN;
-    }
-
-    public Identifier getSystem()
-    {
-        if(mSystem == null)
-        {
-            mSystem = APCO25System.create(getMessage().getInt(SYSTEM));
-        }
-
-        return mSystem;
-    }
-
-    public Identifier getSourceAddress()
-    {
-        if(mSourceAddress == null)
-        {
-            mSourceAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_ID));
-        }
-
-        return mSourceAddress;
+        return mRoamingAddress;
     }
 
     @Override
@@ -119,9 +92,7 @@ public class RoamingAddressResponse extends ISPMessage
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getWACN());
-            mIdentifiers.add(getSystem());
-            mIdentifiers.add(getSourceAddress());
+            mIdentifiers.add(getRoamingAddress());
         }
 
         return mIdentifiers;

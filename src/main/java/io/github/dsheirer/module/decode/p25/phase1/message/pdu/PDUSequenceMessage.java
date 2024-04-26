@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +14,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
-
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import java.util.Collections;
 import java.util.List;
 
-public class PDUSequenceMessage extends P25Message
+public class PDUSequenceMessage extends P25P1Message
 {
     private PDUSequence mPDUSequence;
 

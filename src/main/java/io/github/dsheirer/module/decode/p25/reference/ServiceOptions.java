@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,23 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.reference;
 
 /**
- * Channel allocation service options
+ * Base channel allocation service options
  */
-public class ServiceOptions
+public abstract class ServiceOptions
 {
-    private static final int EMERGENCY_FLAG = 0x80;
-    private static final int ENCRYPTION_FLAG = 0x40;
-    private static final int DUPLEX = 0x20;
-    private static final int SESSION_MODE = 0x10;
-
+    protected static final int EMERGENCY_FLAG = 0x80;
+    protected static final int ENCRYPTION_FLAG = 0x40;
+    protected static final int DUPLEX = 0x20;
+    protected static final int SESSION_MODE = 0x10;
     protected int mServiceOptions;
 
+    /**
+     * Constructs an instance
+     * @param serviceOptions
+     */
     public ServiceOptions(int serviceOptions)
     {
         mServiceOptions = serviceOptions;

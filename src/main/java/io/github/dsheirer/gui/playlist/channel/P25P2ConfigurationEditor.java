@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,9 +42,13 @@ import java.util.List;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +68,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     private IntegerTextField mWacnTextField;
     private IntegerTextField mSystemTextField;
     private IntegerTextField mNacTextField;
+    private ToggleSwitch mIgnoreDataCallsButton;
+    private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
 
     /**
      * Constructs an instance
@@ -102,7 +108,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         if(mDecoderPane == null)
         {
             mDecoderPane = new TitledPane();
-            mDecoderPane.setText("Decoder: P25 Phase 2");
+            mDecoderPane.setText("Decoder: P25 Phase 2 for TDMA control or TDMA traffic channels.");
             mDecoderPane.setExpanded(true);
 
             GridPane gridPane = new GridPane();
@@ -111,6 +117,22 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setVgap(10);
 
             int row = 0;
+
+            Label poolSizeLabel = new Label("Max Traffic Channels");
+            GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
+            GridPane.setConstraints(poolSizeLabel, 0, row);
+            gridPane.getChildren().add(poolSizeLabel);
+
+            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 1, row);
+            gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
+
+            GridPane.setConstraints(getIgnoreDataCallsButton(), 2, row);
+            gridPane.getChildren().add(getIgnoreDataCallsButton());
+
+            Label directionLabel = new Label("Ignore Data Calls");
+            GridPane.setHalignment(directionLabel, HPos.LEFT);
+            GridPane.setConstraints(directionLabel, 3, row);
+            gridPane.getChildren().add(directionLabel);
 
             Label wacnLabel = new Label("WACN");
             GridPane.setHalignment(wacnLabel, HPos.RIGHT);
@@ -122,19 +144,26 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
 
             Label systemLabel = new Label("System");
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
-            GridPane.setConstraints(systemLabel, 0, ++row);
+            GridPane.setConstraints(systemLabel, 2, row);
             gridPane.getChildren().add(systemLabel);
 
-            GridPane.setConstraints(getSystemTextField(), 1, row);
+            GridPane.setConstraints(getSystemTextField(), 3, row);
             gridPane.getChildren().add(getSystemTextField());
 
             Label nacLabel = new Label("NAC");
             GridPane.setHalignment(nacLabel, HPos.RIGHT);
-            GridPane.setConstraints(nacLabel, 0, ++row);
+            GridPane.setConstraints(nacLabel, 4, row);
             gridPane.getChildren().add(nacLabel);
 
-            GridPane.setConstraints(getNacTextField(), 1, row);
+            GridPane.setConstraints(getNacTextField(), 5, row);
             gridPane.getChildren().add(getNacTextField());
+
+            Label noteLabel = new Label("Note: WACN/System/NAC values are auto-detected (ie not required) from " +
+                    "the control channel and are only required when decoding individual traffic channels");
+            GridPane.setHalignment(noteLabel, HPos.LEFT);
+            GridPane.setConstraints(noteLabel, 1, ++row, 6, 1);
+            gridPane.getChildren().add(noteLabel);
+
 
             mDecoderPane.setContent(gridPane);
         }
@@ -203,6 +232,37 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         return mEventLogConfigurationEditor;
     }
 
+    private ToggleSwitch getIgnoreDataCallsButton()
+    {
+        if(mIgnoreDataCallsButton == null)
+        {
+            mIgnoreDataCallsButton = new ToggleSwitch();
+            mIgnoreDataCallsButton.setDisable(true);
+            mIgnoreDataCallsButton.selectedProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreDataCallsButton;
+    }
+
+    private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
+    {
+        if(mTrafficChannelPoolSizeSpinner == null)
+        {
+            mTrafficChannelPoolSizeSpinner = new Spinner();
+            mTrafficChannelPoolSizeSpinner.setDisable(true);
+            mTrafficChannelPoolSizeSpinner.setTooltip(
+                    new Tooltip("Maximum number of traffic channels that can be created by the decoder"));
+            mTrafficChannelPoolSizeSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
+            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 50);
+            mTrafficChannelPoolSizeSpinner.setValueFactory(svf);
+            mTrafficChannelPoolSizeSpinner.getValueFactory().valueProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mTrafficChannelPoolSizeSpinner;
+    }
+
     private IntegerTextField getWacnTextField()
     {
         if(mWacnTextField == null)
@@ -247,6 +307,9 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             types.add(RecorderType.BASEBAND);
             types.add(RecorderType.DEMODULATED_BIT_STREAM);
             types.add(RecorderType.MBE_CALL_SEQUENCE);
+            types.add(RecorderType.TRAFFIC_BASEBAND);
+            types.add(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM);
+            types.add(RecorderType.TRAFFIC_MBE_CALL_SEQUENCE);
             mRecordConfigurationEditor = new RecordConfigurationEditor(types);
             mRecordConfigurationEditor.setDisable(true);
             mRecordConfigurationEditor.modifiedProperty()
@@ -259,9 +322,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
-        if(config instanceof DecodeConfigP25Phase2)
+        if(config instanceof DecodeConfigP25Phase2 decodeConfig)
         {
-            DecodeConfigP25Phase2 decodeConfig = (DecodeConfigP25Phase2)config;
             getWacnTextField().setDisable(false);
             getSystemTextField().setDisable(false);
             getNacTextField().setDisable(false);
@@ -280,6 +342,11 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
                 getSystemTextField().set(0);
                 getNacTextField().set(0);
             }
+
+            getIgnoreDataCallsButton().setDisable(false);
+            getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
+            getTrafficChannelPoolSizeSpinner().setDisable(false);
+            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
         }
         else
         {
@@ -289,6 +356,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getWacnTextField().setDisable(true);
             getSystemTextField().setDisable(true);
             getNacTextField().setDisable(true);
+            getIgnoreDataCallsButton().setDisable(true);
+            getTrafficChannelPoolSizeSpinner().setDisable(true);
         }
     }
 
@@ -297,19 +366,22 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         DecodeConfigP25Phase2 config;
 
-        if(getItem().getDecodeConfiguration() instanceof DecodeConfigP25Phase2)
+        if(getItem().getDecodeConfiguration() instanceof DecodeConfigP25Phase2 p2)
         {
-            config = (DecodeConfigP25Phase2)getItem().getDecodeConfiguration();
-            config.setAutoDetectScrambleParameters(false);
-            int wacn = getWacnTextField().get();
-            int system = getSystemTextField().get();
-            int nac = getNacTextField().get();
-            config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
+            config = p2;
         }
         else
         {
             config = new DecodeConfigP25Phase2();
         }
+
+        config.setAutoDetectScrambleParameters(false);
+        int wacn = getWacnTextField().get();
+        int system = getSystemTextField().get();
+        int nac = getNacTextField().get();
+        config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
+        config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
+        config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
 
         getItem().setDecodeConfiguration(config);
     }

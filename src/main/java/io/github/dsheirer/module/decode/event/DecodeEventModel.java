@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -115,9 +115,9 @@ public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent> implem
 
                     if(channelDescriptor != null)
                     {
-                        if(event.hasTimeslot())
+                        if(event.hasTimeslot() && !event.toString().contains("TS"))
                         {
-                            return channelDescriptor + " TS:" + event.getTimeslot();
+                            return channelDescriptor + " TS" + event.getTimeslot();
                         }
                         else
                         {
@@ -126,9 +126,9 @@ public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent> implem
                     }
                     else
                     {
-                        if(event.hasTimeslot())
+                        if(event.hasTimeslot() && !event.toString().contains("TS"))
                         {
-                            return "TS:" + event.getTimeslot();
+                            return "TS" + event.getTimeslot();
                         }
                         else
                         {

@@ -24,6 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.telephone.APCO25TelephoneNumber;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
@@ -34,7 +35,7 @@ import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessage implements IBitErrorProvider
+public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessage implements IBitErrorProvider, IServiceOptionsProvider
 {
     private static final int[] BLOCK_0_DIGIT_COUNT = {8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] BLOCK_0_SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
@@ -58,15 +59,15 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
         {
             sb.append(" TO:").append(getTelephoneNumber());
         }
-        if(getVoiceServiceOptions() != null)
+        if(getServiceOptions() != null)
         {
-            sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+            sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         }
 
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public VoiceServiceOptions getServiceOptions()
     {
         if(mVoiceServiceOptions == null && hasDataBlock(0))
         {

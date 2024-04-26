@@ -26,6 +26,7 @@ import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.ActivitySummaryProvider;
+import io.github.dsheirer.module.decode.event.DecodeEventDuplicateDetector;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.sample.Broadcaster;
@@ -44,6 +45,7 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
     protected Broadcaster<IDecodeEvent> mDecodeEventBroadcaster = new Broadcaster<>();
     protected Listener<DecoderStateEvent> mDecoderStateListener;
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
+    private static final DecodeEventDuplicateDetector mDuplicateEventDetector = new DecodeEventDuplicateDetector();
     private boolean mRunning;
 
     public abstract DecoderType getDecoderType();
@@ -105,7 +107,10 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
      */
     protected void broadcast(IDecodeEvent event)
     {
-        mDecodeEventBroadcaster.broadcast(event);
+        if(!mDuplicateEventDetector.isDuplicate(event, System.currentTimeMillis()))
+        {
+            mDecodeEventBroadcaster.broadcast(event);
+        }
     }
 
     /**
@@ -161,31 +166,15 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
         mDecoderStateListener = null;
     }
 
+    /**
+     * Wrapper that implements the IDecoderStateEventListener interface
+     */
     private class DecoderStateEventListener implements Listener<DecoderStateEvent>
     {
         @Override
         public void receive(DecoderStateEvent event)
         {
             receiveDecoderStateEvent(event);
-        }
-    }
-
-    /**
-     * Message listener that only passes messages while we're running.  This is important because each of the decoders
-     * can process blocks of samples and that can result in additional messages being generated even after shutdown
-     * and so we shut off the processing of decoded messages when we're commanded to stop.  The sample processing thread
-     * cannot be shutdown or forcefully interrupted because downstream decoder and channel states may have acquired
-     * locks that have to be properly released.
-     */
-    private class MessageListener implements Listener<IMessage>
-    {
-        @Override
-        public void receive(IMessage message)
-        {
-            if(isRunning())
-            {
-                receive(message);
-            }
         }
     }
 }

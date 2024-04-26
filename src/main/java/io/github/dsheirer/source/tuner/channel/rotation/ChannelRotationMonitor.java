@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,12 +30,11 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Monitors channel state to detect when a channel is not in an identified active state and issues a request to rotate
@@ -63,10 +62,11 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
      * @param activeStates to monitor
      * @param rotationDelay specifies how long to remain on each frequency before rotating (in milliseconds).
      */
-    public ChannelRotationMonitor(Collection<State> activeStates, long rotationDelay)
+    public ChannelRotationMonitor(Collection<State> activeStates, long rotationDelay, UserPreferences userPreferences)
     {
         mActiveStates = activeStates;
         mRotationDelay = rotationDelay;
+        mUserPreferences = userPreferences;
 
         if(mRotationDelay == 0)
         {
