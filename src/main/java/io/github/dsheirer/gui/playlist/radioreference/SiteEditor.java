@@ -379,7 +379,8 @@ public class SiteEditor extends GridPane
                     getP25ControlLabel().setVisible(true);
                     getTdmaControlToggleButton().setVisible(true);
                     getFdmaControlToggleButton().setVisible(true);
-                    if(site.getSite().getModulation() != null && site.getSite().getModulation().contains(PHASE_2_TDMA_MODULATION))
+
+                    if(site.getSite().getTdmaControlChannel() > 0) //Value is 0 for FDMA or 1 for TDMA
                     {
                         getTdmaControlToggleButton().setSelected(true);
                     }
