@@ -477,7 +477,7 @@ public abstract class USBTunerController extends TunerController
     {
         if(isRunning())
         {
-            mBufferListenerLock.lock();
+            getLock().lock();
 
             try
             {
@@ -492,7 +492,7 @@ public abstract class USBTunerController extends TunerController
             }
             finally
             {
-                mBufferListenerLock.unlock();
+                getLock().unlock();
             }
         }
     }
@@ -503,7 +503,7 @@ public abstract class USBTunerController extends TunerController
     @Override
     public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        mBufferListenerLock.lock();
+        getLock().lock();
 
         try
         {
@@ -516,7 +516,7 @@ public abstract class USBTunerController extends TunerController
         }
         finally
         {
-            mBufferListenerLock.unlock();
+            getLock().unlock();
         }
     }
 
