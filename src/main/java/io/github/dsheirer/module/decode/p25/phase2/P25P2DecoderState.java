@@ -1458,7 +1458,10 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
          * based solely on the null info in the traffic channel.  Ultimately, the existing call event will either be
          * updated by a subsequent call, or removed via the traffic channel teardown.
          */
-        continueState(State.ACTIVE);
+        if(message.getMacPduType() != MacPduType.MAC_4_ACTIVE) //Don't change the state when we're in a call
+        {
+            continueState(State.ACTIVE);
+        }
     }
 
     /**
