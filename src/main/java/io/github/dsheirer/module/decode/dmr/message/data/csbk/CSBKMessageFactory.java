@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,11 +31,12 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAnnou
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraCsbko44;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraSmsAvailableNotification;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraTrafficChannelTalkerStatus;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTAdjacentSites;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTPreamble;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTSiteState;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAdvantageModeVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxOpenModeVoiceChannelUpdate;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAdvantageModeVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusCSBKO_60;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusDataRevertWindowAnnouncement;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusDataRevertWindowGrant;
@@ -245,6 +246,9 @@ public class CSBKMessageFactory
                     break;
                 case HYTERA_68_XPT_SITE_STATE:
                     csbk = new HyteraXPTSiteState(pattern, message, cach, slotType, timestamp, timeslot);
+                    break;
+                case HYTERA_68_XPT_ADJACENT_SITE:
+                    csbk = new HyteraXPTAdjacentSites(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
                 case HYTERA_08_ACKNOWLEDGE:
                     csbk = new Hytera08Acknowledge(pattern, message, cach, slotType, timestamp, timeslot);

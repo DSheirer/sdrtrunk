@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnknownFullLCMe
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraTerminator;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraXptChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAlias;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAliasContinuation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxVoiceChannelUser;
@@ -132,6 +133,7 @@ public class LCMessageFactory
                 flc = new UnitToUnitVoiceChannelUser(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_GPS_INFO:
+            case FULL_HYTERA_GPS_INFO:
                 flc = new GPSInformation(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TERMINATOR_DATA:
@@ -169,16 +171,23 @@ public class LCMessageFactory
                 flc = new HyteraTerminator(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_HEADER:
+            case FULL_HYTERA_TALKER_ALIAS_HEADER:
                 flc = new TalkerAliasHeader(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
+            case FULL_HYTERA_TALKER_ALIAS_BLOCK_1:
                 flc = new TalkerAliasBlock1(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
+            case FULL_HYTERA_TALKER_ALIAS_BLOCK_2:
                 flc = new TalkerAliasBlock2(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
+            case FULL_HYTERA_TALKER_ALIAS_BLOCK_3:
                 flc = new TalkerAliasBlock3(message, timestamp, timeslot);
+                break;
+            case FULL_HYTERA_XPT_CHANNEL_GRANT:
+                flc = new HyteraXptChannelGrant(message, timestamp, timeslot);
                 break;
             default:
                 flc = new UnknownFullLCMessage(message, timestamp, timeslot);

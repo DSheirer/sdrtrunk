@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ public enum PositionError
     ERROR_4("LESS THAN 20 KILOMETERS"),
     ERROR_5("LESS THAN 200 KILOMETERS"),
     ERROR_6("MORE THAN 200 KILOMETERS"),
-    UNKNOWN("UNKNOWN");
+    UNKNOWN("NOT KNOWN");
 
     private String mLabel;
 
