@@ -43,7 +43,7 @@ public class UnknownMotorolaISPMessage extends VendorOSPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" MOTOROLA **UNRECOGNIZED ISP OPCODE**");
+        sb.append(" MOTOROLA **UNRECOGNIZED ISP OPCODE: ").append(getOpcodeNumber());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
