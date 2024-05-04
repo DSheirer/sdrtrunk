@@ -42,15 +42,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Base tuner controller implementation.
+ */
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
         INativeBufferProvider, Listener<INativeBuffer>, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
 
     //Protects access to the native buffer broadcaster for adding, removing or checking for listener count.
-    protected ReentrantLock mBufferListenerLock = new ReentrantLock();
+    private ReentrantLock mBufferListenerLock = new ReentrantLock();
+    private ReentrantLock mLock = new ReentrantLock();
     protected Broadcaster<INativeBuffer> mNativeBufferBroadcaster = new Broadcaster();
-
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
     private int mMeasuredFrequencyError;
@@ -75,6 +78,26 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
+     * Lock for controlling configuration access to this tuner controller and any embedded tuner to ensure that
+     * configuration changes happen atomically.  There are at least two threads that can touch this controller:
+     *
+     * A: channel processing that changes the center tuned frequency and frequency correction.
+     * b: user ui thread that can touch any of the frequency correction and gain controls.
+     *
+     * Generally, we'll lock on each of the primary configuration change points - getter and setter for:
+     *      Frequency
+     *      Frequency Correction
+     *      Sample Rate
+     *      Gain Controls
+     *
+     * @return lock for controlling access to tuner controller and em
+     */
+    public ReentrantLock getLock()
+    {
+        return mLock;
+    }
+
+    /**
      * Updates the frequency controller with the new minimum and maximum values.
      * @param minimum frequency Hertz
      * @param maximum frequency Hertz
@@ -83,17 +106,6 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     {
         mFrequencyController.setMinimumFrequency(minimum);
         mFrequencyController.setMaximumFrequency(maximum);
-    }
-
-    /**
-     * Lock for the frequency controller.  This should only be used by the channel source manager to lock access to the
-     * frequency controller while creating a channel source, to block multi-threaded access to the frequency controller
-     * which might put the center tuned frequency value in an indeterminant state.
-     * @return frequency controller lock
-     */
-    public ReentrantLock getFrequencyControllerLock()
-    {
-        return mFrequencyController.getFrequencyControllerLock();
     }
 
     /**
@@ -292,12 +304,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     {
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             mFrequencyController.setFrequency(frequency);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
     }
 
@@ -318,12 +330,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             canTune = mFrequencyController.canTune(frequency);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
 
         return canTune;
@@ -341,12 +353,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             correction = mFrequencyController.getFrequencyCorrection();
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
 
         return correction;
@@ -356,12 +368,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     {
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             mFrequencyController.setFrequencyCorrection(correction);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
     }
 
@@ -375,12 +387,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             minimum = mFrequencyController.getMinimumFrequency();
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
 
         return minimum;
@@ -394,12 +406,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     {
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             mFrequencyController.setMinimumFrequency(minimum);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
     }
 
@@ -413,12 +425,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             maximum = mFrequencyController.getMaximumFrequency();
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
 
         return maximum;
@@ -432,12 +444,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     {
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             mFrequencyController.setMaximumFrequency(maximum);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
     }
 
@@ -447,12 +459,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             minTuned = mFrequencyController.getFrequency() - (getUsableBandwidth() / 2);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
 
         return minTuned;
@@ -464,12 +476,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         try
         {
-            getFrequencyControllerLock().lock();
+            getLock().lock();
             maxTuned = mFrequencyController.getFrequency() + (getUsableBandwidth() / 2);
         }
         finally
         {
-            getFrequencyControllerLock().unlock();
+            getLock().unlock();
         }
 
         return maxTuned;

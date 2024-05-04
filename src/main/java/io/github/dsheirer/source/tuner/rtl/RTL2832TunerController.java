@@ -67,7 +67,6 @@ public class RTL2832TunerController extends USBTunerController
     private EmbeddedTuner mEmbeddedTuner;
     private long mTunedFrequency = 0;
     private boolean mBiasTEnabled = false;
-    private ReentrantLock mLock = new ReentrantLock();
 
     /**
      * Abstract tuner controller device.  Use the static gettype() method
@@ -78,28 +77,6 @@ public class RTL2832TunerController extends USBTunerController
     {
         super(bus, portAddress, tunerErrorListener);
     }
-
-    /**
-     * Lock for controlling configuration access to this tuner controller and the embedded tuner to ensure that
-     * configuration changes involving multiple USB control messages can happen atomically.  There are at least two
-     * threads that can touch this controller:
-     *
-     * A: channel processing that changes the center tuned frequency and frequency correction.
-     * b: user ui thread that can touch any of the frequency correction and gain controls.
-     *
-     * Generally, we'll lock on each of the primary configuration change points - getter and setter for:
-     *      Frequency
-     *      Frequency Correction
-     *      Sample Rate
-     *      Gain Controls
-     *
-     * @return lock for controlling access to tuner controller and em
-     */
-    private ReentrantLock getLock()
-    {
-        return mLock;
-    }
-
 
     @Override
     protected INativeBufferFactory getNativeBufferFactory()

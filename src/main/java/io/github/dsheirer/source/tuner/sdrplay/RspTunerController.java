@@ -185,7 +185,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     @Override
     public void addBufferListener(Listener<INativeBuffer> listener)
     {
-        mBufferListenerLock.lock();
+        getLock().lock();
 
         try
         {
@@ -198,7 +198,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         }
         finally
         {
-            mBufferListenerLock.unlock();
+            getLock().unlock();
         }
     }
 
@@ -209,7 +209,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     @Override
     public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        mBufferListenerLock.lock();
+        getLock().lock();
 
         try
         {
@@ -222,7 +222,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         }
         finally
         {
-            mBufferListenerLock.unlock();
+            getLock().unlock();
         }
     }
 

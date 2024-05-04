@@ -65,7 +65,6 @@ public abstract class FCDTunerController extends TunerController
 
     private FCDConfiguration mConfiguration = new FCDConfiguration();
     protected ComplexMixer mComplexMixer;
-    private ReentrantLock mListenerLock = new ReentrantLock();
 
     /**
      * Generic FCD tuner controller - contains functionality common across both
@@ -126,7 +125,7 @@ public abstract class FCDTunerController extends TunerController
     @Override
     public void addBufferListener(Listener<INativeBuffer> listener)
     {
-        mListenerLock.lock();
+        getLock().lock();
 
         try
         {
@@ -139,7 +138,7 @@ public abstract class FCDTunerController extends TunerController
         }
         finally
         {
-            mListenerLock.unlock();
+            getLock().unlock();
         }
     }
 
@@ -150,7 +149,7 @@ public abstract class FCDTunerController extends TunerController
     @Override
     public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        mListenerLock.lock();
+        getLock().lock();
 
         try
         {
@@ -167,7 +166,7 @@ public abstract class FCDTunerController extends TunerController
         }
         finally
         {
-            mListenerLock.unlock();
+            getLock().unlock();
         }
     }
 
@@ -460,7 +459,7 @@ public abstract class FCDTunerController extends TunerController
      */
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        mListenerLock.lock();
+        getLock().lock();
 
         try
         {
@@ -473,7 +472,7 @@ public abstract class FCDTunerController extends TunerController
         }
         finally
         {
-            mListenerLock.unlock();
+            getLock().unlock();
         }
     }
 

@@ -22,11 +22,12 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FrequencyController
 {
@@ -43,26 +44,12 @@ public class FrequencyController
     private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
 
     /**
-     * Lock protecting access to frequency control plane, source event processor subscriptions and event broadcasting
-     */
-    private ReentrantLock mLock = new ReentrantLock();
-
-    /**
      * Constructs an instance
      * @param tunable that can be controlled by this frequency controller.
      */
     public FrequencyController(Tunable tunable)
     {
         mTunable = tunable;
-    }
-
-
-    /**
-     * Lock for controlling access to frequency control plane, event processor subscriptions and source event broadcasts.
-     */
-    public ReentrantLock getFrequencyControllerLock()
-    {
-        return mLock;
     }
 
     /**
@@ -294,7 +281,7 @@ public class FrequencyController
      */
     public void addSourceEventProcessor(ISourceEventProcessor processor)
     {
-        mLock.lock();
+        mTunable.getLock().lock();
 
         try
         {
@@ -305,7 +292,7 @@ public class FrequencyController
         }
         finally
         {
-            mLock.unlock();
+            mTunable.getLock().unlock();
         }
     }
 
@@ -314,7 +301,7 @@ public class FrequencyController
      */
     public void removeSourceEventProcessor(ISourceEventProcessor processor)
     {
-        mLock.lock();
+        mTunable.getLock().lock();
 
         try
         {
@@ -322,7 +309,7 @@ public class FrequencyController
         }
         finally
         {
-            mLock.unlock();
+            mTunable.getLock().unlock();
         }
     }
 
@@ -354,7 +341,7 @@ public class FrequencyController
 
     public void broadcast(SourceEvent event) throws SourceException
     {
-        mLock.lock();
+        mTunable.getLock().lock();
 
         try
         {
@@ -365,13 +352,18 @@ public class FrequencyController
         }
         finally
         {
-            mLock.unlock();
+            mTunable.getLock().unlock();
         }
     }
 
 
     public interface Tunable
     {
+        /**
+         * Reentrant lock to synchronize threaded access to tuner controls.
+         */
+        ReentrantLock getLock();
+
         /**
          * Gets the tuned frequency of the device
          */

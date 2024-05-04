@@ -1417,8 +1417,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         mAvailablePhase1TrafficChannelQueue.clear();
         mAvailablePhase2TrafficChannelQueue.clear();
-//TODO: debug
-        mLog.info("TCM - Stopping and clearing channel grant event maps");
         mTS1ChannelGrantEventMap.clear();
         mTS2ChannelGrantEventMap.clear();
     }
