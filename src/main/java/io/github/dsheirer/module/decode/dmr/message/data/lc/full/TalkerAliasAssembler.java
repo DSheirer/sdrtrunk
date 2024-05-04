@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,6 +83,7 @@ public class TalkerAliasAssembler
         switch(message.getOpcode())
         {
             case FULL_STANDARD_TALKER_ALIAS_HEADER:
+            case FULL_HYTERA_TALKER_ALIAS_HEADER:
                 if(message instanceof TalkerAliasHeader tah)
                 {
                     if(message.getTimeslot() == 1)
@@ -99,6 +100,7 @@ public class TalkerAliasAssembler
                     }
                 }
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
+            case FULL_HYTERA_TALKER_ALIAS_BLOCK_1:
                 if(message instanceof TalkerAliasBlock1 tab1)
                 {
                     if(message.getTimeslot() == 1)
@@ -115,6 +117,7 @@ public class TalkerAliasAssembler
                     }
                 }
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
+            case FULL_HYTERA_TALKER_ALIAS_BLOCK_2:
                 if(message instanceof TalkerAliasBlock2 tab2)
                 {
                     if(message.getTimeslot() == 1)
@@ -131,6 +134,7 @@ public class TalkerAliasAssembler
                     }
                 }
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
+            case FULL_HYTERA_TALKER_ALIAS_BLOCK_3:
                 if(message instanceof TalkerAliasBlock3 tab3)
                 {
                     if(message.getTimeslot() == 1)

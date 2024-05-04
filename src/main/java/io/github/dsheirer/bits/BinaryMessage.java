@@ -507,7 +507,7 @@ public class BinaryMessage extends BitSet
 
     /**
      * Indicates if the message field contains a non-zero value indicated by any bits set in the int field indices.
-     * @param intField to inspect
+     * @param fragmentedField to inspect
      * @return true if any of the bits are set, indicating a non-zero value.
      */
     public boolean hasInt(FragmentedIntField fragmentedField)
@@ -1057,14 +1057,14 @@ public class BinaryMessage extends BitSet
         if(get(start))
         {
             //Negative value - flip and add one
-            BinaryMessage fragment = getSubMessage(start, end);
+            BinaryMessage fragment = getSubMessage(start, end + 1);
             fragment.flip(0, fragment.size());
-            return fragment.getInt(1, fragment.size()) + 1;
+            return -(fragment.getInt(0, fragment.size() - 1) + 1);
         }
         else
         {
             //Positive value - return the contents.
-            return getInt(start + 1, end);
+            return getInt(start, end);
         }
     }
 

@@ -1329,14 +1329,15 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 break;
             case FULL_STANDARD_GPS_INFO:
-                if(message instanceof GPSInformation gpsInformation)
+            case FULL_HYTERA_GPS_INFO:
+                if(message instanceof GPSInformation gps)
                 {
                     PlottableDecodeEvent plottableGPS = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, message.getTimestamp())
                             .channel(getCurrentChannel())
-                            .details("LOCATION:" + gpsInformation.getGPSLocation())
+                            .details("LOCATION:" + gps.getGPSLocation())
                             .identifiers(new IdentifierCollection(getIdentifierCollection().getIdentifiers()))
                             .protocol(Protocol.DMR)
-                            .location(gpsInformation.getPosition())
+                            .location(gps.getPosition())
                             .build();
 
                     broadcast(plottableGPS);

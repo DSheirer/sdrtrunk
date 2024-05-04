@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,6 +70,9 @@ public class TalkerAliasHeader extends FullLCMessage
      */
     public int getTotalBitLength()
     {
+        TalkerAliasDataFormat format = getFormat();
+        int bitsPerCharacter = format.getBitsPerCharacter();
+        int characterLength = getCharacterLength();
         int total = getFormat().getBitsPerCharacter() * getCharacterLength();
 
         //Max payload bit length is 217 (49 + 56 + 56 + 56)

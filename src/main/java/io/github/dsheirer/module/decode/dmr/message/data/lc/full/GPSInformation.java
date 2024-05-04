@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.dmr.message.data.lc.full;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.location.LocationIdentifier;
@@ -67,9 +68,10 @@ public class GPSInformation extends FullLCMessage
             sb.append("[CRC-ERROR] ");
         }
 
-        sb.append("GPS LOCATION ");
+        sb.append("FLC GPS LOCATION ");
         sb.append(getGPSLocation().toString());
         sb.append(" POSITION ERROR:").append(getPositionError().toString());
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 
@@ -129,5 +131,12 @@ public class GPSInformation extends FullLCMessage
         }
 
         return mIdentifiers;
+    }
+
+    public static void main(String[] args)
+    {
+        CorrectedBinaryMessage cbm = new CorrectedBinaryMessage(BinaryMessage.loadHex("08000F8A177E3903C230"));
+        GPSInformation gps = new GPSInformation(cbm, 0, 1);
+        System.out.println(gps);
     }
 }
