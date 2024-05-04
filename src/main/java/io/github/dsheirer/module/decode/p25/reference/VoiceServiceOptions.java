@@ -70,7 +70,7 @@ public class VoiceServiceOptions extends ServiceOptions
      */
     public static VoiceServiceOptions createEncrypted()
     {
-        return new VoiceServiceOptions(ENCRYPTION_FLAG);
+        return new VoiceServiceOptions(ENCRYPTION_FLAG + 4);
     }
 
     /**
@@ -78,6 +78,6 @@ public class VoiceServiceOptions extends ServiceOptions
      */
     public static VoiceServiceOptions createUnencrypted()
     {
-        return new VoiceServiceOptions(0);
+        return new VoiceServiceOptions(4);
     }
 }

@@ -52,6 +52,7 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.mototrbo.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
+import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
@@ -382,10 +383,34 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         List<Identifier> updated = mPatchGroupManager.update(lcw.getIdentifiers(), timestamp);
         getIdentifierCollection().update(updated);
         DecodeEventType decodeEventType = getLCDecodeEventType(lcw);
-        ServiceOptions serviceOptions = lcw.isEncrypted() ? VoiceServiceOptions.createEncrypted() :
-                VoiceServiceOptions.createUnencrypted();
+
+
+        ServiceOptions serviceOptions = null;
+
+        if(lcw instanceof IServiceOptionsProvider sop)
+        {
+            serviceOptions = sop.getServiceOptions();
+        }
+        else if(lcw.isEncrypted())
+        {
+            serviceOptions = VoiceServiceOptions.createEncrypted();
+        }
+        else
+        {
+            serviceOptions = VoiceServiceOptions.createUnencrypted();
+        }
+
         mTrafficChannelManager.processP1CurrentUser(getCurrentFrequency(), getCurrentChannel(), decodeEventType,
                 serviceOptions, getIdentifierCollection(), timestamp, null );
+
+        if(serviceOptions.isEncrypted())
+        {
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED));
+        }
+        else
+        {
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+        }
     }
 
     /**
@@ -776,9 +801,16 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             DecodeEventType type = headerData.isEncryptedAudio() ? DecodeEventType.CALL_ENCRYPTED : DecodeEventType.CALL;
             mTrafficChannelManager.processP1CurrentUser(getCurrentFrequency(), getCurrentChannel(), type,
                     serviceOptions, mic, message.getTimestamp(), details);
-        }
 
-        broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+            if(headerData.isEncryptedAudio())
+            {
+                broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED));
+            }
+            else
+            {
+                broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+            }
+        }
     }
 
 
@@ -810,12 +842,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     getIdentifierCollection().update(esp.getIdentifiers());
                     mTrafficChannelManager.processP1CurrentUser(getCurrentFrequency(), esp.getEncryptionKey(),
                             message.getTimestamp());
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED));
                 }
                 else
                 {
                     getIdentifierCollection().remove(Form.ENCRYPTION_KEY);
                     mTrafficChannelManager.processP1CurrentUser(getCurrentFrequency(), null,
                             message.getTimestamp());
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
                 }
             }
             else
@@ -824,7 +858,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             }
         }
 
-        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
     }
 
     /**
