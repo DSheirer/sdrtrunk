@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableView;
@@ -284,6 +285,7 @@ public class DmrViewer extends VBox
         if(mMessageTableView == null)
         {
             mMessageTableView = new TableView<>();
+            mMessageTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             mMessageTableView.setPlaceholder(getLoadingIndicator());
             SortedList<IMessage> sortedList = new SortedList<>(mFilteredMessages);
             sortedList.comparatorProperty().bind(mMessageTableView.comparatorProperty());

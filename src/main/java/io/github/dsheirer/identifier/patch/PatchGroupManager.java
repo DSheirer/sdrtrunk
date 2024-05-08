@@ -63,13 +63,13 @@ public class PatchGroupManager
 
         if(trackers.isEmpty())
         {
-            sb.append("None");
+            sb.append("  None\n");
         }
         else
         {
             for(PatchGroupTracker tracker : trackers)
             {
-                sb.append(" ").append(tracker.mPatchGroupIdentifier).append("\n");
+                sb.append("  ").append(tracker.mPatchGroupIdentifier).append("\n");
             }
         }
 

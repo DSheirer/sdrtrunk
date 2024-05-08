@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,14 @@ import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,14 +60,6 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.text.DecimalFormat;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
@@ -294,6 +294,10 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 {
                     text = EMPTY_VALUE;
                 }
+                else if(hasAdditionalIdentifier(channelMetadata))
+                {
+                    text = text + " " + getAdditionalIdentifier(channelMetadata);
+                }
 
                 label.setText(text);
             }
@@ -306,6 +310,8 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         }
 
         public abstract Identifier getIdentifier(ChannelMetadata channelMetadata);
+        public abstract boolean hasAdditionalIdentifier(ChannelMetadata channelMetadata);
+        public abstract Identifier getAdditionalIdentifier(ChannelMetadata channelMetadata);
     }
 
     /**
@@ -322,6 +328,18 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         public Identifier getIdentifier(ChannelMetadata channelMetadata)
         {
             return channelMetadata.getFromIdentifier();
+        }
+
+        @Override
+        public Identifier getAdditionalIdentifier(ChannelMetadata channelMetadata)
+        {
+            return channelMetadata.getTalkerAliasIdentifier();
+        }
+
+        @Override
+        public boolean hasAdditionalIdentifier(ChannelMetadata channelMetadata)
+        {
+            return channelMetadata.hasTalkerAliasIdentifier();
         }
     }
 
@@ -340,6 +358,11 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         {
             return channelMetadata.getToIdentifier();
         }
+
+        @Override
+        public Identifier getAdditionalIdentifier(ChannelMetadata channelMetadata) {return null;}
+        @Override
+        public boolean hasAdditionalIdentifier(ChannelMetadata channelMetadata) {return false;}
     }
 
     public class ColoredStateCellRenderer extends DefaultTableCellRenderer

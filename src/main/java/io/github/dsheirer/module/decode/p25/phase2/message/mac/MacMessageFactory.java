@@ -136,12 +136,12 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorol
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupDeleteCommand;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupExtendedFunctionCommand;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupTalkerAlias;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupTalkerAliasContinuation;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaQueuedResponse;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaTalkerAliasDataBlock;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaTalkerAliasHeader;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import java.util.ArrayList;
 import java.util.List;
@@ -584,10 +584,10 @@ public class MacMessageFactory
                 return new MotorolaGroupRegroupExtendedFunctionCommand(message, offset);
             case MOTOROLA_89_GROUP_REGROUP_DELETE:
                 return new MotorolaGroupRegroupDeleteCommand(message, offset);
-            case MOTOROLA_91_GROUP_REGROUP_UNKNOWN:
-                return new MotorolaGroupRegroupTalkerAlias(message, offset);
-            case MOTOROLA_95_UNKNOWN_149:
-                return new MotorolaGroupRegroupTalkerAliasContinuation(message, offset);
+            case MOTOROLA_91_TALKER_ALIAS_HEADER:
+                return new MotorolaTalkerAliasHeader(message, offset);
+            case MOTOROLA_95_TALKER_ALIAS_DATA_BLOCK:
+                return new MotorolaTalkerAliasDataBlock(message, offset);
             case MOTOROLA_A0_GROUP_REGROUP_VOICE_CHANNEL_USER_EXTENDED:
                 return new MotorolaGroupRegroupVoiceChannelUserExtended(message, offset);
             case MOTOROLA_A3_GROUP_REGROUP_CHANNEL_GRANT_IMPLICIT:

@@ -280,18 +280,21 @@ public class FrequencyController
      */
     public void addSourceEventProcessor(ISourceEventProcessor processor)
     {
-        mTunable.getLock().lock();
+        if(mTunable != null)
+        {
+            mTunable.getLock().lock();
 
-        try
-        {
-            if(!mProcessors.contains(processor))
+            try
             {
-                mProcessors.add(processor);
+                if(!mProcessors.contains(processor))
+                {
+                    mProcessors.add(processor);
+                }
             }
-        }
-        finally
-        {
-            mTunable.getLock().unlock();
+            finally
+            {
+                mTunable.getLock().unlock();
+            }
         }
     }
 

@@ -28,23 +28,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Motorola Link Control Opcode 0x15.
- *
- * Note: I suspect this is some form of radio reprogramming message, possibly used to update encryption.
+ * Motorola Talker Alias Header - Link Control Opcode 0x15.
  *
  * I've seen LCOpcode 0x15 and 0x17 twice and in both cases it was sent in a TDULC at the end of a call for the same
- * radio on the CNYICC system.  The header references the talkgroup that the radio is calling, so it may be some form
- * of dynamic regrouping, but the total content is quite large.
- *
- * Note: this seems to only be targeted to certain radios since it wasn't sent at the end of every call.
+ * radio on the CNYICC system.
  *
  * Examples observed on traffic channels in TDULC at the end of a call following the Motorola Talk Complete message
  * for Radio: 15,104,082 (0xE67852) and TG:7101 (0x1BBD)
  * Example 1
  *
- * 1590 1BBD 07 0100 F 8BA / 1BBD=TG, 07=record count, 0100=?, F=sequence number, 8BA=crc checksum
+ * 1590 1BBD 07 0100 F 8BA / 1BBD=TG, 07=record count, 0100=Format/Unicode?, F=sequence number, 8BA=crc checksum
  * 1790 01 F BEE00 2AE E67 /  BEE00=WACN, 2AE=SYS, E67...= RADIO ID
- * 1790 02 F 852 83ED1081 / ...852=RADIO ID cont.
+ * 1790 02 F 852 83ED1081 / ...852=RADIO ID cont.  Encoded alias ...
  * 1790 03 F E33C03E9B3E
  * 1790 04 F 35647DE0C00
  * 1790 05 F C8A83E351E4
@@ -68,13 +63,15 @@ import java.util.List;
  *
  * The reprogramming payload sequence starts by sending the full SUID for the radio (BEE00.2AE.E67852).
  */
-public class LCMotorolaRadioReprogramHeader extends LinkControlWord
+public class LCMotorolaTalkerAliasHeader extends LinkControlWord
 {
     private static final IntField TALKGROUP = IntField.length16(OCTET_2_BIT_16);
-    private static final IntField RECORD_COUNT = IntField.length8(OCTET_4_BIT_32);
-    private static final IntField SEQUENCE_NUMBER = IntField.length4(OCTET_7_BIT_56);
-    private static final IntField SEQUENCE_CHECKSUM = IntField.length12(OCTET_7_BIT_56 + 4);
-    private Identifier mTalkgroup;
+    private static final IntField BLOCK_COUNT = IntField.length8(OCTET_4_BIT_32);
+    private static final IntField FORMAT = IntField.length8(OCTET_5_BIT_40); //Value 1 observed - unicode?
+    private static final IntField UNKNOWN = IntField.length8(OCTET_6_BIT_48); //Always 0x00
+    private static final IntField SEQUENCE = IntField.length4(OCTET_7_BIT_56);
+    private static final IntField CHECKSUM = IntField.length12(OCTET_7_BIT_56 + 4);
+    private APCO25Talkgroup mTalkgroup;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -82,7 +79,7 @@ public class LCMotorolaRadioReprogramHeader extends LinkControlWord
      *
      * @param message
      */
-    public LCMotorolaRadioReprogramHeader(CorrectedBinaryMessage message)
+    public LCMotorolaTalkerAliasHeader(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -100,10 +97,12 @@ public class LCMotorolaRadioReprogramHeader extends LinkControlWord
         {
             sb.append(" ENCRYPTED");
         }
-        sb.append("MOTOROLA RADIO REPROGRAM HEADER");
+        sb.append("MOTOROLA TALKER ALIAS HEADER");
         sb.append(" TG:").append(getTalkgroup());
-        sb.append(" RECORD COUNT:").append(getRecordCount());
-        sb.append(" SEQUENCE:").append(getSequenceNumber());
+        sb.append(" SEQUENCE:").append(getSequence());
+        sb.append(" BLOCKS TO FOLLOW:").append(getBlockCount());
+        sb.append(" FORMAT:").append(getFormat());
+        sb.append(" UNK:").append(Integer.toHexString(getInt(UNKNOWN)).toUpperCase());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
@@ -111,7 +110,7 @@ public class LCMotorolaRadioReprogramHeader extends LinkControlWord
     /**
      * Talkgroup
      */
-    public Identifier getTalkgroup()
+    public APCO25Talkgroup getTalkgroup()
     {
         if(mTalkgroup == null)
         {
@@ -122,20 +121,36 @@ public class LCMotorolaRadioReprogramHeader extends LinkControlWord
     }
 
     /**
-     * Count of continuation messages to follow
-     * @return
+     * Alias encoding format
      */
-    public int getRecordCount()
+    public String getFormat()
     {
-        return getInt(RECORD_COUNT);
+        int format = getInt(FORMAT);
+
+        if(format == 1)
+        {
+            return "1-UNICODE"; //best guess
+        }
+        else
+        {
+            return String.valueOf(format);
+        }
     }
 
     /**
-     * Sequence number
+     * Sequence number that ties the header to each of the data blocks.
      */
-    public int getSequenceNumber()
+    public int getSequence()
     {
-        return getInt(SEQUENCE_NUMBER);
+        return getInt(SEQUENCE);
+    }
+
+    /**
+     * Number of data blocks that follow this header.
+     */
+    public int getBlockCount()
+    {
+        return getInt(BLOCK_COUNT);
     }
 
     /**

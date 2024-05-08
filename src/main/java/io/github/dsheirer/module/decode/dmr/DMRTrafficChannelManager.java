@@ -31,6 +31,7 @@ import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageHistoryPreloadData;
 import io.github.dsheirer.message.MessageHistoryRequest;
@@ -103,6 +104,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
     private TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
+    private TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
     private Channel mParentChannel;
     private boolean mIgnoreDataCalls;
 
@@ -127,6 +129,14 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         }
 
         createTrafficChannels();
+    }
+
+    /**
+     * Talker alias manager
+     */
+    public TalkerAliasManager getTalkerAliasManager()
+    {
+        return mTalkerAliasManager;
     }
 
     /**

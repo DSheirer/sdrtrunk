@@ -70,9 +70,6 @@ public class TalkerAliasHeader extends FullLCMessage
      */
     public int getTotalBitLength()
     {
-        TalkerAliasDataFormat format = getFormat();
-        int bitsPerCharacter = format.getBitsPerCharacter();
-        int characterLength = getCharacterLength();
         int total = getFormat().getBitsPerCharacter() * getCharacterLength();
 
         //Max payload bit length is 217 (49 + 56 + 56 + 56)

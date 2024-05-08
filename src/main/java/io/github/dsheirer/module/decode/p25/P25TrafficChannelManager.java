@@ -30,6 +30,7 @@ import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
@@ -118,6 +119,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     //Used only for data calls
     private DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
     private ReentrantLock mLock = new ReentrantLock();
+    private TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
 
     /**
      * Constructs an instance.
@@ -139,6 +141,15 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             createPhase1TrafficChannels(phase2.getTrafficChannelPoolSize(), new DecodeConfigP25Phase1());
             createPhase2TrafficChannels(phase2.getTrafficChannelPoolSize(), phase2);
         }
+    }
+
+    /**
+     * Talker alias manager
+     * @return manager
+     */
+    public TalkerAliasManager getTalkerAliasManager()
+    {
+        return mTalkerAliasManager;
     }
 
     /**
