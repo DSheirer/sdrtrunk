@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.map;
 
@@ -23,10 +22,6 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.icon.IconModel;
-import org.jdesktop.swingx.JXMapViewer;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
-import javax.swing.ImageIcon;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -34,21 +29,58 @@ import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.util.Collections;
 import java.util.List;
+import org.jdesktop.swingx.JXMapViewer;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 
+import javax.swing.ImageIcon;
+
+/**
+ * Paints a single plottable entity to the map.
+ */
 public class PlottableEntityRenderer
 {
     private AliasModel mAliasModel;
     private IconModel mIconModel;
+    private int mTrackHistoryLength = 3;
 
+    /**
+     * Constructs an instance
+     * @param aliasModel for alias lookup for the entity to determine plot color and icon
+     * @param iconModel to retrieve icon for plotting.
+     */
     public PlottableEntityRenderer(AliasModel aliasModel, IconModel iconModel)
     {
         mAliasModel = aliasModel;
         mIconModel = iconModel;
     }
 
+    /**
+     * Sets the length of the plotted history trails.
+     * @param length of history trails
+     */
+    public void setTrackHistoryLength(int length)
+    {
+        mTrackHistoryLength = length;
+    }
+
+    /**
+     * Current size of the history trail length.
+     */
+    public int getTrackHistoryLength()
+    {
+        return mTrackHistoryLength;
+    }
+
+    /**
+     * Requests the plottable entity be painted to the map viewer.
+     * @param g graphics
+     * @param viewer requesting the painting
+     * @param entity to be painted
+     * @param antiAliasing for rendering.
+     */
     public void paintPlottableEntity(Graphics2D g, JXMapViewer viewer, PlottableEntityHistory entity, boolean antiAliasing)
     {
-        List<GeoPosition> locationHistory = entity.getLocationHistory();
+        List<TimestampedGeoPosition> locationHistory = entity.getLocationHistory();
 
         if(!locationHistory.isEmpty() && locationHistory.get(locationHistory.size() - 1).isValid())
         {
@@ -66,7 +98,7 @@ public class PlottableEntityRenderer
             /**
              * Use the entity's preferred color for lines and labels
              */
-            Color color = (alias != null ? alias.getDisplayColor() : Color.YELLOW);
+            Color color = (alias != null ? alias.getDisplayColor() : Color.BLUE);
             graphics.setColor(color);
 
             /**
@@ -79,7 +111,7 @@ public class PlottableEntityRenderer
              * Convert the lat/long geoposition to an x/y point on the viewer
              */
 
-            Point2D point = viewer.getTileFactory().geoToPixel(locationHistory.get(locationHistory.size() - 1), viewer.getZoom());
+            Point2D point = viewer.getTileFactory().geoToPixel(entity.getLatestPosition(), viewer.getZoom());
 
             /**
              * Paint the icon at the current location
@@ -139,7 +171,7 @@ public class PlottableEntityRenderer
      */
     private void paintRoute(Graphics2D graphics, JXMapViewer viewer, PlottableEntityHistory entity, Color color)
     {
-        List<GeoPosition> locations = entity.getLocationHistory();
+        List<TimestampedGeoPosition> locations = entity.getLocationHistory();
 
         if(!locations.isEmpty())
         {
@@ -160,21 +192,26 @@ public class PlottableEntityRenderer
     /**
      * Draws a route from a list of plottables
      */
-    private void drawRoute(List<GeoPosition> locations, Graphics2D g, JXMapViewer viewer)
+    private void drawRoute(List<TimestampedGeoPosition> locations, Graphics2D g, JXMapViewer viewer)
     {
-        Point2D lastPoint = null;
+        Point2D previousPoint = null;
 
-        for(GeoPosition location : locations)
+        int length = Math.min(locations.size(), mTrackHistoryLength);
+
+        for(int x = 0; x < length; x++)
         {
+            GeoPosition location = locations.get(x);
+
             // convert geo-coordinate to world bitmap pixel
             Point2D currentPoint = viewer.getTileFactory().geoToPixel(location, viewer.getZoom());
 
-            if(lastPoint != null)
+            if(previousPoint != null)
             {
-                g.drawLine((int)lastPoint.getX(), (int)lastPoint.getY(), (int)currentPoint.getX(), (int)currentPoint.getY());
+                g.drawLine((int)previousPoint.getX(), (int)previousPoint.getY(), (int)currentPoint.getX(), (int)currentPoint.getY());
             }
 
-            lastPoint = currentPoint;
+            previousPoint = currentPoint;
+
         }
     }
 }

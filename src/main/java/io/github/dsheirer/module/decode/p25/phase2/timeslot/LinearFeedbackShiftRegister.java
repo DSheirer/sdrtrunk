@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
@@ -63,9 +60,6 @@ public class LinearFeedbackShiftRegister
         mSystem = system;
         mNac = nac;
 
-        int temp = 0xFFFFF & 1;
-        long tempShift = temp << 24;
-
         mRegisters = (long)(0xFFFFF & wacn) << 24;
         mRegisters += (0xFFF & system) << 12;
         mRegisters += (0xFFF & nac);
@@ -75,6 +69,16 @@ public class LinearFeedbackShiftRegister
             mRegisters = 0xFFFFFFFFFFFl;
         }
 
+        mCurrentOutput = getTap(TAP_43);
+    }
+
+    /**
+     * Loads the seed value directly into the registers.
+     * @param seed for the lfsr
+     */
+    public void updateSeed(long seed)
+    {
+        mRegisters = seed;
         mCurrentOutput = getTap(TAP_43);
     }
 
@@ -121,6 +125,32 @@ public class LinearFeedbackShiftRegister
     }
 
     /**
+     * Generates a (de)scrambling sequence for the specified seed and length
+     * @param seed value to use
+     * @param length of the generated sequence
+     * @return scrambling sequence in a binary message
+     */
+    public BinaryMessage generateScramblingSequence(long seed, int length)
+    {
+        updateSeed(seed);
+        BinaryMessage sequence = new BinaryMessage(length);
+
+        try
+        {
+            for(int x = 0; x < length; x++)
+            {
+                sequence.add(next());
+            }
+        }
+        catch(BitSetFullException e)
+        {
+            //This shouldn't happen
+        }
+
+        return sequence;
+    }
+
+    /**
      * Provides the next output bit from the LFSR
      */
     public boolean next()
@@ -151,5 +181,40 @@ public class LinearFeedbackShiftRegister
     private boolean getTap(long tap)
     {
         return (mRegisters & tap) == tap;
+    }
+
+    public static void main(String[] args)
+    {
+        long seed = 0;
+        int wacn = 0xBEE00;
+        int system = 0x1C7;
+        int nac = 0x1C1;
+
+        seed = (long)(0xFFFFF & wacn) << 24;
+        seed += (0xFFF & system) << 12;
+        seed += (0xFFF & nac);
+
+        seed = 0xBEE001C7013l;
+
+        System.out.println("Seed: " + Long.toHexString(seed).toUpperCase());
+
+        LinearFeedbackShiftRegister lfsr = new LinearFeedbackShiftRegister();
+//        BinaryMessage scramble = lfsr.generateScramblingSequence(0xBEE07, 0x40F, 0x04E);
+        BinaryMessage scramble = lfsr.generateScramblingSequence(seed, 400);
+        System.out.println("SCRAM: "  + scramble.toHexString());
+//        scramble.rotateRight(64, 0, 401);
+        System.out.println("SCRAM: " + scramble.toHexString());
+
+        BinaryMessage raw1 = BinaryMessage.loadHex("BEE001C70139CB7D5F2D4823695F7ED499EA998F8748E6DAB167FAC15EC2C6222E");
+//        BinaryMessage raw1 = BinaryMessage.loadHex("BEE0740F04E0172D21681A1B52FFBFBFEE53D2A5ADB9561CADF4D955EBF1CB0000");
+//        BinaryMessage raw2 = BinaryMessage.loadHex("BEE0740F04E0DD2D21681A1B52FFBFBFEE53FE86BEF78FD5AB910B2376F9D80000");
+        System.out.println("  RAW: " + raw1.toHexString());
+        System.out.println("  xxx: BEE001C70139CB");
+        int length = raw1.length();
+
+
+        raw1.xor(scramble);
+        BinaryMessage descrambled = raw1.get(0, length);
+        System.out.println("DESCR: " + descrambled.toHexString());
     }
 }

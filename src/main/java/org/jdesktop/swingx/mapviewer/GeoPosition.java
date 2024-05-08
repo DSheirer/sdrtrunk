@@ -1,4 +1,23 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/*
  * GeoPosition.java
  *
  * Created on March 31, 2006, 9:15 PM
@@ -33,7 +52,6 @@ public class GeoPosition
         this.latitude = latitude;
         this.longitude = longitude;
     }
-    // must be an array of length two containing lat then long in that order.
 
     /**
      * Creates a new instance of GeoPosition from the specified
@@ -87,6 +105,36 @@ public class GeoPosition
     public double getLongitude()
     {
         return longitude;
+    }
+
+    /**
+     * Formats the position as Degrees Minutes Seconds (DMS)
+     */
+    public String toDMS()
+    {
+        int latDegrees = (int)Math.floor(Math.abs(latitude));
+        double latMinutes = (Math.abs(latitude) - latDegrees) * 60.0;
+        int latMinutesInt = (int)Math.floor(latMinutes);
+        double latSeconds = (latMinutes - latMinutesInt) * 60.0;
+        int latSecondsInt = (int)latSeconds;
+
+        int lonDegrees = (int)Math.floor(Math.abs(longitude));
+        double lonMinutes = (Math.abs(longitude) - lonDegrees) * 60.0;
+        int lonMinutesInt = (int)Math.floor(lonMinutes);
+        double lonSeconds = (lonMinutes - lonMinutesInt) * 60.0;
+        int lonSecondsInt = (int)lonSeconds;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(latDegrees).append("°");
+        sb.append(latMinutesInt).append("'");
+        sb.append(latSecondsInt).append("");
+        sb.append(latitude >= 0 ? "N" : "S");
+        sb.append(", ");
+        sb.append(lonDegrees).append("°");
+        sb.append(lonMinutesInt).append("'");
+        sb.append(lonSecondsInt).append("");
+        sb.append(longitude >= 0 ? "E" : "W");
+        return sb.toString();
     }
 
     @Override

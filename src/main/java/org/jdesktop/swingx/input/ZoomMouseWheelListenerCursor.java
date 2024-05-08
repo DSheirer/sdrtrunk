@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.jdesktop.swingx.input;
 
+import io.github.dsheirer.map.MapPanel;
 import org.jdesktop.swingx.JXMapViewer;
 
 import java.awt.*;
@@ -31,32 +32,34 @@ import java.awt.geom.Point2D;
  */
 public class ZoomMouseWheelListenerCursor implements MouseWheelListener
 {
-	private JXMapViewer viewer;
-	
+	private MapPanel mMapPanel;
+	private JXMapViewer mViewer;
+
 	/**
 	 * @param viewer the jxmapviewer
 	 */
-	public ZoomMouseWheelListenerCursor(JXMapViewer viewer)
+	public ZoomMouseWheelListenerCursor(MapPanel mapPanel)
 	{
-		this.viewer = viewer;
+		mMapPanel = mapPanel;
+		mViewer = mMapPanel.getMapViewer();
 	}
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent evt)
 	{
 		Point current = evt.getPoint();
-		Rectangle bound = viewer.getViewportBounds();
+		Rectangle bound = mViewer.getViewportBounds();
 		
 		double dx = current.x - bound.width / 2;
 		double dy = current.y - bound.height / 2;
 		
-		Dimension oldMapSize = viewer.getTileFactory().getMapSize(viewer.getZoom());
+		Dimension oldMapSize = mViewer.getTileFactory().getMapSize(mViewer.getZoom());
 
-		viewer.setZoom(viewer.getZoom() + evt.getWheelRotation());
-		
-		Dimension mapSize = viewer.getTileFactory().getMapSize(viewer.getZoom());
+		mMapPanel.adjustZoom(evt.getWheelRotation());
 
-		Point2D center = viewer.getCenter();
+		Dimension mapSize = mViewer.getTileFactory().getMapSize(mViewer.getZoom());
+
+		Point2D center = mViewer.getCenter();
 
 		double dzw = (mapSize.getWidth() / oldMapSize.getWidth());
 		double dzh = (mapSize.getHeight() / oldMapSize.getHeight());
@@ -64,6 +67,6 @@ public class ZoomMouseWheelListenerCursor implements MouseWheelListener
 		double x = center.getX() + dx * (dzw - 1);
 		double y = center.getY() + dy * (dzh - 1);
 
-		viewer.setCenter(new Point2D.Double(x, y));
+		mViewer.setCenter(new Point2D.Double(x, y));
 	}
 }
