@@ -31,7 +31,8 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
  */
 public class PlottableEntityHistory
 {
-    private List<GeoPosition> mLocationHistory = new ArrayList<>();
+    public static final int MAX_LOCATION_HISTORY = 10;
+    private List<TimestampedGeoPosition> mLocationHistory = new ArrayList<>();
     private PlottableDecodeEvent mCurrentEvent;
     private Identifier mIdentifier;
 
@@ -47,9 +48,22 @@ public class PlottableEntityHistory
     /**
      * Location history for this entity
      */
-    public List<GeoPosition> getLocationHistory()
+    public List<TimestampedGeoPosition> getLocationHistory()
     {
         return new ArrayList<>(mLocationHistory);
+    }
+
+    /**
+     * Latest position for this entity.
+     */
+    public TimestampedGeoPosition getLatestPosition()
+    {
+        if(mLocationHistory.size() > 0)
+        {
+            return mLocationHistory.get(0);
+        }
+
+        return null;
     }
 
     /**
@@ -74,6 +88,11 @@ public class PlottableEntityHistory
     public void add(PlottableDecodeEvent event)
     {
         mCurrentEvent = event;
-        mLocationHistory.add(event.getLocation());
+        mLocationHistory.add(0, new TimestampedGeoPosition(event.getLocation(), event.getTimeStart()));
+
+        while(mLocationHistory.size() > MAX_LOCATION_HISTORY)
+        {
+            mLocationHistory.remove(mLocationHistory.size() - 1);
+        }
     }
 }

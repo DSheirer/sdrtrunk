@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 /*
@@ -31,6 +28,20 @@
 
 package org.jdesktop.swingx;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.beans.DesignMode;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.Set;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import org.apache.commons.math3.util.FastMath;
@@ -46,20 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JPanel;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.Rectangle;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.beans.DesignMode;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.Set;
 
 /**
  * A tile oriented map component that can easily be used with tile sources
@@ -87,8 +84,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 {
 	private static final long serialVersionUID = -3530746298586937321L;
 
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( JXMapViewer.class );
+	private final static Logger mLog = LoggerFactory.getLogger(JXMapViewer.class);
 	
 	private final boolean isNegativeYAllowed = true; // maybe rename to isNorthBounded and isSouthBounded?
 
@@ -96,25 +92,25 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 * The zoom level. Generally a value between 1 and 15 (TODO Is this true for all the mapping worlds? What does this
 	 * mean if some mapping system doesn't support the zoom level?
 	 */
-	private int zoomLevel = 1;
+	private int mZoomLevel = 1;
 
 	/**
 	 * The position, in <I>map coordinates</I> of the center point. This is defined as the distance from the top and
 	 * left edges of the map in pixels. Dragging the map component will change the center position. Zooming in/out will
 	 * cause the center to be recalculated so as to remain in the center of the new "map".
 	 */
-	private Point2D center = new Point2D.Double(0, 0);
+	private Point2D mCenter = new Point2D.Double(0, 0);
 
 	/**
 	 * Indicates whether or not to draw the borders between tiles. Defaults to false. TODO Generally not very nice
 	 * looking, very much a product of testing Consider whether this should really be a property or not.
 	 */
-	private boolean drawTileBorders = false;
+	private boolean mDrawTileBorders = false;
 
 	/**
 	 * Factory used by this component to grab the tiles necessary for painting the map.
 	 */
-	private TileFactory factory;
+	private TileFactory mTileFactory;
 
 	/**
 	 * The position in latitude/longitude of the "address" being mapped. This is a special coordinate that, when moved,
@@ -122,27 +118,27 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 * (in pixels) of the viewport whereas this will not change when panning or zooming. Whenever the addressLocation is
 	 * changed, however, the map will be repositioned.
 	 */
-	private GeoPosition addressLocation;
+	private GeoPosition mAddressLocation;
 
 	/**
 	 * The overlay to delegate to for painting the "foreground" of the map component. This would include painting
 	 * waypoints, day/night, etc. Also receives mouse events.
 	 */
-	private Painter<? super JXMapViewer> overlay;
+	private Painter<? super JXMapViewer> mOverlay;
 
-	private boolean designTime;
+	private boolean mDesignTime;
 
-	private Image loadingImage;
+	private Image mLoadingImage;
 
-	private boolean restrictOutsidePanning = true;
-	private boolean horizontalWrapped = true;
+	private boolean mRestrictOutsidePanning = true;
+	private boolean mHorizontalWrapped = true;
 
 	/**
 	 * Create a new JXMapViewer. By default it will use the EmptyTileFactory
 	 */
 	public JXMapViewer()
 	{
-		factory = new EmptyTileFactory();
+		mTileFactory = new EmptyTileFactory();
 		// setTileFactory(new GoogleTileFactory());
 
 		// make a dummy loading image
@@ -153,9 +149,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 		}
 		catch (Throwable ex)
 		{
-			
 			mLog.error( "JXMapViewer could not load default 'loading.png'" );
-			
 			BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2 = img.createGraphics();
 			g2.setColor(Color.black);
@@ -203,7 +197,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	@Override
 	public void setDesignTime(boolean b)
 	{
-		this.designTime = b;
+		this.mDesignTime = b;
 	}
 
 	/**
@@ -213,7 +207,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	@Override
 	public boolean isDesignTime()
 	{
-		return designTime;
+		return mDesignTime;
 	}
 
 	/**
@@ -313,9 +307,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 	@SuppressWarnings("unused")
 	private void drawOverlays(final int zoom, final Graphics g, final Rectangle viewportBounds)
 	{
-		if (overlay != null)
+		if (mOverlay != null)
 		{
-			overlay.paint((Graphics2D) g, this, getWidth(), getHeight());
+			mOverlay.paint((Graphics2D) g, this, getWidth(), getHeight());
 		}
 	}
 
@@ -333,7 +327,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	public void setOverlayPainter(Painter<? super JXMapViewer> overlay)
 	{
 		Painter<? super JXMapViewer> old = getOverlayPainter();
-		this.overlay = overlay;
+		this.mOverlay = overlay;
 
 		PropertyChangeListener listener = new PropertyChangeListener()
 		{
@@ -369,7 +363,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public Painter<? super JXMapViewer> getOverlayPainter()
 	{
-		return overlay;
+		return mOverlay;
 	}
 
 	/**
@@ -399,7 +393,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public void setZoom(int zoom)
 	{
-		if (zoom == this.zoomLevel)
+		if (zoom == this.mZoomLevel)
 		{
 			return;
 		}
@@ -412,10 +406,10 @@ public class JXMapViewer extends JPanel implements DesignMode
 		}
 
 		// if(zoom >= 0 && zoom <= 15 && zoom != this.zoom) {
-		int oldzoom = this.zoomLevel;
+		int oldzoom = this.mZoomLevel;
 		Point2D oldCenter = getCenter();
 		Dimension oldMapSize = getTileFactory().getMapSize(oldzoom);
-		this.zoomLevel = zoom;
+		this.mZoomLevel = zoom;
 		this.firePropertyChange("zoom", oldzoom, zoom);
 
 		Dimension mapSize = getTileFactory().getMapSize(zoom);
@@ -432,7 +426,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public int getZoom()
 	{
-		return this.zoomLevel;
+		return this.mZoomLevel;
 	}
 
 	/**
@@ -442,7 +436,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public GeoPosition getAddressLocation()
 	{
-		return addressLocation;
+		return mAddressLocation;
 	}
 
 	/**
@@ -452,7 +446,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	public void setAddressLocation(GeoPosition addressLocation)
 	{
 		GeoPosition old = getAddressLocation();
-		this.addressLocation = addressLocation;
+		this.mAddressLocation = addressLocation;
 		setCenter(getTileFactory().geoToPixel(addressLocation, getZoom()));
 
 		firePropertyChange("addressLocation", old, getAddressLocation());
@@ -475,7 +469,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public boolean isDrawTileBorders()
 	{
-		return drawTileBorders;
+		return mDrawTileBorders;
 	}
 
 	/**
@@ -485,7 +479,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	public void setDrawTileBorders(boolean drawTileBorders)
 	{
 		boolean old = isDrawTileBorders();
-		this.drawTileBorders = drawTileBorders;
+		this.mDrawTileBorders = drawTileBorders;
 		firePropertyChange("drawTileBorders", old, isDrawTileBorders());
 		repaint();
 	}
@@ -497,7 +491,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	public void setCenterPosition(GeoPosition geoPosition)
 	{
 		GeoPosition oldVal = getCenterPosition();
-		setCenter(getTileFactory().geoToPixel(geoPosition, zoomLevel));
+		setCenter(getTileFactory().geoToPixel(geoPosition, mZoomLevel));
 		repaint();
 		GeoPosition newVal = getCenterPosition();
 		firePropertyChange("centerPosition", oldVal, newVal);
@@ -509,7 +503,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public GeoPosition getCenterPosition()
 	{
-		return getTileFactory().pixelToGeo(getCenter(), zoomLevel);
+		return getTileFactory().pixelToGeo(getCenter(), mZoomLevel);
 	}
 
 	/**
@@ -518,7 +512,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public TileFactory getTileFactory()
 	{
-		return factory;
+		return mTileFactory;
 	}
 
 	/**
@@ -530,10 +524,10 @@ public class JXMapViewer extends JPanel implements DesignMode
 		if (factory == null)
 			throw new NullPointerException("factory must not be null");
 		
-		this.factory.removeTileListener(tileLoadListener);
-		this.factory.dispose();
+		this.mTileFactory.removeTileListener(tileLoadListener);
+		this.mTileFactory.dispose();
 		
-		this.factory = factory;
+		this.mTileFactory = factory;
 		this.setZoom(factory.getInfo().getDefaultZoomLevel());
 		
 		factory.addTileListener(tileLoadListener);
@@ -547,7 +541,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public Image getLoadingImage()
 	{
-		return loadingImage;
+		return mLoadingImage;
 	}
 
 	/**
@@ -556,7 +550,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public void setLoadingImage(Image loadingImage)
 	{
-		this.loadingImage = loadingImage;
+		this.mLoadingImage = loadingImage;
 	}
 
 	/**
@@ -565,7 +559,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public Point2D getCenter()
 	{
-		return center;
+		return mCenter;
 	}
 
 	/**
@@ -641,8 +635,8 @@ public class JXMapViewer extends JPanel implements DesignMode
 		}
 		
 		GeoPosition oldGP = this.getCenterPosition();
-		this.center = new Point2D.Double(centerX, centerY);
-		firePropertyChange("center", old, this.center);
+		this.mCenter = new Point2D.Double(centerX, centerY);
+		firePropertyChange("center", old, this.mCenter);
 		firePropertyChange("centerPosition", oldGP, this.getCenterPosition());
 		repaint();
 	}
@@ -739,7 +733,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public boolean isRestrictOutsidePanning()
 	{
-		return restrictOutsidePanning;
+		return mRestrictOutsidePanning;
 	}
 
 	/**
@@ -747,7 +741,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public void setRestrictOutsidePanning(boolean restrictOutsidePanning)
 	{
-		this.restrictOutsidePanning = restrictOutsidePanning;
+		this.mRestrictOutsidePanning = restrictOutsidePanning;
 	}
 
 	/**
@@ -755,7 +749,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public boolean isHorizontalWrapped()
 	{
-		return horizontalWrapped;
+		return mHorizontalWrapped;
 	}
 
 	/**
@@ -763,7 +757,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	 */
 	public void setHorizontalWrapped(boolean horizontalWrapped)
 	{
-		this.horizontalWrapped = horizontalWrapped;
+		this.mHorizontalWrapped = horizontalWrapped;
 	}
 
 	/**
