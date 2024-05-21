@@ -134,7 +134,7 @@ public class DeviceFactory
             case RSPduo -> {
                 return new RspDuoDevice(sdrPlay, deviceStruct);
             }
-            case RSPdx -> {
+            case RSPdx, RSPdxR2 -> {
                 return new RspDxDevice(sdrPlay, deviceStruct);
             }
             default -> {

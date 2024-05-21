@@ -1719,6 +1719,17 @@ public class sdrplay_api_h  {
     public static int SDRPLAY_RSP1B_ID() {
         return (int)6L;
     }
+
+    //Note: RSPdx_R2 manually edited for API version 3.15
+
+    /**
+     * {@snippet :
+     * #define SDRPLAY_RSPdx_R2_ID 7
+     * }
+     */
+    public static int SDRPLAY_RSPdx_R2_ID() {
+        return (int)7L;
+    }
 }
 
 
