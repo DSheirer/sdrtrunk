@@ -35,7 +35,8 @@ public enum Version
     V3_11(3.11f, true),
     V3_12(3.12f, true),
     V3_13(3.13f, true), //No changes - OSX build only.
-    V3_14(3.14f, true);
+    V3_14(3.14f, true),
+    V3_15(3.15f, true);
 
     private float mValue;
     private boolean mSupported;
@@ -57,6 +58,7 @@ public enum Version
 
     /**
      * Indicates if this version is greater than or equal to the specified version.
+     *
      * @param version to compare
      * @return true if this version is greater than or equal to
      */
@@ -75,13 +77,14 @@ public enum Version
 
     /**
      * Lookup the version from the specified value.
+     *
      * @param value to lookup
      * @return version or UNKNOWN
      */
     public static Version fromValue(float value)
     {
 
-        for(Version version: values())
+        for(Version version : values())
         {
             if(version.mValue == value)
             {

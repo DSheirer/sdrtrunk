@@ -57,7 +57,7 @@ public class CompositeParametersFactory
             case RSPduo -> {
                 return new RspDuoCompositeParameters(version, memorySegment, arena);
             }
-            case RSPdx -> {
+            case RSPdx, RSPdxR2 -> {
                 return new RspDxCompositeParameters(version, memorySegment, arena);
             }
         }

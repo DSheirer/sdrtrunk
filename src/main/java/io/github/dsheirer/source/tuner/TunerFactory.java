@@ -162,6 +162,7 @@ public class TunerFactory
                 tuners.add(new DiscoveredRsp2Tuner(deviceInfo, channelizerType));
                 break;
             case RSPdx:
+            case RSPdxR2:
                 tuners.add(new DiscoveredRspDxTuner(deviceInfo, channelizerType));
                 break;
             case RSPduo:
@@ -255,6 +256,7 @@ public class TunerFactory
                     }
                     break;
                 case RSPdx:
+                case RSPdxR2:
                     if(device instanceof RspDxDevice rspDxDevice)
                     {
                         IControlRspDx controlRspDx = new ControlRspDx(rspDxDevice);
@@ -476,6 +478,7 @@ public class TunerFactory
                         case RSP2:
                             return new Rsp2TunerEditor(userPreferences, tunerManager, discoveredRspTuner);
                         case RSPdx:
+                        case RSPdxR2:
                             return new RspDxTunerEditor(userPreferences, tunerManager, discoveredRspTuner);
                         case RSPduo:
                             if(discoveredRspTuner instanceof DiscoveredRspDuoTuner1 duoTuner1)

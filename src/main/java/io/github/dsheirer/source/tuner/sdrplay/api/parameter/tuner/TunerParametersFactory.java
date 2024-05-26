@@ -69,7 +69,7 @@ public class TunerParametersFactory
                     throw new IllegalArgumentException("Unrecognized API version: " + version);
                 }
             }
-            case RSPdx -> {
+            case RSPdx, RSPdxR2 -> {
                 MemorySegment rspDxMemorySegment = sdrplay_api_RxChannelParamsT.rspDxTunerParams$slice(memorySegment);
                 return new RspDxTunerParameters(memorySegment, rspDxMemorySegment);
             }

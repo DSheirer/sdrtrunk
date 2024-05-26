@@ -50,7 +50,7 @@ public class DeviceParametersFactory
             case RSPduo -> {
                 return new RspDuoDeviceParameters(memorySegment);
             }
-            case RSPdx -> {
+            case RSPdx, RSPdxR2 -> {
                 return new RspDxDeviceParameters(memorySegment);
             }
         }
