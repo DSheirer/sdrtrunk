@@ -40,6 +40,7 @@ import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
@@ -1523,13 +1524,14 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 collection.update(fromRadio);
             }
 
-            broadcast(PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, message.getTimestamp())
+            DecodeEvent decodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, message.getTimestamp())
                     .protocol(Protocol.APCO25)
                     .location(gps.getGeoPosition()).channel(getCurrentChannel()).details("LOCATION: " +
                             gps.getLocation().toString())
                     .identifiers(collection)
-                    .build());
-
+                    .build();
+            broadcast(decodeEvent);
+            mTrafficChannelManager.broadcast(decodeEvent);
             mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), gps.getLocation(),
                     message.getTimestamp());
         }

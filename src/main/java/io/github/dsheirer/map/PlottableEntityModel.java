@@ -22,6 +22,7 @@ package io.github.dsheirer.map;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
@@ -104,7 +105,7 @@ public class PlottableEntityModel extends AbstractTableModel implements Listener
         EventQueue.invokeLater(() -> {
             Identifier from = plottableDecodeEvent.getIdentifierCollection().getFromIdentifier();
 
-            if(from != null)
+            if(from != null && from.getForm() != Form.LOCATION)
             {
                 AliasListConfigurationIdentifier aliasList = plottableDecodeEvent.getIdentifierCollection().getAliasListConfiguration();
                 String key = (aliasList != null ? aliasList.toString() : KEY_NO_ALIAS_LIST) + from;

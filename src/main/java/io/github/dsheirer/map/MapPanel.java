@@ -468,7 +468,7 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         if(mPlottedTracksTable == null)
         {
             mPlottedTracksTable = new JTable(mMapService.getPlottableEntityModel());
-
+            mPlottedTracksTable.setAutoCreateRowSorter(true);
             mMapService.getPlottableEntityModel().addTableModelListener(e ->
             {
                 //Update the followed entity for DELETE/UPDATE operations
