@@ -395,7 +395,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         if(source == null)
         {
             //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(false));
+            if(!GraphicsEnvironment.isHeadless())
+            {
+                Platform.runLater(() -> channel.setProcessing(false));
+            }
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
