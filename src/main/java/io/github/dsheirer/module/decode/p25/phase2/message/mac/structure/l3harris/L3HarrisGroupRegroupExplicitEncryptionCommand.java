@@ -123,8 +123,6 @@ public class L3HarrisGroupRegroupExplicitEncryptionCommand extends MacStructureV
             sb.append(" V").append(getRegroupOptions().getSupergroupSequenceNumber());
         }
 
-        sb.append(" MSG LENGTH:").append(getLength());
-
         return sb.toString();
     }
 
@@ -175,34 +173,48 @@ public class L3HarrisGroupRegroupExplicitEncryptionCommand extends MacStructureV
     {
         if(mPatchGroupIdentifier == null)
         {
+            int octetLength = getLength();
+
             TalkgroupIdentifier patchGroupId = APCO25Talkgroup.create(getInt(SUPERGROUP_ADDRESS));
             PatchGroup patchGroup = new PatchGroup(patchGroupId, getRegroupOptions().getSupergroupSequenceNumber());
 
             if(getRegroupOptions().isTalkgroupAddress())
             {
-                int talkgroup1 = getInt(TALKGROUP_1);
-
-                if(talkgroup1 > 0)
+                if(octetLength >= 11)
                 {
-                    patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup1));
+                    int talkgroup1 = getInt(TALKGROUP_1);
 
-                    int talkgroup2 = getMessage().getInt(TALKGROUP_2, getOffset());
-
-                    if(talkgroup2 > 0)
+                    if(talkgroup1 > 0)
                     {
-                        patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup2));
+                        patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup1));
 
-                        int talkgroup3 = getMessage().getInt(TALKGROUP_3, getOffset());
-
-                        if(talkgroup3 > 0)
+                        if(octetLength >= 13)
                         {
-                            patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup3));
+                            int talkgroup2 = getMessage().getInt(TALKGROUP_2, getOffset());
 
-                            int talkgroup4 = getMessage().getInt(TALKGROUP_4, getOffset());
-
-                            if(talkgroup4 > 0)
+                            if(talkgroup2 > 0)
                             {
-                                patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup4));
+                                patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup2));
+
+                                if(octetLength >= 15)
+                                {
+                                    int talkgroup3 = getMessage().getInt(TALKGROUP_3, getOffset());
+
+                                    if(talkgroup3 > 0)
+                                    {
+                                        patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup3));
+
+                                        if(octetLength >= 17)
+                                        {
+                                            int talkgroup4 = getMessage().getInt(TALKGROUP_4, getOffset());
+
+                                            if(talkgroup4 > 0)
+                                            {
+                                                patchGroup.addPatchedTalkgroup(APCO25Talkgroup.create(talkgroup4));
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -210,23 +222,32 @@ public class L3HarrisGroupRegroupExplicitEncryptionCommand extends MacStructureV
             }
             else
             {
-                int radio1 = getInt(RADIO_1);
-
-                if(radio1 > 0)
+                if(octetLength >= 11)
                 {
-                    patchGroup.addPatchedRadio(APCO25RadioIdentifier.createTo(radio1));
+                    int radio1 = getInt(RADIO_1);
 
-                    int radio2 = getInt(RADIO_2);
-
-                    if(radio2 > 0)
+                    if(radio1 > 0)
                     {
-                        patchGroup.addPatchedRadio(APCO25RadioIdentifier.createTo(radio2));
+                        patchGroup.addPatchedRadio(APCO25RadioIdentifier.createTo(radio1));
 
-                        int radio3 = getInt(RADIO_3);
-
-                        if(radio3 > 0)
+                        if(octetLength >= 14)
                         {
-                            patchGroup.addPatchedRadio(APCO25RadioIdentifier.createTo(radio3));
+                            int radio2 = getInt(RADIO_2);
+
+                            if(radio2 > 0)
+                            {
+                                patchGroup.addPatchedRadio(APCO25RadioIdentifier.createTo(radio2));
+
+                                if(octetLength >= 17)
+                                {
+                                    int radio3 = getInt(RADIO_3);
+
+                                    if(radio3 > 0)
+                                    {
+                                        patchGroup.addPatchedRadio(APCO25RadioIdentifier.createTo(radio3));
+                                    }
+                                }
+                            }
                         }
                     }
                 }
