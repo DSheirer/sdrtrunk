@@ -22,12 +22,11 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FrequencyController
 {
@@ -341,21 +340,23 @@ public class FrequencyController
 
     public void broadcast(SourceEvent event) throws SourceException
     {
-        mTunable.getLock().lock();
-
-        try
+        if(mTunable != null)
         {
-            for(ISourceEventProcessor processor : mProcessors)
+            mTunable.getLock().lock();
+
+            try
             {
-                processor.process(event);
+                for(ISourceEventProcessor processor : mProcessors)
+                {
+                    processor.process(event);
+                }
+            }
+            finally
+            {
+                mTunable.getLock().unlock();
             }
         }
-        finally
-        {
-            mTunable.getLock().unlock();
-        }
     }
-
 
     public interface Tunable
     {
