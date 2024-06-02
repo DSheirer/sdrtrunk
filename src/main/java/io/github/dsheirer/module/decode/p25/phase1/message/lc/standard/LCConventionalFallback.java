@@ -64,7 +64,7 @@ public class LCConventionalFallback extends LinkControlWord
         sb.append(" 5:").append(getFallbackChannel5());
         sb.append(" 6:").append(getFallbackChannel6());
 
-        return super.toString();
+        return sb.toString();
     }
 
     public int getFallbackChannel1()
