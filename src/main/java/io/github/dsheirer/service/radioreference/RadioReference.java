@@ -192,10 +192,14 @@ public class RadioReference
                 throw new RadioReferenceException("The Radio Reference service is not providing user account details");
             }
 
+            mLog.info("Radio Reference Test Connection Result - user [" + userName + "] expiration [" + ui.getExpirationDate() + "]");
+
             return CheckExpDate(ui.getExpirationDate());
         }
         catch (RadioReferenceException rre)
         {
+            mLog.error("Radio Reference Test Connection Failed - user [" + userName + "] error [" + rre.getMessage() + "]");
+
             if (rre.hasFault())
             {
                 Fault fault = rre.getFault();
@@ -297,6 +301,18 @@ public class RadioReference
                 availableProperty().set(false);
                 premiumAccountProperty().set(false);
             }
+
+            if(userInfo != null)
+            {
+                mLog.info("Radio Reference Account - User:" + userInfo.getUserName() +
+                        " Expires:" + userInfo.getExpirationDate() +
+                        " Login Status:" + mLoginStatus +
+                        " Premium Access Enabled:" + premiumAccountProperty().get());
+            }
+            else
+            {
+                mLog.info("Radio Reference API did not provide a response from getUserData method call - premium access is disabled");
+            }
         }
         catch(RadioReferenceException rre)
         {
@@ -304,7 +320,7 @@ public class RadioReference
             mLoginStatus = LoginStatus.UNKNOWN;
             availableProperty().set(false);
             premiumAccountProperty().set(false);
-
+            mLog.error("Error checking radio reference premium account status.  Disabling premium access.  Error: " + rre.getMessage());
         }
     }
 
