@@ -36,7 +36,8 @@ public enum Version
     V3_12(3.12f, true),
     V3_13(3.13f, true), //No changes - OSX build only.
     V3_14(3.14f, true),
-    V3_15(3.15f, true);
+    V3_15(3.15f, true),
+    V3_16(3.16f, true);
 
     private float mValue;
     private boolean mSupported;
