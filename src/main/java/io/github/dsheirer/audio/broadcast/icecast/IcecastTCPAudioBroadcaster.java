@@ -347,7 +347,15 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     else
                     {
                         mLog.error("Unrecognized server response:" + message);
-                        setBroadcastState(BroadcastState.ERROR);
+
+                        /**
+                         * Only allow a generic error to update state if we've not already experienced a more
+                         * specific error. Otherwise, trailing messages will clear the more meaningful error state.
+                         */
+                        if(!getBroadcastState().isErrorState())
+                        {
+                            setBroadcastState(BroadcastState.ERROR);
+                        }
                     }
                 }
             }
