@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -588,9 +588,14 @@ public abstract class USBTunerController extends TunerController
 
         /**
          * (Re)Submits the transfer for stream processing
+         *
+         * Note: synchronized used here because there can be multiple threads can invoke LibUsb.handleTimeoutEvents
+         * (scheduled thread pool and a dedicated shutdown thread) during tuner shutdown and this has caused transfer
+         * tracking issues.
+         *
          * @param transfer to (re)submit
          */
-        private void submitTransfer(Transfer transfer)
+        private synchronized void submitTransfer(Transfer transfer)
         {
             int status = LibUsb.submitTransfer(transfer);
 
@@ -616,35 +621,34 @@ public abstract class USBTunerController extends TunerController
                                     mAvailableTransfers.size() + "]");
                         }
                     }
+                    else if(resubmitStatus == LibUsb.ERROR_BUSY)
+                    {
+                        //Ignore - this indicates the transfer was previously submitted and libusb is still working it.
+                    }
                     else
                     {
+                        //Add it back to the queue to try again later.
                         mErrorTransfers.add(transfer);
                         mTransferErrorCount++;
-
-                        //Only log this if more than half of the total transfer buffers are in error-holding
-                        if(mErrorTransfers.size() >= (mAvailableTransfers.size() / 2))
-                        {
-                            mLog.error("Attempt to resubmit previous error USB transfer buffer failed with status [" +
-                                    LibUsb.errorName(resubmitStatus) + "] - this may be temporary and has happened [" +
-                                    mTransferErrorCount + "] times so far.  Transfer buffer holding queue (error/total) [" +
-                                    mErrorTransfers.size() + "/" + mAvailableTransfers.size() + "]");
-                        }
                     }
                 }
             }
+            else if(status == LibUsb.ERROR_BUSY)
+            {
+                //Ignore - this indicates the transfer was previously submitted and libusb is still working it.  I'm not
+                //sure how this happens because we give libusb a transfer and it hands it back when it's full.  If
+                //libusb is still working it, then why did it indicate the transfer was completed?  So, we simply
+                //ignore this error code.  Other libraries simply ignore the submit status code altogether.
+            }
             else
             {
+                mLog.error("USB transfer [" + transfer + "] submit attempt failed with error [" + LibUsb.errorName(status) +
+                        "] - adding to error queue to resubmit later - this may be a temporary USB issue and has happened [" +
+                        mTransferErrorCount + "] time(s) so far.  Current transfer error queue (error/total) [" +
+                        mErrorTransfers.size() + "/" + mAvailableTransfers.size() + "]");
+
                 mErrorTransfers.add(transfer);
                 mTransferErrorCount++;
-
-                //Only log this if more than half of the total transfer buffers are in error-holding
-                if(mErrorTransfers.size() >= (mAvailableTransfers.size() / 2))
-                {
-                    mLog.error("Attempt to submit USB transfer buffer failed with status [" +
-                            LibUsb.errorName(status) + "] - this may be temporary and has happened [" +
-                            mTransferErrorCount + "] time(s) so far.  Transfer buffer holding queue (error/total) [" +
-                            mErrorTransfers.size() + "/" + mAvailableTransfers.size() + "]");
-                }
             }
 
             if(mErrorTransfers.size() >= mAvailableTransfers.size())
@@ -702,6 +706,14 @@ public abstract class USBTunerController extends TunerController
         public void processTransfer(Transfer transfer)
         {
             mInProgressTransfers.remove(transfer);
+
+            if(mErrorTransfers.contains(transfer))
+            {
+                mLog.warn("USB transfer [" + transfer + "] that was being tracked as an error transfer, has just been " +
+                        "delivered as completed with transfer status [" + LibUsb.errorName(transfer.status()) +
+                        "] - removing it from the transfer error queue");
+                mErrorTransfers.remove(transfer);
+            }
 
             switch(transfer.status())
             {

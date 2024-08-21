@@ -672,7 +672,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     }
                     break;
                 default:
-                    mLog.debug("Unrecognized AMBTC Opcode: " + ambtc.getHeader().getOpcode().name());
+//                    mLog.debug("Unrecognized AMBTC Opcode: " + ambtc.getHeader().getOpcode().name());
                     break;
             }
         }
@@ -1486,13 +1486,13 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 case MOTOROLA_OSP_QUEUED_RESPONSE:
                     processTSBKQueuedResponse(tsbk);
                 default:
-                    if(!tsbk.getOpcode().name().startsWith("ISP"))
-                    {
-                        LOGGING_SUPPRESSOR.info(tsbk.getOpcode().name() + tsbk.getMessage().toHexString(),
-                        1, "Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() +
-                            " VENDOR:" + tsbk.getVendor() + " OPCODE:" + tsbk.getOpcodeNumber() +
-                                " MSG:" + tsbk.getMessage().toHexString());
-                    }
+//                    if(!tsbk.getOpcode().name().startsWith("ISP"))
+//                    {
+//                        LOGGING_SUPPRESSOR.info(tsbk.getOpcode().name() + tsbk.getMessage().toHexString(),
+//                        1, "Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() +
+//                            " VENDOR:" + tsbk.getVendor() + " OPCODE:" + tsbk.getOpcodeNumber() +
+//                                " MSG:" + tsbk.getMessage().toHexString());
+//                    }
                     break;
             }
         }
@@ -2164,10 +2164,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 {
                     closeCurrentCallEvent(timestamp);
                 }
-                LOGGING_SUPPRESSOR.info(lcw.getVendor().toString() + lcw.getOpcodeNumber() + lcw.getMessage().toHexString(),
-                        1, "Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
-                    " OPCODE:" + lcw.getOpcodeNumber() + " MSG:" + lcw.getMessage().toHexString() +
-                                " CHAN:" + getCurrentChannel() + " FREQ:" + getCurrentFrequency());
+//                LOGGING_SUPPRESSOR.info(lcw.getVendor().toString() + lcw.getOpcodeNumber() + lcw.getMessage().toHexString(),
+//                        1, "Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
+//                    " OPCODE:" + lcw.getOpcodeNumber() + " MSG:" + lcw.getMessage().toHexString() +
+//                                " CHAN:" + getCurrentChannel() + " FREQ:" + getCurrentFrequency());
                 break;
         }
     }
