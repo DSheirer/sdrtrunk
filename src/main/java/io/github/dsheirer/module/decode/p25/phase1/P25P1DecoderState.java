@@ -2218,7 +2218,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     public void start()
     {
         super.start();
-        mPatchGroupManager.clear();
 
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannel.isTrafficChannel())
@@ -2230,12 +2229,5 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void init()
     {
-    }
-
-    @Override
-    public void stop()
-    {
-        super.stop();
-        mPatchGroupManager.clear();
     }
 }
