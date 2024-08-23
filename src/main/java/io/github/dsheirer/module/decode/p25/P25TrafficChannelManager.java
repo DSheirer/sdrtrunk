@@ -98,6 +98,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(mLog);
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
+    private static final long STALE_EVENT_THRESHOLD_MS = 2000;
 
     private Queue<Channel> mAvailablePhase1TrafficChannelQueue = new LinkedTransferQueue<>();
     private List<Channel> mManagedPhase1TrafficChannels;
@@ -366,8 +367,28 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            DecodeEvent event = timeslot == P25P1Message.TIMESLOT_1 ?
-                    mTS1ChannelGrantEventMap.get(frequency) : mTS2ChannelGrantEventMap.get(frequency);
+            DecodeEvent event = null;
+
+            if(timeslot == P25P1Message.TIMESLOT_1)
+            {
+                event = mTS1ChannelGrantEventMap.get(frequency);
+
+                if(isStaleEvent(event, timestamp))
+                {
+                    event = null;
+                    mTS1ChannelGrantEventMap.remove(frequency);
+                }
+            }
+            else if(timeslot == P25P1Message.TIMESLOT_2)
+            {
+                event = mTS2ChannelGrantEventMap.get(frequency);
+
+                if(isStaleEvent(event, timestamp))
+                {
+                    event = null;
+                    mTS1ChannelGrantEventMap.remove(frequency);
+                }
+            }
 
             if(event != null)
             {
@@ -408,8 +429,28 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            DecodeEvent event = timeslot == P25P1Message.TIMESLOT_1 ?
-                    mTS1ChannelGrantEventMap.get(frequency) : mTS2ChannelGrantEventMap.get(frequency);
+            DecodeEvent event = null;
+
+            if(timeslot == P25P1Message.TIMESLOT_1)
+            {
+                event = mTS1ChannelGrantEventMap.get(frequency);
+
+                if(isStaleEvent(event, timestamp))
+                {
+                    event = null;
+                    mTS1ChannelGrantEventMap.remove(frequency);
+                }
+            }
+            else if(timeslot == P25P1Message.TIMESLOT_2)
+            {
+                event = mTS2ChannelGrantEventMap.get(frequency);
+
+                if(isStaleEvent(event, timestamp))
+                {
+                    event = null;
+                    mTS2ChannelGrantEventMap.remove(frequency);
+                }
+            }
 
             if(event != null)
             {
@@ -751,10 +792,22 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             if(channel.isTDMAChannel() && channel.getTimeslot() == P25P1Message.TIMESLOT_2)
             {
                 event = mTS2ChannelGrantEventMap.get(channel.getDownlinkFrequency());
+                // If the event is stale, remove it and allow a new event to be created.
+                if(isStaleEvent(event, timestamp))
+                {
+                    event = null;
+                    mTS2ChannelGrantEventMap.remove(channel.getDownlinkFrequency());
+                }
             }
             else
             {
                 event = mTS1ChannelGrantEventMap.get(channel.getDownlinkFrequency());
+                // If the event is stale, remove it and allow a new event to be created.
+                if(isStaleEvent(event, timestamp))
+                {
+                    event = null;
+                    mTS1ChannelGrantEventMap.remove(channel.getDownlinkFrequency());
+                }
             }
 
             //If we have an event, update it.  Otherwise, make sure we have the traffic channel allocated
@@ -763,8 +816,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 event.update(timestamp);
                 broadcast(event);
             }
-            else if(channel.getDownlinkFrequency() > 0 &&
-                    !mAllocatedTrafficChannelMap.containsKey(channel.getDownlinkFrequency()))
+            else
             {
                 processP1ChannelGrant(channel, serviceOptions, ic, opcode, timestamp);
             }
@@ -800,6 +852,24 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Indicates if the event is stale and should be replaced with a new decode event.  Compares the event down time
+     * to the reference timestamp argument and indicates if that staleness exceeds a staleness threshold (2 seconds).
+     *
+     * Note: some decode events can remain in the channel grant event map if a traffic channel is not allocated for the
+     * event (ie tuner unavailable).  The control channel only tells us that the traffic channel is active, but doesn't
+     * tell us when the traffic channel is torn down.  So, we use this staleness evaluation to remove stale events that
+     * are left over from a previous traffic channel allocation.
+     *
+     * @param decodeEvent to evaluate
+     * @param timestamp for reference of event staleness.
+     * @return true if the event is stale.
+     */
+    private static boolean isStaleEvent(DecodeEvent decodeEvent, long timestamp)
+    {
+        return decodeEvent != null && (timestamp - decodeEvent.getTimeEnd() > STALE_EVENT_THRESHOLD_MS);
+    }
+
+    /**
      * Processes Phase 1 channel grants to allocate traffic channels and track overall channel usage.  Generates
      * decode events for each new channel that is allocated.
      *
@@ -819,6 +889,13 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         long frequency = apco25Channel.getDownlinkFrequency();
 
         P25ChannelGrantEvent event = mTS1ChannelGrantEventMap.get(frequency);
+
+        // If the event is stale, remove it and allow a new event to be created.
+        if(isStaleEvent(event, timestamp))
+        {
+            event = null;
+            mTS1ChannelGrantEventMap.remove(frequency);
+        }
 
         if(event != null && isSameCallUpdate(identifierCollection, event.getIdentifierCollection()))
         {
@@ -973,10 +1050,22 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
         {
             event = mTS1ChannelGrantEventMap.get(frequency);
+            // If the event is stale, remove it and allow a new event to be created.
+            if(isStaleEvent(event, timestamp))
+            {
+                event = null;
+                mTS1ChannelGrantEventMap.remove(frequency);
+            }
         }
         else if(timeslot == P25P1Message.TIMESLOT_2)
         {
             event = mTS2ChannelGrantEventMap.get(frequency);
+            // If the event is stale, remove it and allow a new event to be created.
+            if(isStaleEvent(event, timestamp))
+            {
+                event = null;
+                mTS2ChannelGrantEventMap.remove(frequency);
+            }
         }
         else
         {
