@@ -1959,7 +1959,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     public void start()
     {
         super.start();
-        mPatchGroupManager.clear();
 
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannel.isTrafficChannel())
@@ -1971,12 +1970,5 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     @Override
     public void init()
     {
-    }
-
-    @Override
-    public void stop()
-    {
-        super.stop();
-        mPatchGroupManager.clear();
     }
 }
