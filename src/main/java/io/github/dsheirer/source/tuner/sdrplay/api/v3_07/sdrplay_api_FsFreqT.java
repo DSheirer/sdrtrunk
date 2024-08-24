@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,123 +21,220 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfByte;
+import static java.lang.foreign.ValueLayout.OfDouble;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     double fsHz;
  *     unsigned char syncUpdate;
  *     unsigned char reCal;
- * };
+ * }
  * }
  */
 public class sdrplay_api_FsFreqT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_DOUBLE$LAYOUT.withName("fsHz"),
-        Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
-        Constants$root.C_CHAR$LAYOUT.withName("reCal"),
-        MemoryLayout.paddingLayout(48)
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_FsFreqT.$struct$LAYOUT;
+    sdrplay_api_FsFreqT() {
+        // Should not be called directly
     }
-    static final VarHandle fsHz$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("fsHz"));
-    public static VarHandle fsHz$VH() {
-        return sdrplay_api_FsFreqT.fsHz$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * double fsHz;
-     * }
-     */
-    public static double fsHz$get(MemorySegment seg) {
-        return (double)sdrplay_api_FsFreqT.fsHz$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * double fsHz;
-     * }
-     */
-    public static void fsHz$set(MemorySegment seg, double x) {
-        sdrplay_api_FsFreqT.fsHz$VH.set(seg, x);
-    }
-    public static double fsHz$get(MemorySegment seg, long index) {
-        return (double)sdrplay_api_FsFreqT.fsHz$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void fsHz$set(MemorySegment seg, long index, double x) {
-        sdrplay_api_FsFreqT.fsHz$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle syncUpdate$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("syncUpdate"));
-    public static VarHandle syncUpdate$VH() {
-        return sdrplay_api_FsFreqT.syncUpdate$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char syncUpdate;
-     * }
-     */
-    public static byte syncUpdate$get(MemorySegment seg) {
-        return (byte)sdrplay_api_FsFreqT.syncUpdate$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char syncUpdate;
-     * }
-     */
-    public static void syncUpdate$set(MemorySegment seg, byte x) {
-        sdrplay_api_FsFreqT.syncUpdate$VH.set(seg, x);
-    }
-    public static byte syncUpdate$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_FsFreqT.syncUpdate$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void syncUpdate$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_FsFreqT.syncUpdate$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle reCal$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("reCal"));
-    public static VarHandle reCal$VH() {
-        return sdrplay_api_FsFreqT.reCal$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char reCal;
-     * }
-     */
-    public static byte reCal$get(MemorySegment seg) {
-        return (byte)sdrplay_api_FsFreqT.reCal$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char reCal;
-     * }
-     */
-    public static void reCal$set(MemorySegment seg, byte x) {
-        sdrplay_api_FsFreqT.reCal$VH.set(seg, x);
-    }
-    public static byte reCal$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_FsFreqT.reCal$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void reCal$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_FsFreqT.reCal$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_DOUBLE.withName("fsHz"),
+        sdrplay_api_h.C_CHAR.withName("syncUpdate"),
+        sdrplay_api_h.C_CHAR.withName("reCal"),
+        MemoryLayout.paddingLayout(6)
+    ).withName("$anon$17:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfDouble fsHz$LAYOUT = (OfDouble)$LAYOUT.select(groupElement("fsHz"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * double fsHz
+     * }
+     */
+    public static final OfDouble fsHz$layout() {
+        return fsHz$LAYOUT;
+    }
+
+    private static final long fsHz$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * double fsHz
+     * }
+     */
+    public static final long fsHz$offset() {
+        return fsHz$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * double fsHz
+     * }
+     */
+    public static double fsHz(MemorySegment struct) {
+        return struct.get(fsHz$LAYOUT, fsHz$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * double fsHz
+     * }
+     */
+    public static void fsHz(MemorySegment struct, double fieldValue) {
+        struct.set(fsHz$LAYOUT, fsHz$OFFSET, fieldValue);
+    }
+
+    private static final OfByte syncUpdate$LAYOUT = (OfByte)$LAYOUT.select(groupElement("syncUpdate"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char syncUpdate
+     * }
+     */
+    public static final OfByte syncUpdate$layout() {
+        return syncUpdate$LAYOUT;
+    }
+
+    private static final long syncUpdate$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char syncUpdate
+     * }
+     */
+    public static final long syncUpdate$offset() {
+        return syncUpdate$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char syncUpdate
+     * }
+     */
+    public static byte syncUpdate(MemorySegment struct) {
+        return struct.get(syncUpdate$LAYOUT, syncUpdate$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char syncUpdate
+     * }
+     */
+    public static void syncUpdate(MemorySegment struct, byte fieldValue) {
+        struct.set(syncUpdate$LAYOUT, syncUpdate$OFFSET, fieldValue);
+    }
+
+    private static final OfByte reCal$LAYOUT = (OfByte)$LAYOUT.select(groupElement("reCal"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char reCal
+     * }
+     */
+    public static final OfByte reCal$layout() {
+        return reCal$LAYOUT;
+    }
+
+    private static final long reCal$OFFSET = 9;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char reCal
+     * }
+     */
+    public static final long reCal$offset() {
+        return reCal$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char reCal
+     * }
+     */
+    public static byte reCal(MemorySegment struct) {
+        return struct.get(reCal$LAYOUT, reCal$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char reCal
+     * }
+     */
+    public static void reCal(MemorySegment struct, byte fieldValue) {
+        struct.set(reCal$LAYOUT, reCal$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

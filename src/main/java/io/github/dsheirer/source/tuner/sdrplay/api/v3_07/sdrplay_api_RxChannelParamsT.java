@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +22,12 @@
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
 import java.lang.foreign.*;
+import java.util.function.*;
+
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     sdrplay_api_TunerParamsT tunerParams;
  *     sdrplay_api_ControlParamsT ctrlParams;
@@ -32,118 +35,339 @@ import java.lang.foreign.*;
  *     sdrplay_api_Rsp2TunerParamsT rsp2TunerParams;
  *     sdrplay_api_RspDuoTunerParamsT rspDuoTunerParams;
  *     sdrplay_api_RspDxTunerParamsT rspDxTunerParams;
- * };
+ * }
  * }
  */
 public class sdrplay_api_RxChannelParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        MemoryLayout.structLayout(
-            Constants$root.C_INT$LAYOUT.withName("bwType"),
-            Constants$root.C_INT$LAYOUT.withName("ifType"),
-            Constants$root.C_INT$LAYOUT.withName("loMode"),
-            MemoryLayout.structLayout(
-                Constants$root.C_INT$LAYOUT.withName("gRdB"),
-                Constants$root.C_CHAR$LAYOUT.withName("LNAstate"),
-                Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
-                MemoryLayout.paddingLayout(16),
-                Constants$root.C_INT$LAYOUT.withName("minGr"),
-                MemoryLayout.structLayout(
-                    Constants$root.C_FLOAT$LAYOUT.withName("curr"),
-                    Constants$root.C_FLOAT$LAYOUT.withName("max"),
-                    Constants$root.C_FLOAT$LAYOUT.withName("min")
-                ).withName("gainVals")
-            ).withName("gain"),
-            MemoryLayout.paddingLayout(32),
-            MemoryLayout.structLayout(
-                Constants$root.C_DOUBLE$LAYOUT.withName("rfHz"),
-                Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
-                MemoryLayout.paddingLayout(56)
-            ).withName("rfFreq"),
-            MemoryLayout.structLayout(
-                Constants$root.C_CHAR$LAYOUT.withName("dcCal"),
-                Constants$root.C_CHAR$LAYOUT.withName("speedUp"),
-                MemoryLayout.paddingLayout(16),
-                Constants$root.C_INT$LAYOUT.withName("trackTime"),
-                Constants$root.C_INT$LAYOUT.withName("refreshRateTime")
-            ).withName("dcOffsetTuner"),
-            MemoryLayout.paddingLayout(32)
-        ).withName("tunerParams"),
-        MemoryLayout.structLayout(
-            MemoryLayout.structLayout(
-                Constants$root.C_CHAR$LAYOUT.withName("DCenable"),
-                Constants$root.C_CHAR$LAYOUT.withName("IQenable")
-            ).withName("dcOffset"),
-            MemoryLayout.structLayout(
-                Constants$root.C_CHAR$LAYOUT.withName("enable"),
-                Constants$root.C_CHAR$LAYOUT.withName("decimationFactor"),
-                Constants$root.C_CHAR$LAYOUT.withName("wideBandSignal")
-            ).withName("decimation"),
-            MemoryLayout.paddingLayout(24),
-            MemoryLayout.structLayout(
-                Constants$root.C_INT$LAYOUT.withName("enable"),
-                Constants$root.C_INT$LAYOUT.withName("setPoint_dBfs"),
-                Constants$root.C_SHORT$LAYOUT.withName("attack_ms"),
-                Constants$root.C_SHORT$LAYOUT.withName("decay_ms"),
-                Constants$root.C_SHORT$LAYOUT.withName("decay_delay_ms"),
-                Constants$root.C_SHORT$LAYOUT.withName("decay_threshold_dB"),
-                Constants$root.C_INT$LAYOUT.withName("syncUpdate")
-            ).withName("agc"),
-            Constants$root.C_INT$LAYOUT.withName("adsbMode")
-        ).withName("ctrlParams"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("biasTEnable")
-        ).withName("rsp1aTunerParams"),
-        MemoryLayout.paddingLayout(24),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
-            MemoryLayout.paddingLayout(24),
-            Constants$root.C_INT$LAYOUT.withName("amPortSel"),
-            Constants$root.C_INT$LAYOUT.withName("antennaSel"),
-            Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
-            MemoryLayout.paddingLayout(24)
-        ).withName("rsp2TunerParams"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
-            MemoryLayout.paddingLayout(24),
-            Constants$root.C_INT$LAYOUT.withName("tuner1AmPortSel"),
-            Constants$root.C_CHAR$LAYOUT.withName("tuner1AmNotchEnable"),
-            Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
-            Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
-            MemoryLayout.paddingLayout(8)
-        ).withName("rspDuoTunerParams"),
-        MemoryLayout.structLayout(
-            Constants$root.C_INT$LAYOUT.withName("hdrBw")
-        ).withName("rspDxTunerParams"),
-        MemoryLayout.paddingLayout(32)
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_RxChannelParamsT.$struct$LAYOUT;
+    sdrplay_api_RxChannelParamsT() {
+        // Should not be called directly
     }
-    public static MemorySegment tunerParams$slice(MemorySegment seg) {
-        return seg.asSlice(0, 72);
-    }
-    public static MemorySegment ctrlParams$slice(MemorySegment seg) {
-        return seg.asSlice(72, 32);
-    }
-    public static MemorySegment rsp1aTunerParams$slice(MemorySegment seg) {
-        return seg.asSlice(104, 1);
-    }
-    public static MemorySegment rsp2TunerParams$slice(MemorySegment seg) {
-        return seg.asSlice(108, 16);
-    }
-    public static MemorySegment rspDuoTunerParams$slice(MemorySegment seg) {
-        return seg.asSlice(124, 12);
-    }
-    public static MemorySegment rspDxTunerParams$slice(MemorySegment seg) {
-        return seg.asSlice(136, 4);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_TunerParamsT.layout().withName("tunerParams"),
+        sdrplay_api_ControlParamsT.layout().withName("ctrlParams"),
+        sdrplay_api_Rsp1aTunerParamsT.layout().withName("rsp1aTunerParams"),
+        MemoryLayout.paddingLayout(3),
+        sdrplay_api_Rsp2TunerParamsT.layout().withName("rsp2TunerParams"),
+        sdrplay_api_RspDuoTunerParamsT.layout().withName("rspDuoTunerParams"),
+        sdrplay_api_RspDxTunerParamsT.layout().withName("rspDxTunerParams"),
+        MemoryLayout.paddingLayout(4)
+    ).withName("$anon$11:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final GroupLayout tunerParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("tunerParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerParamsT tunerParams
+     * }
+     */
+    public static final GroupLayout tunerParams$layout() {
+        return tunerParams$LAYOUT;
+    }
+
+    private static final long tunerParams$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerParamsT tunerParams
+     * }
+     */
+    public static final long tunerParams$offset() {
+        return tunerParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerParamsT tunerParams
+     * }
+     */
+    public static MemorySegment tunerParams(MemorySegment struct) {
+        return struct.asSlice(tunerParams$OFFSET, tunerParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerParamsT tunerParams
+     * }
+     */
+    public static void tunerParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, tunerParams$OFFSET, tunerParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout ctrlParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("ctrlParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ControlParamsT ctrlParams
+     * }
+     */
+    public static final GroupLayout ctrlParams$layout() {
+        return ctrlParams$LAYOUT;
+    }
+
+    private static final long ctrlParams$OFFSET = 72;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ControlParamsT ctrlParams
+     * }
+     */
+    public static final long ctrlParams$offset() {
+        return ctrlParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ControlParamsT ctrlParams
+     * }
+     */
+    public static MemorySegment ctrlParams(MemorySegment struct) {
+        return struct.asSlice(ctrlParams$OFFSET, ctrlParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ControlParamsT ctrlParams
+     * }
+     */
+    public static void ctrlParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, ctrlParams$OFFSET, ctrlParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rsp1aTunerParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rsp1aTunerParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aTunerParamsT rsp1aTunerParams
+     * }
+     */
+    public static final GroupLayout rsp1aTunerParams$layout() {
+        return rsp1aTunerParams$LAYOUT;
+    }
+
+    private static final long rsp1aTunerParams$OFFSET = 104;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aTunerParamsT rsp1aTunerParams
+     * }
+     */
+    public static final long rsp1aTunerParams$offset() {
+        return rsp1aTunerParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aTunerParamsT rsp1aTunerParams
+     * }
+     */
+    public static MemorySegment rsp1aTunerParams(MemorySegment struct) {
+        return struct.asSlice(rsp1aTunerParams$OFFSET, rsp1aTunerParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aTunerParamsT rsp1aTunerParams
+     * }
+     */
+    public static void rsp1aTunerParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rsp1aTunerParams$OFFSET, rsp1aTunerParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rsp2TunerParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rsp2TunerParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2TunerParamsT rsp2TunerParams
+     * }
+     */
+    public static final GroupLayout rsp2TunerParams$layout() {
+        return rsp2TunerParams$LAYOUT;
+    }
+
+    private static final long rsp2TunerParams$OFFSET = 108;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2TunerParamsT rsp2TunerParams
+     * }
+     */
+    public static final long rsp2TunerParams$offset() {
+        return rsp2TunerParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2TunerParamsT rsp2TunerParams
+     * }
+     */
+    public static MemorySegment rsp2TunerParams(MemorySegment struct) {
+        return struct.asSlice(rsp2TunerParams$OFFSET, rsp2TunerParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2TunerParamsT rsp2TunerParams
+     * }
+     */
+    public static void rsp2TunerParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rsp2TunerParams$OFFSET, rsp2TunerParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rspDuoTunerParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rspDuoTunerParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoTunerParamsT rspDuoTunerParams
+     * }
+     */
+    public static final GroupLayout rspDuoTunerParams$layout() {
+        return rspDuoTunerParams$LAYOUT;
+    }
+
+    private static final long rspDuoTunerParams$OFFSET = 124;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoTunerParamsT rspDuoTunerParams
+     * }
+     */
+    public static final long rspDuoTunerParams$offset() {
+        return rspDuoTunerParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoTunerParamsT rspDuoTunerParams
+     * }
+     */
+    public static MemorySegment rspDuoTunerParams(MemorySegment struct) {
+        return struct.asSlice(rspDuoTunerParams$OFFSET, rspDuoTunerParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoTunerParamsT rspDuoTunerParams
+     * }
+     */
+    public static void rspDuoTunerParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rspDuoTunerParams$OFFSET, rspDuoTunerParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rspDxTunerParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rspDxTunerParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxTunerParamsT rspDxTunerParams
+     * }
+     */
+    public static final GroupLayout rspDxTunerParams$layout() {
+        return rspDxTunerParams$LAYOUT;
+    }
+
+    private static final long rspDxTunerParams$OFFSET = 136;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxTunerParamsT rspDxTunerParams
+     * }
+     */
+    public static final long rspDxTunerParams$offset() {
+        return rspDxTunerParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxTunerParamsT rspDxTunerParams
+     * }
+     */
+    public static MemorySegment rspDxTunerParams(MemorySegment struct) {
+        return struct.asSlice(rspDxTunerParams$OFFSET, rspDxTunerParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxTunerParamsT rspDxTunerParams
+     * }
+     */
+    public static void rspDxTunerParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rspDxTunerParams$OFFSET, rspDxTunerParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

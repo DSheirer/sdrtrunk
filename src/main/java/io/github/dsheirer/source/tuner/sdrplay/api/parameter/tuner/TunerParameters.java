@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,28 +27,28 @@ import java.lang.foreign.MemorySegment;
  */
 public abstract class TunerParameters
 {
-    private MemorySegment mMemorySegment;
-    private RfFrequency mRfFrequency;
-    private Gain mGain;
-    private DcOffsetTuner mDcOffsetTuner;
+    private final MemorySegment mTunerParams;
+    private final RfFrequency mRfFrequency;
+    private final Gain mGain;
+    private final DcOffsetTuner mDcOffsetTuner;
 
     /**
      * Constructs an instance from the foreign memory segment
      */
-    public TunerParameters(MemorySegment memorySegment)
+    public TunerParameters(MemorySegment tunerParams)
     {
-        mMemorySegment = memorySegment;
-        mRfFrequency = new RfFrequency(sdrplay_api_TunerParamsT.rfFreq$slice(memorySegment));
-        mGain = new Gain(sdrplay_api_TunerParamsT.gain$slice(memorySegment));
-        mDcOffsetTuner = new DcOffsetTuner(sdrplay_api_TunerParamsT.dcOffsetTuner$slice(memorySegment));
+        mTunerParams = tunerParams;
+        mRfFrequency = new RfFrequency(sdrplay_api_TunerParamsT.rfFreq(tunerParams));
+        mGain = new Gain(sdrplay_api_TunerParamsT.gain(tunerParams));
+        mDcOffsetTuner = new DcOffsetTuner(sdrplay_api_TunerParamsT.dcOffsetTuner(tunerParams));
     }
 
     /**
      * Foreign memory segment for this tuner parameters structure
      */
-    private MemorySegment getMemorySegment()
+    private MemorySegment getTunerParams()
     {
-        return mMemorySegment;
+        return mTunerParams;
     }
 
     /**
@@ -56,7 +56,7 @@ public abstract class TunerParameters
      */
     public Bandwidth getBandwidth()
     {
-        return Bandwidth.fromValue(sdrplay_api_TunerParamsT.bwType$get(getMemorySegment()));
+        return Bandwidth.fromValue(sdrplay_api_TunerParamsT.bwType(getTunerParams()));
     }
 
     /**
@@ -64,7 +64,7 @@ public abstract class TunerParameters
      */
     public void setBandwidth(Bandwidth bandwidth)
     {
-        sdrplay_api_TunerParamsT.bwType$set(getMemorySegment(), bandwidth.getValue());
+        sdrplay_api_TunerParamsT.bwType(getTunerParams(), bandwidth.getValue());
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class TunerParameters
      */
     public IfMode getIfMode()
     {
-        return IfMode.fromValue(sdrplay_api_TunerParamsT.ifType$get(getMemorySegment()));
+        return IfMode.fromValue(sdrplay_api_TunerParamsT.ifType(getTunerParams()));
     }
 
     /**
@@ -80,7 +80,7 @@ public abstract class TunerParameters
      */
     public void setIfMode(IfMode ifMode)
     {
-        sdrplay_api_TunerParamsT.ifType$set(getMemorySegment(), ifMode.getValue());
+        sdrplay_api_TunerParamsT.ifType(getTunerParams(), ifMode.getValue());
     }
 
     /**
@@ -88,7 +88,7 @@ public abstract class TunerParameters
      */
     public LoMode getLoMode()
     {
-        return LoMode.fromValue(sdrplay_api_TunerParamsT.loMode$get(getMemorySegment()));
+        return LoMode.fromValue(sdrplay_api_TunerParamsT.loMode(getTunerParams()));
     }
 
     /**
@@ -96,7 +96,7 @@ public abstract class TunerParameters
      */
     public void setLoMode(LoMode loMode)
     {
-        sdrplay_api_TunerParamsT.loMode$set(getMemorySegment(), loMode.getValue());
+        sdrplay_api_TunerParamsT.loMode(getTunerParams(), loMode.getValue());
     }
 
     /**

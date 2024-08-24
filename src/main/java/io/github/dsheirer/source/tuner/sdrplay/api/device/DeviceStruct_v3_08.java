@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,9 +27,9 @@ import java.lang.foreign.MemorySegment;
  */
 public class DeviceStruct_v3_08 implements IDeviceStruct
 {
-    private MemorySegment mDeviceMemorySegment;
-    private DeviceType mDeviceType;
-    private String mSerialNumber;
+    private final MemorySegment mDeviceMemorySegment;
+    private final DeviceType mDeviceType;
+    private final String mSerialNumber;
 
     /**
      * Constructs an instance
@@ -38,9 +38,9 @@ public class DeviceStruct_v3_08 implements IDeviceStruct
     public DeviceStruct_v3_08(MemorySegment deviceMemorySegment)
     {
         mDeviceMemorySegment = deviceMemorySegment;
-        mDeviceType = DeviceType.fromValue(0xFF & sdrplay_api_DeviceT.hwVer$get(mDeviceMemorySegment));
-        MemorySegment serialSegment = sdrplay_api_DeviceT.SerNo$slice(mDeviceMemorySegment);
-        mSerialNumber = serialSegment.getUtf8String(0);
+        mDeviceType = DeviceType.fromValue(0xFF & sdrplay_api_DeviceT.hwVer(mDeviceMemorySegment));
+        MemorySegment serialSegment = sdrplay_api_DeviceT.SerNo(mDeviceMemorySegment);
+        mSerialNumber = serialSegment.getString(0);
     }
 
     @Override public MemorySegment getDeviceMemorySegment()
@@ -60,18 +60,18 @@ public class DeviceStruct_v3_08 implements IDeviceStruct
 
     @Override public TunerSelect getTunerSelect()
     {
-        return TunerSelect.fromValue(sdrplay_api_DeviceT.tuner$get(getDeviceMemorySegment()));
+        return TunerSelect.fromValue(sdrplay_api_DeviceT.tuner(getDeviceMemorySegment()));
     }
 
     @Override public RspDuoMode getRspDuoMode()
     {
-        return RspDuoMode.fromValue(sdrplay_api_DeviceT.rspDuoMode$get(getDeviceMemorySegment()));
+        return RspDuoMode.fromValue(sdrplay_api_DeviceT.rspDuoMode(getDeviceMemorySegment()));
     }
 
     @Override
     public void setRspDuoMode(RspDuoMode mode)
     {
-        sdrplay_api_DeviceT.rspDuoMode$set(getDeviceMemorySegment(), mode.getValue());
+        sdrplay_api_DeviceT.rspDuoMode(getDeviceMemorySegment(), mode.getValue());
     }
 
     @Override public boolean isValid()
@@ -82,17 +82,17 @@ public class DeviceStruct_v3_08 implements IDeviceStruct
 
     @Override public double getRspDuoSampleFrequency()
     {
-        return sdrplay_api_DeviceT.rspDuoSampleFreq$get(getDeviceMemorySegment());
+        return sdrplay_api_DeviceT.rspDuoSampleFreq(getDeviceMemorySegment());
     }
 
     @Override
     public void setRspDuoSampleFrequency(double frequency)
     {
-        sdrplay_api_DeviceT.rspDuoSampleFreq$set(getDeviceMemorySegment(), frequency);
+        sdrplay_api_DeviceT.rspDuoSampleFreq(getDeviceMemorySegment(), frequency);
     }
 
     @Override public MemorySegment getDeviceHandle()
     {
-        return sdrplay_api_DeviceT.dev$get(getDeviceMemorySegment());
+        return sdrplay_api_DeviceT.dev(getDeviceMemorySegment());
     }
 }

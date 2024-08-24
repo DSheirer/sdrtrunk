@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * I/Q sample stream callback adapter.  Implements the native interface and transfers the native callback data to an
  * implementation of the Java IStreamListener interface.
  */
-public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
+public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t.Function
 {
     private static final Logger mLog = LoggerFactory.getLogger(StreamCallbackAdapter.class);
     private IStreamListener mStreamListener;
@@ -73,11 +73,11 @@ public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
     {
         if(mStreamListener != null || mStreamCallbackListener != null)
         {
-            try(Arena arena = Arena.openConfined())
+            try(Arena confinedArena = Arena.ofConfined())
             {
                 //Translate the callback parameters pointer to a memory segment and re-construct the parameters as a Java object
-                StreamCallbackParameters parameters = new StreamCallbackParameters(sdrplay_api_StreamCbParamsT
-                        .ofAddress(parametersPointer, arena.scope()));
+                MemorySegment memorySegment = parametersPointer.reinterpret(sdrplay_api_StreamCbParamsT.sizeof(), confinedArena, null);
+                StreamCallbackParameters parameters = new StreamCallbackParameters(memorySegment);
 
                 if(mStreamCallbackListener != null)
                 {
@@ -88,8 +88,10 @@ public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
                 {
                     //Allocate memory segments from I/Q pointers, transfer from native to JVM array, and send to listener
                     long arrayByteSize = ValueLayout.JAVA_SHORT.byteSize() * sampleCount;
-                    MemorySegment iSamples = MemorySegment.ofAddress(iSamplesPointer.address(), arrayByteSize, arena.scope());
-                    MemorySegment qSamples = MemorySegment.ofAddress(qSamplesPointer.address(), arrayByteSize, arena.scope());
+                    MemorySegment iSamples = iSamplesPointer.reinterpret(arrayByteSize, confinedArena, null);
+                    MemorySegment qSamples = qSamplesPointer.reinterpret(arrayByteSize, confinedArena, null);
+//                    MemorySegment iSamples = MemorySegment.ofAddress(iSamplesPointer.address(), arrayByteSize, confinedArena.scope());
+//                    MemorySegment qSamples = MemorySegment.ofAddress(qSamplesPointer.address(), arrayByteSize, confinedArena.scope());
                     short[] i = iSamples.toArray(ValueLayout.JAVA_SHORT);
                     short[] q = qSamples.toArray(ValueLayout.JAVA_SHORT);
                     mStreamListener.processStream(i, q, parameters, Flag.evaluate(reset));

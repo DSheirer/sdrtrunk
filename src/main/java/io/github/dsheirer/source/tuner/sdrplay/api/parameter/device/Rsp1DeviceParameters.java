@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,10 +28,10 @@ public class Rsp1DeviceParameters extends DeviceParameters
 {
     /**
      * Constructs an instance
-     * @param memorySegment for this structure
+     * @param devParams for an allocated sdrplay_api_DevParamsT structure
      */
-    public Rsp1DeviceParameters(MemorySegment memorySegment)
+    public Rsp1DeviceParameters(MemorySegment devParams)
     {
-        super(memorySegment);
+        super(devParams);
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import java.lang.foreign.MemorySegment;
  */
 public class Decimation
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from the foreign memory segment
@@ -51,7 +51,7 @@ public class Decimation
      */
     public boolean isEnabled()
     {
-        return Flag.evaluate(sdrplay_api_DecimationT.enable$get(getMemorySegment()));
+        return Flag.evaluate(sdrplay_api_DecimationT.enable(getMemorySegment()));
     }
 
     /**
@@ -59,7 +59,7 @@ public class Decimation
      */
     public void setEnabled(boolean enable)
     {
-        sdrplay_api_DecimationT.enable$set(getMemorySegment(), Flag.of(enable));
+        sdrplay_api_DecimationT.enable(getMemorySegment(), Flag.of(enable));
     }
 
     /**
@@ -67,7 +67,7 @@ public class Decimation
      */
     public int getDecimationFactor()
     {
-        return sdrplay_api_DecimationT.decimationFactor$get(getMemorySegment());
+        return sdrplay_api_DecimationT.decimationFactor(getMemorySegment());
     }
 
     /**
@@ -75,7 +75,7 @@ public class Decimation
      */
     public void setDecimationFactor(int decimationFactor)
     {
-        sdrplay_api_DecimationT.decimationFactor$set(getMemorySegment(), (byte)decimationFactor);
+        sdrplay_api_DecimationT.decimationFactor(getMemorySegment(), (byte)decimationFactor);
     }
 
     /**
@@ -83,7 +83,7 @@ public class Decimation
      */
     public boolean isWideBandSignal()
     {
-        return Flag.evaluate(sdrplay_api_DecimationT.wideBandSignal$get(getMemorySegment()));
+        return Flag.evaluate(sdrplay_api_DecimationT.wideBandSignal(getMemorySegment()));
     }
 
     /**
@@ -91,6 +91,6 @@ public class Decimation
      */
     public void setWideBandSignal(boolean enable)
     {
-        sdrplay_api_DecimationT.wideBandSignal$set(getMemorySegment(), Flag.of(enable));
+        sdrplay_api_DecimationT.wideBandSignal(getMemorySegment(), Flag.of(enable));
     }
 }

@@ -35,26 +35,26 @@ import java.lang.foreign.MemorySegment;
  */
 public class RspDuoCompositeParameters extends CompositeParameters<RspDuoDeviceParameters, RspDuoTunerParameters>
 {
-    private RspDuoTunerParameters mTunerBParameters;
-    private ControlParameters mControlBParameters;
+    private final RspDuoTunerParameters mTunerBParameters;
+    private final ControlParameters mControlBParameters;
 
     /**
      * Constructs an instance from the foreign memory segment
      *
      * @param version for constructing the correct version structure.
-     * @param memorySegment for the composite structure in foreign memory
+     * @param deviceParams structure in foreign memory
      * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public RspDuoCompositeParameters(Version version, MemorySegment memorySegment, Arena arena)
+    public RspDuoCompositeParameters(Version version, MemorySegment deviceParams, Arena arena)
     {
-        super(version, DeviceType.RSPduo, memorySegment, arena);
+        super(version, DeviceType.RSPduo, deviceParams, arena);
 
-        MemorySegment memoryAddressRxB = sdrplay_api_DeviceParamsT.rxChannelB$get(memorySegment);
-        MemorySegment memorySegmentRxB = sdrplay_api_RxChannelParamsT.ofAddress(memoryAddressRxB, arena.scope());
-        mTunerBParameters = (RspDuoTunerParameters) TunerParametersFactory.create(version, DeviceType.RSPduo, memorySegmentRxB);
+        MemorySegment addressRxChannelB = sdrplay_api_DeviceParamsT.rxChannelB(deviceParams);
+        MemorySegment rxChannelB = addressRxChannelB.reinterpret(sdrplay_api_RxChannelParamsT.sizeof(), arena, null);
+        mTunerBParameters = (RspDuoTunerParameters) TunerParametersFactory.create(version, DeviceType.RSPduo, rxChannelB);
 
-        MemorySegment tunerBControlParametersMemorySegment = sdrplay_api_RxChannelParamsT.ctrlParams$slice(memorySegmentRxB);
-        mControlBParameters = new ControlParameters(tunerBControlParametersMemorySegment);
+        MemorySegment rxChannelBCtrlParams = sdrplay_api_RxChannelParamsT.ctrlParams(rxChannelB);
+        mControlBParameters = new ControlParameters(rxChannelBCtrlParams);
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import java.lang.foreign.MemorySegment;
  */
 public class ResetFlags
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from a foreign memory segment and transfers the structure fields into this instance.
@@ -52,7 +52,7 @@ public class ResetFlags
      */
     public void resetGain(boolean reset)
     {
-        sdrplay_api_ResetFlagsT.resetGainUpdate$set(getMemorySegment(), reset ? Flag.TRUE : Flag.FALSE);
+        sdrplay_api_ResetFlagsT.resetGainUpdate(getMemorySegment(), reset ? Flag.TRUE : Flag.FALSE);
     }
 
     /**
@@ -60,7 +60,7 @@ public class ResetFlags
      */
     public void resetFrequency(boolean reset)
     {
-        sdrplay_api_ResetFlagsT.resetRfUpdate$set(getMemorySegment(), reset ? Flag.TRUE : Flag.FALSE);
+        sdrplay_api_ResetFlagsT.resetRfUpdate(getMemorySegment(), reset ? Flag.TRUE : Flag.FALSE);
     }
 
     /**
@@ -68,6 +68,6 @@ public class ResetFlags
      */
     public void resetSampleRate(boolean reset)
     {
-        sdrplay_api_ResetFlagsT.resetFsUpdate$set(getMemorySegment(), reset ? Flag.TRUE : Flag.FALSE);
+        sdrplay_api_ResetFlagsT.resetFsUpdate(getMemorySegment(), reset ? Flag.TRUE : Flag.FALSE);
     }
 }

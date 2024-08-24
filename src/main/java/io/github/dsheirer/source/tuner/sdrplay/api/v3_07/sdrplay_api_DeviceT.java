@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,15 +21,24 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
+import java.lang.foreign.SequenceLayout;
 import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.MemoryLayout.PathElement.sequenceElement;
+import static java.lang.foreign.ValueLayout.OfByte;
+import static java.lang.foreign.ValueLayout.OfDouble;
+import static java.lang.foreign.ValueLayout.OfInt;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     char SerNo[64];
  *     unsigned char hwVer;
@@ -37,173 +46,372 @@ import java.lang.invoke.VarHandle;
  *     sdrplay_api_RspDuoModeT rspDuoMode;
  *     double rspDuoSampleFreq;
  *     HANDLE dev;
- * };
+ * }
  * }
  */
 public class sdrplay_api_DeviceT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        MemoryLayout.sequenceLayout(64, Constants$root.C_CHAR$LAYOUT).withName("SerNo"),
-        Constants$root.C_CHAR$LAYOUT.withName("hwVer"),
-        MemoryLayout.paddingLayout(24),
-        Constants$root.C_INT$LAYOUT.withName("tuner"),
-        Constants$root.C_INT$LAYOUT.withName("rspDuoMode"),
-        MemoryLayout.paddingLayout(32),
-        Constants$root.C_DOUBLE$LAYOUT.withName("rspDuoSampleFreq"),
-        Constants$root.C_POINTER$LAYOUT.withName("dev")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_DeviceT.$struct$LAYOUT;
+    sdrplay_api_DeviceT() {
+        // Should not be called directly
     }
-    public static MemorySegment SerNo$slice(MemorySegment seg) {
-        return seg.asSlice(0, 64);
-    }
-    static final VarHandle hwVer$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("hwVer"));
-    public static VarHandle hwVer$VH() {
-        return sdrplay_api_DeviceT.hwVer$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char hwVer;
-     * }
-     */
-    public static byte hwVer$get(MemorySegment seg) {
-        return (byte)sdrplay_api_DeviceT.hwVer$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char hwVer;
-     * }
-     */
-    public static void hwVer$set(MemorySegment seg, byte x) {
-        sdrplay_api_DeviceT.hwVer$VH.set(seg, x);
-    }
-    public static byte hwVer$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_DeviceT.hwVer$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void hwVer$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_DeviceT.hwVer$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle tuner$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("tuner"));
-    public static VarHandle tuner$VH() {
-        return sdrplay_api_DeviceT.tuner$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_TunerSelectT tuner;
-     * }
-     */
-    public static int tuner$get(MemorySegment seg) {
-        return (int)sdrplay_api_DeviceT.tuner$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_TunerSelectT tuner;
-     * }
-     */
-    public static void tuner$set(MemorySegment seg, int x) {
-        sdrplay_api_DeviceT.tuner$VH.set(seg, x);
-    }
-    public static int tuner$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_DeviceT.tuner$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void tuner$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_DeviceT.tuner$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rspDuoMode$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rspDuoMode"));
-    public static VarHandle rspDuoMode$VH() {
-        return sdrplay_api_DeviceT.rspDuoMode$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_RspDuoModeT rspDuoMode;
-     * }
-     */
-    public static int rspDuoMode$get(MemorySegment seg) {
-        return (int)sdrplay_api_DeviceT.rspDuoMode$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_RspDuoModeT rspDuoMode;
-     * }
-     */
-    public static void rspDuoMode$set(MemorySegment seg, int x) {
-        sdrplay_api_DeviceT.rspDuoMode$VH.set(seg, x);
-    }
-    public static int rspDuoMode$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_DeviceT.rspDuoMode$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rspDuoMode$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_DeviceT.rspDuoMode$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rspDuoSampleFreq$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rspDuoSampleFreq"));
-    public static VarHandle rspDuoSampleFreq$VH() {
-        return sdrplay_api_DeviceT.rspDuoSampleFreq$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * double rspDuoSampleFreq;
-     * }
-     */
-    public static double rspDuoSampleFreq$get(MemorySegment seg) {
-        return (double)sdrplay_api_DeviceT.rspDuoSampleFreq$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * double rspDuoSampleFreq;
-     * }
-     */
-    public static void rspDuoSampleFreq$set(MemorySegment seg, double x) {
-        sdrplay_api_DeviceT.rspDuoSampleFreq$VH.set(seg, x);
-    }
-    public static double rspDuoSampleFreq$get(MemorySegment seg, long index) {
-        return (double)sdrplay_api_DeviceT.rspDuoSampleFreq$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rspDuoSampleFreq$set(MemorySegment seg, long index, double x) {
-        sdrplay_api_DeviceT.rspDuoSampleFreq$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle dev$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("dev"));
-    public static VarHandle dev$VH() {
-        return sdrplay_api_DeviceT.dev$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * HANDLE dev;
-     * }
-     */
-    public static MemorySegment dev$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceT.dev$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * HANDLE dev;
-     * }
-     */
-    public static void dev$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_DeviceT.dev$VH.set(seg, x);
-    }
-    public static MemorySegment dev$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceT.dev$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void dev$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_DeviceT.dev$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        MemoryLayout.sequenceLayout(64, sdrplay_api_h.C_CHAR).withName("SerNo"),
+        sdrplay_api_h.C_CHAR.withName("hwVer"),
+        MemoryLayout.paddingLayout(3),
+        sdrplay_api_h.C_INT.withName("tuner"),
+        sdrplay_api_h.C_INT.withName("rspDuoMode"),
+        MemoryLayout.paddingLayout(4),
+        sdrplay_api_h.C_DOUBLE.withName("rspDuoSampleFreq"),
+        sdrplay_api_h.C_POINTER.withName("dev")
+    ).withName("$anon$142:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final SequenceLayout SerNo$LAYOUT = (SequenceLayout)$LAYOUT.select(groupElement("SerNo"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static final SequenceLayout SerNo$layout() {
+        return SerNo$LAYOUT;
+    }
+
+    private static final long SerNo$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static final long SerNo$offset() {
+        return SerNo$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static MemorySegment SerNo(MemorySegment struct) {
+        return struct.asSlice(SerNo$OFFSET, SerNo$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static void SerNo(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, SerNo$OFFSET, SerNo$LAYOUT.byteSize());
+    }
+
+    private static long[] SerNo$DIMS = { 64 };
+
+    /**
+     * Dimensions for array field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static long[] SerNo$dimensions() {
+        return SerNo$DIMS;
+    }
+    private static final VarHandle SerNo$ELEM_HANDLE = SerNo$LAYOUT.varHandle(sequenceElement());
+
+    /**
+     * Indexed getter for field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static byte SerNo(MemorySegment struct, long index0) {
+        return (byte)SerNo$ELEM_HANDLE.get(struct, 0L, index0);
+    }
+
+    /**
+     * Indexed setter for field:
+     * {@snippet lang=c :
+     * char SerNo[64]
+     * }
+     */
+    public static void SerNo(MemorySegment struct, long index0, byte fieldValue) {
+        SerNo$ELEM_HANDLE.set(struct, 0L, index0, fieldValue);
+    }
+
+    private static final OfByte hwVer$LAYOUT = (OfByte)$LAYOUT.select(groupElement("hwVer"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char hwVer
+     * }
+     */
+    public static final OfByte hwVer$layout() {
+        return hwVer$LAYOUT;
+    }
+
+    private static final long hwVer$OFFSET = 64;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char hwVer
+     * }
+     */
+    public static final long hwVer$offset() {
+        return hwVer$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char hwVer
+     * }
+     */
+    public static byte hwVer(MemorySegment struct) {
+        return struct.get(hwVer$LAYOUT, hwVer$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char hwVer
+     * }
+     */
+    public static void hwVer(MemorySegment struct, byte fieldValue) {
+        struct.set(hwVer$LAYOUT, hwVer$OFFSET, fieldValue);
+    }
+
+    private static final OfInt tuner$LAYOUT = (OfInt)$LAYOUT.select(groupElement("tuner"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerSelectT tuner
+     * }
+     */
+    public static final OfInt tuner$layout() {
+        return tuner$LAYOUT;
+    }
+
+    private static final long tuner$OFFSET = 68;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerSelectT tuner
+     * }
+     */
+    public static final long tuner$offset() {
+        return tuner$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerSelectT tuner
+     * }
+     */
+    public static int tuner(MemorySegment struct) {
+        return struct.get(tuner$LAYOUT, tuner$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TunerSelectT tuner
+     * }
+     */
+    public static void tuner(MemorySegment struct, int fieldValue) {
+        struct.set(tuner$LAYOUT, tuner$OFFSET, fieldValue);
+    }
+
+    private static final OfInt rspDuoMode$LAYOUT = (OfInt)$LAYOUT.select(groupElement("rspDuoMode"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoModeT rspDuoMode
+     * }
+     */
+    public static final OfInt rspDuoMode$layout() {
+        return rspDuoMode$LAYOUT;
+    }
+
+    private static final long rspDuoMode$OFFSET = 72;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoModeT rspDuoMode
+     * }
+     */
+    public static final long rspDuoMode$offset() {
+        return rspDuoMode$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoModeT rspDuoMode
+     * }
+     */
+    public static int rspDuoMode(MemorySegment struct) {
+        return struct.get(rspDuoMode$LAYOUT, rspDuoMode$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoModeT rspDuoMode
+     * }
+     */
+    public static void rspDuoMode(MemorySegment struct, int fieldValue) {
+        struct.set(rspDuoMode$LAYOUT, rspDuoMode$OFFSET, fieldValue);
+    }
+
+    private static final OfDouble rspDuoSampleFreq$LAYOUT = (OfDouble)$LAYOUT.select(groupElement("rspDuoSampleFreq"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * double rspDuoSampleFreq
+     * }
+     */
+    public static final OfDouble rspDuoSampleFreq$layout() {
+        return rspDuoSampleFreq$LAYOUT;
+    }
+
+    private static final long rspDuoSampleFreq$OFFSET = 80;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * double rspDuoSampleFreq
+     * }
+     */
+    public static final long rspDuoSampleFreq$offset() {
+        return rspDuoSampleFreq$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * double rspDuoSampleFreq
+     * }
+     */
+    public static double rspDuoSampleFreq(MemorySegment struct) {
+        return struct.get(rspDuoSampleFreq$LAYOUT, rspDuoSampleFreq$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * double rspDuoSampleFreq
+     * }
+     */
+    public static void rspDuoSampleFreq(MemorySegment struct, double fieldValue) {
+        struct.set(rspDuoSampleFreq$LAYOUT, rspDuoSampleFreq$OFFSET, fieldValue);
+    }
+
+    private static final AddressLayout dev$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("dev"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * HANDLE dev
+     * }
+     */
+    public static final AddressLayout dev$layout() {
+        return dev$LAYOUT;
+    }
+
+    private static final long dev$OFFSET = 88;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * HANDLE dev
+     * }
+     */
+    public static final long dev$offset() {
+        return dev$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * HANDLE dev
+     * }
+     */
+    public static MemorySegment dev(MemorySegment struct) {
+        return struct.get(dev$LAYOUT, dev$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * HANDLE dev
+     * }
+     */
+    public static void dev(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(dev$LAYOUT, dev$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

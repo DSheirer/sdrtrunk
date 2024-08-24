@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,122 +21,218 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfByte;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     unsigned char enable;
  *     unsigned char decimationFactor;
  *     unsigned char wideBandSignal;
- * };
+ * }
  * }
  */
 public class sdrplay_api_DecimationT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_CHAR$LAYOUT.withName("enable"),
-        Constants$root.C_CHAR$LAYOUT.withName("decimationFactor"),
-        Constants$root.C_CHAR$LAYOUT.withName("wideBandSignal")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_DecimationT.$struct$LAYOUT;
+    sdrplay_api_DecimationT() {
+        // Should not be called directly
     }
-    static final VarHandle enable$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("enable"));
-    public static VarHandle enable$VH() {
-        return sdrplay_api_DecimationT.enable$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char enable;
-     * }
-     */
-    public static byte enable$get(MemorySegment seg) {
-        return (byte)sdrplay_api_DecimationT.enable$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char enable;
-     * }
-     */
-    public static void enable$set(MemorySegment seg, byte x) {
-        sdrplay_api_DecimationT.enable$VH.set(seg, x);
-    }
-    public static byte enable$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_DecimationT.enable$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void enable$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_DecimationT.enable$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle decimationFactor$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("decimationFactor"));
-    public static VarHandle decimationFactor$VH() {
-        return sdrplay_api_DecimationT.decimationFactor$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char decimationFactor;
-     * }
-     */
-    public static byte decimationFactor$get(MemorySegment seg) {
-        return (byte)sdrplay_api_DecimationT.decimationFactor$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char decimationFactor;
-     * }
-     */
-    public static void decimationFactor$set(MemorySegment seg, byte x) {
-        sdrplay_api_DecimationT.decimationFactor$VH.set(seg, x);
-    }
-    public static byte decimationFactor$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_DecimationT.decimationFactor$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void decimationFactor$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_DecimationT.decimationFactor$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle wideBandSignal$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("wideBandSignal"));
-    public static VarHandle wideBandSignal$VH() {
-        return sdrplay_api_DecimationT.wideBandSignal$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char wideBandSignal;
-     * }
-     */
-    public static byte wideBandSignal$get(MemorySegment seg) {
-        return (byte)sdrplay_api_DecimationT.wideBandSignal$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char wideBandSignal;
-     * }
-     */
-    public static void wideBandSignal$set(MemorySegment seg, byte x) {
-        sdrplay_api_DecimationT.wideBandSignal$VH.set(seg, x);
-    }
-    public static byte wideBandSignal$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_DecimationT.wideBandSignal$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void wideBandSignal$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_DecimationT.wideBandSignal$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_CHAR.withName("enable"),
+        sdrplay_api_h.C_CHAR.withName("decimationFactor"),
+        sdrplay_api_h.C_CHAR.withName("wideBandSignal")
+    ).withName("$anon$29:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfByte enable$LAYOUT = (OfByte)$LAYOUT.select(groupElement("enable"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char enable
+     * }
+     */
+    public static final OfByte enable$layout() {
+        return enable$LAYOUT;
+    }
+
+    private static final long enable$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char enable
+     * }
+     */
+    public static final long enable$offset() {
+        return enable$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char enable
+     * }
+     */
+    public static byte enable(MemorySegment struct) {
+        return struct.get(enable$LAYOUT, enable$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char enable
+     * }
+     */
+    public static void enable(MemorySegment struct, byte fieldValue) {
+        struct.set(enable$LAYOUT, enable$OFFSET, fieldValue);
+    }
+
+    private static final OfByte decimationFactor$LAYOUT = (OfByte)$LAYOUT.select(groupElement("decimationFactor"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char decimationFactor
+     * }
+     */
+    public static final OfByte decimationFactor$layout() {
+        return decimationFactor$LAYOUT;
+    }
+
+    private static final long decimationFactor$OFFSET = 1;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char decimationFactor
+     * }
+     */
+    public static final long decimationFactor$offset() {
+        return decimationFactor$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char decimationFactor
+     * }
+     */
+    public static byte decimationFactor(MemorySegment struct) {
+        return struct.get(decimationFactor$LAYOUT, decimationFactor$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char decimationFactor
+     * }
+     */
+    public static void decimationFactor(MemorySegment struct, byte fieldValue) {
+        struct.set(decimationFactor$LAYOUT, decimationFactor$OFFSET, fieldValue);
+    }
+
+    private static final OfByte wideBandSignal$LAYOUT = (OfByte)$LAYOUT.select(groupElement("wideBandSignal"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char wideBandSignal
+     * }
+     */
+    public static final OfByte wideBandSignal$layout() {
+        return wideBandSignal$LAYOUT;
+    }
+
+    private static final long wideBandSignal$OFFSET = 2;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char wideBandSignal
+     * }
+     */
+    public static final long wideBandSignal$offset() {
+        return wideBandSignal$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char wideBandSignal
+     * }
+     */
+    public static byte wideBandSignal(MemorySegment struct) {
+        return struct.get(wideBandSignal$LAYOUT, wideBandSignal$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char wideBandSignal
+     * }
+     */
+    public static void wideBandSignal(MemorySegment struct, byte fieldValue) {
+        struct.set(wideBandSignal$LAYOUT, wideBandSignal$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

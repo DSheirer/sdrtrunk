@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,24 +29,24 @@ import java.lang.foreign.MemorySegment;
  */
 public class Rsp2DeviceParameters extends DeviceParameters
 {
-    private MemorySegment mRsp2MemorySegment;
+    private final MemorySegment mRsp2Params;
 
     /**
      * Constructs an instance
-     * @param memorySegment for this structure
+     * @param devParams for an allocated sdrplay_api_DevParamsT structure
      */
-    public Rsp2DeviceParameters(MemorySegment memorySegment)
+    public Rsp2DeviceParameters(MemorySegment devParams)
     {
-        super(memorySegment);
-        mRsp2MemorySegment = sdrplay_api_DevParamsT.rsp2Params$slice(memorySegment);
+        super(devParams);
+        mRsp2Params = sdrplay_api_DevParamsT.rsp2Params(devParams);
     }
 
     /**
      * Foreign memory segment representing this structure
      */
-    private MemorySegment getRsp2MemorySegment()
+    private MemorySegment getRsp2Params()
     {
-        return mRsp2MemorySegment;
+        return mRsp2Params;
     }
 
     /**
@@ -54,7 +54,7 @@ public class Rsp2DeviceParameters extends DeviceParameters
      */
     public boolean isExternalReferenceOutput()
     {
-        return Flag.evaluate(sdrplay_api_Rsp2ParamsT.extRefOutputEn$get(getRsp2MemorySegment()));
+        return Flag.evaluate(sdrplay_api_Rsp2ParamsT.extRefOutputEn(getRsp2Params()));
     }
 
     /**
@@ -62,6 +62,6 @@ public class Rsp2DeviceParameters extends DeviceParameters
      */
     public void setExternalReferenceOutput(boolean enable)
     {
-        sdrplay_api_Rsp2ParamsT.extRefOutputEn$set(getRsp2MemorySegment(), Flag.of(enable));
+        sdrplay_api_Rsp2ParamsT.extRefOutputEn(getRsp2Params(), Flag.of(enable));
     }
 }

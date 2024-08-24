@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,16 +26,12 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite.RspDuoCom
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceT;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * RSPduo Device
  */
 public class RspDuoDevice extends Device<RspDuoCompositeParameters, RspDuoTuner>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(RspDuoDevice.class);
-
     private RspDuoTuner mTuner;
 
     /**
@@ -87,7 +83,7 @@ public class RspDuoDevice extends Device<RspDuoCompositeParameters, RspDuoTuner>
     @Override
     public TunerSelect getTunerSelect()
     {
-        return TunerSelect.fromValue(sdrplay_api_DeviceT.tuner$get(getDeviceMemorySegment()));
+        return TunerSelect.fromValue(sdrplay_api_DeviceT.tuner(getDeviceMemorySegment()));
     }
 
     /**
@@ -95,7 +91,7 @@ public class RspDuoDevice extends Device<RspDuoCompositeParameters, RspDuoTuner>
      */
     public void setTunerSelect(TunerSelect tunerSelect)
     {
-        sdrplay_api_DeviceT.tuner$set(getDeviceMemorySegment(), tunerSelect.getValue());
+        sdrplay_api_DeviceT.tuner(getDeviceMemorySegment(), tunerSelect.getValue());
     }
 
     /**

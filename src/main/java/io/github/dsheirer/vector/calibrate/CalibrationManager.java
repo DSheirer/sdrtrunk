@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -275,8 +275,20 @@ public class CalibrationManager
     public static void main(String[] args)
     {
         CalibrationManager manager = getInstance();
-//        manager.reset();
-        manager.reset(CalibrationType.WINDOW);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Current Calibration Settings:\n");
+        for(CalibrationType type: CalibrationType.values())
+        {
+            Calibration calibration = manager.getCalibration(type);
+            if(calibration != null)
+            {
+                sb.append("\t").append(type.name()).append("\t").append(manager.getCalibration(type).getImplementation()).append("\n");
+            }
+        }
+        System.out.println(sb);
+
+        manager.reset();
 
         if(!manager.isCalibrated())
         {
@@ -289,6 +301,19 @@ public class CalibrationManager
                 e.printStackTrace();
             }
         }
+
+
+        StringBuilder sb1 = new StringBuilder();
+        sb1.append("Updated Calibration Settings:\n");
+        for(CalibrationType type: CalibrationType.values())
+        {
+            Calibration calibration = manager.getCalibration(type);
+            if(calibration != null)
+            {
+                sb1.append("\t").append(type.name()).append("\t").append(manager.getCalibration(type).getImplementation()).append("\n");
+            }
+        }
+        System.out.println(sb1);
 
         System.out.println("Complete");
     }

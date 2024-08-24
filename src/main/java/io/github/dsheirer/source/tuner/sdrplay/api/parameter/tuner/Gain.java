@@ -32,8 +32,8 @@ public class Gain
 {
     private static final Logger mLog = LoggerFactory.getLogger(Gain.class);
 
-    private MemorySegment mMemorySegment;
-    private GainValues mGainValues;
+    private final MemorySegment mMemorySegment;
+    private final GainValues mGainValues;
 
     /**
      * Constructs an instance from the foreign memory segment
@@ -41,7 +41,7 @@ public class Gain
     public Gain(MemorySegment memorySegment)
     {
         mMemorySegment = memorySegment;
-        mGainValues = new GainValues(sdrplay_api_GainT.gainVals$slice(memorySegment));
+        mGainValues = new GainValues(sdrplay_api_GainT.gainVals(memorySegment));
     }
 
     /**
@@ -58,7 +58,7 @@ public class Gain
      */
     public int getGainReductionDb()
     {
-        return sdrplay_api_GainT.gRdB$get(getMemorySegment());
+        return sdrplay_api_GainT.gRdB(getMemorySegment());
     }
 
     /**
@@ -67,7 +67,7 @@ public class Gain
      */
     public void setGainReductionDb(int gainReductionDb)
     {
-        sdrplay_api_GainT.gRdB$set(getMemorySegment(), gainReductionDb);
+        sdrplay_api_GainT.gRdB(getMemorySegment(), gainReductionDb);
     }
 
     /**
@@ -75,7 +75,7 @@ public class Gain
      */
     public int getLNA()
     {
-        return sdrplay_api_GainT.LNAstate$get(getMemorySegment());
+        return sdrplay_api_GainT.LNAstate(getMemorySegment());
     }
 
     /**
@@ -83,7 +83,7 @@ public class Gain
      */
     public void setLNA(int lna)
     {
-        sdrplay_api_GainT.LNAstate$set(getMemorySegment(), (byte)lna);
+        sdrplay_api_GainT.LNAstate(getMemorySegment(), (byte)lna);
     }
 
     /**
@@ -91,7 +91,7 @@ public class Gain
      */
     public void setSynchronousUpdate(boolean syncUpdate)
     {
-        sdrplay_api_GainT.syncUpdate$set(getMemorySegment(), Flag.of(syncUpdate));
+        sdrplay_api_GainT.syncUpdate(getMemorySegment(), Flag.of(syncUpdate));
     }
 
     /**
@@ -99,7 +99,7 @@ public class Gain
      */
     public MinimumGainReductionMode getMinimumGainReductionMode()
     {
-        return MinimumGainReductionMode.fromValue(sdrplay_api_GainT.minGr$get(getMemorySegment()));
+        return MinimumGainReductionMode.fromValue(sdrplay_api_GainT.minGr(getMemorySegment()));
     }
 
     /**
@@ -107,7 +107,7 @@ public class Gain
      */
     public void setMinimumGainReductionMode(MinimumGainReductionMode minimumGainReductionMode)
     {
-        sdrplay_api_GainT.minGr$set(getMemorySegment(), minimumGainReductionMode.getValue());
+        sdrplay_api_GainT.minGr(getMemorySegment(), minimumGainReductionMode.getValue());
     }
 
     /**

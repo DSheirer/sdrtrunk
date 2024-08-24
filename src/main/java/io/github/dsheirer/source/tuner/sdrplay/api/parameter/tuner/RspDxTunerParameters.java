@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,23 +27,23 @@ import java.lang.foreign.MemorySegment;
  */
 public class RspDxTunerParameters extends TunerParameters
 {
-    private MemorySegment mRspDxMemorySegment;
+    private final MemorySegment mRspDxTunerParams;
 
     /**
      * Constructs an instance from the foreign memory segment.
      */
-    public RspDxTunerParameters(MemorySegment tunerParametersMemorySegment, MemorySegment rspDxMemorySegment)
+    public RspDxTunerParameters(MemorySegment rxChannelParams, MemorySegment rspDxTunerParams)
     {
-        super(tunerParametersMemorySegment);
-        mRspDxMemorySegment = rspDxMemorySegment;
+        super(rxChannelParams);
+        mRspDxTunerParams = rspDxTunerParams;
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getRspDxMemorySegment()
+    private MemorySegment getRspDxTunerParams()
     {
-        return mRspDxMemorySegment;
+        return mRspDxTunerParams;
     }
 
     /**
@@ -51,7 +51,7 @@ public class RspDxTunerParameters extends TunerParameters
      */
     public HdrModeBandwidth getHdrModeBandwidth()
     {
-        return HdrModeBandwidth.fromValue(sdrplay_api_RspDxTunerParamsT.hdrBw$get(getRspDxMemorySegment()));
+        return HdrModeBandwidth.fromValue(sdrplay_api_RspDxTunerParamsT.hdrBw(getRspDxTunerParams()));
     }
 
     /**
@@ -59,6 +59,6 @@ public class RspDxTunerParameters extends TunerParameters
      */
     public void setHdrModeBandwidth(HdrModeBandwidth bandwidth)
     {
-        sdrplay_api_RspDxTunerParamsT.hdrBw$set(getRspDxMemorySegment(), bandwidth.getValue());
+        sdrplay_api_RspDxTunerParamsT.hdrBw(getRspDxTunerParams(), bandwidth.getValue());
     }
 }

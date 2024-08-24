@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,122 +21,218 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
- *     sdrplay_api_DevParamsT* devParams;
- *     sdrplay_api_RxChannelParamsT* rxChannelA;
- *     sdrplay_api_RxChannelParamsT* rxChannelB;
- * };
+ *     sdrplay_api_DevParamsT *devParams;
+ *     sdrplay_api_RxChannelParamsT *rxChannelA;
+ *     sdrplay_api_RxChannelParamsT *rxChannelB;
+ * }
  * }
  */
 public class sdrplay_api_DeviceParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_POINTER$LAYOUT.withName("devParams"),
-        Constants$root.C_POINTER$LAYOUT.withName("rxChannelA"),
-        Constants$root.C_POINTER$LAYOUT.withName("rxChannelB")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_DeviceParamsT.$struct$LAYOUT;
+    sdrplay_api_DeviceParamsT() {
+        // Should not be called directly
     }
-    static final VarHandle devParams$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("devParams"));
-    public static VarHandle devParams$VH() {
-        return sdrplay_api_DeviceParamsT.devParams$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_DevParamsT* devParams;
-     * }
-     */
-    public static MemorySegment devParams$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceParamsT.devParams$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_DevParamsT* devParams;
-     * }
-     */
-    public static void devParams$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_DeviceParamsT.devParams$VH.set(seg, x);
-    }
-    public static MemorySegment devParams$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceParamsT.devParams$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void devParams$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_DeviceParamsT.devParams$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rxChannelA$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rxChannelA"));
-    public static VarHandle rxChannelA$VH() {
-        return sdrplay_api_DeviceParamsT.rxChannelA$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_RxChannelParamsT* rxChannelA;
-     * }
-     */
-    public static MemorySegment rxChannelA$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceParamsT.rxChannelA$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_RxChannelParamsT* rxChannelA;
-     * }
-     */
-    public static void rxChannelA$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_DeviceParamsT.rxChannelA$VH.set(seg, x);
-    }
-    public static MemorySegment rxChannelA$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceParamsT.rxChannelA$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rxChannelA$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_DeviceParamsT.rxChannelA$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rxChannelB$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rxChannelB"));
-    public static VarHandle rxChannelB$VH() {
-        return sdrplay_api_DeviceParamsT.rxChannelB$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_RxChannelParamsT* rxChannelB;
-     * }
-     */
-    public static MemorySegment rxChannelB$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceParamsT.rxChannelB$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_RxChannelParamsT* rxChannelB;
-     * }
-     */
-    public static void rxChannelB$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_DeviceParamsT.rxChannelB$VH.set(seg, x);
-    }
-    public static MemorySegment rxChannelB$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_DeviceParamsT.rxChannelB$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rxChannelB$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_DeviceParamsT.rxChannelB$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_POINTER.withName("devParams"),
+        sdrplay_api_h.C_POINTER.withName("rxChannelA"),
+        sdrplay_api_h.C_POINTER.withName("rxChannelB")
+    ).withName("$anon$154:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final AddressLayout devParams$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("devParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DevParamsT *devParams
+     * }
+     */
+    public static final AddressLayout devParams$layout() {
+        return devParams$LAYOUT;
+    }
+
+    private static final long devParams$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DevParamsT *devParams
+     * }
+     */
+    public static final long devParams$offset() {
+        return devParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DevParamsT *devParams
+     * }
+     */
+    public static MemorySegment devParams(MemorySegment struct) {
+        return struct.get(devParams$LAYOUT, devParams$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DevParamsT *devParams
+     * }
+     */
+    public static void devParams(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(devParams$LAYOUT, devParams$OFFSET, fieldValue);
+    }
+
+    private static final AddressLayout rxChannelA$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("rxChannelA"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelA
+     * }
+     */
+    public static final AddressLayout rxChannelA$layout() {
+        return rxChannelA$LAYOUT;
+    }
+
+    private static final long rxChannelA$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelA
+     * }
+     */
+    public static final long rxChannelA$offset() {
+        return rxChannelA$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelA
+     * }
+     */
+    public static MemorySegment rxChannelA(MemorySegment struct) {
+        return struct.get(rxChannelA$LAYOUT, rxChannelA$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelA
+     * }
+     */
+    public static void rxChannelA(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(rxChannelA$LAYOUT, rxChannelA$OFFSET, fieldValue);
+    }
+
+    private static final AddressLayout rxChannelB$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("rxChannelB"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelB
+     * }
+     */
+    public static final AddressLayout rxChannelB$layout() {
+        return rxChannelB$LAYOUT;
+    }
+
+    private static final long rxChannelB$OFFSET = 16;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelB
+     * }
+     */
+    public static final long rxChannelB$offset() {
+        return rxChannelB$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelB
+     * }
+     */
+    public static MemorySegment rxChannelB(MemorySegment struct) {
+        return struct.get(rxChannelB$LAYOUT, rxChannelB$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RxChannelParamsT *rxChannelB
+     * }
+     */
+    public static void rxChannelB(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(rxChannelB$LAYOUT, rxChannelB$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

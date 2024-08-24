@@ -25,8 +25,8 @@ import java.text.SimpleDateFormat
  * Instructions for building/compiling the sdrtrunk application.
  *
  * Prerequisites:
- * Install and configure an OpenJDK version 19+ that includes the JavaFX modules (e.g. Bellsoft Liberica JDK)
- * - Optional: install and configure Gradle 7.6+
+ * Install and configure an OpenJDK version 22+ that includes the JavaFX modules (e.g. Bellsoft Liberica JDK)
+ * - Optional: install and configure Gradle 8.10+
  *
  * Scenario 1: run the application via gradle command line from the source code root directory:
  * command: ./gradlew run
@@ -58,10 +58,10 @@ repositories {
 //Version is defined in gradle.properties so that we can CLI override it for nightly builds.
 version = project.findProperty('projectVersion')
 
-//Java 20 is required for this version of the Project Panama preview/incubator feature
+//Java 22 is required for this version of the Project Panama preview/incubator feature
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(20)
+        languageVersion = JavaLanguageVersion.of(22)
     }
 }
 
@@ -90,8 +90,8 @@ dependencies {
     implementation 'com.github.nwaldispuehl:java-lame:v3.98.4'
 
     //mavenCentral/jcenter imports
-    implementation 'ch.qos.logback:logback-classic:1.4.5'
-    implementation 'ch.qos.logback:logback-core:1.4.5'
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    implementation 'ch.qos.logback:logback-core:1.4.14'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.14.0'
     implementation 'com.fazecast:jSerialComm:2.9.3'
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
@@ -99,7 +99,7 @@ dependencies {
     implementation 'com.github.jiconfont:jiconfont-swing:1.0.1'
     implementation 'com.github.wendykierp:JTransforms:3.1'
     implementation 'com.google.code.gson:gson:2.10'
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.google.guava:guava:33.3.0-jre'
     implementation 'com.jidesoft:jide-oss:3.6.18'
     implementation 'com.miglayout:miglayout-swing:11.0'
     implementation 'com.mpatric:mp3agic:0.9.1'
@@ -108,7 +108,7 @@ dependencies {
     implementation 'io.github.dsheirer:radio-reference-api:18.0.0'
     implementation 'javax.usb:usb-api:1.0.2'
     implementation 'net.coderazzi:tablefilter-swing:5.5.4'
-    implementation 'org.apache.commons:commons-compress:1.21'
+    implementation 'org.apache.commons:commons-compress:1.26.0'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'org.apache.commons:commons-csv:1.9.0'
@@ -127,11 +127,11 @@ dependencies {
 def os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem
 
 /**
- * This is needed for the JDK19 panama and vector API ... until it moves out of incubation or preview
+ * This is needed for the JDK22 vector API ... until it moves out of incubation or preview
  */
 tasks.withType(JavaCompile) {
-    options.compilerArgs.add("--enable-preview") //Panama Foreign Function/Memory is preview in JDK 19
-    options.compilerArgs.add("--add-modules=jdk.incubator.vector") //Needed while Panama Vector API remains in incubator
+    options.compilerArgs.add("--enable-preview") //Project Panama Vector API is still in incubator
+    options.compilerArgs.add("--add-modules=jdk.incubator.vector") //Project Panama Vector API is still in incubator
 }
 
 /**
@@ -140,10 +140,10 @@ tasks.withType(JavaCompile) {
 def jvmArgsWindows =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED', //windows users for JIDE
-         '--add-modules=jdk.incubator.vector',   //Needed while Project Panama API is still in incubator
-         '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
-         '--enable-native-access=ALL-UNNAMED',
-         '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //Allows Project Panama Foreign Function access to system library
+         '--add-modules=jdk.incubator.vector',   //Project Panama Vector API is still in incubator
+         '--enable-preview', //Project Panama Vector API is still in incubator
+         '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
+         '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //SDRPlay API library path
 
 /**
  * JVM Arguments for running the application on Linux.
@@ -152,8 +152,7 @@ def jvmArgsLinux =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-modules=jdk.incubator.vector',   //Needed while Project Panama API is still in incubator
          '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
-         '--enable-native-access=ALL-UNNAMED',
-         '-Djava.library.path=/usr/local/lib'] //Allows Project Panama Foreign Function access to system library
+         '--enable-native-access=ALL-UNNAMED'] //SDRPlay API library path
 
 application {
     mainClassName = "io.github.dsheirer.gui.SDRTrunk"
@@ -200,16 +199,16 @@ String targetWindowsX86_64 = 'windows-x86_64-v' + version
  * author's development environment, but can be changed to your environment if you want to use this build pattern.
  */
 String jdk_base = '/home/denny/java_jdks/'
-String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-20.0.1-full'
-String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-20.0.1-full'
-String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-20.0.1-full.jdk'
-String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-20.0.1-full.jdk'
-String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-20.0.1-full'
+String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-22.0.2-full'
+String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-22.0.2-full'
+String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-22.0.2-full.jdk'
+String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-22.0.2-full.jdk'
+String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-22.0.2-full'
 
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
-def jdk_download_base = "https://download.bell-sw.com/java/20.0.1+10/bellsoft-jdk20.0.1+10-"
+def jdk_download_base = "https://download.bell-sw.com/java/22.0.2+11/bellsoft-jdk22.0.2+11-"
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
 def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix

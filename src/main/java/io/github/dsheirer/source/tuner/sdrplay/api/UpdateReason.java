@@ -78,7 +78,7 @@ public enum UpdateReason
     EXTENSION_RSP_DX_RF_NOTCH_CONTROL(sdrplay_api_h.sdrplay_api_Update_RspDx_RfNotchControl(), "RSPdx RF Notch Control"),
     EXTENSION_RSP_DX_RF_DAB_NOTCH_CONTROL(sdrplay_api_h.sdrplay_api_Update_RspDx_RfDabNotchControl(), "RSPdx RF DAB Notch Control"),
     EXTENSION_RSP_DX_HDR_BANDWIDTH(sdrplay_api_h.sdrplay_api_Update_RspDx_HdrBw(), "RSPdx HDR Bandwidth"),
-    EXTENSION_RSP_DUO_RESET_SLAVE_FLAGS(io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_h.sdrplay_api_Update_RspDuo_ResetSlaveFlags(), "RSPDuo Reset Slave Flags"),
+    EXTENSION_RSP_DUO_RESET_SLAVE_FLAGS(io.github.dsheirer.source.tuner.sdrplay.api.v3_15.sdrplay_api_h.sdrplay_api_Update_RspDuo_ResetSlaveFlags(), "RSPDuo Reset Slave Flags"),
     EXTENSION_NONE(sdrplay_api_h.sdrplay_api_Update_Ext1_None(), "NONE"),
 
 

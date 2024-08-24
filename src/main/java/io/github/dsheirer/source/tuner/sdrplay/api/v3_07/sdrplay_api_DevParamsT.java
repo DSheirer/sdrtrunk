@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,15 +21,19 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfDouble;
+import static java.lang.foreign.ValueLayout.OfInt;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     double ppm;
  *     sdrplay_api_FsFreqT fsFreq;
@@ -41,166 +45,519 @@ import java.lang.invoke.VarHandle;
  *     sdrplay_api_Rsp2ParamsT rsp2Params;
  *     sdrplay_api_RspDuoParamsT rspDuoParams;
  *     sdrplay_api_RspDxParamsT rspDxParams;
- * };
+ * }
  * }
  */
 public class sdrplay_api_DevParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_DOUBLE$LAYOUT.withName("ppm"),
-        MemoryLayout.structLayout(
-            Constants$root.C_DOUBLE$LAYOUT.withName("fsHz"),
-            Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
-            Constants$root.C_CHAR$LAYOUT.withName("reCal"),
-            MemoryLayout.paddingLayout(48)
-        ).withName("fsFreq"),
-        MemoryLayout.structLayout(
-            Constants$root.C_INT$LAYOUT.withName("sampleNum"),
-            Constants$root.C_INT$LAYOUT.withName("period")
-        ).withName("syncUpdate"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("resetGainUpdate"),
-            Constants$root.C_CHAR$LAYOUT.withName("resetRfUpdate"),
-            Constants$root.C_CHAR$LAYOUT.withName("resetFsUpdate")
-        ).withName("resetFlags"),
-        MemoryLayout.paddingLayout(8),
-        Constants$root.C_INT$LAYOUT.withName("mode"),
-        Constants$root.C_INT$LAYOUT.withName("samplesPerPkt"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
-            Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable")
-        ).withName("rsp1aParams"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("extRefOutputEn")
-        ).withName("rsp2Params"),
-        MemoryLayout.paddingLayout(8),
-        MemoryLayout.structLayout(
-            Constants$root.C_INT$LAYOUT.withName("extRefOutputEn")
-        ).withName("rspDuoParams"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("hdrEnable"),
-            Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
-            MemoryLayout.paddingLayout(16),
-            Constants$root.C_INT$LAYOUT.withName("antennaSel"),
-            Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
-            Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
-            MemoryLayout.paddingLayout(16)
-        ).withName("rspDxParams")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_DevParamsT.$struct$LAYOUT;
+    sdrplay_api_DevParamsT() {
+        // Should not be called directly
     }
-    static final VarHandle ppm$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("ppm"));
-    public static VarHandle ppm$VH() {
-        return sdrplay_api_DevParamsT.ppm$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * double ppm;
-     * }
-     */
-    public static double ppm$get(MemorySegment seg) {
-        return (double)sdrplay_api_DevParamsT.ppm$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * double ppm;
-     * }
-     */
-    public static void ppm$set(MemorySegment seg, double x) {
-        sdrplay_api_DevParamsT.ppm$VH.set(seg, x);
-    }
-    public static double ppm$get(MemorySegment seg, long index) {
-        return (double)sdrplay_api_DevParamsT.ppm$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void ppm$set(MemorySegment seg, long index, double x) {
-        sdrplay_api_DevParamsT.ppm$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static MemorySegment fsFreq$slice(MemorySegment seg) {
-        return seg.asSlice(8, 16);
-    }
-    public static MemorySegment syncUpdate$slice(MemorySegment seg) {
-        return seg.asSlice(24, 8);
-    }
-    public static MemorySegment resetFlags$slice(MemorySegment seg) {
-        return seg.asSlice(32, 3);
-    }
-    static final VarHandle mode$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("mode"));
-    public static VarHandle mode$VH() {
-        return sdrplay_api_DevParamsT.mode$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_TransferModeT mode;
-     * }
-     */
-    public static int mode$get(MemorySegment seg) {
-        return (int)sdrplay_api_DevParamsT.mode$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_TransferModeT mode;
-     * }
-     */
-    public static void mode$set(MemorySegment seg, int x) {
-        sdrplay_api_DevParamsT.mode$VH.set(seg, x);
-    }
-    public static int mode$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_DevParamsT.mode$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void mode$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_DevParamsT.mode$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle samplesPerPkt$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("samplesPerPkt"));
-    public static VarHandle samplesPerPkt$VH() {
-        return sdrplay_api_DevParamsT.samplesPerPkt$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned int samplesPerPkt;
-     * }
-     */
-    public static int samplesPerPkt$get(MemorySegment seg) {
-        return (int)sdrplay_api_DevParamsT.samplesPerPkt$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned int samplesPerPkt;
-     * }
-     */
-    public static void samplesPerPkt$set(MemorySegment seg, int x) {
-        sdrplay_api_DevParamsT.samplesPerPkt$VH.set(seg, x);
-    }
-    public static int samplesPerPkt$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_DevParamsT.samplesPerPkt$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void samplesPerPkt$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_DevParamsT.samplesPerPkt$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static MemorySegment rsp1aParams$slice(MemorySegment seg) {
-        return seg.asSlice(44, 2);
-    }
-    public static MemorySegment rsp2Params$slice(MemorySegment seg) {
-        return seg.asSlice(46, 1);
-    }
-    public static MemorySegment rspDuoParams$slice(MemorySegment seg) {
-        return seg.asSlice(48, 4);
-    }
-    public static MemorySegment rspDxParams$slice(MemorySegment seg) {
-        return seg.asSlice(52, 12);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_DOUBLE.withName("ppm"),
+        sdrplay_api_FsFreqT.layout().withName("fsFreq"),
+        sdrplay_api_SyncUpdateT.layout().withName("syncUpdate"),
+        sdrplay_api_ResetFlagsT.layout().withName("resetFlags"),
+        MemoryLayout.paddingLayout(1),
+        sdrplay_api_h.C_INT.withName("mode"),
+        sdrplay_api_h.C_INT.withName("samplesPerPkt"),
+        sdrplay_api_Rsp1aParamsT.layout().withName("rsp1aParams"),
+        sdrplay_api_Rsp2ParamsT.layout().withName("rsp2Params"),
+        MemoryLayout.paddingLayout(1),
+        sdrplay_api_RspDuoParamsT.layout().withName("rspDuoParams"),
+        sdrplay_api_RspDxParamsT.layout().withName("rspDxParams")
+    ).withName("$anon$37:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfDouble ppm$LAYOUT = (OfDouble)$LAYOUT.select(groupElement("ppm"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * double ppm
+     * }
+     */
+    public static final OfDouble ppm$layout() {
+        return ppm$LAYOUT;
+    }
+
+    private static final long ppm$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * double ppm
+     * }
+     */
+    public static final long ppm$offset() {
+        return ppm$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * double ppm
+     * }
+     */
+    public static double ppm(MemorySegment struct) {
+        return struct.get(ppm$LAYOUT, ppm$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * double ppm
+     * }
+     */
+    public static void ppm(MemorySegment struct, double fieldValue) {
+        struct.set(ppm$LAYOUT, ppm$OFFSET, fieldValue);
+    }
+
+    private static final GroupLayout fsFreq$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("fsFreq"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_FsFreqT fsFreq
+     * }
+     */
+    public static final GroupLayout fsFreq$layout() {
+        return fsFreq$LAYOUT;
+    }
+
+    private static final long fsFreq$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_FsFreqT fsFreq
+     * }
+     */
+    public static final long fsFreq$offset() {
+        return fsFreq$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_FsFreqT fsFreq
+     * }
+     */
+    public static MemorySegment fsFreq(MemorySegment struct) {
+        return struct.asSlice(fsFreq$OFFSET, fsFreq$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_FsFreqT fsFreq
+     * }
+     */
+    public static void fsFreq(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, fsFreq$OFFSET, fsFreq$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout syncUpdate$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("syncUpdate"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_SyncUpdateT syncUpdate
+     * }
+     */
+    public static final GroupLayout syncUpdate$layout() {
+        return syncUpdate$LAYOUT;
+    }
+
+    private static final long syncUpdate$OFFSET = 24;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_SyncUpdateT syncUpdate
+     * }
+     */
+    public static final long syncUpdate$offset() {
+        return syncUpdate$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_SyncUpdateT syncUpdate
+     * }
+     */
+    public static MemorySegment syncUpdate(MemorySegment struct) {
+        return struct.asSlice(syncUpdate$OFFSET, syncUpdate$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_SyncUpdateT syncUpdate
+     * }
+     */
+    public static void syncUpdate(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, syncUpdate$OFFSET, syncUpdate$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout resetFlags$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("resetFlags"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ResetFlagsT resetFlags
+     * }
+     */
+    public static final GroupLayout resetFlags$layout() {
+        return resetFlags$LAYOUT;
+    }
+
+    private static final long resetFlags$OFFSET = 32;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ResetFlagsT resetFlags
+     * }
+     */
+    public static final long resetFlags$offset() {
+        return resetFlags$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ResetFlagsT resetFlags
+     * }
+     */
+    public static MemorySegment resetFlags(MemorySegment struct) {
+        return struct.asSlice(resetFlags$OFFSET, resetFlags$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_ResetFlagsT resetFlags
+     * }
+     */
+    public static void resetFlags(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, resetFlags$OFFSET, resetFlags$LAYOUT.byteSize());
+    }
+
+    private static final OfInt mode$LAYOUT = (OfInt)$LAYOUT.select(groupElement("mode"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TransferModeT mode
+     * }
+     */
+    public static final OfInt mode$layout() {
+        return mode$LAYOUT;
+    }
+
+    private static final long mode$OFFSET = 36;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TransferModeT mode
+     * }
+     */
+    public static final long mode$offset() {
+        return mode$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TransferModeT mode
+     * }
+     */
+    public static int mode(MemorySegment struct) {
+        return struct.get(mode$LAYOUT, mode$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_TransferModeT mode
+     * }
+     */
+    public static void mode(MemorySegment struct, int fieldValue) {
+        struct.set(mode$LAYOUT, mode$OFFSET, fieldValue);
+    }
+
+    private static final OfInt samplesPerPkt$LAYOUT = (OfInt)$LAYOUT.select(groupElement("samplesPerPkt"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned int samplesPerPkt
+     * }
+     */
+    public static final OfInt samplesPerPkt$layout() {
+        return samplesPerPkt$LAYOUT;
+    }
+
+    private static final long samplesPerPkt$OFFSET = 40;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned int samplesPerPkt
+     * }
+     */
+    public static final long samplesPerPkt$offset() {
+        return samplesPerPkt$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned int samplesPerPkt
+     * }
+     */
+    public static int samplesPerPkt(MemorySegment struct) {
+        return struct.get(samplesPerPkt$LAYOUT, samplesPerPkt$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned int samplesPerPkt
+     * }
+     */
+    public static void samplesPerPkt(MemorySegment struct, int fieldValue) {
+        struct.set(samplesPerPkt$LAYOUT, samplesPerPkt$OFFSET, fieldValue);
+    }
+
+    private static final GroupLayout rsp1aParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rsp1aParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aParamsT rsp1aParams
+     * }
+     */
+    public static final GroupLayout rsp1aParams$layout() {
+        return rsp1aParams$LAYOUT;
+    }
+
+    private static final long rsp1aParams$OFFSET = 44;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aParamsT rsp1aParams
+     * }
+     */
+    public static final long rsp1aParams$offset() {
+        return rsp1aParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aParamsT rsp1aParams
+     * }
+     */
+    public static MemorySegment rsp1aParams(MemorySegment struct) {
+        return struct.asSlice(rsp1aParams$OFFSET, rsp1aParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp1aParamsT rsp1aParams
+     * }
+     */
+    public static void rsp1aParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rsp1aParams$OFFSET, rsp1aParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rsp2Params$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rsp2Params"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2ParamsT rsp2Params
+     * }
+     */
+    public static final GroupLayout rsp2Params$layout() {
+        return rsp2Params$LAYOUT;
+    }
+
+    private static final long rsp2Params$OFFSET = 46;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2ParamsT rsp2Params
+     * }
+     */
+    public static final long rsp2Params$offset() {
+        return rsp2Params$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2ParamsT rsp2Params
+     * }
+     */
+    public static MemorySegment rsp2Params(MemorySegment struct) {
+        return struct.asSlice(rsp2Params$OFFSET, rsp2Params$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Rsp2ParamsT rsp2Params
+     * }
+     */
+    public static void rsp2Params(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rsp2Params$OFFSET, rsp2Params$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rspDuoParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rspDuoParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoParamsT rspDuoParams
+     * }
+     */
+    public static final GroupLayout rspDuoParams$layout() {
+        return rspDuoParams$LAYOUT;
+    }
+
+    private static final long rspDuoParams$OFFSET = 48;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoParamsT rspDuoParams
+     * }
+     */
+    public static final long rspDuoParams$offset() {
+        return rspDuoParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoParamsT rspDuoParams
+     * }
+     */
+    public static MemorySegment rspDuoParams(MemorySegment struct) {
+        return struct.asSlice(rspDuoParams$OFFSET, rspDuoParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDuoParamsT rspDuoParams
+     * }
+     */
+    public static void rspDuoParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rspDuoParams$OFFSET, rspDuoParams$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rspDxParams$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rspDxParams"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxParamsT rspDxParams
+     * }
+     */
+    public static final GroupLayout rspDxParams$layout() {
+        return rspDxParams$LAYOUT;
+    }
+
+    private static final long rspDxParams$OFFSET = 52;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxParamsT rspDxParams
+     * }
+     */
+    public static final long rspDxParams$offset() {
+        return rspDxParams$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxParamsT rspDxParams
+     * }
+     */
+    public static MemorySegment rspDxParams(MemorySegment struct) {
+        return struct.asSlice(rspDxParams$OFFSET, rspDxParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDxParamsT rspDxParams
+     * }
+     */
+    public static void rspDxParams(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rspDxParams$OFFSET, rspDxParams$LAYOUT.byteSize());
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

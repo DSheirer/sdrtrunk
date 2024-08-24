@@ -30,7 +30,7 @@ public enum EventType
     POWER_OVERLOAD_CHANGE(sdrplay_api_h.sdrplay_api_PowerOverloadChange(), "POWER OVERLOAD CHANGE"),
     DEVICE_REMOVED(sdrplay_api_h.sdrplay_api_DeviceRemoved(), "DEVICE REMOVED"),
     RSP_DUO_MODE_CHANGE(sdrplay_api_h.sdrplay_api_RspDuoModeChange(), "RSP-DUO MODE CHANGE"),
-    DEVICE_FAILURE(io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_h.sdrplay_api_DeviceFailure(), "DEVICE FAILURE"),
+    DEVICE_FAILURE(io.github.dsheirer.source.tuner.sdrplay.api.v3_15.sdrplay_api_h.sdrplay_api_DeviceFailure(), "DEVICE FAILURE"),
     UNKNOWN(-1, "UNKNOWN");
 
     private int mValue;

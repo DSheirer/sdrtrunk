@@ -26,6 +26,7 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.device.DeviceParame
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.device.DeviceParametersFactory;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParametersFactory;
+import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_ControlParamsT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DevParamsT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceParamsT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_RxChannelParamsT;
@@ -34,37 +35,37 @@ import java.lang.foreign.MemorySegment;
 
 /**
  * Composite Device Parameters structure (sdrplay_api_DeviceParamsT) providing access to the device parameters and
- * the tuner 1 parameters.  Tuner 2 parameters are only accessible via the RSPduo sub-class implementation.
+ * the tuner 1 parameter.  Tuner 2 parameters are only accessible via the RSPduo subclass implementation.
  *
- * Note: sub-class implementations will constrain access to the appropriate sub-structures of the DeviceParamsT
+ * Note: subclass implementations will constrain access to the appropriate sub-structures of the DeviceParamsT
  * structure for each specific device.
  */
 public class CompositeParameters<D extends DeviceParameters, T extends TunerParameters>
 {
-    private D mDeviceParameters;
-    private T mTunerAParameters;
-    private ControlParameters mControlAParameters;
+    private final D mDeviceParameters;
+    private final T mTunerAParameters;
+    private final ControlParameters mControlAParameters;
 
     /**
      * Constructs an instance from the foreign memory segment
      *
      * @param version of the API
      * @param deviceType to create
-     * @param memorySegment for the composite structure in foreign memory
+     * @param deviceParamsT native memory sdrplay_api_DeviceParamsT structure
      * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public CompositeParameters(Version version, DeviceType deviceType, MemorySegment memorySegment, Arena arena)
+    public CompositeParameters(Version version, DeviceType deviceType, MemorySegment deviceParamsT, Arena arena)
     {
-        MemorySegment parametersMemoryAddress = sdrplay_api_DeviceParamsT.devParams$get(memorySegment);
-        MemorySegment parametersMemorySegment = sdrplay_api_DevParamsT.ofAddress(parametersMemoryAddress, arena.scope());
-        mDeviceParameters = (D) DeviceParametersFactory.create(deviceType, parametersMemorySegment);
+        MemorySegment addressDevParams = sdrplay_api_DeviceParamsT.devParams(deviceParamsT);
+        MemorySegment devParams = addressDevParams.reinterpret(sdrplay_api_DevParamsT.sizeof(), arena, null);
+        mDeviceParameters = (D) DeviceParametersFactory.create(deviceType, devParams);
 
-        MemorySegment memoryAddressRxA = sdrplay_api_DeviceParamsT.rxChannelA$get(memorySegment);
-        MemorySegment memorySegmentRxA = sdrplay_api_RxChannelParamsT.ofAddress(memoryAddressRxA, arena.scope());
-        mTunerAParameters = (T) TunerParametersFactory.create(version, deviceType, memorySegmentRxA);
+        MemorySegment addressRxA = sdrplay_api_DeviceParamsT.rxChannelA(deviceParamsT);
+        MemorySegment rxA = addressRxA.reinterpret(sdrplay_api_RxChannelParamsT.sizeof(), arena, null);
+        mTunerAParameters = (T) TunerParametersFactory.create(version, deviceType, rxA);
 
-        MemorySegment tunerAControlParametersMemorySegment = sdrplay_api_RxChannelParamsT.ctrlParams$slice(memorySegmentRxA);
-        mControlAParameters = new ControlParameters(tunerAControlParametersMemorySegment);
+        MemorySegment tunerACtrlParams = rxA.asSlice(sdrplay_api_RxChannelParamsT.ctrlParams$offset(), sdrplay_api_ControlParamsT.sizeof());
+        mControlAParameters = new ControlParameters(tunerACtrlParams);
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,33 +30,36 @@ import java.lang.foreign.MemorySegment;
  */
 public class CallbackFunctions
 {
-    private DeviceEventAdapter mDeviceEventAdapter;
-    private StreamCallbackAdapter mStreamACallbackAdapter;
-    private StreamCallbackAdapter mStreamBCallbackAdapter;
-    private MemorySegment mCallbackFunctionsMemorySegment;
+    private final DeviceEventAdapter mDeviceEventAdapter;
+    private final StreamCallbackAdapter mStreamACallbackAdapter;
+    private final StreamCallbackAdapter mStreamBCallbackAdapter;
+    private final MemorySegment mCallbackFunctionsMemorySegment;
 
     /**
      * Constructs a callback functions for single-tuner use.
-     * @param longLifecycleArena for native memory allocation for long lifecycle objects.
+     * @param arena for native memory allocation for long lifecycle objects.
      * @param deviceEventListener for device events
      * @param streamListener for streaming samples
      * @param streamCallbackListener for streaming events
      */
-    public CallbackFunctions(Arena longLifecycleArena, IDeviceEventListener deviceEventListener,
-                             IStreamListener streamListener, IStreamCallbackListener streamCallbackListener)
+    public CallbackFunctions(Arena arena, IDeviceEventListener deviceEventListener, IStreamListener streamListener,
+                             IStreamCallbackListener streamCallbackListener)
     {
         //Create the event callback function
         mDeviceEventAdapter = new DeviceEventAdapter(deviceEventListener);
-        MemorySegment eventFunction = sdrplay_api_EventCallback_t.allocate(mDeviceEventAdapter, longLifecycleArena.scope());
+        MemorySegment eventFunction = sdrplay_api_EventCallback_t.allocate(mDeviceEventAdapter, arena);
 
         //Create the stream A callback function
         mStreamACallbackAdapter = new StreamCallbackAdapter(streamListener, streamCallbackListener);
-        MemorySegment streamAFunction = sdrplay_api_StreamCallback_t.allocate(mStreamACallbackAdapter, longLifecycleArena.scope());
+        MemorySegment streamAFunction = sdrplay_api_StreamCallback_t.allocate(mStreamACallbackAdapter, arena);
+        mStreamBCallbackAdapter = null;
 
         //Create the callback functions union and populate the callback functions
-        mCallbackFunctionsMemorySegment = sdrplay_api_CallbackFnsT.allocate(longLifecycleArena);
-        sdrplay_api_CallbackFnsT.EventCbFn$set(mCallbackFunctionsMemorySegment, eventFunction);
-        sdrplay_api_CallbackFnsT.StreamACbFn$set(mCallbackFunctionsMemorySegment, streamAFunction);
+        mCallbackFunctionsMemorySegment = sdrplay_api_CallbackFnsT.allocate(arena);
+        sdrplay_api_CallbackFnsT.EventCbFn(mCallbackFunctionsMemorySegment, eventFunction);
+        sdrplay_api_CallbackFnsT.StreamACbFn(mCallbackFunctionsMemorySegment, streamAFunction);
+//        sdrplay_api_CallbackFnsT.EventCbFn$set(mCallbackFunctionsMemorySegment, eventFunction);
+//        sdrplay_api_CallbackFnsT.StreamACbFn$set(mCallbackFunctionsMemorySegment, streamAFunction);
     }
 
     /**
@@ -73,21 +76,24 @@ public class CallbackFunctions
     {
         //Create the event callback function
         mDeviceEventAdapter = new DeviceEventAdapter(deviceEventListener);
-        MemorySegment eventFunction = sdrplay_api_EventCallback_t.allocate(mDeviceEventAdapter, arena.scope());
+        MemorySegment eventFunction = sdrplay_api_EventCallback_t.allocate(mDeviceEventAdapter, arena);
 
         //Create the stream A callback function
         mStreamACallbackAdapter = new StreamCallbackAdapter(streamAListener, streamCallbackListener);
-        MemorySegment streamAFunction = sdrplay_api_StreamCallback_t.allocate(mStreamACallbackAdapter, arena.scope());
+        MemorySegment streamAFunction = sdrplay_api_StreamCallback_t.allocate(mStreamACallbackAdapter, arena);
 
         //Create the stream B callback function
         mStreamBCallbackAdapter = new StreamCallbackAdapter(streamBListener, streamCallbackListener);
-        MemorySegment streamBFunction = sdrplay_api_StreamCallback_t.allocate(mStreamBCallbackAdapter, arena.scope());
+        MemorySegment streamBFunction = sdrplay_api_StreamCallback_t.allocate(mStreamBCallbackAdapter, arena);
 
         //Create the callback functions union and populate the callback functions
         mCallbackFunctionsMemorySegment = sdrplay_api_CallbackFnsT.allocate(arena);
-        sdrplay_api_CallbackFnsT.EventCbFn$set(mCallbackFunctionsMemorySegment, eventFunction);
-        sdrplay_api_CallbackFnsT.StreamACbFn$set(mCallbackFunctionsMemorySegment, streamAFunction);
-        sdrplay_api_CallbackFnsT.StreamBCbFn$set(mCallbackFunctionsMemorySegment, streamBFunction);
+        sdrplay_api_CallbackFnsT.EventCbFn(mCallbackFunctionsMemorySegment, eventFunction);
+        sdrplay_api_CallbackFnsT.StreamACbFn(mCallbackFunctionsMemorySegment, streamAFunction);
+        sdrplay_api_CallbackFnsT.StreamBCbFn(mCallbackFunctionsMemorySegment, streamBFunction);
+//        sdrplay_api_CallbackFnsT.EventCbFn$set(mCallbackFunctionsMemorySegment, eventFunction);
+//        sdrplay_api_CallbackFnsT.StreamACbFn$set(mCallbackFunctionsMemorySegment, streamAFunction);
+//        sdrplay_api_CallbackFnsT.StreamBCbFn$set(mCallbackFunctionsMemorySegment, streamBFunction);
     }
 
     /**

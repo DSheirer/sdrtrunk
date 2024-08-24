@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,24 +29,24 @@ import java.lang.foreign.MemorySegment;
  */
 public class Rsp1aDeviceParameters extends DeviceParameters
 {
-    private MemorySegment mRsp1AMemorySegment;
+    private final MemorySegment mRsp1aParams;
 
     /**
      * Constructs an instance
-     * @param memorySegment for this structure
+     * @param devParams for an allocated sdrplay_api_DevParamsT structure
      */
-    public Rsp1aDeviceParameters(MemorySegment memorySegment)
+    public Rsp1aDeviceParameters(MemorySegment devParams)
     {
-        super(memorySegment);
-        mRsp1AMemorySegment = sdrplay_api_DevParamsT.rsp1aParams$slice(memorySegment);
+        super(devParams);
+        mRsp1aParams = sdrplay_api_DevParamsT.rsp1aParams(devParams);
     }
 
     /**
      * Foreign memory segment representing this structure
      */
-    private MemorySegment getRsp1AMemorySegment()
+    private MemorySegment getRsp1aParams()
     {
-        return mRsp1AMemorySegment;
+        return mRsp1aParams;
     }
 
     /**
@@ -54,7 +54,7 @@ public class Rsp1aDeviceParameters extends DeviceParameters
      */
     public boolean isRFNotch()
     {
-        return Flag.evaluate(sdrplay_api_Rsp1aParamsT.rfNotchEnable$get(getRsp1AMemorySegment()));
+        return Flag.evaluate(sdrplay_api_Rsp1aParamsT.rfNotchEnable(getRsp1aParams()));
     }
 
     /**
@@ -62,7 +62,7 @@ public class Rsp1aDeviceParameters extends DeviceParameters
      */
     public void setRFNotch(boolean enable)
     {
-        sdrplay_api_Rsp1aParamsT.rfNotchEnable$set(getRsp1AMemorySegment(), Flag.of(enable));
+        sdrplay_api_Rsp1aParamsT.rfNotchEnable(getRsp1aParams(), Flag.of(enable));
     }
 
     /**
@@ -70,7 +70,7 @@ public class Rsp1aDeviceParameters extends DeviceParameters
      */
     public boolean isRfDabNotch()
     {
-        return Flag.evaluate(sdrplay_api_Rsp1aParamsT.rfDabNotchEnable$get(getRsp1AMemorySegment()));
+        return Flag.evaluate(sdrplay_api_Rsp1aParamsT.rfDabNotchEnable(getRsp1aParams()));
     }
 
     /**
@@ -78,6 +78,6 @@ public class Rsp1aDeviceParameters extends DeviceParameters
      */
     public void setRfDabNotch(boolean enable)
     {
-        sdrplay_api_Rsp1aParamsT.rfDabNotchEnable$set(getRsp1AMemorySegment(), Flag.of(enable));
+        sdrplay_api_Rsp1aParamsT.rfDabNotchEnable(getRsp1aParams(), Flag.of(enable));
     }
 }

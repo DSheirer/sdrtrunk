@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,22 +28,22 @@ import java.lang.foreign.MemorySegment;
  */
 public class DcOffset
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mDCOffset;
 
     /**
      * Constructs an instance from the foreign memory segment
      */
-    public DcOffset(MemorySegment memorySegment)
+    public DcOffset(MemorySegment dCOffset)
     {
-        mMemorySegment = memorySegment;
+        mDCOffset = dCOffset;
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getMemorySegment()
+    private MemorySegment getDCOffset()
     {
-        return mMemorySegment;
+        return mDCOffset;
     }
 
     /**
@@ -51,7 +51,7 @@ public class DcOffset
      */
     public boolean isDC()
     {
-        return Flag.evaluate(sdrplay_api_DcOffsetT.DCenable$get(getMemorySegment()));
+        return Flag.evaluate(sdrplay_api_DcOffsetT.DCenable(getDCOffset()));
     }
 
     /**
@@ -59,7 +59,7 @@ public class DcOffset
      */
     public void setDC(boolean enable)
     {
-        sdrplay_api_DcOffsetT.DCenable$set(getMemorySegment(), Flag.of(enable));
+        sdrplay_api_DcOffsetT.DCenable(getDCOffset(), Flag.of(enable));
     }
 
     /**
@@ -67,7 +67,7 @@ public class DcOffset
      */
     public boolean isIQ()
     {
-        return Flag.evaluate(sdrplay_api_DcOffsetT.IQenable$get(getMemorySegment()));
+        return Flag.evaluate(sdrplay_api_DcOffsetT.IQenable(getDCOffset()));
     }
 
     /**
@@ -75,6 +75,6 @@ public class DcOffset
      */
     public void setIQ(boolean enable)
     {
-        sdrplay_api_DcOffsetT.IQenable$set(getMemorySegment(), Flag.of(enable));
+        sdrplay_api_DcOffsetT.IQenable(getDCOffset(), Flag.of(enable));
     }
 }

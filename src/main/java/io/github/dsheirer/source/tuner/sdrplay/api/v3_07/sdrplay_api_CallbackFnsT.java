@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,131 +21,218 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     sdrplay_api_StreamCallback_t StreamACbFn;
  *     sdrplay_api_StreamCallback_t StreamBCbFn;
  *     sdrplay_api_EventCallback_t EventCbFn;
- * };
+ * }
  * }
  */
 public class sdrplay_api_CallbackFnsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_POINTER$LAYOUT.withName("StreamACbFn"),
-        Constants$root.C_POINTER$LAYOUT.withName("StreamBCbFn"),
-        Constants$root.C_POINTER$LAYOUT.withName("EventCbFn")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_CallbackFnsT.$struct$LAYOUT;
+    sdrplay_api_CallbackFnsT() {
+        // Should not be called directly
     }
-    static final VarHandle StreamACbFn$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("StreamACbFn"));
-    public static VarHandle StreamACbFn$VH() {
-        return sdrplay_api_CallbackFnsT.StreamACbFn$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_StreamCallback_t StreamACbFn;
-     * }
-     */
-    public static MemorySegment StreamACbFn$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_CallbackFnsT.StreamACbFn$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_StreamCallback_t StreamACbFn;
-     * }
-     */
-    public static void StreamACbFn$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_CallbackFnsT.StreamACbFn$VH.set(seg, x);
-    }
-    public static MemorySegment StreamACbFn$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_CallbackFnsT.StreamACbFn$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void StreamACbFn$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_CallbackFnsT.StreamACbFn$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static sdrplay_api_StreamCallback_t StreamACbFn(MemorySegment segment, SegmentScope scope) {
-        return sdrplay_api_StreamCallback_t.ofAddress(StreamACbFn$get(segment), scope);
-    }
-    static final VarHandle StreamBCbFn$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("StreamBCbFn"));
-    public static VarHandle StreamBCbFn$VH() {
-        return sdrplay_api_CallbackFnsT.StreamBCbFn$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_StreamCallback_t StreamBCbFn;
-     * }
-     */
-    public static MemorySegment StreamBCbFn$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_CallbackFnsT.StreamBCbFn$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_StreamCallback_t StreamBCbFn;
-     * }
-     */
-    public static void StreamBCbFn$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_CallbackFnsT.StreamBCbFn$VH.set(seg, x);
-    }
-    public static MemorySegment StreamBCbFn$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_CallbackFnsT.StreamBCbFn$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void StreamBCbFn$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_CallbackFnsT.StreamBCbFn$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static sdrplay_api_StreamCallback_t StreamBCbFn(MemorySegment segment, SegmentScope scope) {
-        return sdrplay_api_StreamCallback_t.ofAddress(StreamBCbFn$get(segment), scope);
-    }
-    static final VarHandle EventCbFn$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("EventCbFn"));
-    public static VarHandle EventCbFn$VH() {
-        return sdrplay_api_CallbackFnsT.EventCbFn$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_EventCallback_t EventCbFn;
-     * }
-     */
-    public static MemorySegment EventCbFn$get(MemorySegment seg) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_CallbackFnsT.EventCbFn$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_EventCallback_t EventCbFn;
-     * }
-     */
-    public static void EventCbFn$set(MemorySegment seg, MemorySegment x) {
-        sdrplay_api_CallbackFnsT.EventCbFn$VH.set(seg, x);
-    }
-    public static MemorySegment EventCbFn$get(MemorySegment seg, long index) {
-        return (java.lang.foreign.MemorySegment)sdrplay_api_CallbackFnsT.EventCbFn$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void EventCbFn$set(MemorySegment seg, long index, MemorySegment x) {
-        sdrplay_api_CallbackFnsT.EventCbFn$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static sdrplay_api_EventCallback_t EventCbFn(MemorySegment segment, SegmentScope scope) {
-        return sdrplay_api_EventCallback_t.ofAddress(EventCbFn$get(segment), scope);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_POINTER.withName("StreamACbFn"),
+        sdrplay_api_h.C_POINTER.withName("StreamBCbFn"),
+        sdrplay_api_h.C_POINTER.withName("EventCbFn")
+    ).withName("$anon$71:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final AddressLayout StreamACbFn$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("StreamACbFn"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamACbFn
+     * }
+     */
+    public static final AddressLayout StreamACbFn$layout() {
+        return StreamACbFn$LAYOUT;
+    }
+
+    private static final long StreamACbFn$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamACbFn
+     * }
+     */
+    public static final long StreamACbFn$offset() {
+        return StreamACbFn$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamACbFn
+     * }
+     */
+    public static MemorySegment StreamACbFn(MemorySegment struct) {
+        return struct.get(StreamACbFn$LAYOUT, StreamACbFn$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamACbFn
+     * }
+     */
+    public static void StreamACbFn(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(StreamACbFn$LAYOUT, StreamACbFn$OFFSET, fieldValue);
+    }
+
+    private static final AddressLayout StreamBCbFn$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("StreamBCbFn"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamBCbFn
+     * }
+     */
+    public static final AddressLayout StreamBCbFn$layout() {
+        return StreamBCbFn$LAYOUT;
+    }
+
+    private static final long StreamBCbFn$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamBCbFn
+     * }
+     */
+    public static final long StreamBCbFn$offset() {
+        return StreamBCbFn$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamBCbFn
+     * }
+     */
+    public static MemorySegment StreamBCbFn(MemorySegment struct) {
+        return struct.get(StreamBCbFn$LAYOUT, StreamBCbFn$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_StreamCallback_t StreamBCbFn
+     * }
+     */
+    public static void StreamBCbFn(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(StreamBCbFn$LAYOUT, StreamBCbFn$OFFSET, fieldValue);
+    }
+
+    private static final AddressLayout EventCbFn$LAYOUT = (AddressLayout)$LAYOUT.select(groupElement("EventCbFn"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_EventCallback_t EventCbFn
+     * }
+     */
+    public static final AddressLayout EventCbFn$layout() {
+        return EventCbFn$LAYOUT;
+    }
+
+    private static final long EventCbFn$OFFSET = 16;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_EventCallback_t EventCbFn
+     * }
+     */
+    public static final long EventCbFn$offset() {
+        return EventCbFn$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_EventCallback_t EventCbFn
+     * }
+     */
+    public static MemorySegment EventCbFn(MemorySegment struct) {
+        return struct.get(EventCbFn$LAYOUT, EventCbFn$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_EventCallback_t EventCbFn
+     * }
+     */
+    public static void EventCbFn(MemorySegment struct, MemorySegment fieldValue) {
+        struct.set(EventCbFn$LAYOUT, EventCbFn$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

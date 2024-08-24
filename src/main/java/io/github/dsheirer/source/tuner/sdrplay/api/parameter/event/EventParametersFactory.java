@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,31 +27,27 @@ import java.lang.foreign.MemorySegment;
  */
 public class EventParametersFactory
 {
-    private GainCallbackParameters mGainCallbackParameters;
-    private PowerOverloadCallbackParameters mPowerOverloadCallbackParameters;
-    private RspDuoModeCallbackParameters mRspDuoModeCallbackParameters;
-
     /**
      * Gain event callback parameters
      */
-    public static GainCallbackParameters createGainCallbackParameters(MemorySegment memorySegment)
+    public static GainCallbackParameters createGainCallbackParameters(MemorySegment eventParams)
     {
-        return new GainCallbackParameters(sdrplay_api_EventParamsT.gainParams$slice(memorySegment));
+        return new GainCallbackParameters(sdrplay_api_EventParamsT.gainParams(eventParams));
     }
 
     /**
      * Power overload event callback parameters
      */
-    public static PowerOverloadCallbackParameters createPowerOverloadCallbackParameters(MemorySegment memorySegment)
+    public static PowerOverloadCallbackParameters createPowerOverloadCallbackParameters(MemorySegment eventParams)
     {
-        return new PowerOverloadCallbackParameters(sdrplay_api_EventParamsT.powerOverloadParams$slice(memorySegment));
+        return new PowerOverloadCallbackParameters(sdrplay_api_EventParamsT.powerOverloadParams(eventParams));
     }
 
     /**
      * RSPduo mode event callback parameters
      */
-    public static RspDuoModeCallbackParameters createRspDuoModeCallbackParameters(MemorySegment memorySegment)
+    public static RspDuoModeCallbackParameters createRspDuoModeCallbackParameters(MemorySegment eventParams)
     {
-        return new RspDuoModeCallbackParameters(sdrplay_api_EventParamsT.rspDuoModeParams$slice(memorySegment));
+        return new RspDuoModeCallbackParameters(sdrplay_api_EventParamsT.rspDuoModeParams(eventParams));
     }
 }

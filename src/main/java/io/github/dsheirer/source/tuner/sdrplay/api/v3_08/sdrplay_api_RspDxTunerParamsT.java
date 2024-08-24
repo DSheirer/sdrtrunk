@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,58 +21,122 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.invoke.VarHandle;
 import java.lang.foreign.*;
+import java.util.function.*;
+
+import static java.lang.foreign.ValueLayout.*;
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     sdrplay_api_RspDx_HdrModeBwT hdrBw;
- * };
+ * }
  * }
  */
 public class sdrplay_api_RspDxTunerParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_INT$LAYOUT.withName("hdrBw")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_RspDxTunerParamsT.$struct$LAYOUT;
+    sdrplay_api_RspDxTunerParamsT() {
+        // Should not be called directly
     }
-    static final VarHandle hdrBw$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("hdrBw"));
-    public static VarHandle hdrBw$VH() {
-        return sdrplay_api_RspDxTunerParamsT.hdrBw$VH;
+
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_INT.withName("hdrBw")
+    ).withName("$anon$40:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
     }
+
+    private static final OfInt hdrBw$LAYOUT = (OfInt)$LAYOUT.select(groupElement("hdrBw"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_HdrModeBwT hdrBw
+     * }
+     */
+    public static final OfInt hdrBw$layout() {
+        return hdrBw$LAYOUT;
+    }
+
+    private static final long hdrBw$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_HdrModeBwT hdrBw
+     * }
+     */
+    public static final long hdrBw$offset() {
+        return hdrBw$OFFSET;
+    }
+
     /**
      * Getter for field:
-     * {@snippet :
-     * sdrplay_api_RspDx_HdrModeBwT hdrBw;
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_HdrModeBwT hdrBw
      * }
      */
-    public static int hdrBw$get(MemorySegment seg) {
-        return (int)sdrplay_api_RspDxTunerParamsT.hdrBw$VH.get(seg);
+    public static int hdrBw(MemorySegment struct) {
+        return struct.get(hdrBw$LAYOUT, hdrBw$OFFSET);
     }
+
     /**
      * Setter for field:
-     * {@snippet :
-     * sdrplay_api_RspDx_HdrModeBwT hdrBw;
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_HdrModeBwT hdrBw
      * }
      */
-    public static void hdrBw$set(MemorySegment seg, int x) {
-        sdrplay_api_RspDxTunerParamsT.hdrBw$VH.set(seg, x);
+    public static void hdrBw(MemorySegment struct, int fieldValue) {
+        struct.set(hdrBw$LAYOUT, hdrBw$OFFSET, fieldValue);
     }
-    public static int hdrBw$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_RspDxTunerParamsT.hdrBw$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void hdrBw$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_RspDxTunerParamsT.hdrBw$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

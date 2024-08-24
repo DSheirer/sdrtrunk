@@ -26,25 +26,25 @@ import java.lang.foreign.MemorySegment;
  */
 public abstract class RspDuoTunerParameters extends TunerParameters
 {
-    private MemorySegment mRspDuoMemorySegment;
+    private MemorySegment mRspDuoTunerParams;
 
     /**
      * Constructs an instance from the foreign memory segment
-     * @param tunerParametersMemorySegment of foreign memory structure
-     * @param rspDuoMemorySegment of foreign memory structure
+     * @param rxChannelParams of foreign memory structure
+     * @param rspDuoTunerParams of foreign memory structure
      */
-    RspDuoTunerParameters(MemorySegment tunerParametersMemorySegment, MemorySegment rspDuoMemorySegment)
+    RspDuoTunerParameters(MemorySegment rxChannelParams, MemorySegment rspDuoTunerParams)
     {
-        super(tunerParametersMemorySegment);
-        mRspDuoMemorySegment = rspDuoMemorySegment;
+        super(rxChannelParams);
+        mRspDuoTunerParams = rspDuoTunerParams;
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    MemorySegment getRspDuoMemorySegment()
+    MemorySegment getRspDuoTunerParams()
     {
-        return mRspDuoMemorySegment;
+        return mRspDuoTunerParams;
     }
 
     /**

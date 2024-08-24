@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,77 +21,366 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
+import java.lang.foreign.SequenceLayout;
 import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.MemoryLayout.PathElement.sequenceElement;
+import static java.lang.foreign.ValueLayout.OfInt;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     char file[256];
  *     char function[256];
  *     int line;
  *     char message[1024];
- * };
+ * }
  * }
  */
 public class sdrplay_api_ErrorInfoT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        MemoryLayout.sequenceLayout(256, Constants$root.C_CHAR$LAYOUT).withName("file"),
-        MemoryLayout.sequenceLayout(256, Constants$root.C_CHAR$LAYOUT).withName("function"),
-        Constants$root.C_INT$LAYOUT.withName("line"),
-        MemoryLayout.sequenceLayout(1024, Constants$root.C_CHAR$LAYOUT).withName("message")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_ErrorInfoT.$struct$LAYOUT;
+    sdrplay_api_ErrorInfoT() {
+        // Should not be called directly
     }
-    public static MemorySegment file$slice(MemorySegment seg) {
-        return seg.asSlice(0, 256);
+
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        MemoryLayout.sequenceLayout(256, sdrplay_api_h.C_CHAR).withName("file"),
+        MemoryLayout.sequenceLayout(256, sdrplay_api_h.C_CHAR).withName("function"),
+        sdrplay_api_h.C_INT.withName("line"),
+        MemoryLayout.sequenceLayout(1024, sdrplay_api_h.C_CHAR).withName("message")
+    ).withName("$anon$162:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
     }
-    public static MemorySegment function$slice(MemorySegment seg) {
-        return seg.asSlice(256, 256);
+
+    private static final SequenceLayout file$LAYOUT = (SequenceLayout)$LAYOUT.select(groupElement("file"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * char file[256]
+     * }
+     */
+    public static final SequenceLayout file$layout() {
+        return file$LAYOUT;
     }
-    static final VarHandle line$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("line"));
-    public static VarHandle line$VH() {
-        return sdrplay_api_ErrorInfoT.line$VH;
+
+    private static final long file$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * char file[256]
+     * }
+     */
+    public static final long file$offset() {
+        return file$OFFSET;
     }
+
     /**
      * Getter for field:
-     * {@snippet :
-     * int line;
+     * {@snippet lang=c :
+     * char file[256]
      * }
      */
-    public static int line$get(MemorySegment seg) {
-        return (int)sdrplay_api_ErrorInfoT.line$VH.get(seg);
+    public static MemorySegment file(MemorySegment struct) {
+        return struct.asSlice(file$OFFSET, file$LAYOUT.byteSize());
     }
+
     /**
      * Setter for field:
-     * {@snippet :
-     * int line;
+     * {@snippet lang=c :
+     * char file[256]
      * }
      */
-    public static void line$set(MemorySegment seg, int x) {
-        sdrplay_api_ErrorInfoT.line$VH.set(seg, x);
+    public static void file(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, file$OFFSET, file$LAYOUT.byteSize());
     }
-    public static int line$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_ErrorInfoT.line$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void line$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_ErrorInfoT.line$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static MemorySegment message$slice(MemorySegment seg) {
-        return seg.asSlice(516, 1024);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static long[] file$DIMS = { 256 };
+
+    /**
+     * Dimensions for array field:
+     * {@snippet lang=c :
+     * char file[256]
+     * }
+     */
+    public static long[] file$dimensions() {
+        return file$DIMS;
+    }
+    private static final VarHandle file$ELEM_HANDLE = file$LAYOUT.varHandle(sequenceElement());
+
+    /**
+     * Indexed getter for field:
+     * {@snippet lang=c :
+     * char file[256]
+     * }
+     */
+    public static byte file(MemorySegment struct, long index0) {
+        return (byte)file$ELEM_HANDLE.get(struct, 0L, index0);
+    }
+
+    /**
+     * Indexed setter for field:
+     * {@snippet lang=c :
+     * char file[256]
+     * }
+     */
+    public static void file(MemorySegment struct, long index0, byte fieldValue) {
+        file$ELEM_HANDLE.set(struct, 0L, index0, fieldValue);
+    }
+
+    private static final SequenceLayout function$LAYOUT = (SequenceLayout)$LAYOUT.select(groupElement("function"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static final SequenceLayout function$layout() {
+        return function$LAYOUT;
+    }
+
+    private static final long function$OFFSET = 256;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static final long function$offset() {
+        return function$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static MemorySegment function(MemorySegment struct) {
+        return struct.asSlice(function$OFFSET, function$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static void function(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, function$OFFSET, function$LAYOUT.byteSize());
+    }
+
+    private static long[] function$DIMS = { 256 };
+
+    /**
+     * Dimensions for array field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static long[] function$dimensions() {
+        return function$DIMS;
+    }
+    private static final VarHandle function$ELEM_HANDLE = function$LAYOUT.varHandle(sequenceElement());
+
+    /**
+     * Indexed getter for field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static byte function(MemorySegment struct, long index0) {
+        return (byte)function$ELEM_HANDLE.get(struct, 0L, index0);
+    }
+
+    /**
+     * Indexed setter for field:
+     * {@snippet lang=c :
+     * char function[256]
+     * }
+     */
+    public static void function(MemorySegment struct, long index0, byte fieldValue) {
+        function$ELEM_HANDLE.set(struct, 0L, index0, fieldValue);
+    }
+
+    private static final OfInt line$LAYOUT = (OfInt)$LAYOUT.select(groupElement("line"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int line
+     * }
+     */
+    public static final OfInt line$layout() {
+        return line$LAYOUT;
+    }
+
+    private static final long line$OFFSET = 512;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int line
+     * }
+     */
+    public static final long line$offset() {
+        return line$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int line
+     * }
+     */
+    public static int line(MemorySegment struct) {
+        return struct.get(line$LAYOUT, line$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int line
+     * }
+     */
+    public static void line(MemorySegment struct, int fieldValue) {
+        struct.set(line$LAYOUT, line$OFFSET, fieldValue);
+    }
+
+    private static final SequenceLayout message$LAYOUT = (SequenceLayout)$LAYOUT.select(groupElement("message"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static final SequenceLayout message$layout() {
+        return message$LAYOUT;
+    }
+
+    private static final long message$OFFSET = 516;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static final long message$offset() {
+        return message$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static MemorySegment message(MemorySegment struct) {
+        return struct.asSlice(message$OFFSET, message$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static void message(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, message$OFFSET, message$LAYOUT.byteSize());
+    }
+
+    private static long[] message$DIMS = { 1024 };
+
+    /**
+     * Dimensions for array field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static long[] message$dimensions() {
+        return message$DIMS;
+    }
+    private static final VarHandle message$ELEM_HANDLE = message$LAYOUT.varHandle(sequenceElement());
+
+    /**
+     * Indexed getter for field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static byte message(MemorySegment struct, long index0) {
+        return (byte)message$ELEM_HANDLE.get(struct, 0L, index0);
+    }
+
+    /**
+     * Indexed setter for field:
+     * {@snippet lang=c :
+     * char message[1024]
+     * }
+     */
+    public static void message(MemorySegment struct, long index0, byte fieldValue) {
+        message$ELEM_HANDLE.set(struct, 0L, index0, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

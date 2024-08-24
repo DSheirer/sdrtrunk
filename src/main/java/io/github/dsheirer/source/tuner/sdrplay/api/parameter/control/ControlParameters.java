@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,28 +27,28 @@ import java.lang.foreign.MemorySegment;
  */
 public class ControlParameters
 {
-    private MemorySegment mMemorySegment;
-    private DcOffset mDcOffset;
-    private Decimation mDecimation;
-    private Agc mAgc;
+    private final MemorySegment mControlParams;
+    private final DcOffset mDcOffset;
+    private final Decimation mDecimation;
+    private final Agc mAgc;
 
     /**
      * Creates an instance from the foreign memory segment
      */
-    public ControlParameters(MemorySegment memorySegment)
+    public ControlParameters(MemorySegment controlParams)
     {
-        mMemorySegment = memorySegment;
-        mDcOffset = new DcOffset(sdrplay_api_ControlParamsT.dcOffset$slice(memorySegment));
-        mDecimation = new Decimation(sdrplay_api_ControlParamsT.decimation$slice(memorySegment));
-        mAgc = new Agc(sdrplay_api_ControlParamsT.agc$slice(memorySegment));
+        mControlParams = controlParams;
+        mDcOffset = new DcOffset(sdrplay_api_ControlParamsT.dcOffset(controlParams));
+        mDecimation = new Decimation(sdrplay_api_ControlParamsT.decimation(controlParams));
+        mAgc = new Agc(sdrplay_api_ControlParamsT.agc(controlParams));
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getMemorySegment()
+    private MemorySegment getControlParams()
     {
-        return mMemorySegment;
+        return mControlParams;
     }
 
     /**
@@ -80,7 +80,7 @@ public class ControlParameters
      */
     public AdsbMode getAdsbMode()
     {
-        return AdsbMode.fromValue(sdrplay_api_ControlParamsT.adsbMode$get(getMemorySegment()));
+        return AdsbMode.fromValue(sdrplay_api_ControlParamsT.adsbMode(getControlParams()));
     }
 
     /**
@@ -88,6 +88,6 @@ public class ControlParameters
      */
     public void setAdsbMode(AdsbMode mode)
     {
-        sdrplay_api_ControlParamsT.adsbMode$set(getMemorySegment(), mode.getValue());
+        sdrplay_api_ControlParamsT.adsbMode(getControlParams(), mode.getValue());
     }
 }

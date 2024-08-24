@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,180 +21,308 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.invoke.VarHandle;
 import java.lang.foreign.*;
+import java.util.function.*;
+
+import static java.lang.foreign.ValueLayout.*;
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     unsigned char hdrEnable;
  *     unsigned char biasTEnable;
  *     sdrplay_api_RspDx_AntennaSelectT antennaSel;
  *     unsigned char rfNotchEnable;
  *     unsigned char rfDabNotchEnable;
- * };
+ * }
  * }
  */
 public class sdrplay_api_RspDxParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_CHAR$LAYOUT.withName("hdrEnable"),
-        Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
-        MemoryLayout.paddingLayout(16),
-        Constants$root.C_INT$LAYOUT.withName("antennaSel"),
-        Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
-        Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
-        MemoryLayout.paddingLayout(16)
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_RspDxParamsT.$struct$LAYOUT;
+    sdrplay_api_RspDxParamsT() {
+        // Should not be called directly
     }
-    static final VarHandle hdrEnable$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("hdrEnable"));
-    public static VarHandle hdrEnable$VH() {
-        return sdrplay_api_RspDxParamsT.hdrEnable$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char hdrEnable;
-     * }
-     */
-    public static byte hdrEnable$get(MemorySegment seg) {
-        return (byte)sdrplay_api_RspDxParamsT.hdrEnable$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char hdrEnable;
-     * }
-     */
-    public static void hdrEnable$set(MemorySegment seg, byte x) {
-        sdrplay_api_RspDxParamsT.hdrEnable$VH.set(seg, x);
-    }
-    public static byte hdrEnable$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_RspDxParamsT.hdrEnable$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void hdrEnable$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_RspDxParamsT.hdrEnable$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle biasTEnable$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("biasTEnable"));
-    public static VarHandle biasTEnable$VH() {
-        return sdrplay_api_RspDxParamsT.biasTEnable$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char biasTEnable;
-     * }
-     */
-    public static byte biasTEnable$get(MemorySegment seg) {
-        return (byte)sdrplay_api_RspDxParamsT.biasTEnable$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char biasTEnable;
-     * }
-     */
-    public static void biasTEnable$set(MemorySegment seg, byte x) {
-        sdrplay_api_RspDxParamsT.biasTEnable$VH.set(seg, x);
-    }
-    public static byte biasTEnable$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_RspDxParamsT.biasTEnable$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void biasTEnable$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_RspDxParamsT.biasTEnable$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle antennaSel$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("antennaSel"));
-    public static VarHandle antennaSel$VH() {
-        return sdrplay_api_RspDxParamsT.antennaSel$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_RspDx_AntennaSelectT antennaSel;
-     * }
-     */
-    public static int antennaSel$get(MemorySegment seg) {
-        return (int)sdrplay_api_RspDxParamsT.antennaSel$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_RspDx_AntennaSelectT antennaSel;
-     * }
-     */
-    public static void antennaSel$set(MemorySegment seg, int x) {
-        sdrplay_api_RspDxParamsT.antennaSel$VH.set(seg, x);
-    }
-    public static int antennaSel$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_RspDxParamsT.antennaSel$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void antennaSel$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_RspDxParamsT.antennaSel$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rfNotchEnable$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rfNotchEnable"));
-    public static VarHandle rfNotchEnable$VH() {
-        return sdrplay_api_RspDxParamsT.rfNotchEnable$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char rfNotchEnable;
-     * }
-     */
-    public static byte rfNotchEnable$get(MemorySegment seg) {
-        return (byte)sdrplay_api_RspDxParamsT.rfNotchEnable$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char rfNotchEnable;
-     * }
-     */
-    public static void rfNotchEnable$set(MemorySegment seg, byte x) {
-        sdrplay_api_RspDxParamsT.rfNotchEnable$VH.set(seg, x);
-    }
-    public static byte rfNotchEnable$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_RspDxParamsT.rfNotchEnable$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rfNotchEnable$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_RspDxParamsT.rfNotchEnable$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rfDabNotchEnable$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rfDabNotchEnable"));
-    public static VarHandle rfDabNotchEnable$VH() {
-        return sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char rfDabNotchEnable;
-     * }
-     */
-    public static byte rfDabNotchEnable$get(MemorySegment seg) {
-        return (byte)sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char rfDabNotchEnable;
-     * }
-     */
-    public static void rfDabNotchEnable$set(MemorySegment seg, byte x) {
-        sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH.set(seg, x);
-    }
-    public static byte rfDabNotchEnable$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rfDabNotchEnable$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_CHAR.withName("hdrEnable"),
+        sdrplay_api_h.C_CHAR.withName("biasTEnable"),
+        MemoryLayout.paddingLayout(2),
+        sdrplay_api_h.C_INT.withName("antennaSel"),
+        sdrplay_api_h.C_CHAR.withName("rfNotchEnable"),
+        sdrplay_api_h.C_CHAR.withName("rfDabNotchEnable"),
+        MemoryLayout.paddingLayout(2)
+    ).withName("$anon$31:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfByte hdrEnable$LAYOUT = (OfByte)$LAYOUT.select(groupElement("hdrEnable"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char hdrEnable
+     * }
+     */
+    public static final OfByte hdrEnable$layout() {
+        return hdrEnable$LAYOUT;
+    }
+
+    private static final long hdrEnable$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char hdrEnable
+     * }
+     */
+    public static final long hdrEnable$offset() {
+        return hdrEnable$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char hdrEnable
+     * }
+     */
+    public static byte hdrEnable(MemorySegment struct) {
+        return struct.get(hdrEnable$LAYOUT, hdrEnable$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char hdrEnable
+     * }
+     */
+    public static void hdrEnable(MemorySegment struct, byte fieldValue) {
+        struct.set(hdrEnable$LAYOUT, hdrEnable$OFFSET, fieldValue);
+    }
+
+    private static final OfByte biasTEnable$LAYOUT = (OfByte)$LAYOUT.select(groupElement("biasTEnable"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char biasTEnable
+     * }
+     */
+    public static final OfByte biasTEnable$layout() {
+        return biasTEnable$LAYOUT;
+    }
+
+    private static final long biasTEnable$OFFSET = 1;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char biasTEnable
+     * }
+     */
+    public static final long biasTEnable$offset() {
+        return biasTEnable$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char biasTEnable
+     * }
+     */
+    public static byte biasTEnable(MemorySegment struct) {
+        return struct.get(biasTEnable$LAYOUT, biasTEnable$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char biasTEnable
+     * }
+     */
+    public static void biasTEnable(MemorySegment struct, byte fieldValue) {
+        struct.set(biasTEnable$LAYOUT, biasTEnable$OFFSET, fieldValue);
+    }
+
+    private static final OfInt antennaSel$LAYOUT = (OfInt)$LAYOUT.select(groupElement("antennaSel"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_AntennaSelectT antennaSel
+     * }
+     */
+    public static final OfInt antennaSel$layout() {
+        return antennaSel$LAYOUT;
+    }
+
+    private static final long antennaSel$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_AntennaSelectT antennaSel
+     * }
+     */
+    public static final long antennaSel$offset() {
+        return antennaSel$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_AntennaSelectT antennaSel
+     * }
+     */
+    public static int antennaSel(MemorySegment struct) {
+        return struct.get(antennaSel$LAYOUT, antennaSel$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RspDx_AntennaSelectT antennaSel
+     * }
+     */
+    public static void antennaSel(MemorySegment struct, int fieldValue) {
+        struct.set(antennaSel$LAYOUT, antennaSel$OFFSET, fieldValue);
+    }
+
+    private static final OfByte rfNotchEnable$LAYOUT = (OfByte)$LAYOUT.select(groupElement("rfNotchEnable"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char rfNotchEnable
+     * }
+     */
+    public static final OfByte rfNotchEnable$layout() {
+        return rfNotchEnable$LAYOUT;
+    }
+
+    private static final long rfNotchEnable$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char rfNotchEnable
+     * }
+     */
+    public static final long rfNotchEnable$offset() {
+        return rfNotchEnable$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char rfNotchEnable
+     * }
+     */
+    public static byte rfNotchEnable(MemorySegment struct) {
+        return struct.get(rfNotchEnable$LAYOUT, rfNotchEnable$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char rfNotchEnable
+     * }
+     */
+    public static void rfNotchEnable(MemorySegment struct, byte fieldValue) {
+        struct.set(rfNotchEnable$LAYOUT, rfNotchEnable$OFFSET, fieldValue);
+    }
+
+    private static final OfByte rfDabNotchEnable$LAYOUT = (OfByte)$LAYOUT.select(groupElement("rfDabNotchEnable"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char rfDabNotchEnable
+     * }
+     */
+    public static final OfByte rfDabNotchEnable$layout() {
+        return rfDabNotchEnable$LAYOUT;
+    }
+
+    private static final long rfDabNotchEnable$OFFSET = 9;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char rfDabNotchEnable
+     * }
+     */
+    public static final long rfDabNotchEnable$offset() {
+        return rfDabNotchEnable$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char rfDabNotchEnable
+     * }
+     */
+    public static byte rfDabNotchEnable(MemorySegment struct) {
+        return struct.get(rfDabNotchEnable$LAYOUT, rfDabNotchEnable$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char rfDabNotchEnable
+     * }
+     */
+    public static void rfDabNotchEnable(MemorySegment struct, byte fieldValue) {
+        struct.set(rfDabNotchEnable$LAYOUT, rfDabNotchEnable$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,122 +21,218 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfFloat;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     float curr;
  *     float max;
  *     float min;
- * };
+ * }
  * }
  */
 public class sdrplay_api_GainValuesT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_FLOAT$LAYOUT.withName("curr"),
-        Constants$root.C_FLOAT$LAYOUT.withName("max"),
-        Constants$root.C_FLOAT$LAYOUT.withName("min")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_GainValuesT.$struct$LAYOUT;
+    sdrplay_api_GainValuesT() {
+        // Should not be called directly
     }
-    static final VarHandle curr$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("curr"));
-    public static VarHandle curr$VH() {
-        return sdrplay_api_GainValuesT.curr$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * float curr;
-     * }
-     */
-    public static float curr$get(MemorySegment seg) {
-        return (float)sdrplay_api_GainValuesT.curr$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * float curr;
-     * }
-     */
-    public static void curr$set(MemorySegment seg, float x) {
-        sdrplay_api_GainValuesT.curr$VH.set(seg, x);
-    }
-    public static float curr$get(MemorySegment seg, long index) {
-        return (float)sdrplay_api_GainValuesT.curr$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void curr$set(MemorySegment seg, long index, float x) {
-        sdrplay_api_GainValuesT.curr$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle max$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("max"));
-    public static VarHandle max$VH() {
-        return sdrplay_api_GainValuesT.max$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * float max;
-     * }
-     */
-    public static float max$get(MemorySegment seg) {
-        return (float)sdrplay_api_GainValuesT.max$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * float max;
-     * }
-     */
-    public static void max$set(MemorySegment seg, float x) {
-        sdrplay_api_GainValuesT.max$VH.set(seg, x);
-    }
-    public static float max$get(MemorySegment seg, long index) {
-        return (float)sdrplay_api_GainValuesT.max$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void max$set(MemorySegment seg, long index, float x) {
-        sdrplay_api_GainValuesT.max$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle min$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("min"));
-    public static VarHandle min$VH() {
-        return sdrplay_api_GainValuesT.min$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * float min;
-     * }
-     */
-    public static float min$get(MemorySegment seg) {
-        return (float)sdrplay_api_GainValuesT.min$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * float min;
-     * }
-     */
-    public static void min$set(MemorySegment seg, float x) {
-        sdrplay_api_GainValuesT.min$VH.set(seg, x);
-    }
-    public static float min$get(MemorySegment seg, long index) {
-        return (float)sdrplay_api_GainValuesT.min$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void min$set(MemorySegment seg, long index, float x) {
-        sdrplay_api_GainValuesT.min$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_FLOAT.withName("curr"),
+        sdrplay_api_h.C_FLOAT.withName("max"),
+        sdrplay_api_h.C_FLOAT.withName("min")
+    ).withName("$anon$53:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfFloat curr$LAYOUT = (OfFloat)$LAYOUT.select(groupElement("curr"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * float curr
+     * }
+     */
+    public static final OfFloat curr$layout() {
+        return curr$LAYOUT;
+    }
+
+    private static final long curr$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * float curr
+     * }
+     */
+    public static final long curr$offset() {
+        return curr$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * float curr
+     * }
+     */
+    public static float curr(MemorySegment struct) {
+        return struct.get(curr$LAYOUT, curr$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * float curr
+     * }
+     */
+    public static void curr(MemorySegment struct, float fieldValue) {
+        struct.set(curr$LAYOUT, curr$OFFSET, fieldValue);
+    }
+
+    private static final OfFloat max$LAYOUT = (OfFloat)$LAYOUT.select(groupElement("max"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * float max
+     * }
+     */
+    public static final OfFloat max$layout() {
+        return max$LAYOUT;
+    }
+
+    private static final long max$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * float max
+     * }
+     */
+    public static final long max$offset() {
+        return max$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * float max
+     * }
+     */
+    public static float max(MemorySegment struct) {
+        return struct.get(max$LAYOUT, max$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * float max
+     * }
+     */
+    public static void max(MemorySegment struct, float fieldValue) {
+        struct.set(max$LAYOUT, max$OFFSET, fieldValue);
+    }
+
+    private static final OfFloat min$LAYOUT = (OfFloat)$LAYOUT.select(groupElement("min"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * float min
+     * }
+     */
+    public static final OfFloat min$layout() {
+        return min$LAYOUT;
+    }
+
+    private static final long min$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * float min
+     * }
+     */
+    public static final long min$offset() {
+        return min$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * float min
+     * }
+     */
+    public static float min(MemorySegment struct) {
+        return struct.get(min$LAYOUT, min$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * float min
+     * }
+     */
+    public static void min(MemorySegment struct, float fieldValue) {
+        struct.set(min$LAYOUT, min$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

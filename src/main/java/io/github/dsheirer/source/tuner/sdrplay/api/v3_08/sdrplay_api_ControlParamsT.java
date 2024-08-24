@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,93 +21,265 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfInt;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     sdrplay_api_DcOffsetT dcOffset;
  *     sdrplay_api_DecimationT decimation;
  *     sdrplay_api_AgcT agc;
  *     sdrplay_api_AdsbModeT adsbMode;
- * };
+ * }
  * }
  */
 public class sdrplay_api_ControlParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("DCenable"),
-            Constants$root.C_CHAR$LAYOUT.withName("IQenable")
-        ).withName("dcOffset"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("enable"),
-            Constants$root.C_CHAR$LAYOUT.withName("decimationFactor"),
-            Constants$root.C_CHAR$LAYOUT.withName("wideBandSignal")
-        ).withName("decimation"),
-        MemoryLayout.paddingLayout(24),
-        MemoryLayout.structLayout(
-            Constants$root.C_INT$LAYOUT.withName("enable"),
-            Constants$root.C_INT$LAYOUT.withName("setPoint_dBfs"),
-            Constants$root.C_SHORT$LAYOUT.withName("attack_ms"),
-            Constants$root.C_SHORT$LAYOUT.withName("decay_ms"),
-            Constants$root.C_SHORT$LAYOUT.withName("decay_delay_ms"),
-            Constants$root.C_SHORT$LAYOUT.withName("decay_threshold_dB"),
-            Constants$root.C_INT$LAYOUT.withName("syncUpdate")
-        ).withName("agc"),
-        Constants$root.C_INT$LAYOUT.withName("adsbMode")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_ControlParamsT.$struct$LAYOUT;
+    sdrplay_api_ControlParamsT() {
+        // Should not be called directly
     }
-    public static MemorySegment dcOffset$slice(MemorySegment seg) {
-        return seg.asSlice(0, 2);
+
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_DcOffsetT.layout().withName("dcOffset"),
+        sdrplay_api_DecimationT.layout().withName("decimation"),
+        MemoryLayout.paddingLayout(3),
+        sdrplay_api_AgcT.layout().withName("agc"),
+        sdrplay_api_h.C_INT.withName("adsbMode")
+    ).withName("$anon$47:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
     }
-    public static MemorySegment decimation$slice(MemorySegment seg) {
-        return seg.asSlice(2, 3);
+
+    private static final GroupLayout dcOffset$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("dcOffset"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetT dcOffset
+     * }
+     */
+    public static final GroupLayout dcOffset$layout() {
+        return dcOffset$LAYOUT;
     }
-    public static MemorySegment agc$slice(MemorySegment seg) {
-        return seg.asSlice(8, 20);
+
+    private static final long dcOffset$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetT dcOffset
+     * }
+     */
+    public static final long dcOffset$offset() {
+        return dcOffset$OFFSET;
     }
-    static final VarHandle adsbMode$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("adsbMode"));
-    public static VarHandle adsbMode$VH() {
-        return sdrplay_api_ControlParamsT.adsbMode$VH;
-    }
+
     /**
      * Getter for field:
-     * {@snippet :
-     * sdrplay_api_AdsbModeT adsbMode;
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetT dcOffset
      * }
      */
-    public static int adsbMode$get(MemorySegment seg) {
-        return (int)sdrplay_api_ControlParamsT.adsbMode$VH.get(seg);
+    public static MemorySegment dcOffset(MemorySegment struct) {
+        return struct.asSlice(dcOffset$OFFSET, dcOffset$LAYOUT.byteSize());
     }
+
     /**
      * Setter for field:
-     * {@snippet :
-     * sdrplay_api_AdsbModeT adsbMode;
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetT dcOffset
      * }
      */
-    public static void adsbMode$set(MemorySegment seg, int x) {
-        sdrplay_api_ControlParamsT.adsbMode$VH.set(seg, x);
+    public static void dcOffset(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, dcOffset$OFFSET, dcOffset$LAYOUT.byteSize());
     }
-    public static int adsbMode$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_ControlParamsT.adsbMode$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void adsbMode$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_ControlParamsT.adsbMode$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout decimation$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("decimation"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DecimationT decimation
+     * }
+     */
+    public static final GroupLayout decimation$layout() {
+        return decimation$LAYOUT;
+    }
+
+    private static final long decimation$OFFSET = 2;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DecimationT decimation
+     * }
+     */
+    public static final long decimation$offset() {
+        return decimation$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DecimationT decimation
+     * }
+     */
+    public static MemorySegment decimation(MemorySegment struct) {
+        return struct.asSlice(decimation$OFFSET, decimation$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DecimationT decimation
+     * }
+     */
+    public static void decimation(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, decimation$OFFSET, decimation$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout agc$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("agc"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcT agc
+     * }
+     */
+    public static final GroupLayout agc$layout() {
+        return agc$LAYOUT;
+    }
+
+    private static final long agc$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcT agc
+     * }
+     */
+    public static final long agc$offset() {
+        return agc$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcT agc
+     * }
+     */
+    public static MemorySegment agc(MemorySegment struct) {
+        return struct.asSlice(agc$OFFSET, agc$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcT agc
+     * }
+     */
+    public static void agc(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, agc$OFFSET, agc$LAYOUT.byteSize());
+    }
+
+    private static final OfInt adsbMode$LAYOUT = (OfInt)$LAYOUT.select(groupElement("adsbMode"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AdsbModeT adsbMode
+     * }
+     */
+    public static final OfInt adsbMode$layout() {
+        return adsbMode$LAYOUT;
+    }
+
+    private static final long adsbMode$OFFSET = 28;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AdsbModeT adsbMode
+     * }
+     */
+    public static final long adsbMode$offset() {
+        return adsbMode$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AdsbModeT adsbMode
+     * }
+     */
+    public static int adsbMode(MemorySegment struct) {
+        return struct.get(adsbMode$LAYOUT, adsbMode$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AdsbModeT adsbMode
+     * }
+     */
+    public static void adsbMode(MemorySegment struct, int fieldValue) {
+        struct.set(adsbMode$LAYOUT, adsbMode$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

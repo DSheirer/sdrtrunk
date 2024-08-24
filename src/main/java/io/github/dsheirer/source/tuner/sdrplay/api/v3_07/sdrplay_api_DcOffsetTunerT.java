@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,153 +21,266 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfByte;
+import static java.lang.foreign.ValueLayout.OfInt;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     unsigned char dcCal;
  *     unsigned char speedUp;
  *     int trackTime;
  *     int refreshRateTime;
- * };
+ * }
  * }
  */
 public class sdrplay_api_DcOffsetTunerT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_CHAR$LAYOUT.withName("dcCal"),
-        Constants$root.C_CHAR$LAYOUT.withName("speedUp"),
-        MemoryLayout.paddingLayout(16),
-        Constants$root.C_INT$LAYOUT.withName("trackTime"),
-        Constants$root.C_INT$LAYOUT.withName("refreshRateTime")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_DcOffsetTunerT.$struct$LAYOUT;
+    sdrplay_api_DcOffsetTunerT() {
+        // Should not be called directly
     }
-    static final VarHandle dcCal$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("dcCal"));
-    public static VarHandle dcCal$VH() {
-        return sdrplay_api_DcOffsetTunerT.dcCal$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char dcCal;
-     * }
-     */
-    public static byte dcCal$get(MemorySegment seg) {
-        return (byte)sdrplay_api_DcOffsetTunerT.dcCal$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char dcCal;
-     * }
-     */
-    public static void dcCal$set(MemorySegment seg, byte x) {
-        sdrplay_api_DcOffsetTunerT.dcCal$VH.set(seg, x);
-    }
-    public static byte dcCal$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_DcOffsetTunerT.dcCal$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void dcCal$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_DcOffsetTunerT.dcCal$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle speedUp$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("speedUp"));
-    public static VarHandle speedUp$VH() {
-        return sdrplay_api_DcOffsetTunerT.speedUp$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned char speedUp;
-     * }
-     */
-    public static byte speedUp$get(MemorySegment seg) {
-        return (byte)sdrplay_api_DcOffsetTunerT.speedUp$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned char speedUp;
-     * }
-     */
-    public static void speedUp$set(MemorySegment seg, byte x) {
-        sdrplay_api_DcOffsetTunerT.speedUp$VH.set(seg, x);
-    }
-    public static byte speedUp$get(MemorySegment seg, long index) {
-        return (byte)sdrplay_api_DcOffsetTunerT.speedUp$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void speedUp$set(MemorySegment seg, long index, byte x) {
-        sdrplay_api_DcOffsetTunerT.speedUp$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle trackTime$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("trackTime"));
-    public static VarHandle trackTime$VH() {
-        return sdrplay_api_DcOffsetTunerT.trackTime$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int trackTime;
-     * }
-     */
-    public static int trackTime$get(MemorySegment seg) {
-        return (int)sdrplay_api_DcOffsetTunerT.trackTime$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int trackTime;
-     * }
-     */
-    public static void trackTime$set(MemorySegment seg, int x) {
-        sdrplay_api_DcOffsetTunerT.trackTime$VH.set(seg, x);
-    }
-    public static int trackTime$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_DcOffsetTunerT.trackTime$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void trackTime$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_DcOffsetTunerT.trackTime$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle refreshRateTime$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("refreshRateTime"));
-    public static VarHandle refreshRateTime$VH() {
-        return sdrplay_api_DcOffsetTunerT.refreshRateTime$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int refreshRateTime;
-     * }
-     */
-    public static int refreshRateTime$get(MemorySegment seg) {
-        return (int)sdrplay_api_DcOffsetTunerT.refreshRateTime$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int refreshRateTime;
-     * }
-     */
-    public static void refreshRateTime$set(MemorySegment seg, int x) {
-        sdrplay_api_DcOffsetTunerT.refreshRateTime$VH.set(seg, x);
-    }
-    public static int refreshRateTime$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_DcOffsetTunerT.refreshRateTime$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void refreshRateTime$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_DcOffsetTunerT.refreshRateTime$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_CHAR.withName("dcCal"),
+        sdrplay_api_h.C_CHAR.withName("speedUp"),
+        MemoryLayout.paddingLayout(2),
+        sdrplay_api_h.C_INT.withName("trackTime"),
+        sdrplay_api_h.C_INT.withName("refreshRateTime")
+    ).withName("$anon$75:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfByte dcCal$LAYOUT = (OfByte)$LAYOUT.select(groupElement("dcCal"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char dcCal
+     * }
+     */
+    public static final OfByte dcCal$layout() {
+        return dcCal$LAYOUT;
+    }
+
+    private static final long dcCal$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char dcCal
+     * }
+     */
+    public static final long dcCal$offset() {
+        return dcCal$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char dcCal
+     * }
+     */
+    public static byte dcCal(MemorySegment struct) {
+        return struct.get(dcCal$LAYOUT, dcCal$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char dcCal
+     * }
+     */
+    public static void dcCal(MemorySegment struct, byte fieldValue) {
+        struct.set(dcCal$LAYOUT, dcCal$OFFSET, fieldValue);
+    }
+
+    private static final OfByte speedUp$LAYOUT = (OfByte)$LAYOUT.select(groupElement("speedUp"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned char speedUp
+     * }
+     */
+    public static final OfByte speedUp$layout() {
+        return speedUp$LAYOUT;
+    }
+
+    private static final long speedUp$OFFSET = 1;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned char speedUp
+     * }
+     */
+    public static final long speedUp$offset() {
+        return speedUp$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned char speedUp
+     * }
+     */
+    public static byte speedUp(MemorySegment struct) {
+        return struct.get(speedUp$LAYOUT, speedUp$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned char speedUp
+     * }
+     */
+    public static void speedUp(MemorySegment struct, byte fieldValue) {
+        struct.set(speedUp$LAYOUT, speedUp$OFFSET, fieldValue);
+    }
+
+    private static final OfInt trackTime$LAYOUT = (OfInt)$LAYOUT.select(groupElement("trackTime"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int trackTime
+     * }
+     */
+    public static final OfInt trackTime$layout() {
+        return trackTime$LAYOUT;
+    }
+
+    private static final long trackTime$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int trackTime
+     * }
+     */
+    public static final long trackTime$offset() {
+        return trackTime$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int trackTime
+     * }
+     */
+    public static int trackTime(MemorySegment struct) {
+        return struct.get(trackTime$LAYOUT, trackTime$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int trackTime
+     * }
+     */
+    public static void trackTime(MemorySegment struct, int fieldValue) {
+        struct.set(trackTime$LAYOUT, trackTime$OFFSET, fieldValue);
+    }
+
+    private static final OfInt refreshRateTime$LAYOUT = (OfInt)$LAYOUT.select(groupElement("refreshRateTime"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int refreshRateTime
+     * }
+     */
+    public static final OfInt refreshRateTime$layout() {
+        return refreshRateTime$LAYOUT;
+    }
+
+    private static final long refreshRateTime$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int refreshRateTime
+     * }
+     */
+    public static final long refreshRateTime$offset() {
+        return refreshRateTime$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int refreshRateTime
+     * }
+     */
+    public static int refreshRateTime(MemorySegment struct) {
+        return struct.get(refreshRateTime$LAYOUT, refreshRateTime$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int refreshRateTime
+     * }
+     */
+    public static void refreshRateTime(MemorySegment struct, int fieldValue) {
+        struct.set(refreshRateTime$LAYOUT, refreshRateTime$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

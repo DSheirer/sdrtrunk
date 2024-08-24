@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,15 +21,19 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SegmentScope;
-import java.lang.foreign.StructLayout;
-import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
+
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.OfInt;
+import static java.lang.foreign.ValueLayout.OfShort;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     sdrplay_api_AgcControlT enable;
  *     int setPoint_dBfs;
@@ -38,225 +42,382 @@ import java.lang.invoke.VarHandle;
  *     unsigned short decay_delay_ms;
  *     unsigned short decay_threshold_dB;
  *     int syncUpdate;
- * };
+ * }
  * }
  */
 public class sdrplay_api_AgcT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_INT$LAYOUT.withName("enable"),
-        Constants$root.C_INT$LAYOUT.withName("setPoint_dBfs"),
-        Constants$root.C_SHORT$LAYOUT.withName("attack_ms"),
-        Constants$root.C_SHORT$LAYOUT.withName("decay_ms"),
-        Constants$root.C_SHORT$LAYOUT.withName("decay_delay_ms"),
-        Constants$root.C_SHORT$LAYOUT.withName("decay_threshold_dB"),
-        Constants$root.C_INT$LAYOUT.withName("syncUpdate")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_AgcT.$struct$LAYOUT;
+    sdrplay_api_AgcT() {
+        // Should not be called directly
     }
-    static final VarHandle enable$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("enable"));
-    public static VarHandle enable$VH() {
-        return sdrplay_api_AgcT.enable$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_AgcControlT enable;
-     * }
-     */
-    public static int enable$get(MemorySegment seg) {
-        return (int)sdrplay_api_AgcT.enable$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_AgcControlT enable;
-     * }
-     */
-    public static void enable$set(MemorySegment seg, int x) {
-        sdrplay_api_AgcT.enable$VH.set(seg, x);
-    }
-    public static int enable$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_AgcT.enable$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void enable$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_AgcT.enable$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle setPoint_dBfs$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("setPoint_dBfs"));
-    public static VarHandle setPoint_dBfs$VH() {
-        return sdrplay_api_AgcT.setPoint_dBfs$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int setPoint_dBfs;
-     * }
-     */
-    public static int setPoint_dBfs$get(MemorySegment seg) {
-        return (int)sdrplay_api_AgcT.setPoint_dBfs$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int setPoint_dBfs;
-     * }
-     */
-    public static void setPoint_dBfs$set(MemorySegment seg, int x) {
-        sdrplay_api_AgcT.setPoint_dBfs$VH.set(seg, x);
-    }
-    public static int setPoint_dBfs$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_AgcT.setPoint_dBfs$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void setPoint_dBfs$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_AgcT.setPoint_dBfs$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle attack_ms$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("attack_ms"));
-    public static VarHandle attack_ms$VH() {
-        return sdrplay_api_AgcT.attack_ms$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned short attack_ms;
-     * }
-     */
-    public static short attack_ms$get(MemorySegment seg) {
-        return (short)sdrplay_api_AgcT.attack_ms$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned short attack_ms;
-     * }
-     */
-    public static void attack_ms$set(MemorySegment seg, short x) {
-        sdrplay_api_AgcT.attack_ms$VH.set(seg, x);
-    }
-    public static short attack_ms$get(MemorySegment seg, long index) {
-        return (short)sdrplay_api_AgcT.attack_ms$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void attack_ms$set(MemorySegment seg, long index, short x) {
-        sdrplay_api_AgcT.attack_ms$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle decay_ms$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("decay_ms"));
-    public static VarHandle decay_ms$VH() {
-        return sdrplay_api_AgcT.decay_ms$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned short decay_ms;
-     * }
-     */
-    public static short decay_ms$get(MemorySegment seg) {
-        return (short)sdrplay_api_AgcT.decay_ms$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned short decay_ms;
-     * }
-     */
-    public static void decay_ms$set(MemorySegment seg, short x) {
-        sdrplay_api_AgcT.decay_ms$VH.set(seg, x);
-    }
-    public static short decay_ms$get(MemorySegment seg, long index) {
-        return (short)sdrplay_api_AgcT.decay_ms$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void decay_ms$set(MemorySegment seg, long index, short x) {
-        sdrplay_api_AgcT.decay_ms$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle decay_delay_ms$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("decay_delay_ms"));
-    public static VarHandle decay_delay_ms$VH() {
-        return sdrplay_api_AgcT.decay_delay_ms$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned short decay_delay_ms;
-     * }
-     */
-    public static short decay_delay_ms$get(MemorySegment seg) {
-        return (short)sdrplay_api_AgcT.decay_delay_ms$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned short decay_delay_ms;
-     * }
-     */
-    public static void decay_delay_ms$set(MemorySegment seg, short x) {
-        sdrplay_api_AgcT.decay_delay_ms$VH.set(seg, x);
-    }
-    public static short decay_delay_ms$get(MemorySegment seg, long index) {
-        return (short)sdrplay_api_AgcT.decay_delay_ms$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void decay_delay_ms$set(MemorySegment seg, long index, short x) {
-        sdrplay_api_AgcT.decay_delay_ms$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle decay_threshold_dB$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("decay_threshold_dB"));
-    public static VarHandle decay_threshold_dB$VH() {
-        return sdrplay_api_AgcT.decay_threshold_dB$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned short decay_threshold_dB;
-     * }
-     */
-    public static short decay_threshold_dB$get(MemorySegment seg) {
-        return (short)sdrplay_api_AgcT.decay_threshold_dB$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned short decay_threshold_dB;
-     * }
-     */
-    public static void decay_threshold_dB$set(MemorySegment seg, short x) {
-        sdrplay_api_AgcT.decay_threshold_dB$VH.set(seg, x);
-    }
-    public static short decay_threshold_dB$get(MemorySegment seg, long index) {
-        return (short)sdrplay_api_AgcT.decay_threshold_dB$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void decay_threshold_dB$set(MemorySegment seg, long index, short x) {
-        sdrplay_api_AgcT.decay_threshold_dB$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle syncUpdate$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("syncUpdate"));
-    public static VarHandle syncUpdate$VH() {
-        return sdrplay_api_AgcT.syncUpdate$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int syncUpdate;
-     * }
-     */
-    public static int syncUpdate$get(MemorySegment seg) {
-        return (int)sdrplay_api_AgcT.syncUpdate$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int syncUpdate;
-     * }
-     */
-    public static void syncUpdate$set(MemorySegment seg, int x) {
-        sdrplay_api_AgcT.syncUpdate$VH.set(seg, x);
-    }
-    public static int syncUpdate$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_AgcT.syncUpdate$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void syncUpdate$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_AgcT.syncUpdate$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_INT.withName("enable"),
+        sdrplay_api_h.C_INT.withName("setPoint_dBfs"),
+        sdrplay_api_h.C_SHORT.withName("attack_ms"),
+        sdrplay_api_h.C_SHORT.withName("decay_ms"),
+        sdrplay_api_h.C_SHORT.withName("decay_delay_ms"),
+        sdrplay_api_h.C_SHORT.withName("decay_threshold_dB"),
+        sdrplay_api_h.C_INT.withName("syncUpdate")
+    ).withName("$anon$36:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfInt enable$LAYOUT = (OfInt)$LAYOUT.select(groupElement("enable"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcControlT enable
+     * }
+     */
+    public static final OfInt enable$layout() {
+        return enable$LAYOUT;
+    }
+
+    private static final long enable$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcControlT enable
+     * }
+     */
+    public static final long enable$offset() {
+        return enable$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcControlT enable
+     * }
+     */
+    public static int enable(MemorySegment struct) {
+        return struct.get(enable$LAYOUT, enable$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_AgcControlT enable
+     * }
+     */
+    public static void enable(MemorySegment struct, int fieldValue) {
+        struct.set(enable$LAYOUT, enable$OFFSET, fieldValue);
+    }
+
+    private static final OfInt setPoint_dBfs$LAYOUT = (OfInt)$LAYOUT.select(groupElement("setPoint_dBfs"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int setPoint_dBfs
+     * }
+     */
+    public static final OfInt setPoint_dBfs$layout() {
+        return setPoint_dBfs$LAYOUT;
+    }
+
+    private static final long setPoint_dBfs$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int setPoint_dBfs
+     * }
+     */
+    public static final long setPoint_dBfs$offset() {
+        return setPoint_dBfs$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int setPoint_dBfs
+     * }
+     */
+    public static int setPoint_dBfs(MemorySegment struct) {
+        return struct.get(setPoint_dBfs$LAYOUT, setPoint_dBfs$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int setPoint_dBfs
+     * }
+     */
+    public static void setPoint_dBfs(MemorySegment struct, int fieldValue) {
+        struct.set(setPoint_dBfs$LAYOUT, setPoint_dBfs$OFFSET, fieldValue);
+    }
+
+    private static final OfShort attack_ms$LAYOUT = (OfShort)$LAYOUT.select(groupElement("attack_ms"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned short attack_ms
+     * }
+     */
+    public static final OfShort attack_ms$layout() {
+        return attack_ms$LAYOUT;
+    }
+
+    private static final long attack_ms$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned short attack_ms
+     * }
+     */
+    public static final long attack_ms$offset() {
+        return attack_ms$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned short attack_ms
+     * }
+     */
+    public static short attack_ms(MemorySegment struct) {
+        return struct.get(attack_ms$LAYOUT, attack_ms$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned short attack_ms
+     * }
+     */
+    public static void attack_ms(MemorySegment struct, short fieldValue) {
+        struct.set(attack_ms$LAYOUT, attack_ms$OFFSET, fieldValue);
+    }
+
+    private static final OfShort decay_ms$LAYOUT = (OfShort)$LAYOUT.select(groupElement("decay_ms"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned short decay_ms
+     * }
+     */
+    public static final OfShort decay_ms$layout() {
+        return decay_ms$LAYOUT;
+    }
+
+    private static final long decay_ms$OFFSET = 10;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned short decay_ms
+     * }
+     */
+    public static final long decay_ms$offset() {
+        return decay_ms$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned short decay_ms
+     * }
+     */
+    public static short decay_ms(MemorySegment struct) {
+        return struct.get(decay_ms$LAYOUT, decay_ms$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned short decay_ms
+     * }
+     */
+    public static void decay_ms(MemorySegment struct, short fieldValue) {
+        struct.set(decay_ms$LAYOUT, decay_ms$OFFSET, fieldValue);
+    }
+
+    private static final OfShort decay_delay_ms$LAYOUT = (OfShort)$LAYOUT.select(groupElement("decay_delay_ms"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned short decay_delay_ms
+     * }
+     */
+    public static final OfShort decay_delay_ms$layout() {
+        return decay_delay_ms$LAYOUT;
+    }
+
+    private static final long decay_delay_ms$OFFSET = 12;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned short decay_delay_ms
+     * }
+     */
+    public static final long decay_delay_ms$offset() {
+        return decay_delay_ms$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned short decay_delay_ms
+     * }
+     */
+    public static short decay_delay_ms(MemorySegment struct) {
+        return struct.get(decay_delay_ms$LAYOUT, decay_delay_ms$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned short decay_delay_ms
+     * }
+     */
+    public static void decay_delay_ms(MemorySegment struct, short fieldValue) {
+        struct.set(decay_delay_ms$LAYOUT, decay_delay_ms$OFFSET, fieldValue);
+    }
+
+    private static final OfShort decay_threshold_dB$LAYOUT = (OfShort)$LAYOUT.select(groupElement("decay_threshold_dB"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned short decay_threshold_dB
+     * }
+     */
+    public static final OfShort decay_threshold_dB$layout() {
+        return decay_threshold_dB$LAYOUT;
+    }
+
+    private static final long decay_threshold_dB$OFFSET = 14;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned short decay_threshold_dB
+     * }
+     */
+    public static final long decay_threshold_dB$offset() {
+        return decay_threshold_dB$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned short decay_threshold_dB
+     * }
+     */
+    public static short decay_threshold_dB(MemorySegment struct) {
+        return struct.get(decay_threshold_dB$LAYOUT, decay_threshold_dB$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned short decay_threshold_dB
+     * }
+     */
+    public static void decay_threshold_dB(MemorySegment struct, short fieldValue) {
+        struct.set(decay_threshold_dB$LAYOUT, decay_threshold_dB$OFFSET, fieldValue);
+    }
+
+    private static final OfInt syncUpdate$LAYOUT = (OfInt)$LAYOUT.select(groupElement("syncUpdate"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int syncUpdate
+     * }
+     */
+    public static final OfInt syncUpdate$layout() {
+        return syncUpdate$LAYOUT;
+    }
+
+    private static final long syncUpdate$OFFSET = 16;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int syncUpdate
+     * }
+     */
+    public static final long syncUpdate$offset() {
+        return syncUpdate$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int syncUpdate
+     * }
+     */
+    public static int syncUpdate(MemorySegment struct) {
+        return struct.get(syncUpdate$LAYOUT, syncUpdate$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int syncUpdate
+     * }
+     */
+    public static void syncUpdate(MemorySegment struct, int fieldValue) {
+        struct.set(syncUpdate$LAYOUT, syncUpdate$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import java.lang.foreign.MemorySegment;
  */
 public class Agc
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from the foreign memory segment
@@ -51,7 +51,7 @@ public class Agc
      */
     public AgcMode getAgcMode()
     {
-        return AgcMode.fromValue(sdrplay_api_AgcT.enable$get(getMemorySegment()));
+        return AgcMode.fromValue(sdrplay_api_AgcT.enable(getMemorySegment()));
     }
 
     /**
@@ -59,7 +59,7 @@ public class Agc
      */
     public void setAgcMode(AgcMode mode)
     {
-        sdrplay_api_AgcT.enable$set(getMemorySegment(), mode.getValue());
+        sdrplay_api_AgcT.enable(getMemorySegment(), mode.getValue());
     }
 
     /**
@@ -67,7 +67,7 @@ public class Agc
      */
     public int getSetPointDbfs()
     {
-        return sdrplay_api_AgcT.setPoint_dBfs$get(getMemorySegment());
+        return sdrplay_api_AgcT.setPoint_dBfs(getMemorySegment());
     }
 
     /**
@@ -75,7 +75,7 @@ public class Agc
      */
     public void setSetPointDbfs(int setPointDbfs)
     {
-        sdrplay_api_AgcT.setPoint_dBfs$set(getMemorySegment(), setPointDbfs);
+        sdrplay_api_AgcT.setPoint_dBfs(getMemorySegment(), setPointDbfs);
     }
 
     /**
@@ -83,7 +83,7 @@ public class Agc
      */
     public int getAttackMs()
     {
-        return sdrplay_api_AgcT.attack_ms$get(getMemorySegment());
+        return sdrplay_api_AgcT.attack_ms(getMemorySegment());
     }
 
     /**
@@ -91,7 +91,7 @@ public class Agc
      */
     public void setAttackMs(int attackMs)
     {
-        sdrplay_api_AgcT.attack_ms$set(getMemorySegment(), (short)attackMs);
+        sdrplay_api_AgcT.attack_ms(getMemorySegment(), (short)attackMs);
     }
 
     /**
@@ -99,7 +99,7 @@ public class Agc
      */
     public int getDecayMs()
     {
-        return sdrplay_api_AgcT.decay_ms$get(getMemorySegment());
+        return sdrplay_api_AgcT.decay_ms(getMemorySegment());
     }
 
     /**
@@ -107,7 +107,7 @@ public class Agc
      */
     public void setDecayMs(int decayMs)
     {
-        sdrplay_api_AgcT.decay_ms$set(getMemorySegment(), (short)decayMs);
+        sdrplay_api_AgcT.decay_ms(getMemorySegment(), (short)decayMs);
     }
 
     /**
@@ -115,7 +115,7 @@ public class Agc
      */
     public int getDecayDelayMs()
     {
-        return sdrplay_api_AgcT.decay_delay_ms$get(getMemorySegment());
+        return sdrplay_api_AgcT.decay_delay_ms(getMemorySegment());
     }
 
     /**
@@ -123,7 +123,7 @@ public class Agc
      */
     public void setDecayDelayMs(int decayDelayMs)
     {
-        sdrplay_api_AgcT.decay_delay_ms$set(getMemorySegment(), (short)decayDelayMs);
+        sdrplay_api_AgcT.decay_delay_ms(getMemorySegment(), (short)decayDelayMs);
     }
 
     /**
@@ -131,7 +131,7 @@ public class Agc
      */
     public int getDecayThresholdDb()
     {
-        return sdrplay_api_AgcT.decay_threshold_dB$get(getMemorySegment());
+        return sdrplay_api_AgcT.decay_threshold_dB(getMemorySegment());
     }
 
     /**
@@ -139,7 +139,7 @@ public class Agc
      */
     public void setDecayThresholdDb(int decayThresholdDb)
     {
-        sdrplay_api_AgcT.decay_threshold_dB$set(getMemorySegment(), (short)decayThresholdDb);
+        sdrplay_api_AgcT.decay_threshold_dB(getMemorySegment(), (short)decayThresholdDb);
     }
 
     /**
@@ -148,6 +148,6 @@ public class Agc
     public void setSynchronousUpdate(boolean syncUpdate)
     {
         //Note: this is supposed to be an integer value ... does it represent a boolean (0 or 1) or something else??
-        sdrplay_api_AgcT.syncUpdate$set(getMemorySegment(), Flag.of(syncUpdate));
+        sdrplay_api_AgcT.syncUpdate(getMemorySegment(), Flag.of(syncUpdate));
     }
 }

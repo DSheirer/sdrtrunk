@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,88 +21,168 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.invoke.VarHandle;
 import java.lang.foreign.*;
+import java.util.function.*;
+
+import static java.lang.foreign.ValueLayout.*;
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     unsigned int sampleNum;
  *     unsigned int period;
- * };
+ * }
  * }
  */
 public class sdrplay_api_SyncUpdateT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_INT$LAYOUT.withName("sampleNum"),
-        Constants$root.C_INT$LAYOUT.withName("period")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_SyncUpdateT.$struct$LAYOUT;
+    sdrplay_api_SyncUpdateT() {
+        // Should not be called directly
     }
-    static final VarHandle sampleNum$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("sampleNum"));
-    public static VarHandle sampleNum$VH() {
-        return sdrplay_api_SyncUpdateT.sampleNum$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned int sampleNum;
-     * }
-     */
-    public static int sampleNum$get(MemorySegment seg) {
-        return (int)sdrplay_api_SyncUpdateT.sampleNum$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned int sampleNum;
-     * }
-     */
-    public static void sampleNum$set(MemorySegment seg, int x) {
-        sdrplay_api_SyncUpdateT.sampleNum$VH.set(seg, x);
-    }
-    public static int sampleNum$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_SyncUpdateT.sampleNum$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void sampleNum$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_SyncUpdateT.sampleNum$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle period$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("period"));
-    public static VarHandle period$VH() {
-        return sdrplay_api_SyncUpdateT.period$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned int period;
-     * }
-     */
-    public static int period$get(MemorySegment seg) {
-        return (int)sdrplay_api_SyncUpdateT.period$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned int period;
-     * }
-     */
-    public static void period$set(MemorySegment seg, int x) {
-        sdrplay_api_SyncUpdateT.period$VH.set(seg, x);
-    }
-    public static int period$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_SyncUpdateT.period$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void period$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_SyncUpdateT.period$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_INT.withName("sampleNum"),
+        sdrplay_api_h.C_INT.withName("period")
+    ).withName("$anon$24:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfInt sampleNum$LAYOUT = (OfInt)$LAYOUT.select(groupElement("sampleNum"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned int sampleNum
+     * }
+     */
+    public static final OfInt sampleNum$layout() {
+        return sampleNum$LAYOUT;
+    }
+
+    private static final long sampleNum$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned int sampleNum
+     * }
+     */
+    public static final long sampleNum$offset() {
+        return sampleNum$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned int sampleNum
+     * }
+     */
+    public static int sampleNum(MemorySegment struct) {
+        return struct.get(sampleNum$LAYOUT, sampleNum$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned int sampleNum
+     * }
+     */
+    public static void sampleNum(MemorySegment struct, int fieldValue) {
+        struct.set(sampleNum$LAYOUT, sampleNum$OFFSET, fieldValue);
+    }
+
+    private static final OfInt period$LAYOUT = (OfInt)$LAYOUT.select(groupElement("period"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned int period
+     * }
+     */
+    public static final OfInt period$layout() {
+        return period$LAYOUT;
+    }
+
+    private static final long period$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned int period
+     * }
+     */
+    public static final long period$offset() {
+        return period$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned int period
+     * }
+     */
+    public static int period(MemorySegment struct) {
+        return struct.get(period$LAYOUT, period$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned int period
+     * }
+     */
+    public static void period(MemorySegment struct, int fieldValue) {
+        struct.set(period$LAYOUT, period$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

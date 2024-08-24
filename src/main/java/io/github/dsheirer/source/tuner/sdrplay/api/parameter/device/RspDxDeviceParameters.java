@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,23 +30,24 @@ import java.lang.foreign.MemorySegment;
  */
 public class RspDxDeviceParameters extends DeviceParameters
 {
-    private MemorySegment mRspDxMemorySegment;
+    private final MemorySegment mRspDxParams;
 
     /**
      * Constructs an instance from the foreign memory segment.
+     * @param devParams an allocated sdrplay_api_DevParamsT structure
      */
-    public RspDxDeviceParameters(MemorySegment memorySegment)
+    public RspDxDeviceParameters(MemorySegment devParams)
     {
-        super(memorySegment);
-        mRspDxMemorySegment = sdrplay_api_DevParamsT.rspDxParams$slice(memorySegment);
+        super(devParams);
+        mRspDxParams = sdrplay_api_DevParamsT.rspDxParams(devParams);
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getRspDxMemorySegment()
+    private MemorySegment getRspDxParams()
     {
-        return mRspDxMemorySegment;
+        return mRspDxParams;
     }
 
     /**
@@ -54,7 +55,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public boolean isHdr()
     {
-        return Flag.evaluate(sdrplay_api_RspDxParamsT.hdrEnable$get(getRspDxMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDxParamsT.hdrEnable(getRspDxParams()));
     }
 
     /**
@@ -62,7 +63,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public void setHdr(boolean enable)
     {
-        sdrplay_api_RspDxParamsT.hdrEnable$set(getRspDxMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDxParamsT.hdrEnable(getRspDxParams(), Flag.of(enable));
     }
 
     /**
@@ -70,7 +71,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public boolean isBiasT()
     {
-        return Flag.evaluate(sdrplay_api_RspDxParamsT.biasTEnable$get(getRspDxMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDxParamsT.biasTEnable(getRspDxParams()));
     }
 
     /**
@@ -78,7 +79,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public void setBiasT(boolean enable)
     {
-        sdrplay_api_RspDxParamsT.biasTEnable$set(getRspDxMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDxParamsT.biasTEnable(getRspDxParams(), Flag.of(enable));
     }
 
     /**
@@ -86,7 +87,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public RspDxAntenna getRspDxAntenna()
     {
-        return RspDxAntenna.fromValue(sdrplay_api_RspDxParamsT.antennaSel$get(getRspDxMemorySegment()));
+        return RspDxAntenna.fromValue(sdrplay_api_RspDxParamsT.antennaSel(getRspDxParams()));
     }
 
     /**
@@ -94,7 +95,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public void setRspDxAntenna(RspDxAntenna rspDxAntenna)
     {
-        sdrplay_api_RspDxParamsT.antennaSel$set(getRspDxMemorySegment(), rspDxAntenna.getValue());
+        sdrplay_api_RspDxParamsT.antennaSel(getRspDxParams(), rspDxAntenna.getValue());
     }
 
     /**
@@ -102,7 +103,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public boolean isRfNotch()
     {
-        return Flag.evaluate(sdrplay_api_RspDxParamsT.rfNotchEnable$get(getRspDxMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDxParamsT.rfNotchEnable(getRspDxParams()));
     }
 
     /**
@@ -110,7 +111,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public void setRfNotch(boolean enable)
     {
-        sdrplay_api_RspDxParamsT.rfNotchEnable$set(getRspDxMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDxParamsT.rfNotchEnable(getRspDxParams(), Flag.of(enable));
     }
 
     /**
@@ -118,7 +119,7 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public boolean isRfDabNotch()
     {
-        return Flag.evaluate(sdrplay_api_RspDxParamsT.rfDabNotchEnable$get(getRspDxMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDxParamsT.rfDabNotchEnable(getRspDxParams()));
     }
 
     /**
@@ -126,6 +127,6 @@ public class RspDxDeviceParameters extends DeviceParameters
      */
     public void setRfDabNotch(boolean enable)
     {
-        sdrplay_api_RspDxParamsT.rfDabNotchEnable$set(getRspDxMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDxParamsT.rfDabNotchEnable(getRspDxParams(), Flag.of(enable));
     }
 }
