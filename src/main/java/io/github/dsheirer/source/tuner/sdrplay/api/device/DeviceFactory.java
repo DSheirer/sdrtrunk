@@ -28,16 +28,12 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory methods for creating new RSP Device instances
  */
 public class DeviceFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(DeviceFactory.class);
-
     /**
      * Creates a foreign memory segment for a DeviceT array, appropriate for the specified version.
      * @param version value
@@ -81,7 +77,7 @@ public class DeviceFactory
      * @param devicesArray memory segment
      * @param count of device structures in the devicesArray.
      * @return a list of device infos
-     * @throws exception if version is unrecognized or unsupported
+     * @throws SDRPlayException if version is unrecognized or unsupported
      */
     public static List<IDeviceStruct> parseDeviceStructs(Version version, MemorySegment devicesArray, int count)
             throws SDRPlayException
@@ -90,13 +86,13 @@ public class DeviceFactory
 
         if(version.gte(Version.V3_08))
         {
-            devicesArray.elements(sdrplay_api_DeviceT.$LAYOUT())
+            devicesArray.elements(sdrplay_api_DeviceT.layout())
                     .limit(count).forEach(memorySegment ->
                             deviceStructs.add(DeviceFactory.createDeviceStruct(version, memorySegment)));
         }
         else if(version == Version.V3_07)
         {
-            devicesArray.elements(sdrplay_api_DeviceT.$LAYOUT()).limit(count).forEach(memorySegment ->
+            devicesArray.elements(sdrplay_api_DeviceT.layout()).limit(count).forEach(memorySegment ->
             {
                 deviceStructs.add(DeviceFactory.createDeviceStruct(version, memorySegment));
             });
@@ -112,7 +108,7 @@ public class DeviceFactory
     /**
      * Creates an SDRplay device from the foreign memory Device instance.
      * @param sdrPlay for device callback support
-     * @param deviceMemorySegment instance for the device
+     * @param deviceStruct instance for the device
      * @return correctly typed device
      */
     public static Device createDevice(SDRplay sdrPlay, IDeviceStruct deviceStruct)

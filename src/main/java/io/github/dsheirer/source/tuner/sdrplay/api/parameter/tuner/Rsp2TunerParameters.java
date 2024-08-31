@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,20 +28,20 @@ import java.lang.foreign.MemorySegment;
  */
 public class Rsp2TunerParameters extends TunerParameters
 {
-    private MemorySegment mRsp2MemorySegment;
+    private final MemorySegment mRsp2TunerParams;
 
-    public Rsp2TunerParameters(MemorySegment tunerParametersMemorySegment, MemorySegment rsp2MemorySegment)
+    public Rsp2TunerParameters(MemorySegment rxChannelParams, MemorySegment rsp2TunerParams)
     {
-        super(tunerParametersMemorySegment);
-        mRsp2MemorySegment = rsp2MemorySegment;
+        super(rxChannelParams);
+        mRsp2TunerParams = rsp2TunerParams;
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getRsp2MemorySegment()
+    private MemorySegment getRsp2TunerParams()
     {
-        return mRsp2MemorySegment;
+        return mRsp2TunerParams;
     }
 
     /**
@@ -49,7 +49,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public boolean isBiasT()
     {
-        return Flag.evaluate(sdrplay_api_Rsp2TunerParamsT.biasTEnable$get(getRsp2MemorySegment()));
+        return Flag.evaluate(sdrplay_api_Rsp2TunerParamsT.biasTEnable(getRsp2TunerParams()));
     }
 
     /**
@@ -57,7 +57,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public void setBiasT(boolean enable)
     {
-        sdrplay_api_Rsp2TunerParamsT.biasTEnable$set(getRsp2MemorySegment(), Flag.of(enable));
+        sdrplay_api_Rsp2TunerParamsT.biasTEnable(getRsp2TunerParams(), Flag.of(enable));
     }
 
     /**
@@ -65,7 +65,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public Rsp2AmPort getAmPort()
     {
-        return Rsp2AmPort.fromValue(sdrplay_api_Rsp2TunerParamsT.amPortSel$get(getRsp2MemorySegment()));
+        return Rsp2AmPort.fromValue(sdrplay_api_Rsp2TunerParamsT.amPortSel(getRsp2TunerParams()));
     }
 
     /**
@@ -73,7 +73,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public void setAmPort(Rsp2AmPort amPort)
     {
-        sdrplay_api_Rsp2TunerParamsT.amPortSel$set(getRsp2MemorySegment(), amPort.getValue());
+        sdrplay_api_Rsp2TunerParamsT.amPortSel(getRsp2TunerParams(), amPort.getValue());
     }
 
     /**
@@ -81,7 +81,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public Rsp2Antenna getAntenna()
     {
-        return Rsp2Antenna.fromValue(sdrplay_api_Rsp2TunerParamsT.antennaSel$get(getRsp2MemorySegment()));
+        return Rsp2Antenna.fromValue(sdrplay_api_Rsp2TunerParamsT.antennaSel(getRsp2TunerParams()));
     }
 
     /**
@@ -89,7 +89,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public void setAntenna(Rsp2Antenna rsp2Antenna)
     {
-        sdrplay_api_Rsp2TunerParamsT.antennaSel$set(getRsp2MemorySegment(), rsp2Antenna.getValue());
+        sdrplay_api_Rsp2TunerParamsT.antennaSel(getRsp2TunerParams(), rsp2Antenna.getValue());
     }
 
     /**
@@ -97,7 +97,7 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public boolean isRfNotch()
     {
-        return Flag.evaluate(sdrplay_api_Rsp2TunerParamsT.rfNotchEnable$get(getRsp2MemorySegment()));
+        return Flag.evaluate(sdrplay_api_Rsp2TunerParamsT.rfNotchEnable(getRsp2TunerParams()));
     }
 
     /**
@@ -105,6 +105,6 @@ public class Rsp2TunerParameters extends TunerParameters
      */
     public void setRfNotch(boolean enable)
     {
-        sdrplay_api_Rsp2TunerParamsT.rfNotchEnable$set(getRsp2MemorySegment(), Flag.of(enable));
+        sdrplay_api_Rsp2TunerParamsT.rfNotchEnable(getRsp2TunerParams(), Flag.of(enable));
     }
 }

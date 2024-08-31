@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,23 +28,23 @@ import java.lang.foreign.MemorySegment;
  */
 public class Rsp1aTunerParameters extends TunerParameters
 {
-    private MemorySegment mRsp1aMemorySegment;
+    private final MemorySegment mRsp1aTunerParams;
 
     /**
      * Constructs an instance from the foreign memory segment.
      */
-    public Rsp1aTunerParameters(MemorySegment tunerParametersMemorySegment, MemorySegment rsp1aMemorySegment)
+    public Rsp1aTunerParameters(MemorySegment rxChannelParams, MemorySegment rsp1aTunerParams)
     {
-        super(tunerParametersMemorySegment);
-        mRsp1aMemorySegment = rsp1aMemorySegment;
+        super(rxChannelParams);
+        mRsp1aTunerParams = rsp1aTunerParams;
     }
 
     /**
      * Foreign memory segment for this structure
      */
-    private MemorySegment getRsp1aMemorySegment()
+    private MemorySegment getRsp1aTunerParams()
     {
-        return mRsp1aMemorySegment;
+        return mRsp1aTunerParams;
     }
 
     /**
@@ -52,7 +52,7 @@ public class Rsp1aTunerParameters extends TunerParameters
      */
     public boolean isBiasT()
     {
-        return Flag.evaluate(sdrplay_api_Rsp1aTunerParamsT.biasTEnable$get(getRsp1aMemorySegment()));
+        return Flag.evaluate(sdrplay_api_Rsp1aTunerParamsT.biasTEnable(getRsp1aTunerParams()));
     }
 
     /**
@@ -60,6 +60,6 @@ public class Rsp1aTunerParameters extends TunerParameters
      */
     public void setBiasT(boolean enable)
     {
-        sdrplay_api_Rsp1aTunerParamsT.biasTEnable$set(getRsp1aMemorySegment(), Flag.of(enable));
+        sdrplay_api_Rsp1aTunerParamsT.biasTEnable(getRsp1aTunerParams(), Flag.of(enable));
     }
 }

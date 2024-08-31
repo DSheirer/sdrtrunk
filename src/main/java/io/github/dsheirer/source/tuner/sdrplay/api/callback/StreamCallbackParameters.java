@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,22 +28,22 @@ import java.lang.foreign.MemorySegment;
  */
 public class StreamCallbackParameters
 {
-    private int mFirstSampleNumber;
-    private boolean mGainReductionChanged;
-    private boolean mRfFrequencyChanged;
-    private boolean mSampleRateChanged;
-    private long mNumberSamples;
+    private final int mFirstSampleNumber;
+    private final boolean mGainReductionChanged;
+    private final boolean mRfFrequencyChanged;
+    private final boolean mSampleRateChanged;
+    private final long mNumberSamples;
 
     /**
      * Constructs an instance from the foreign memory segment
      */
     public StreamCallbackParameters(MemorySegment memorySegment)
     {
-        mFirstSampleNumber = sdrplay_api_StreamCbParamsT.firstSampleNum$get(memorySegment);
-        mGainReductionChanged = Flag.evaluate(sdrplay_api_StreamCbParamsT.grChanged$get(memorySegment));
-        mRfFrequencyChanged = Flag.evaluate(sdrplay_api_StreamCbParamsT.rfChanged$get(memorySegment));
-        mSampleRateChanged = Flag.evaluate(sdrplay_api_StreamCbParamsT.fsChanged$get(memorySegment));
-        mNumberSamples = sdrplay_api_StreamCbParamsT.numSamples$get(memorySegment);
+        mFirstSampleNumber = sdrplay_api_StreamCbParamsT.firstSampleNum(memorySegment);
+        mGainReductionChanged = Flag.evaluate(sdrplay_api_StreamCbParamsT.grChanged(memorySegment));
+        mRfFrequencyChanged = Flag.evaluate(sdrplay_api_StreamCbParamsT.rfChanged(memorySegment));
+        mSampleRateChanged = Flag.evaluate(sdrplay_api_StreamCbParamsT.fsChanged(memorySegment));
+        mNumberSamples = sdrplay_api_StreamCbParamsT.numSamples(memorySegment);
     }
 
     /**

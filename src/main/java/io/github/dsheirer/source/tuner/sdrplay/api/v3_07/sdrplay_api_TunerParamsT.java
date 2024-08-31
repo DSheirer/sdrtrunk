@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,14 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.invoke.VarHandle;
 import java.lang.foreign.*;
+import java.util.function.*;
+
+import static java.lang.foreign.ValueLayout.*;
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     sdrplay_api_Bw_MHzT bwType;
  *     sdrplay_api_If_kHzT ifType;
@@ -33,144 +36,339 @@ import java.lang.foreign.*;
  *     sdrplay_api_GainT gain;
  *     sdrplay_api_RfFreqT rfFreq;
  *     sdrplay_api_DcOffsetTunerT dcOffsetTuner;
- * };
+ * }
  * }
  */
 public class sdrplay_api_TunerParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_INT$LAYOUT.withName("bwType"),
-        Constants$root.C_INT$LAYOUT.withName("ifType"),
-        Constants$root.C_INT$LAYOUT.withName("loMode"),
-        MemoryLayout.structLayout(
-            Constants$root.C_INT$LAYOUT.withName("gRdB"),
-            Constants$root.C_CHAR$LAYOUT.withName("LNAstate"),
-            Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
-            MemoryLayout.paddingLayout(16),
-            Constants$root.C_INT$LAYOUT.withName("minGr"),
-            MemoryLayout.structLayout(
-                Constants$root.C_FLOAT$LAYOUT.withName("curr"),
-                Constants$root.C_FLOAT$LAYOUT.withName("max"),
-                Constants$root.C_FLOAT$LAYOUT.withName("min")
-            ).withName("gainVals")
-        ).withName("gain"),
-        MemoryLayout.paddingLayout(32),
-        MemoryLayout.structLayout(
-            Constants$root.C_DOUBLE$LAYOUT.withName("rfHz"),
-            Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
-            MemoryLayout.paddingLayout(56)
-        ).withName("rfFreq"),
-        MemoryLayout.structLayout(
-            Constants$root.C_CHAR$LAYOUT.withName("dcCal"),
-            Constants$root.C_CHAR$LAYOUT.withName("speedUp"),
-            MemoryLayout.paddingLayout(16),
-            Constants$root.C_INT$LAYOUT.withName("trackTime"),
-            Constants$root.C_INT$LAYOUT.withName("refreshRateTime")
-        ).withName("dcOffsetTuner"),
-        MemoryLayout.paddingLayout(32)
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_TunerParamsT.$struct$LAYOUT;
+    sdrplay_api_TunerParamsT() {
+        // Should not be called directly
     }
-    static final VarHandle bwType$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("bwType"));
-    public static VarHandle bwType$VH() {
-        return sdrplay_api_TunerParamsT.bwType$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_Bw_MHzT bwType;
-     * }
-     */
-    public static int bwType$get(MemorySegment seg) {
-        return (int)sdrplay_api_TunerParamsT.bwType$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_Bw_MHzT bwType;
-     * }
-     */
-    public static void bwType$set(MemorySegment seg, int x) {
-        sdrplay_api_TunerParamsT.bwType$VH.set(seg, x);
-    }
-    public static int bwType$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_TunerParamsT.bwType$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void bwType$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_TunerParamsT.bwType$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle ifType$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("ifType"));
-    public static VarHandle ifType$VH() {
-        return sdrplay_api_TunerParamsT.ifType$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_If_kHzT ifType;
-     * }
-     */
-    public static int ifType$get(MemorySegment seg) {
-        return (int)sdrplay_api_TunerParamsT.ifType$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_If_kHzT ifType;
-     * }
-     */
-    public static void ifType$set(MemorySegment seg, int x) {
-        sdrplay_api_TunerParamsT.ifType$VH.set(seg, x);
-    }
-    public static int ifType$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_TunerParamsT.ifType$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void ifType$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_TunerParamsT.ifType$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle loMode$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("loMode"));
-    public static VarHandle loMode$VH() {
-        return sdrplay_api_TunerParamsT.loMode$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * sdrplay_api_LoModeT loMode;
-     * }
-     */
-    public static int loMode$get(MemorySegment seg) {
-        return (int)sdrplay_api_TunerParamsT.loMode$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * sdrplay_api_LoModeT loMode;
-     * }
-     */
-    public static void loMode$set(MemorySegment seg, int x) {
-        sdrplay_api_TunerParamsT.loMode$VH.set(seg, x);
-    }
-    public static int loMode$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_TunerParamsT.loMode$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void loMode$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_TunerParamsT.loMode$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static MemorySegment gain$slice(MemorySegment seg) {
-        return seg.asSlice(12, 24);
-    }
-    public static MemorySegment rfFreq$slice(MemorySegment seg) {
-        return seg.asSlice(40, 16);
-    }
-    public static MemorySegment dcOffsetTuner$slice(MemorySegment seg) {
-        return seg.asSlice(56, 12);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_INT.withName("bwType"),
+        sdrplay_api_h.C_INT.withName("ifType"),
+        sdrplay_api_h.C_INT.withName("loMode"),
+        sdrplay_api_GainT.layout().withName("gain"),
+        MemoryLayout.paddingLayout(4),
+        sdrplay_api_RfFreqT.layout().withName("rfFreq"),
+        sdrplay_api_DcOffsetTunerT.layout().withName("dcOffsetTuner"),
+        MemoryLayout.paddingLayout(4)
+    ).withName("$anon$83:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfInt bwType$LAYOUT = (OfInt)$LAYOUT.select(groupElement("bwType"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Bw_MHzT bwType
+     * }
+     */
+    public static final OfInt bwType$layout() {
+        return bwType$LAYOUT;
+    }
+
+    private static final long bwType$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Bw_MHzT bwType
+     * }
+     */
+    public static final long bwType$offset() {
+        return bwType$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Bw_MHzT bwType
+     * }
+     */
+    public static int bwType(MemorySegment struct) {
+        return struct.get(bwType$LAYOUT, bwType$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_Bw_MHzT bwType
+     * }
+     */
+    public static void bwType(MemorySegment struct, int fieldValue) {
+        struct.set(bwType$LAYOUT, bwType$OFFSET, fieldValue);
+    }
+
+    private static final OfInt ifType$LAYOUT = (OfInt)$LAYOUT.select(groupElement("ifType"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_If_kHzT ifType
+     * }
+     */
+    public static final OfInt ifType$layout() {
+        return ifType$LAYOUT;
+    }
+
+    private static final long ifType$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_If_kHzT ifType
+     * }
+     */
+    public static final long ifType$offset() {
+        return ifType$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_If_kHzT ifType
+     * }
+     */
+    public static int ifType(MemorySegment struct) {
+        return struct.get(ifType$LAYOUT, ifType$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_If_kHzT ifType
+     * }
+     */
+    public static void ifType(MemorySegment struct, int fieldValue) {
+        struct.set(ifType$LAYOUT, ifType$OFFSET, fieldValue);
+    }
+
+    private static final OfInt loMode$LAYOUT = (OfInt)$LAYOUT.select(groupElement("loMode"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_LoModeT loMode
+     * }
+     */
+    public static final OfInt loMode$layout() {
+        return loMode$LAYOUT;
+    }
+
+    private static final long loMode$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_LoModeT loMode
+     * }
+     */
+    public static final long loMode$offset() {
+        return loMode$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_LoModeT loMode
+     * }
+     */
+    public static int loMode(MemorySegment struct) {
+        return struct.get(loMode$LAYOUT, loMode$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_LoModeT loMode
+     * }
+     */
+    public static void loMode(MemorySegment struct, int fieldValue) {
+        struct.set(loMode$LAYOUT, loMode$OFFSET, fieldValue);
+    }
+
+    private static final GroupLayout gain$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("gain"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_GainT gain
+     * }
+     */
+    public static final GroupLayout gain$layout() {
+        return gain$LAYOUT;
+    }
+
+    private static final long gain$OFFSET = 12;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_GainT gain
+     * }
+     */
+    public static final long gain$offset() {
+        return gain$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_GainT gain
+     * }
+     */
+    public static MemorySegment gain(MemorySegment struct) {
+        return struct.asSlice(gain$OFFSET, gain$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_GainT gain
+     * }
+     */
+    public static void gain(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, gain$OFFSET, gain$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout rfFreq$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("rfFreq"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RfFreqT rfFreq
+     * }
+     */
+    public static final GroupLayout rfFreq$layout() {
+        return rfFreq$LAYOUT;
+    }
+
+    private static final long rfFreq$OFFSET = 40;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RfFreqT rfFreq
+     * }
+     */
+    public static final long rfFreq$offset() {
+        return rfFreq$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RfFreqT rfFreq
+     * }
+     */
+    public static MemorySegment rfFreq(MemorySegment struct) {
+        return struct.asSlice(rfFreq$OFFSET, rfFreq$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_RfFreqT rfFreq
+     * }
+     */
+    public static void rfFreq(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, rfFreq$OFFSET, rfFreq$LAYOUT.byteSize());
+    }
+
+    private static final GroupLayout dcOffsetTuner$LAYOUT = (GroupLayout)$LAYOUT.select(groupElement("dcOffsetTuner"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetTunerT dcOffsetTuner
+     * }
+     */
+    public static final GroupLayout dcOffsetTuner$layout() {
+        return dcOffsetTuner$LAYOUT;
+    }
+
+    private static final long dcOffsetTuner$OFFSET = 56;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetTunerT dcOffsetTuner
+     * }
+     */
+    public static final long dcOffsetTuner$offset() {
+        return dcOffsetTuner$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetTunerT dcOffsetTuner
+     * }
+     */
+    public static MemorySegment dcOffsetTuner(MemorySegment struct) {
+        return struct.asSlice(dcOffsetTuner$OFFSET, dcOffsetTuner$LAYOUT.byteSize());
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * sdrplay_api_DcOffsetTunerT dcOffsetTuner
+     * }
+     */
+    public static void dcOffsetTuner(MemorySegment struct, MemorySegment fieldValue) {
+        MemorySegment.copy(fieldValue, 0L, struct, dcOffsetTuner$OFFSET, dcOffsetTuner$LAYOUT.byteSize());
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

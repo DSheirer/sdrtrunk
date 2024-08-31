@@ -35,11 +35,11 @@ public class Rsp1CompositeParameters extends CompositeParameters<Rsp1DeviceParam
      * Constructs an instance from the foreign memory segment
      *
      * @param version of the API
-     * @param memorySegment for the composite structure in foreign memory
+     * @param deviceParams for the composite structure in foreign memory
      * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public Rsp1CompositeParameters(Version version, MemorySegment memorySegment, Arena arena)
+    public Rsp1CompositeParameters(Version version, MemorySegment deviceParams, Arena arena)
     {
-        super(version, DeviceType.RSP1, memorySegment, arena);
+        super(version, DeviceType.RSP1, deviceParams, arena);
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,16 +22,13 @@ package io.github.dsheirer.source.tuner.sdrplay.api.parameter.device;
 import io.github.dsheirer.source.tuner.sdrplay.api.util.Flag;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_FsFreqT;
 import java.lang.foreign.MemorySegment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Sample Rate structure
  */
 public class SamplingFrequency
 {
-    private Logger mLog = LoggerFactory.getLogger(SamplingFrequency.class);
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from a foreign memory segment and transfers the structure fields into this instance.
@@ -53,7 +50,7 @@ public class SamplingFrequency
      */
     public double getSampleRate()
     {
-        return sdrplay_api_FsFreqT.fsHz$get(getMemorySegment());
+        return sdrplay_api_FsFreqT.fsHz(getMemorySegment());
     }
 
     /**
@@ -64,9 +61,9 @@ public class SamplingFrequency
      */
     public void setSampleRate(double sampleRate, boolean synchronousUpdate, boolean recalibrate)
     {
-        sdrplay_api_FsFreqT.fsHz$set(getMemorySegment(), sampleRate);
-        sdrplay_api_FsFreqT.syncUpdate$set(getMemorySegment(), synchronousUpdate ? Flag.TRUE : Flag.FALSE);
-        sdrplay_api_FsFreqT.reCal$set(getMemorySegment(), recalibrate ? Flag.TRUE : Flag.FALSE);
+        sdrplay_api_FsFreqT.fsHz(getMemorySegment(), sampleRate);
+        sdrplay_api_FsFreqT.syncUpdate(getMemorySegment(), synchronousUpdate ? Flag.TRUE : Flag.FALSE);
+        sdrplay_api_FsFreqT.reCal(getMemorySegment(), recalibrate ? Flag.TRUE : Flag.FALSE);
     }
 
     /**

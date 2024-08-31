@@ -30,7 +30,7 @@ public class DeviceParametersFactory
     /**
      * Create a device parameters instance
      * @param deviceType for the device
-     * @param memorySegment of foreign memory representing the device type
+     * @param memorySegment for an allocated sdrplay_api_DevParamsT structure
      * @return instance
      */
     public static DeviceParameters create(DeviceType deviceType, MemorySegment memorySegment)

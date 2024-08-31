@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import java.lang.foreign.MemorySegment;
  */
 public class DcOffsetTuner
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from the foreign memory segment
@@ -52,42 +52,42 @@ public class DcOffsetTuner
      */
     public int getDcCal()
     {
-        return sdrplay_api_DcOffsetTunerT.dcCal$get(getMemorySegment());
+        return sdrplay_api_DcOffsetTunerT.dcCal(getMemorySegment());
     }
 
     public void setDcCal(int dcCal)
     {
-        sdrplay_api_DcOffsetTunerT.dcCal$set(getMemorySegment(), (byte)dcCal);
+        sdrplay_api_DcOffsetTunerT.dcCal(getMemorySegment(), (byte)dcCal);
     }
 
     public boolean isSpeedUp()
     {
-        return Flag.evaluate(sdrplay_api_DcOffsetTunerT.speedUp$get(getMemorySegment()));
+        return Flag.evaluate(sdrplay_api_DcOffsetTunerT.speedUp(getMemorySegment()));
     }
 
     public void setSpeedUp(boolean speedUp)
     {
-        sdrplay_api_DcOffsetTunerT.speedUp$set(getMemorySegment(), Flag.of(speedUp));
+        sdrplay_api_DcOffsetTunerT.speedUp(getMemorySegment(), Flag.of(speedUp));
     }
 
     public int getTrackTime()
     {
-        return sdrplay_api_DcOffsetTunerT.trackTime$get(getMemorySegment());
+        return sdrplay_api_DcOffsetTunerT.trackTime(getMemorySegment());
     }
 
     public void setTrackTime(int trackTime)
     {
-        sdrplay_api_DcOffsetTunerT.trackTime$set(getMemorySegment(), trackTime);
+        sdrplay_api_DcOffsetTunerT.trackTime(getMemorySegment(), trackTime);
     }
 
     public int getRefreshRateTime()
     {
-        return sdrplay_api_DcOffsetTunerT.refreshRateTime$get(getMemorySegment());
+        return sdrplay_api_DcOffsetTunerT.refreshRateTime(getMemorySegment());
     }
 
     public void setRefreshRateTime(int refreshRateTime)
     {
-        sdrplay_api_DcOffsetTunerT.refreshRateTime$set(getMemorySegment(), refreshRateTime);
+        sdrplay_api_DcOffsetTunerT.refreshRateTime(getMemorySegment(), refreshRateTime);
     }
 
     @Override

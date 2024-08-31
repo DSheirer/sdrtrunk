@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,25 +27,29 @@ import java.lang.foreign.MemorySegment;
  */
 public abstract class DeviceParameters
 {
-    private MemorySegment mMemorySegment;
-    private SamplingFrequency mSamplingFrequency;
-    private SynchronousUpdate mSynchronousUpdate;
-    private ResetFlags mResetFlags;
+    private final MemorySegment mDevParams;
+    private final SamplingFrequency mSamplingFrequency;
+    private final SynchronousUpdate mSynchronousUpdate;
+    private final ResetFlags mResetFlags;
 
-    public DeviceParameters(MemorySegment memorySegment)
+    /**
+     * Constructs an instance.
+     * @param devParams for the DeviceParameters structure
+     */
+    public DeviceParameters(MemorySegment devParams)
     {
-        mMemorySegment = memorySegment;
-        mSamplingFrequency = new SamplingFrequency(sdrplay_api_DevParamsT.fsFreq$slice(memorySegment));
-        mSynchronousUpdate = new SynchronousUpdate(sdrplay_api_DevParamsT.syncUpdate$slice(memorySegment));
-        mResetFlags = new ResetFlags(sdrplay_api_DevParamsT.resetFlags$slice(memorySegment));
+        mDevParams = devParams;
+        mSamplingFrequency = new SamplingFrequency(sdrplay_api_DevParamsT.fsFreq(devParams));
+        mSynchronousUpdate = new SynchronousUpdate(sdrplay_api_DevParamsT.syncUpdate(devParams));
+        mResetFlags = new ResetFlags(sdrplay_api_DevParamsT.resetFlags(devParams));
     }
 
     /**
      * Foreign memory segment for this device parameters instance
      */
-    protected MemorySegment getMemorySegment()
+    protected MemorySegment getDevParams()
     {
-        return mMemorySegment;
+        return mDevParams;
     }
 
     /**
@@ -54,7 +58,7 @@ public abstract class DeviceParameters
      */
     public double getPPM()
     {
-        return sdrplay_api_DevParamsT.ppm$get(getMemorySegment());
+        return sdrplay_api_DevParamsT.ppm(getDevParams());
     }
 
     /**
@@ -63,7 +67,7 @@ public abstract class DeviceParameters
      */
     public void setPPM(double ppm)
     {
-        sdrplay_api_DevParamsT.ppm$set(getMemorySegment(), ppm);
+        sdrplay_api_DevParamsT.ppm(getDevParams(), ppm);
     }
 
     /**
@@ -95,7 +99,7 @@ public abstract class DeviceParameters
      */
     public TransferMode getTransferMode()
     {
-        return TransferMode.fromValue(sdrplay_api_DevParamsT.mode$get(getMemorySegment()));
+        return TransferMode.fromValue(sdrplay_api_DevParamsT.mode(getDevParams()));
     }
 
     /**
@@ -105,13 +109,13 @@ public abstract class DeviceParameters
     {
         if(transferMode != TransferMode.UNKNOWN)
         {
-            sdrplay_api_DevParamsT.mode$set(getMemorySegment(), transferMode.getValue());
+            sdrplay_api_DevParamsT.mode(getDevParams(), transferMode.getValue());
         }
     }
 
     public long getSamplesPerPacket()
     {
-        return sdrplay_api_DevParamsT.samplesPerPkt$get(getMemorySegment());
+        return sdrplay_api_DevParamsT.samplesPerPkt(getDevParams());
     }
 
     @Override

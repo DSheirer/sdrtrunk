@@ -32,37 +32,37 @@ public class TunerParametersFactory
     /**
      * Creats a tuner parameters instance for the specified device type
      * @param deviceType to create
-     * @param memorySegment for the sdrplay_api_RxChannelParamsT structure
+     * @param rxChannelParams sdrplay_api_RxChannelParamsT structure
      * @return tuner parameters
      */
-    public static TunerParameters create(Version version, DeviceType deviceType, MemorySegment memorySegment)
+    public static TunerParameters create(Version version, DeviceType deviceType, MemorySegment rxChannelParams)
     {
-        MemorySegment tunerParametersMemorySegment = sdrplay_api_RxChannelParamsT.tunerParams$slice(memorySegment);
+        MemorySegment tunerParams = sdrplay_api_RxChannelParamsT.tunerParams(rxChannelParams);
 
         switch(deviceType)
         {
             case RSP1 -> {
-                return new Rsp1TunerParameters(tunerParametersMemorySegment);
+                return new Rsp1TunerParameters(tunerParams);
             }
             //RSP1A and RSP1B share the same tuner parameters structures
             case RSP1A, RSP1B -> {
-                MemorySegment rsp1AMemorySegment = sdrplay_api_RxChannelParamsT.rsp1aTunerParams$slice(memorySegment);
-                return new Rsp1aTunerParameters(memorySegment, rsp1AMemorySegment);
+                MemorySegment rsp1aTunerParams = sdrplay_api_RxChannelParamsT.rsp1aTunerParams(rxChannelParams);
+                return new Rsp1aTunerParameters(rxChannelParams, rsp1aTunerParams);
             }
             case RSP2 -> {
-                MemorySegment rsp2MemorySegment = sdrplay_api_RxChannelParamsT.rsp2TunerParams$slice(memorySegment);
-                return new Rsp2TunerParameters(memorySegment, rsp2MemorySegment);
+                MemorySegment rsp2TunerParams = sdrplay_api_RxChannelParamsT.rsp2TunerParams(rxChannelParams);
+                return new Rsp2TunerParameters(rxChannelParams, rsp2TunerParams);
             }
             case RSPduo -> {
                 if(version.gte(Version.V3_14))
                 {
-                    MemorySegment rspDuoMemorySegment = io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_RxChannelParamsT.rspDuoTunerParams$slice(memorySegment);
-                    return new RspDuoTunerParametersV3_14(memorySegment, rspDuoMemorySegment);
+                    MemorySegment rspDuoTunerParams = io.github.dsheirer.source.tuner.sdrplay.api.v3_15.sdrplay_api_RxChannelParamsT.rspDuoTunerParams(rxChannelParams);
+                    return new RspDuoTunerParametersV3_14(rxChannelParams, rspDuoTunerParams);
                 }
                 else if(version.gte(Version.V3_07))
                 {
-                    MemorySegment rspDuoMemorySegment = sdrplay_api_RxChannelParamsT.rspDuoTunerParams$slice(memorySegment);
-                    return new RspDuoTunerParametersV3_07(memorySegment, rspDuoMemorySegment);
+                    MemorySegment rspDuoTunerParams = sdrplay_api_RxChannelParamsT.rspDuoTunerParams(rxChannelParams);
+                    return new RspDuoTunerParametersV3_07(rxChannelParams, rspDuoTunerParams);
                 }
                 else
                 {
@@ -70,8 +70,8 @@ public class TunerParametersFactory
                 }
             }
             case RSPdx, RSPdxR2 -> {
-                MemorySegment rspDxMemorySegment = sdrplay_api_RxChannelParamsT.rspDxTunerParams$slice(memorySegment);
-                return new RspDxTunerParameters(memorySegment, rspDxMemorySegment);
+                MemorySegment rspDxTunerParams = sdrplay_api_RxChannelParamsT.rspDxTunerParams(rxChannelParams);
+                return new RspDxTunerParameters(rxChannelParams, rspDxTunerParams);
             }
             default -> throw new IllegalArgumentException("Unrecognized device type: " + deviceType);
         }

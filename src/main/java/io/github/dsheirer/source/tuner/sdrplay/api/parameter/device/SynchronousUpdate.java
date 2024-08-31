@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import java.lang.foreign.MemorySegment;
  */
 public class SynchronousUpdate
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from a foreign memory segment
@@ -50,7 +50,7 @@ public class SynchronousUpdate
      */
     public void set(int sampleNumber, int period)
     {
-        sdrplay_api_SyncUpdateT.sampleNum$set(getMemorySegment(), sampleNumber);
-        sdrplay_api_SyncUpdateT.period$set(getMemorySegment(), period);
+        sdrplay_api_SyncUpdateT.sampleNum(getMemorySegment(), sampleNumber);
+        sdrplay_api_SyncUpdateT.period(getMemorySegment(), period);
     }
 }

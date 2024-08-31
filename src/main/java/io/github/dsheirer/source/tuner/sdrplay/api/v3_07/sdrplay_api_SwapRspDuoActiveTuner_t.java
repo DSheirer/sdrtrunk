@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,29 +21,62 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
+import java.lang.invoke.*;
 import java.lang.foreign.*;
 
 /**
- * {@snippet :
- * enum  (*sdrplay_api_SwapRspDuoActiveTuner_t)(void* dev,enum * tuner,enum  tuner1AmPortSel);
+ * {@snippet lang=c :
+ * typedef sdrplay_api_ErrT (*sdrplay_api_SwapRspDuoActiveTuner_t)(HANDLE, sdrplay_api_TunerSelectT *, sdrplay_api_RspDuo_AmPortSelectT)
  * }
  */
-public interface sdrplay_api_SwapRspDuoActiveTuner_t {
+public class sdrplay_api_SwapRspDuoActiveTuner_t {
 
-    int apply(java.lang.foreign.MemorySegment dev, java.lang.foreign.MemorySegment tuner, int tuner1AmPortSel);
-    static MemorySegment allocate(sdrplay_api_SwapRspDuoActiveTuner_t fi, SegmentScope scope) {
-        return RuntimeHelper.upcallStub(constants$6.sdrplay_api_SwapRspDuoActiveTuner_t_UP$MH, fi, constants$6.sdrplay_api_SwapRspDuoActiveTuner_t$FUNC, scope);
+    sdrplay_api_SwapRspDuoActiveTuner_t() {
+        // Should not be called directly
     }
-    static sdrplay_api_SwapRspDuoActiveTuner_t ofAddress(MemorySegment addr, SegmentScope scope) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
-        return (java.lang.foreign.MemorySegment _dev, java.lang.foreign.MemorySegment _tuner, int _tuner1AmPortSel) -> {
-            try {
-                return (int)constants$6.sdrplay_api_SwapRspDuoActiveTuner_t_DOWN$MH.invokeExact(symbol, _dev, _tuner, _tuner1AmPortSel);
-            } catch (Throwable ex$) {
-                throw new AssertionError("should not reach here", ex$);
-            }
-        };
+
+    /**
+     * The function pointer signature, expressed as a functional interface
+     */
+    public interface Function {
+        int apply(MemorySegment dev, MemorySegment tuner, int tuner1AmPortSel);
+    }
+
+    private static final FunctionDescriptor $DESC = FunctionDescriptor.of(
+        sdrplay_api_h.C_INT,
+        sdrplay_api_h.C_POINTER,
+        sdrplay_api_h.C_POINTER,
+        sdrplay_api_h.C_INT
+    );
+
+    /**
+     * The descriptor of this function pointer
+     */
+    public static FunctionDescriptor descriptor() {
+        return $DESC;
+    }
+
+    private static final MethodHandle UP$MH = sdrplay_api_h.upcallHandle(sdrplay_api_SwapRspDuoActiveTuner_t.Function.class, "apply", $DESC);
+
+    /**
+     * Allocates a new upcall stub, whose implementation is defined by {@code fi}.
+     * The lifetime of the returned segment is managed by {@code arena}
+     */
+    public static MemorySegment allocate(sdrplay_api_SwapRspDuoActiveTuner_t.Function fi, Arena arena) {
+        return Linker.nativeLinker().upcallStub(UP$MH.bindTo(fi), $DESC, arena);
+    }
+
+    private static final MethodHandle DOWN$MH = Linker.nativeLinker().downcallHandle($DESC);
+
+    /**
+     * Invoke the upcall stub {@code funcPtr}, with given parameters
+     */
+    public static int invoke(MemorySegment funcPtr,MemorySegment dev, MemorySegment tuner, int tuner1AmPortSel) {
+        try {
+            return (int) DOWN$MH.invokeExact(funcPtr, dev, tuner, tuner1AmPortSel);
+        } catch (Throwable ex$) {
+            throw new AssertionError("should not reach here", ex$);
+        }
     }
 }
-
 

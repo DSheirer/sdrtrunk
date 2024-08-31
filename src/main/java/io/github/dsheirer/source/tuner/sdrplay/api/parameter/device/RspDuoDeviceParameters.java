@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,24 +29,24 @@ import java.lang.foreign.MemorySegment;
  */
 public class RspDuoDeviceParameters extends DeviceParameters
 {
-    private MemorySegment mRspDuoMemorySegment;
+    private final MemorySegment mRspDuoParams;
 
     /**
      * Constructs an instance
-     * @param memorySegment for this structure
+     * @param devParams for an allocated sdrplay_api_DevParamsT structure
      */
-    public RspDuoDeviceParameters(MemorySegment memorySegment)
+    public RspDuoDeviceParameters(MemorySegment devParams)
     {
-        super(memorySegment);
-        mRspDuoMemorySegment = sdrplay_api_DevParamsT.rspDuoParams$slice(memorySegment);
+        super(devParams);
+        mRspDuoParams = sdrplay_api_DevParamsT.rspDuoParams(devParams);
     }
 
     /**
      * Foreign memory segment representing this structure
      */
-    private MemorySegment getRspDuoMemorySegment()
+    private MemorySegment getRspDuoParams()
     {
-        return mRspDuoMemorySegment;
+        return mRspDuoParams;
     }
 
     /**
@@ -54,7 +54,7 @@ public class RspDuoDeviceParameters extends DeviceParameters
      */
     public boolean isExternalReferenceOutput()
     {
-        return Flag.evaluate(sdrplay_api_RspDuoParamsT.extRefOutputEn$get(getRspDuoMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDuoParamsT.extRefOutputEn(getRspDuoParams()));
     }
 
     /**
@@ -62,6 +62,6 @@ public class RspDuoDeviceParameters extends DeviceParameters
      */
     public void setExternalReferenceOutput(boolean enable)
     {
-        sdrplay_api_RspDuoParamsT.extRefOutputEn$set(getRspDuoMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDuoParamsT.extRefOutputEn(getRspDuoParams(), Flag.of(enable));
     }
 }

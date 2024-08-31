@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import java.lang.foreign.MemorySegment;
  */
 public class GainValues
 {
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from the foreign memory segment
@@ -50,17 +50,17 @@ public class GainValues
 
     public float getCurrent()
     {
-        return sdrplay_api_GainValuesT.curr$get(getMemorySegment());
+        return sdrplay_api_GainValuesT.curr(getMemorySegment());
     }
 
     public float getMax()
     {
-        return sdrplay_api_GainValuesT.max$get(getMemorySegment());
+        return sdrplay_api_GainValuesT.max(getMemorySegment());
     }
 
     public float getMin()
     {
-        return sdrplay_api_GainValuesT.min$get(getMemorySegment());
+        return sdrplay_api_GainValuesT.min(getMemorySegment());
     }
 
     @Override

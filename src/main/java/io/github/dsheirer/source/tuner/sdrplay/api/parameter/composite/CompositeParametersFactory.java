@@ -33,32 +33,32 @@ public class CompositeParametersFactory
      * Creates a composite parameters instance for the specified device type
      * @param version of the api
      * @param deviceType to create
-     * @param memorySegment of foreign memory structure for the composite parameters
+     * @param deviceParams sdrplay_api_DeviceParamsT structure
      * @param arena to allocate additional memory structures
      * @return instance
      */
-    public static CompositeParameters create(Version version, DeviceType deviceType, MemorySegment memorySegment,
+    public static CompositeParameters create(Version version, DeviceType deviceType, MemorySegment deviceParams,
                                              Arena arena)
     {
         switch(deviceType)
         {
             case RSP1 -> {
-                return new Rsp1CompositeParameters(version, memorySegment, arena);
+                return new Rsp1CompositeParameters(version, deviceParams, arena);
             }
             case RSP1A -> {
-                return new Rsp1aCompositeParameters(version, memorySegment, arena);
+                return new Rsp1aCompositeParameters(version, deviceParams, arena);
             }
             case RSP1B -> {
-                return new Rsp1bCompositeParameters(version, memorySegment, arena);
+                return new Rsp1bCompositeParameters(version, deviceParams, arena);
             }
             case RSP2 -> {
-                return new Rsp2CompositeParameters(version, memorySegment, arena);
+                return new Rsp2CompositeParameters(version, deviceParams, arena);
             }
             case RSPduo -> {
-                return new RspDuoCompositeParameters(version, memorySegment, arena);
+                return new RspDuoCompositeParameters(version, deviceParams, arena);
             }
             case RSPdx, RSPdxR2 -> {
-                return new RspDxCompositeParameters(version, memorySegment, arena);
+                return new RspDxCompositeParameters(version, deviceParams, arena);
             }
         }
 

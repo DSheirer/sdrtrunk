@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ public class RfFrequency
 {
     private static final double MINIMUM_FREQUENCY = 1_200;
     private static final double MAXIMUM_FREQUENCY = 2_000_000_000;
-    private MemorySegment mMemorySegment;
+    private final MemorySegment mMemorySegment;
 
     /**
      * Constructs an instance from the foreign memory segment
@@ -53,7 +53,7 @@ public class RfFrequency
      */
     public double getFrequency()
     {
-        return sdrplay_api_RfFreqT.rfHz$get(getMemorySegment());
+        return sdrplay_api_RfFreqT.rfHz(getMemorySegment());
     }
 
     /**
@@ -66,8 +66,8 @@ public class RfFrequency
     {
         if(MINIMUM_FREQUENCY < frequency && frequency <= MAXIMUM_FREQUENCY)
         {
-            sdrplay_api_RfFreqT.rfHz$set(getMemorySegment(), frequency);
-            sdrplay_api_RfFreqT.syncUpdate$set(getMemorySegment(), Flag.of(synchronousUpdate));
+            sdrplay_api_RfFreqT.rfHz(getMemorySegment(), frequency);
+            sdrplay_api_RfFreqT.syncUpdate(getMemorySegment(), Flag.of(synchronousUpdate));
         }
         else
         {

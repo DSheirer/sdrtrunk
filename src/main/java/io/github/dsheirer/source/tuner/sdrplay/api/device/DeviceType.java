@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.device;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.v3_14.sdrplay_api_h;
+import io.github.dsheirer.source.tuner.sdrplay.api.v3_15.sdrplay_api_h;
 
 /**
  * RSP Device type
@@ -32,11 +32,11 @@ public enum DeviceType
     RSP2(sdrplay_api_h.SDRPLAY_RSP2_ID(), "RSP2"),
     RSPduo(sdrplay_api_h.SDRPLAY_RSPduo_ID(), "RSPduo"),
     RSPdx(sdrplay_api_h.SDRPLAY_RSPdx_ID(), "RSPdx"),
-    RSPdxR2(sdrplay_api_h.SDRPLAY_RSPdx_R2_ID(), "RSPdxR2"),
+    RSPdxR2(sdrplay_api_h.SDRPLAY_RSPdxR2_ID(), "RSPdxR2"),
     UNKNOWN(Integer.MIN_VALUE, "UNKNOWN");
 
-    private int mValue;
-    private String mDescription;
+    private final int mValue;
+    private final String mDescription;
 
     DeviceType(int value, String description)
     {

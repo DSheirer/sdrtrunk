@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,27 +21,24 @@ package io.github.dsheirer.source.tuner.sdrplay.api.parameter.event;
 
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_GainCbParamT;
 import java.lang.foreign.MemorySegment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Gain Callback Parameters structure (sdrplay_api_GainCbParamT)
  */
 public class GainCallbackParameters
 {
-    private static final Logger mLog = LoggerFactory.getLogger(GainCallbackParameters.class);
-    private int mGainReductionDb;
-    private int mLnaGainReductionDb;
-    private double mCurrentGain;
+    private final int mGainReductionDb;
+    private final int mLnaGainReductionDb;
+    private final double mCurrentGain;
 
     /**
      * Constructs an instance from the foreign memory segment
      */
-    public GainCallbackParameters(MemorySegment memorySegment)
+    public GainCallbackParameters(MemorySegment gainCbParam)
     {
-        mGainReductionDb = sdrplay_api_GainCbParamT.gRdB$get(memorySegment);
-        mLnaGainReductionDb = sdrplay_api_GainCbParamT.lnaGRdB$get(memorySegment);
-        mCurrentGain = sdrplay_api_GainCbParamT.currGain$get(memorySegment);
+        mGainReductionDb = sdrplay_api_GainCbParamT.gRdB(gainCbParam);
+        mLnaGainReductionDb = sdrplay_api_GainCbParamT.lnaGRdB(gainCbParam);
+        mCurrentGain = sdrplay_api_GainCbParamT.currGain(gainCbParam);
     }
 
     /**

@@ -1,11 +1,12 @@
 SDRplay API
 
-All source class files are auto-created from sdrplay api header files using JDK 20 jextract tool:
+All source class files are auto-created from sdrplay api header files using JDK 22 jextract tool:
 
-Version 3.07 is the oldest supported version.  Versions 3.08 through 3.11 are all functionally equivalent.
+Version 3.07 is the oldest supported version.  Versions 3.08 through 3.14 are all functionally equivalent and
+versions 3.15+ are functionally equivalent.
 
-We use the JDK 20 jextract tool to generate java source files from the API include files that are
-located in the /arctifacts directory.
+We use the jextract tool to generate java source files from the API include files that are located in
+the /artifacts directory.
 
 With each new JDK release where they change something about the Foreign Function api, we have to regenerate
 the java source files.  My approach is to generate the java files into the source code directories alongside
@@ -21,22 +22,42 @@ Generate Source Files from SDRPlay API Headers
 - Download latest jextract tool and alias the jextract command.
 - cd into the (project)/jSDRplay/sdrplay-api/src/main/java/ directory
 
+Note: each version is auto-generated with a _1 suffix to avoid overwriting the existing implementation.  Then,
+you can just delete the original implementation and rename the suffixed versions to remove the _1.  Then,
+resolve any import or syntax errors to integrate the new auto-gen code into the existing codebase.
+
 Version 3.07
-- cd into the same folder where the v3.07 header files are lcoated.
-- jextract --source -t io.github.dsheirer.source.tuner.sdrplay.api.v3_08_1 -l libsdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_08_1/ sdrplay_api.h
-- In the generated RuntimeHelper class, comment out this line: System.loadLibrary("libsdrplay_api");
+- cd into the same folder where the v3.07 header files are located.
+- jextract -t io.github.dsheirer.source.tuner.sdrplay.api.v3_07 -l sdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_07_1/ sdrplay_api.h
 
 Version 3.08
-Note: API include files are from a windows 10 installer, with the windows DLL aspects commented out.
 - cd into the same folder where the v3.08 header files are located.
-- jextract --source -t io.github.dsheirer.source.tuner.sdrplay.api.v3_08_1 -l libsdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_08_1/ sdrplay_api.h
-- In the generated RuntimeHelper class, comment out this line: System.loadLibrary("libsdrplay_api");
+- jextract -t io.github.dsheirer.source.tuner.sdrplay.api.v3_08 -l sdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_08_1/ sdrplay_api.h
 
+Version 3.15 - Adds support for RSP dx2
+- cd into the same folder where the v3.15 header files are located.
+- jextract -t io.github.dsheirer.source.tuner.sdrplay.api.v3_15 -l sdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_15_1/ sdrplay_api.h
+
+As a final step, delete the original api version branches and rename each of the new api version branches to remove the _1 suffix.
+
+Code Modifications: for each version, modify the sdrplay_api_h.java class to wrap the SYMBOL_LOOKUP variable using the
+following changes, so that the code doesn't throw an error on systems that don't have the API installed:
+    //jextract auto-generated code modified to wrap with exception handler for systems that don't have the library
+    static SymbolLookup SYMBOL_LOOKUP;
+    static
+    {
+        try
+        {
+            SYMBOL_LOOKUP = SymbolLookup.libraryLookup(System.mapLibraryName("sdrplay_api"), LIBRARY_ARENA)
+                    .or(SymbolLookup.loaderLookup())
+                    .or(Linker.nativeLinker().defaultLookup());
+        }
+        catch(Exception e)
+        {
+            SYMBOL_LOOKUP = null;
+        }
+    }
 
 IntelliJ setup
 1. Run configuration
 2. JVM Option: --enable-native-access=ALL-UNNAMED
-3. Add library location to the java.library.path:
-   Linux: /usr/local/lib
-   Windows: ??
-   MacOS: ??

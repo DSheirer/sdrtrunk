@@ -30,12 +30,12 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
 {
     /**
      * Constructs an instance from the foreign memory segment
-     * @param tunerParametersMemorySegment of foreign memory structure
-     * @param rspDuoMemorySegment of foreign memory structure
+     * @param rxChannelParams of foreign memory structure
+     * @param rspDuoTunerParams of foreign memory structure
      */
-    RspDuoTunerParametersV3_07(MemorySegment tunerParametersMemorySegment, MemorySegment rspDuoMemorySegment)
+    RspDuoTunerParametersV3_07(MemorySegment rxChannelParams, MemorySegment rspDuoTunerParams)
     {
-        super(tunerParametersMemorySegment, rspDuoMemorySegment);
+        super(rxChannelParams, rspDuoTunerParams);
     }
 
     /**
@@ -43,7 +43,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public boolean isBiasT()
     {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.biasTEnable$get(getRspDuoMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.biasTEnable(getRspDuoTunerParams()));
     }
 
     /**
@@ -51,7 +51,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public void setBiasT(boolean enable)
     {
-        sdrplay_api_RspDuoTunerParamsT.biasTEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDuoTunerParamsT.biasTEnable(getRspDuoTunerParams(), Flag.of(enable));
     }
 
     /**
@@ -59,7 +59,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public RspDuoAmPort getTuner1AmPort()
     {
-        return RspDuoAmPort.fromValue(sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$get(getRspDuoMemorySegment()));
+        return RspDuoAmPort.fromValue(sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel(getRspDuoTunerParams()));
     }
 
     /**
@@ -67,7 +67,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public void setTuner1AmPort(RspDuoAmPort amPort)
     {
-        sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$set(getRspDuoMemorySegment(), amPort.getValue());
+        sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel(getRspDuoTunerParams(), amPort.getValue());
     }
 
     /**
@@ -75,7 +75,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public boolean isTuner1AmNotch()
     {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$get(getRspDuoMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable(getRspDuoTunerParams()));
     }
 
     /**
@@ -83,7 +83,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public void setTuner1AmNotch(boolean enable)
     {
-        sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable(getRspDuoTunerParams(), Flag.of(enable));
     }
 
     /**
@@ -91,7 +91,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public boolean isRfNotch()
     {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$get(getRspDuoMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.rfNotchEnable(getRspDuoTunerParams()));
     }
 
     /**
@@ -99,7 +99,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public void setRfNotch(boolean enable)
     {
-        sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDuoTunerParamsT.rfNotchEnable(getRspDuoTunerParams(), Flag.of(enable));
     }
 
     /**
@@ -107,7 +107,7 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public boolean isRfDabNotch()
     {
-        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$get(getRspDuoMemorySegment()));
+        return Flag.evaluate(sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable(getRspDuoTunerParams()));
     }
 
     /**
@@ -115,6 +115,6 @@ public class RspDuoTunerParametersV3_07 extends RspDuoTunerParameters
      */
     public void setRfDabNotch(boolean enable)
     {
-        sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$set(getRspDuoMemorySegment(), Flag.of(enable));
+        sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable(getRspDuoTunerParams(), Flag.of(enable));
     }
 }

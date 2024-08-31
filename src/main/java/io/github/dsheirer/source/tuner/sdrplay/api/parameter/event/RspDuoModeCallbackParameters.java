@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,14 +27,14 @@ import java.lang.foreign.MemorySegment;
  */
 public class RspDuoModeCallbackParameters
 {
-    private RspDuoModeEventType mRspDuoModeEventType;
+    private final RspDuoModeEventType mRspDuoModeEventType;
 
     /**
      * Constructs an instance from the foreign memory segment
      */
-    public RspDuoModeCallbackParameters(MemorySegment memorySegment)
+    public RspDuoModeCallbackParameters(MemorySegment rspDuoModeCbParam)
     {
-        mRspDuoModeEventType = RspDuoModeEventType.fromValue(sdrplay_api_RspDuoModeCbParamT.modeChangeType$get(memorySegment));
+        mRspDuoModeEventType = RspDuoModeEventType.fromValue(sdrplay_api_RspDuoModeCbParamT.modeChangeType(rspDuoModeCbParam));
     }
 
     /**

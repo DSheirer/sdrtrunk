@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,20 +27,20 @@ import java.lang.foreign.MemorySegment;
  */
 public class ErrorInformation
 {
-    private String mFile;
-    private String mFunction;
-    private int mLine;
-    private String mMessage;
+    private final String mFile;
+    private final String mFunction;
+    private final int mLine;
+    private final String mMessage;
 
     /**
      * Constructs an instance from the foreign memory segment
      */
     public ErrorInformation(MemorySegment memorySegment)
     {
-        mFile = sdrplay_api_ErrorInfoT.file$slice(memorySegment).getUtf8String(0);
-        mFunction = sdrplay_api_ErrorInfoT.function$slice(memorySegment).getUtf8String(0);
-        mLine = sdrplay_api_ErrorInfoT.line$get(memorySegment);
-        mMessage = sdrplay_api_ErrorInfoT.message$slice(memorySegment).getUtf8String(0);
+        mFile = sdrplay_api_ErrorInfoT.file(memorySegment).getString(0);
+        mFunction = sdrplay_api_ErrorInfoT.function(memorySegment).getString(0);
+        mLine = sdrplay_api_ErrorInfoT.line(memorySegment);
+        mMessage = sdrplay_api_ErrorInfoT.message(memorySegment).getString(0);
     }
 
     public String getFile()

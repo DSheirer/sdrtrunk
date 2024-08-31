@@ -33,7 +33,7 @@ import io.github.dsheirer.source.tuner.sdrplay.api.error.ErrorInformation;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite.CompositeParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite.CompositeParametersFactory;
 import io.github.dsheirer.source.tuner.sdrplay.api.util.Flag;
-import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceT;
+import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceParamsT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_ErrorInfoT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_h;
 import java.lang.foreign.Arena;
@@ -44,35 +44,21 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * SDRplay API wrapper.
- *
- * Note: the jextract auto-generated RuntimeHelper contains a static block that attempts to load the sdrplay_api
- * library.  This approach fails because the API is installed to a non-default location.  Comment out the library
- * load code in the RuntimeHelper and we'll directly load the library.
- *
- * //        System.loadLibrary("libsdrplay_api");
  */
 public class SDRplay
 {
-    public static final String SDRPLAY_API_LIBRARY_NAME = "sdrplay_api";
-    public static final String SDRPLAY_API_PATH_LINUX = "/usr/local/lib/libsdrplay_api.so";
-    public static final String SDRPLAY_API_PATH_MAC_OS = "/usr/local/lib/libsdrplay_api.dylib";
-    public static final String SDRPLAY_API_PATH_WINDOWS = System.getenv("ProgramFiles") +
-            "\\SDRplay\\API\\" + (System.getProperty("sun.arch.data.model").contentEquals("64") ? "x64" : "x86") +
-            "\\" + SDRPLAY_API_LIBRARY_NAME;
-    public static final String JAVA_LIBRARY_PATH_KEY = "java.library.path";
-
     private static final Logger mLog = LoggerFactory.getLogger(SDRplay.class);
 
     /**
-     * Foreign memory arena allocation resource scope
+     * Foreign memory arena allocation resource scope.  We use a shared arena with a lifetime bounded by the
+     * lifetime of this API.
      */
-    private final Arena mArena = Arena.openShared();
+    private final Arena mSharedArena = Arena.ofShared();
 
     /**
      * Indicates if libsdrplay_api.xx library was found and loaded.
@@ -105,28 +91,21 @@ public class SDRplay
      */
     public SDRplay() throws SDRPlayException
     {
-        mSdrplayLibraryLoaded = loadLibrary();
+        mSdrplayLibraryLoaded = SDRPlayLibraryHelper.LOADED;
 
         if(mSdrplayLibraryLoaded)
         {
             Status openStatus = open();
-            if(sLibraryLoadStatusLogging)
-            {
-                mLog.info("API library - open status: " + openStatus);
-            }
+
             mAvailable = openStatus.success() && getVersion().isSupported();
 
             if(openStatus == Status.FAIL)
             {
-                throw new SDRPlayException("Service not available");
+                throw new SDRPlayException("Service not available - open status: " + openStatus);
             }
         }
         else
         {
-            if(sLibraryLoadStatusLogging)
-            {
-                mLog.info("API library was not loaded");
-            }
             mAvailable = false;
         }
 
@@ -141,7 +120,14 @@ public class SDRplay
         {
             if(sLibraryLoadStatusLogging)
             {
-                mLog.info("API library is not available.");
+                if(!getVersion().isSupported())
+                {
+                    mLog.info("API library is not available - unsupported version: " + getVersion());
+                }
+                else
+                {
+                    mLog.info("API library is not available.");
+                }
             }
         }
 
@@ -151,52 +137,9 @@ public class SDRplay
     /**
      * Open Shared Memory Arena for this API instance
      */
-    private Arena getArena()
+    private Arena getSharedArena()
     {
-        return mArena;
-    }
-
-    /**
-     * Attempts to load the SDRPlay API library from the local system.
-     *
-     * @return true if library was loaded successfully.
-     */
-    private boolean loadLibrary()
-    {
-        try
-        {
-            String libraryPath = getSDRplayLibraryPath();
-            if(sLibraryLoadStatusLogging)
-            {
-                mLog.info("Loading API Library from default install path: " + libraryPath);
-            }
-            System.loadLibrary(SDRPLAY_API_LIBRARY_NAME);
-            return true;
-        }
-        catch(Throwable t)
-        {
-            mLog.error("Unable to load SDRplay API library from default install path.  Loading from java system library path");
-
-            try
-            {
-                System.loadLibrary(SDRPLAY_API_LIBRARY_NAME);
-                return true;
-            }
-            catch(Throwable t2)
-            {
-                String name = System.mapLibraryName(SDRPLAY_API_LIBRARY_NAME);
-
-                if(sLibraryLoadStatusLogging)
-                {
-                    mLog.warn("SDRPlay API library not found/installed on this system.  Ensure the API is installed either " +
-                            "in the default install location or the install location is included in the " +
-                            "'java.library.path' JVM property contains path to the library file [" + name +
-                            "].  Current library path property contents: " + System.getProperty(JAVA_LIBRARY_PATH_KEY));
-                }
-            }
-        }
-
-        return false;
+        return mSharedArena;
     }
 
     /**
@@ -219,9 +162,9 @@ public class SDRplay
         List<IDeviceStruct> deviceStructs = new ArrayList<>();
 
         //Get a version-correct array of DeviceT structures
-        MemorySegment devicesArray = DeviceFactory.createDeviceArray(getVersion(), getArena());
+        MemorySegment devicesArray = DeviceFactory.createDeviceArray(getVersion(), getSharedArena());
 
-        MemorySegment deviceCount = getArena().allocate(ValueLayout.JAVA_INT, 0);
+        MemorySegment deviceCount = getSharedArena().allocate(ValueLayout.JAVA_INT);
 
         Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_GetDevices(devicesArray, deviceCount,
                 sdrplay_api_h.SDRPLAY_MAX_DEVICES()));
@@ -356,18 +299,22 @@ public class SDRplay
      */
     public CompositeParameters getCompositeParameters(DeviceType deviceType, MemorySegment deviceHandle) throws SDRPlayException
     {
-        //Allocate a pointer that the api will fill with the memory address of the device parameters in memory.
-        MemorySegment pointer = getArena().allocate(ValueLayout.ADDRESS);
-        Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_GetDeviceParams(deviceHandle, pointer));
+        //The GetDeviceParams function call returns a C pointer-to-pointer so we have to:
+        // 1) Allocate native memory to receive the address
+        // 2) Invoke the method call
+        // 3) Reinterpret the address to 8-bytes so we can get the returned address value
+        // 4) Allocate a memory segment for that address
+        // 5) Reinterpret the memory segment to the size of the DeviceParamsT structure
+        // 6) Finally, wrap the native memory in a composite parameters instance
+        MemorySegment pointerToPointer = getSharedArena().allocate(ValueLayout.ADDRESS);
+        Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_GetDeviceParams(deviceHandle, pointerToPointer));
 
         if(status.success())
         {
-            //Get the memory address from the pointer's memory segment to where the structure is located
-            MemorySegment memoryAddress = pointer.get(ValueLayout.ADDRESS, 0);
-
-            //The structure's memory is already allocated ... wrap a memory segment around it
-            MemorySegment memorySegment = sdrplay_api_DeviceT.ofAddress(memoryAddress, getArena().scope());
-            return CompositeParametersFactory.create(getVersion(), deviceType, memorySegment, getArena());
+            MemorySegment pointer = pointerToPointer.reinterpret(ValueLayout.ADDRESS.byteSize());
+            MemorySegment deviceParamsAddress = MemorySegment.ofAddress(pointer.get(ValueLayout.JAVA_LONG, 0));
+            MemorySegment deviceParams = deviceParamsAddress.reinterpret(sdrplay_api_DeviceParamsT.sizeof(), getSharedArena(), null);
+            return CompositeParametersFactory.create(getVersion(), deviceType, deviceParams, getSharedArena());
         }
         else
         {
@@ -385,7 +332,7 @@ public class SDRplay
     private void init(MemorySegment deviceHandle, MemorySegment callbackFunctions) throws SDRPlayException
     {
         //Since we don't need/use the callback context ... setup as a pointer to the callback functions
-        MemorySegment contextPointer = getArena().allocate(ValueLayout.ADDRESS, callbackFunctions);
+        MemorySegment contextPointer = Arena.ofAuto().allocate(ValueLayout.ADDRESS);
         Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_Init(deviceHandle, callbackFunctions, contextPointer));
 
         if(!status.success())
@@ -410,7 +357,7 @@ public class SDRplay
 
         if(callbackFunctions == null)
         {
-            callbackFunctions = new CallbackFunctions(getArena(), eventListener, streamListener,
+            callbackFunctions = new CallbackFunctions(getSharedArena(), eventListener, streamListener,
                     device.getStreamCallbackListener());
             mDeviceCallbackFunctionsMap.put(deviceHandle, callbackFunctions);
         }
@@ -439,7 +386,7 @@ public class SDRplay
 
         if(callbackFunctions == null)
         {
-            callbackFunctions = new CallbackFunctions(getArena(), eventListener, streamListener, streamListener,
+            callbackFunctions = new CallbackFunctions(getSharedArena(), eventListener, streamListener, streamListener,
                     device.getStreamCallbackListener());
             mDeviceCallbackFunctionsMap.put(deviceHandle, callbackFunctions);
         }
@@ -505,7 +452,7 @@ public class SDRplay
     private ErrorInformation getLastError(MemorySegment deviceSegment)
     {
         MemorySegment errorAddress = sdrplay_api_h.sdrplay_api_GetLastError(deviceSegment);
-        MemorySegment errorSegment = sdrplay_api_ErrorInfoT.ofAddress(errorAddress, getArena().scope());
+        MemorySegment errorSegment = errorAddress.reinterpret(sdrplay_api_ErrorInfoT.layout().byteSize(), getSharedArena(), null);
         return new ErrorInformation(errorSegment);
     }
 
@@ -559,7 +506,7 @@ public class SDRplay
      * Closes the API service.  MUST be invoked before shutdown, after all SDRPlay API operations are completed.
      *
      * Note: when using multiple instances of this class, only invoke close() on a single instance.  With linux API
-     * version 3.07, if you invoked close() on one instance, then all of the other instances become unusable for
+     * version 3.07, if you invoked close() on one instance, then all other instances become unusable for
      * performing device operations (e.g. release(), etc).  This may be an artifact of the way that the Java
      * Foreign Function support is implemented, but not sure.  dls 1-Jan-2023
      */
@@ -579,12 +526,14 @@ public class SDRplay
                 mLog.error("Error closing SDRPlay API");
             }
 
+            getSharedArena().close();
             mSdrplayLibraryLoaded = false;
             mAvailable = false;
             return closeStatus;
         }
         else
         {
+            getSharedArena().close();
             return Status.API_UNAVAILABLE;
         }
     }
@@ -602,7 +551,7 @@ public class SDRplay
         {
             if(mSdrplayLibraryLoaded)
             {
-                MemorySegment apiVersion = getArena().allocate(ValueLayout.JAVA_FLOAT, 0);
+                MemorySegment apiVersion = getSharedArena().allocate(ValueLayout.JAVA_FLOAT);
                 Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_ApiVersion(apiVersion));
                 if(status.success())
                 {
@@ -663,28 +612,6 @@ public class SDRplay
         {
             throw new SDRPlayException("API is unavailable", Status.API_UNAVAILABLE);
         }
-    }
-
-    /**
-     * Identifies the java library path for the sdrplay api library at runtime.
-     */
-    public static String getSDRplayLibraryPath()
-    {
-        if(SystemUtils.IS_OS_WINDOWS)
-        {
-            return SDRPLAY_API_PATH_WINDOWS;
-        }
-        else if(SystemUtils.IS_OS_LINUX)
-        {
-            return SDRPLAY_API_PATH_LINUX;
-        }
-        else if(SystemUtils.IS_OS_MAC_OSX)
-        {
-            return SDRPLAY_API_PATH_MAC_OS;
-        }
-
-        mLog.error("Unrecognized operating system.  Cannot identify sdrplay api library path");
-        return "";
     }
 
     public static void main(String[] args)

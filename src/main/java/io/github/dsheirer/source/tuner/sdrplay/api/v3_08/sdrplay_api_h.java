@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,1349 +21,1584 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import static java.lang.foreign.ValueLayout.OfAddress;
-import static java.lang.foreign.ValueLayout.OfByte;
-import static java.lang.foreign.ValueLayout.OfDouble;
-import static java.lang.foreign.ValueLayout.OfFloat;
-import static java.lang.foreign.ValueLayout.OfInt;
-import static java.lang.foreign.ValueLayout.OfLong;
-import static java.lang.foreign.ValueLayout.OfShort;
-public class sdrplay_api_h  {
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.PaddingLayout;
+import java.lang.foreign.SequenceLayout;
+import java.lang.foreign.StructLayout;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
-    public static final OfByte C_CHAR = Constants$root.C_CHAR$LAYOUT;
-    public static final OfShort C_SHORT = Constants$root.C_SHORT$LAYOUT;
-    public static final OfInt C_INT = Constants$root.C_INT$LAYOUT;
-    public static final OfLong C_LONG = Constants$root.C_LONG_LONG$LAYOUT;
-    public static final OfLong C_LONG_LONG = Constants$root.C_LONG_LONG$LAYOUT;
-    public static final OfFloat C_FLOAT = Constants$root.C_FLOAT$LAYOUT;
-    public static final OfDouble C_DOUBLE = Constants$root.C_DOUBLE$LAYOUT;
-    public static final OfAddress C_POINTER = Constants$root.C_POINTER$LAYOUT;
+import static java.lang.foreign.ValueLayout.JAVA_BYTE;
+
+public class sdrplay_api_h {
+
+    sdrplay_api_h() {
+        // Should not be called directly
+    }
+
+    static final Arena LIBRARY_ARENA = Arena.ofAuto();
+    static final boolean TRACE_DOWNCALLS = Boolean.getBoolean("jextract.trace.downcalls");
+
+    static void traceDowncall(String name, Object... args) {
+         String traceArgs = Arrays.stream(args)
+                       .map(Object::toString)
+                       .collect(Collectors.joining(", "));
+         System.out.printf("%s(%s)\n", name, traceArgs);
+    }
+
+    static MemorySegment findOrThrow(String symbol) {
+        return SYMBOL_LOOKUP.find(symbol)
+            .orElseThrow(() -> new UnsatisfiedLinkError("unresolved symbol: " + symbol));
+    }
+
+    static MethodHandle upcallHandle(Class<?> fi, String name, FunctionDescriptor fdesc) {
+        try {
+            return MethodHandles.lookup().findVirtual(fi, name, fdesc.toMethodType());
+        } catch (ReflectiveOperationException ex) {
+            throw new AssertionError(ex);
+        }
+    }
+
+    static MemoryLayout align(MemoryLayout layout, long align) {
+        return switch (layout) {
+            case PaddingLayout p -> p;
+            case ValueLayout v -> v.withByteAlignment(align);
+            case GroupLayout g -> {
+                MemoryLayout[] alignedMembers = g.memberLayouts().stream()
+                        .map(m -> align(m, align)).toArray(MemoryLayout[]::new);
+                yield g instanceof StructLayout ?
+                        MemoryLayout.structLayout(alignedMembers) : MemoryLayout.unionLayout(alignedMembers);
+            }
+            case SequenceLayout s -> MemoryLayout.sequenceLayout(s.elementCount(), align(s.elementLayout(), align));
+        };
+    }
+
+    //jextract auto-generated code modified to wrap with exception handler for systems that don't have the library
+    static SymbolLookup SYMBOL_LOOKUP;
+    static
+    {
+        try
+        {
+            SYMBOL_LOOKUP = SymbolLookup.libraryLookup(System.mapLibraryName("sdrplay_api"), LIBRARY_ARENA)
+                    .or(SymbolLookup.loaderLookup())
+                    .or(Linker.nativeLinker().defaultLookup());
+        }
+        catch(Exception e)
+        {
+            SYMBOL_LOOKUP = null;
+        }
+    }
+
+    public static final ValueLayout.OfBoolean C_BOOL = ValueLayout.JAVA_BOOLEAN;
+    public static final ValueLayout.OfByte C_CHAR = ValueLayout.JAVA_BYTE;
+    public static final ValueLayout.OfShort C_SHORT = ValueLayout.JAVA_SHORT;
+    public static final ValueLayout.OfInt C_INT = ValueLayout.JAVA_INT;
+    public static final ValueLayout.OfLong C_LONG_LONG = ValueLayout.JAVA_LONG;
+    public static final ValueLayout.OfFloat C_FLOAT = ValueLayout.JAVA_FLOAT;
+    public static final ValueLayout.OfDouble C_DOUBLE = ValueLayout.JAVA_DOUBLE;
+    public static final AddressLayout C_POINTER = ValueLayout.ADDRESS
+            .withTargetLayout(MemoryLayout.sequenceLayout(java.lang.Long.MAX_VALUE, JAVA_BYTE));
+    public static final ValueLayout.OfLong C_LONG = ValueLayout.JAVA_LONG;
+    private static final int RSPIA_NUM_LNA_STATES = (int)10L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPIA_NUM_LNA_STATES 10
      * }
      */
     public static int RSPIA_NUM_LNA_STATES() {
-        return (int)10L;
+        return RSPIA_NUM_LNA_STATES;
     }
+    private static final int RSPIA_NUM_LNA_STATES_AM = (int)7L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPIA_NUM_LNA_STATES_AM 7
      * }
      */
     public static int RSPIA_NUM_LNA_STATES_AM() {
-        return (int)7L;
+        return RSPIA_NUM_LNA_STATES_AM;
     }
+    private static final int RSPIA_NUM_LNA_STATES_LBAND = (int)9L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPIA_NUM_LNA_STATES_LBAND 9
      * }
      */
     public static int RSPIA_NUM_LNA_STATES_LBAND() {
-        return (int)9L;
+        return RSPIA_NUM_LNA_STATES_LBAND;
     }
+    private static final int RSPII_NUM_LNA_STATES = (int)9L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPII_NUM_LNA_STATES 9
      * }
      */
     public static int RSPII_NUM_LNA_STATES() {
-        return (int)9L;
+        return RSPII_NUM_LNA_STATES;
     }
+    private static final int RSPII_NUM_LNA_STATES_AMPORT = (int)5L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPII_NUM_LNA_STATES_AMPORT 5
      * }
      */
     public static int RSPII_NUM_LNA_STATES_AMPORT() {
-        return (int)5L;
+        return RSPII_NUM_LNA_STATES_AMPORT;
     }
+    private static final int RSPII_NUM_LNA_STATES_420MHZ = (int)6L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPII_NUM_LNA_STATES_420MHZ 6
      * }
      */
     public static int RSPII_NUM_LNA_STATES_420MHZ() {
-        return (int)6L;
+        return RSPII_NUM_LNA_STATES_420MHZ;
     }
+    private static final int RSPDUO_NUM_LNA_STATES = (int)10L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDUO_NUM_LNA_STATES 10
      * }
      */
     public static int RSPDUO_NUM_LNA_STATES() {
-        return (int)10L;
+        return RSPDUO_NUM_LNA_STATES;
     }
+    private static final int RSPDUO_NUM_LNA_STATES_AMPORT = (int)5L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDUO_NUM_LNA_STATES_AMPORT 5
      * }
      */
     public static int RSPDUO_NUM_LNA_STATES_AMPORT() {
-        return (int)5L;
+        return RSPDUO_NUM_LNA_STATES_AMPORT;
     }
+    private static final int RSPDUO_NUM_LNA_STATES_AM = (int)7L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDUO_NUM_LNA_STATES_AM 7
      * }
      */
     public static int RSPDUO_NUM_LNA_STATES_AM() {
-        return (int)7L;
+        return RSPDUO_NUM_LNA_STATES_AM;
     }
+    private static final int RSPDUO_NUM_LNA_STATES_LBAND = (int)9L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDUO_NUM_LNA_STATES_LBAND 9
      * }
      */
     public static int RSPDUO_NUM_LNA_STATES_LBAND() {
-        return (int)9L;
+        return RSPDUO_NUM_LNA_STATES_LBAND;
     }
+    private static final int RSPDX_NUM_LNA_STATES = (int)28L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES 28
      * }
      */
     public static int RSPDX_NUM_LNA_STATES() {
-        return (int)28L;
+        return RSPDX_NUM_LNA_STATES;
     }
+    private static final int RSPDX_NUM_LNA_STATES_AMPORT2_0_12 = (int)19L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES_AMPORT2_0_12 19
      * }
      */
     public static int RSPDX_NUM_LNA_STATES_AMPORT2_0_12() {
-        return (int)19L;
+        return RSPDX_NUM_LNA_STATES_AMPORT2_0_12;
     }
+    private static final int RSPDX_NUM_LNA_STATES_AMPORT2_12_60 = (int)20L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES_AMPORT2_12_60 20
      * }
      */
     public static int RSPDX_NUM_LNA_STATES_AMPORT2_12_60() {
-        return (int)20L;
+        return RSPDX_NUM_LNA_STATES_AMPORT2_12_60;
     }
+    private static final int RSPDX_NUM_LNA_STATES_VHF_BAND3 = (int)27L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES_VHF_BAND3 27
      * }
      */
     public static int RSPDX_NUM_LNA_STATES_VHF_BAND3() {
-        return (int)27L;
+        return RSPDX_NUM_LNA_STATES_VHF_BAND3;
     }
+    private static final int RSPDX_NUM_LNA_STATES_420MHZ = (int)21L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES_420MHZ 21
      * }
      */
     public static int RSPDX_NUM_LNA_STATES_420MHZ() {
-        return (int)21L;
+        return RSPDX_NUM_LNA_STATES_420MHZ;
     }
+    private static final int RSPDX_NUM_LNA_STATES_LBAND = (int)19L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES_LBAND 19
      * }
      */
     public static int RSPDX_NUM_LNA_STATES_LBAND() {
-        return (int)19L;
+        return RSPDX_NUM_LNA_STATES_LBAND;
     }
+    private static final int RSPDX_NUM_LNA_STATES_DX = (int)26L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define RSPDX_NUM_LNA_STATES_DX 26
      * }
      */
     public static int RSPDX_NUM_LNA_STATES_DX() {
-        return (int)26L;
+        return RSPDX_NUM_LNA_STATES_DX;
     }
+    private static final int sdrplay_api_Rsp2_ANTENNA_A = (int)5L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Rsp2_ANTENNA_A = 5;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Rsp2_ANTENNA_A = 5
      * }
      */
     public static int sdrplay_api_Rsp2_ANTENNA_A() {
-        return (int)5L;
+        return sdrplay_api_Rsp2_ANTENNA_A;
     }
+    private static final int sdrplay_api_Rsp2_ANTENNA_B = (int)6L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Rsp2_ANTENNA_B = 6;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Rsp2_ANTENNA_B = 6
      * }
      */
     public static int sdrplay_api_Rsp2_ANTENNA_B() {
-        return (int)6L;
+        return sdrplay_api_Rsp2_ANTENNA_B;
     }
+    private static final int sdrplay_api_Rsp2_AMPORT_1 = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Rsp2_AMPORT_1 = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Rsp2_AMPORT_1 = 1
      * }
      */
     public static int sdrplay_api_Rsp2_AMPORT_1() {
-        return (int)1L;
+        return sdrplay_api_Rsp2_AMPORT_1;
     }
+    private static final int sdrplay_api_Rsp2_AMPORT_2 = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Rsp2_AMPORT_2 = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Rsp2_AMPORT_2 = 0
      * }
      */
     public static int sdrplay_api_Rsp2_AMPORT_2() {
-        return (int)0L;
+        return sdrplay_api_Rsp2_AMPORT_2;
     }
+    private static final int sdrplay_api_RspDuoMode_Unknown = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuoMode_Unknown = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuoMode_Unknown = 0
      * }
      */
     public static int sdrplay_api_RspDuoMode_Unknown() {
-        return (int)0L;
+        return sdrplay_api_RspDuoMode_Unknown;
     }
+    private static final int sdrplay_api_RspDuoMode_Single_Tuner = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuoMode_Single_Tuner = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuoMode_Single_Tuner = 1
      * }
      */
     public static int sdrplay_api_RspDuoMode_Single_Tuner() {
-        return (int)1L;
+        return sdrplay_api_RspDuoMode_Single_Tuner;
     }
+    private static final int sdrplay_api_RspDuoMode_Dual_Tuner = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuoMode_Dual_Tuner = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuoMode_Dual_Tuner = 2
      * }
      */
     public static int sdrplay_api_RspDuoMode_Dual_Tuner() {
-        return (int)2L;
+        return sdrplay_api_RspDuoMode_Dual_Tuner;
     }
+    private static final int sdrplay_api_RspDuoMode_Master = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuoMode_Master = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuoMode_Master = 4
      * }
      */
     public static int sdrplay_api_RspDuoMode_Master() {
-        return (int)4L;
+        return sdrplay_api_RspDuoMode_Master;
     }
+    private static final int sdrplay_api_RspDuoMode_Slave = (int)8L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuoMode_Slave = 8;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuoMode_Slave = 8
      * }
      */
     public static int sdrplay_api_RspDuoMode_Slave() {
-        return (int)8L;
+        return sdrplay_api_RspDuoMode_Slave;
     }
+    private static final int sdrplay_api_RspDuo_AMPORT_1 = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuo_AMPORT_1 = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuo_AMPORT_1 = 1
      * }
      */
     public static int sdrplay_api_RspDuo_AMPORT_1() {
-        return (int)1L;
+        return sdrplay_api_RspDuo_AMPORT_1;
     }
+    private static final int sdrplay_api_RspDuo_AMPORT_2 = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuo_AMPORT_2 = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuo_AMPORT_2 = 0
      * }
      */
     public static int sdrplay_api_RspDuo_AMPORT_2() {
-        return (int)0L;
+        return sdrplay_api_RspDuo_AMPORT_2;
     }
+    private static final int sdrplay_api_BW_Undefined = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_Undefined = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_Undefined = 0
      * }
      */
     public static int sdrplay_api_BW_Undefined() {
-        return (int)0L;
+        return sdrplay_api_BW_Undefined;
     }
+    private static final int sdrplay_api_BW_0_200 = (int)200L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_0_200 = 200;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_0_200 = 200
      * }
      */
     public static int sdrplay_api_BW_0_200() {
-        return (int)200L;
+        return sdrplay_api_BW_0_200;
     }
+    private static final int sdrplay_api_BW_0_300 = (int)300L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_0_300 = 300;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_0_300 = 300
      * }
      */
     public static int sdrplay_api_BW_0_300() {
-        return (int)300L;
+        return sdrplay_api_BW_0_300;
     }
+    private static final int sdrplay_api_BW_0_600 = (int)600L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_0_600 = 600;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_0_600 = 600
      * }
      */
     public static int sdrplay_api_BW_0_600() {
-        return (int)600L;
+        return sdrplay_api_BW_0_600;
     }
+    private static final int sdrplay_api_BW_1_536 = (int)1536L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_1_536 = 1536;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_1_536 = 1536
      * }
      */
     public static int sdrplay_api_BW_1_536() {
-        return (int)1536L;
+        return sdrplay_api_BW_1_536;
     }
+    private static final int sdrplay_api_BW_5_000 = (int)5000L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_5_000 = 5000;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_5_000 = 5000
      * }
      */
     public static int sdrplay_api_BW_5_000() {
-        return (int)5000L;
+        return sdrplay_api_BW_5_000;
     }
+    private static final int sdrplay_api_BW_6_000 = (int)6000L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_6_000 = 6000;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_6_000 = 6000
      * }
      */
     public static int sdrplay_api_BW_6_000() {
-        return (int)6000L;
+        return sdrplay_api_BW_6_000;
     }
+    private static final int sdrplay_api_BW_7_000 = (int)7000L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_7_000 = 7000;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_7_000 = 7000
      * }
      */
     public static int sdrplay_api_BW_7_000() {
-        return (int)7000L;
+        return sdrplay_api_BW_7_000;
     }
+    private static final int sdrplay_api_BW_8_000 = (int)8000L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BW_8_000 = 8000;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BW_8_000 = 8000
      * }
      */
     public static int sdrplay_api_BW_8_000() {
-        return (int)8000L;
+        return sdrplay_api_BW_8_000;
     }
+    private static final int sdrplay_api_IF_Undefined = (int)-1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_IF_Undefined = -1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_IF_Undefined = -1
      * }
      */
     public static int sdrplay_api_IF_Undefined() {
-        return (int)-1L;
+        return sdrplay_api_IF_Undefined;
     }
+    private static final int sdrplay_api_IF_Zero = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_IF_Zero = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_IF_Zero = 0
      * }
      */
     public static int sdrplay_api_IF_Zero() {
-        return (int)0L;
+        return sdrplay_api_IF_Zero;
     }
+    private static final int sdrplay_api_IF_0_450 = (int)450L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_IF_0_450 = 450;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_IF_0_450 = 450
      * }
      */
     public static int sdrplay_api_IF_0_450() {
-        return (int)450L;
+        return sdrplay_api_IF_0_450;
     }
+    private static final int sdrplay_api_IF_1_620 = (int)1620L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_IF_1_620 = 1620;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_IF_1_620 = 1620
      * }
      */
     public static int sdrplay_api_IF_1_620() {
-        return (int)1620L;
+        return sdrplay_api_IF_1_620;
     }
+    private static final int sdrplay_api_IF_2_048 = (int)2048L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_IF_2_048 = 2048;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_IF_2_048 = 2048
      * }
      */
     public static int sdrplay_api_IF_2_048() {
-        return (int)2048L;
+        return sdrplay_api_IF_2_048;
     }
+    private static final int sdrplay_api_LO_Undefined = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_LO_Undefined = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_LO_Undefined = 0
      * }
      */
     public static int sdrplay_api_LO_Undefined() {
-        return (int)0L;
+        return sdrplay_api_LO_Undefined;
     }
+    private static final int sdrplay_api_LO_Auto = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_LO_Auto = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_LO_Auto = 1
      * }
      */
     public static int sdrplay_api_LO_Auto() {
-        return (int)1L;
+        return sdrplay_api_LO_Auto;
     }
+    private static final int sdrplay_api_LO_120MHz = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_LO_120MHz = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_LO_120MHz = 2
      * }
      */
     public static int sdrplay_api_LO_120MHz() {
-        return (int)2L;
+        return sdrplay_api_LO_120MHz;
     }
+    private static final int sdrplay_api_LO_144MHz = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_LO_144MHz = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_LO_144MHz = 3
      * }
      */
     public static int sdrplay_api_LO_144MHz() {
-        return (int)3L;
+        return sdrplay_api_LO_144MHz;
     }
+    private static final int sdrplay_api_LO_168MHz = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_LO_168MHz = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_LO_168MHz = 4
      * }
      */
     public static int sdrplay_api_LO_168MHz() {
-        return (int)4L;
+        return sdrplay_api_LO_168MHz;
     }
+    private static final int sdrplay_api_EXTENDED_MIN_GR = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_EXTENDED_MIN_GR = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_EXTENDED_MIN_GR = 0
      * }
      */
     public static int sdrplay_api_EXTENDED_MIN_GR() {
-        return (int)0L;
+        return sdrplay_api_EXTENDED_MIN_GR;
     }
+    private static final int sdrplay_api_NORMAL_MIN_GR = (int)20L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_NORMAL_MIN_GR = 20;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_NORMAL_MIN_GR = 20
      * }
      */
     public static int sdrplay_api_NORMAL_MIN_GR() {
-        return (int)20L;
+        return sdrplay_api_NORMAL_MIN_GR;
     }
+    private static final int sdrplay_api_Tuner_Neither = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Tuner_Neither = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Tuner_Neither = 0
      * }
      */
     public static int sdrplay_api_Tuner_Neither() {
-        return (int)0L;
+        return sdrplay_api_Tuner_Neither;
     }
+    private static final int sdrplay_api_Tuner_A = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Tuner_A = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Tuner_A = 1
      * }
      */
     public static int sdrplay_api_Tuner_A() {
-        return (int)1L;
+        return sdrplay_api_Tuner_A;
     }
+    private static final int sdrplay_api_Tuner_B = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Tuner_B = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Tuner_B = 2
      * }
      */
     public static int sdrplay_api_Tuner_B() {
-        return (int)2L;
+        return sdrplay_api_Tuner_B;
     }
+    private static final int sdrplay_api_Tuner_Both = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Tuner_Both = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Tuner_Both = 3
      * }
      */
     public static int sdrplay_api_Tuner_Both() {
-        return (int)3L;
+        return sdrplay_api_Tuner_Both;
     }
+    private static final int sdrplay_api_RspDx_ANTENNA_A = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_ANTENNA_A = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_ANTENNA_A = 0
      * }
      */
     public static int sdrplay_api_RspDx_ANTENNA_A() {
-        return (int)0L;
+        return sdrplay_api_RspDx_ANTENNA_A;
     }
+    private static final int sdrplay_api_RspDx_ANTENNA_B = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_ANTENNA_B = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_ANTENNA_B = 1
      * }
      */
     public static int sdrplay_api_RspDx_ANTENNA_B() {
-        return (int)1L;
+        return sdrplay_api_RspDx_ANTENNA_B;
     }
+    private static final int sdrplay_api_RspDx_ANTENNA_C = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_ANTENNA_C = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_ANTENNA_C = 2
      * }
      */
     public static int sdrplay_api_RspDx_ANTENNA_C() {
-        return (int)2L;
+        return sdrplay_api_RspDx_ANTENNA_C;
     }
+    private static final int sdrplay_api_RspDx_HDRMODE_BW_0_200 = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_HDRMODE_BW_0_200 = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_HDRMODE_BW_0_200 = 0
      * }
      */
     public static int sdrplay_api_RspDx_HDRMODE_BW_0_200() {
-        return (int)0L;
+        return sdrplay_api_RspDx_HDRMODE_BW_0_200;
     }
+    private static final int sdrplay_api_RspDx_HDRMODE_BW_0_500 = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_HDRMODE_BW_0_500 = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_HDRMODE_BW_0_500 = 1
      * }
      */
     public static int sdrplay_api_RspDx_HDRMODE_BW_0_500() {
-        return (int)1L;
+        return sdrplay_api_RspDx_HDRMODE_BW_0_500;
     }
+    private static final int sdrplay_api_RspDx_HDRMODE_BW_1_200 = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_HDRMODE_BW_1_200 = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_HDRMODE_BW_1_200 = 2
      * }
      */
     public static int sdrplay_api_RspDx_HDRMODE_BW_1_200() {
-        return (int)2L;
+        return sdrplay_api_RspDx_HDRMODE_BW_1_200;
     }
+    private static final int sdrplay_api_RspDx_HDRMODE_BW_1_700 = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDx_HDRMODE_BW_1_700 = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDx_HDRMODE_BW_1_700 = 3
      * }
      */
     public static int sdrplay_api_RspDx_HDRMODE_BW_1_700() {
-        return (int)3L;
+        return sdrplay_api_RspDx_HDRMODE_BW_1_700;
     }
+    private static final int sdrplay_api_ISOCH = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_ISOCH = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_ISOCH = 0
      * }
      */
     public static int sdrplay_api_ISOCH() {
-        return (int)0L;
+        return sdrplay_api_ISOCH;
     }
+    private static final int sdrplay_api_BULK = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_BULK = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_BULK = 1
      * }
      */
     public static int sdrplay_api_BULK() {
-        return (int)1L;
+        return sdrplay_api_BULK;
     }
+    private static final int sdrplay_api_AGC_DISABLE = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AGC_DISABLE = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AGC_DISABLE = 0
      * }
      */
     public static int sdrplay_api_AGC_DISABLE() {
-        return (int)0L;
+        return sdrplay_api_AGC_DISABLE;
     }
+    private static final int sdrplay_api_AGC_100HZ = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AGC_100HZ = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AGC_100HZ = 1
      * }
      */
     public static int sdrplay_api_AGC_100HZ() {
-        return (int)1L;
+        return sdrplay_api_AGC_100HZ;
     }
+    private static final int sdrplay_api_AGC_50HZ = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AGC_50HZ = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AGC_50HZ = 2
      * }
      */
     public static int sdrplay_api_AGC_50HZ() {
-        return (int)2L;
+        return sdrplay_api_AGC_50HZ;
     }
+    private static final int sdrplay_api_AGC_5HZ = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AGC_5HZ = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AGC_5HZ = 3
      * }
      */
     public static int sdrplay_api_AGC_5HZ() {
-        return (int)3L;
+        return sdrplay_api_AGC_5HZ;
     }
+    private static final int sdrplay_api_AGC_CTRL_EN = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AGC_CTRL_EN = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AGC_CTRL_EN = 4
      * }
      */
     public static int sdrplay_api_AGC_CTRL_EN() {
-        return (int)4L;
+        return sdrplay_api_AGC_CTRL_EN;
     }
+    private static final int sdrplay_api_ADSB_DECIMATION = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_ADSB_DECIMATION = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_ADSB_DECIMATION = 0
      * }
      */
     public static int sdrplay_api_ADSB_DECIMATION() {
-        return (int)0L;
+        return sdrplay_api_ADSB_DECIMATION;
     }
+    private static final int sdrplay_api_ADSB_NO_DECIMATION_LOWPASS = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_ADSB_NO_DECIMATION_LOWPASS = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_ADSB_NO_DECIMATION_LOWPASS = 1
      * }
      */
     public static int sdrplay_api_ADSB_NO_DECIMATION_LOWPASS() {
-        return (int)1L;
+        return sdrplay_api_ADSB_NO_DECIMATION_LOWPASS;
     }
+    private static final int sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_2MHZ = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_2MHZ = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_2MHZ = 2
      * }
      */
     public static int sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_2MHZ() {
-        return (int)2L;
+        return sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_2MHZ;
     }
+    private static final int sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_3MHZ = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_3MHZ = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_3MHZ = 3
      * }
      */
     public static int sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_3MHZ() {
-        return (int)3L;
+        return sdrplay_api_ADSB_NO_DECIMATION_BANDPASS_3MHZ;
     }
+    private static final int sdrplay_api_Overload_Detected = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Overload_Detected = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Overload_Detected = 0
      * }
      */
     public static int sdrplay_api_Overload_Detected() {
-        return (int)0L;
+        return sdrplay_api_Overload_Detected;
     }
+    private static final int sdrplay_api_Overload_Corrected = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Overload_Corrected = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Overload_Corrected = 1
      * }
      */
     public static int sdrplay_api_Overload_Corrected() {
-        return (int)1L;
+        return sdrplay_api_Overload_Corrected;
     }
+    private static final int sdrplay_api_MasterInitialised = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_MasterInitialised = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_MasterInitialised = 0
      * }
      */
     public static int sdrplay_api_MasterInitialised() {
-        return (int)0L;
+        return sdrplay_api_MasterInitialised;
     }
+    private static final int sdrplay_api_SlaveAttached = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_SlaveAttached = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_SlaveAttached = 1
      * }
      */
     public static int sdrplay_api_SlaveAttached() {
-        return (int)1L;
+        return sdrplay_api_SlaveAttached;
     }
+    private static final int sdrplay_api_SlaveDetached = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_SlaveDetached = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_SlaveDetached = 2
      * }
      */
     public static int sdrplay_api_SlaveDetached() {
-        return (int)2L;
+        return sdrplay_api_SlaveDetached;
     }
+    private static final int sdrplay_api_SlaveInitialised = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_SlaveInitialised = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_SlaveInitialised = 3
      * }
      */
     public static int sdrplay_api_SlaveInitialised() {
-        return (int)3L;
+        return sdrplay_api_SlaveInitialised;
     }
+    private static final int sdrplay_api_SlaveUninitialised = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_SlaveUninitialised = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_SlaveUninitialised = 4
      * }
      */
     public static int sdrplay_api_SlaveUninitialised() {
-        return (int)4L;
+        return sdrplay_api_SlaveUninitialised;
     }
+    private static final int sdrplay_api_MasterDllDisappeared = (int)5L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_MasterDllDisappeared = 5;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_MasterDllDisappeared = 5
      * }
      */
     public static int sdrplay_api_MasterDllDisappeared() {
-        return (int)5L;
+        return sdrplay_api_MasterDllDisappeared;
     }
+    private static final int sdrplay_api_SlaveDllDisappeared = (int)6L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_SlaveDllDisappeared = 6;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_SlaveDllDisappeared = 6
      * }
      */
     public static int sdrplay_api_SlaveDllDisappeared() {
-        return (int)6L;
+        return sdrplay_api_SlaveDllDisappeared;
     }
+    private static final int sdrplay_api_GainChange = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_GainChange = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_GainChange = 0
      * }
      */
     public static int sdrplay_api_GainChange() {
-        return (int)0L;
+        return sdrplay_api_GainChange;
     }
+    private static final int sdrplay_api_PowerOverloadChange = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_PowerOverloadChange = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_PowerOverloadChange = 1
      * }
      */
     public static int sdrplay_api_PowerOverloadChange() {
-        return (int)1L;
+        return sdrplay_api_PowerOverloadChange;
     }
+    private static final int sdrplay_api_DeviceRemoved = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_DeviceRemoved = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_DeviceRemoved = 2
      * }
      */
     public static int sdrplay_api_DeviceRemoved() {
-        return (int)2L;
+        return sdrplay_api_DeviceRemoved;
     }
+    private static final int sdrplay_api_RspDuoModeChange = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RspDuoModeChange = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RspDuoModeChange = 3
      * }
      */
     public static int sdrplay_api_RspDuoModeChange() {
-        return (int)3L;
+        return sdrplay_api_RspDuoModeChange;
     }
     /**
-     * {@snippet :
-     * typedef void* HANDLE;
+     * {@snippet lang=c :
+     * typedef void *HANDLE
      * }
      */
-    public static final OfAddress HANDLE = Constants$root.C_POINTER$LAYOUT;
+    public static final AddressLayout HANDLE = sdrplay_api_h.C_POINTER;
+    private static final int sdrplay_api_Success = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Success = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Success = 0
      * }
      */
     public static int sdrplay_api_Success() {
-        return (int)0L;
+        return sdrplay_api_Success;
     }
+    private static final int sdrplay_api_Fail = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Fail = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Fail = 1
      * }
      */
     public static int sdrplay_api_Fail() {
-        return (int)1L;
+        return sdrplay_api_Fail;
     }
+    private static final int sdrplay_api_InvalidParam = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_InvalidParam = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_InvalidParam = 2
      * }
      */
     public static int sdrplay_api_InvalidParam() {
-        return (int)2L;
+        return sdrplay_api_InvalidParam;
     }
+    private static final int sdrplay_api_OutOfRange = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_OutOfRange = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_OutOfRange = 3
      * }
      */
     public static int sdrplay_api_OutOfRange() {
-        return (int)3L;
+        return sdrplay_api_OutOfRange;
     }
+    private static final int sdrplay_api_GainUpdateError = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_GainUpdateError = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_GainUpdateError = 4
      * }
      */
     public static int sdrplay_api_GainUpdateError() {
-        return (int)4L;
+        return sdrplay_api_GainUpdateError;
     }
+    private static final int sdrplay_api_RfUpdateError = (int)5L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_RfUpdateError = 5;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_RfUpdateError = 5
      * }
      */
     public static int sdrplay_api_RfUpdateError() {
-        return (int)5L;
+        return sdrplay_api_RfUpdateError;
     }
+    private static final int sdrplay_api_FsUpdateError = (int)6L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FsUpdateError = 6;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FsUpdateError = 6
      * }
      */
     public static int sdrplay_api_FsUpdateError() {
-        return (int)6L;
+        return sdrplay_api_FsUpdateError;
     }
+    private static final int sdrplay_api_HwError = (int)7L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_HwError = 7;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_HwError = 7
      * }
      */
     public static int sdrplay_api_HwError() {
-        return (int)7L;
+        return sdrplay_api_HwError;
     }
+    private static final int sdrplay_api_AliasingError = (int)8L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AliasingError = 8;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AliasingError = 8
      * }
      */
     public static int sdrplay_api_AliasingError() {
-        return (int)8L;
+        return sdrplay_api_AliasingError;
     }
+    private static final int sdrplay_api_AlreadyInitialised = (int)9L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_AlreadyInitialised = 9;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_AlreadyInitialised = 9
      * }
      */
     public static int sdrplay_api_AlreadyInitialised() {
-        return (int)9L;
+        return sdrplay_api_AlreadyInitialised;
     }
+    private static final int sdrplay_api_NotInitialised = (int)10L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_NotInitialised = 10;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_NotInitialised = 10
      * }
      */
     public static int sdrplay_api_NotInitialised() {
-        return (int)10L;
+        return sdrplay_api_NotInitialised;
     }
+    private static final int sdrplay_api_NotEnabled = (int)11L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_NotEnabled = 11;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_NotEnabled = 11
      * }
      */
     public static int sdrplay_api_NotEnabled() {
-        return (int)11L;
+        return sdrplay_api_NotEnabled;
     }
+    private static final int sdrplay_api_HwVerError = (int)12L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_HwVerError = 12;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_HwVerError = 12
      * }
      */
     public static int sdrplay_api_HwVerError() {
-        return (int)12L;
+        return sdrplay_api_HwVerError;
     }
+    private static final int sdrplay_api_OutOfMemError = (int)13L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_OutOfMemError = 13;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_OutOfMemError = 13
      * }
      */
     public static int sdrplay_api_OutOfMemError() {
-        return (int)13L;
+        return sdrplay_api_OutOfMemError;
     }
+    private static final int sdrplay_api_ServiceNotResponding = (int)14L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_ServiceNotResponding = 14;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_ServiceNotResponding = 14
      * }
      */
     public static int sdrplay_api_ServiceNotResponding() {
-        return (int)14L;
+        return sdrplay_api_ServiceNotResponding;
     }
+    private static final int sdrplay_api_StartPending = (int)15L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_StartPending = 15;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_StartPending = 15
      * }
      */
     public static int sdrplay_api_StartPending() {
-        return (int)15L;
+        return sdrplay_api_StartPending;
     }
+    private static final int sdrplay_api_StopPending = (int)16L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_StopPending = 16;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_StopPending = 16
      * }
      */
     public static int sdrplay_api_StopPending() {
-        return (int)16L;
+        return sdrplay_api_StopPending;
     }
+    private static final int sdrplay_api_InvalidMode = (int)17L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_InvalidMode = 17;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_InvalidMode = 17
      * }
      */
     public static int sdrplay_api_InvalidMode() {
-        return (int)17L;
+        return sdrplay_api_InvalidMode;
     }
+    private static final int sdrplay_api_FailedVerification1 = (int)18L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FailedVerification1 = 18;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FailedVerification1 = 18
      * }
      */
     public static int sdrplay_api_FailedVerification1() {
-        return (int)18L;
+        return sdrplay_api_FailedVerification1;
     }
+    private static final int sdrplay_api_FailedVerification2 = (int)19L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FailedVerification2 = 19;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FailedVerification2 = 19
      * }
      */
     public static int sdrplay_api_FailedVerification2() {
-        return (int)19L;
+        return sdrplay_api_FailedVerification2;
     }
+    private static final int sdrplay_api_FailedVerification3 = (int)20L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FailedVerification3 = 20;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FailedVerification3 = 20
      * }
      */
     public static int sdrplay_api_FailedVerification3() {
-        return (int)20L;
+        return sdrplay_api_FailedVerification3;
     }
+    private static final int sdrplay_api_FailedVerification4 = (int)21L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FailedVerification4 = 21;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FailedVerification4 = 21
      * }
      */
     public static int sdrplay_api_FailedVerification4() {
-        return (int)21L;
+        return sdrplay_api_FailedVerification4;
     }
+    private static final int sdrplay_api_FailedVerification5 = (int)22L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FailedVerification5 = 22;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FailedVerification5 = 22
      * }
      */
     public static int sdrplay_api_FailedVerification5() {
-        return (int)22L;
+        return sdrplay_api_FailedVerification5;
     }
+    private static final int sdrplay_api_FailedVerification6 = (int)23L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_FailedVerification6 = 23;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_FailedVerification6 = 23
      * }
      */
     public static int sdrplay_api_FailedVerification6() {
-        return (int)23L;
+        return sdrplay_api_FailedVerification6;
     }
+    private static final int sdrplay_api_InvalidServiceVersion = (int)24L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_InvalidServiceVersion = 24;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_InvalidServiceVersion = 24
      * }
      */
     public static int sdrplay_api_InvalidServiceVersion() {
-        return (int)24L;
+        return sdrplay_api_InvalidServiceVersion;
     }
+    private static final int sdrplay_api_Update_None = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_None = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_None = 0
      * }
      */
     public static int sdrplay_api_Update_None() {
-        return (int)0L;
+        return sdrplay_api_Update_None;
     }
+    private static final int sdrplay_api_Update_Dev_Fs = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Dev_Fs = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Dev_Fs = 1
      * }
      */
     public static int sdrplay_api_Update_Dev_Fs() {
-        return (int)1L;
+        return sdrplay_api_Update_Dev_Fs;
     }
+    private static final int sdrplay_api_Update_Dev_Ppm = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Dev_Ppm = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Dev_Ppm = 2
      * }
      */
     public static int sdrplay_api_Update_Dev_Ppm() {
-        return (int)2L;
+        return sdrplay_api_Update_Dev_Ppm;
     }
+    private static final int sdrplay_api_Update_Dev_SyncUpdate = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Dev_SyncUpdate = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Dev_SyncUpdate = 4
      * }
      */
     public static int sdrplay_api_Update_Dev_SyncUpdate() {
-        return (int)4L;
+        return sdrplay_api_Update_Dev_SyncUpdate;
     }
+    private static final int sdrplay_api_Update_Dev_ResetFlags = (int)8L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Dev_ResetFlags = 8;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Dev_ResetFlags = 8
      * }
      */
     public static int sdrplay_api_Update_Dev_ResetFlags() {
-        return (int)8L;
+        return sdrplay_api_Update_Dev_ResetFlags;
     }
+    private static final int sdrplay_api_Update_Rsp1a_BiasTControl = (int)16L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp1a_BiasTControl = 16;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp1a_BiasTControl = 16
      * }
      */
     public static int sdrplay_api_Update_Rsp1a_BiasTControl() {
-        return (int)16L;
+        return sdrplay_api_Update_Rsp1a_BiasTControl;
     }
+    private static final int sdrplay_api_Update_Rsp1a_RfNotchControl = (int)32L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp1a_RfNotchControl = 32;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp1a_RfNotchControl = 32
      * }
      */
     public static int sdrplay_api_Update_Rsp1a_RfNotchControl() {
-        return (int)32L;
+        return sdrplay_api_Update_Rsp1a_RfNotchControl;
     }
+    private static final int sdrplay_api_Update_Rsp1a_RfDabNotchControl = (int)64L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp1a_RfDabNotchControl = 64;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp1a_RfDabNotchControl = 64
      * }
      */
     public static int sdrplay_api_Update_Rsp1a_RfDabNotchControl() {
-        return (int)64L;
+        return sdrplay_api_Update_Rsp1a_RfDabNotchControl;
     }
+    private static final int sdrplay_api_Update_Rsp2_BiasTControl = (int)128L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp2_BiasTControl = 128;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp2_BiasTControl = 128
      * }
      */
     public static int sdrplay_api_Update_Rsp2_BiasTControl() {
-        return (int)128L;
+        return sdrplay_api_Update_Rsp2_BiasTControl;
     }
+    private static final int sdrplay_api_Update_Rsp2_AmPortSelect = (int)256L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp2_AmPortSelect = 256;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp2_AmPortSelect = 256
      * }
      */
     public static int sdrplay_api_Update_Rsp2_AmPortSelect() {
-        return (int)256L;
+        return sdrplay_api_Update_Rsp2_AmPortSelect;
     }
+    private static final int sdrplay_api_Update_Rsp2_AntennaControl = (int)512L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp2_AntennaControl = 512;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp2_AntennaControl = 512
      * }
      */
     public static int sdrplay_api_Update_Rsp2_AntennaControl() {
-        return (int)512L;
+        return sdrplay_api_Update_Rsp2_AntennaControl;
     }
+    private static final int sdrplay_api_Update_Rsp2_RfNotchControl = (int)1024L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp2_RfNotchControl = 1024;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp2_RfNotchControl = 1024
      * }
      */
     public static int sdrplay_api_Update_Rsp2_RfNotchControl() {
-        return (int)1024L;
+        return sdrplay_api_Update_Rsp2_RfNotchControl;
     }
+    private static final int sdrplay_api_Update_Rsp2_ExtRefControl = (int)2048L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Rsp2_ExtRefControl = 2048;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Rsp2_ExtRefControl = 2048
      * }
      */
     public static int sdrplay_api_Update_Rsp2_ExtRefControl() {
-        return (int)2048L;
+        return sdrplay_api_Update_Rsp2_ExtRefControl;
     }
+    private static final int sdrplay_api_Update_RspDuo_ExtRefControl = (int)4096L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDuo_ExtRefControl = 4096;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDuo_ExtRefControl = 4096
      * }
      */
     public static int sdrplay_api_Update_RspDuo_ExtRefControl() {
-        return (int)4096L;
+        return sdrplay_api_Update_RspDuo_ExtRefControl;
     }
+    private static final int sdrplay_api_Update_Master_Spare_1 = (int)8192L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Master_Spare_1 = 8192;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Master_Spare_1 = 8192
      * }
      */
     public static int sdrplay_api_Update_Master_Spare_1() {
-        return (int)8192L;
+        return sdrplay_api_Update_Master_Spare_1;
     }
+    private static final int sdrplay_api_Update_Master_Spare_2 = (int)16384L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Master_Spare_2 = 16384;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Master_Spare_2 = 16384
      * }
      */
     public static int sdrplay_api_Update_Master_Spare_2() {
-        return (int)16384L;
+        return sdrplay_api_Update_Master_Spare_2;
     }
+    private static final int sdrplay_api_Update_Tuner_Gr = (int)32768L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_Gr = 32768;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_Gr = 32768
      * }
      */
     public static int sdrplay_api_Update_Tuner_Gr() {
-        return (int)32768L;
+        return sdrplay_api_Update_Tuner_Gr;
     }
+    private static final int sdrplay_api_Update_Tuner_GrLimits = (int)65536L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_GrLimits = 65536;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_GrLimits = 65536
      * }
      */
     public static int sdrplay_api_Update_Tuner_GrLimits() {
-        return (int)65536L;
+        return sdrplay_api_Update_Tuner_GrLimits;
     }
+    private static final int sdrplay_api_Update_Tuner_Frf = (int)131072L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_Frf = 131072;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_Frf = 131072
      * }
      */
     public static int sdrplay_api_Update_Tuner_Frf() {
-        return (int)131072L;
+        return sdrplay_api_Update_Tuner_Frf;
     }
+    private static final int sdrplay_api_Update_Tuner_BwType = (int)262144L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_BwType = 262144;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_BwType = 262144
      * }
      */
     public static int sdrplay_api_Update_Tuner_BwType() {
-        return (int)262144L;
+        return sdrplay_api_Update_Tuner_BwType;
     }
+    private static final int sdrplay_api_Update_Tuner_IfType = (int)524288L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_IfType = 524288;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_IfType = 524288
      * }
      */
     public static int sdrplay_api_Update_Tuner_IfType() {
-        return (int)524288L;
+        return sdrplay_api_Update_Tuner_IfType;
     }
+    private static final int sdrplay_api_Update_Tuner_DcOffset = (int)1048576L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_DcOffset = 1048576;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_DcOffset = 1048576
      * }
      */
     public static int sdrplay_api_Update_Tuner_DcOffset() {
-        return (int)1048576L;
+        return sdrplay_api_Update_Tuner_DcOffset;
     }
+    private static final int sdrplay_api_Update_Tuner_LoMode = (int)2097152L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Tuner_LoMode = 2097152;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Tuner_LoMode = 2097152
      * }
      */
     public static int sdrplay_api_Update_Tuner_LoMode() {
-        return (int)2097152L;
+        return sdrplay_api_Update_Tuner_LoMode;
     }
+    private static final int sdrplay_api_Update_Ctrl_DCoffsetIQimbalance = (int)4194304L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Ctrl_DCoffsetIQimbalance = 4194304;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Ctrl_DCoffsetIQimbalance = 4194304
      * }
      */
     public static int sdrplay_api_Update_Ctrl_DCoffsetIQimbalance() {
-        return (int)4194304L;
+        return sdrplay_api_Update_Ctrl_DCoffsetIQimbalance;
     }
+    private static final int sdrplay_api_Update_Ctrl_Decimation = (int)8388608L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Ctrl_Decimation = 8388608;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Ctrl_Decimation = 8388608
      * }
      */
     public static int sdrplay_api_Update_Ctrl_Decimation() {
-        return (int)8388608L;
+        return sdrplay_api_Update_Ctrl_Decimation;
     }
+    private static final int sdrplay_api_Update_Ctrl_Agc = (int)16777216L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Ctrl_Agc = 16777216;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Ctrl_Agc = 16777216
      * }
      */
     public static int sdrplay_api_Update_Ctrl_Agc() {
-        return (int)16777216L;
+        return sdrplay_api_Update_Ctrl_Agc;
     }
+    private static final int sdrplay_api_Update_Ctrl_AdsbMode = (int)33554432L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Ctrl_AdsbMode = 33554432;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Ctrl_AdsbMode = 33554432
      * }
      */
     public static int sdrplay_api_Update_Ctrl_AdsbMode() {
-        return (int)33554432L;
+        return sdrplay_api_Update_Ctrl_AdsbMode;
     }
+    private static final int sdrplay_api_Update_Ctrl_OverloadMsgAck = (int)67108864L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Ctrl_OverloadMsgAck = 67108864;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Ctrl_OverloadMsgAck = 67108864
      * }
      */
     public static int sdrplay_api_Update_Ctrl_OverloadMsgAck() {
-        return (int)67108864L;
+        return sdrplay_api_Update_Ctrl_OverloadMsgAck;
     }
+    private static final int sdrplay_api_Update_RspDuo_BiasTControl = (int)134217728L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDuo_BiasTControl = 134217728;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDuo_BiasTControl = 134217728
      * }
      */
     public static int sdrplay_api_Update_RspDuo_BiasTControl() {
-        return (int)134217728L;
+        return sdrplay_api_Update_RspDuo_BiasTControl;
     }
+    private static final int sdrplay_api_Update_RspDuo_AmPortSelect = (int)268435456L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDuo_AmPortSelect = 268435456;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDuo_AmPortSelect = 268435456
      * }
      */
     public static int sdrplay_api_Update_RspDuo_AmPortSelect() {
-        return (int)268435456L;
+        return sdrplay_api_Update_RspDuo_AmPortSelect;
     }
+    private static final int sdrplay_api_Update_RspDuo_Tuner1AmNotchControl = (int)536870912L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDuo_Tuner1AmNotchControl = 536870912;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDuo_Tuner1AmNotchControl = 536870912
      * }
      */
     public static int sdrplay_api_Update_RspDuo_Tuner1AmNotchControl() {
-        return (int)536870912L;
+        return sdrplay_api_Update_RspDuo_Tuner1AmNotchControl;
     }
+    private static final int sdrplay_api_Update_RspDuo_RfNotchControl = (int)1073741824L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDuo_RfNotchControl = 1073741824;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDuo_RfNotchControl = 1073741824
      * }
      */
     public static int sdrplay_api_Update_RspDuo_RfNotchControl() {
-        return (int)1073741824L;
+        return sdrplay_api_Update_RspDuo_RfNotchControl;
     }
+    private static final int sdrplay_api_Update_RspDuo_RfDabNotchControl = (int)-2147483648L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDuo_RfDabNotchControl = -2147483648;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDuo_RfDabNotchControl = -2147483648
      * }
      */
     public static int sdrplay_api_Update_RspDuo_RfDabNotchControl() {
-        return (int)-2147483648L;
+        return sdrplay_api_Update_RspDuo_RfDabNotchControl;
     }
+    private static final int sdrplay_api_Update_Ext1_None = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_Ext1_None = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_Ext1_None = 0
      * }
      */
     public static int sdrplay_api_Update_Ext1_None() {
-        return (int)0L;
+        return sdrplay_api_Update_Ext1_None;
     }
+    private static final int sdrplay_api_Update_RspDx_HdrEnable = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDx_HdrEnable = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDx_HdrEnable = 1
      * }
      */
     public static int sdrplay_api_Update_RspDx_HdrEnable() {
-        return (int)1L;
+        return sdrplay_api_Update_RspDx_HdrEnable;
     }
+    private static final int sdrplay_api_Update_RspDx_BiasTControl = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDx_BiasTControl = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDx_BiasTControl = 2
      * }
      */
     public static int sdrplay_api_Update_RspDx_BiasTControl() {
-        return (int)2L;
+        return sdrplay_api_Update_RspDx_BiasTControl;
     }
+    private static final int sdrplay_api_Update_RspDx_AntennaControl = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDx_AntennaControl = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDx_AntennaControl = 4
      * }
      */
     public static int sdrplay_api_Update_RspDx_AntennaControl() {
-        return (int)4L;
+        return sdrplay_api_Update_RspDx_AntennaControl;
     }
+    private static final int sdrplay_api_Update_RspDx_RfNotchControl = (int)8L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDx_RfNotchControl = 8;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDx_RfNotchControl = 8
      * }
      */
     public static int sdrplay_api_Update_RspDx_RfNotchControl() {
-        return (int)8L;
+        return sdrplay_api_Update_RspDx_RfNotchControl;
     }
+    private static final int sdrplay_api_Update_RspDx_RfDabNotchControl = (int)16L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDx_RfDabNotchControl = 16;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDx_RfDabNotchControl = 16
      * }
      */
     public static int sdrplay_api_Update_RspDx_RfDabNotchControl() {
-        return (int)16L;
+        return sdrplay_api_Update_RspDx_RfDabNotchControl;
     }
+    private static final int sdrplay_api_Update_RspDx_HdrBw = (int)32L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_Update_RspDx_HdrBw = 32;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_Update_RspDx_HdrBw = 32
      * }
      */
     public static int sdrplay_api_Update_RspDx_HdrBw() {
-        return (int)32L;
+        return sdrplay_api_Update_RspDx_HdrBw;
     }
+    private static final int sdrplay_api_DbgLvl_Disable = (int)0L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_DbgLvl_Disable = 0;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_DbgLvl_Disable = 0
      * }
      */
     public static int sdrplay_api_DbgLvl_Disable() {
-        return (int)0L;
+        return sdrplay_api_DbgLvl_Disable;
     }
+    private static final int sdrplay_api_DbgLvl_Verbose = (int)1L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_DbgLvl_Verbose = 1;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_DbgLvl_Verbose = 1
      * }
      */
     public static int sdrplay_api_DbgLvl_Verbose() {
-        return (int)1L;
+        return sdrplay_api_DbgLvl_Verbose;
     }
+    private static final int sdrplay_api_DbgLvl_Warning = (int)2L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_DbgLvl_Warning = 2;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_DbgLvl_Warning = 2
      * }
      */
     public static int sdrplay_api_DbgLvl_Warning() {
-        return (int)2L;
+        return sdrplay_api_DbgLvl_Warning;
     }
+    private static final int sdrplay_api_DbgLvl_Error = (int)3L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_DbgLvl_Error = 3;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_DbgLvl_Error = 3
      * }
      */
     public static int sdrplay_api_DbgLvl_Error() {
-        return (int)3L;
+        return sdrplay_api_DbgLvl_Error;
     }
+    private static final int sdrplay_api_DbgLvl_Message = (int)4L;
     /**
-     * {@snippet :
-     * enum .sdrplay_api_DbgLvl_Message = 4;
+     * {@snippet lang=c :
+     * enum <anonymous>.sdrplay_api_DbgLvl_Message = 4
      * }
      */
     public static int sdrplay_api_DbgLvl_Message() {
-        return (int)4L;
+        return sdrplay_api_DbgLvl_Message;
     }
+    private static final int MAX_BB_GR = (int)59L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define MAX_BB_GR 59
      * }
      */
     public static int MAX_BB_GR() {
-        return (int)59L;
+        return MAX_BB_GR;
     }
+    private static final float SDRPLAY_API_VERSION = 3.0799999237060547f;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_API_VERSION 3.0799999237060547
      * }
      */
     public static float SDRPLAY_API_VERSION() {
-        return 3.0799999237060547f;
+        return SDRPLAY_API_VERSION;
     }
+    private static final int SDRPLAY_MAX_DEVICES = (int)16L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_MAX_DEVICES 16
      * }
      */
     public static int SDRPLAY_MAX_DEVICES() {
-        return (int)16L;
+        return SDRPLAY_MAX_DEVICES;
     }
+    private static final int SDRPLAY_MAX_TUNERS_PER_DEVICE = (int)2L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_MAX_TUNERS_PER_DEVICE 2
      * }
      */
     public static int SDRPLAY_MAX_TUNERS_PER_DEVICE() {
-        return (int)2L;
+        return SDRPLAY_MAX_TUNERS_PER_DEVICE;
     }
+    private static final int SDRPLAY_MAX_SER_NO_LEN = (int)64L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_MAX_SER_NO_LEN 64
      * }
      */
     public static int SDRPLAY_MAX_SER_NO_LEN() {
-        return (int)64L;
+        return SDRPLAY_MAX_SER_NO_LEN;
     }
+    private static final int SDRPLAY_MAX_ROOT_NM_LEN = (int)32L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_MAX_ROOT_NM_LEN 32
      * }
      */
     public static int SDRPLAY_MAX_ROOT_NM_LEN() {
-        return (int)32L;
+        return SDRPLAY_MAX_ROOT_NM_LEN;
     }
+    private static final int SDRPLAY_RSP1_ID = (int)1L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_RSP1_ID 1
      * }
      */
     public static int SDRPLAY_RSP1_ID() {
-        return (int)1L;
+        return SDRPLAY_RSP1_ID;
     }
+    private static final int SDRPLAY_RSP1A_ID = (int)255L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_RSP1A_ID 255
      * }
      */
     public static int SDRPLAY_RSP1A_ID() {
-        return (int)255L;
+        return SDRPLAY_RSP1A_ID;
     }
+    private static final int SDRPLAY_RSP2_ID = (int)2L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_RSP2_ID 2
      * }
      */
     public static int SDRPLAY_RSP2_ID() {
-        return (int)2L;
+        return SDRPLAY_RSP2_ID;
     }
+    private static final int SDRPLAY_RSPduo_ID = (int)3L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_RSPduo_ID 3
      * }
      */
     public static int SDRPLAY_RSPduo_ID() {
-        return (int)3L;
+        return SDRPLAY_RSPduo_ID;
     }
+    private static final int SDRPLAY_RSPdx_ID = (int)4L;
     /**
-     * {@snippet :
+     * {@snippet lang=c :
      * #define SDRPLAY_RSPdx_ID 4
      * }
      */
     public static int SDRPLAY_RSPdx_ID() {
-        return (int)4L;
+        return SDRPLAY_RSPdx_ID;
     }
 }
-
 

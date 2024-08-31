@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,178 +21,306 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.invoke.VarHandle;
 import java.lang.foreign.*;
+import java.util.function.*;
+
+import static java.lang.foreign.ValueLayout.*;
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
 /**
- * {@snippet :
+ * {@snippet lang=c :
  * struct {
  *     unsigned int firstSampleNum;
  *     int grChanged;
  *     int rfChanged;
  *     int fsChanged;
  *     unsigned int numSamples;
- * };
+ * }
  * }
  */
 public class sdrplay_api_StreamCbParamsT {
 
-    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_INT$LAYOUT.withName("firstSampleNum"),
-        Constants$root.C_INT$LAYOUT.withName("grChanged"),
-        Constants$root.C_INT$LAYOUT.withName("rfChanged"),
-        Constants$root.C_INT$LAYOUT.withName("fsChanged"),
-        Constants$root.C_INT$LAYOUT.withName("numSamples")
-    );
-    public static MemoryLayout $LAYOUT() {
-        return sdrplay_api_StreamCbParamsT.$struct$LAYOUT;
+    sdrplay_api_StreamCbParamsT() {
+        // Should not be called directly
     }
-    static final VarHandle firstSampleNum$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("firstSampleNum"));
-    public static VarHandle firstSampleNum$VH() {
-        return sdrplay_api_StreamCbParamsT.firstSampleNum$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned int firstSampleNum;
-     * }
-     */
-    public static int firstSampleNum$get(MemorySegment seg) {
-        return (int)sdrplay_api_StreamCbParamsT.firstSampleNum$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned int firstSampleNum;
-     * }
-     */
-    public static void firstSampleNum$set(MemorySegment seg, int x) {
-        sdrplay_api_StreamCbParamsT.firstSampleNum$VH.set(seg, x);
-    }
-    public static int firstSampleNum$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_StreamCbParamsT.firstSampleNum$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void firstSampleNum$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_StreamCbParamsT.firstSampleNum$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle grChanged$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("grChanged"));
-    public static VarHandle grChanged$VH() {
-        return sdrplay_api_StreamCbParamsT.grChanged$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int grChanged;
-     * }
-     */
-    public static int grChanged$get(MemorySegment seg) {
-        return (int)sdrplay_api_StreamCbParamsT.grChanged$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int grChanged;
-     * }
-     */
-    public static void grChanged$set(MemorySegment seg, int x) {
-        sdrplay_api_StreamCbParamsT.grChanged$VH.set(seg, x);
-    }
-    public static int grChanged$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_StreamCbParamsT.grChanged$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void grChanged$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_StreamCbParamsT.grChanged$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle rfChanged$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("rfChanged"));
-    public static VarHandle rfChanged$VH() {
-        return sdrplay_api_StreamCbParamsT.rfChanged$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int rfChanged;
-     * }
-     */
-    public static int rfChanged$get(MemorySegment seg) {
-        return (int)sdrplay_api_StreamCbParamsT.rfChanged$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int rfChanged;
-     * }
-     */
-    public static void rfChanged$set(MemorySegment seg, int x) {
-        sdrplay_api_StreamCbParamsT.rfChanged$VH.set(seg, x);
-    }
-    public static int rfChanged$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_StreamCbParamsT.rfChanged$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void rfChanged$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_StreamCbParamsT.rfChanged$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle fsChanged$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("fsChanged"));
-    public static VarHandle fsChanged$VH() {
-        return sdrplay_api_StreamCbParamsT.fsChanged$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * int fsChanged;
-     * }
-     */
-    public static int fsChanged$get(MemorySegment seg) {
-        return (int)sdrplay_api_StreamCbParamsT.fsChanged$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * int fsChanged;
-     * }
-     */
-    public static void fsChanged$set(MemorySegment seg, int x) {
-        sdrplay_api_StreamCbParamsT.fsChanged$VH.set(seg, x);
-    }
-    public static int fsChanged$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_StreamCbParamsT.fsChanged$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void fsChanged$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_StreamCbParamsT.fsChanged$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    static final VarHandle numSamples$VH = $struct$LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("numSamples"));
-    public static VarHandle numSamples$VH() {
-        return sdrplay_api_StreamCbParamsT.numSamples$VH;
-    }
-    /**
-     * Getter for field:
-     * {@snippet :
-     * unsigned int numSamples;
-     * }
-     */
-    public static int numSamples$get(MemorySegment seg) {
-        return (int)sdrplay_api_StreamCbParamsT.numSamples$VH.get(seg);
-    }
-    /**
-     * Setter for field:
-     * {@snippet :
-     * unsigned int numSamples;
-     * }
-     */
-    public static void numSamples$set(MemorySegment seg, int x) {
-        sdrplay_api_StreamCbParamsT.numSamples$VH.set(seg, x);
-    }
-    public static int numSamples$get(MemorySegment seg, long index) {
-        return (int)sdrplay_api_StreamCbParamsT.numSamples$VH.get(seg.asSlice(index*sizeof()));
-    }
-    public static void numSamples$set(MemorySegment seg, long index, int x) {
-        sdrplay_api_StreamCbParamsT.numSamples$VH.set(seg.asSlice(index*sizeof()), x);
-    }
-    public static long sizeof() { return $LAYOUT().byteSize(); }
-    public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
-        return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
-    }
-    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
-}
 
+    private static final GroupLayout $LAYOUT = MemoryLayout.structLayout(
+        sdrplay_api_h.C_INT.withName("firstSampleNum"),
+        sdrplay_api_h.C_INT.withName("grChanged"),
+        sdrplay_api_h.C_INT.withName("rfChanged"),
+        sdrplay_api_h.C_INT.withName("fsChanged"),
+        sdrplay_api_h.C_INT.withName("numSamples")
+    ).withName("$anon$57:9");
+
+    /**
+     * The layout of this struct
+     */
+    public static final GroupLayout layout() {
+        return $LAYOUT;
+    }
+
+    private static final OfInt firstSampleNum$LAYOUT = (OfInt)$LAYOUT.select(groupElement("firstSampleNum"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned int firstSampleNum
+     * }
+     */
+    public static final OfInt firstSampleNum$layout() {
+        return firstSampleNum$LAYOUT;
+    }
+
+    private static final long firstSampleNum$OFFSET = 0;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned int firstSampleNum
+     * }
+     */
+    public static final long firstSampleNum$offset() {
+        return firstSampleNum$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned int firstSampleNum
+     * }
+     */
+    public static int firstSampleNum(MemorySegment struct) {
+        return struct.get(firstSampleNum$LAYOUT, firstSampleNum$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned int firstSampleNum
+     * }
+     */
+    public static void firstSampleNum(MemorySegment struct, int fieldValue) {
+        struct.set(firstSampleNum$LAYOUT, firstSampleNum$OFFSET, fieldValue);
+    }
+
+    private static final OfInt grChanged$LAYOUT = (OfInt)$LAYOUT.select(groupElement("grChanged"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int grChanged
+     * }
+     */
+    public static final OfInt grChanged$layout() {
+        return grChanged$LAYOUT;
+    }
+
+    private static final long grChanged$OFFSET = 4;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int grChanged
+     * }
+     */
+    public static final long grChanged$offset() {
+        return grChanged$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int grChanged
+     * }
+     */
+    public static int grChanged(MemorySegment struct) {
+        return struct.get(grChanged$LAYOUT, grChanged$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int grChanged
+     * }
+     */
+    public static void grChanged(MemorySegment struct, int fieldValue) {
+        struct.set(grChanged$LAYOUT, grChanged$OFFSET, fieldValue);
+    }
+
+    private static final OfInt rfChanged$LAYOUT = (OfInt)$LAYOUT.select(groupElement("rfChanged"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int rfChanged
+     * }
+     */
+    public static final OfInt rfChanged$layout() {
+        return rfChanged$LAYOUT;
+    }
+
+    private static final long rfChanged$OFFSET = 8;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int rfChanged
+     * }
+     */
+    public static final long rfChanged$offset() {
+        return rfChanged$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int rfChanged
+     * }
+     */
+    public static int rfChanged(MemorySegment struct) {
+        return struct.get(rfChanged$LAYOUT, rfChanged$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int rfChanged
+     * }
+     */
+    public static void rfChanged(MemorySegment struct, int fieldValue) {
+        struct.set(rfChanged$LAYOUT, rfChanged$OFFSET, fieldValue);
+    }
+
+    private static final OfInt fsChanged$LAYOUT = (OfInt)$LAYOUT.select(groupElement("fsChanged"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * int fsChanged
+     * }
+     */
+    public static final OfInt fsChanged$layout() {
+        return fsChanged$LAYOUT;
+    }
+
+    private static final long fsChanged$OFFSET = 12;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * int fsChanged
+     * }
+     */
+    public static final long fsChanged$offset() {
+        return fsChanged$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * int fsChanged
+     * }
+     */
+    public static int fsChanged(MemorySegment struct) {
+        return struct.get(fsChanged$LAYOUT, fsChanged$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * int fsChanged
+     * }
+     */
+    public static void fsChanged(MemorySegment struct, int fieldValue) {
+        struct.set(fsChanged$LAYOUT, fsChanged$OFFSET, fieldValue);
+    }
+
+    private static final OfInt numSamples$LAYOUT = (OfInt)$LAYOUT.select(groupElement("numSamples"));
+
+    /**
+     * Layout for field:
+     * {@snippet lang=c :
+     * unsigned int numSamples
+     * }
+     */
+    public static final OfInt numSamples$layout() {
+        return numSamples$LAYOUT;
+    }
+
+    private static final long numSamples$OFFSET = 16;
+
+    /**
+     * Offset for field:
+     * {@snippet lang=c :
+     * unsigned int numSamples
+     * }
+     */
+    public static final long numSamples$offset() {
+        return numSamples$OFFSET;
+    }
+
+    /**
+     * Getter for field:
+     * {@snippet lang=c :
+     * unsigned int numSamples
+     * }
+     */
+    public static int numSamples(MemorySegment struct) {
+        return struct.get(numSamples$LAYOUT, numSamples$OFFSET);
+    }
+
+    /**
+     * Setter for field:
+     * {@snippet lang=c :
+     * unsigned int numSamples
+     * }
+     */
+    public static void numSamples(MemorySegment struct, int fieldValue) {
+        struct.set(numSamples$LAYOUT, numSamples$OFFSET, fieldValue);
+    }
+
+    /**
+     * Obtains a slice of {@code arrayParam} which selects the array element at {@code index}.
+     * The returned segment has address {@code arrayParam.address() + index * layout().byteSize()}
+     */
+    public static MemorySegment asSlice(MemorySegment array, long index) {
+        return array.asSlice(layout().byteSize() * index);
+    }
+
+    /**
+     * The size (in bytes) of this struct
+     */
+    public static long sizeof() { return layout().byteSize(); }
+
+    /**
+     * Allocate a segment of size {@code layout().byteSize()} using {@code allocator}
+     */
+    public static MemorySegment allocate(SegmentAllocator allocator) {
+        return allocator.allocate(layout());
+    }
+
+    /**
+     * Allocate an array of size {@code elementCount} using {@code allocator}.
+     * The returned segment has size {@code elementCount * layout().byteSize()}.
+     */
+    public static MemorySegment allocateArray(long elementCount, SegmentAllocator allocator) {
+        return allocator.allocate(MemoryLayout.sequenceLayout(elementCount, layout()));
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(addr, 1, arena, cleanup);
+    }
+
+    /**
+     * Reinterprets {@code addr} using target {@code arena} and {@code cleanupAction} (if any).
+     * The returned segment has size {@code elementCount * layout().byteSize()}
+     */
+    public static MemorySegment reinterpret(MemorySegment addr, long elementCount, Arena arena, Consumer<MemorySegment> cleanup) {
+        return addr.reinterpret(layout().byteSize() * elementCount, arena, cleanup);
+    }
+}
 

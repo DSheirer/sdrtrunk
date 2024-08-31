@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,30 +21,63 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SegmentScope;
+import java.lang.invoke.*;
+import java.lang.foreign.*;
 
 /**
- * {@snippet :
- * enum  (*sdrplay_api_Update_t)(void* dev,enum  tuner,enum  reasonForUpdate,enum  reasonForUpdateExt1);
+ * {@snippet lang=c :
+ * typedef sdrplay_api_ErrT (*sdrplay_api_Update_t)(HANDLE, sdrplay_api_TunerSelectT, sdrplay_api_ReasonForUpdateT, sdrplay_api_ReasonForUpdateExtension1T)
  * }
  */
-public interface sdrplay_api_Update_t {
+public class sdrplay_api_Update_t {
 
-    int apply(java.lang.foreign.MemorySegment dev, int tuner, int reasonForUpdate, int reasonForUpdateExt1);
-    static MemorySegment allocate(sdrplay_api_Update_t fi, SegmentScope scope) {
-        return RuntimeHelper.upcallStub(constants$5.sdrplay_api_Update_t_UP$MH, fi, constants$5.sdrplay_api_Update_t$FUNC, scope);
+    sdrplay_api_Update_t() {
+        // Should not be called directly
     }
-    static sdrplay_api_Update_t ofAddress(MemorySegment addr, SegmentScope scope) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
-        return (java.lang.foreign.MemorySegment _dev, int _tuner, int _reasonForUpdate, int _reasonForUpdateExt1) -> {
-            try {
-                return (int)constants$5.sdrplay_api_Update_t_DOWN$MH.invokeExact(symbol, _dev, _tuner, _reasonForUpdate, _reasonForUpdateExt1);
-            } catch (Throwable ex$) {
-                throw new AssertionError("should not reach here", ex$);
-            }
-        };
+
+    /**
+     * The function pointer signature, expressed as a functional interface
+     */
+    public interface Function {
+        int apply(MemorySegment dev, int tuner, int reasonForUpdate, int reasonForUpdateExt1);
+    }
+
+    private static final FunctionDescriptor $DESC = FunctionDescriptor.of(
+        sdrplay_api_h.C_INT,
+        sdrplay_api_h.C_POINTER,
+        sdrplay_api_h.C_INT,
+        sdrplay_api_h.C_INT,
+        sdrplay_api_h.C_INT
+    );
+
+    /**
+     * The descriptor of this function pointer
+     */
+    public static FunctionDescriptor descriptor() {
+        return $DESC;
+    }
+
+    private static final MethodHandle UP$MH = sdrplay_api_h.upcallHandle(sdrplay_api_Update_t.Function.class, "apply", $DESC);
+
+    /**
+     * Allocates a new upcall stub, whose implementation is defined by {@code fi}.
+     * The lifetime of the returned segment is managed by {@code arena}
+     */
+    public static MemorySegment allocate(sdrplay_api_Update_t.Function fi, Arena arena) {
+        return Linker.nativeLinker().upcallStub(UP$MH.bindTo(fi), $DESC, arena);
+    }
+
+    private static final MethodHandle DOWN$MH = Linker.nativeLinker().downcallHandle($DESC);
+
+    /**
+     * Invoke the upcall stub {@code funcPtr}, with given parameters
+     */
+    public static int invoke(MemorySegment funcPtr,MemorySegment dev, int tuner, int reasonForUpdate, int reasonForUpdateExt1) {
+        try {
+            return (int) DOWN$MH.invokeExact(funcPtr, dev, tuner, reasonForUpdate, reasonForUpdateExt1);
+        } catch (Throwable ex$) {
+            throw new AssertionError("should not reach here", ex$);
+        }
     }
 }
-
 
