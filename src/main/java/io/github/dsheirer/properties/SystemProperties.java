@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -125,12 +125,24 @@ public class SystemProperties
 
         if(root.equalsIgnoreCase(DEFAULT_APP_ROOT))
         {
-            retVal = Paths.get(
-                System.getProperty("user.home"), DEFAULT_APP_ROOT);
+            retVal = Paths.get(System.getProperty("user.home"), DEFAULT_APP_ROOT);
         }
         else
         {
             retVal = Paths.get(root);
+        }
+
+        if(!Files.exists(retVal))
+        {
+            try
+            {
+                mLog.info("Creating application root folder: " + retVal);
+                Files.createDirectory(retVal);
+            }
+            catch(IOException e)
+            {
+                mLog.error("Error creating sdrtrunk application root folder", e);
+            }
         }
 
         return retVal;
