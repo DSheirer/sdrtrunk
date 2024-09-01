@@ -21,6 +21,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
+import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayLibraryHelper;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -57,6 +58,10 @@ public class sdrplay_api_h {
     }
 
     static MemorySegment findOrThrow(String symbol) {
+        if(SYMBOL_LOOKUP == null)
+        {
+            throw new UnsatisfiedLinkError("unresolved symbol:" + symbol);
+        }
         return SYMBOL_LOOKUP.find(symbol)
             .orElseThrow(() -> new UnsatisfiedLinkError("unresolved symbol: " + symbol));
     }
@@ -95,7 +100,23 @@ public class sdrplay_api_h {
         }
         catch(Exception e)
         {
-            SYMBOL_LOOKUP = null;
+            if(SDRPlayLibraryHelper.LOADED_FROM_PATH)
+            {
+                try
+                {
+                    SYMBOL_LOOKUP = SymbolLookup.libraryLookup(SDRPlayLibraryHelper.LIBRARY_PATH, LIBRARY_ARENA)
+                            .or(SymbolLookup.loaderLookup())
+                            .or(Linker.nativeLinker().defaultLookup());
+                }
+                catch(Exception e2)
+                {
+                    SYMBOL_LOOKUP = null;
+                }
+            }
+            else
+            {
+                SYMBOL_LOOKUP = null;
+            }
         }
     }
 

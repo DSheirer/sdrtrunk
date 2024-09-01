@@ -42,22 +42,22 @@ public class SDRPlayLibraryHelper
     private static final String SDRPLAY_API_PATH_MAC_OS = "/usr/local/lib/libsdrplay_api.dylib";
     private static final String SDRPLAY_API_PATH_MAC_OS_ALTERNATE = "/usr/local/lib/libsdrplay_api.so";
     private static final String SDRPLAY_API_PATH_WINDOWS = System.getenv("ProgramFiles") +
-            "\\SDRplay\\API\\" + (System.getProperty("sun.arch.data.model").contentEquals("64") ? "x64" : "x86") +
-            "\\" + SDRPLAY_API_LIBRARY_NAME;
-    private static final String JAVA_LIBRARY_PATH_KEY = "java.library.path";
-    public static final boolean LOADED = load();
+            "\\SDRplay\\API\\x64\\" + SDRPLAY_API_LIBRARY_NAME;
 
-    /**
-     * Attempts to load the SDRPlay API library from the local system.
-     *
-     * @return true if library was loaded successfully.
-     */
-    public static boolean load()
+    public static final boolean LOADED;
+    public static final boolean LOADED_FROM_PATH;
+    public static final Path LIBRARY_PATH = Path.of(getSDRplayLibraryPath());
+
+    static
     {
+        boolean loaded = false;
+        boolean loadedFromPath = false;
+
         try
         {
             System.loadLibrary(SDRPLAY_API_LIBRARY_NAME);
-            return true;
+            mLog.info("SDRPLay API library loaded by name [" + SDRPLAY_API_LIBRARY_NAME + "]");
+            loaded = true;
         }
         catch(Throwable t)
         {
@@ -70,11 +70,13 @@ public class SDRPlayLibraryHelper
                 try
                 {
                     System.load(libraryPath);
-                    return true;
+                    mLog.info("SDRPLay API library loaded by path [" + libraryPath + "]");
+                    loaded = true;
+                    loadedFromPath = true;
                 }
                 catch(Throwable t2)
                 {
-                    mLog.warn("Unable to load SDRPlay API native library: " + libraryPath);
+                    mLog.info("SDRPlay API native library not found at " + libraryPath);
                 }
             }
             else
@@ -83,7 +85,8 @@ public class SDRPlayLibraryHelper
             }
         }
 
-        return false;
+        LOADED = loaded;
+        LOADED_FROM_PATH = loadedFromPath;
     }
 
     /**
@@ -114,10 +117,5 @@ public class SDRPlayLibraryHelper
 
         mLog.error("Unrecognized operating system.  Cannot identify sdrplay api library path");
         return "";
-    }
-
-    public static void main(String[] args)
-    {
-        System.out.println("Loaded: " + SDRPlayLibraryHelper.LOADED);
     }
 }
