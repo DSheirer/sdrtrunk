@@ -77,12 +77,11 @@ test {
 dependencies {
 
     // JUnit Tests
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.assertj:assertj-core:3.23.1'
-    testImplementation('org.junit.jupiter:junit-jupiter-api:5.9.0')
-    testImplementation 'org.mockito:mockito-core:4.8.0'
+    testImplementation(platform("org.junit:junit-bom:5.11.0"))
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
 
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
 
     //Jitpack imports
     implementation 'com.github.dnault:libresample4j:master'

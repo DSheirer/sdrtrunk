@@ -666,10 +666,15 @@ public class AliasList
             //Attempt to do a fully qualified identifier match first.
             if(identifier instanceof FullyQualifiedTalkgroupIdentifier fqti)
             {
-                return mFullyQualifiedTalkgroupAliasMap.get(fqti.getFullyQualifiedTalkgroupAddress());
+                Alias fullyQualifiedAlias = mFullyQualifiedTalkgroupAliasMap.get(fqti.getFullyQualifiedTalkgroupAddress());
+
+                if(fullyQualifiedAlias != null)
+                {
+                    return fullyQualifiedAlias;
+                }
             }
 
-            //Then try to match it by it's locally assigned (temporary) address.
+            //Next, attempt to match against the locally assigned (temporary) address
             int value = identifier.getValue();
 
             Alias mapValue = mTalkgroupAliasMap.get(value);
@@ -786,10 +791,15 @@ public class AliasList
             //Attempt to do a fully qualified identifier match first.
             if(identifier instanceof FullyQualifiedRadioIdentifier fqri)
             {
-                return mFullyQualifiedRadioAliasMap.get(fqri.getFullyQualifiedRadioAddress());
+                Alias fullyQualifiedRadioAlias =  mFullyQualifiedRadioAliasMap.get(fqri.getFullyQualifiedRadioAddress());
+
+                if(fullyQualifiedRadioAlias != null)
+                {
+                    return fullyQualifiedRadioAlias;
+                }
             }
 
-            //Then match against the locally assigned (temporary) address
+            //Next, attempt to match against the locally assigned (temporary) address
             int value = identifier.getValue();
 
             Alias mapValue = mRadioAliasMap.get(value);
