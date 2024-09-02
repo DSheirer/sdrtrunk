@@ -42,6 +42,7 @@ As a final step, delete the original api version branches and rename each of the
 
 Code Modifications: for each version, modify the sdrplay_api_h.java class to wrap the SYMBOL_LOOKUP variable using the
 following changes, so that the code doesn't throw an error on systems that don't have the API installed:
+
     //jextract auto-generated code modified to wrap with exception handler for systems that don't have the library
     static SymbolLookup SYMBOL_LOOKUP;
     static
@@ -54,9 +55,32 @@ following changes, so that the code doesn't throw an error on systems that don't
         }
         catch(Exception e)
         {
-            SYMBOL_LOOKUP = null;
+            if(SDRPlayLibraryHelper.LOADED_FROM_PATH)
+            {
+                try
+                {
+                    SYMBOL_LOOKUP = SymbolLookup.libraryLookup(SDRPlayLibraryHelper.LIBRARY_PATH, LIBRARY_ARENA)
+                            .or(SymbolLookup.loaderLookup())
+                            .or(Linker.nativeLinker().defaultLookup());
+                }
+                catch(Exception e2)
+                {
+                    SYMBOL_LOOKUP = null;
+                }
+            }
+            else
+            {
+                SYMBOL_LOOKUP = null;
+            }
         }
     }
+
+... and add null checking to the findOrThrow() method ...
+        if(SYMBOL_LOOKUP == null)
+        {
+            throw new UnsatisfiedLinkError("unresolved symbol:" + symbol);
+        }
+
 
 IntelliJ setup
 1. Run configuration
