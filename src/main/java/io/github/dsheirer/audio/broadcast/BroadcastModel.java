@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -344,14 +344,13 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 deleteBroadcaster(configuredBroadcast);
             }
 
-            AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration,
+            final AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration,
                     mAliasModel, mUserPreferences);
 
             if(audioBroadcaster != null)
             {
                 configuredBroadcast.setAudioBroadcaster(audioBroadcaster);
                 audioBroadcaster.setListener(mBroadcastEventListener);
-                audioBroadcaster.start();
                 mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getId(), audioBroadcaster);
 
                 int index = mConfiguredBroadcasts.indexOf(configuredBroadcast);
@@ -362,6 +361,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 }
 
                 broadcast(new BroadcastEvent(audioBroadcaster, BroadcastEvent.Event.BROADCASTER_ADD));
+                ThreadPool.CACHED.submit(audioBroadcaster::start);
             }
         }
     }
