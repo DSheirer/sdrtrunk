@@ -78,6 +78,20 @@ public enum Encryption
         return mLabel;
     }
 
+    /**
+     * Encryption type value.
+     * @return value.
+     */
+    public int getValue()
+    {
+        return mValue;
+    }
+
+    /**
+     * Utility method to lookup the encryption type from the value.
+     * @param value of the encryption type.
+     * @return enumeration entry or UNKNOWN.
+     */
     public static Encryption fromValue(int value)
     {
         switch(value)

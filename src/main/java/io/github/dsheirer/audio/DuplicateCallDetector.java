@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.duplicate.CallManagementPreference;
+import io.github.dsheirer.preference.duplicate.ICallManagementProvider;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
@@ -38,7 +38,8 @@ import java.util.Map;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,18 +52,41 @@ import org.slf4j.LoggerFactory;
 public class DuplicateCallDetector implements Listener<AudioSegment>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DuplicateCallDetector.class);
-    private CallManagementPreference mCallManagementPreference;
+    private ICallManagementProvider mCallManagementProvider;
     private Map<String,SystemDuplicateCallDetector> mDetectorMap = new HashMap();
+    protected Listener<AudioSegment> mDuplicateCallDetectionListener;
 
+    /**
+     * Constructs an instance.
+     * @param userPreferences to access the duplicate call detection preferences.
+     */
     public DuplicateCallDetector(UserPreferences userPreferences)
     {
-        mCallManagementPreference = userPreferences.getDuplicateCallDetectionPreference();
+        this(userPreferences.getDuplicateCallDetectionPreference());
+    }
+
+    /**
+     * Constructs an instance.
+     * @param callManagementProvider to provide call management preferences.
+     */
+    public DuplicateCallDetector(ICallManagementProvider callManagementProvider)
+    {
+        mCallManagementProvider = callManagementProvider;
+    }
+
+    /**
+     * Optional listener to be notified each time an audio segment is flagged as duplicate.
+     * @param listener to register
+     */
+    public void setDuplicateCallDetectionListener(Listener<AudioSegment> listener)
+    {
+        mDuplicateCallDetectionListener = listener;
     }
 
     @Override
     public void receive(AudioSegment audioSegment)
     {
-        if(mCallManagementPreference.isDuplicateCallDetectionEnabled())
+        if(mCallManagementProvider.isDuplicateCallDetectionEnabled())
         {
             Identifier identifier = audioSegment.getIdentifierCollection()
                 .getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
@@ -77,7 +101,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
 
                     if(detector == null)
                     {
-                        detector = new SystemDuplicateCallDetector();
+                        detector = new SystemDuplicateCallDetector(mCallManagementProvider, system);
                         mDetectorMap.put(system, detector);
                     }
 
@@ -87,44 +111,98 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
         }
     }
 
+    /**
+     * System level duplicate call detector.  Uses a scheduled executor to run every 25 ms to compare all ongoing call
+     * audio segments to detect duplicates.
+     *
+     * All audio segments remain in the queue until they are flagged as complete.  While in the queue, each call is
+     * compared against the others to detect duplicates.  Once all calls are either flagged as complete or flagged as
+     * duplicate and removed, the queue is empty and the monitoring is shutdown until a new audio segment arrives and
+     * then the monitoring starts again.
+     */
     public class SystemDuplicateCallDetector
     {
-        private LinkedTransferQueue<AudioSegment> mAudioSegmentQueue = new LinkedTransferQueue<>();
-        private List<AudioSegment> mAudioSegments = new ArrayList<>();
-        private AtomicBoolean mMonitoring = new AtomicBoolean();
+        private final LinkedTransferQueue<AudioSegment> mAudioSegmentQueue = new LinkedTransferQueue<>();
+        private final List<AudioSegment> mAudioSegments = new ArrayList<>();
         private ScheduledFuture<?> mProcessorFuture;
+        private Lock mLock = new ReentrantLock();
+        private boolean mMonitoring = false;
+        private final ICallManagementProvider mCallManagementProvider;
+        private String mSystem;
 
-        public SystemDuplicateCallDetector()
+        /**
+         * Constructs an instance
+         * @param callManagementProvider to check for duplicate monitoring preferences
+         */
+        public SystemDuplicateCallDetector(ICallManagementProvider callManagementProvider, String system)
         {
+            mCallManagementProvider = callManagementProvider;
+            mSystem = system;
         }
 
+        /**
+         * Adds the audio segment to the monitoring queue.
+         * @param audioSegment to add
+         */
         public void add(AudioSegment audioSegment)
         {
-            //Block on audio segment queue so that we don't interfere with monitoring shutdown
-            synchronized(mAudioSegmentQueue)
+            mLock.lock();
+
+            try
             {
                 mAudioSegmentQueue.add(audioSegment);
                 startMonitoring();
             }
-        }
-
-        private void startMonitoring()
-        {
-            if(mMonitoring.compareAndSet(false, true))
+            finally
             {
-                mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> process(),
-                    0, 25, TimeUnit.MILLISECONDS);
+                mLock.unlock();
             }
         }
 
+        /**
+         * Starts the call monitoring thread if it's not already running.
+         *
+         * Note: this method should only be called from a thread with the lock acquired.
+         */
+        private void startMonitoring()
+        {
+            if(!mMonitoring)
+            {
+                mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::process,
+                    0, 25, TimeUnit.MILLISECONDS);
+                mMonitoring = true;
+            }
+        }
+
+        /**
+         * Stops the call monitoring thread if the audio segements queue is empty.
+         *
+         * Note: this should only be called from a separate thread and not from within the scheduled monitoring thread
+         * because cancelling the scheduled timer from within the process() method would kill the thread without
+         * releasing the lock, causing a deadlock.
+         */
         private void stopMonitoring()
         {
-            if(mMonitoring.compareAndSet(true, false))
+            mLock.lock();
+
+            try
             {
-                if(mProcessorFuture != null)
+                //Recheck the audio segments queue to make sure we didn't slip in another audio segment before we can
+                //shut down the scheduled monitoring thread.
+                if(mMonitoring && mAudioSegments.isEmpty())
                 {
-                    mProcessorFuture.cancel(true);
+                    if(mProcessorFuture != null)
+                    {
+                        mProcessorFuture.cancel(true);
+                        mProcessorFuture = null;
+                    }
+
+                    mMonitoring = false;
                 }
+            }
+            finally
+            {
+                mLock.unlock();
             }
         }
 
@@ -136,7 +214,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
          */
         private boolean isDuplicate(AudioSegment segment1, AudioSegment segment2)
         {
-            if(mCallManagementPreference.isDuplicateCallDetectionByTalkgroupEnabled())
+            if(mCallManagementProvider.isDuplicateCallDetectionByTalkgroupEnabled())
             {
                 //Step 1 check for duplicate TO values
                 List<Identifier> to1 = segment1.getIdentifierCollection().getIdentifiers(Role.TO);
@@ -148,7 +226,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                 }
             }
 
-            if(mCallManagementPreference.isDuplicateCallDetectionByRadioEnabled())
+            if(mCallManagementProvider.isDuplicateCallDetectionByRadioEnabled())
             {
                 //Step 2 check for duplicate FROM values
                 List<Identifier> from1 = segment1.getIdentifierCollection().getIdentifiers(Role.FROM);
@@ -168,53 +246,51 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
          * @param identifiers2
          * @return
          */
-        private boolean isDuplicate(List<Identifier> identifiers1, List<Identifier> identifiers2)
+        public static boolean isDuplicate(List<Identifier> identifiers1, List<Identifier> identifiers2)
         {
             for(Identifier identifier1: identifiers1)
             {
-                if(identifier1 instanceof TalkgroupIdentifier)
+                if(identifier1 instanceof TalkgroupIdentifier tgId1)
                 {
-                    int talkgroup1 = ((TalkgroupIdentifier)identifier1).getValue();
+                    int tg1 = tgId1.getValue();
 
                     for(Identifier identifier2: identifiers2)
                     {
-                        if(identifier2 instanceof TalkgroupIdentifier &&
-                           ((TalkgroupIdentifier)identifier2).getValue() == talkgroup1)
+                        if(identifier2 instanceof TalkgroupIdentifier tgId2 && tgId2.getValue() == tg1)
                         {
                             return true;
                         }
-                        else if(identifier2 instanceof PatchGroupIdentifier &&
-                            ((PatchGroupIdentifier)identifier2).getValue().getPatchGroup().getValue() == talkgroup1)
+                        else if(identifier2 instanceof PatchGroupIdentifier pgId2 &&
+                                pgId2.getValue().getPatchGroup().getValue() == tg1)
                         {
                             return true;
                         }
                     }
                 }
-                else if(identifier1 instanceof PatchGroupIdentifier)
+                else if(identifier1 instanceof PatchGroupIdentifier pgId1)
                 {
-                    int talkgroup1 = ((PatchGroupIdentifier)identifier1).getValue().getPatchGroup().getValue();
+                    int talkgroup1 = pgId1.getValue().getPatchGroup().getValue();
 
                     for(Identifier identifier2: identifiers2)
                     {
-                        if(identifier2 instanceof TalkgroupIdentifier &&
-                            ((TalkgroupIdentifier)identifier2).getValue() == talkgroup1)
+                        if(identifier2 instanceof TalkgroupIdentifier tgId2 && tgId2.getValue() == talkgroup1)
                         {
                             return true;
                         }
-                        else if(identifier2 instanceof PatchGroupIdentifier &&
-                            ((PatchGroupIdentifier)identifier2).getValue().getPatchGroup().getValue() == talkgroup1)
+                        else if(identifier2 instanceof PatchGroupIdentifier pgId2 &&
+                                pgId2.getValue().getPatchGroup().getValue() == talkgroup1)
                         {
                             return true;
                         }
                     }
                 }
-                else if(identifier1 instanceof RadioIdentifier)
+                else if(identifier1 instanceof RadioIdentifier raId1)
                 {
-                    int radio1 = ((RadioIdentifier)identifier1).getValue();
+                    int radio1 = raId1.getValue();
 
                     for(Identifier identifier2: identifiers2)
                     {
-                        if(identifier2 instanceof RadioIdentifier && ((RadioIdentifier)identifier2).getValue() == radio1)
+                        if(identifier2 instanceof RadioIdentifier raId2 && raId2.getValue() == radio1)
                         {
                             return true;
                         }
@@ -230,6 +306,8 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
          */
         private void process()
         {
+            mLock.lock();
+
             try
             {
                 //Transfer in newly arrived audio segments
@@ -247,6 +325,19 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                     return complete;
                 });
 
+                //Remove any encrypted audio segments.
+                mAudioSegments.removeIf(audioSegment -> {
+                    boolean encrypted = audioSegment.isEncrypted();
+
+                    if(encrypted)
+                    {
+                        audioSegment.decrementConsumerCount();
+                    }
+
+
+                    return encrypted;
+                });
+
                 //Only check for duplicates if there is more than one call
                 if(mAudioSegments.size() > 1)
                 {
@@ -257,7 +348,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                     {
                         AudioSegment current = mAudioSegments.get(currentIndex);
 
-                        if(!current.isDuplicate())
+                        if(current.hasAudio() && !current.isDuplicate())
                         {
                             int checkIndex = currentIndex + 1;
 
@@ -272,6 +363,12 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                                         toCheck.setDuplicate(true);
                                         toCheck.decrementConsumerCount();
                                         duplicates.add(toCheck);
+
+                                        //Notify optional listener that we flagged the call as duplicate.
+                                        if(mDuplicateCallDetectionListener != null)
+                                        {
+                                            mDuplicateCallDetectionListener.receive(toCheck);
+                                        }
                                     }
                                 }
 
@@ -285,32 +382,22 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                     mAudioSegments.removeAll(duplicates);
                 }
 
-                //Finally, if the audio segment queue is empty, shutdown montitoring until a new segment arrives
+                //Finally, if the audio segment queue is now empty, shutdown monitoring until a new segment arrives.
+                //The monitor shutdown method has to be called on a separate thread so that we don't kill our current
+                // thread and fail to release the lock.
                 if(mAudioSegments.isEmpty())
                 {
-                    //Block on the audio segment queue so that we can shutdown before any new segments are added, and
-                    //allow the add(segment) to restart monitoring as soon as needed.
-                    synchronized(mAudioSegmentQueue)
-                    {
-                        if(mAudioSegmentQueue.isEmpty())
-                        {
-                            try
-                            {
-                                stopMonitoring();
-                            }
-                            catch(Exception e)
-                            {
-                                mLog.error("Unexpected error during duplicate audio segment monitoring shutdown", e);
-                                //Do nothing, we got interrupted
-                            }
-                        }
-                    }
+                    ThreadPool.CACHED.submit(this::stopMonitoring);
                 }
             }
             catch(Throwable t)
             {
                 mLog.error("Unknown error while processing audio segments for duplicate call detection.  Please report " +
                     "this to the developer.", t);
+            }
+            finally
+            {
+                mLock.unlock();
             }
         }
     }

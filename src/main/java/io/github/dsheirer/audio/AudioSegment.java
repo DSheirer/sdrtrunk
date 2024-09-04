@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import java.util.Collection;
@@ -68,6 +69,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private final static Logger mLog = LoggerFactory.getLogger(AudioSegment.class);
     private BooleanProperty mComplete = new SimpleBooleanProperty(false);
     private BooleanProperty mDuplicate = new SimpleBooleanProperty(false);
+    private BooleanProperty mEncrypted = new SimpleBooleanProperty(false);
     private BooleanProperty mRecordAudio = new SimpleBooleanProperty(false);
     private IntegerProperty mMonitorPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private ObservableSet<BroadcastChannel> mBroadcastChannels = FXCollections.observableSet(new HashSet<>());
@@ -127,6 +129,25 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public long getDuration()
     {
         return (mSampleCount / 8); //8 kHz audio generates 8 samples per millisecond
+    }
+
+    /**
+     * Indicates if the audio segment contains encrypted audio.
+     *
+     * @return encrypted property
+     */
+    public BooleanProperty encryptedProperty()
+    {
+        return mEncrypted;
+    }
+
+    /**
+     * Indicates if this audio segment is encrypted
+     * @return true if encrypted.
+     */
+    public boolean isEncrypted()
+    {
+        return mEncrypted.get();
     }
 
     /**
@@ -386,6 +407,11 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
             throw new IllegalStateException("Can't add audio to an audio segment that is being disposed");
         }
 
+        if(mAudioBuffers.isEmpty())
+        {
+            mStartTimestamp = System.currentTimeMillis() - 20;
+        }
+
         mAudioBuffers.add(audioBuffer);
         mSampleCount += audioBuffer.length;
     }
@@ -414,6 +440,14 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public void addIdentifier(Identifier identifier)
     {
         mIdentifierCollection.update(identifier);
+
+        /**
+         * If we have a late-add encryption key, set the encrypted flag to true.
+         */
+        if(identifier instanceof EncryptionKeyIdentifier eki)
+        {
+            mEncrypted.set(eki.isEncrypted());
+        }
 
         List<Alias> aliases = mAliasList.getAliases(identifier);
 
