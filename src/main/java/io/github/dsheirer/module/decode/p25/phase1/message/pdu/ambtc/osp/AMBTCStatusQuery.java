@@ -85,7 +85,7 @@ public class AMBTCStatusQuery extends AMBTCMessage
 
     public APCO25FullyQualifiedRadioIdentifier getSourceAddress()
     {
-        if(mSourceAddress == null)
+        if(mSourceAddress == null && hasDataBlock(0) && hasDataBlock(1))
         {
             int localAddress = getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_ADDRESS) << 8;
             localAddress += getDataBlock(1).getMessage().getInt(BLOCK_1_SOURCE_ADDRESS);
