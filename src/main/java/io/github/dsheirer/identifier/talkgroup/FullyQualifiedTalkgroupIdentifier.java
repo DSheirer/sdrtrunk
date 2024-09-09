@@ -40,7 +40,7 @@ public abstract class FullyQualifiedTalkgroupIdentifier extends TalkgroupIdentif
      */
     public FullyQualifiedTalkgroupIdentifier(int localAddress, int wacn, int system, int id, Role role)
     {
-        super(localAddress > 0 ? localAddress : id, role);
+        super(localAddress, role);
         mWacn = wacn;
         mSystem = system;
         mTalkgroup = id;
@@ -90,5 +90,24 @@ public abstract class FullyQualifiedTalkgroupIdentifier extends TalkgroupIdentif
         {
             return getFullyQualifiedTalkgroupAddress();
         }
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        //Attempt to match as a fully qualified talkgroup match first
+        if(o instanceof FullyQualifiedTalkgroupIdentifier fqti)
+        {
+            return getWacn() == fqti.getWacn() &&
+                    getSystem() == fqti.getSystem() &&
+                    getTalkgroup() == fqti.getTalkgroup();
+        }
+        //Attempt to match the local address against a simple talkgroup version
+        else if(o instanceof TalkgroupIdentifier ti)
+        {
+            return getValue() != 0 && ti.getValue() != 0 && getValue().equals(ti.getValue());
+        }
+
+        return super.equals(o);
     }
 }
