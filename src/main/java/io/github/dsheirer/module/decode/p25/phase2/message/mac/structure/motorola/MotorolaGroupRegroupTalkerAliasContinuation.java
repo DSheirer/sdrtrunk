@@ -26,19 +26,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Motorola Unknown Opcode 149 (0x95)
+ * Motorola Unknown Opcode 149 (0x95) Talker Alias continuation message.
  *
- * This was observed at the end of a Group Regroup call sequence during HANGTIME, so it seems more of an announcement
- * type message and less as something relevant to the call.
+ * This was observed at the end of a Group Regroup call sequence during HANGTIME.  Each radio doesn't know the alias
+ * until it receives it once and then queues the alias for subsequent use.
+ *
+ * This opcode is observed following an Opcode 145 message and seems to be a continuation message.
  *
  * Examples:
  * 959011 018E58B82BAB4D3B70E9A8457F9D C67
  * 959011 0287000000000000000000000000 E26
  *
- * The opcode, vendor and length octets are consistent.  The first octet seems to be an identifier, 01, 02, etc.
+ * Example 2:
+ * 9190110BCD02010026BEE004A403151724FD9 Opcode 145
+ * 959011012436C4C022EC902A9943EDAA69E76 Opcode 149
+ * 95901102298FAA77683FAE0000000000000AB Opcode 149
+ * (immediately followed in the same call sequence by a slight variation)
+ * 9190110BCD02010036BEE004A403151724513 Opcode 145
+ * 959011013436C4C022EC902A9943EDAA699F6 Opcode 149
+ * 95901102398FAA77683FAE00000000000072B Opcode 149
+ *
+ * The opcode, vendor and length octets are consistent.  The first octet seems to be a sequence identifier, 01, 02, etc.
  * Nothing else seems to match any of the other identifiers that were active at call time.
  */
-public class MotorolaOpcode149 extends MacStructureVendor
+public class MotorolaGroupRegroupTalkerAliasContinuation extends MacStructureVendor
 {
     private List<Identifier> mIdentifiers;
 
@@ -48,7 +59,7 @@ public class MotorolaOpcode149 extends MacStructureVendor
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public MotorolaOpcode149(CorrectedBinaryMessage message, int offset)
+    public MotorolaGroupRegroupTalkerAliasContinuation(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -59,7 +70,7 @@ public class MotorolaOpcode149 extends MacStructureVendor
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("MOTOROLA UNKNOWN OPCODE 149");
+        sb.append("MOTOROLA TALKER ALIAS CONTINUATION");
         sb.append(" MSG:").append(getMessage().get(getOffset(), getMessage().length()).toHexString());
         return sb.toString();
     }
