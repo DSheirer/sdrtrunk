@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * User preferences for call management
  */
-public class CallManagementPreference extends Preference
+public class CallManagementPreference extends Preference implements ICallManagementProvider
 {
     private static final String PREFERENCE_KEY_DETECT_DUPLICATE_TALKGROUP = "duplicate.call.detect.talkgroup";
     private static final String PREFERENCE_KEY_DETECT_DUPLICATE_RADIO = "duplicate.call.detect.radio";
