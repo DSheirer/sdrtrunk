@@ -341,15 +341,29 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                                     }
                                     else
                                     {
-                                        mLog.error("String [" + getStreamName() + "] - HTTP protocol decoder error - message:\n\n" + message);
+                                        mLog.error("String [" + getStreamName() + "] - HTTP 403 protocol decoder error - message:\n\n" + message);
+                                        setBroadcastState(BroadcastState.DISCONNECTED);
+                                        disconnect();
+                                    }
+                                    break;
+                                case 401: //Unauthorized
+                                    if(message.toString().contains("Authentication Required"))
+                                    {
+                                        mLog.error("Stream [" + getStreamName() + "] - unable to connect - invalid credentials");
+                                        setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
+                                        disconnect();
+                                    }
+                                    else
+                                    {
+                                        mLog.error("String [" + getStreamName() + "] - HTTP 401 protocol decoder error - message:\n\n" + message);
                                         setBroadcastState(BroadcastState.DISCONNECTED);
                                         disconnect();
                                     }
                                     break;
                                 default:
-                                    mLog.error("String [" + getStreamName() + "] - HTTP protocol decoder error - message:\n\n" + message);
-                                    setBroadcastState(BroadcastState.DISCONNECTED);
-                                    disconnect();
+                                        mLog.error("String [" + getStreamName() + "] - HTTP protocol decoder error - message:\n\n" + message);
+                                        setBroadcastState(BroadcastState.DISCONNECTED);
+                                        disconnect();
                             }
                         }
                         else
@@ -401,9 +415,16 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                         disconnect();
                         break;
                     default:
-                        setBroadcastState(BroadcastState.ERROR);
-                        disconnect();
+                        /**
+                         * Only allow a generic error to update state if we've not already experienced a more
+                         * specific error. Otherwise, trailing messages will clear the more meaningful error state.
+                         */
+                        if(!getBroadcastState().isErrorState())
+                        {
+                            setBroadcastState(BroadcastState.ERROR);
+                        }
                         mLog.debug("Unspecified error: " + response.toString() + " Class:" + object.getClass());
+                        disconnect();
                         break;
                 }
             }
