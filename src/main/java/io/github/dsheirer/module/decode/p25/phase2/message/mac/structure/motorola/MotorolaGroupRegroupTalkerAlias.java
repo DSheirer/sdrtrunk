@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Motorola Group Regroup Unknown Opcode 145 - 17-bytes long
+ * Motorola Group Regroup Talker Alias - 17-bytes long
  */
-public class MotorolaGroupRegroupOpcode145 extends MacStructureVendor
+public class MotorolaGroupRegroupTalkerAlias extends MacStructureVendor
 {
     private static final IntField TALKGROUP = IntField.length16(24);
     private static final IntField UNKNOWN = IntField.length32(40);
@@ -49,7 +49,7 @@ public class MotorolaGroupRegroupOpcode145 extends MacStructureVendor
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public MotorolaGroupRegroupOpcode145(CorrectedBinaryMessage message, int offset)
+    public MotorolaGroupRegroupTalkerAlias(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -60,7 +60,7 @@ public class MotorolaGroupRegroupOpcode145 extends MacStructureVendor
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("MOTOROLA GROUP REGROUP UNKNOWN OPCODE 145 TALKGROUP:").append(getTalkgroup());
+        sb.append("MOTOROLA GROUP REGROUP TALKER ALIAS TALKGROUP:").append(getTalkgroup());
         sb.append(" SOURCE SUID RADIO:").append(getRadio());
         sb.append(" UNK:").append(Integer.toHexString(getInt(UNKNOWN)).toUpperCase());
         sb.append(" MSG:").append(getMessage().get(getOffset(), getMessage().length()).toHexString());

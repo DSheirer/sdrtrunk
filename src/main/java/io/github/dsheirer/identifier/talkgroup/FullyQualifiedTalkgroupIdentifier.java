@@ -71,12 +71,22 @@ public abstract class FullyQualifiedTalkgroupIdentifier extends TalkgroupIdentif
     }
 
     /**
-     * Indicates if the talkgroup identify is aliased with a persona value that is different from the talkgroup ID.
+     * Indicates if the talkgroup identity is aliased with a persona value that is different from the talkgroup ID.
      * @return true if aliased.
      */
     public boolean isAliased()
     {
-        return getValue() != mTalkgroup;
+        return getValue() != 0 && getValue() != mTalkgroup;
+    }
+
+    /**
+     * Override the default behavior of TalkgroupIdentifier.isValid() to allow for fully qualified TGID's with a local
+     * ID of zero which indicates an ISSI patch.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return true;
     }
 
     @Override

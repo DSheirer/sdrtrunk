@@ -227,16 +227,30 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
             {
                 case DECIMAL:
                 case FORMATTED:
-                    sb.append(toDecimal(id, RADIO_DECIMAL_WIDTH));
-                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    if(id > 0)
+                    {
+                        sb.append(toDecimal(id, RADIO_DECIMAL_WIDTH)).append(" (");
+                    }
+                    sb.append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
                     sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toDecimal(radio, RADIO_DECIMAL_WIDTH)).append(")");
+                    sb.append(".").append(toDecimal(radio, RADIO_DECIMAL_WIDTH));
+                    if(id > 0)
+                    {
+                        sb.append(")");
+                    }
                     return sb.toString();
                 case HEXADECIMAL:
-                    sb.append(toHex(id, RADIO_HEXADECIMAL_WIDTH));
-                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    if(id > 0)
+                    {
+                        sb.append(toHex(id, RADIO_HEXADECIMAL_WIDTH)).append(" (");
+                    }
+                    sb.append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
                     sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toHex(radio, RADIO_HEXADECIMAL_WIDTH)).append(")");
+                    sb.append(".").append(toHex(radio, RADIO_HEXADECIMAL_WIDTH));
+                    if(id > 0)
+                    {
+                        sb.append(")");
+                    }
                     return sb.toString();
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
@@ -248,16 +262,30 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
             {
                 case DECIMAL:
                 case FORMATTED:
-                    sb.append(id);
+                    if(id > 0)
+                    {
+                        sb.append(id).append(" (");
+                    }
                     sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
                     sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(radio).append(")");
+                    sb.append(".").append(radio);
+                    if(id > 0)
+                    {
+                        sb.append(")");
+                    }
                     return sb.toString();
                 case HEXADECIMAL:
-                    sb.append(toHex(id));
-                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
+                    if(id > 0)
+                    {
+                        sb.append(toHex(id)).append(" (");
+                    }
+                    sb.append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
                     sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toHex(radio)).append(")");
+                    sb.append(".").append(toHex(radio));
+                    if(id > 0)
+                    {
+                        sb.append(")");
+                    }
                     return sb.toString();
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);

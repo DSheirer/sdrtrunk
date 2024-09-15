@@ -21,12 +21,15 @@ package io.github.dsheirer.gui.viewer;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.Callback;
 
 /**
  * JavaFX identifier collection viewer
@@ -82,7 +85,19 @@ public class IdentifierCollectionViewer extends VBox
             valueColumn.setText("Value");
             valueColumn.setCellValueFactory(new PropertyValueFactory<>("value"));
 
-            mIdentifierTableView.getColumns().addAll(classColumn, formColumn, roleColumn, valueColumn);
+            TableColumn textColumn = new TableColumn();
+            textColumn.setPrefWidth(160);
+            textColumn.setText("Text");
+            textColumn.setCellValueFactory((Callback<TableColumn.CellDataFeatures<Identifier<?>, String>, ObservableValue>) param -> {
+                if(param.getValue() != null)
+                {
+                    return new SimpleStringProperty(param.getValue().toString());
+                }
+
+                return null;
+            });
+
+            mIdentifierTableView.getColumns().addAll(classColumn, formColumn, roleColumn, valueColumn, textColumn);
         }
 
         return mIdentifierTableView;

@@ -300,15 +300,18 @@ public class FrequencyController
      */
     public void removeSourceEventProcessor(ISourceEventProcessor processor)
     {
-        mTunable.getLock().lock();
+        if(mTunable != null)
+        {
+            mTunable.getLock().lock();
 
-        try
-        {
-            mProcessors.remove(processor);
-        }
-        finally
-        {
-            mTunable.getLock().unlock();
+            try
+            {
+                mProcessors.remove(processor);
+            }
+            finally
+            {
+                mTunable.getLock().unlock();
+            }
         }
     }
 

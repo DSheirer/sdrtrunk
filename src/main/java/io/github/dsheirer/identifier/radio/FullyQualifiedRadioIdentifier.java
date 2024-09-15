@@ -72,12 +72,22 @@ public abstract class FullyQualifiedRadioIdentifier extends RadioIdentifier
     }
 
     /**
-     * Indicates if the radio identify is aliased with a persona value that is different from the radio ID.
+     * Indicates if the radio identity is aliased with a persona value that is different from the radio ID.
      * @return true if aliased.
      */
     public boolean isAliased()
     {
-        return getValue() != mRadio;
+        return getValue() != 0 && getValue() != mRadio;
+    }
+
+    /**
+     * Override the default behavior of RadioIdentifier.isValid() to allow for fully qualified SUID's with a local
+     * ID of zero which indicates an ISSI patch.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return true;
     }
 
     @Override

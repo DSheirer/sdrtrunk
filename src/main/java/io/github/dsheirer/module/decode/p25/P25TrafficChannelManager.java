@@ -32,7 +32,6 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
-import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
@@ -307,7 +306,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param timeslot for the channel.
      * @param isIdleNull to indicate if this close event is trigged by an IDLE/NULL message
      */
-    public void closeP2CallEvent(long frequency, int timeslot, long timestamp, boolean isIdleNull)
+    public void closeP2CallEvent(long frequency, int timeslot, boolean isIdleNull)
     {
         /**
          * Hack: L3Harris systems can issue a channel grant on control/TS1 which creates an event for TS2 and then the
@@ -325,21 +324,13 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            DecodeEvent event;
-
             if(timeslot == P25P1Message.TIMESLOT_0 || timeslot == P25P1Message.TIMESLOT_1)
             {
-                event = mTS1ChannelGrantEventMap.remove(frequency);
+                mTS1ChannelGrantEventMap.remove(frequency);
             }
             else
             {
-                event = mTS2ChannelGrantEventMap.remove(frequency);
-            }
-
-            if(event != null)
-            {
-                event.end(timestamp);
-                broadcast(event);
+                mTS2ChannelGrantEventMap.remove(frequency);
             }
         }
         finally
@@ -1410,55 +1401,50 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * Compares the TO role identifier(s) from each collection for equality.  This is normally used to compare a call
      * update where we only compare the TO role.
      *
-     * @param collection1 containing a TO identifier
-     * @param collection2 containing a TO identifier
+     * @param existingIC containing a TO identifier
+     * @param nextIC containing a TO identifier
      * @return true if both collections contain a TO identifier and the TO identifiers are the same value
      */
-    private boolean isSameCallUpdate(IdentifierCollection collection1, IdentifierCollection collection2)
+    private boolean isSameCallUpdate(IdentifierCollection existingIC, IdentifierCollection nextIC)
     {
-        Identifier toIdentifier1 = collection1.getToIdentifier();
-        Identifier toIdentifier2 = collection2.getToIdentifier();
-        return toIdentifier1 != null && toIdentifier1.equals(toIdentifier2);
+        Identifier existingTO = existingIC.getToIdentifier();
+        Identifier nextTO = nextIC.getToIdentifier();
+        return existingTO != null && existingTO.equals(nextTO);
     }
 
     /**
      * Compares the TO role identifier(s) from each collection for equality.  This is normally used to compare a call
      * update where we only compare the TO role.
      *
-     * @param collection1 containing a TO identifier
-     * @param collection2 containing a TO identifier
+     * @param existingIC for the existing/previous event containing a TO identifier
+     * @param nextIC for the next event containing a TO identifier
      * @return true if both collections contain a TO identifier and the TO identifiers are the same value
      */
-    private boolean isSameCallFull(IdentifierCollection collection1, IdentifierCollection collection2)
+    private boolean isSameCallFull(IdentifierCollection existingIC, IdentifierCollection nextIC)
     {
-        Identifier to1 = collection1.getToIdentifier();
-        Identifier to2 = collection2.getToIdentifier();
+        Identifier existingTO = existingIC.getToIdentifier();
+        Identifier nextTO = nextIC.getToIdentifier();
 
-        if(to1 != null && to1.equals(to2))
+        if(existingTO != null && existingTO.equals(nextTO))
         {
-            Identifier from1 = collection1.getFromIdentifier();
+            Identifier existingFROM = existingIC.getFromIdentifier();
 
             //If the FROM identifier hasn't yet been established, then this is the same call.  We also ignore the
             //talker alias as a call identifier since on L3Harris systems they can transmit the talker alias before
             //they transmit the radio ID.
-            if(from1 == null || from1.getForm() == Form.TALKER_ALIAS)
+            if(existingFROM == null || existingFROM.getForm() == Form.TALKER_ALIAS)
             {
                 return true;
             }
 
-            Identifier from2 = collection2.getFromIdentifier();
+            Identifier nextFROM = nextIC.getFromIdentifier();
 
-            if(from2 != null && from2.getForm() == Form.TALKER_ALIAS)
+            if(nextFROM != null && nextFROM.getForm() == Form.TALKER_ALIAS)
             {
                 return true;
             }
 
-            if(from2 instanceof RadioIdentifier radio && radio.getValue() == 0)
-            {
-                return true;
-            }
-
-            return from1.equals(from2);
+            return existingFROM.equals(nextFROM);
         }
 
         return false;
