@@ -42,6 +42,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCCallAlert;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCFrequencyBandUpdateTDMA;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupAffiliationQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupAffiliationResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupDataChannelGrant;
@@ -245,6 +246,8 @@ public class PDUMessageFactory
                 return new AMBTCGroupAffiliationResponse(pduSequence, nac, timestamp);
             case OSP_GROUP_VOICE_CHANNEL_GRANT:
                 return new AMBTCGroupVoiceChannelGrant(pduSequence, nac, timestamp);
+            case OSP_IDENTIFIER_UPDATE_TDMA:
+                return new AMBTCFrequencyBandUpdateTDMA(pduSequence, nac, timestamp);
             case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                 return new AMBTCIndividualDataChannelGrant(pduSequence, nac, timestamp);
             case OSP_MESSAGE_UPDATE:
