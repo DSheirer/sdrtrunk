@@ -663,18 +663,13 @@ public class AliasList
 
         public Alias getAlias(TalkgroupIdentifier identifier)
         {
-            //Attempt to do a fully qualified identifier match first.
+            //Attempt to do a fully qualified identifier match only
             if(identifier instanceof FullyQualifiedTalkgroupIdentifier fqti)
             {
-                Alias fullyQualifiedAlias = mFullyQualifiedTalkgroupAliasMap.get(fqti.getFullyQualifiedTalkgroupAddress());
-
-                if(fullyQualifiedAlias != null)
-                {
-                    return fullyQualifiedAlias;
-                }
+                return mFullyQualifiedTalkgroupAliasMap.get(fqti.getFullyQualifiedTalkgroupAddress());
             }
 
-            //Next, attempt to match against the locally assigned (temporary) address
+            //Attempt to match the talkgroup value
             int value = identifier.getValue();
 
             Alias mapValue = mTalkgroupAliasMap.get(value);
@@ -683,7 +678,7 @@ public class AliasList
                 return mapValue;
             }
 
-            //Finally, match the locally assigned address against any talkgroup ranges
+            //Alternatively, match the talkgroup to any talkgroup ranges
             for(Map.Entry<TalkgroupRange, Alias> entry : mTalkgroupRangeAliasMap.entrySet())
             {
                 if(entry.getKey().contains(value))
@@ -788,18 +783,13 @@ public class AliasList
 
         public Alias getAlias(RadioIdentifier identifier)
         {
-            //Attempt to do a fully qualified identifier match first.
+            //Match fully qualified identifier only.
             if(identifier instanceof FullyQualifiedRadioIdentifier fqri)
             {
-                Alias fullyQualifiedRadioAlias =  mFullyQualifiedRadioAliasMap.get(fqri.getFullyQualifiedRadioAddress());
-
-                if(fullyQualifiedRadioAlias != null)
-                {
-                    return fullyQualifiedRadioAlias;
-                }
+                return mFullyQualifiedRadioAliasMap.get(fqri.getFullyQualifiedRadioAddress());
             }
 
-            //Next, attempt to match against the locally assigned (temporary) address
+            //Attempt to match against the radio identifier
             int value = identifier.getValue();
 
             Alias mapValue = mRadioAliasMap.get(value);
@@ -808,7 +798,7 @@ public class AliasList
                 return mapValue;
             }
 
-            //Finally, attempt to match the locally assigned (temporary) address against any radio ranges.
+            //Alternatively, attempt to match the radio address against any radio ranges.
             for(Map.Entry<RadioRange, Alias> entry : mRadioRangeAliasMap.entrySet())
             {
                 if(entry.getKey().contains(value))

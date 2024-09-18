@@ -120,8 +120,7 @@ public class P25AliasTest
         APCO25FullyQualifiedTalkgroupIdentifier p25FQTG1 = APCO25FullyQualifiedTalkgroupIdentifier.createTo(aliasGroup, wacn, system, originalGroup);
 
         List<Alias> aliases = aliasList.getAliases(p25FQTG1);
-        assertEquals(1, aliases.size(), "Expected 1 matching alias");
-        assertEquals(correctAliasName, aliases.getFirst().getName(), "Unexpected alias name");
+        assertEquals(0, aliases.size(), "Expected 0 matching alias");
     }
 
     /**
@@ -148,8 +147,7 @@ public class P25AliasTest
         APCO25FullyQualifiedTalkgroupIdentifier p25FQTG1 = APCO25FullyQualifiedTalkgroupIdentifier.createTo(aliasGroup, wacn, system, originalGroup);
 
         List<Alias> aliases = aliasList.getAliases(p25FQTG1);
-        assertEquals(1, aliases.size(), "Expected 1 matching alias");
-        assertEquals(correctAliasName, aliases.getFirst().getName(), "Unexpected alias name");
+        assertEquals(0, aliases.size(), "Expected 0 matching aliases");
     }
 
     @Test
@@ -233,8 +231,7 @@ public class P25AliasTest
         APCO25FullyQualifiedRadioIdentifier p25FQTG1 = APCO25FullyQualifiedRadioIdentifier.createFrom(aliasRadio, wacn, system, originalRadio);
 
         List<Alias> aliases = aliasList.getAliases(p25FQTG1);
-        assertEquals(1, aliases.size(), "Expected 1 matching alias");
-        assertEquals(correctAliasName, aliases.getFirst().getName(), "Unexpected alias name");
+        assertEquals(0, aliases.size(), "Expected 0 matching aliases");
     }
 
     /**
@@ -261,7 +258,6 @@ public class P25AliasTest
         APCO25FullyQualifiedRadioIdentifier p25FQTG1 = APCO25FullyQualifiedRadioIdentifier.createFrom(aliasRadio, wacn, system, originalRadio);
 
         List<Alias> aliases = aliasList.getAliases(p25FQTG1);
-        assertEquals(1, aliases.size(), "Expected 1 matching alias");
-        assertEquals(correctAliasName, aliases.getFirst().getName(), "Unexpected alias name");
+        assertEquals(0, aliases.size(), "Expected 0 matching aliases");
     }
 }
