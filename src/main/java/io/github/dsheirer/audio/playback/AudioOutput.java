@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,6 +82,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private boolean mDropDuplicates;
     private long mOutputLastTimestamp = 0;
     private static final long STALE_PLAYBACK_THRESHOLD_MS = 500;
+    private AudioFormat mAudioFormat;
+    private int mRequestedBufferSize;
 
     /**
      * Single audio channel playback with automatic starting and stopping of the
@@ -106,6 +108,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                 "sdrtrunk audio output " + mixerChannel.name()));
         mUserPreferences = userPreferences;
         mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
+        mAudioFormat = audioFormat;
+        mRequestedBufferSize = requestedBufferSize;
 
         try
         {
@@ -286,6 +290,54 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                 mOutputLastTimestamp = System.currentTimeMillis();
 
                 checkStart();
+
+                 //Something is causing the source data line to fail to accept audio byte data via the write() method
+                 //and this seems to have started around JDK22, maybe.  We can detect when this happens and close() and
+                 //reopen the data line to clear the error.
+                if(!mOutput.isRunning() && wrote <= 0 && buffer.array().length > 0)
+                {
+                    mOutput.close();
+
+                    try
+                    {
+                        mOutput.open(mAudioFormat, mRequestedBufferSize);
+
+                        //Start threshold: buffer is full with 10% or less of capacity remaining
+                        mBufferStartThreshold = (int) (mOutput.getBufferSize() * 0.10);
+
+                        //Stop threshold: buffer is empty with 90% or more capacity available
+                        mBufferStopThreshold = (int) (mOutput.getBufferSize() * 0.90);
+
+                        try
+                        {
+                            Control gain = mOutput.getControl(FloatControl.Type.MASTER_GAIN);
+                            mGainControl = (FloatControl) gain;
+                        }
+                        catch(IllegalArgumentException iae)
+                        {
+                            mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" + getChannelName() + "]");
+                        }
+
+                        try
+                        {
+                            Control mute = mOutput.getControl(BooleanControl.Type.MUTE);
+                            mMuteControl = (BooleanControl) mute;
+                        }
+                        catch(IllegalArgumentException iae)
+                        {
+                            mLog.warn("Couldn't obtain MUTE control for stereo line [" + getChannelName() + "]");
+                        }
+
+                        mAudioStartEvent = new AudioEvent(AudioEvent.Type.AUDIO_STARTED, getChannelName());
+                        mAudioStopEvent = new AudioEvent(AudioEvent.Type.AUDIO_STOPPED, getChannelName());
+                        mCanProcessAudio = true;
+                    }
+                    catch(LineUnavailableException e)
+                    {
+                        mLog.error("Couldn't obtain audio source data line for audio output - mixer [" +
+                                mMixer.getMixerInfo().getName() + "]");
+                    }
+                }
             }
 
             if(mOutput.isRunning() && wrote < buffer.array().length)
