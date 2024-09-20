@@ -58,10 +58,10 @@ repositories {
 //Version is defined in gradle.properties so that we can CLI override it for nightly builds.
 version = project.findProperty('projectVersion')
 
-//Java 22 is required for this version of the Project Panama preview/incubator feature
+//Java 23 is required for this version of the Project Panama preview/incubator feature
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(23)
     }
 }
 
@@ -126,7 +126,7 @@ dependencies {
 def os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem
 
 /**
- * This is needed for the JDK22 vector API ... until it moves out of incubation or preview
+ * This is needed for the JDK23 vector API ... until it moves out of incubation or preview
  */
 tasks.withType(JavaCompile) {
     options.compilerArgs.add("--enable-preview") //Project Panama Vector API is still in incubator
@@ -207,7 +207,7 @@ String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-22.0.2-full'
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
-def jdk_download_base = "https://download.bell-sw.com/java/22.0.2+11/bellsoft-jdk22.0.2+11-"
+def jdk_download_base = "https://download.bell-sw.com/java/23+38/bellsoft-jdk23+38-"
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
 def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix
