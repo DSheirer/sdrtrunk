@@ -63,6 +63,16 @@ public class PlottableDecodeEvent extends DecodeEvent
     }
 
     /**
+     * Indicates if the location is non-null and either latitude or longitude is not at the zero axis.  If the location
+     * coordinates are zero or both are very small values close to zero, then the location is flagged as invalid.
+     */
+    public boolean isValidLocation()
+    {
+        return mGeoPosition != null &&
+                ((Math.abs(mGeoPosition.getLatitude()) > 0.01) || (Math.abs(mGeoPosition.getLongitude()) > 0.01));
+    }
+
+    /**
      * Sets the heading for the mobile plottable event
      * @param heading
      */

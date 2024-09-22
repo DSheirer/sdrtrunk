@@ -101,42 +101,45 @@ public class PlottableEntityModel extends AbstractTableModel implements Listener
     @Override
     public void receive(PlottableDecodeEvent plottableDecodeEvent)
     {
-        //Add or update the event on the swing event thread
-        EventQueue.invokeLater(() -> {
-            Identifier from = plottableDecodeEvent.getIdentifierCollection().getFromIdentifier();
+        if(plottableDecodeEvent.isValidLocation())
+        {
+            //Add or update the event on the swing event thread
+            EventQueue.invokeLater(() -> {
+                Identifier from = plottableDecodeEvent.getIdentifierCollection().getFromIdentifier();
 
-            if(from != null && from.getForm() != Form.LOCATION)
-            {
-                AliasListConfigurationIdentifier aliasList = plottableDecodeEvent.getIdentifierCollection().getAliasListConfiguration();
-                String key = (aliasList != null ? aliasList.toString() : KEY_NO_ALIAS_LIST) + from;
-
-                PlottableEntityHistory entityHistory = mEntityHistoryMap.get(key);
-
-                if(entityHistory == null)
+                if(from != null && from.getForm() != Form.LOCATION)
                 {
-                    entityHistory = new PlottableEntityHistory(from, plottableDecodeEvent);
-                    mEntityHistories.add(entityHistory);
-                    mEntityHistoryMap.put(key, entityHistory);
-                    int index = mEntityHistories.indexOf(entityHistory);
-                    fireTableRowsInserted(index, index);
+                    AliasListConfigurationIdentifier aliasList = plottableDecodeEvent.getIdentifierCollection().getAliasListConfiguration();
+                    String key = (aliasList != null ? aliasList.toString() : KEY_NO_ALIAS_LIST) + from;
+
+                    PlottableEntityHistory entityHistory = mEntityHistoryMap.get(key);
+
+                    if(entityHistory == null)
+                    {
+                        entityHistory = new PlottableEntityHistory(from, plottableDecodeEvent);
+                        mEntityHistories.add(entityHistory);
+                        mEntityHistoryMap.put(key, entityHistory);
+                        int index = mEntityHistories.indexOf(entityHistory);
+                        fireTableRowsInserted(index, index);
+                    }
+                    else
+                    {
+                        entityHistory.add(plottableDecodeEvent);
+                        int index = mEntityHistories.indexOf(entityHistory);
+                        fireTableRowsUpdated(index, index);
+                    }
+
+                    for(IPlottableUpdateListener listener : mPlottableUpdateListeners)
+                    {
+                        listener.addPlottableEntity(entityHistory);
+                    }
                 }
                 else
                 {
-                    entityHistory.add(plottableDecodeEvent);
-                    int index = mEntityHistories.indexOf(entityHistory);
-                    fireTableRowsUpdated(index, index);
+                    LOGGER.warn("Received plottable decode event that does not contain a FROM identifier - cannot plot");
                 }
-
-                for(IPlottableUpdateListener listener : mPlottableUpdateListeners)
-                {
-                    listener.addPlottableEntity(entityHistory);
-                }
-            }
-            else
-            {
-                LOGGER.warn("Received plottable decode event that does not contain a FROM identifier - cannot plot");
-            }
-        });
+            });
+        }
     }
 
     @Override
