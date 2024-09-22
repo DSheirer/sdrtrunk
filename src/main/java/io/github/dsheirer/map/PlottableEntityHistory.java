@@ -87,17 +87,20 @@ public class PlottableEntityHistory
      */
     public void add(PlottableDecodeEvent event)
     {
-        TimestampedGeoPosition mostRecentPosition = getLatestPosition();
-        TimestampedGeoPosition latest = new TimestampedGeoPosition(event.getLocation(), event.getTimeStart());
-
-        if(isUnique(latest, mostRecentPosition))
+        if(event.isValidLocation())
         {
-            mCurrentEvent = event;
-            mLocationHistory.add(0, latest);
+            TimestampedGeoPosition mostRecentPosition = getLatestPosition();
+            TimestampedGeoPosition latest = new TimestampedGeoPosition(event.getLocation(), event.getTimeStart());
 
-            while(mLocationHistory.size() > MAX_LOCATION_HISTORY)
+            if(isUnique(latest, mostRecentPosition))
             {
-                mLocationHistory.remove(mLocationHistory.size() - 1);
+                mCurrentEvent = event;
+                mLocationHistory.add(0, latest);
+
+                while(mLocationHistory.size() > MAX_LOCATION_HISTORY)
+                {
+                    mLocationHistory.remove(mLocationHistory.size() - 1);
+                }
             }
         }
     }
