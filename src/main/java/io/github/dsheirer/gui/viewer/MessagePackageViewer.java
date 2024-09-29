@@ -22,6 +22,8 @@ package io.github.dsheirer.gui.viewer;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventSnapshot;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -38,6 +40,7 @@ public class MessagePackageViewer extends VBox
     private TableView<DecoderStateEvent> mDecoderStateEventTableView;
     private TableView<DecodeEventSnapshot> mDecodeEventTableView;
     private IdentifierCollectionViewer mIdentifierCollectionViewer;
+    private IdentifierCollectionViewer mAudioSegmentIdCollectionViewer;
     private ChannelStartProcessingRequestViewer mChannelStartProcessingRequestViewer;
 
     /**
@@ -63,8 +66,14 @@ public class MessagePackageViewer extends VBox
         GridPane.setHgrow(getDecodeEventTableView(), Priority.ALWAYS);
         gridPane.add(getDecodeEventTableView(), 1, 2);
 
-        gridPane.add(new Label("Channel Start Processing Request"), 0, 3);
-        gridPane.add(getChannelStartProcessingRequestViewer(), 0, 4);
+        TabPane tabPane = new TabPane();
+        Tab startTab = new Tab("Channel Start Processing Request");
+        startTab.setContent(getChannelStartProcessingRequestViewer());
+        Tab audioTab = new Tab("Audio Segment");
+        audioTab.setContent(getAudioSegmentIdCollectionViewer());
+        tabPane.getTabs().addAll(audioTab, startTab);
+
+        gridPane.add(tabPane, 0, 4);
 
         getIdentifierCollectionViewer().setPrefHeight(120);
         gridPane.add(new Label("Selected Decode Event Identifiers"), 1, 3);
@@ -96,6 +105,15 @@ public class MessagePackageViewer extends VBox
             {
                 getDecodeEventTableView().getSelectionModel().select(0);
             }
+
+            if(messagePackage.getAudioSegment() != null)
+            {
+                getAudioSegmentIdCollectionViewer().set(messagePackage.getAudioSegment().getIdentifierCollection());
+            }
+            else
+            {
+                getAudioSegmentIdCollectionViewer().set(null);
+            }
         }
     }
 
@@ -107,6 +125,16 @@ public class MessagePackageViewer extends VBox
         }
 
         return mIdentifierCollectionViewer;
+    }
+
+    private IdentifierCollectionViewer getAudioSegmentIdCollectionViewer()
+    {
+        if(mAudioSegmentIdCollectionViewer == null)
+        {
+            mAudioSegmentIdCollectionViewer = new IdentifierCollectionViewer();
+        }
+
+        return mAudioSegmentIdCollectionViewer;
     }
 
     private Label getMessageLabel()

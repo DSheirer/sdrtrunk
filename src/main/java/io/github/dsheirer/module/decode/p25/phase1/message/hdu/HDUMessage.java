@@ -184,7 +184,11 @@ public class HDUMessage extends P25P1Message
 
         if(irrecoverableErrors)
         {
+            //Set the header data as invalid
             mHeaderData.setValid(false);
+
+            //Est the whole HDU message as invalid.
+            setValid(false);
         }
         else
         {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class P25P1AudioModule extends ImbeAudioModule
 {
@@ -38,7 +40,7 @@ public class P25P1AudioModule extends ImbeAudioModule
 
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-    private LDU1Message mCachedLDU1Message = null;
+    private List<LDUMessage> mCachedLDUMessages = new ArrayList<>();
 
     public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
@@ -81,37 +83,46 @@ public class P25P1AudioModule extends ImbeAudioModule
         {
             if(mEncryptedCallStateEstablished)
             {
-                if(message instanceof LDUMessage)
+                if(message instanceof LDUMessage ldu)
                 {
-                    processAudio((LDUMessage)message);
+                    processAudio(ldu);
                 }
             }
             else
             {
-                if(message instanceof HDUMessage)
+                if(message instanceof HDUMessage hdu && hdu.isValid())
                 {
                     mEncryptedCallStateEstablished = true;
-                    mEncryptedCall = ((HDUMessage)message).getHeaderData().isEncryptedAudio();
+                    mEncryptedCall = hdu.getHeaderData().isEncryptedAudio();
                 }
-                else if(message instanceof LDU1Message)
+                else if(message instanceof LDU1Message ldu1)
                 {
                     //When we receive an LDU1 message without first receiving the HDU message, cache the LDU1 Message
                     //until we can determine the encrypted call state from the next LDU2 message
-                    mCachedLDU1Message = (LDU1Message)message;
+                    mCachedLDUMessages.add(ldu1);
                 }
-                else if(message instanceof LDU2Message)
+                else if(message instanceof LDU2Message ldu2)
                 {
-                    mEncryptedCallStateEstablished = true;
-                    LDU2Message ldu2 = (LDU2Message)message;
-                    mEncryptedCall = ldu2.getEncryptionSyncParameters().isEncryptedAudio();
-
-                    if(mCachedLDU1Message != null)
+                    if(ldu2.getEncryptionSyncParameters().isValid())
                     {
-                        processAudio(mCachedLDU1Message);
-                        mCachedLDU1Message = null;
+                        mEncryptedCallStateEstablished = true;
+                        mEncryptedCall = ldu2.getEncryptionSyncParameters().isEncryptedAudio();
                     }
 
-                    processAudio(ldu2);
+                    if(mEncryptedCallStateEstablished)
+                    {
+                        for(LDUMessage cachedLdu : mCachedLDUMessages)
+                        {
+                            processAudio(cachedLdu);
+                        }
+
+                        mCachedLDUMessages.clear();
+                        processAudio(ldu2);
+                    }
+                    else
+                    {
+                        mCachedLDUMessages.add(ldu2);
+                    }
                 }
             }
         }
@@ -152,7 +163,7 @@ public class P25P1AudioModule extends ImbeAudioModule
                 closeAudioSegment();
                 mEncryptedCallStateEstablished = false;
                 mEncryptedCall = false;
-                mCachedLDU1Message = null;
+                mCachedLDUMessages.clear();
             }
         }
     }

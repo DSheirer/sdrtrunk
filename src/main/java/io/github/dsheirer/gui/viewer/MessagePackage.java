@@ -19,11 +19,11 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.event.DecodeEventSnapshot;
-import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +37,7 @@ public class MessagePackage
     private List<DecoderStateEvent> mDecoderStateEvents = new ArrayList<>();
     private List<DecodeEventSnapshot> mDecodeEvents = new ArrayList<>();
     private ChannelStartProcessingRequest mChannelStartProcessingRequest;
+    private AudioSegment mAudioSegment;
 
     /**
      * Constructs an instance
@@ -152,8 +153,39 @@ public class MessagePackage
         return mChannelStartProcessingRequest == null ? 0 : 1;
     }
 
+    /**
+     * Count (0 or 1) of audio segment.
+     */
+    public int getAudioSegmentCount()
+    {
+        return mAudioSegment == null ? 0 : 1;
+    }
+
     public ChannelStartProcessingRequest getChannelStartProcessingRequest()
     {
         return mChannelStartProcessingRequest;
+    }
+
+    /**
+     * Generated audio segment.
+     * @return segment or null.
+     */
+    public AudioSegment getAudioSegment()
+    {
+        return mAudioSegment;
+    }
+
+    /**
+     * Adds the audio segment to the package
+     * @param audioSegment to add
+     */
+    public void add(AudioSegment audioSegment)
+    {
+        if(mAudioSegment != null)
+        {
+            throw new IllegalStateException("AudioSegment already set");
+        }
+
+        mAudioSegment = audioSegment;
     }
 }
