@@ -20,13 +20,13 @@
 package io.github.dsheirer.gui.viewer;
 
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventSnapshot;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
-import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 
 /**
  * Utility for combining a message and decoder state events.
@@ -40,6 +40,18 @@ public class MessagePackager
      */
     public MessagePackager()
     {
+    }
+
+    /**
+     * Adds an audio segment.
+     * @param audioSegment to add
+     */
+    public void add(AudioSegment audioSegment)
+    {
+        if(mMessagePackage != null)
+        {
+            mMessagePackage.add(audioSegment);
+        }
     }
 
     /**

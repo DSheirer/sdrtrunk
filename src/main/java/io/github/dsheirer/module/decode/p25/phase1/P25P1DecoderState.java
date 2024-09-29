@@ -60,7 +60,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlOpcode;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisReturnToControlChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaEmergencyAlarmActivation;
@@ -891,15 +890,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             if(lcw != null && lcw.isValid())
             {
-                //Send an ACTIVE decoder state event for everything except the CALL TERMINATION opcode which is
-                //handled by the processLC() method.
-                if(lcw.getOpcode() != LinkControlOpcode.CALL_TERMINATION_OR_CANCELLATION)
-                {
-                    //Set the state to ACTIVE while the call continues in hangtime.  The processLC() method will signal
-                    // the channel teardown.
-                    broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
-                }
-
+                //Set the state to ACTIVE while the call continues in hangtime.  The processLC() method will signal
+                // the channel teardown when that happens.
+                broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
                 processLC(lcw, message.getTimestamp(), true);
             }
         }

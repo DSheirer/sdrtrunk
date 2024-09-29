@@ -20,16 +20,24 @@
 package io.github.dsheirer.gui.viewer;
 
 import com.google.common.eventbus.EventBus;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.channel.state.DecoderStateEvent;
+import io.github.dsheirer.channel.state.SingleChannelState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
+import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageFramer;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageProcessor;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.binary.BinaryReader;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -94,9 +102,11 @@ public class P25P1Viewer extends VBox
     private ProgressIndicator mLoadingIndicator;
     private MessagePackageViewer mMessagePackageViewer;
     private StringProperty mLoadedFile = new SimpleStringProperty();
+    private UserPreferences mUserPreferences;
 
-    public P25P1Viewer()
+    public P25P1Viewer(UserPreferences userPreferences)
     {
+        mUserPreferences = userPreferences;
         setPadding(new Insets(5));
         setSpacing(5);
 
@@ -155,7 +165,9 @@ public class P25P1Viewer extends VBox
                 List<MessagePackage> messagePackages = new ArrayList<>();
                 P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, 9600);
                 P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
-                messageFramer.setListener(messageProcessor);
+                Broadcaster<IMessage> messageBroadcaster = new Broadcaster<>();
+                messageFramer.setListener(messageBroadcaster);
+                messageBroadcaster.addListener(messageProcessor);
 
                 Channel empty = new Channel("Empty");
                 empty.setDecodeConfiguration(new DecodeConfigP25Phase1());
@@ -169,10 +181,14 @@ public class P25P1Viewer extends VBox
                 trafficChannelManager.setInterModuleEventBus(eventBus);
 
                 //Register to receive events
-                trafficChannelManager.addDecodeEventListener(decodeEvent -> messagePackager.add(decodeEvent));
+                trafficChannelManager.addDecodeEventListener(messagePackager::add);
                 P25P1DecoderState decoderState = new P25P1DecoderState(empty, trafficChannelManager);
-                decoderState.setDecoderStateListener(decoderStateEvent -> messagePackager.add(decoderStateEvent));
-                decoderState.addDecodeEventListener(decodeEvent -> messagePackager.add(decodeEvent));
+
+                Broadcaster<DecoderStateEvent> decoderStateEventBroadcaster = new Broadcaster<>();
+                decoderState.setDecoderStateListener(decoderStateEventBroadcaster);
+
+                decoderStateEventBroadcaster.addListener(messagePackager::add);
+                decoderState.addDecodeEventListener(messagePackager::add);
                 decoderState.start();
 
                 long frequency = getFrequencyFromFile(mLoadedFile.get());
@@ -197,6 +213,16 @@ public class P25P1Viewer extends VBox
                     }
                 });
 
+                P25P1AudioModule audioModule = new P25P1AudioModule(mUserPreferences, new AliasList("debug"));
+                decoderState.setIdentifierUpdateListener(audioModule.getIdentifierUpdateListener());
+                audioModule.setAudioSegmentListener(messagePackager::add);
+                messageBroadcaster.addListener(audioModule);
+                audioModule.start();
+                SingleChannelState singleChannelState = new SingleChannelState(empty, new AliasModel());
+                singleChannelState.setSquelchStateListener(squelchStateEvent -> audioModule.getSquelchStateListener().receive(squelchStateEvent));
+                decoderStateEventBroadcaster.addListener(singleChannelState.getDecoderStateListener());
+                singleChannelState.start();
+
                 try(BinaryReader reader = new BinaryReader(file.toPath(), 200))
                 {
                     while(reader.hasNext())
@@ -209,6 +235,10 @@ public class P25P1Viewer extends VBox
                 {
                     ioe.printStackTrace();
                 }
+
+                audioModule.stop();
+                decoderState.stop();
+                singleChannelState.stop();
 
                 Platform.runLater(() -> {
                     getLoadingIndicator().setVisible(false);
@@ -444,8 +474,13 @@ public class P25P1Viewer extends VBox
             channelStartCountColumn.setText("Starts");
             channelStartCountColumn.setCellValueFactory(new PropertyValueFactory<>("channelStartProcessingRequestCount"));
 
+            TableColumn audioSegmentCountColumn = new TableColumn();
+            audioSegmentCountColumn.setPrefWidth(50);
+            audioSegmentCountColumn.setText("Audio");
+            audioSegmentCountColumn.setCellValueFactory(new PropertyValueFactory<>("audioSegmentCount"));
+
             mMessagePackageTableView.getColumns().addAll(timestampColumn, validColumn, timeslotColumn, messageColumn,
-                    decodeEventCountColumn, decoderStateEventCountColumn, channelStartCountColumn);
+                    decodeEventCountColumn, decoderStateEventCountColumn, channelStartCountColumn, audioSegmentCountColumn);
         }
 
         return mMessagePackageTableView;

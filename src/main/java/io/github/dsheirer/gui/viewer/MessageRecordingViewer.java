@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Node;
@@ -51,6 +52,7 @@ public class MessageRecordingViewer extends VBox
     private int mTabCounterDmr = 1;
     private int mTabCounterP25P1 = 1;
     private int mTabCounterP25P2 = 1;
+    private UserPreferences mUserPreferences = new UserPreferences();
 
     /**
      * Constructs an instance
@@ -77,7 +79,7 @@ public class MessageRecordingViewer extends VBox
             });
             MenuItem p25p1MenuItem = new MenuItem("P25 Phase 1");
             p25p1MenuItem.onActionProperty().set(event -> {
-                Tab tab = new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer());
+                Tab tab = new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mUserPreferences));
                 getTabPane().getTabs().add(tab);
                 getTabPane().getSelectionModel().select(tab);
             });
@@ -108,7 +110,7 @@ public class MessageRecordingViewer extends VBox
             mTabPane = new TabPane();
             mTabPane.setMaxHeight(Double.MAX_VALUE);
             mTabPane.getTabs().add(new LabeledTab("DMR-" + mTabCounterDmr++, new DmrViewer()));
-            mTabPane.getTabs().add(new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer()));
+            mTabPane.getTabs().add(new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mUserPreferences)));
             mTabPane.getTabs().add(new LabeledTab("P25P2-" + mTabCounterP25P2++, new P25P2Viewer()));
         }
 
