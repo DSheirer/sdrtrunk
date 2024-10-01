@@ -70,6 +70,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,12 +170,22 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            Channel channel = mAllocatedTrafficChannelMap.get(current);
-
-            if(!parentChannel.equals(channel))
+            //Shutdown all existing traffic channels and clear the maps.
+            mAllocatedTrafficChannelMap.forEach(new BiConsumer<Long, Channel>()
             {
-                broadcast(new ChannelEvent(mAllocatedTrafficChannelMap.get(current), Event.REQUEST_DISABLE));
-            }
+                @Override
+                public void accept(Long aLong, Channel channel)
+                {
+                    if(!parentChannel.equals(channel))
+                    {
+                        broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
+                    }
+                }
+            });
+
+            mAllocatedTrafficChannelMap.clear();
+            mTS1ChannelGrantEventMap.clear();
+            mTS2ChannelGrantEventMap.clear();
 
             //Store the control channel in the allocated channel map so that we don't allocate a traffic channel against it
             mAllocatedTrafficChannelMap.put(current, parentChannel);
