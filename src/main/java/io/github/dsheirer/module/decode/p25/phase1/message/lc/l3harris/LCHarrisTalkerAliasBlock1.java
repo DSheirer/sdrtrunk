@@ -16,30 +16,44 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.module.decode.p25.identifier.talkgroup;
 
-import io.github.dsheirer.identifier.Role;
+package io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * APCO25 Announcement Talkgroup - grouping of talkgroups within a system.
+ * L3Harris Opcode 50 (0x32) Talker Alias Block 1 (of 4).
  */
-public class APCO25AnnouncementTalkgroup extends APCO25Talkgroup
+public class LCHarrisTalkerAliasBlock1 extends LCHarrisTalkerAliasBase
 {
     /**
-     * Constructs an APCO25 Talkgroup Identifier with a FROM role.
+     * Constructs a Link Control Word from the binary message sequence.
      *
-     * @param value of the talkgroup
+     * @param message
      */
-    public APCO25AnnouncementTalkgroup(Integer value)
+    public LCHarrisTalkerAliasBlock1(CorrectedBinaryMessage message)
     {
-        super(value, Role.BROADCAST);
+        super(message);
     }
 
-    /**
-     * Creates an APCO-25 announcement group talkgroup identifier
-     */
-    public static APCO25Talkgroup create(int talkgroup)
+    public String toString()
     {
-        return new APCO25AnnouncementTalkgroup(talkgroup);
+        StringBuilder sb = new StringBuilder();
+
+        if(!isValid())
+        {
+            sb.append("**CRC-FAILED** ");
+        }
+
+        if(isEncrypted())
+        {
+            sb.append(" ENCRYPTED");
+        }
+        else
+        {
+            sb.append("L3HARRIS TALKER ALIAS FRAGMENT 1/4:").append(getPayloadFragmentString());
+        }
+        sb.append(" MSG:").append(getMessage().toHexString());
+        return sb.toString();
     }
 }

@@ -1457,12 +1457,20 @@ public class DMRDecoderState extends TimeslotDecoderState
     @Override
     public String getActivitySummary()
     {
+        StringBuilder sb = new StringBuilder();
+
         if(mNetworkConfigurationMonitor != null)
         {
-            return mNetworkConfigurationMonitor.getActivitySummary();
+            sb.append(mNetworkConfigurationMonitor.getActivitySummary());
+            sb.append("\n\n");
+            sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
+        }
+        else
+        {
+            sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
         }
 
-        return "";
+        return sb.toString();
     }
 
     @Override

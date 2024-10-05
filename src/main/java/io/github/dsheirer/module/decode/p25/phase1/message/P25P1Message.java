@@ -31,21 +31,6 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public abstract class P25P1Message extends TimeslotMessage implements IMessage
 {
-    //P25 Phase 1 ICD defines octets starting at zero.
-    public static final int OCTET_0_BIT_0 = 0;
-    public static final int OCTET_1_BIT_8 = 8;
-    public static final int OCTET_2_BIT_16 = 16;
-    public static final int OCTET_3_BIT_24 = 24;
-    public static final int OCTET_4_BIT_32 = 32;
-    public static final int OCTET_5_BIT_40 = 40;
-    public static final int OCTET_6_BIT_48 = 48;
-    public static final int OCTET_7_BIT_56 = 56;
-    public static final int OCTET_8_BIT_64 = 64;
-    public static final int OCTET_9_BIT_72 = 72;
-    public static final int OCTET_10_BIT_80 = 80;
-    public static final int OCTET_11_BIT_88 = 88;
-    public static final int OCTET_12_BIT_96 = 96;
-
     private Identifier mNAC;
 
     /**

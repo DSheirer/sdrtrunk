@@ -188,7 +188,7 @@ public class DecoderFactory
                 processPassport(channel, modules, aliasList, decodeConfig);
                 break;
             case P25_PHASE1:
-                processP25Phase1(channel, userPreferences, modules, aliasList, channelType, (DecodeConfigP25Phase1) decodeConfig);
+                processP25Phase1(channel, userPreferences, modules, aliasList, trafficChannelManager);
                 break;
             case P25_PHASE2:
                 processP25Phase2(channel, userPreferences, modules, aliasList, trafficChannelManager);
@@ -262,32 +262,37 @@ public class DecoderFactory
      * @param modules collection to add to
      * @param aliasList for the channel
      */
-    private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig)
+    private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules,
+                                         AliasList aliasList, TrafficChannelManager trafficChannelManager)
     {
-        DecodeConfigP25Phase1 p25Config = decodeConfig;
-
-        switch(p25Config.getModulation())
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 p1)
         {
-            case C4FM:
-                modules.add(new P25P1DecoderC4FM());
-                break;
-            case CQPSK:
-                modules.add(new P25P1DecoderLSM());
-                break;
-            default:
-                throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
-                    p25Config.getModulation() + "]");
+            switch(p1.getModulation())
+            {
+                case C4FM:
+                    modules.add(new P25P1DecoderC4FM());
+                    break;
+                case CQPSK:
+                    modules.add(new P25P1DecoderLSM());
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + p1.getModulation() + "]");
+            }
         }
 
-        if(channelType == ChannelType.STANDARD)
+        if(channel.getChannelType() == ChannelType.STANDARD)
         {
-            P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
-            modules.add(trafficChannelManager);
-            modules.add(new P25P1DecoderState(channel, trafficChannelManager));
+            P25TrafficChannelManager primaryTCM = new P25TrafficChannelManager(channel);
+            modules.add(primaryTCM);
+            modules.add(new P25P1DecoderState(channel, primaryTCM));
+        }
+        else if(trafficChannelManager instanceof P25TrafficChannelManager parentTCM)
+        {
+            modules.add(new P25P1DecoderState(channel, parentTCM));
         }
         else
         {
-            modules.add(new P25P1DecoderState(channel));
+            mLog.warn("Expected non-null traffic channel manager for channel " + channel.getName());
         }
 
         modules.add(new P25P1AudioModule(userPreferences, aliasList));

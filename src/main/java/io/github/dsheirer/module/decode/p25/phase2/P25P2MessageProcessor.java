@@ -31,17 +31,19 @@ import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureMultiFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MultiFragmentContinuationMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaTalkerAliasAssembler;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaTalkerAliasDataBlock;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaTalkerAliasHeader;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice2Timeslot;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class P25P2MessageProcessor implements Listener<IMessage>
 {
@@ -52,6 +54,8 @@ public class P25P2MessageProcessor implements Listener<IMessage>
     private MacMessage mMacMessageWithMultiFragment1;
     private MacStructureMultiFragment mMacStructureMultiFragment1;
     private MacStructureMultiFragment mMacStructureMultiFragment2;
+    private MotorolaTalkerAliasAssembler mMotorolaTalkerAliasAssembler1 = new MotorolaTalkerAliasAssembler(P25P2Message.TIMESLOT_1);
+    private MotorolaTalkerAliasAssembler mMotorolaTalkerAliasAssembler2 = new MotorolaTalkerAliasAssembler(P25P2Message.TIMESLOT_2);
     private Listener<IMessage> mMessageListener;
 
     //Map of up to 16 band identifiers per RFSS.  These identifier update messages are inserted into any message that
@@ -217,14 +221,33 @@ public class P25P2MessageProcessor implements Listener<IMessage>
                                 }
                             }
 
-                            /* Store band identifiers so that they can be injected into channel
-                             * type messages */
+                            //Store band identifiers so that they can be injected into channel type messages
                             if(macMessage.getMacStructure() instanceof IFrequencyBand bandIdentifier)
                             {
                                 mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
                             }
 
+                            //Send the message to the listener
                             mMessageListener.receive(macMessage);
+
+                            /**
+                             * We reassemble Motorola talker alias messages here so that we can send the assembled
+                             * message to message listener, after the fragment has been sent to the listener.
+                             */
+                            if(macMessage.getMacStructure() instanceof MotorolaTalkerAliasHeader ||
+                               macMessage.getMacStructure() instanceof MotorolaTalkerAliasDataBlock)
+                            {
+                                if(macMessage.getTimeslot() == P25P2Message.TIMESLOT_1 &&
+                                   mMotorolaTalkerAliasAssembler1.add(macMessage.getMacStructure(), macMessage.getTimestamp()))
+                                {
+                                    mMessageListener.receive(mMotorolaTalkerAliasAssembler1.assemble());
+                                }
+                                else if(macMessage.getTimeslot() == P25P2Message.TIMESLOT_2 &&
+                                        mMotorolaTalkerAliasAssembler2.add(macMessage.getMacStructure(), macMessage.getTimestamp()))
+                                {
+                                    mMessageListener.receive(mMotorolaTalkerAliasAssembler2.assemble());
+                                }
+                            }
                         }
                     }
                     else if(timeslot instanceof AbstractVoiceTimeslot)

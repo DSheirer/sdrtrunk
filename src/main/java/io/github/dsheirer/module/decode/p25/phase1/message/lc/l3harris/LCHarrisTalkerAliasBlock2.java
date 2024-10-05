@@ -17,30 +17,24 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
+package io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * Motorola Link Control opcode 0x17 (23).  This is possibly a radio reprogramming record segment that is used
- * in combination with LCO 0x15.  See notes in header of LCMotorolaRadioReprogramHeader class.
+ * L3Harris Opcode 51 (0x33) Talker Alias Block 2.
  */
-public class LCMotorolaRadioReprogramRecord extends LinkControlWord
+public class LCHarrisTalkerAliasBlock2 extends LCHarrisTalkerAliasBase
 {
-    private static final IntField RECORD_NUMBER = IntField.length8(OCTET_2_BIT_16);
-    private static final IntField SEQUENCE_NUMBER = IntField.length4(OCTET_3_BIT_24);
+    private static final int PAYLOAD_START = OCTET_2_BIT_16;
+    private static final int PAYLOAD_END = OCTET_9_BIT_72;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
      *
      * @param message
      */
-    public LCMotorolaRadioReprogramRecord(CorrectedBinaryMessage message)
+    public LCHarrisTalkerAliasBlock2(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -58,32 +52,11 @@ public class LCMotorolaRadioReprogramRecord extends LinkControlWord
         {
             sb.append(" ENCRYPTED");
         }
-
-        sb.append("MOTOROLA RADIO REPROGRAM RECORD:").append(getRecordNumber());
-        sb.append(" OF SEQUENCE:").append(getSequenceNumber());
+        else
+        {
+            sb.append("L3HARRIS TALKER ALIAS FRAGMENT 2/4:").append(getPayloadFragmentString());
+        }
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
-    }
-
-    /**
-     * Record number
-     */
-    public int getRecordNumber()
-    {
-        return getInt(RECORD_NUMBER);
-    }
-
-    /**
-     * Sequence number
-     */
-    public int getSequenceNumber()
-    {
-        return getInt(SEQUENCE_NUMBER);
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.emptyList();
     }
 }

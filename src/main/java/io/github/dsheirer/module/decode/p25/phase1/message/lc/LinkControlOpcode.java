@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc;
 
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import java.util.EnumSet;
+import java.util.logging.Logger;
 
 /**
  * Opcodes used for Link Control Words.
@@ -99,19 +100,27 @@ public enum LinkControlOpcode
     MOTOROLA_UNIT_GPS("MOTOROLA UNIT GPS", 6),
     MOTOROLA_EMERGENCY_ALARM_ACTIVATION("MOTOROLA EMERGENCY ALARM ACTIVATION", 10),
     MOTOROLA_TALK_COMPLETE("MOTOROLA TALK_COMPLETE", 15),
-    MOTOROLA_RADIO_REPROGRAM_HEADER("MOTOROLA RADIO REPROGRAM HEADER", 21),
-    MOTOROLA_RADIO_REPROGRAM_RECORD("MOTOROLA RADIO REPROGRAM CONTINUATION", 23),
+    MOTOROLA_TALKER_ALIAS_HEADER("MOTOROLA TALKER ALIAS HEADER", 21),
+    MOTOROLA_TALKER_ALIAS_DATA_BLOCK("MOTOROLA TALKER ALIAS DATA BLOCK", 23),
     MOTOROLA_UNKNOWN("MOTOROLA UNKNOWN", -1),
 
     L3HARRIS_RETURN_TO_CONTROL_CHANNEL("UNKNOWN OPCODE 10", 10),
     L3HARRIS_UNKNOWN_2A("UNKNOWN OPCODE 42", 42),
     L3HARRIS_UNKNOWN_2B("UNKNOWN OPCODE 43", 43),
+    L3HARRIS_TALKER_ALIAS_BLOCK_1("TALKER ALIAS BLOCK 1", 50),
+    L3HARRIS_TALKER_ALIAS_BLOCK_2("TALKER ALIAS BLOCK 2", 51),
+    L3HARRIS_TALKER_ALIAS_BLOCK_3("TALKER ALIAS BLOCK 3", 52),
+    L3HARRIS_TALKER_ALIAS_BLOCK_4("TALKER ALIAS BLOCK 4", 53),
     L3HARRIS_UNKNOWN("L3HARRIS UNKNOWN", -1),
+
+    //This is used for reassembled talker aliases and is not an actual opcode
+    TALKER_ALIAS_COMPLETE("TALKER ALIAS COMPLETE", -1),
 
     UNKNOWN("UNKNOWN", -1);
 
     private String mLabel;
     private int mCode;
+    private static Logger LOGGER = Logger.getLogger(LinkControlOpcode.class.getName());
 
     /**
      * Constructor
@@ -142,7 +151,8 @@ public enum LinkControlOpcode
      * L3Harris Opcodes
      */
     public static final EnumSet<LinkControlOpcode> L3HARRIS_OPCODES = EnumSet.of(L3HARRIS_RETURN_TO_CONTROL_CHANNEL,
-            L3HARRIS_UNKNOWN_2A, L3HARRIS_UNKNOWN_2B, L3HARRIS_UNKNOWN);
+            L3HARRIS_UNKNOWN_2A, L3HARRIS_UNKNOWN_2B, L3HARRIS_TALKER_ALIAS_BLOCK_1, L3HARRIS_TALKER_ALIAS_BLOCK_2,
+            L3HARRIS_TALKER_ALIAS_BLOCK_3, L3HARRIS_TALKER_ALIAS_BLOCK_4, L3HARRIS_UNKNOWN);
 
     /**
      * Network/channel related opcodes
@@ -213,6 +223,14 @@ public enum LinkControlOpcode
                         return L3HARRIS_UNKNOWN_2A;
                     case 43:
                         return L3HARRIS_UNKNOWN_2B;
+                    case 50:
+                        return L3HARRIS_TALKER_ALIAS_BLOCK_1;
+                    case 51:
+                        return L3HARRIS_TALKER_ALIAS_BLOCK_2;
+                    case 52:
+                        return L3HARRIS_TALKER_ALIAS_BLOCK_3;
+                    case 53:
+                        return L3HARRIS_TALKER_ALIAS_BLOCK_4;
                     default:
                         return L3HARRIS_UNKNOWN;
                 }
@@ -234,9 +252,9 @@ public enum LinkControlOpcode
                     case 15:
                         return MOTOROLA_TALK_COMPLETE;
                     case 21:
-                        return MOTOROLA_RADIO_REPROGRAM_HEADER;
+                        return MOTOROLA_TALKER_ALIAS_HEADER;
                     case 23:
-                        return MOTOROLA_RADIO_REPROGRAM_RECORD;
+                        return MOTOROLA_TALKER_ALIAS_DATA_BLOCK;
                     default:
                         return MOTOROLA_UNKNOWN;
                 }

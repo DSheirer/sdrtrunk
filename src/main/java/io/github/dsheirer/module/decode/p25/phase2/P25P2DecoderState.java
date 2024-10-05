@@ -33,10 +33,12 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.alias.P25TalkerAliasIdentifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKey;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -49,6 +51,7 @@ import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.MotorolaTalkerAliasComplete;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.IP25ChannelGrantDetailProvider;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
@@ -252,39 +255,16 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     continueState(State.CALL);
                 }
             }
+            else if(message instanceof MotorolaTalkerAliasComplete tac)
+            {
+                //Debug
+//                if(!mTrafficChannelManager.getTalkerAliasManager().hasAlias(tac.getRadio()))
+//                {
+//                    System.out.println(tac);
+//                }
+                mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
+            }
         }
-    }
-
-    /**
-     * Updates the channel state according to the PDU type
-     */
-    private static State getStateFromPduType(MacPduType macPduType)
-    {
-        switch(macPduType)
-        {
-            case MAC_0_SIGNAL:
-                return State.CONTROL;
-            case MAC_1_PTT:
-                return State.CALL;
-            case MAC_2_END_PTT:
-                return State.TEARDOWN;
-            case MAC_4_ACTIVE:
-            case MAC_6_HANGTIME:
-            case MAC_3_IDLE:
-            default:
-                return State.ACTIVE;
-        }
-    }
-
-    /**
-     * Adds the current channel to the local identifier collection which will cause it to be broadcast to all of the
-     * other listeners and will allow both timeslots on this channel to receive it and update accordingly.
-     *
-     * @param channel to broadcast
-     */
-    private void broadcastCurrentChannel(APCO25Channel channel)
-    {
-        getIdentifierCollection().update(channel);
     }
 
     /**
@@ -607,10 +587,10 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case MOTOROLA_89_GROUP_REGROUP_DELETE:
                 processDynamicRegrouping(message, mac);
                 break;
-            case MOTOROLA_91_GROUP_REGROUP_UNKNOWN:
+            case MOTOROLA_91_TALKER_ALIAS_HEADER:
                 //Unknown
                 break;
-            case MOTOROLA_95_UNKNOWN_149:
+            case MOTOROLA_95_TALKER_ALIAS_DATA_BLOCK:
                 //Unknown
                 break;
             case MOTOROLA_A0_GROUP_REGROUP_VOICE_CHANNEL_USER_EXTENDED:
@@ -689,15 +669,16 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      */
     private MutableIdentifierCollection getIdentifierCollectionForUsers(List<Identifier> identifiersToAdd, long timestamp)
     {
-        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-        ic.remove(IdentifierClass.USER);
-        ic.remove(Form.CHANNEL);
+        MutableIdentifierCollection mic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        mic.remove(IdentifierClass.USER);
+        mic.remove(Form.CHANNEL);
         for(Identifier identifier : identifiersToAdd)
         {
             //Filter the identifiers through the patch group manager
-            ic.update(mPatchGroupManager.update(identifier, timestamp));
+            mic.update(mPatchGroupManager.update(identifier, timestamp));
         }
-        return ic;
+        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(mic);
+        return mic;
     }
 
     /**
@@ -828,6 +809,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      */
     private void processChannelGrant(MacMessage message, MacStructure mac)
     {
+        //TODO: will we ever see a channel grant on a non-control channel?
         if(message.getMacPduType() == MacPduType.MAC_3_IDLE || message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
         {
             for(Identifier identifier : mac.getIdentifiers())
@@ -835,6 +817,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 //Add to the identifier collection after filtering through the patch group manager
                 getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
             }
+
+            mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
 
             continueState(State.ACTIVE);
         }
@@ -1152,24 +1136,20 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      */
     private void processChannelUser(MacMessage message, MacStructure mac)
     {
+        for(Identifier identifier : mac.getIdentifiers())
+        {
+            //Add to the identifier collection after filtering through the patch group manager
+            getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
+        }
+
+        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
+
         if(message.getMacPduType() == MacPduType.MAC_3_IDLE || message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
         {
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
-            }
-
             continueState(State.ACTIVE);
         }
         else
         {
-            for(Identifier identifier : mac.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
-            }
-
             if(mac instanceof IServiceOptionsProvider sop)
             {
                 IChannelDescriptor currentChannel = mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), getCurrentChannel(), sop.getServiceOptions(), mac.getOpcode(), getIdentifierCollection().copyOf(), message.getTimestamp(), null);
@@ -1210,12 +1190,14 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
         }
 
+        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
+
         if(mac instanceof PushToTalk ptt)
         {
             VoiceServiceOptions vso = ptt.isEncrypted() ? VoiceServiceOptions.createEncrypted() : VoiceServiceOptions.createUnencrypted();
-
-            mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), getCurrentChannel(), vso, mac.getOpcode(), getIdentifierCollection().copyOf(), message.getTimestamp(), ptt.isEncrypted() ? ptt.getEncryptionKey().toString() : null);
-
+            mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), getCurrentChannel(), vso,
+                    mac.getOpcode(), getIdentifierCollection().copyOf(), message.getTimestamp(),
+                    ptt.isEncrypted() ? ptt.getEncryptionKey().toString() : null);
             broadcast(new DecoderStateEvent(this, Event.START, ptt.isEncrypted() ? State.ENCRYPTED : State.CALL, getTimeslot()));
         }
     }
@@ -1762,9 +1744,17 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     {
         if(mac instanceof L3HarrisTalkerAlias talkerAlias)
         {
-            Identifier alias = talkerAlias.getAlias();
+            P25TalkerAliasIdentifier alias = talkerAlias.getAlias();
             getIdentifierCollection().update(alias);
             mTrafficChannelManager.processP2CurrentUser(getCurrentFrequency(), getTimeslot(), alias, message.getTimestamp());
+
+            //Add the alias to the talker alias manager if we know the associated radio
+            Identifier from = getIdentifierCollection().getFromIdentifier();
+
+            if(from instanceof RadioIdentifier ri)
+            {
+                mTrafficChannelManager.getTalkerAliasManager().update(ri, alias);
+            }
         }
     }
 
@@ -1788,9 +1778,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         }
     }
 
-
     /**
-     * Creates and broadcasts a decode event.
+     * Creates and broadcasts a decode event and broadcasts it for the specified channel
      *
      * @param message for the event
      * @param mac for the event
@@ -1798,13 +1787,13 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      * @param eventType of event
      * @param details to populate for the event
      */
-    private void broadcast(MacMessage message, MacStructure mac, IChannelDescriptor channel, DecodeEventType eventType, String details)
+    private void broadcast(MacMessage message, MacStructure mac, IChannelDescriptor channel, DecodeEventType eventType,
+                           String details)
     {
-        MutableIdentifierCollection collection = getUpdatedMutableIdentifierCollection(mac);
-
+        MutableIdentifierCollection mic = getUpdatedMutableIdentifierCollection(mac);
         broadcast(P25DecodeEvent.builder(eventType, message.getTimestamp()).channel(channel)
                 .details(details)
-                .identifiers(collection)
+                .identifiers(mic)
                 .timeslot(getTimeslot())
                 .build());
     }
@@ -1819,14 +1808,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      */
     private void broadcast(MacMessage message, MacStructure structure, DecodeEventType eventType, String details)
     {
-        MutableIdentifierCollection icQueuedResponse = getUpdatedMutableIdentifierCollection(structure);
-
-        broadcast(P25DecodeEvent.builder(eventType, message.getTimestamp())
-                .channel(getCurrentChannel())
-                .details(details)
-                .identifiers(icQueuedResponse)
-                .timeslot(getTimeslot())
-                .build());
+        broadcast(message, structure, getCurrentChannel(), eventType, details);
     }
 
     /**
@@ -1838,10 +1820,11 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      */
     private MutableIdentifierCollection getUpdatedMutableIdentifierCollection(MacStructure mac)
     {
-        MutableIdentifierCollection icQueuedResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-        icQueuedResponse.remove(IdentifierClass.USER);
-        icQueuedResponse.update(mac.getIdentifiers());
-        return icQueuedResponse;
+        MutableIdentifierCollection mic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        mic.remove(IdentifierClass.USER);
+        mic.update(mac.getIdentifiers());
+        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(mic);
+        return mic;
     }
 
     /**
@@ -1926,6 +1909,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         sb.append(mNetworkConfigurationMonitor.getActivitySummary());
         sb.append("\n");
         sb.append(mPatchGroupManager.getPatchGroupSummary());
+        sb.append("\n");
+        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
         return sb.toString();
     }
 

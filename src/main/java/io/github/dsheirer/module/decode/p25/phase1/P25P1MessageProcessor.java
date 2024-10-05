@@ -25,6 +25,8 @@ import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.ExtendedSourceLinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.HarrisTalkerAliasAssembler;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaTalkerAliasAssembler;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSourceIDExtension;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
@@ -38,7 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  * APCO25 Phase 1 Message Processor.
  *
- * Performs post-message creation processing before the message is sent downstream.
+ * Performs post-message creation processing and enrichment before the message is sent downstream.
  */
 public class P25P1MessageProcessor implements Listener<IMessage>
 {
@@ -60,6 +62,19 @@ public class P25P1MessageProcessor implements Listener<IMessage>
      */
     private ExtendedSourceLinkControlWord mExtendedSourceLinkControlWord;
 
+    /**
+     * Motorola talker alias assembler for link control header and data blocks.
+     */
+    private LCMotorolaTalkerAliasAssembler mMotorolaTalkerAliasAssembler = new LCMotorolaTalkerAliasAssembler();
+
+    /**
+     * Harris talker alias assembler for link control talker alias blocks
+     */
+    private HarrisTalkerAliasAssembler mHarrisTalkerAliasAssembler = new HarrisTalkerAliasAssembler();
+
+    /**
+     * Constructs an instance
+     */
     public P25P1MessageProcessor()
     {
     }
@@ -79,19 +94,40 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         }
     }
 
+    /**
+     * Processes the message for enrichment or reassembly of fragments and sends the enriched message and any additional
+     * messages that were created during the enrichment to the registered message listener.
+     * @param message to process
+     */
     @Override
     public void receive(IMessage message)
     {
+        //Optional message created during processing that should be sent after the current argument is sent.
+        IMessage additionalMessageToSend = null;
+
         if(message.isValid())
         {
             //Reassemble extended source link control messages.
             if(message instanceof LDU1Message ldu)
             {
                 reassembleLC(ldu.getLinkControlWord());
+
+                //Send the LCW to the harris talker alias assembler
+                additionalMessageToSend = mHarrisTalkerAliasAssembler.process(ldu.getLinkControlWord(), ldu.getTimestamp());
             }
             else if(message instanceof TDULinkControlMessage tdu)
             {
-                reassembleLC(tdu.getLinkControlWord());
+                LinkControlWord lcw = tdu.getLinkControlWord();
+                reassembleLC(lcw);
+
+                //Motorola carries the talker alias in the TDULC
+                if(mMotorolaTalkerAliasAssembler.add(lcw, message.getTimestamp()))
+                {
+                    additionalMessageToSend = mMotorolaTalkerAliasAssembler.assemble();
+                }
+
+                //Harris carries the talker alias in the LDU voice messages, so reset the assembler on TDULC.
+                mHarrisTalkerAliasAssembler.reset();
             }
 
             //Insert frequency band identifier update messages into channel-type messages */
@@ -119,13 +155,25 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             if(message instanceof IFrequencyBand)
             {
                 IFrequencyBand bandIdentifier = (IFrequencyBand)message;
-                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
+
+                //Only store the frequency band if it's new so we don't hold on to more than one instance of the
+                //frequency band message.  Otherwise, we'll hold on to several instances of each message as they get
+                //injected into other messages with channel information.
+                if(!mFrequencyBandMap.containsKey(bandIdentifier.getIdentifier()))
+                {
+                    mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
+                }
             }
         }
 
         if(mMessageListener != null)
         {
             mMessageListener.receive(message);
+
+            if(additionalMessageToSend != null)
+            {
+                mMessageListener.receive(additionalMessageToSend);
+            }
         }
     }
 
@@ -153,17 +201,27 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         }
     }
 
+    /**
+     * Prepares for disposal of this instance.
+     */
     public void dispose()
     {
         mFrequencyBandMap.clear();
         mMessageListener = null;
     }
 
+    /**
+     * Sets the message listener to receive the output from this processor.
+     * @param listener to receive output messages
+     */
     public void setMessageListener(Listener<IMessage> listener)
     {
         mMessageListener = listener;
     }
 
+    /**
+     * Clears a registered message listener.
+     */
     public void removeMessageListener()
     {
         mMessageListener = null;

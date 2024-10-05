@@ -22,6 +22,7 @@ package io.github.dsheirer.channel.metadata;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -57,6 +58,7 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     private DecoderTypeConfigurationIdentifier mDecoderTypeConfigurationIdentifier;
     private Identifier mFromIdentifier;
     private List<Alias> mFromIdentifierAliases;
+    private Identifier mTalkerAliasIdentifier;
     private Identifier mToIdentifier;
     private List<Alias> mToIdentifierAliases;
     private Integer mTimeslot;
@@ -239,6 +241,22 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     }
 
     /**
+     * Optional talker alias identifier
+     */
+    public Identifier getTalkerAliasIdentifier()
+    {
+        return mTalkerAliasIdentifier;
+    }
+
+    /**
+     * Indicates if we have a non-null talker alias identifier
+     */
+    public boolean hasTalkerAliasIdentifier()
+    {
+        return mTalkerAliasIdentifier != null;
+    }
+
+    /**
      * Current call event TO identifier
      */
     public Identifier getToIdentifier()
@@ -409,15 +427,22 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
             case USER:
                 if(identifier.getRole() == Role.FROM)
                 {
-                    mFromIdentifier = update.isAdd() ? identifier : null;
-
-                    if(mAliasList != null && mFromIdentifier != null)
+                    if(identifier.getForm() == Form.TALKER_ALIAS)
                     {
-                        mFromIdentifierAliases = mAliasList.getAliases(mFromIdentifier);
+                        mTalkerAliasIdentifier = identifier;
                     }
                     else
                     {
-                        mFromIdentifierAliases = Collections.EMPTY_LIST;
+                        mFromIdentifier = update.isAdd() ? identifier : null;
+
+                        if(mAliasList != null && mFromIdentifier != null)
+                        {
+                            mFromIdentifierAliases = mAliasList.getAliases(mFromIdentifier);
+                        }
+                        else
+                        {
+                            mFromIdentifierAliases = Collections.EMPTY_LIST;
+                        }
                     }
 
                     broadcastUpdate(ChannelMetadataField.USER_FROM);

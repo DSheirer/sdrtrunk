@@ -62,6 +62,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableView;
@@ -380,6 +381,7 @@ public class P25P1Viewer extends VBox
         if(mMessagePackageTableView == null)
         {
             mMessagePackageTableView = new TableView<>();
+            mMessagePackageTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             mMessagePackageTableView.setPlaceholder(getLoadingIndicator());
             SortedList<MessagePackage> sortedList = new SortedList<>(mFilteredMessagePackages);
             sortedList.comparatorProperty().bind(mMessagePackageTableView.comparatorProperty());
