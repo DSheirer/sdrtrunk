@@ -115,14 +115,14 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
                 case DECIMAL:
                 case FORMATTED:
                     sb.append(id);
-                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append("(").append(toHex(wacn));
+                    sb.append(".").append(toHex(system));
                     sb.append(".").append(talkgroup).append(")");
                     return sb.toString();
                 case HEXADECIMAL:
                     sb.append(toHex(id));
-                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append("(").append(toHex(wacn));
+                    sb.append(".").append(toHex(system));
                     sb.append(".").append(toHex(talkgroup)).append(")");
                     return sb.toString();
                 default:
@@ -266,8 +266,8 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
                     {
                         sb.append(id).append(" (");
                     }
-                    sb.append("(").append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(toHex(wacn));
+                    sb.append(".").append(toHex(system));
                     sb.append(".").append(radio);
                     if(id > 0)
                     {
@@ -279,8 +279,8 @@ public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
                     {
                         sb.append(toHex(id)).append(" (");
                     }
-                    sb.append(toHex(wacn, WACN_HEXADECIMAL_WIDTH));
-                    sb.append(".").append(toHex(system, SYSTEM_HEXADECIMAL_WIDTH));
+                    sb.append(toHex(wacn));
+                    sb.append(".").append(toHex(system));
                     sb.append(".").append(toHex(radio));
                     if(id > 0)
                     {
