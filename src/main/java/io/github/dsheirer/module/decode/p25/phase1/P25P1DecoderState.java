@@ -61,6 +61,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.IExtendedSourceMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisReturnToControlChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasComplete;
@@ -317,6 +318,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 case UNKNOWN:
                     break;
             }
+        }
+        else if(iMessage instanceof IExtendedSourceMessage esm && iMessage instanceof LinkControlWord lcw)
+        {
+            processLC(lcw, esm.getTimestamp(), esm.isTerminator());
         }
         else if(iMessage instanceof MotorolaTalkerAliasComplete tac)
         {

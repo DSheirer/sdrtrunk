@@ -81,8 +81,10 @@ public class LinkControlWordFactory
      * Creates a link control word from the binary message sequence.
      *
      * @param message containing the LCW binary message sequence.
+     * @param timestamp of the message that carries the link control word.
+     * @param isTerminator to indicate if message is carried by a TDULC terminator message
      */
-    public static LinkControlWord create(CorrectedBinaryMessage message)
+    public static LinkControlWord create(CorrectedBinaryMessage message, long timestamp, boolean isTerminator)
     {
         LinkControlOpcode opcode = LinkControlWord.getOpcode(message);
         switch(opcode)
@@ -104,11 +106,11 @@ public class LinkControlWordFactory
             case EXTENDED_FUNCTION_COMMAND:
                 return new LCExtendedFunctionCommand(message);
             case EXTENDED_FUNCTION_COMMAND_EXTENDED:
-                return new LCExtendedFunctionCommandExtended(message);
+                return new LCExtendedFunctionCommandExtended(message, timestamp, isTerminator);
             case GROUP_AFFILIATION_QUERY:
                 return new LCGroupAffiliationQuery(message);
             case GROUP_VOICE_CHANNEL_USER:
-                return new LCGroupVoiceChannelUser(message);
+                return new LCGroupVoiceChannelUser(message, timestamp, isTerminator);
             case GROUP_VOICE_CHANNEL_UPDATE:
                 return new LCGroupVoiceChannelUpdate(message);
             case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
@@ -116,7 +118,7 @@ public class LinkControlWordFactory
             case MESSAGE_UPDATE:
                 return new LCMessageUpdate(message);
             case MESSAGE_UPDATE_EXTENDED:
-                return new LCMessageUpdateExtended(message);
+                return new LCMessageUpdateExtended(message, timestamp, isTerminator);
             case NETWORK_STATUS_BROADCAST:
                 return new LCNetworkStatusBroadcast(message);
             case NETWORK_STATUS_BROADCAST_EXPLICIT:
@@ -132,13 +134,13 @@ public class LinkControlWordFactory
             case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
                 return new LCSecondaryControlChannelBroadcastExplicit(message);
             case SOURCE_ID_EXTENSION:
-                return new LCSourceIDExtension(message);
+                return new LCSourceIDExtension(message, timestamp, isTerminator);
             case STATUS_QUERY:
                 return new LCStatusQuery(message);
             case STATUS_UPDATE:
                 return new LCStatusUpdate(message);
             case STATUS_UPDATE_EXTENDED:
-                return new LCStatusUpdateExtended(message);
+                return new LCStatusUpdateExtended(message, timestamp, isTerminator);
             case SYSTEM_SERVICE_BROADCAST:
                 return new LCSystemServiceBroadcast(message);
             case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
@@ -154,7 +156,7 @@ public class LinkControlWordFactory
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
                 return new LCUnitToUnitVoiceChannelUser(message);
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
-                return new LCUnitToUnitVoiceChannelUserExtended(message);
+                return new LCUnitToUnitVoiceChannelUserExtended(message, timestamp, isTerminator);
 
             case L3HARRIS_RETURN_TO_CONTROL_CHANNEL:
                 return new LCHarrisReturnToControlChannel(message);

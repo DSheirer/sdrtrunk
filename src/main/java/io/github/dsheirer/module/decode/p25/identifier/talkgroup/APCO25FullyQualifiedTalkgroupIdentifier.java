@@ -20,11 +20,7 @@
 package io.github.dsheirer.module.decode.p25.identifier.talkgroup;
 
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.FullyQualifiedTalkgroupIdentifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
@@ -51,8 +47,14 @@ public class APCO25FullyQualifiedTalkgroupIdentifier extends FullyQualifiedTalkg
         return Protocol.APCO25;
     }
 
+    @Override
+    public String toString()
+    {
+        return "ISSI " + super.toString();
+    }
+
     /**
-     * Creates an identifier for the fully qualified talkgroup ising the FROM role.
+     * Creates an identifier for the fully qualified talkgroup using the FROM role.
      * @param groupAddress used on the local system as an alias to the fully qualified talkgroup.
      * @param wacn for the talkgroup home system.
      * @param system for the talkgroup home system.

@@ -21,28 +21,63 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.FullyQualifiedRadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSourceIDExtension;
+import io.github.dsheirer.protocol.Protocol;
+import java.util.List;
 
 /**
  * Extended link control word.  Base class for adding in the extension word for messages that require two link control
  * fragments to fit the content.
  */
-public abstract class ExtendedSourceLinkControlWord extends LinkControlWord
+public abstract class ExtendedSourceLinkControlWord extends LinkControlWord implements IExtendedSourceMessage
 {
     private static final IntField SOURCE_ADDRESS = IntField.length24(OCTET_6_BIT_48);
     private LCSourceIDExtension mSourceIDExtension;
     private FullyQualifiedRadioIdentifier mSourceAddress;
+    private long mTimestamp;
+    private boolean mTerminator;
+    protected List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
      *
      * @param message
+     * @param timestamp of this message.
+     * @param isTerminator to indicate if message is carried by a TDULC terminator message
      */
-    public ExtendedSourceLinkControlWord(CorrectedBinaryMessage message)
+    public ExtendedSourceLinkControlWord(CorrectedBinaryMessage message, long timestamp, boolean isTerminator)
     {
         super(message);
+        mTimestamp = timestamp;
+        mTerminator = isTerminator;
+    }
+
+    @Override
+    public boolean isTerminator()
+    {
+        return mTerminator;
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.APCO25;
+    }
+
+    @Override
+    public long getTimestamp()
+    {
+        return mTimestamp;
+    }
+
+    @Override
+    public int getTimeslot()
+    {
+        return P25P1Message.TIMESLOT_0;
     }
 
     /**
@@ -59,6 +94,26 @@ public abstract class ExtendedSourceLinkControlWord extends LinkControlWord
     public void setSourceIDExtension(LCSourceIDExtension extension)
     {
         mSourceIDExtension = extension;
+        mSourceAddress = null;
+        mIdentifiers = null;
+    }
+
+    /**
+     * Indicates that this LCW always requires an extended source.
+     */
+    @Override
+    public boolean isExtensionRequired()
+    {
+        return true;
+    }
+
+    /**
+     * Indicates if this message has the source ID extension message appended.
+     */
+    @Override
+    public boolean isFullyExtended()
+    {
+        return mSourceIDExtension != null;
     }
 
     /**
