@@ -47,6 +47,19 @@ public class APCO25FullyQualifiedRadioIdentifier extends FullyQualifiedRadioIden
         return Protocol.APCO25;
     }
 
+    @Override
+    public String toString()
+    {
+        if(isAliased())
+        {
+            return "ROAM " + super.toString();
+        }
+        else
+        {
+            return "ISSI " + super.toString();
+        }
+    }
+
     /**
      * Creates a fully qualified radio and assigns the FROM role.
      * @param localAddress radio identifier.  This can be the same as the radio ID when the fully qualified radio

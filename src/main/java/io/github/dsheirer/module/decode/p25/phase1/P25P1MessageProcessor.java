@@ -23,9 +23,10 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.P25FrequencyBandPreloadDataContent;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.ExtendedSourceLinkControlWord;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.IExtendedSourceMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.HarrisTalkerAliasAssembler;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasBase;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaTalkerAliasAssembler;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSourceIDExtension;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
@@ -60,7 +61,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
     /**
      * Temporary holding of an extended source link control message while it awaits the extension message to arrive.
      */
-    private ExtendedSourceLinkControlWord mExtendedSourceLinkControlWord;
+    private IExtendedSourceMessage mExtendedSourceMessage;
 
     /**
      * Motorola talker alias assembler for link control header and data blocks.
@@ -110,18 +111,26 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             //Reassemble extended source link control messages.
             if(message instanceof LDU1Message ldu)
             {
-                reassembleLC(ldu.getLinkControlWord());
-
-                //Send the LCW to the harris talker alias assembler
-                additionalMessageToSend = mHarrisTalkerAliasAssembler.process(ldu.getLinkControlWord(), ldu.getTimestamp());
+                if(ldu.getLinkControlWord() instanceof IExtendedSourceMessage extendedSourceMessage)
+                {
+                    additionalMessageToSend = reassembleLC(extendedSourceMessage);
+                }
+                else if(ldu.getLinkControlWord() instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
+                {
+                    //Send the LCW to the harris talker alias assembler
+                    additionalMessageToSend = mHarrisTalkerAliasAssembler.process(harrisTalkerAlias, ldu.getTimestamp());
+                }
             }
             else if(message instanceof TDULinkControlMessage tdu)
             {
                 LinkControlWord lcw = tdu.getLinkControlWord();
-                reassembleLC(lcw);
 
+                if(lcw instanceof IExtendedSourceMessage extendedSourceMessage)
+                {
+                    additionalMessageToSend = reassembleLC(extendedSourceMessage);
+                }
                 //Motorola carries the talker alias in the TDULC
-                if(mMotorolaTalkerAliasAssembler.add(lcw, message.getTimestamp()))
+                else if(mMotorolaTalkerAliasAssembler.add(lcw, message.getTimestamp()))
                 {
                     additionalMessageToSend = mMotorolaTalkerAliasAssembler.assemble();
                 }
@@ -168,7 +177,10 @@ public class P25P1MessageProcessor implements Listener<IMessage>
 
         if(mMessageListener != null)
         {
-            mMessageListener.receive(message);
+            if(message != null)
+            {
+                mMessageListener.receive(message);
+            }
 
             if(additionalMessageToSend != null)
             {
@@ -179,26 +191,32 @@ public class P25P1MessageProcessor implements Listener<IMessage>
 
     /**
      * Processes link control words to reassemble source ID extension messages.
-     * @param linkControlWord to process
+     * @param lcw to process
+     * @return reassembled link control or null if the original lcw is a receiver (which we hold onto and send later)
      */
-    private void reassembleLC(LinkControlWord linkControlWord)
+    private IMessage reassembleLC(IExtendedSourceMessage lcw)
     {
-        if(linkControlWord instanceof ExtendedSourceLinkControlWord eslcw)
+        IMessage toReturn = null;
+
+        if(lcw instanceof IExtendedSourceMessage extendedSourceMessage && extendedSourceMessage.isExtensionRequired())
         {
-            mExtendedSourceLinkControlWord = eslcw;
+            mExtendedSourceMessage = extendedSourceMessage;
         }
-        else if(linkControlWord instanceof LCSourceIDExtension sie && mExtendedSourceLinkControlWord != null)
+        else if(lcw instanceof LCSourceIDExtension sie && mExtendedSourceMessage != null)
         {
-            mExtendedSourceLinkControlWord.setSourceIDExtension(sie);
-            mExtendedSourceLinkControlWord = null;
+            mExtendedSourceMessage.setSourceIDExtension(sie);
+            toReturn = mExtendedSourceMessage;
+            mExtendedSourceMessage = null;
         }
         else
         {
             //The source extension message should always immediately follow the message that is being extended, so if
             //we get a message that is not an extended message or the extension, then we've missed the extension and we
             //should nullify any extended message that's waiting for the extension.
-            mExtendedSourceLinkControlWord = null;
+            mExtendedSourceMessage = null;
         }
+
+        return toReturn;
     }
 
     /**

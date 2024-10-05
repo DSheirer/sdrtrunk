@@ -38,16 +38,17 @@ public class LCMessageUpdateExtended extends ExtendedSourceLinkControlWord
 
     private Identifier mShortDataMessage;
     private Identifier mTargetAddress;
-    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
      *
      * @param message
+     * @param timestamp of the carrier message
+     * @param isTerminator to indicate if message is carried by a TDULC terminator message
      */
-    public LCMessageUpdateExtended(CorrectedBinaryMessage message)
+    public LCMessageUpdateExtended(CorrectedBinaryMessage message, long timestamp, boolean isTerminator)
     {
-        super(message);
+        super(message, timestamp, isTerminator);
     }
 
     public String toString()

@@ -19,8 +19,6 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris;
 
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-
 /**
  * Assembles a talker alias from talker alias blocks 1-4
  */
@@ -55,7 +53,7 @@ public class HarrisTalkerAliasAssembler
      * @param lcw containing Harris LC talker alias blocks 1-4
      * @return fully assembled talker alias, if available, or null.
      */
-    public LCHarrisTalkerAliasComplete process(LinkControlWord lcw, long timestamp)
+    public LCHarrisTalkerAliasComplete process(LCHarrisTalkerAliasBase lcw, long timestamp)
     {
         mTimestamp = timestamp;
 
