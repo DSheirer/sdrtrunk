@@ -151,7 +151,7 @@ public class LCGroupVoiceChannelUser extends VoiceLinkControlMessage implements 
     {
         if(mSourceAddress == null)
         {
-            if(isExtensionRequired() && mSourceIdExtension != null)
+            if(isExtensionRequired() && mSourceIdExtension != null && mSourceIdExtension.isValidExtendedSource())
             {
                 mSourceAddress = APCO25FullyQualifiedRadioIdentifier.createFrom(getInt(SOURCE_ADDRESS),
                         mSourceIdExtension.getWACN(), mSourceIdExtension.getSystem(), mSourceIdExtension.getId());
