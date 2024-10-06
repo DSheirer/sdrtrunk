@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,6 +80,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
         private ServiceOptions mServiceOptions;
+        private int mTimeslot = -1;
 
         /**
          * Constructs a builder instance with the specified start time in milliseconds
@@ -145,6 +146,16 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
         }
 
         /**
+         * Sets the timeslot for the event
+         * @param timeslot
+         */
+        public P25ChannelGrantDecodeEventBuilder timeslot(int timeslot)
+        {
+            mTimeslot = timeslot;
+            return this;
+        }
+
+        /**
          * Builds the decode event
          */
         public P25ChannelGrantEvent build()
@@ -156,6 +167,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
             decodeEvent.setDuration(mDuration);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setServiceOptions(mServiceOptions);
+            decodeEvent.setTimeslot(mTimeslot);
             return decodeEvent;
         }
     }

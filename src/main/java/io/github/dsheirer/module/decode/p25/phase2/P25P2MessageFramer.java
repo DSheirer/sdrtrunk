@@ -20,7 +20,6 @@ package io.github.dsheirer.module.decode.p25.phase2;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
@@ -30,11 +29,8 @@ import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageProviderModule;
 import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.preference.UserPreferences;
@@ -59,23 +55,15 @@ import org.slf4j.LoggerFactory;
 public class P25P2MessageFramer implements Listener<Dibit>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2MessageFramer.class);
-
     private P25P2SuperFrameDetector mSuperFrameDetector;
-    private boolean mAssemblingMessage = false;
-    private CorrectedBinaryMessage mBinaryMessage;
-    private DataUnitID mDataUnitID;
-    private PDUSequence mPDUSequence;
-    private int[] mCorrectedNID;
-    private int mNAC;
-    private int mStatusSymbolDibitCounter = 0;
-    private int mTrailingDibitsToSuppress = 0;
-    private double mBitRate;
-    private long mCurrentTime = System.currentTimeMillis();
 
-    public P25P2MessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
+    /**
+     * Constructs an instance
+     * @param phaseLockedLoop for use with the super frame detector
+     */
+    public P25P2MessageFramer(IPhaseLockedLoop phaseLockedLoop)
     {
         mSuperFrameDetector = new P25P2SuperFrameDetector(phaseLockedLoop);
-        mBitRate = bitRate;
     }
 
     /**
@@ -110,41 +98,6 @@ public class P25P2MessageFramer implements Listener<Dibit>
     }
 
     /**
-     * Current timestamp or timestamp of incoming message buffers that is continuously updated to as
-     * close as possible to the bits processed for the expected baud rate.
-     *
-     * @return
-     */
-    private long getTimestamp()
-    {
-        return mCurrentTime;
-    }
-
-    /**
-     * Sets the current time.  This should be invoked by an incoming message buffer stream.
-     *
-     * @param currentTime
-     */
-    public void setCurrentTime(long currentTime)
-    {
-        mCurrentTime = currentTime;
-    }
-
-    /**
-     * Updates the current timestamp based on the number of bits processed versus the bit rate per second
-     * in order to keep an accurate running timestamp to use for timestamped message creation.
-     *
-     * @param bitsProcessed thus far
-     */
-    private void updateBitsProcessed(int bitsProcessed)
-    {
-        if(bitsProcessed > 0)
-        {
-            mCurrentTime += (long)((double)bitsProcessed / mBitRate * 1000.0);
-        }
-    }
-
-    /**
      * Registers the listener for messages produced by this message framer
      *
      * @param messageListener to receive framed and decoded messages
@@ -152,11 +105,6 @@ public class P25P2MessageFramer implements Listener<Dibit>
     public void setListener(Listener<IMessage> messageListener)
     {
         mSuperFrameDetector.setListener(messageListener);
-    }
-
-    public P25P2SuperFrameDetector getSuperFrameDetector()
-    {
-        return mSuperFrameDetector;
     }
 
     /**
@@ -168,18 +116,6 @@ public class P25P2MessageFramer implements Listener<Dibit>
     public void receive(Dibit dibit)
     {
         mSuperFrameDetector.receive(dibit);
-    }
-
-    private void reset(int bitsProcessed)
-    {
-        updateBitsProcessed(bitsProcessed);
-        mPDUSequence = null;
-        mBinaryMessage = null;
-        mAssemblingMessage = false;
-        mDataUnitID = null;
-        mNAC = 0;
-        mSuperFrameDetector.reset();
-        mStatusSymbolDibitCounter = 0;
     }
 
     /**
@@ -266,7 +202,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
                                        processingChain.start();
 
-                                       P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE2.getProtocol().getBitRate());
+                                       P25P2MessageFramer messageFramer = new P25P2MessageFramer(null);
                                        messageFramer.setScrambleParameters(scrambleParameters);
                                        P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
                                        messageFramer.setListener(messageProcessor);

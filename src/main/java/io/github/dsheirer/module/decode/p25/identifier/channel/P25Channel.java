@@ -43,6 +43,22 @@ public class P25Channel implements IChannelDescriptor
     }
 
     /**
+     * Band identifier for this channel.
+     */
+    public int getBandIdentifier()
+    {
+        return mBandIdentifier;
+    }
+
+    /**
+     * Channel number for this channel.
+     */
+    public int getChannelNumber()
+    {
+        return mChannelNumber;
+    }
+
+    /**
      * Frequency band information that backs this channel
      */
     public IFrequencyBand getFrequencyBand()
