@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.p25.reference;
 public abstract class ServiceOptions
 {
     protected static final int EMERGENCY_FLAG = 0x80;
-    protected static final int ENCRYPTION_FLAG = 0x40;
+    public static final int ENCRYPTION_FLAG = 0x40;
     protected static final int DUPLEX = 0x20;
     protected static final int SESSION_MODE = 0x10;
     protected int mServiceOptions;

@@ -65,6 +65,16 @@ public class LCSourceIDExtension extends LinkControlWord implements IExtendedSou
         return sb.toString();
     }
 
+    /**
+     * Indicates that at least one of the WACN, System, or ID values are non-zero.
+     * @return
+     */
+    public boolean isValidExtendedSource()
+    {
+        return getWACN() != 0 && getSystem() != 0 && getId() != 0;
+    }
+
+
     @Override
     public boolean isTerminator()
     {

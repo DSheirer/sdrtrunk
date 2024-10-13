@@ -38,7 +38,6 @@ import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
@@ -123,7 +122,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
 
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
-        mMessageFramer = new P25P2MessageFramer(mCostasLoop, DecoderType.P25_PHASE2.getProtocol().getBitRate());
+        mMessageFramer = new P25P2MessageFramer(mCostasLoop);
 
         if(mDecodeConfigP25Phase2 !=null)
         {
@@ -146,8 +145,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     @Override
     public void receive(ComplexSamples samples)
     {
-        mMessageFramer.setCurrentTime(System.currentTimeMillis());
-
         float[] i = mIBasebandFilter.filter(samples.i());
         float[] q = mQBasebandFilter.filter(samples.q());
 

@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.identifier.channel;
 
@@ -110,6 +107,36 @@ public class APCO25Channel extends Identifier<P25Channel> implements IChannelDes
     public static APCO25Channel create(int frequencyBand, int channelNumber)
     {
         return new APCO25Channel(new P25Channel(frequencyBand, channelNumber));
+    }
+
+    /**
+     * Creates a new APCO-25 identifier with the same frequencyBand, and a different channelNumber representing the
+     * requested timeslot.
+     * @param requestedTimeslot to decorate as.
+     * @return decorated channel.
+     */
+    public APCO25Channel decorateAs(int requestedTimeslot)
+    {
+        if(getTimeslot() == requestedTimeslot)
+        {
+            return this;
+        }
+
+        P25Channel existing = getValue();
+
+        int channelNumber = existing.getChannelNumber();
+        if(requestedTimeslot == 1)
+        {
+            channelNumber--;
+        }
+        else
+        {
+            channelNumber++;
+        }
+
+        P25Channel decoratedChannel = new P25Channel(existing.getBandIdentifier(), channelNumber);
+        decoratedChannel.setFrequencyBand(existing.getFrequencyBand());
+        return new APCO25Channel(decoratedChannel);
     }
 
     @Override

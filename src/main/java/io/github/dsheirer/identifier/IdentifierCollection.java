@@ -363,6 +363,15 @@ public class IdentifierCollection
         return to;
     }
 
+    /**
+     * Returns an encryption key identiier or null.
+     * @return key or null.
+     */
+    public Identifier getEncryptionIdentifier()
+    {
+        return getIdentifier(IdentifierClass.USER, Form.ENCRYPTION_KEY, Role.ANY);
+    }
+
     @Override
     public String toString()
     {

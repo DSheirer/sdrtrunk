@@ -188,10 +188,10 @@ public class DecoderFactory
                 processPassport(channel, modules, aliasList, decodeConfig);
                 break;
             case P25_PHASE1:
-                processP25Phase1(channel, userPreferences, modules, aliasList, trafficChannelManager);
+                processP25Phase1(channel, userPreferences, modules, aliasList, trafficChannelManager, channelDescriptor);
                 break;
             case P25_PHASE2:
-                processP25Phase2(channel, userPreferences, modules, aliasList, trafficChannelManager);
+                processP25Phase2(channel, userPreferences, modules, aliasList, trafficChannelManager, channelDescriptor);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
@@ -210,7 +210,8 @@ public class DecoderFactory
      * will be created automatically.
      */
     private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules,
-                                         AliasList aliasList, TrafficChannelManager trafficChannelManager)
+                                         AliasList aliasList, TrafficChannelManager trafficChannelManager,
+                                         IChannelDescriptor channelDescriptor)
     {
 
         modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
@@ -236,22 +237,25 @@ public class DecoderFactory
             modules.add(p25TrafficChannelManager);
         }
 
+        //A single patch group manager is shared across both timeslots
         PatchGroupManager patchGroupManager = new PatchGroupManager();
-        modules.add(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_1, p25TrafficChannelManager, patchGroupManager));
-        modules.add(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_2, p25TrafficChannelManager, patchGroupManager));
+
+        P25P2DecoderState decoderState1 = new P25P2DecoderState(channel, P25P2Message.TIMESLOT_1, p25TrafficChannelManager, patchGroupManager);
+        decoderState1.setCurrentChannel(channelDescriptor);
+        P25P2DecoderState decoderState2 = new P25P2DecoderState(channel, P25P2Message.TIMESLOT_2, p25TrafficChannelManager, patchGroupManager);
+        decoderState2.setCurrentChannel(channelDescriptor);
+        modules.add(decoderState1);
+        modules.add(decoderState2);
         modules.add(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList));
         modules.add(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList));
 
-
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
-        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
-                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
+                sctmf.hasMultipleFrequencies())
         {
             List<State> activeStates = new ArrayList<>();
             activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates,
-                    ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay(),
-                    userPreferences));
+            modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
         }
     }
 
@@ -263,7 +267,8 @@ public class DecoderFactory
      * @param aliasList for the channel
      */
     private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules,
-                                         AliasList aliasList, TrafficChannelManager trafficChannelManager)
+                                         AliasList aliasList, TrafficChannelManager trafficChannelManager,
+                                         IChannelDescriptor channelDescriptor)
     {
         if(channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 p1)
         {
@@ -288,7 +293,9 @@ public class DecoderFactory
         }
         else if(trafficChannelManager instanceof P25TrafficChannelManager parentTCM)
         {
-            modules.add(new P25P1DecoderState(channel, parentTCM));
+            P25P1DecoderState decoderState = new P25P1DecoderState(channel, parentTCM);
+            decoderState.setCurrentChannel(channelDescriptor);
+            modules.add(decoderState);
         }
         else
         {
@@ -466,6 +473,7 @@ public class DecoderFactory
      * @param aliasList for the audio module
      * @param decodeConfig for the DMR configuration
      * @param trafficChannelManager optional traffic channel manager to re-use
+     * @param channelDescriptor for the channel.
      */
     private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules,
                                    AliasList aliasList, DecodeConfigDMR decodeConfig,
