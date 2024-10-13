@@ -25,6 +25,7 @@ import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Broadcaster;
@@ -58,6 +59,7 @@ import javax.sound.sampled.SourceDataLine;
 public abstract class AudioOutput implements LineListener, Listener<IdentifierUpdateNotification>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioOutput.class);
+    private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(mLog);
     private int mBufferStartThreshold;
     private int mBufferStopThreshold;
     private Listener<IdentifierCollection> mIdentifierCollectionListener;
@@ -83,6 +85,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private long mOutputLastTimestamp = 0;
     private static final long STALE_PLAYBACK_THRESHOLD_MS = 500;
     private AudioFormat mAudioFormat;
+    private Line.Info mLineInfo;
     private int mRequestedBufferSize;
 
     /**
@@ -109,11 +112,12 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         mUserPreferences = userPreferences;
         mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
         mAudioFormat = audioFormat;
+        mLineInfo = lineInfo;
         mRequestedBufferSize = requestedBufferSize;
 
         try
         {
-            mOutput = (SourceDataLine) mMixer.getLine(lineInfo);
+            mOutput = (SourceDataLine) mMixer.getLine(mLineInfo);
 
             if(mOutput != null)
             {
@@ -270,6 +274,12 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
      */
     private void playAudio(ByteBuffer buffer)
     {
+        if(mOutput == null)
+        {
+            LOGGING_SUPPRESSOR.error("null output", 5, "Audio Output is null - ignoring audio playback request");
+            return;
+        }
+
         if(buffer != null)
         {
             int wrote = 0;
@@ -300,6 +310,29 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
                     try
                     {
+                        mOutput = (SourceDataLine)mMixer.getLine(mLineInfo);
+
+                        if(mOutput != null)
+                        {
+                            LOGGING_SUPPRESSOR.info("reopen audio output success", 5,
+                                    "Closed and reopened audio output - success - mOutput is not null");
+                        }
+                        else
+                        {
+                            LOGGING_SUPPRESSOR.info("reopen audio output fail", 5,
+                                    "Closed and reopened audio output - fail - mOutput is null");
+                            return;
+                        }
+                    }
+                    catch(LineUnavailableException lue)
+                    {
+                        LOGGING_SUPPRESSOR.error("reopen fail for lua", 3, "Attempt to reopen " +
+                                "audio source data line failed", lue);
+                        return;
+                    }
+
+                    try
+                    {
                         mOutput.open(mAudioFormat, mRequestedBufferSize);
 
                         //Start threshold: buffer is full with 10% or less of capacity remaining
@@ -315,7 +348,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                         }
                         catch(IllegalArgumentException iae)
                         {
-                            mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" + getChannelName() + "]");
+                            mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" + getChannelName() +
+                                    "] after reopening the source data line");
                         }
 
                         try
@@ -325,7 +359,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                         }
                         catch(IllegalArgumentException iae)
                         {
-                            mLog.warn("Couldn't obtain MUTE control for stereo line [" + getChannelName() + "]");
+                            mLog.warn("Couldn't obtain MUTE control for stereo line [" + getChannelName() +
+                                    "] after reopening the source data line");
                         }
 
                         mAudioStartEvent = new AudioEvent(AudioEvent.Type.AUDIO_STARTED, getChannelName());
@@ -334,8 +369,10 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
                     catch(LineUnavailableException e)
                     {
-                        mLog.error("Couldn't obtain audio source data line for audio output - mixer [" +
+                        LOGGING_SUPPRESSOR.error("failed reopen source data line lua", 3,
+                                "Failed to (re)open the source data line for audio output - mixer [" +
                                 mMixer.getMixerInfo().getName() + "]");
+                        return;
                     }
                 }
             }
