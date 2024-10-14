@@ -31,7 +31,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWordFac
 import java.util.Collections;
 import java.util.List;
 
-public class TDULinkControlMessage extends P25P1Message implements IFrequencyBandReceiver
+public class TDULCMessage extends P25P1Message implements IFrequencyBandReceiver
 {
     public static final int[] LC_HEX_0 = {0, 1, 2, 3, 4, 5};
     public static final int[] LC_HEX_1 = {6, 7, 8, 9, 10, 11};
@@ -63,7 +63,7 @@ public class TDULinkControlMessage extends P25P1Message implements IFrequencyBan
 
     private LinkControlWord mLinkControlWord;
 
-    public TDULinkControlMessage(CorrectedBinaryMessage message, int nac, long timestamp)
+    public TDULCMessage(CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(message, nac, timestamp);
     }

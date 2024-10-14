@@ -39,7 +39,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.EncryptionSyncPar
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import java.util.List;
@@ -119,9 +119,9 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
         {
             process((LDUMessage)message);
         }
-        else if(message instanceof TDULinkControlMessage)
+        else if(message instanceof TDULCMessage)
         {
-            process((TDULinkControlMessage)message);
+            process((TDULCMessage)message);
         }
         else if(message instanceof TDUMessage)
         {
@@ -133,7 +133,7 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
         }
     }
 
-    private void process(TDULinkControlMessage tdulc)
+    private void process(TDULCMessage tdulc)
     {
         process(tdulc.getLinkControlWord());
     }

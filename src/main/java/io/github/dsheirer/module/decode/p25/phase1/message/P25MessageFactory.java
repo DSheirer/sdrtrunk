@@ -23,7 +23,7 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.vselp.VSELP1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.vselp.VSELP2Message;
@@ -65,7 +65,7 @@ public class P25MessageFactory
             case TERMINATOR_DATA_UNIT:
                 return new TDUMessage(message, nac, timestamp);
             case TERMINATOR_DATA_UNIT_LINK_CONTROL:
-                return new TDULinkControlMessage(message, nac, timestamp);
+                return new TDULCMessage(message, nac, timestamp);
             case TRUNKING_SIGNALING_BLOCK_1:
             case TRUNKING_SIGNALING_BLOCK_2:
             case TRUNKING_SIGNALING_BLOCK_3:
