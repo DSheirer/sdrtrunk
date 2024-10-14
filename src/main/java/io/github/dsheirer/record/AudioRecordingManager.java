@@ -140,7 +140,7 @@ public class AudioRecordingManager implements Listener<AudioSegment>
 
         while(audioSegment != null)
         {
-            if(audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference().isDuplicateRecordingSuppressionEnabled())
+            if(audioSegment.isDuplicate() && mUserPreferences.getCallManagementPreference().isDuplicateRecordingSuppressionEnabled())
             {
                 audioSegment.decrementConsumerCount();
             }
