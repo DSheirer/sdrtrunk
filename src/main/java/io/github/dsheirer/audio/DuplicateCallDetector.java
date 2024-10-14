@@ -62,7 +62,7 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
      */
     public DuplicateCallDetector(UserPreferences userPreferences)
     {
-        this(userPreferences.getDuplicateCallDetectionPreference());
+        this(userPreferences.getCallManagementPreference());
     }
 
     /**

@@ -110,7 +110,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(
                 "sdrtrunk audio output " + mixerChannel.name()));
         mUserPreferences = userPreferences;
-        mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
+        mDropDuplicates = mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled();
         mAudioFormat = audioFormat;
         mLineInfo = lineInfo;
         mRequestedBufferSize = requestedBufferSize;
@@ -238,7 +238,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         }
         else if(preferenceType == PreferenceType.DUPLICATE_CALL_DETECTION)
         {
-            mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
+            mDropDuplicates = mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled();
         }
     }
 

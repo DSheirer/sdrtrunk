@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
-    private CallManagementPreference mDuplicateCallDetectionPreference;
+    private CallManagementPreference mCallManagementPreference;
     private JmbeLibraryPreference mJmbeLibraryPreference;
     private MP3Preference mMP3Preference;
     private PlaybackPreference mPlaybackPreference;
@@ -206,11 +206,11 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
-     * Duplicate call detection preferences
+     * Call management and duplicate call detection preferences
      */
-    public CallManagementPreference getDuplicateCallDetectionPreference()
+    public CallManagementPreference getCallManagementPreference()
     {
-        return mDuplicateCallDetectionPreference;
+        return mCallManagementPreference;
     }
 
     /**
@@ -222,10 +222,9 @@ public class UserPreferences implements Listener<PreferenceType>
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
         mDecodeEventPreference = new DecodeEventPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
-        mDuplicateCallDetectionPreference = new CallManagementPreference(this::receive);
+        mCallManagementPreference = new CallManagementPreference(this::receive);
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
         mMP3Preference = new MP3Preference(this::receive);
-        mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);
         mRecordPreference = new RecordPreference(this::receive);

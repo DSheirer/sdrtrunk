@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -136,7 +136,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
         {
             audioSegment = it.next();
 
-            if(audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference().isDuplicateStreamingSuppressionEnabled())
+            if(audioSegment.isDuplicate() && mUserPreferences.getCallManagementPreference().isDuplicateStreamingSuppressionEnabled())
             {
                 it.remove();
                 audioSegment.decrementConsumerCount();
@@ -152,7 +152,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
                     if(identifiers.getToIdentifier() instanceof PatchGroupIdentifier patchGroupIdentifier)
                     {
-                        if(mUserPreferences.getDuplicateCallDetectionPreference()
+                        if(mUserPreferences.getCallManagementPreference()
                                 .getPatchGroupStreamingOption() == PatchGroupStreamingOption.TALKGROUPS)
                         {
                             //Decompose the patch group into the individual (patched) talkgroups and process the audio
