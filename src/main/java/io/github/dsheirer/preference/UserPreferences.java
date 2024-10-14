@@ -225,6 +225,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mCallManagementPreference = new CallManagementPreference(this::receive);
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
         mMP3Preference = new MP3Preference(this::receive);
+        mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);
         mRecordPreference = new RecordPreference(this::receive);
