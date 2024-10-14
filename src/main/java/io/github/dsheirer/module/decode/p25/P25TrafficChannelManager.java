@@ -31,8 +31,10 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
@@ -710,6 +712,78 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Process a Phase 1 HDU indicating a call start.
+     *
+     * @param frequency for the call event
+     * @param talkgroup to update within the event.
+     * @param eki for encryption settings.
+     * @param timestamp for the update
+     */
+    public void processP1TrafficCallStart(long frequency, Identifier<?> talkgroup, Identifier<?> radio,
+                                          EncryptionKeyIdentifier eki, ServiceOptions serviceOptions,
+                                          IChannelDescriptor channelDescriptor, long timestamp)
+    {
+        mLock.lock();
+
+        try
+        {
+            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+
+            if(tracker != null)
+            {
+                removeTracker(frequency, P25P1Message.TIMESLOT_1);
+            }
+
+            DecodeEventType decodeEventType = getDecodeEventType(talkgroup, eki);
+
+            MutableIdentifierCollection mic = new MutableIdentifierCollection();
+            mic.update(talkgroup);
+            mic.update(radio);
+            mic.update(eki);
+
+            //Create a new event for the current call.
+            P25ChannelGrantEvent callEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                    .channelDescriptor(channelDescriptor)
+                    .details("PHASE 1 CALL " + (serviceOptions != null ? serviceOptions : ""))
+                    .identifiers(mic)
+                    .build();
+
+            tracker = new P25TrafficChannelEventTracker(callEvent);
+            addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+            broadcast(tracker);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+    }
+
+    /**
+     * Determines the HDU message call decode event type from the talkgroup identifier and encryption key
+     * @param talkgroup to inspect
+     * @param eki to inspect
+     * @return decode event type.
+     */
+    private static DecodeEventType getDecodeEventType(Identifier talkgroup, EncryptionKeyIdentifier eki)
+    {
+        DecodeEventType decodeEventType = null;
+
+        if(talkgroup instanceof PatchGroupIdentifier)
+        {
+            decodeEventType = eki.isEncrypted() ? DecodeEventType.CALL_PATCH_GROUP_ENCRYPTED : DecodeEventType.CALL_PATCH_GROUP;
+        }
+        else if(talkgroup instanceof TalkgroupIdentifier ti && ti.getValue() == 0) //Unit-to-Unit private call
+        {
+            decodeEventType = eki.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED : DecodeEventType.CALL_UNIT_TO_UNIT;
+        }
+        else
+        {
+            decodeEventType = eki.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED : DecodeEventType.CALL_GROUP;
+        }
+        return decodeEventType;
+    }
+
+    /**
      * Updates an identifier for an ongoing call event on the frequency and updates the event duration timestamp.
      *
      * Note: if this manager does not have an existing call event for the frequency, the update is ignored
@@ -743,6 +817,55 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 if(identifier instanceof EncryptionKeyIdentifier eki && eki.isEncrypted())
                 {
                     tracker.addDetailsIfMissing(eki.toString());
+                }
+
+                tracker.updateDurationTraffic(timestamp);
+                broadcast(tracker);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+    }
+
+    /**
+     * Updates all current identifiers for an ongoing call event on the frequency and updates the event duration timestamp.
+     *
+     * Note: if this manager does not have an existing call event for the frequency, the update is ignored
+     * because we don't have enough detail to create a call event.
+     *
+     * This is used primarily to add encryption, GPS, talker alias, etc. but can be used for any identifier update.
+     *
+     * @param frequency for the call event
+     * @param identifier to update within the event.
+     * @param timestamp for the update
+     */
+    public void processP1TrafficCurrentUserIdentifiers(long frequency, List<Identifier> identifiers, long timestamp, String context)
+    {
+        mLock.lock();
+
+        try
+        {
+            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+
+            if(tracker != null && tracker.isComplete())
+            {
+                removeTracker(frequency, P25P1Message.TIMESLOT_1);
+                tracker = null;
+            }
+
+            if(tracker != null)
+            {
+                for(Identifier identifier : identifiers)
+                {
+                    tracker.addIdentifierIfMissing(identifier);
+
+                    //Add the encryption key to the call event details.
+                    if(identifier instanceof EncryptionKeyIdentifier eki && eki.isEncrypted())
+                    {
+                        tracker.addDetailsIfMissing(eki.toString());
+                    }
                 }
 
                 tracker.updateDurationTraffic(timestamp);

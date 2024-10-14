@@ -32,7 +32,8 @@ import java.util.List;
  */
 public class LCCallTermination extends LinkControlWord
 {
-    private static final int MOTOROLA_SYSTEM_CONTROLLER = 0xFFFFFD;
+    private static final int MOTOROLA_SYSTEM_CONTROLLER_1 = 0xFFFFFD;
+    private static final int MOTOROLA_SYSTEM_CONTROLLER_2 = 0xFFFFFF;
     private static final int HARRIS_SYSTEM_CONTROLLER = 0;
     private static final IntField ADDRESS = IntField.length24(OCTET_6_BIT_48);
     private Identifier mAddress;
@@ -75,7 +76,7 @@ public class LCCallTermination extends LinkControlWord
     public boolean isNetworkCommandedTeardown()
     {
         int address = getInt(ADDRESS);
-        return address == MOTOROLA_SYSTEM_CONTROLLER || address == HARRIS_SYSTEM_CONTROLLER;
+        return address == MOTOROLA_SYSTEM_CONTROLLER_1 || address == MOTOROLA_SYSTEM_CONTROLLER_2 || address == HARRIS_SYSTEM_CONTROLLER;
     }
 
     /**

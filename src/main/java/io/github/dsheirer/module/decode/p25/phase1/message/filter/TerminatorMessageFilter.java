@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlOpcode;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -63,7 +63,7 @@ public class TerminatorMessageFilter extends Filter<IMessage, LinkControlOpcode>
         @Override
         public LinkControlOpcode apply(IMessage message)
         {
-            if(message instanceof TDULinkControlMessage tdulc)
+            if(message instanceof TDULCMessage tdulc)
             {
                 return tdulc.getLinkControlWord().getOpcode();
             }

@@ -61,7 +61,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.IExtendedSourceMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisReturnToControlChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasComplete;
@@ -113,7 +112,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMess
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPPacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.response.ResponseMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.L3HarrisGroupRegroupExplicitEncryptionCommand;
@@ -190,6 +189,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final P25P1NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private final Listener<ChannelEvent> mChannelEventListener;
     private P25TrafficChannelManager mTrafficChannelManager;
+    private ServiceOptions mCurrentServiceOptions;
 
     /**
      * Constructs an APCO-25 decoder state with an optional traffic channel manager.
@@ -316,10 +316,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     break;
             }
         }
-        else if(iMessage instanceof IExtendedSourceMessage esm && iMessage instanceof LinkControlWord lcw)
-        {
-            processLC(lcw, esm.getTimestamp(), esm.isTerminator());
-        }
         else if(iMessage instanceof MotorolaTalkerAliasComplete tac)
         {
             mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
@@ -412,7 +408,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         List<Identifier> updated = mPatchGroupManager.update(lcw.getIdentifiers(), timestamp);
         getIdentifierCollection().update(updated);
         DecodeEventType decodeEventType = getLCDecodeEventType(lcw);
-
 
         ServiceOptions serviceOptions = null;
 
@@ -831,17 +826,31 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(message.isValid() && message instanceof HDUMessage hdu)
         {
             HeaderData headerData = hdu.getHeaderData();
-            //Run the talkgroup through the patch group manager so we don't get a plain talkgroup in addition to the patch
-            Identifier talkgroup = mPatchGroupManager.update(headerData.getTalkgroup(), message.getTimestamp());
-            mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), talkgroup, hdu.getTimestamp(), message.toString());
 
-            if(headerData.isEncryptedAudio())
+            if(headerData.isValid())
             {
-                broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED));
-            }
-            else
-            {
-                broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+                Identifier talkgroup = headerData.getTalkgroup();
+
+                //Run the talkgroup through the patch group manager so we don't get a plain talkgroup in addition to the patch
+                //Talkgroup value of zero indicates a unit-to-unit call, so don't attempt to update it as a patch group
+                if(headerData.getTalkgroup().getValue() > 0)
+                {
+                    talkgroup = mPatchGroupManager.update(talkgroup, message.getTimestamp());
+                }
+
+                Identifier<?> radio = getIdentifierCollection().getFromIdentifier();
+
+                mTrafficChannelManager.processP1TrafficCallStart(getCurrentFrequency(), talkgroup, radio,
+                        headerData.getEncryptionKey(), mCurrentServiceOptions, getCurrentChannel(), message.getTimestamp());
+
+                if(headerData.isEncryptedAudio())
+                {
+                    broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED));
+                }
+                else
+                {
+                    broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+                }
             }
         }
     }
@@ -862,6 +871,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             if(lcw != null && lcw.isValid())
             {
                 processLC(lcw, message.getTimestamp(), false);
+                mTrafficChannelManager.processP1TrafficCurrentUserIdentifiers(getCurrentFrequency(),
+                        getIdentifierCollection().getIdentifiers(), message.getTimestamp(), ldu1.toString());
             }
         }
         else if(message instanceof LDU2Message ldu2)
@@ -917,7 +928,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
         }
 
-        if(message instanceof TDULinkControlMessage tdulc)
+        if(message instanceof TDULCMessage tdulc)
         {
             LinkControlWord lcw = tdulc.getLinkControlWord();
 
@@ -1831,7 +1842,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         switch(lcw.getOpcode())
         {
-            //Calls in-progress on this channel
+            case SOURCE_ID_EXTENSION:
+                //Ignore - handled elsewhere
+                break;
+            //Calls getting ready to start or in-progress on this channel
             case GROUP_VOICE_CHANNEL_USER:
             case MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_USER:
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
@@ -1839,7 +1853,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                 if(isTerminator)
                 {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
+                    mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), timestamp, lcw.toString());
+                    List<Identifier> updated = mPatchGroupManager.update(lcw.getIdentifiers(), timestamp);
+                    getIdentifierCollection().update(updated);
                 }
                 else
                 {
@@ -1939,11 +1955,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     FrequencyConfigurationIdentifier frequencyID = FrequencyConfigurationIdentifier
                             .create(sb.getChannel().getDownlinkFrequency());
                     getIdentifierCollection().update(frequencyID);
-                }
-
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
                 }
 
                 mNetworkConfigurationMonitor.process(lcw);
@@ -2161,9 +2172,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 {
                     closeCurrentCallEvent(timestamp, lcw.toString());
                 }
-                break;
-            case SOURCE_ID_EXTENSION:
-                //Ignore - handled elsewhere
                 break;
             default:
                 if(isTerminator)
