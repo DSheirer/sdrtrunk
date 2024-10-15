@@ -405,8 +405,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processLCChannelUser(LinkControlWord lcw, long timestamp)
     {
-        List<Identifier> updated = mPatchGroupManager.update(lcw.getIdentifiers(), timestamp);
-        getIdentifierCollection().update(updated);
+        getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
         DecodeEventType decodeEventType = getLCDecodeEventType(lcw);
 
         ServiceOptions serviceOptions = null;
@@ -871,7 +870,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             if(lcw != null && lcw.isValid())
             {
                 processLC(lcw, message.getTimestamp(), false);
-                mTrafficChannelManager.processP1TrafficCurrentUserIdentifiers(getCurrentFrequency(),
+                mTrafficChannelManager.processP1TrafficLDU1(getCurrentFrequency(),
                         getIdentifierCollection().getIdentifiers(), message.getTimestamp(), ldu1.toString());
             }
         }
@@ -881,9 +880,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             if(esp != null && esp.isValid())
             {
+                getIdentifierCollection().update(esp.getIdentifiers());
+
                 if(esp.isEncryptedAudio())
                 {
-                    getIdentifierCollection().update(esp.getIdentifiers());
                     mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), esp.getEncryptionKey(),
                             message.getTimestamp(), ldu2.toString());
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED));
@@ -904,12 +904,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processTDU(P25P1Message message)
     {
-        //If the TCM indicates that it closed the traffic call event, then remove the FROM users
-        if(mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), message.getTimestamp(), "TDU:" + message))
-        {
-            getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
-        }
-
+        mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), message.getTimestamp(), "TDU:" + message);
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
     }
 
@@ -921,23 +916,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processTDULC(P25P1Message message)
     {
-        boolean completed = mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), message.getTimestamp(), "TDULC:" + message);
-
-        if(completed)
-        {
-            getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
-        }
-
         if(message instanceof TDULCMessage tdulc)
         {
             LinkControlWord lcw = tdulc.getLinkControlWord();
 
             if(lcw != null && lcw.isValid())
             {
-                //Set the state to ACTIVE while the call continues in hangtime.  The processLC() method will signal
-                // the channel teardown when that happens.
+                mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), message.getTimestamp(), "TDULC:" + message);
                 broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
-                //Don't signal call end to the TCM or remove FROM identifiers unless the call has started on this traffic channel.
                 processLC(lcw, message.getTimestamp(), true);
             }
         }
@@ -950,6 +936,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processPDU(P25P1Message message)
     {
+        getIdentifierCollection().remove(IdentifierClass.USER);
+
         if(message.isValid() && message instanceof PDUMessage pdu)
         {
             broadcastEvent(pdu.getIdentifiers(), message.getTimestamp(), DecodeEventType.DATA_PACKET, pdu.toString());
@@ -989,6 +977,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processPacketData(P25P1Message message)
     {
+        getIdentifierCollection().remove(IdentifierClass.USER);
+
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
 
         if(message instanceof SNDCPPacketMessage sndcp)
@@ -1121,6 +1111,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processSNDCP(P25P1Message message)
     {
+        getIdentifierCollection().remove(IdentifierClass.USER);
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
 
         if(message.isValid() && message instanceof SNDCPPacketMessage sndcpPacket)
@@ -1853,9 +1844,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                 if(isTerminator)
                 {
-                    mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), timestamp, lcw.toString());
-                    List<Identifier> updated = mPatchGroupManager.update(lcw.getIdentifiers(), timestamp);
-                    getIdentifierCollection().update(updated);
+                    getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
                 }
                 else
                 {
@@ -1865,16 +1854,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             case MOTOROLA_TALK_COMPLETE:
                 if(lcw instanceof LCMotorolaTalkComplete tc)
                 {
-                    getIdentifierCollection().update(tc.getAddress());
-                    //Note: don't update the traffic channel manager because the current event is already in closeout
-                    closeCurrentCallEvent(timestamp, lcw.toString());
+                    //TCM has already closed the call event.  Remove the FROM user identifiers to prepare for the
+                    //next call.
+                    getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
                 }
                 break;
 
             //Call termination
             case CALL_TERMINATION_OR_CANCELLATION:
-                closeCurrentCallEvent(timestamp, lcw.toString());
-
                 //Note: we only broadcast an END state if this is a network-commanded channel teardown
                 if(lcw instanceof LCCallTermination lcct && lcct.isNetworkCommandedTeardown())
                 {
@@ -1884,16 +1871,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             //Voice Channel Update messages - indicates calls in-progress on another channel - ignored
             case GROUP_VOICE_CHANNEL_UPDATE:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
-                break;
             case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 break;
 
             //Network configuration messages
@@ -1912,11 +1890,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     getIdentifierCollection().update(frequencyID);
                 }
 
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
-
                 mNetworkConfigurationMonitor.process(lcw);
                 break;
             case RFSS_STATUS_BROADCAST_EXPLICIT:
@@ -1932,11 +1905,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     FrequencyConfigurationIdentifier frequencyID = FrequencyConfigurationIdentifier
                             .create(sb.getChannel().getDownlinkFrequency());
                     getIdentifierCollection().update(frequencyID);
-                }
-
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
                 }
 
                 mNetworkConfigurationMonitor.process(lcw);
@@ -1974,11 +1942,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     getIdentifierCollection().update(frequencyID);
                 }
 
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
-
                 mNetworkConfigurationMonitor.process(lcw);
                 break;
 
@@ -1990,10 +1953,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             case SECONDARY_CONTROL_CHANNEL_BROADCAST:
             case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
             case SYSTEM_SERVICE_BROADCAST:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 mNetworkConfigurationMonitor.process(lcw);
                 break;
 
@@ -2006,32 +1965,17 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 break;
             case MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_UPDATE:
                 //Voice Channel Update message - indicates calls in-progress on another channel - ignored
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 break;
             case MOTOROLA_TALKER_ALIAS_HEADER:
             case MOTOROLA_TALKER_ALIAS_DATA_BLOCK:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
+                //Inore - we'll pickup the talker alias from the assembler in the MessageProcessor.
                 break;
 
             //Other events
             case CALL_ALERT:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.PAGE, "Call Alert");
                 break;
             case EXTENDED_FUNCTION_COMMAND:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCExtendedFunctionCommand efc)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.COMMAND, "Function: " +
@@ -2040,27 +1984,15 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 }
                 break;
             case EXTENDED_FUNCTION_COMMAND_EXTENDED:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCExtendedFunctionCommandExtended efce)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.COMMAND, "Function: " +
                             efce.getExtendedFunction() + " Arguments:" + efce.getExtendedFunctionArguments());
                 }
             case GROUP_AFFILIATION_QUERY:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.QUERY, "Group Affiliation");
                 break;
             case MESSAGE_UPDATE:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCMessageUpdate mu)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.SDM,
@@ -2068,10 +2000,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 }
                 break;
             case MESSAGE_UPDATE_EXTENDED:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCMessageUpdateExtended mue)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.SDM, "MSG:" +
@@ -2079,17 +2007,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 }
                 break;
             case STATUS_QUERY:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.QUERY, "Status");
                 break;
             case STATUS_UPDATE:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCStatusUpdate su)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.STATUS,
@@ -2097,10 +2017,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 }
                 break;
             case STATUS_UPDATE_EXTENDED:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCStatusUpdateExtended sue)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.STATUS, "UNIT:" +
@@ -2108,10 +2024,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 }
                 break;
             case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 if(lcw instanceof LCTelephoneInterconnectAnswerRequest tiar)
                 {
                     broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.PAGE, "Telephone Call:" +
@@ -2119,24 +2031,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 }
                 break;
             case UNIT_AUTHENTICATION_COMMAND:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.COMMAND, "Authenticate Unit");
                 break;
             case UNIT_REGISTRATION_COMMAND:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.COMMAND, "Unit Registration");
                 break;
             case UNIT_TO_UNIT_ANSWER_REQUEST:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 broadcastEvent(lcw.getIdentifiers(), timestamp, DecodeEventType.PAGE, "Unit-to-Unit Answer Request");
                 break;
             case L3HARRIS_RETURN_TO_CONTROL_CHANNEL:
@@ -2167,18 +2067,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             .build();
                     broadcast(event);
                 }
-
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
                 break;
             default:
-                if(isTerminator)
-                {
-                    closeCurrentCallEvent(timestamp, lcw.toString());
-                }
-
 //                if(lcw.getVendor().isLoggable())
 //                {
 //                    LOGGING_SUPPRESSOR.info(lcw.getVendor().toString() + lcw.getOpcodeNumber() + lcw.getMessage().toHexString(),
@@ -2188,16 +2078,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 //                }
                 break;
         }
-    }
-
-    /**
-     * Closes the call event on the current channel.
-     * @param timestamp for the closure
-     */
-    private void closeCurrentCallEvent(long timestamp, String context)
-    {
-        mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), timestamp, context);
-        getIdentifierCollection().remove(IdentifierClass.USER);
     }
 
     @Override
