@@ -38,6 +38,7 @@ import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.TimeslotMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.channel.DMRAbsoluteChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
@@ -1459,14 +1460,22 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         StringBuilder sb = new StringBuilder();
 
+        boolean networkAdded = false;
+
         if(mNetworkConfigurationMonitor != null)
         {
             sb.append(mNetworkConfigurationMonitor.getActivitySummary());
-            sb.append("\n\n");
-            sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
+            networkAdded = true;
         }
-        else
+
+        //Only add the talker alias summary to timeslot 1 activity summary since we aggregate across both timeslots.
+        if(getTimeslot() == TimeslotMessage.TIMESLOT_1)
         {
+            if(networkAdded)
+            {
+                sb.append("\n\n");
+            }
+
             sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
         }
 

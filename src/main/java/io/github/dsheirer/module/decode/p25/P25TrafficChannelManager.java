@@ -59,6 +59,7 @@ import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
@@ -729,27 +730,36 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
-            if(tracker != null)
+            //If the tracker is already started, it was for another call.  Close it and recreate the event.
+            if(tracker != null && tracker.isStarted())
             {
                 removeTracker(frequency, P25P1Message.TIMESLOT_1);
+                tracker = null;
             }
 
-            DecodeEventType decodeEventType = getDecodeEventType(talkgroup, eki);
+            if(tracker != null)
+            {
+                tracker.addIdentifierIfMissing(talkgroup);
+            }
+            else
+            {
+                DecodeEventType decodeEventType = getDecodeEventType(talkgroup, eki);
+                MutableIdentifierCollection mic = new MutableIdentifierCollection();
+                mic.update(talkgroup);
+                mic.update(radio);
+                mic.update(eki);
 
-            MutableIdentifierCollection mic = new MutableIdentifierCollection();
-            mic.update(talkgroup);
-            mic.update(radio);
-            mic.update(eki);
+                //Create a new event for the current call.
+                P25ChannelGrantEvent callEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                        .channelDescriptor(channelDescriptor)
+                        .details("PHASE 1 CALL " + (serviceOptions != null ? serviceOptions : ""))
+                        .identifiers(mic)
+                        .build();
 
-            //Create a new event for the current call.
-            P25ChannelGrantEvent callEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-                    .channelDescriptor(channelDescriptor)
-                    .details("PHASE 1 CALL " + (serviceOptions != null ? serviceOptions : ""))
-                    .identifiers(mic)
-                    .build();
+                tracker = new P25TrafficChannelEventTracker(callEvent);
+                addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+            }
 
-            tracker = new P25TrafficChannelEventTracker(callEvent);
-            addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             broadcast(tracker);
         }
         finally
@@ -838,19 +848,22 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * This is used primarily to add encryption, GPS, talker alias, etc. but can be used for any identifier update.
      *
      * @param frequency for the call event
-     * @param identifier to update within the event.
+     * @param identifiers to update within the event.
      * @param timestamp for the update
      */
-    public void processP1TrafficCurrentUserIdentifiers(long frequency, List<Identifier> identifiers, long timestamp, String context)
+    public void processP1TrafficLDU1(long frequency, List<Identifier> identifiers, long timestamp, String context)
     {
         mLock.lock();
 
         try
         {
+            IChannelDescriptor channelDescriptor = null;
+
             P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
             if(tracker != null && tracker.isComplete())
             {
+                channelDescriptor = tracker.getEvent().getChannelDescriptor();;
                 removeTracker(frequency, P25P1Message.TIMESLOT_1);
                 tracker = null;
             }
@@ -870,6 +883,29 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                 tracker.updateDurationTraffic(timestamp);
                 broadcast(tracker);
+            }
+            else
+            {
+                MutableIdentifierCollection mic = new MutableIdentifierCollection(identifiers);
+                Identifier talkgroup = mic.getToIdentifier();
+                Identifier encryption = mic.getEncryptionIdentifier();
+
+                if(talkgroup != null && encryption instanceof EncryptionKeyIdentifier eki)
+                {
+                    DecodeEventType decodeEventType = getDecodeEventType(talkgroup, eki);
+                    //Create a new event for the current call.
+                    ServiceOptions serviceOptions = (eki.isEncrypted() ? VoiceServiceOptions.createEncrypted() :
+                            VoiceServiceOptions.createUnencrypted());
+                    P25ChannelGrantEvent callEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                            .channelDescriptor(channelDescriptor)
+                            .details("PHASE 1 CALL " + (eki.isEncrypted() ? eki.toString() : ""))
+                            .identifiers(mic)
+                            .build();
+
+                    tracker = new P25TrafficChannelEventTracker(callEvent);
+                    addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+                    broadcast(tracker);
+                }
             }
         }
         finally
