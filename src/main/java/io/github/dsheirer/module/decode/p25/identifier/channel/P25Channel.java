@@ -134,7 +134,7 @@ public class P25Channel implements IChannelDescriptor
     @Override
     public void setFrequencyBand(IFrequencyBand frequencyBand)
     {
-        if(frequencyBand.getIdentifier() == getDownlinkBandIdentifier())
+        if(frequencyBand != null && frequencyBand.getIdentifier() == getDownlinkBandIdentifier())
         {
             mFrequencyBand = frequencyBand;
         }
