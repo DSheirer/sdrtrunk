@@ -314,6 +314,28 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
                         if(mOutput != null)
                         {
+                            try
+                            {
+                                Control gain = mOutput.getControl(FloatControl.Type.MASTER_GAIN);
+                                mGainControl = (FloatControl) gain;
+                            }
+                            catch(IllegalArgumentException iae)
+                            {
+                                mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" +
+                                        mMixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                            }
+
+                            try
+                            {
+                                Control mute = mOutput.getControl(BooleanControl.Type.MUTE);
+                                mMuteControl = (BooleanControl) mute;
+                            }
+                            catch(IllegalArgumentException iae)
+                            {
+                                mLog.warn("Couldn't obtain MUTE control for stereo line [" +
+                                        mMixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                            }
+
                             LOGGING_SUPPRESSOR.info("reopen audio output success", 5,
                                     "Closed and reopened audio output - success - mOutput is not null");
                         }
