@@ -135,7 +135,12 @@ public class APCO25Channel extends Identifier<P25Channel> implements IChannelDes
         }
 
         P25Channel decoratedChannel = new P25Channel(existing.getBandIdentifier(), channelNumber);
-        decoratedChannel.setFrequencyBand(existing.getFrequencyBand());
+
+        if(existing.getFrequencyBand() != null)
+        {
+            decoratedChannel.setFrequencyBand(existing.getFrequencyBand());
+        }
+
         return new APCO25Channel(decoratedChannel);
     }
 
