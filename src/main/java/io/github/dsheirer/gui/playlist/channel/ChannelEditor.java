@@ -57,6 +57,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -504,6 +505,12 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
             mChannelTableView.setItems(sortedList);
             mChannelTableView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setChannel(newValue));
+            mChannelTableView.setOnMouseClicked(event -> {
+                if(event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
+                {
+                    getChannelConfigurationEditor().startChannel();
+                }
+            });
         }
 
         return mChannelTableView;
