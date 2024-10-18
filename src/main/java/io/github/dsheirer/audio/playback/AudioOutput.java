@@ -140,8 +140,9 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
                     catch(IllegalArgumentException iae)
                     {
-                        mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" +
-                            mixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                        LOGGING_SUPPRESSOR.error("no gain control", 5, "Couldn't obtain " +
+                            "MASTER GAIN control for stereo line [" + mixer.getMixerInfo().getName() + " | " +
+                                getChannelName() + "]");
                     }
 
                     try
@@ -151,8 +152,9 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
                     catch(IllegalArgumentException iae)
                     {
-                        mLog.warn("Couldn't obtain MUTE control for stereo line [" +
-                            mixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                        LOGGING_SUPPRESSOR.error("no mute control", 5, "Couldn't obtain " +
+                            "MUTE control for stereo line [" + mixer.getMixerInfo().getName() + " | " +
+                            getChannelName() + "]");
                     }
 
 					//Run the queue processor task every 100 milliseconds or 10 times a second
