@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,9 @@ import jmbe.iface.IAudioCodecLibrary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Base audio module for protocols that use the JMBE audio codec.
+ */
 public abstract class JmbeAudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener,
     ISquelchStateListener
 {
@@ -64,7 +67,6 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     {
         super.dispose();
         MyEventBus.getGlobalEventBus().unregister(this);
-        mAudioCodec = null;
     }
 
     public IAudioCodec getAudioCodec()
