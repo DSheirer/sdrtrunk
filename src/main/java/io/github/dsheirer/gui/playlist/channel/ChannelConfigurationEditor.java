@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,6 +140,17 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     @Override
     public void dispose()
     {
+    }
+
+    /**
+     * Starts the current channel when the play button is not disabled.
+     */
+    public void startChannel()
+    {
+        if(!getPlayButton().disabledProperty().get())
+        {
+            getPlayButton().fire();
+        }
     }
 
     public abstract DecoderType getDecoderType();
