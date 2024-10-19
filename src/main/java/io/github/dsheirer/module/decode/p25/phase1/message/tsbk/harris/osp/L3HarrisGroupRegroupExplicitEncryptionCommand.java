@@ -44,7 +44,8 @@ public class L3HarrisGroupRegroupExplicitEncryptionCommand extends VendorOSPMess
     private static final IntField REGROUP_OPTIONS = IntField.length8(OCTET_2_BIT_16);
     private static final IntField SUPERGROUP_ADDRESS = IntField.length16(OCTET_3_BIT_24);
     private static final IntField ENCRYPTION_KEY_ID = IntField.length16(OCTET_5_BIT_40);
-    private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_7_BIT_56);
+    private static final IntField TARGET_RADIO_ADDRESS = IntField.length24(OCTET_7_BIT_56);
+    private static final IntField TARGET_TALKGROUP_ADDRESS = IntField.length16(OCTET_8_BIT_64);
 
     private TalkgroupIdentifier mSuperGroupIdentifier;
     private APCO25PatchGroup mPatchGroup;
@@ -128,11 +129,11 @@ public class L3HarrisGroupRegroupExplicitEncryptionCommand extends VendorOSPMess
         {
             if(getRegroupOptions().isTalkgroupAddress())
             {
-                mPatchedIdentifier = APCO25Talkgroup.create(getInt(TARGET_ADDRESS));
+                mPatchedIdentifier = APCO25Talkgroup.create(getInt(TARGET_TALKGROUP_ADDRESS));
             }
             else
             {
-                mPatchedIdentifier = APCO25RadioIdentifier.createTo(getInt(TARGET_ADDRESS));
+                mPatchedIdentifier = APCO25RadioIdentifier.createTo(getInt(TARGET_RADIO_ADDRESS));
             }
         }
 
