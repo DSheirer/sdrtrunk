@@ -192,6 +192,7 @@ String targetLinuxX86_64 = 'linux-x86_64-v' + version
 String targetOsxAarch64 = 'osx-aarch64-v' + version
 String targetOsxX86_64 = 'osx-x86_64-v' + version
 String targetWindowsX86_64 = 'windows-x86_64-v' + version
+String targetWindowsAarch64 = 'windows-aarch64-v' + version
 
 /**
  * Optional pre-downloaded Java Development Kit (JDK) for each target OS and CPU.  These locations are hard-coded to the
@@ -203,17 +204,19 @@ String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-22.0.2-full'
 String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-22.0.2-full.jdk'
 String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-22.0.2-full.jdk'
 String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-22.0.2-full'
+String jdk_windows_aarch64 = jdk_base + 'windows-arm64/jdk-22.0.2-full'
 
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
-def jdk_download_base = "https://download.bell-sw.com/java/23+38/bellsoft-jdk23+38-"
+def jdk_download_base = "https://download.bell-sw.com/java/23.0.1+13/bellsoft-jdk23.0.1+13-"
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
 def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix
 def jdk_download_osx_x86_64 = jdk_download_base + "macos-amd64" + jdk_download_suffix
 def jdk_download_osx_aarch64 = jdk_download_base + "macos-aarch64" + jdk_download_suffix
 def jdk_download_windows_x86_64 = jdk_download_base + "windows-amd64-full.zip"
+def jdk_download_windows_aarch64 = jdk_download_base + "windows-aarch64-full.zip"
 
 /**
  * Configures the runtime zip task with additional options/settings.
@@ -256,7 +259,12 @@ tasks.register('runtimeZipCurrent', org.beryx.runtime.RuntimeZipTask) {rt ->
     def javaHome = org.gradle.internal.jvm.Jvm.current().getJavaHome().toString()
 
     if(os.isWindows()) {
-        rt.extension.targetPlatform(targetWindowsX86_64, javaHome)
+        if(arch.equals("amd64")) {
+            rt.extension.targetPlatform(targetWindowsX86_64, javaHome)
+        }
+        else if(arch.equals("aarch64")) {
+            rt.extension.targetPlatform(targetWindowsAarch64, javaHome)
+        }
         configure(rt, jvmArgsWindows)
     }
     else if(os.isLinux())
@@ -292,6 +300,16 @@ tasks.register('runtimeZipCurrent', org.beryx.runtime.RuntimeZipTask) {rt ->
  * Usage: ./gradlew runtimeZipWindows   (linux - using gradlew)
  */
 tasks.register('runtimeZipWindows', org.beryx.runtime.RuntimeZipTask) {rt ->
+    //Windows aarch64
+    if(file(jdk_windows_aarch64).exists()) {
+        rt.extension.targetPlatform(targetWindowsAarch64, jdk_windows_aarch64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetWindowsAarch64) {
+            jdkHome = jdkDownload(jdk_download_windows_aarch64)
+        }
+    }
+    //Windows x86-64
     if(file(jdk_windows_x86_64).exists()) {
         rt.extension.targetPlatform(targetWindowsX86_64, jdk_windows_x86_64, [])
     }
