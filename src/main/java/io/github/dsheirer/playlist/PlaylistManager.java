@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
@@ -48,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -77,6 +79,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
     private ScheduledFuture<?> mPlaylistSaveFuture;
     private boolean mPlaylistLoading = false;
+    private List<IAliasListRefreshListener> mAliasListRefreshListeners = new ArrayList<>();
 
     /**
      * Playlist manager - manages all channel configurations, channel maps, and alias lists and handles loading or
@@ -133,6 +136,68 @@ public class PlaylistManager implements Listener<ChannelEvent>
                     break;
             }
         });
+    }
+
+    /**
+     * Adds the listener to be notified when an alias list refresh operation is about to take place.  The listener
+     * should clear any selected or editing item to prepare for the list of alias list names to be updated so that
+     * alias list combo boxes won't trigger an editor modified event when the list contents changes.
+     * @param listener for alias list refresh event.
+     */
+    public void addAliasListRefreshListener(IAliasListRefreshListener listener)
+    {
+        mAliasListRefreshListeners.add(listener);
+    }
+
+    /**
+     * Notifies listeners that the alias list will be refreshed
+     */
+    private void prepareForAliasListRefresh()
+    {
+        for(IAliasListRefreshListener editor : mAliasListRefreshListeners)
+        {
+            editor.prepareForAliasListRefresh();
+        }
+    }
+
+    /**
+     * Refresh the alias list names after a rename or delete operation.
+     */
+    private void refreshAliasListNames()
+    {
+        //Do a refresh from the aliases
+        getAliasModel().refreshAliasListNames();
+        //Add in the alias list names referred to by the channels.
+        getAliasModel().addAliasListNames(mChannelModel.getAliasListNames());
+    }
+
+    /**
+     * Renames alias list references across aliases and channels from the old name to the new name.
+     *
+     * Note: this method should be invoked on the JavaFX thread since it will touch observable alias and channel lists.
+     * @param oldName that is currently used by channels and aliases
+     * @param newName to apply to channels and aliases
+     */
+    public void renameAliasList(String oldName, String newName)
+    {
+        prepareForAliasListRefresh();
+        getAliasModel().renameAliasList(oldName, newName);
+        getChannelModel().renameAliasList(oldName, newName);
+        refreshAliasListNames();
+    }
+
+    /**
+     * Deletes all aliases that have the alias list name and removes the alias list name from all channels.
+     *
+     * Note: this method should be invoked on the JavaFX thread since it will touch observable alias and channel lists.
+     * @param aliasListName to delete
+     */
+    public void deleteAliasList(String aliasListName)
+    {
+        prepareForAliasListRefresh();
+        getAliasModel().deleteAliasList(aliasListName);
+        getChannelModel().deleteAliasList(aliasListName);
+        refreshAliasListNames();
     }
 
     /**

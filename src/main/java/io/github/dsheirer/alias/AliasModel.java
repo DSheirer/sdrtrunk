@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,69 @@ public class AliasModel
     public ObservableList<String> aliasListNames()
     {
         return mAliasListNames;
+    }
+
+    /**
+     * Clears and reloads the list of alias list names from the current set of aliases.
+     */
+    public void refreshAliasListNames()
+    {
+        mAliasListNames.clear();
+
+        for(Alias alias : mAliases)
+        {
+            String aliasListName = alias.getAliasListName();
+
+            if(aliasListName != null && !aliasListName.isEmpty() && !mAliasListNames.contains(aliasListName))
+            {
+                mAliasListNames.add(aliasListName);
+            }
+        }
+    }
+
+    /**
+     * Renames the alias list across the set of aliases.
+     * @param oldName currently used by the alias
+     * @param newName to apply to the alias
+     */
+    public void renameAliasList(String oldName, String newName)
+    {
+        if(oldName == null || oldName.isEmpty() || newName == null || newName.isEmpty())
+        {
+            return;
+        }
+
+        mAliases.stream().filter(alias -> alias.getAliasListName().equals(oldName)).forEach(alias -> alias.setAliasListName(newName));
+    }
+
+    /**
+     * Deletes any aliases that have the alias list name
+     * @param aliasListName to delete
+     */
+    public void deleteAliasList(String aliasListName)
+    {
+        if(aliasListName == null || aliasListName.isEmpty())
+        {
+            return;
+        }
+
+        mAliases.removeIf(alias -> alias.getAliasListName().equals(aliasListName));
+        mAliasListMap.remove(aliasListName);
+    }
+
+    /**
+     * Adds the list of alias list names to the currently managed set of alias list names.
+     * @param aliasListNames to add
+     */
+    public void addAliasListNames(List<String> aliasListNames)
+    {
+        for(String aliasListName : aliasListNames)
+        {
+            if(!mAliasListNames.contains(aliasListName))
+            {
+                mAliasListNames.add(aliasListName);
+            }
+        }
     }
 
     /**

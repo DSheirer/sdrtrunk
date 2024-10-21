@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
@@ -26,14 +23,12 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 /**
  * Channel Model
@@ -53,6 +48,58 @@ public class ChannelModel implements Listener<ChannelEvent>
         ChannelListChangeListener changeListener = new ChannelListChangeListener();
         mChannels.addListener(changeListener);
         mTrafficChannels.addListener(changeListener);
+    }
+
+    /**
+     * Get a deduplicated list of alias list names from across the channel configurations.
+     * @return list of alias list names.
+     */
+    public List<String> getAliasListNames()
+    {
+        List<String> aliasListNames = new ArrayList<>();
+
+        for(Channel channel : mChannels)
+        {
+            String aliasListName = channel.getAliasListName();
+
+            if(aliasListName != null && !aliasListName.isEmpty() && !aliasListNames.contains(aliasListName))
+            {
+                aliasListNames.add(aliasListName);
+            }
+        }
+
+        return aliasListNames;
+    }
+
+    /**
+     * Renames the alias list across the set of aliases.
+     * @param oldName currently used by the alias
+     * @param newName to apply to the alias
+     */
+    public void renameAliasList(String oldName, String newName)
+    {
+        if(oldName == null || oldName.isEmpty() || newName == null || newName.isEmpty())
+        {
+            return;
+        }
+
+        mChannels.stream().filter(channel -> channel.getAliasListName().equals(oldName))
+                .forEach(channel -> channel.setAliasListName(newName));
+    }
+
+    /**
+     * Deletes any aliases that have the alias list name
+     * @param aliasListName to delete
+     */
+    public void deleteAliasList(String aliasListName)
+    {
+        if(aliasListName == null || aliasListName.isEmpty())
+        {
+            return;
+        }
+
+        mChannels.stream().filter(channel -> channel.getAliasListName().equals(aliasListName))
+                .forEach(channel -> channel.setAliasListName(null));
     }
 
     /**
@@ -107,6 +154,45 @@ public class ChannelModel implements Listener<ChannelEvent>
         }
 
         return null;
+    }
+
+    /**
+     * Renames the alias list across all channels.
+     * @param existing alias list name
+     * @param renamed alias list name.
+     */
+    public void renameAliaslistForChannels(String existing, String renamed)
+    {
+        if(existing == null || existing.isEmpty() || renamed == null || renamed.isEmpty())
+        {
+            return;
+        }
+
+        mChannels.forEach(channel -> {
+            if(channel.getAliasListName() != null && channel.getAliasListName().equals(existing))
+            {
+                channel.setAliasListName(renamed);
+            }
+        });
+    }
+
+    /**
+     * Removes the alias list name from any channels.
+     * @param name to delete
+     */
+    public void deleteAliasListName(String name)
+    {
+        if(name == null || name.isEmpty())
+        {
+            return;
+        }
+
+        mChannels.forEach(channel -> {
+            if(channel.getAliasListName() != null && channel.getAliasListName().equals(name))
+            {
+                channel.setAliasListName(null);
+            }
+        });
     }
 
     /**
