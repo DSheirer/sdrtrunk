@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.playlist.channel;
 
 import com.google.common.base.Joiner;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -73,7 +74,7 @@ import org.slf4j.LoggerFactory;
 /**
  * JavaFX editor for managing channel configurations.
  */
-public class ChannelEditor extends SplitPane implements IFilterProcessor
+public class ChannelEditor extends SplitPane implements IFilterProcessor, IAliasListRefreshListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelEditor.class);
     private PlaylistManager mPlaylistManager;
@@ -104,6 +105,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
     public ChannelEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mPlaylistManager.addAliasListRefreshListener(this);
         mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
         mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager, mTunerManager,
@@ -122,6 +124,15 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor
 
         setOrientation(Orientation.VERTICAL);
         getItems().addAll(topBox, getChannelConfigurationEditor());
+    }
+
+    /**
+     * Prepares for an alias list refresh by clearing the currently selected channel from the channel table.
+     */
+    @Override
+    public void prepareForAliasListRefresh()
+    {
+        getChannelTableView().getSelectionModel().select(null);
     }
 
     /**

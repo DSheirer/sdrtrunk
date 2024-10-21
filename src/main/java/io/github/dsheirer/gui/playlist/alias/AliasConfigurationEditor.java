@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
+import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
@@ -41,7 +42,6 @@ import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Editor for aliases
  */
-public class AliasConfigurationEditor extends SplitPane
+public class AliasConfigurationEditor extends SplitPane implements IAliasListRefreshListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(AliasConfigurationEditor.class);
 
@@ -89,6 +89,7 @@ public class AliasConfigurationEditor extends SplitPane
     private Label mPlaceholderLabel;
     private Button mNewAliasButton;
     private Button mDeleteAliasButton;
+    private Button mRenameAliasButton;
     private Button mCloneAliasButton;
     private MenuButton mMoveToAliasButton;
     private VBox mButtonBox;
@@ -96,13 +97,20 @@ public class AliasConfigurationEditor extends SplitPane
     private TextField mSearchField;
     private ComboBox<String> mAliasListNameComboBox;
     private Button mNewAliasListButton;
+    private Button mDeleteAliasListButton;
     private FilteredList<Alias> mAliasFilteredList;
     private SortedList<Alias> mAliasSortedList;
     private AliasPredicate mAliasPredicate;
 
+    /**
+     * Constructs an instance
+     * @param playlistManager for playlist operations
+     * @param userPreferences for user preferences
+     */
     public AliasConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mPlaylistManager.addAliasListRefreshListener(this);
         mUserPreferences = userPreferences;
 
         VBox leftBox = new VBox();
@@ -116,6 +124,15 @@ public class AliasConfigurationEditor extends SplitPane
         setOrientation(Orientation.VERTICAL);
         mCurrentEditor = getAliasItemEditor();
         getItems().addAll(topBox, getAliasItemEditor());
+    }
+
+    /**
+     * Prepares for an alias list refresh by clearing the currently selected alias item from the editor.
+     */
+    @Override
+    public void prepareForAliasListRefresh()
+    {
+        getAliasTableView().getSelectionModel().select(null);
     }
 
     /**
@@ -167,18 +184,17 @@ public class AliasConfigurationEditor extends SplitPane
             alert.setTitle("Save Changes");
             alert.setHeaderText("Alias configuration has been modified");
             alert.setContentText("Do you want to save these changes?");
-            alert.initOwner(((Node) getButtonBox()).getScene().getWindow());
+            alert.initOwner((getButtonBox()).getScene().getWindow());
 
             //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
             alert.setResizable(true);
-            alert.onShownProperty().addListener(e ->
-            {
+            alert.onShownProperty().addListener(e -> {
                 Platform.runLater(() -> alert.setResizable(false));
             });
 
             Optional<ButtonType> result = alert.showAndWait();
 
-            if(result.get() == ButtonType.YES)
+            if(result.isPresent() && result.get() == ButtonType.YES)
             {
                 getAliasItemEditor().save();
             }
@@ -202,7 +218,7 @@ public class AliasConfigurationEditor extends SplitPane
             getAliasBulkEditor().setItem(aliases);
         }
 
-        getCloneAliasButton().setDisable(aliases.isEmpty() || aliases.size() > 1);
+        getCloneAliasButton().setDisable(aliases.size() != 1);
         getDeleteAliasButton().setDisable(aliases.isEmpty());
         getMoveToAliasButton().setDisable(aliases.isEmpty());
     }
@@ -248,7 +264,7 @@ public class AliasConfigurationEditor extends SplitPane
             searchBox.setAlignment(Pos.BASELINE_RIGHT);
 
             mSearchAndListSelectionBox.getChildren().addAll(listLabel, getAliasListNameComboBox(),
-                    getNewAliasListButton(), searchBox);
+                getNewAliasListButton(), getRenameAliasListButton(), getDeleteAliasListButton(), searchBox);
         }
 
         return mSearchAndListSelectionBox;
@@ -347,6 +363,70 @@ public class AliasConfigurationEditor extends SplitPane
         return mNewAliasListButton;
     }
 
+    private Button getRenameAliasListButton() {
+
+        if (mRenameAliasButton == null) {
+            mRenameAliasButton = new Button("Rename Alias List");
+            mRenameAliasButton.setOnAction(event -> {
+                String aliasListName = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
+
+                if (aliasListName.equals(AliasModel.NO_ALIAS_LIST)) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
+                    alert.setTitle("Rename Alias List");
+                    alert.setHeaderText("You cannot rename " + aliasListName + ".");
+                    alert.initOwner((getRenameAliasListButton()).getScene().getWindow());
+                    alert.showAndWait();
+                    return;
+                }
+
+                TextInputDialog dialog = new TextInputDialog();
+                dialog.setTitle("Renaming Alias List: " + aliasListName);
+                dialog.setHeaderText("Please enter the new alias list name (max 25 chars).");
+                dialog.setContentText("Name:");
+                dialog.getEditor().setTextFormatter(new TextFormatter<String>(new MaxLengthUnaryOperator(25)));
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(newAliasListName -> {
+                    mPlaylistManager.renameAliasList(aliasListName, newAliasListName);
+                    getAliasListNameComboBox().getSelectionModel().select(newAliasListName);
+                });
+            });
+
+        }
+        return mRenameAliasButton;
+    }
+
+    private Button getDeleteAliasListButton() {
+
+        if (mDeleteAliasListButton == null) {
+            mDeleteAliasListButton = new Button("Delete Alias List");
+            mDeleteAliasListButton.setOnAction(event -> {
+                String aliasListName = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
+                if (aliasListName.equals(AliasModel.NO_ALIAS_LIST)) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
+                    alert.setTitle("Delete Alias List");
+                    alert.setHeaderText("You cannot delete " + aliasListName + ".");
+                    alert.initOwner((getDeleteAliasListButton()).getScene().getWindow());
+                    alert.showAndWait();
+                    return;
+                }
+
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "", ButtonType.NO, ButtonType.YES);
+                alert.setTitle("Delete Alias List");
+                alert.setHeaderText("Are you sure you want to delete the alias list " + aliasListName + " and all associated aliases?");
+                alert.initOwner((getDeleteAliasListButton()).getScene().getWindow());
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isPresent() && result.get() == ButtonType.YES)
+                {
+                    mPlaylistManager.deleteAliasList(aliasListName);
+                }
+            });
+        }
+
+        return mDeleteAliasListButton;
+    }
+
+
     private TableView<Alias> getAliasTableView()
     {
         if(mAliasTableView == null)
@@ -423,8 +503,7 @@ public class AliasConfigurationEditor extends SplitPane
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
             mAliasTableView.setItems(getAliasSortedList());
             mAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            mAliasTableView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<Alias>) c ->
-            {
+            mAliasTableView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<Alias>)c -> {
                 Platform.runLater(() -> setAliases(mAliasTableView.getSelectionModel().getSelectedItems()));
             });
         }
@@ -537,11 +616,11 @@ public class AliasConfigurationEditor extends SplitPane
                         ButtonType.NO, ButtonType.YES);
                 alert.setTitle("Delete Alias");
                 alert.setHeaderText("Are you sure?");
-                alert.initOwner(((Node) getDeleteAliasButton()).getScene().getWindow());
+                alert.initOwner((getDeleteAliasButton()).getScene().getWindow());
 
                 Optional<ButtonType> result = alert.showAndWait();
 
-                if(result.get() == ButtonType.YES)
+                if(result.isPresent() && result.get() == ButtonType.YES)
                 {
                     List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
                     mPlaylistManager.getAliasModel().removeAliases(selectedAliases);
