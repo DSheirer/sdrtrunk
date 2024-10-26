@@ -129,6 +129,9 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harri
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.L3HarrisUnknownOpcode143;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris.UnknownOpcode136;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaAcknowledgeResponse;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaActiveGroupRadiosOpcode130_x82;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaActiveGroupRadiosOpcode143_x8F;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaActiveGroupRadiosOpcode191_xBF;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupAddCommand;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupChannelGrantExplicit;
@@ -578,12 +581,18 @@ public class MacMessageFactory
                 return new MotorolaGroupRegroupVoiceChannelUserAbbreviated(message, offset);
             case MOTOROLA_81_GROUP_REGROUP_ADD:
                 return new MotorolaGroupRegroupAddCommand(message, offset);
+            case MOTOROLA_82_ACTIVE_GROUP_RADIOS_130:
+                return new MotorolaActiveGroupRadiosOpcode130_x82(message, offset);
             case MOTOROLA_83_GROUP_REGROUP_VOICE_CHANNEL_UPDATE:
                 return new MotorolaGroupRegroupVoiceChannelUpdate(message, offset);
             case MOTOROLA_84_GROUP_REGROUP_EXTENDED_FUNCTION_COMMAND:
                 return new MotorolaGroupRegroupExtendedFunctionCommand(message, offset);
             case MOTOROLA_89_GROUP_REGROUP_DELETE:
                 return new MotorolaGroupRegroupDeleteCommand(message, offset);
+            case MOTOROLA_8F_ACTIVE_GROUP_RADIOS_143:
+                return new MotorolaActiveGroupRadiosOpcode143_x8F(message, offset);
+            case MOTOROLA_BF_ACTIVE_GROUP_RADIOS_191:
+                return new MotorolaActiveGroupRadiosOpcode191_xBF(message, offset);
             case MOTOROLA_91_TALKER_ALIAS_HEADER:
                 return new MotorolaTalkerAliasHeader(message, offset);
             case MOTOROLA_95_TALKER_ALIAS_DATA_BLOCK:
