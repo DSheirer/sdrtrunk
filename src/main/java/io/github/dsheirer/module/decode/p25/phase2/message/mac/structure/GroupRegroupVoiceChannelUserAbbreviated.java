@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,11 +63,7 @@ public class GroupRegroupVoiceChannelUserAbbreviated extends MacStructure implem
         StringBuilder sb = new StringBuilder();
         sb.append("GROUP REGROUP VOICE CHANNEL USER ABBREVIATED");
         sb.append(" TALKGROUP:").append(getPatchgroup());
-        if(hasRadio())
-        {
-            sb.append(" TALKER RADIO:").append(getRadio());
-        }
-
+        sb.append(" TALKER RADIO:").append(getRadio());
         return sb.toString();
     }
 
@@ -89,6 +84,14 @@ public class GroupRegroupVoiceChannelUserAbbreviated extends MacStructure implem
         }
 
         return mPatchgroup;
+    }
+
+    /**
+     * Indicates if this message has a non-zero patch group identifier.
+     */
+    public boolean hasPatchgroup()
+    {
+        return getInt(SUPERGROUP) > 0;
     }
 
     /**
@@ -118,7 +121,11 @@ public class GroupRegroupVoiceChannelUserAbbreviated extends MacStructure implem
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getPatchgroup());
+
+            if(hasPatchgroup())
+            {
+                mIdentifiers.add(getPatchgroup());
+            }
 
             if(hasRadio())
             {

@@ -465,9 +465,16 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case PHASE1_90_GROUP_REGROUP_VOICE_CHANNEL_USER_ABBREVIATED:
                 if(mac instanceof GroupRegroupVoiceChannelUserAbbreviated gr)
                 {
-                    mPatchGroupManager.addPatchGroup(gr.getPatchgroup(), message.getTimestamp());
+                    if(gr.hasPatchgroup())
+                    {
+                        mPatchGroupManager.addPatchGroup(gr.getPatchgroup(), message.getTimestamp());
+                    }
+
+                    if(gr.hasPatchgroup() || gr.hasRadio())
+                    {
+                        processChannelUser(message, mac);
+                    }
                 }
-                processChannelUser(message, mac);
                 break;
 
             /**

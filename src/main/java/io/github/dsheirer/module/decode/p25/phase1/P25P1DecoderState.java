@@ -188,7 +188,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private final P25P1NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private final Listener<ChannelEvent> mChannelEventListener;
-    private P25TrafficChannelManager mTrafficChannelManager;
+    private final P25TrafficChannelManager mTrafficChannelManager;
     private ServiceOptions mCurrentServiceOptions;
 
     /**
