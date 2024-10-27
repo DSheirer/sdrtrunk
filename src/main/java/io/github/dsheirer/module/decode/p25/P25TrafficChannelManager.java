@@ -1163,16 +1163,20 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             return;
         }
 
-        if(mIgnoreDataCalls && isDataChannelGrant && tracker == null)
+        if(mIgnoreDataCalls && isDataChannelGrant)
         {
-            P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
-                .channelDescriptor(apco25Channel)
-                .details("IGNORED: PHASE 1 DATA CALL " + (serviceOptions != null ? serviceOptions : ""))
-                .identifiers(ic)
-                .build();
-            tracker = new P25TrafficChannelEventTracker(event);
-            addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
-            broadcast(tracker);
+            if(tracker == null)
+            {
+                P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                        .channelDescriptor(apco25Channel)
+                        .details("IGNORED: PHASE 1 DATA CALL " + (serviceOptions != null ? serviceOptions : ""))
+                        .identifiers(ic)
+                        .build();
+                tracker = new P25TrafficChannelEventTracker(event);
+                addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+                broadcast(tracker);
+            }
+
             return;
         }
 
