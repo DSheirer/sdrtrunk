@@ -100,19 +100,19 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         cells.add(event.getProtocol());
         cells.add(event.getEventType());
 
-        List<Identifier> fromIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.FROM);
-        if(fromIdentifiers != null && !fromIdentifiers.isEmpty())
+        Identifier fromIdentifier = event.getIdentifierCollection().getFromIdentifier();
+        if(fromIdentifier != null)
         {
-            cells.add(fromIdentifiers.get(0));
+            cells.add(fromIdentifier);
         }
         else
         {
             cells.add("");
         }
 
-        List<Identifier> toIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.TO);
+        Identifier toIdentifier = event.getIdentifierCollection().getToIdentifier();
 
-        if(toIdentifiers != null && !toIdentifiers.isEmpty())
+        if(toIdentifier != null)
         {
             Identifier identifier = event.getIdentifierCollection()
                 .getIdentifier(IdentifierClass.CONFIGURATION,Form.ALIAS_LIST,Role.ANY);
@@ -120,9 +120,9 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
             if(mAliasList != null)
             {
-                String mystring = (!mAliasList.getAliases(toIdentifiers.get(0)).isEmpty()) ?
-                    mAliasList.getAliases(toIdentifiers.get(0)).get(0).toString() : "";
-                cells.add(mystring + " (" + toIdentifiers.get(0) + ")");
+                String mystring = (!mAliasList.getAliases(toIdentifier).isEmpty()) ?
+                    mAliasList.getAliases(toIdentifier).toString() : "";
+                cells.add(mystring + " (" + toIdentifier + ")");
             }
             else
             {
