@@ -63,6 +63,18 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     }
 
     @Override
+    protected void closeAudioSegment()
+    {
+        super.closeAudioSegment();
+
+        //Reset the audio codec to clear any leftover frame data from the previous call.
+        if(mAudioCodec != null)
+        {
+            mAudioCodec.reset();
+        }
+    }
+
+    @Override
     public void dispose()
     {
         super.dispose();
