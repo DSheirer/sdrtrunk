@@ -68,9 +68,13 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
         mRotationDelay = rotationDelay;
         mUserPreferences = userPreferences;
 
-        if(mRotationDelay == 0)
+        if(mRotationDelay < CHANNEL_ROTATION_DELAY_MINIMUM)
         {
-            mRotationDelay = 200;
+            mRotationDelay = CHANNEL_ROTATION_DELAY_MINIMUM;
+        }
+        else if(mRotationDelay > CHANNEL_ROTATION_DELAY_MAXIMUM)
+        {
+            mRotationDelay = CHANNEL_ROTATION_DELAY_MAXIMUM;
         }
     }
 
@@ -184,7 +188,7 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
                 }
             };
 
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(runnable, mRotationDelay,
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(runnable, mRotationDelay * 2,
                 mRotationDelay / 2, TimeUnit.MILLISECONDS);
         }
     }
