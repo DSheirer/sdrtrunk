@@ -279,15 +279,27 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 break;
             case REQUEST_DISABLE:
             case NOTIFICATION_DELETE:
-                if(channel != null && channel.isProcessing())
+                if(channel != null)
                 {
                     try
                     {
                         stopProcessing(channel);
                     }
-                    catch(ChannelException ce)
+                    catch(Throwable t)
                     {
-                        mLog.error("Error stopping channel [" + channel.getName() + "] - " + ce.getMessage());
+                        mLog.error("Error stopping channel [" + channel + "]", t);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        throw new IllegalArgumentException("Request to disable channel must have non-null channel");
+                    }
+                    catch(IllegalArgumentException iae)
+                    {
+                        mLog.error("Caught a [" + event.getEvent() + "] non-standard channel event - logging stack trace.  " +
+                                "This should not happen, please send this error to the developer.", iae);
                     }
                 }
                 break;
@@ -521,7 +533,14 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         if(addProcessingChain(channel, processingChain))
         {
-            processingChain.start();
+            try
+            {
+                processingChain.start();
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error caught during processing chain startup - continuing", t);
+            }
 
             if(GraphicsEnvironment.isHeadless())
             {
@@ -627,8 +646,28 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             }
             else
             {
-                //This has to be done on the FX event thread when the playlist editor is constructed
-                Platform.runLater(() -> channel.setProcessing(false));
+                //When we're in non-headless mode we have to change the processing property on the JavaFX
+                //event thread.  However, if it hasn't yet been initialized (ie an FX window opened), we'll
+                //get an ISE.  In that case, just set the property to false because there won't be any
+                //property listeners being triggered.
+                try
+                {
+                    Platform.runLater(() -> {
+                        try
+                        {
+                            channel.setProcessing(false);
+                        }
+                        catch(Exception e)
+                        {
+                            mLog.error("Error during channel stop while setting processing to false [" + channel +
+                                    "] - continuing channel stop process", e);
+                        }
+                    });
+                }
+                catch(IllegalStateException e)
+                {
+                    channel.setProcessing(false);
+                }
             }
 
             try
@@ -847,6 +886,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                         mLog.error("Error stopping channel [" + (toShutdown != null ? toShutdown.getName() : "unknown") +
                                 "] with source error - " + ce.getMessage());
                     }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error stopping channel [" + toShutdown + "]", t);
+                    }
                 }
             }
         }
@@ -875,6 +918,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 sb.append("\tProcessing Chain - Processing: ").append(chain.isProcessing()).append("\n");
                 AbstractChannelState state = chain.getChannelState();
                 sb.append("Channel State: ").append(state.getClass()).append("\n");
+                sb.append(" Teardown Started:").append(state.isTeardownSequenceStarted()).append("\n");
+                sb.append(" Teardown Completed:").append(state.isTeardownSequenceCompleted()).append("\n");
                 for(ChannelMetadata metadata: state.getChannelMetadata())
                 {
                     sb.append(metadata.getDescription()).append("\n");
