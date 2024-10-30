@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,11 +46,10 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel state tracks the overall state of all processing modules and decoders configured for the channel and
@@ -163,9 +162,11 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 mStateMachine.setState(State.IDLE);
                 break;
             case TEARDOWN:
+                mTeardownSequenceStarted = true;
                 if(getChannel().isTrafficChannel())
                 {
                     broadcast(new ChannelEvent(getChannel(), ChannelEvent.Event.REQUEST_DISABLE));
+                    mTeardownSequenceCompleted = true;
                 }
                 else
                 {
@@ -173,6 +174,12 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 }
                 break;
         }
+    }
+
+    @Override
+    public boolean isTeardownState()
+    {
+        return mStateMachine.getState() == State.TEARDOWN;
     }
 
     @Override

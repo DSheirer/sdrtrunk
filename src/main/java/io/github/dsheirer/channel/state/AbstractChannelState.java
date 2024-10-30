@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,10 +35,9 @@ import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public abstract class AbstractChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider,
     IDecoderStateEventProvider, ISourceEventProvider, IHeartbeatListener, ISquelchStateProvider,
@@ -53,7 +52,8 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
     private Channel mChannel;
     protected boolean mSourceOverflow = false;
     private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
-
+    protected boolean mTeardownSequenceStarted = false;
+    protected boolean mTeardownSequenceCompleted = false;
 
     //TODO: remove the IOverflowListener code from this class
 
@@ -64,6 +64,22 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
     public AbstractChannelState(Channel channel)
     {
         mChannel = channel;
+    }
+
+    /**
+     * Indicates if the teardown sequence was started.
+     */
+    public boolean isTeardownSequenceCompleted()
+    {
+        return mTeardownSequenceCompleted;
+    }
+
+    /**
+     * Indicates if the teardown sequence was completed, meaning that the request disable channel event was dispatched.
+     */
+    public boolean isTeardownSequenceStarted()
+    {
+        return mTeardownSequenceStarted;
     }
 
     /**
@@ -88,6 +104,11 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
      * messages so that channel state is not entirely dependent on a continuous decoded message stream.
      */
     protected abstract void checkState();
+
+    /**
+     * Indicates if any timeslot is currently in a TEARDOWN state.
+     */
+    public abstract boolean isTeardownState();
 
     public abstract List<ChannelMetadata> getChannelMetadata();
 

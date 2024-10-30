@@ -140,7 +140,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
                     catch(IllegalArgumentException iae)
                     {
-                        LOGGING_SUPPRESSOR.error("no gain control", 5, "Couldn't obtain " +
+                        LOGGING_SUPPRESSOR.error("no gain control", 2, "Couldn't obtain " +
                             "MASTER GAIN control for stereo line [" + mixer.getMixerInfo().getName() + " | " +
                                 getChannelName() + "]");
                     }
@@ -152,7 +152,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
                     catch(IllegalArgumentException iae)
                     {
-                        LOGGING_SUPPRESSOR.error("no mute control", 5, "Couldn't obtain " +
+                        LOGGING_SUPPRESSOR.error("no mute control", 2, "Couldn't obtain " +
                             "MUTE control for stereo line [" + mixer.getMixerInfo().getName() + " | " +
                             getChannelName() + "]");
                     }
@@ -278,7 +278,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     {
         if(mOutput == null)
         {
-            LOGGING_SUPPRESSOR.error("null output", 5, "Audio Output is null - ignoring audio playback request");
+            LOGGING_SUPPRESSOR.error("null output", 2, "Audio Output is null - ignoring audio playback request");
             return;
         }
 
@@ -323,8 +323,9 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                             }
                             catch(IllegalArgumentException iae)
                             {
-                                mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" +
-                                        mMixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                                LOGGING_SUPPRESSOR.error("no gain control", 2, "Couldn't obtain " +
+                                        "MASTER GAIN control for stereo line [" + mMixer.getMixerInfo().getName() + " | " +
+                                        getChannelName() + "]");
                             }
 
                             try
@@ -334,23 +335,24 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                             }
                             catch(IllegalArgumentException iae)
                             {
-                                mLog.warn("Couldn't obtain MUTE control for stereo line [" +
-                                        mMixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
+                                LOGGING_SUPPRESSOR.error("no mute control", 2, "Couldn't obtain " +
+                                        "MASTER MUTE control for stereo line [" + mMixer.getMixerInfo().getName() + " | " +
+                                        getChannelName() + "]");
                             }
 
-                            LOGGING_SUPPRESSOR.info("reopen audio output success", 5,
+                            LOGGING_SUPPRESSOR.info("reopen audio output success", 2,
                                     "Closed and reopened audio output - success - mOutput is not null");
                         }
                         else
                         {
-                            LOGGING_SUPPRESSOR.info("reopen audio output fail", 5,
+                            LOGGING_SUPPRESSOR.info("reopen audio output fail", 2,
                                     "Closed and reopened audio output - fail - mOutput is null");
                             return;
                         }
                     }
                     catch(LineUnavailableException lue)
                     {
-                        LOGGING_SUPPRESSOR.error("reopen fail for lua", 3, "Attempt to reopen " +
+                        LOGGING_SUPPRESSOR.error("reopen fail for lua", 2, "Attempt to reopen " +
                                 "audio source data line failed", lue);
                         return;
                     }
@@ -393,7 +395,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
                     catch(LineUnavailableException e)
                     {
-                        LOGGING_SUPPRESSOR.error("failed reopen source data line lua", 3,
+                        LOGGING_SUPPRESSOR.error("failed reopen source data line lua", 2,
                                 "Failed to (re)open the source data line for audio output - mixer [" +
                                 mMixer.getMixerInfo().getName() + "]");
                         return;
