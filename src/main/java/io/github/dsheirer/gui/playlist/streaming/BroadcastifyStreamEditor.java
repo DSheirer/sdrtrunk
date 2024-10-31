@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.streaming;
@@ -31,7 +28,9 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
+import org.controlsfx.control.ToggleSwitch;
 
 /**
  * Broadcastify streaming configuration editor
@@ -39,6 +38,7 @@ import javafx.scene.layout.GridPane;
 public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyFeedConfiguration>
 {
     private GridPane mEditorPane;
+    private ToggleSwitch mVerboseLoggingToggle;
     private TextField mMountPointTextField;
     private IntegerTextField mFeedIdTextField;
 
@@ -54,16 +54,19 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
 
         getFeedIdTextField().setDisable(item == null);
         getMountPointTextField().setDisable(item == null);
+        getVerboseLoggingToggle().setDisable(item == null);
 
         if(item != null)
         {
             getFeedIdTextField().set(item.getFeedID());
             getMountPointTextField().setText(item.getMountPoint());
+            getVerboseLoggingToggle().setSelected(item.isVerboseLogging());
         }
         else
         {
             getFeedIdTextField().set(0);
             getMountPointTextField().setText(null);
+            getVerboseLoggingToggle().setSelected(false);
         }
 
         modifiedProperty().set(false);
@@ -76,6 +79,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
         {
             getItem().setFeedID(getFeedIdTextField().get());
             getItem().setMountPoint(getMountPointTextField().getText());
+            getItem().setVerboseLogging(getVerboseLoggingToggle().isSelected());
         }
 
         super.save();
@@ -178,9 +182,30 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
 
             GridPane.setConstraints(getFeedIdTextField(), 1, 5);
             getEditorPane().getChildren().add(getFeedIdTextField());
+
+            Label loggingLabel = new Label("Verbose Logging");
+            GridPane.setHalignment(loggingLabel, HPos.RIGHT);
+            GridPane.setConstraints(loggingLabel, 2, 5);
+            getEditorPane().getChildren().add(loggingLabel);
+
+            GridPane.setConstraints(getVerboseLoggingToggle(), 3, 5);
+            getEditorPane().getChildren().add(getVerboseLoggingToggle());
         }
 
         return mEditorPane;
+    }
+
+    private ToggleSwitch getVerboseLoggingToggle()
+    {
+        if(mVerboseLoggingToggle == null)
+        {
+            mVerboseLoggingToggle = new ToggleSwitch();
+            mVerboseLoggingToggle.setTooltip(new Tooltip("Turn on additional logging for connection troubleshooting"));
+            mVerboseLoggingToggle.setDisable(true);
+            mVerboseLoggingToggle.selectedProperty().addListener((ob, ol, ne) -> modifiedProperty().set(true));
+        }
+
+        return mVerboseLoggingToggle;
     }
 
     private TextField getMountPointTextField()
