@@ -236,13 +236,13 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         processForFrequencyBands(message);
 
         //Also process the link control messages for frequency bands.
-        if(message instanceof LDU1Message ldu1)
+        if(message instanceof LDU1Message ldu1 && ldu1.getLinkControlWord() instanceof LinkControlWord lcw && lcw.isValid())
         {
-            processForFrequencyBands(ldu1.getLinkControlWord());
+            processForFrequencyBands(lcw);
         }
-        else if(message instanceof TDULCMessage tdulc)
+        else if(message instanceof TDULCMessage tdulc && tdulc.getLinkControlWord() instanceof LinkControlWord lcw && lcw.isValid())
         {
-            processForFrequencyBands(tdulc.getLinkControlWord());
+            processForFrequencyBands(lcw);
         }
 
         if(mMessageListener != null)
