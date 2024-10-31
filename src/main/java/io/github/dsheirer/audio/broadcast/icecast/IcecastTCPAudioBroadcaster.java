@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.codec.IcecastCodecFactory;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
@@ -39,6 +40,8 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
+import org.apache.mina.filter.logging.LogLevel;
+import org.apache.mina.filter.logging.LoggingFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +59,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
     private IoSession mStreamingSession = null;
 
     private long mLastConnectionAttempt = 0;
+    private boolean mVerboseLogging = false;
     private AtomicBoolean mConnecting = new AtomicBoolean();
 
     /**
@@ -73,6 +77,11 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                                       MP3Setting mp3Setting, AliasModel aliasModel)
     {
         super(configuration, inputAudioFormat, mp3Setting, aliasModel);
+
+        if(configuration instanceof BroadcastifyFeedConfiguration broadcastify)
+        {
+            mVerboseLogging = broadcastify.isVerboseLogging();
+        }
     }
 
     /**
@@ -132,9 +141,12 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 mSocketConnector = new NioSocketConnector();
                 mSocketConnector.getSessionConfig().setWriteTimeout(WRITE_TIMEOUT_SECONDS);
 
-//                LoggingFilter loggingFilter = new LoggingFilter(IcecastTCPAudioBroadcaster.class);
-//                loggingFilter.setMessageSentLogLevel(LogLevel.NONE);
-//                mSocketConnector.getFilterChain().addLast("logger", loggingFilter);
+                if(mVerboseLogging)
+                {
+                    LoggingFilter loggingFilter = new LoggingFilter(IcecastTCPAudioBroadcaster.class);
+                    loggingFilter.setMessageSentLogLevel(LogLevel.NONE);
+                    mSocketConnector.getFilterChain().addLast("logger", loggingFilter);
+                }
 
                 mSocketConnector.getFilterChain().addLast("codec",
                     new ProtocolCodecFilter(new IcecastCodecFactory()));
@@ -148,6 +160,10 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 @Override
                 public void run()
                 {
+                    if(mVerboseLogging)
+                    {
+                        mLog.info("Attempting connection ...");
+                    }
                     setBroadcastState(BroadcastState.CONNECTING);
 
                     try
@@ -156,19 +172,42 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                             .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
                                 getBroadcastConfiguration().getPort()));
 
+                        if(mVerboseLogging)
+                        {
+                            mLog.info("Socket created - asynchronous connect requested - entering wait period");
+                        }
+
                         boolean connected = future.await(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 
                         if(connected)
                         {
+                            if(mVerboseLogging)
+                            {
+                                mLog.info("Connected.");
+                            }
+
                             mStreamingSession = future.getSession();
                             mConnecting.set(false);
                             return;
+                        }
+                        else
+                        {
+                            if(mVerboseLogging)
+                            {
+                                mLog.info("Not Connected.  Connection attempt timeout [" + CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS + "ms] exceeded");
+                            }
                         }
                     }
                     catch(RuntimeIoException rioe)
                     {
                         if(rioe.getCause() instanceof SocketException)
                         {
+                            if(mVerboseLogging)
+                            {
+                                mLog.info("Socket error.  This usually indicates sdrtrunk can't reach the server " +
+                                        "address over the current network connection.  Setting state to " +
+                                        "NETWORK UNAVAILABLE", rioe);
+                            }
                             setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
                             mConnecting.set(false);
                             return;
@@ -176,18 +215,33 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     }
                     catch(UnresolvedAddressException uae)
                     {
+                        if(mVerboseLogging)
+                        {
+                            mLog.info("Unresolved Address error.  This means the domain name services can't resolve " +
+                                    "the server URL to an IP address.  Setting state to NETWORK UNAVAILABLE", uae);
+                        }
+
                         setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
                         mConnecting.set(false);
                         return;
                     }
                     catch(Exception e)
                     {
+                        if(mVerboseLogging)
+                        {
+                            mLog.info("Unknown error.  An error occurred while attempting to connect to the server.", e);
+                        }
                         mLog.error("Error", e);
                         //Disregard ... we'll disconnect and try again
                     }
                     catch(Throwable t)
                     {
                         mLog.error("Throwable error caught", t);
+                    }
+
+                    if(mVerboseLogging)
+                    {
+                        mLog.info("Starting disconnect sequence since an error occurred while trying to connect.");
                     }
 
                     disconnect();
@@ -209,6 +263,11 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
     {
         if(connected() && mStreamingSession != null)
         {
+            if(mVerboseLogging)
+            {
+                mLog.info("Routine disconnect requested from a connected state with a non-null streaming session");
+            }
+
             mStreamingSession.closeNow();
         }
         else
@@ -217,6 +276,12 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             //want to preserve the error state that got us here, so the user can see it.
             if(!getBroadcastState().isErrorState())
             {
+                if(mVerboseLogging)
+                {
+                    mLog.info("Disconnect requested - previous non-error state was [" + getBroadcastState() +
+                            "] - changing state to DISCONNECTED");
+                }
+
                 setBroadcastState(BroadcastState.DISCONNECTED);
             }
 
@@ -282,12 +347,23 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 mInlineActive = false;
             }
 
+            if(mVerboseLogging)
+            {
+                mLog.info("Session opened. Sending: " + sb);
+            }
+
+
             session.write(sb.toString());
         }
 
         @Override
         public void sessionClosed(IoSession session) throws Exception
         {
+            if(mVerboseLogging)
+            {
+                mLog.info("Session closed.  Setting connecting flag to false.");
+            }
+
             mLastConnectionAttempt = System.currentTimeMillis();
 
             //If there is already an error state, don't override it.  Otherwise, set state to disconnected
@@ -311,15 +387,23 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 mLog.error("[" + getStreamName() + "] Broadcast error", cause);
             }
 
+            if(mVerboseLogging)
+            {
+                mLog.info("Session error caught.", cause);
+            }
+
             disconnect();
         }
 
         @Override
         public void messageReceived(IoSession session, Object object) throws Exception
         {
-            if(object instanceof String)
+            if(object instanceof String message)
             {
-                String message = (String) object;
+                if(mVerboseLogging)
+                {
+                    mLog.info("Message Received [" + message + "]");
+                }
 
                 if(message != null && !message.trim().isEmpty())
                 {
