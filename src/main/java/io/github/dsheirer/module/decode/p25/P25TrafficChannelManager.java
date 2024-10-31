@@ -1062,7 +1062,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private void requestTrafficChannelStart(Channel trafficChannel, APCO25Channel apco25Channel,
                                             IdentifierCollection identifierCollection, long timestamp)
     {
-        if(getInterModuleEventBus() != null)
+        if(apco25Channel != null && apco25Channel.getDownlinkFrequency() > 0 && getInterModuleEventBus() != null)
         {
             SourceConfigTuner sourceConfig = new SourceConfigTuner();
             sourceConfig.setFrequency(apco25Channel.getDownlinkFrequency());
