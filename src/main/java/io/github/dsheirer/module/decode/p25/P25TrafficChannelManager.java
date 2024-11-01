@@ -1086,6 +1086,18 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             startChannelRequest.addPreloadDataContent(new P25FrequencyBandPreloadDataContent(mFrequencyBandMap.values()));
             getInterModuleEventBus().post(startChannelRequest);
         }
+        else
+        {
+            //Return the channel to the traffic channel pool since we didn't start it.
+            if(mManagedPhase1TrafficChannels.contains(trafficChannel))
+            {
+                mAvailablePhase1TrafficChannelQueue.add(trafficChannel);
+            }
+            else if(mManagedPhase2TrafficChannels.contains(trafficChannel))
+            {
+                mAvailablePhase2TrafficChannelQueue.add(trafficChannel);
+            }
+        }
     }
 
     /**

@@ -252,11 +252,16 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         synchronized(mBufferDispatcher)
         {
             mChannelSources.remove(channelSource);
-            mPolyphaseChannelizer.removeChannel(channelSource);
+
+            if(mPolyphaseChannelizer != null)
+            {
+                mPolyphaseChannelizer.removeChannel(channelSource);
+            }
+
             mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
             //If this is the last/only channel, deregister to stop the sample buffers
-            if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
+            if(mPolyphaseChannelizer != null && mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
             {
                 mNativeBufferProvider.removeBufferListener(mBufferDispatcher);
                 mBufferDispatcher.stop();

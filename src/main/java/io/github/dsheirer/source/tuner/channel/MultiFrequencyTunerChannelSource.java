@@ -153,19 +153,13 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     @Override
     public void stop()
     {
-        //Don't perform stop sequence if we haven't been started.  There can be a small window on startup where the
-        //channel rotation monitor can get ahead of the channel source and cause it to try to stop and rotate before
-        //it has even started, causing an error in the polyphase channel source.
-        if(mStarted)
-        {
-            mStarted = false;
+        mStarted = false;
 
-            if(mTunerChannelSource != null)
-            {
-                mTunerChannelSource.stop();
-                mTunerChannelSource.removeSourceEventListener();
-                mTunerChannelSource = null;
-            }
+        if(mTunerChannelSource != null)
+        {
+            mTunerChannelSource.stop();
+            mTunerChannelSource.removeSourceEventListener();
+            mTunerChannelSource = null;
         }
     }
 
