@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,16 +97,16 @@ public class SystemIdentityCode extends AbstractStructure
             switch(getModel())
             {
                 case TINY:
-                    mNetwork = new DMRNetwork(getMessage().getInt(TINY_NET, getOffset()));
+                    mNetwork = new DMRNetwork(getMessage().getInt(TINY_NET, getOffset()) + 1);
                     break;
                 case SMALL:
-                    mNetwork = new DMRNetwork(getMessage().getInt(SMALL_NET, getOffset()));
+                    mNetwork = new DMRNetwork(getMessage().getInt(SMALL_NET, getOffset()) + 1);
                     break;
                 case LARGE:
-                    mNetwork = new DMRNetwork(getMessage().getInt(LARGE_NET, getOffset()));
+                    mNetwork = new DMRNetwork(getMessage().getInt(LARGE_NET, getOffset()) + 1);
                     break;
                 case HUGE:
-                    mNetwork = new DMRNetwork(getMessage().getInt(HUGE_NET, getOffset()));
+                    mNetwork = new DMRNetwork(getMessage().getInt(HUGE_NET, getOffset()) + 1);
                     break;
             }
         }
@@ -124,16 +124,16 @@ public class SystemIdentityCode extends AbstractStructure
             switch(getModel())
             {
                 case TINY:
-                    mSite = new DMRSite(getMessage().getInt(TINY_SITE, getOffset()));
+                    mSite = new DMRSite(getMessage().getInt(TINY_SITE, getOffset()) + 1);
                     break;
                 case SMALL:
-                    mSite = new DMRSite(getMessage().getInt(SMALL_SITE, getOffset()));
+                    mSite = new DMRSite(getMessage().getInt(SMALL_SITE, getOffset()) + 1);
                     break;
                 case LARGE:
-                    mSite = new DMRSite(getMessage().getInt(LARGE_SITE, getOffset()));
+                    mSite = new DMRSite(getMessage().getInt(LARGE_SITE, getOffset()) + 1);
                     break;
                 case HUGE:
-                    mSite = new DMRSite(getMessage().getInt(HUGE_SITE, getOffset()));
+                    mSite = new DMRSite(getMessage().getInt(HUGE_SITE, getOffset()) + 1);
                     break;
             }
         }
