@@ -526,10 +526,11 @@ public class DMRDecoderState extends TimeslotDecoderState
 
         GeoPosition geoPosition = PacketUtil.extractGeoPosition(packet.getPacket());
 
-        if (geoPosition != null) {
+        if (geoPosition != null)
+        {
             PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, packet.getTimestamp())
                     .channel(getCurrentChannel())
-                    .identifiers(new IdentifierCollection(packet.getIdentifiers()))
+                    .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
                     .protocol(Protocol.LRRP)
                     .location(geoPosition)
                     .build();
