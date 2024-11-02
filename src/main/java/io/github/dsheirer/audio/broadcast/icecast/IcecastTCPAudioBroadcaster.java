@@ -94,7 +94,6 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             if(mInlineActive)
             {
-                byte[] metadata = IcecastMetadata.formatInline(IcecastMetadata.getTitle(identifierCollection, mAliasModel)).getBytes();
                 if (mInlineRemaining == -1)
                 {
                     mInlineRemaining = mInlineInterval;
@@ -105,16 +104,34 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     byte[] chunk = Arrays.copyOfRange(audio, audioOffset, Math.min(audioOffset + mInlineRemaining, audio.length));
                     mInlineRemaining -= chunk.length;
                     audioOffset += chunk.length;
+
+                    if(mVerboseLogging)
+                    {
+                        mLog.info("Broadcasting audio data - sending [" + chunk.length + "/" + audio.length + "] bytes");
+                    }
+
                     mStreamingSession.write(chunk);
                     if(mInlineRemaining == 0)
                     {
                         mInlineRemaining = mInlineInterval;
+
+                        byte[] metadata = IcecastMetadata.formatInline(IcecastMetadata.getTitle(identifierCollection, mAliasModel)).getBytes();
+
+                        if(mVerboseLogging)
+                        {
+                            mLog.info("Sending inline metadata: " + new String(metadata));
+                        }
+
                         mStreamingSession.write(metadata);
                     }
                 }
             }
             else
             {
+                if(mVerboseLogging)
+                {
+                    mLog.info("Broadcasting audio data [" + audio.length + "] bytes");
+                }
                 mStreamingSession.write(audio);
             }
         }
