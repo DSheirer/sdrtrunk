@@ -41,6 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     private LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
     private ScheduledExecutorService mScheduledExecutorService =
             Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory("sdrtrunk audio manager"));
+    private AudioSegmentPrioritySorter mAudioSegmentPrioritySorter = new AudioSegmentPrioritySorter();
+    private ReentrantLock mAudioOutputLock = new ReentrantLock();
 
     /**
      * Constructs an instance.
@@ -95,6 +98,9 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
         {
             mLog.warn("No audio output devices available");
         }
+
+        mProcessingTask = mScheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
+                0, 100, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -189,13 +195,22 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
                 else if(audioSegment.isLinked())
                 {
-                    for(AudioOutput audioOutput: mAudioOutputs)
+                    mAudioOutputLock.lock();
+
+                    try
                     {
-                        if(audioOutput.isLinkedTo(audioSegment))
+                        for(AudioOutput audioOutput: mAudioOutputs)
                         {
-                            it.remove();
-                            audioOutput.play(audioSegment);
+                            if(audioOutput.isLinkedTo(audioSegment))
+                            {
+                                it.remove();
+                                audioOutput.play(audioSegment);
+                            }
                         }
+                    }
+                    finally
+                    {
+                        mAudioOutputLock.unlock();
                     }
                 }
             }
@@ -203,21 +218,29 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             //Sort audio segments by playback priority and assign to empty audio outputs
             if(!mAudioSegments.isEmpty())
             {
-                //TODO: change this to take audio segment start time into account also
-                mAudioSegments.sort(Comparator.comparingInt(o -> o.monitorPriorityProperty().get()));
+                mAudioSegments.sort(mAudioSegmentPrioritySorter);
 
-                //Assign empty audio outputs first
-                for(AudioOutput audioOutput: mAudioOutputs)
+                mAudioOutputLock.lock();
+
+                try
                 {
-                    if(audioOutput.isEmpty())
+                    //Assign empty audio outputs first
+                    for(AudioOutput audioOutput: mAudioOutputs)
                     {
-                        audioOutput.play(mAudioSegments.remove(0));
-
-                        if(mAudioSegments.isEmpty())
+                        if(audioOutput.isEmpty())
                         {
-                            return;
+                            audioOutput.play(mAudioSegments.remove(0));
+
+                            if(mAudioSegments.isEmpty())
+                            {
+                                return;
+                            }
                         }
                     }
+                }
+                finally
+                {
+                    mAudioOutputLock.unlock();
                 }
             }
 
@@ -288,37 +311,39 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
         {
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_STARTED);
 
-            if(mProcessingTask != null)
+            mAudioOutputLock.lock();
+
+            try
             {
-                mProcessingTask.cancel(true);
+                for(AudioOutput audioOutput: mAudioOutputs)
+                {
+                    audioOutput.dispose();
+                }
+
+                mAudioOutputs.clear();
+
+                switch(entry.getMixerChannel())
+                {
+                    case MONO:
+                        AudioOutput mono = new MonoAudioOutput(entry.getMixer(), mUserPreferences);
+                        mAudioOutputs.add(mono);
+                        break;
+                    case STEREO:
+                        AudioOutput left = new StereoAudioOutput(entry.getMixer(), MixerChannel.LEFT, mUserPreferences);
+                        mAudioOutputs.add(left);
+
+                        AudioOutput right = new StereoAudioOutput(entry.getMixer(), MixerChannel.RIGHT, mUserPreferences);
+                        mAudioOutputs.add(right);
+                        break;
+                    default:
+                        throw new AudioException("Unsupported mixer channel configuration: " + entry.getMixerChannel());
+                }
+            }
+            finally
+            {
+                mAudioOutputLock.unlock();
             }
 
-            for(AudioOutput audioOutput: mAudioOutputs)
-            {
-                audioOutput.dispose();
-            }
-
-            mAudioOutputs.clear();
-
-            switch(entry.getMixerChannel())
-            {
-                case MONO:
-                    AudioOutput mono = new MonoAudioOutput(entry.getMixer(), mUserPreferences);
-                    mAudioOutputs.add(mono);
-                    break;
-                case STEREO:
-                    AudioOutput left = new StereoAudioOutput(entry.getMixer(), MixerChannel.LEFT, mUserPreferences);
-                    mAudioOutputs.add(left);
-
-                    AudioOutput right = new StereoAudioOutput(entry.getMixer(), MixerChannel.RIGHT, mUserPreferences);
-                    mAudioOutputs.add(right);
-                    break;
-                default:
-                    throw new AudioException("Unsupported mixer channel configuration: " + entry.getMixerChannel());
-            }
-
-            mProcessingTask = mScheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
-                0, 100, TimeUnit.MILLISECONDS);
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
             mMixerChannelConfiguration = entry;
         }
@@ -386,6 +411,32 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
 
                 mProcessing.set(false);
+            }
+        }
+    }
+
+    /**
+     * Audio segment comparator for sorting audio segments by: 1)Playback priority and 2)Segment start time
+     */
+    public class AudioSegmentPrioritySorter implements Comparator<AudioSegment>
+    {
+        @Override
+        public int compare(AudioSegment segment1, AudioSegment segment2)
+        {
+            if(segment1 == null || segment2 == null)
+            {
+                return -1;
+            }
+
+            //If priority is the same, sort by start time
+            if(segment1.monitorPriorityProperty().get() == segment2.monitorPriorityProperty().get())
+            {
+                return Long.compare(segment1.getStartTimestamp(), segment2.getStartTimestamp());
+            }
+            //Otherwise, sort by priority
+            else
+            {
+                return Integer.compare(segment1.monitorPriorityProperty().get(), segment2.monitorPriorityProperty().get());
             }
         }
     }
