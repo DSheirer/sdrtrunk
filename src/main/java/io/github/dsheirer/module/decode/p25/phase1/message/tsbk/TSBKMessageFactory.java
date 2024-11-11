@@ -35,6 +35,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.Mot
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaEmergencyAlarmActivation;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExplicitTDMADataChannelAnnouncement;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExtendedFunctionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupAddCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelGrant;
@@ -440,6 +441,9 @@ public class TSBKMessageFactory
                 break;
             case MOTOROLA_OSP_OPCODE_15:
                 tsbk = new MotorolaOpcode15(dataUnitID, message, nac, timestamp);
+                break;
+            case MOTOROLA_OSP_TDMA_DATA_CHANNEL:
+                tsbk = new MotorolaExplicitTDMADataChannelAnnouncement(dataUnitID, message, nac, timestamp);
                 break;
             case MOTOROLA_OSP_UNKNOWN:
                 tsbk = new UnknownMotorolaOSPMessage(dataUnitID, message, nac, timestamp);

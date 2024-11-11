@@ -118,6 +118,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.L3HarrisGroupRegroupExplicitEncryptionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaAcknowledgeResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExplicitTDMADataChannelAnnouncement;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExtendedFunctionCommand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaGroupRegroupChannelUpdate;
@@ -1518,6 +1519,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     break;
                 case MOTOROLA_OSP_QUEUED_RESPONSE:
                     processTSBKQueuedResponse(tsbk);
+                    break;
+                case MOTOROLA_OSP_TDMA_DATA_CHANNEL:
+                    processTSBKActiveTDMADataChannel(tsbk);
+                    break;
                 default:
 //                    if(!tsbk.getOpcode().name().startsWith("ISP"))
 //                    {
@@ -1528,6 +1533,19 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 //                    }
                     break;
             }
+        }
+    }
+
+    /**
+     * TSBK Motorola TDMA data channel is active.
+     * @param tsbk with channel
+     */
+    private void processTSBKActiveTDMADataChannel(TSBKMessage tsbk)
+    {
+        if(tsbk instanceof MotorolaExplicitTDMADataChannelAnnouncement tdma && tdma.hasChannel())
+        {
+            mTrafficChannelManager.processP2DataChannel(tdma.getChannel(), tsbk.getTimestamp());
+            mNetworkConfigurationMonitor.process(tsbk);
         }
     }
 

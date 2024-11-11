@@ -58,6 +58,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Net
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
+import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
@@ -525,6 +526,99 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         finally
         {
             mLock.unlock();
+        }
+    }
+
+    /**
+     * Process a TDMA data channel grant.
+     * @param channel for data.
+     * @param timestamp of the event
+     */
+    public void processP2DataChannel(APCO25Channel channel, long timestamp)
+    {
+        long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
+
+        if(frequency > 0)
+        {
+            mLock.lock();
+
+            try
+            {
+                P25TrafficChannelEventTracker trackerTS1 = getTrackerRemoveIfStale(channel.getDownlinkFrequency(),
+                        P25P1Message.TIMESLOT_1, timestamp);
+
+                if(trackerTS1 != null && trackerTS1.exceedsMaxTDMADataDuration())
+                {
+                    removeTracker(frequency, P25P1Message.TIMESLOT_1);
+                    trackerTS1 = null;
+                }
+
+                if(trackerTS1 == null)
+                {
+                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(DecodeEventType.DATA_CALL,
+                                    timestamp, new DataServiceOptions(0))
+                            .channelDescriptor(channel)
+                            .details("TDMA PHASE 2 DATA CHANNEL ACTIVE")
+                            .identifiers(new IdentifierCollection())
+                            .timeslot(P25P1Message.TIMESLOT_1)
+                            .build();
+
+                    trackerTS1 = new P25TrafficChannelEventTracker(continuationGrantEvent);
+                    addTracker(trackerTS1, frequency, P25P1Message.TIMESLOT_1);
+                }
+
+                //update the ending timestamp so that the duration value is correctly calculated
+                trackerTS1.updateDurationTraffic(timestamp);
+                broadcast(trackerTS1);
+
+                //Even though we have a tracked event, the initial channel grant may have been rejected.  Check to
+                // see if there is a traffic channel allocated.  If not, allocate one and update the event description.
+                if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !mIgnoreDataCalls &&
+                        (getCurrentControlFrequency() != frequency))
+                {
+                    Channel trafficChannel = mAvailablePhase2TrafficChannelQueue.poll();
+
+                    if(trafficChannel != null)
+                    {
+                        requestTrafficChannelStart(trafficChannel, channel, new IdentifierCollection(), timestamp);
+                    }
+                    else
+                    {
+                        trackerTS1.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
+                    }
+                }
+
+                P25TrafficChannelEventTracker trackerTS2 = getTrackerRemoveIfStale(channel.getDownlinkFrequency(),
+                        P25P1Message.TIMESLOT_2, timestamp);
+
+                if(trackerTS2 != null && trackerTS2.exceedsMaxTDMADataDuration())
+                {
+                    removeTracker(frequency, P25P1Message.TIMESLOT_2);
+                    trackerTS2 = null;
+                }
+
+                if(trackerTS2 == null)
+                {
+                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(DecodeEventType.DATA_CALL,
+                                    timestamp, new DataServiceOptions(0))
+                            .channelDescriptor(channel)
+                            .details("TDMA PHASE 2 DATA CHANNEL ACTIVE")
+                            .identifiers(new IdentifierCollection())
+                            .timeslot(P25P1Message.TIMESLOT_2)
+                            .build();
+
+                    trackerTS2 = new P25TrafficChannelEventTracker(continuationGrantEvent);
+                    addTracker(trackerTS2, frequency, P25P1Message.TIMESLOT_2);
+                }
+
+                //update the ending timestamp so that the duration value is correctly calculated
+                trackerTS2.updateDurationTraffic(timestamp);
+                broadcast(trackerTS1);
+            }
+            finally
+            {
+                mLock.unlock();
+            }
         }
     }
 

@@ -25,7 +25,6 @@ import java.util.EnumSet;
  */
 public enum DataUnitID
 {
-
     VOICE_4(0, 0x00,"VOICE-4"),
     RESERVED_1(1, 0x17, "RESERVED 1"),
     RESERVED_2(2, 0x2E, "RESERVED 2"),
@@ -36,7 +35,7 @@ public enum DataUnitID
     RESERVED_7(7, 0x72, "RESERVED 7"),
     RESERVED_8(8, 0x8D, "RESERVED 8"),
     SCRAMBLED_FACCH(9, 0x9A,  "FACCH-S"),
-    RESERVED_A(10, 0xA3, "RESERVED 10"),
+    SCRAMBLED_DATCH(10, 0xA3, "DATCH-S"), //Motorola APX-Next TDMA Data Channel
     RESERVED_B(11, 0xB4, "RESERVED 11"),
     UNSCRAMBLED_SACCH(12, 0xC6,  "SACCH-U"),
     UNSCRAMBLED_LCCH(13, 0xD1, "LOCCH-U"),
@@ -133,7 +132,7 @@ public enum DataUnitID
             case 0x9A:
                 return SCRAMBLED_FACCH;
             case 0xA3:
-                return RESERVED_A;
+                return SCRAMBLED_DATCH;
             case 0xB4:
                 return RESERVED_B;
             case 0xC6:

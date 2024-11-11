@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCAdjacentSiteStatusBroadcast;
@@ -38,6 +39,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNe
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaExplicitTDMADataChannelAnnouncement;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.AdjacentStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.RFSSStatusBroadcast;
@@ -79,8 +81,9 @@ public class P25P1NetworkConfigurationMonitor
     //Current Site Secondary Control Channels
     private Map<String,IChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
 
-    //Current Site Data Channel
+    //Current Site Data Channel(s)
     private SNDCPDataChannelAnnouncementExplicit mSNDCPDataChannel;
+    private Map<APCO25Channel, MotorolaExplicitTDMADataChannelAnnouncement> mTDMADataChannelMap = new HashMap<>();
 
     //Current Site Services
     private SystemServiceBroadcast mTSBKSystemServiceBroadcast;
@@ -176,6 +179,12 @@ public class P25P1NetworkConfigurationMonitor
                 if(tsbk instanceof MotorolaBaseStationId)
                 {
                     mMotorolaBaseStationId = (MotorolaBaseStationId)tsbk;
+                }
+                break;
+            case MOTOROLA_OSP_TDMA_DATA_CHANNEL:
+                if(tsbk instanceof MotorolaExplicitTDMADataChannelAnnouncement tdma && tdma.hasChannel())
+                {
+                    mTDMADataChannelMap.put(tdma.getChannel(), tdma);
                 }
                 break;
         }
@@ -442,9 +451,19 @@ public class P25P1NetworkConfigurationMonitor
 
         if(mSNDCPDataChannel != null)
         {
-            sb.append("  CURRENT DATA CHANNEL:").append(mSNDCPDataChannel.getChannel());
+            sb.append("  CURRENT FDMA DATA CHANNEL:").append(mSNDCPDataChannel.getChannel());
             sb.append(" DOWNLINK:").append(mSNDCPDataChannel.getChannel().getDownlinkFrequency());
             sb.append(" UPLINK:").append(mSNDCPDataChannel.getChannel().getUplinkFrequency()).append("\n");
+        }
+
+        if(!mTDMADataChannelMap.isEmpty())
+        {
+            for(Map.Entry<APCO25Channel, MotorolaExplicitTDMADataChannelAnnouncement> entry: mTDMADataChannelMap.entrySet())
+            {
+                sb.append("  ACTIVE TDMA DATA CHANNEL:").append(entry.getKey());
+                sb.append(" DOWNLINK:").append(entry.getKey().getDownlinkFrequency());
+                sb.append(" UPLINK:").append(entry.getKey().getUplinkFrequency()).append("\n");
+            }
         }
 
         if(mMotorolaBaseStationId != null)

@@ -126,6 +126,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorol
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaGroupRegroupVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaQueuedResponse;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.DatchTimeslot;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.Collections;
@@ -239,6 +240,11 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
                 //If we're tracking the call event, update the duration on it
                 mTrafficChannelManager.processP2TrafficVoice(getCurrentFrequency(), getTimeslot(), message.getTimestamp());
+            }
+            //Motorola TDMA data channel.
+            else if(message instanceof DatchTimeslot)
+            {
+                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA, getTimeslot()));
             }
             else if(message instanceof EncryptionSynchronizationSequence ess)
             {
@@ -522,6 +528,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 break;
             case MOTOROLA_89_GROUP_REGROUP_DELETE:
                 processDynamicRegrouping(message, mac);
+                break;
+            case MOTOROLA_8B_TDMA_DATA_CHANNEL:
                 break;
             case MOTOROLA_91_TALKER_ALIAS_HEADER:
                 //Unknown

@@ -70,4 +70,12 @@ public abstract class MacStructureVariableLength extends MacStructure
     {
         return getLength(getMessage(), getOffset());
     }
+
+    /**
+     * Message fragment for this variable length message.
+     */
+    public CorrectedBinaryMessage getSubMessage()
+    {
+        return getMessage().getSubMessage(getOffset(), getOffset() + (getLength() * 8));
+    }
 }
