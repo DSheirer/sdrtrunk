@@ -36,6 +36,7 @@ public class P25TrafficChannelEventTracker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(P25TrafficChannelEventTracker.class);
     private static final long STALE_EVENT_THRESHOLD_MS = 2000;
+    private static final long MAX_TDMA_DATA_CHANNEL_EVENT_DURATION_MS = 15000;
     private P25ChannelGrantEvent mEvent;
     private boolean mStarted = false;
     private boolean mComplete = false;
@@ -72,6 +73,14 @@ public class P25TrafficChannelEventTracker
         }
 
         return timestamp - getEvent().getTimeStart() > STALE_EVENT_THRESHOLD_MS;
+    }
+
+    /**
+     * Indicates if the TDMA data channel duration exceeds the threshold (15 seconds)
+     */
+    public boolean exceedsMaxTDMADataDuration()
+    {
+        return getEvent().getDuration() > MAX_TDMA_DATA_CHANNEL_EVENT_DURATION_MS;
     }
 
     /**

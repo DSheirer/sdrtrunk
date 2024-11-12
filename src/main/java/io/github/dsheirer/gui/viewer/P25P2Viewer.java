@@ -90,6 +90,9 @@ public class P25P2Viewer extends VBox
     private static final Logger mLog = LoggerFactory.getLogger(P25P2Viewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
     private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.p25p2";
+    private static final String LAST_WACN_VALUE = "last.wacn.value.p25p2";
+    private static final String LAST_SYSTEM_VALUE = "last.system.value.p25p2";
+    private static final String LAST_NAC_VALUE = "last.nac.value.p25p2";
     private static final String FILE_FREQUENCY_REGEX = ".*\\d{8}_\\d{6}_(\\d{9}).*";
     private Preferences mPreferences = Preferences.userNodeForPackage(P25P2Viewer.class);
     private Button mSelectFileButton;
@@ -415,6 +418,12 @@ public class P25P2Viewer extends VBox
         if(mWACNTextField == null)
         {
             mWACNTextField = new IntegerTextField();
+            mWACNTextField.textProperty().addListener((ob, ol, ne) -> mPreferences.putInt(LAST_WACN_VALUE, getWACNTextField().get()));
+            int previous = mPreferences.getInt(LAST_WACN_VALUE, 0);
+            if(previous > 0)
+            {
+                getWACNTextField().set(previous);
+            }
         }
 
         return mWACNTextField;
@@ -425,6 +434,12 @@ public class P25P2Viewer extends VBox
         if(mSystemTextField == null)
         {
             mSystemTextField = new IntegerTextField();
+            mSystemTextField.textProperty().addListener((ob, ol, ne) -> mPreferences.putInt(LAST_SYSTEM_VALUE, getSystemTextField().get()));
+            int previous = mPreferences.getInt(LAST_SYSTEM_VALUE, 0);
+            if(previous > 0)
+            {
+                getSystemTextField().set(previous);
+            }
         }
 
         return mSystemTextField;
@@ -435,6 +450,12 @@ public class P25P2Viewer extends VBox
         if(mNACTextField == null)
         {
             mNACTextField = new IntegerTextField();
+            mNACTextField.textProperty().addListener((ob, ol, ne) -> mPreferences.putInt(LAST_NAC_VALUE, getNACTextField().get()));
+            int previous = mPreferences.getInt(LAST_NAC_VALUE, 0);
+            if(previous > 0)
+            {
+                getNACTextField().set(previous);
+            }
         }
 
         return mNACTextField;

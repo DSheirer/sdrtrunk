@@ -17,37 +17,46 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25.phase2.timeslot;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
-import java.util.Collections;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureVendor;
 import java.util.List;
 
 /**
- * Unknown timeslot - usually happens when we decode the Data Unit ID incorrectly.
+ * Motorola Unknown Opcode 135
+ *
+ * This message was observed on a TDMA dedicated data channel for the Victoria Radio Network (VRN).  It may be an
+ * indicator that this is a data channel.
  */
-public class UnknownTimeslot extends Timeslot
+public class MotorolaUnknownOpcode135 extends MacStructureVendor
 {
-    public UnknownTimeslot(CorrectedBinaryMessage message, int timeslot,  long timestamp, DataUnitID dataUnitID)
+    /**
+     * Constructs the message
+     *
+     * @param message containing the message bits
+     * @param offset into the message for this structure
+     */
+    public MotorolaUnknownOpcode135(CorrectedBinaryMessage message, int offset)
     {
-        super(message, dataUnitID, timeslot, timestamp);
+        super(message, offset);
     }
 
-    @Override
+    /**
+     * Textual representation of this message
+     */
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("TS").append(getTimeslot());
-        sb.append(" UNKNOWN TIMESLOT - DATA UNIT ID: ").append(getDataUnitID());
-        sb.append(" MSG:").append(getMessage().toHexString());
+        sb.append(getOpcode());
+        sb.append(" MSG:").append(getSubMessage().toHexString());
         return sb.toString();
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.EMPTY_LIST;
+        return List.of();
     }
 }

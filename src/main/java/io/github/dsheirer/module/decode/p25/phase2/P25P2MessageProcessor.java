@@ -36,6 +36,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorol
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motorola.MotorolaTalkerAliasHeader;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.DatchTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice2Timeslot;
 import io.github.dsheirer.sample.Listener;
@@ -98,7 +99,11 @@ public class P25P2MessageProcessor implements Listener<IMessage>
 
                 for(Timeslot timeslot: sff.getTimeslots())
                 {
-                    if(timeslot instanceof AbstractSignalingTimeslot)
+                    if(timeslot instanceof DatchTimeslot)
+                    {
+                        mMessageListener.receive(timeslot);
+                    }
+                    else if(timeslot instanceof AbstractSignalingTimeslot)
                     {
                         AbstractSignalingTimeslot ast = (AbstractSignalingTimeslot)timeslot;
 

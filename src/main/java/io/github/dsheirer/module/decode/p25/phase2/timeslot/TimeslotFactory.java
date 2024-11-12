@@ -52,6 +52,8 @@ public class TimeslotFactory
                 return new FacchTimeslot(message, scramblingSequence, timeslot, timestamp);
             case SCRAMBLED_SACCH:
                 return new SacchTimeslot(message, scramblingSequence, timeslot, timestamp);
+            case SCRAMBLED_DATCH:
+                return new DatchTimeslot(message, scramblingSequence, timeslot, timestamp);
             case UNSCRAMBLED_FACCH:
                 return new FacchTimeslot(message, timeslot, timestamp);
             case UNSCRAMBLED_SACCH:
