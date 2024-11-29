@@ -30,7 +30,7 @@ public abstract class VectorInterpolator extends Interpolator
     public float filter(float[] samples, int offset, float mu)
     {
         /* Ensure we have enough samples in the array */
-        Validate.isTrue(samples.length >= offset + 7);
+        Validate.isTrue(samples.length >= offset + 7, "Offset [" + offset + "] must be 7 less than length[" + samples.length + "]");
 
         //Identify the filter bank that corresponds to mu.  Note: since we're not loading the TAPS in reverse order,
         //we select the inverse tap index that has the mirrored set of taps, by subtracting from 127.

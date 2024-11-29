@@ -81,7 +81,7 @@ public class DQPSKVectorDemodulator2
     private DecisionDirectedDQPSKSymbolDecoder mDecoder;
     private float mSymbolPointer = -5;
     private DmrSymbolProcessor mSymbolProcessor = new DmrSymbolProcessor();
-    private int mSamplesProcessed = 0;
+    private DmrSymbolProcessor2 mSymbolProcessor2 = new DmrSymbolProcessor2();
 
     /**
      * Constructor
@@ -106,19 +106,6 @@ public class DQPSKVectorDemodulator2
     {
         int sampleLength = samples.i().length;
         int bufferOverlap = mBufferOverlap;
-
-        int target = 308_500;
-        if(mSamplesProcessed <= target && (mSamplesProcessed + sampleLength) >= target)
-        {
-            mSymbolProcessor.reset();
-        }
-
-        mSamplesProcessed += sampleLength;
-
-        if(mSamplesProcessed >= target)
-        {
-            int a = 0;
-        }
 
         //Copy previous buffer residual samples to beginning of buffer.
         System.arraycopy(mIBuffer, mIBuffer.length - bufferOverlap, mIBuffer, 0, bufferOverlap);
@@ -167,7 +154,8 @@ public class DQPSKVectorDemodulator2
             differentialQ.lanewise(VectorOperators.ATAN2, differentialI).intoArray(decodedPhases, 0);
 
             //Process decoded phase array to extract/accumulate symbols and update timing
-            mSymbolProcessor.process(decodedPhases);
+//            mSymbolProcessor.process(decodedPhases);
+            mSymbolProcessor2.process(decodedPhases);
             updateObservedSamplesPerSymbol(mSymbolProcessor.getObservedSamplesPerSymbol());
         }
 
@@ -185,6 +173,7 @@ public class DQPSKVectorDemodulator2
         mSamplesPerSymbol = mSampleRate / mSymbolRate;
         mDecoder.setSampleRate(mSampleRate);
         mSymbolProcessor.setSamplesPerSymbol(mSamplesPerSymbol);
+        mSymbolProcessor2.setSamplesPerSymbol(mSamplesPerSymbol);
         updateObservedSamplesPerSymbol(mSamplesPerSymbol);
     }
 
@@ -246,11 +235,10 @@ public class DQPSKVectorDemodulator2
         IRealFilter iMatchedFilter = FilterFactory.getRealFilter(matchedFilterCoefficients);
         IRealFilter qMatchedFilter = FilterFactory.getRealFilter(matchedFilterCoefficients);
 
-//        String directory = "/home/denny/SDRTrunk/recordings/";
-        String directory = "C:\\Users\\sheirerd\\SDRTrunk\\recordings\\";
-
-        //        String file = directory + "20230819_064211_451250000_SaiaNet_Syracuse_Control_29_baseband.wav";
-        String file = directory + "20230819_064344_454575000_JPJ_Communications_(DMR)_Madison_Control_28_baseband.wav";
+        String directory = "D:\\DQPSK Equalizer Research\\";
+        String file = directory + "DMR_1_CAPPLUS.wav";
+//        String file = directory + "DMR_2_CAPPLUS.wav";
+//        String file = directory + "DMR_3_CAPPLUS.wav";
         boolean autoReplay = false;
 
         DQPSKVectorDemodulator2 demodulator = new DQPSKVectorDemodulator2(4800);
@@ -282,7 +270,7 @@ public class DQPSKVectorDemodulator2
                     return;
                 }
 
-                System.out.println(iMessage + " [" + errors + " / " + mBitErrorCounter + "]");
+//                System.out.println(iMessage + " [" + errors + " / " + mBitErrorCounter + "]");
             }
         };
         framer.setListener(listener);
@@ -290,9 +278,6 @@ public class DQPSKVectorDemodulator2
         Listener<INativeBuffer> nativeBufferListener = new Listener<INativeBuffer>()
         {
             private int mSampleCounter = 0;
-            private IComplexOscillator mixer = OscillatorFactory.getComplexOscillator(441, 50000);
-            private FloatFFT_1D mFFT = new FloatFFT_1D(1024);
-            private float mGain = 5000.0f;
 
             @Override
             public void receive(INativeBuffer iNativeBuffer)
@@ -320,69 +305,13 @@ public class DQPSKVectorDemodulator2
                     iFiltered = iChannelFilter.filter(iFiltered);
                     qFiltered = qChannelFilter.filter(qFiltered);
 
-                    iFiltered = iMatchedFilter.filter(iFiltered);
-                    qFiltered = qMatchedFilter.filter(qFiltered);
-
-//                    float[] iMatched = iMatchedFilter.filter(iFiltered);
-//                    float[] qMatched = qMatchedFilter.filter(qFiltered);
-
-//                    int offset = 52;
-//
-//                    for (int x = offset; x < iMatched.length - offset; x++)
-//                    {
-//                        System.out.println(DECIMAL_FORMAT.format(iFiltered[x - offset]) + "," +
-//                                DECIMAL_FORMAT.format(iMatched[x]));
-//                    }
+//                    iFiltered = iMatchedFilter.filter(iFiltered);
+//                    qFiltered = qMatchedFilter.filter(qFiltered);
 
                     ComplexSamples filtered = new ComplexSamples(iFiltered, qFiltered, unfiltered.timestamp());
                     demodulator.receive(filtered);
 
-                    int target = 1378810; //start of carrier tone.
-//                    int target = 1378773;
-                    if(mSampleCounter <= target && target <= (mSampleCounter + iFiltered.length))
-                    {
-//                        float[] iFFT = Arrays.copyOfRange(iFiltered, 520, 1544);
-//                        float[] qFFT = Arrays.copyOfRange(qFiltered, 520, 1544);
-//
-//                        float[] mixed = new float[2048];
-//                        for(int a = 0; a < 1024; a++)
-//                        {
-//                            mixed[2 * a] = iFFT[a];
-//                            mixed[2 * a + 1] = qFFT[a];
-//                        }
-//                        mFFT.complexForward(mixed);
-//                        float[] mags = new float[1024];
-//
-//                        for(int b = 0; b < 1024; b++)
-//                        {
-//                            mags[b] = (float)Math.sqrt(Math.pow(mixed[2 * b], 2) + Math.pow(mixed[2 * b + 1], 2));
-//                        }
-//
-//                        float[] magsAdjusted = new float[1024];
-//                        System.arraycopy(mags, 0, magsAdjusted, 512, 512);
-//                        System.arraycopy(mags, 512, magsAdjusted, 0, 512);
-//
-//                        for(int b = 0; b < 1024; b++)
-//                        {
-//                            System.out.println(magsAdjusted[b]);
-//                        }
-
-//                        ComplexSamples offset = mixer.generateComplexSamples(2048, 0);
-//
-//                        System.out.println("Buffer: " + mSampleCounter);
-//
-//                        for(int x = 0; x < iFiltered.length; x++)
-//                        {
-//                            float i = Complex.multiplyInphase(iFiltered[x], qFiltered[x], offset.i()[x], offset.q()[x]);
-//                            float q = Complex.multiplyQuadrature(iFiltered[x], qFiltered[x], offset.i()[x], offset.q()[x]);
-//                            System.out.println(DECIMAL_FORMAT.format(Math.atan2(q, i)));
-//                        }
-
-                        int a = 0;
-                    }
-
                     mSampleCounter += iFiltered.length;
-
                 }
             }
         };

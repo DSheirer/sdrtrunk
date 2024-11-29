@@ -22,6 +22,8 @@ package io.github.dsheirer.dsp.psk.vector;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 
+import java.util.Arrays;
+
 /**
  * DMR Sync Detector.  Uses soft demodulated symbols to detect sync patterns in the demodulated symbol stream.
  */
@@ -38,6 +40,15 @@ public class ScalarDmrSyncDetector
     public ScalarDmrSyncDetector()
     {
         mSyncBsData = DMRSyncPattern.BASE_STATION_DATA.toSymbols();
+    }
+
+    /**
+     * Resets this sync detector and flushes any stored soft symbols from the buffer.
+     */
+    public void reset()
+    {
+        Arrays.fill(mSymbols, 0.0f);
+        mSymbolPointer = 0;
     }
 
     /**
@@ -65,5 +76,11 @@ public class ScalarDmrSyncDetector
         }
 
         return accumulator;
+    }
+
+    public void logSymbols()
+    {
+        float[] symbols = Arrays.copyOfRange(mSymbols, mSymbolPointer, mSymbolPointer + 24);
+        System.out.println("Detector Symbols: " + Arrays.toString(symbols));
     }
 }

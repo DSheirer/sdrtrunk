@@ -23,12 +23,19 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import java.util.Arrays;
 
+/**
+ * Implements a circular buffer delay line for dibits.
+ */
 public class DibitDelayLine
 {
     private Dibit[] mDelayLine;
     private int mPointer;
     private int mLength;
 
+    /**
+     * Constructs an instance
+     * @param length of the delay line in dibits.
+     */
     public DibitDelayLine(int length)
     {
         mLength = length;
@@ -58,27 +65,6 @@ public class DibitDelayLine
         {
             mDelayLine[mPointer++] = dibit;
             mPointer %= mLength;
-        }
-    }
-
-    public static void main(String[] args)
-    {
-        DibitDelayLine delay = new DibitDelayLine(24);
-
-        Dibit[] dibits = DMRSyncPattern.BASE_STATION_DATA.toDibits();
-
-        for(Dibit dibit: dibits)
-        {
-            Dibit returned = delay.insert(dibit);
-            System.out.println("Insert " + dibit + " Return:" + returned);
-        }
-
-        System.out.println("Fully stuffed!");
-
-        for(Dibit dibit: dibits)
-        {
-            Dibit returned = delay.insert(dibit);
-            System.out.println("Insert " + dibit + " Return:" + returned);
         }
     }
 }
