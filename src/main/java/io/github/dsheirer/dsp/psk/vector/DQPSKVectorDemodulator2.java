@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@ import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.interpolator.Interpolator;
 import io.github.dsheirer.dsp.filter.interpolator.InterpolatorFactory;
-import io.github.dsheirer.dsp.oscillator.IComplexOscillator;
-import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
@@ -44,7 +42,6 @@ import java.util.List;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
-import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,7 +232,8 @@ public class DQPSKVectorDemodulator2
         IRealFilter iMatchedFilter = FilterFactory.getRealFilter(matchedFilterCoefficients);
         IRealFilter qMatchedFilter = FilterFactory.getRealFilter(matchedFilterCoefficients);
 
-        String directory = "D:\\DQPSK Equalizer Research\\";
+//        String directory = "D:\\DQPSK Equalizer Research\\"; //Windows
+        String directory = "/media/denny/T9/DQPSK Equalizer Research/"; //Linux
         String file = directory + "DMR_1_CAPPLUS.wav";
 //        String file = directory + "DMR_2_CAPPLUS.wav";
 //        String file = directory + "DMR_3_CAPPLUS.wav";
