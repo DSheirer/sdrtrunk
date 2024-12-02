@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer, 2024 Ilya Smirnov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,26 @@ import java.util.List;
  */
 public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMessage
 {
+    private static final byte[] LOOKUP_TABLE =
+    {
+         -14,   46,  102, -112,  116, -118,  111,  120,  -69,   83,    3,   17,  104,  -51,   68,   23,
+          40,   95,   30, -124,  117,  121,  110, -101,   44,  -66,   98,   45,  -15,  124,  -72, -125,
+         -39,   78,  109,    2,   97,   61,  -88,    6,  -71,   -8, -100,   55,   58,   35,  -63,   80,
+         -19,  -97,  -81,   59,  -67, -126,  -70,  -96,  -33,  -62,   71,   34,  -16,  -18,  -95,   -2,
+         -94,   16,   91,   72,   87,  -93,    5,   96,  123,   13,   -7,  108,  -77,   86,   76,  -68,
+          41,  -92,   15,  -20,  -74,  -91,  -90,   60,  127,  107,  -76,   33,  -83,  -82,  -60,  -56,
+         -59,   93,  -34,  -32,   29,   25,   75,  -58,   12,   63,   90,  -57,  -31,   89,   85,   84,
+          74,   67,   66,  -30,  -29,   -6,    0,  -28,  -27,   24,   65,   11,   10,  -26,   -4,   -3,
+         -46,  -10,  -44,   43,   99,   73, -108,   94,  -89,   92,  112,  105,   -9,    8,  -79,  125,
+          56,  -49,  -52,  -40,   81, -113,  -43, -109,  106,  -13,  -17,  126,   -5,  100,  -12,   53,
+          39,    7,   49,   20, -121, -104,  118,   52,  -54, -110,   51,   27,   79, -116,    9,   64,
+          50,   54,  119,   18,  -45,  -61,    1,  -85,  114, -127, -107,  -55,  -64,  -23,  101,   82,
+          36,   48,   28,  -37, -120,  -24, -105,  -99,   88,   38,    4,   57,  -84,   42,  -98,  -86,
+          37,  -41,  -50,  -21, -106,  -11,   14, -115,  -36,  -87,   47,  -35,   31,  -22, -111,  -73,
+         -42, -119, -117,  -47,  -80, -103,   19,  122,  -25, -102,  -75, -122,   -1,   70, -123,  -78,
+         115,  -38,  -65,  -48,  113,  -53,   77, -128,   21,  103,   22,   26,   32, -114,   69,   62
+    };
+
     private static final IntField SUID_WACN = IntField.length20(OCTET_0_BIT_0);
     private static final IntField SUID_SYSTEM = IntField.length12(OCTET_2_BIT_16 + 4);
     private static final IntField SUID_ID = IntField.length24(OCTET_4_BIT_32);
@@ -113,9 +133,64 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
     {
         if(mAlias == null)
         {
-            //BinaryMessage encoded = getEncodedAlias();
-            //TODO: implement decoding of the encoded alias.
-            String alias = "*ALIAS " + getRadio().getValue() + "*"; //Temporary value until we implement decoding
+            byte[] encoded = getEncodedAlias().toByteArray();
+
+            // TODO: check CRC in last two bytes to validate alias has no errors
+            //
+            //   Data:  wwwww sss iiiiii aaaa...aaaa cccc
+            //
+            //   - w = WACN
+            //   - s = system
+            //   - i = id
+            //   - a = encoded alias
+            //   - c = CRC-16/GSM of the previous bytes
+
+            // Get number of bytes and characters excluding checksum
+            char bytes = (char)(encoded.length - 2);
+            char chars = (char)(bytes / 2);
+
+            // Create array for decoded computed bytes (big-endian)
+            byte[] decoded = new byte[encoded.length];
+
+            // Set up the long-running accumulator
+            char accumulator = bytes;
+            char byteIndex = 0;
+
+            // Calculate each byte sequentially
+            do
+            {
+                // Multiplication step 1
+                char accumMult = (char)(((accumulator + 65536) % 65536) * 293 + 0x72E9);
+
+                // Lookup table step
+                byte lut = LOOKUP_TABLE[encoded[byteIndex] + 128];
+                byte mult1 = (byte)(lut - (byte)(accumMult >> 8));
+
+                // Incrementing step
+                byte mult2 = 1;
+                byte shortstop = (byte)(accumMult | 0x1);
+                byte increment = (byte)(shortstop << 1);
+
+                while(mult2 != -1 && shortstop != 1) {
+                    shortstop = (byte)(shortstop + increment);
+                    mult2 += 2;
+                }
+
+                // Multiplication step 2
+                decoded[byteIndex] = (byte)(mult1 * mult2);
+
+                // Update the accumulator
+                accumulator += (char)(((encoded[byteIndex] + 256) % 256) + 1);
+                byteIndex += 1;
+            }
+            while(byteIndex < bytes);
+
+            // Copy decoded bytes (as chars) to our alias string
+            String alias = "";
+            for (char i = 0; i < chars; i++) {
+                alias += (char)((decoded[i * 2] << 8) | decoded[i * 2 + 1]);
+            }
+
             mAlias = P25TalkerAliasIdentifier.create(alias);
         }
 
@@ -192,8 +267,7 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getTalkgroup());
             mIdentifiers.add(getRadio());
-            //TODO: uncomment once alias decoding is implemented.
-//            mIdentifiers.add(getAlias());
+            mIdentifiers.add(getAlias());
         }
 
         return mIdentifiers;
