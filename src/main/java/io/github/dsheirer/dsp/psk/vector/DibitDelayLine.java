@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 package io.github.dsheirer.dsp.psk.vector;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import java.util.Arrays;
 
 /**
@@ -29,7 +28,7 @@ import java.util.Arrays;
 public class DibitDelayLine
 {
     private Dibit[] mDelayLine;
-    private int mPointer;
+    public int mPointer;
     private int mLength;
 
     /**
@@ -50,9 +49,10 @@ public class DibitDelayLine
      */
     public Dibit insert(Dibit dibit)
     {
+        Dibit ejected = mDelayLine[mPointer];
         mDelayLine[mPointer++] = dibit;
         mPointer %= mLength;
-        return mDelayLine[mPointer];
+        return ejected;
     }
 
     /**

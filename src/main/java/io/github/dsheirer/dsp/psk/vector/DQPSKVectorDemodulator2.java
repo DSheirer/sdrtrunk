@@ -27,7 +27,6 @@ import io.github.dsheirer.dsp.filter.interpolator.Interpolator;
 import io.github.dsheirer.dsp.filter.interpolator.InterpolatorFactory;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.dmr.DMRMessageFramer;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.sample.Listener;
@@ -38,7 +37,6 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -70,14 +68,13 @@ public class DQPSKVectorDemodulator2
     private float mMu;
     private int mBufferOverlap;
     private int mInterpolationOffset;
-    private Listener<List<Dibit>> mSymbolListener;
+    private Listener<Dibit> mSymbolListener;
     private static final DecimalFormat DEGREE_FORMAT = new DecimalFormat("+#000.0;-#000.0");
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("+#0.00000;-#0.00000");
     private static final DecimalFormat I_Q_FORMAT = new DecimalFormat("+#0.0000000;-#0.0000000");
     private final Interpolator mInterpolator = InterpolatorFactory.getInterpolator();
     private DecisionDirectedDQPSKSymbolDecoder mDecoder;
     private float mSymbolPointer = -5;
-    private DmrSymbolProcessor mSymbolProcessor = new DmrSymbolProcessor();
     private DmrSymbolProcessor2 mSymbolProcessor2 = new DmrSymbolProcessor2();
 
     /**
@@ -94,9 +91,10 @@ public class DQPSKVectorDemodulator2
      * Sets the listener to receive decoded symbols.
      * @param symbolListener to receive symbols.
      */
-    public void setSymbolListener(Listener<List<Dibit>> symbolListener)
+    public void setSymbolListener(Listener<Dibit> symbolListener)
     {
-        mSymbolListener = symbolListener;
+        mSymbolProcessor2.setListener(symbolListener);
+//        mSymbolListener = symbolListener;
     }
 
     public void receive(ComplexSamples samples)
@@ -153,11 +151,7 @@ public class DQPSKVectorDemodulator2
             //Process decoded phase array to extract/accumulate symbols and update timing
 //            mSymbolProcessor.process(decodedPhases);
             mSymbolProcessor2.process(decodedPhases);
-            updateObservedSamplesPerSymbol(mSymbolProcessor.getObservedSamplesPerSymbol());
         }
-
-        //Retrieve accumulated symbols from the processor and broadcast.
-        broadcast(mSymbolProcessor.getSymbolsAndClear());
     }
 
     /**
@@ -169,7 +163,6 @@ public class DQPSKVectorDemodulator2
         mSampleRate = (float)sampleRate;
         mSamplesPerSymbol = mSampleRate / mSymbolRate;
         mDecoder.setSampleRate(mSampleRate);
-        mSymbolProcessor.setSamplesPerSymbol(mSamplesPerSymbol);
         mSymbolProcessor2.setSamplesPerSymbol(mSamplesPerSymbol);
         updateObservedSamplesPerSymbol(mSamplesPerSymbol);
     }
@@ -183,18 +176,6 @@ public class DQPSKVectorDemodulator2
         mMu = samplesPerSymbol % 1; //Fractional part of the samples per symbol rate
         mInterpolationOffset = (int)Math.floor(samplesPerSymbol) - 4; //Interpolate at the middle of 8x samples
         mBufferOverlap = (int)Math.floor(samplesPerSymbol) + 4;
-    }
-
-    /**
-     * Broadcasts the demodulated dibit symbols to a registered listener
-     * @param symbols to broadcast
-     */
-    private void broadcast(List<Dibit> symbols)
-    {
-        if(mSymbolListener != null)
-        {
-            mSymbolListener.receive(symbols);
-        }
     }
 
     public static void main(String[] args)
@@ -241,12 +222,7 @@ public class DQPSKVectorDemodulator2
 
         DQPSKVectorDemodulator2 demodulator = new DQPSKVectorDemodulator2(4800);
         DMRMessageFramer framer = new DMRMessageFramer(null);
-        demodulator.setSymbolListener(dibits -> {
-            for(Dibit dibit : dibits)
-            {
-                framer.receive(dibit);
-            }
-        });
+        demodulator.setSymbolListener(framer);
         Listener<IMessage> listener = new Listener<>()
         {
             private int mBitErrorCounter;
@@ -261,14 +237,14 @@ public class DQPSKVectorDemodulator2
                     errors = burst.getMessage().getCorrectedBitCount();
                     mBitErrorCounter += errors;
                 }
-                else if(iMessage instanceof SyncLossMessage loss)
-                {
-                    errors = loss.getBitsProcessed();
-                    mBitErrorCounter += errors;
-                    return;
-                }
+//                else if(iMessage instanceof SyncLossMessage loss)
+//                {
+//                    errors = loss.getBitsProcessed();
+//                    mBitErrorCounter += errors;
+//                    return;
+//                }
 
-//                System.out.println(iMessage + " [" + errors + " / " + mBitErrorCounter + "]");
+                System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " [" + errors + " / " + mBitErrorCounter + "]");
             }
         };
         framer.setListener(listener);
