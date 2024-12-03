@@ -187,6 +187,9 @@ public class TunerFactory
                         break;
                 }
                 break;
+            default:
+                mLog.warn("SDRPlay API returned an unknown tuner type [" + deviceInfo.getDeviceType() +
+                        "] with serial number [" + deviceInfo.getSerialNumber() + "]");
         }
 
         return tuners;

@@ -21,12 +21,15 @@ package io.github.dsheirer.source.tuner.sdrplay.api.device;
 
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_08.sdrplay_api_DeviceT;
 import java.lang.foreign.MemorySegment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * sdrplay_api_DeviceT structure parser for API version 3.07
+ * sdrplay_api_DeviceT structure parser for API version 3.08+
  */
 public class DeviceStruct_v3_08 implements IDeviceStruct
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeviceStruct_v3_08.class);
     private final MemorySegment mDeviceMemorySegment;
     private final DeviceType mDeviceType;
     private final String mSerialNumber;
@@ -38,9 +41,17 @@ public class DeviceStruct_v3_08 implements IDeviceStruct
     public DeviceStruct_v3_08(MemorySegment deviceMemorySegment)
     {
         mDeviceMemorySegment = deviceMemorySegment;
-        mDeviceType = DeviceType.fromValue(0xFF & sdrplay_api_DeviceT.hwVer(mDeviceMemorySegment));
+        int deviceTypeValue = 0xFF & sdrplay_api_DeviceT.hwVer(mDeviceMemorySegment);
+        mDeviceType = DeviceType.fromValue(deviceTypeValue);
+
         MemorySegment serialSegment = sdrplay_api_DeviceT.SerNo(mDeviceMemorySegment);
         mSerialNumber = serialSegment.getString(0);
+
+        if(mDeviceType == DeviceType.UNKNOWN)
+        {
+            LOGGER.warn("Unrecognized RSP tuner device type value [" + deviceTypeValue + "] with serial number [" +
+                    mSerialNumber + "]");
+        }
     }
 
     @Override public MemorySegment getDeviceMemorySegment()
