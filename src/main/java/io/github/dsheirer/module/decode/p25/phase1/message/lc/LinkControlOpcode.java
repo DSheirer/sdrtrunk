@@ -95,6 +95,7 @@ public enum LinkControlOpcode
 
     MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_USER("MOTOROLA GROUP REGROUP VOICE CHANNEL USER", 0),
     MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_UPDATE("MOTOROLA GROUP REGROUP VOICE CHANNEL UPDATE", 1),
+    MOTOROLA_FAILSOFT("MOTOROLA FAILSOFT", 2),
     MOTOROLA_GROUP_REGROUP_ADD("MOTOROLA GROUP REGROUP ADD", 3),
     MOTOROLA_GROUP_REGROUP_DELETE("MOTOROLA GROUP REGROUP DELETE", 4),
     MOTOROLA_UNIT_GPS("MOTOROLA UNIT GPS", 6),
@@ -241,6 +242,8 @@ public enum LinkControlOpcode
                         return MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_USER;
                     case 1:
                         return MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_UPDATE;
+                    case 2:
+                        return MOTOROLA_FAILSOFT;
                     case 3:
                         return MOTOROLA_GROUP_REGROUP_ADD;
                     case 4:
