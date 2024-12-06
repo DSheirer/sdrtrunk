@@ -19,7 +19,9 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.CRC16;
 import io.github.dsheirer.message.TimeslotMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.protocol.Protocol;
@@ -137,11 +139,37 @@ public class LCMotorolaTalkerAliasAssembler
             offset += DATA_BLOCK_FRAGMENT_LENGTH;
         }
 
+        trimTalkerAliasLength(reassembled);
         MotorolaTalkerAliasComplete complete = new MotorolaTalkerAliasComplete(reassembled, mHeader.getTalkgroup(),
                 mHeader.getSequence(), TimeslotMessage.TIMESLOT_0, mMostRecentTimestamp, Protocol.APCO25);
+
+        //   Data:  wwwww sss iiiiii aaaa...aaaa cccc
+        //
+        //   - w = WACN
+        //   - s = system
+        //   - i = id
+        //   - a = encoded alias
+        //   - c = CRC-16/GSM of the previous bytes
+        complete.setValid(CRC16.check(reassembled));
 
         mHeader = null;
         mDataBlocks.clear();
         return complete;
+    }
+
+
+    /**
+     * Trims the message length to exclude pad zeros so that the CRC calculation knows where to finish.
+     * @param message containing an encoded talker alias.
+     */
+    public static void trimTalkerAliasLength(BinaryMessage message)
+    {
+        int x = 72; //Minimum bit size WACN + SYS + RADIO + 1 CHARACTER = 18 Hex Characters * 4 Bits Each
+        while(message.nextSetBit(x) > 0 && x < message.size())
+        {
+            x += 8;
+        }
+
+        message.setSize(x);
     }
 }
