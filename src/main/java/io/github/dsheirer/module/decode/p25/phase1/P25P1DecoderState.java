@@ -317,7 +317,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     break;
             }
         }
-        else if(iMessage instanceof MotorolaTalkerAliasComplete tac)
+        else if(iMessage instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
         {
             mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
         }

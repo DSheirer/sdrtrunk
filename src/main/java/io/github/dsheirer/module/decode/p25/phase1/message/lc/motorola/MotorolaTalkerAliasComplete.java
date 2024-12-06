@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer, 2024 Ilya Smirnov
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,10 +99,15 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
         {
             sb.append("TS").append(getTimeslot()).append(" ");
         }
+
+        if(!isValid())
+        {
+            sb.append("(CRC FAILED) ");
+        }
+
         sb.append("MOTOROLA TALKER ALIAS COMPLETE");
         sb.append(" RADIO:").append(getRadio());
         sb.append(" TG:").append(getTalkgroup());
-        sb.append(" ENCODED:").append(getEncodedAlias().toHexString());
         sb.append(" ALIAS:").append(getAlias());
         sb.append(" SEQUENCE:").append(mSequence);
         sb.append(" MSG:").append(getMessage().toHexString());
@@ -135,8 +140,7 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
         {
             byte[] encoded = getEncodedAlias().toByteArray();
 
-            // TODO: check CRC in last two bytes to validate alias has no errors
-            //
+            // Note: CRC check is performed by assembler.
             //   Data:  wwwww sss iiiiii aaaa...aaaa cccc
             //
             //   - w = WACN
@@ -144,10 +148,9 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
             //   - i = id
             //   - a = encoded alias
             //   - c = CRC-16/GSM of the previous bytes
-
             // Get number of bytes and characters excluding checksum
-            char bytes = (char)(encoded.length - 2);
-            char chars = (char)(bytes / 2);
+            char bytes = (char) (encoded.length - 2);
+            char chars = (char) (bytes / 2);
 
             // Create array for decoded computed bytes (big-endian)
             byte[] decoded = new byte[encoded.length];
@@ -160,35 +163,37 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
             do
             {
                 // Multiplication step 1
-                char accumMult = (char)(((accumulator + 65536) % 65536) * 293 + 0x72E9);
+                char accumMult = (char) (((accumulator + 65536) % 65536) * 293 + 0x72E9);
 
                 // Lookup table step
                 byte lut = LOOKUP_TABLE[encoded[byteIndex] + 128];
-                byte mult1 = (byte)(lut - (byte)(accumMult >> 8));
+                byte mult1 = (byte) (lut - (byte) (accumMult >> 8));
 
                 // Incrementing step
                 byte mult2 = 1;
-                byte shortstop = (byte)(accumMult | 0x1);
-                byte increment = (byte)(shortstop << 1);
+                byte shortstop = (byte) (accumMult | 0x1);
+                byte increment = (byte) (shortstop << 1);
 
-                while(mult2 != -1 && shortstop != 1) {
-                    shortstop = (byte)(shortstop + increment);
+                while(mult2 != -1 && shortstop != 1)
+                {
+                    shortstop = (byte) (shortstop + increment);
                     mult2 += 2;
                 }
 
                 // Multiplication step 2
-                decoded[byteIndex] = (byte)(mult1 * mult2);
+                decoded[byteIndex] = (byte) (mult1 * mult2);
 
                 // Update the accumulator
-                accumulator += (char)(((encoded[byteIndex] + 256) % 256) + 1);
+                accumulator += (char) (((encoded[byteIndex] + 256) % 256) + 1);
                 byteIndex += 1;
             }
             while(byteIndex < bytes);
 
             // Copy decoded bytes (as chars) to our alias string
             String alias = "";
-            for (char i = 0; i < chars; i++) {
-                alias += (char)((decoded[i * 2] << 8) | decoded[i * 2 + 1]);
+            for(char i = 0; i < chars; i++)
+            {
+                alias += (char) ((decoded[i * 2] << 8) | decoded[i * 2 + 1]);
             }
 
             mAlias = P25TalkerAliasIdentifier.create(alias);
@@ -267,7 +272,12 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getTalkgroup());
             mIdentifiers.add(getRadio());
-            mIdentifiers.add(getAlias());
+
+            //Only add the alias if it passes the CRC check.
+            if(isValid())
+            {
+                mIdentifiers.add(getAlias());
+            }
         }
 
         return mIdentifiers;
