@@ -28,6 +28,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisT
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode42;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode43;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaEmergencyAlarmActivation;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaFailsoft;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupGroupDelete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupAdd;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupVoiceChannelUpdate;
@@ -175,6 +176,8 @@ public class LinkControlWordFactory
             case L3HARRIS_UNKNOWN:
                 return new UnknownLinkControlWord(message);
 
+            case MOTOROLA_FAILSOFT:
+                return new LCMotorolaFailsoft(message);
             case MOTOROLA_GROUP_REGROUP_ADD:
                 return new LCMotorolaGroupRegroupAdd(message);
             case MOTOROLA_GROUP_REGROUP_DELETE:
