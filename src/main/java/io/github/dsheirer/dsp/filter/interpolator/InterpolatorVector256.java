@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import jdk.incubator.vector.VectorSpecies;
 /**
  * Vector interpolator for 256 bit SIMD instructions.
  */
-public class VectorInterpolator256 extends VectorInterpolator
+public class InterpolatorVector256 extends VectorInterpolator
 {
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_256;
 

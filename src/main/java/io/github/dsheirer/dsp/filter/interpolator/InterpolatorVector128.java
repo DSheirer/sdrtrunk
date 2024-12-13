@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,11 +24,11 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * Vector interpolator for 256 bit SIMD instructions.
+ * Vector interpolator for 128 bit SIMD instructions.
  */
-public class VectorInterpolator64 extends VectorInterpolator
+public class InterpolatorVector128 extends VectorInterpolator
 {
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_64;
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_128;
 
     @Override
     protected float vectorFilter(float[] samples, int offset, int index)
@@ -40,16 +40,8 @@ public class VectorInterpolator64 extends VectorInterpolator
         sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset);
         accumulator = tapsVector.fma(sampleVector, accumulator);
 
-        tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 2);
-        sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + 2);
-        accumulator = tapsVector.fma(sampleVector, accumulator);
-
         tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 4);
         sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + 4);
-        accumulator = tapsVector.fma(sampleVector, accumulator);
-
-        tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 6);
-        sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + 6);
         accumulator = tapsVector.fma(sampleVector, accumulator);
 
        return accumulator.reduceLanes(VectorOperators.ADD);

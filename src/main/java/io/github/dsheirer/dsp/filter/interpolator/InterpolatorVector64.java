@@ -24,11 +24,11 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * Vector interpolator for the preferred SIMD instructions.
+ * Vector interpolator for 256 bit SIMD instructions.
  */
-public class VectorInterpolatorPreferred extends VectorInterpolator
+public class InterpolatorVector64 extends VectorInterpolator
 {
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_PREFERRED;
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_64;
 
     @Override
     protected float vectorFilter(float[] samples, int offset, int index)
@@ -36,24 +36,22 @@ public class VectorInterpolatorPreferred extends VectorInterpolator
         FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
         FloatVector tapsVector, sampleVector;
 
-        for(int x = 0; x < 8; x += VECTOR_SPECIES.length())
-        {
-            tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], x);
-            sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + x);
-            accumulator = tapsVector.fma(sampleVector, accumulator);
-        }
+        tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 0);
+        sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset);
+        accumulator = tapsVector.fma(sampleVector, accumulator);
 
-        return accumulator.reduceLanes(VectorOperators.ADD);
-    }
+        tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 2);
+        sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + 2);
+        accumulator = tapsVector.fma(sampleVector, accumulator);
 
-    public static void main(String[] args)
-    {
-        Interpolator interpolator = InterpolatorFactory.getInterpolator();
-        float[] samples = new float[]{1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
-        for(float mu = 0.0f; mu <= 1.0f; mu += 0.05f)
-        {
-            float interpolated = interpolator.filter(samples, 0, mu);
-            System.out.println("Mu:" + mu + " Interpolated:" + interpolated);
-        }
+        tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 4);
+        sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + 4);
+        accumulator = tapsVector.fma(sampleVector, accumulator);
+
+        tapsVector = FloatVector.fromArray(VECTOR_SPECIES, TAPS[index], 6);
+        sampleVector = FloatVector.fromArray(VECTOR_SPECIES, samples, offset + 6);
+        accumulator = tapsVector.fma(sampleVector, accumulator);
+
+       return accumulator.reduceLanes(VectorOperators.ADD);
     }
 }

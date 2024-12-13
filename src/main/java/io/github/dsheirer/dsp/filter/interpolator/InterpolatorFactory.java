@@ -47,11 +47,11 @@ public class InterpolatorFactory
     {
         return switch(implementation)
         {
-            case SCALAR, UNCALIBRATED -> new RealInterpolator();
-            case VECTOR_SIMD_PREFERRED -> new VectorInterpolatorPreferred();
-            case VECTOR_SIMD_64 -> new VectorInterpolator64();
-            case VECTOR_SIMD_128 -> new VectorInterpolator128();
-            case VECTOR_SIMD_256, VECTOR_SIMD_512 -> new VectorInterpolator256(); //Vector 512 not supported
+            case SCALAR, UNCALIBRATED -> new InterpolatorScalar();
+            case VECTOR_SIMD_PREFERRED -> new InterpolatorVectorPreferred();
+            case VECTOR_SIMD_64 -> new InterpolatorVector64();
+            case VECTOR_SIMD_128 -> new InterpolatorVector128();
+            case VECTOR_SIMD_256, VECTOR_SIMD_512 -> new InterpolatorVector256(); //Vector 512 not supported
         };
     }
 }

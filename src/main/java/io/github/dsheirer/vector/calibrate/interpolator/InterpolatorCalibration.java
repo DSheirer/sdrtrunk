@@ -20,11 +20,10 @@
 package io.github.dsheirer.vector.calibrate.interpolator;
 
 import io.github.dsheirer.dsp.filter.interpolator.Interpolator;
-import io.github.dsheirer.dsp.filter.interpolator.RealInterpolator;
-import io.github.dsheirer.dsp.filter.interpolator.VectorInterpolator128;
-import io.github.dsheirer.dsp.filter.interpolator.VectorInterpolator256;
-import io.github.dsheirer.dsp.filter.interpolator.VectorInterpolator64;
-import io.github.dsheirer.dsp.filter.interpolator.VectorInterpolatorPreferred;
+import io.github.dsheirer.dsp.filter.interpolator.InterpolatorScalar;
+import io.github.dsheirer.dsp.filter.interpolator.InterpolatorVector128;
+import io.github.dsheirer.dsp.filter.interpolator.InterpolatorVector256;
+import io.github.dsheirer.dsp.filter.interpolator.InterpolatorVector64;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
@@ -44,11 +43,10 @@ public class InterpolatorCalibration extends Calibration
     private static final int WARMUP_ITERATIONS = 5;
     private static final int TEST_ITERATIONS = 5;
 
-    private Interpolator mScalar = new RealInterpolator();
-    private Interpolator mVectorPreferred = new VectorInterpolatorPreferred();
-    private Interpolator mVector256 = new VectorInterpolator256();
-    private Interpolator mVector128 = new VectorInterpolator128();
-    private Interpolator mVector64 = new VectorInterpolator64();
+    private Interpolator mScalar = new InterpolatorScalar();
+    private Interpolator mVector256 = new InterpolatorVector256();
+    private Interpolator mVector128 = new InterpolatorVector128();
+    private Interpolator mVector64 = new InterpolatorVector64();
 
     /**
      * Constructs an instance
@@ -76,16 +74,6 @@ public class InterpolatorCalibration extends Calibration
         }
 
         mLog.info("INTERPOLATOR WARMUP - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
-
-        Mean vectorPreferredMean = new Mean();
-
-        for(int x = 0; x < WARMUP_ITERATIONS; x++)
-        {
-            long score = testVectorPreferred(samples, interpolationPoints);
-            vectorPreferredMean.increment(score);
-        }
-
-        mLog.info("INTERPOLATOR WARMUP - VECTOR PREFERRED: " + DECIMAL_FORMAT.format(vectorPreferredMean.getResult()));
 
         Mean vector256Mean = new Mean();
 
@@ -139,22 +127,6 @@ public class InterpolatorCalibration extends Calibration
 
         double bestScore = scalarMean.getResult();
         setImplementation(Implementation.SCALAR);
-
-        vectorPreferredMean.clear();
-
-        for(int x = 0; x < TEST_ITERATIONS; x++)
-        {
-            long score = testVectorPreferred(samples, interpolationPoints);
-            vectorPreferredMean.increment(score);
-        }
-
-        mLog.info("INTERPOLATOR - VECTOR PREFERRED: " + DECIMAL_FORMAT.format(vectorPreferredMean.getResult()));
-
-        if(vectorPreferredMean.getResult() > bestScore)
-        {
-            bestScore = vectorPreferredMean.getResult();
-            setImplementation(Implementation.VECTOR_SIMD_PREFERRED);
-        }
 
         if(VECTOR_SPECIES.length() >= 8)
         {
@@ -287,25 +259,6 @@ public class InterpolatorCalibration extends Calibration
             for(int x = 0; x < interpolationPoints.length; x++)
             {
                 accumulator += mVector256.filter(samples, 0, interpolationPoints[x]);
-            }
-            count++;
-        }
-
-        return count + (long)(accumulator * 0);
-    }
-
-    private long testVectorPreferred(float[] samples, float[] interpolationPoints)
-    {
-        double accumulator = 0.0f;
-        long count = 0;
-
-        long start = System.currentTimeMillis();
-
-        while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
-        {
-            for(int x = 0; x < interpolationPoints.length; x++)
-            {
-                accumulator += mVectorPreferred.filter(samples, 0, interpolationPoints[x]);
             }
             count++;
         }
