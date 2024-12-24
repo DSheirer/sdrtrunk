@@ -20,63 +20,21 @@
 package io.github.dsheirer.module.decode.dmr.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.TimeslotMessage;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Base DMR Message
  */
-public abstract class DMRMessage extends Message
+public abstract class DMRMessage extends TimeslotMessage
 {
-    public static final int TIMESLOT_1 = 1;
-    public static final int TIMESLOT_2 = 2;
-
-    private CorrectedBinaryMessage mCorrectedBinaryMessage;
-    private boolean mValid = true;
-    private int mTimeslot;
-
     /**
      * Constructs an instance
      * @param timestamp for the message
      */
     public DMRMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
-        super(timestamp);
-        mCorrectedBinaryMessage = message;
-        mTimeslot = timeslot;
-    }
-
-    /**
-     * Message bits
-     */
-    public CorrectedBinaryMessage getMessage()
-    {
-        return mCorrectedBinaryMessage;
-    }
-
-    /**
-     * Indicates if this message is valid
-     */
-    public boolean isValid()
-    {
-        return mValid;
-    }
-
-    /**
-     * Sets the valid flag for this message
-     */
-    public void setValid(boolean valid)
-    {
-        mValid = valid;
-    }
-
-    /**
-     * Timeslot for this message
-     * @return 0 or 1
-     */
-    public int getTimeslot()
-    {
-        return mTimeslot;
+        super(message, timeslot, timestamp);
     }
 
     @Override

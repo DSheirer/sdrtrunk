@@ -21,18 +21,13 @@ package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +44,9 @@ import org.slf4j.LoggerFactory;
  * values against CSBK messages and some other function is involved in determining which CRC mask value to use when
  * checking the CRC of the transmitted CSBK ... fun and games!
  */
-public class DmrCrcMaskManager
+public class DMRCrcMaskManager
 {
-    private Logger LOGGER = LoggerFactory.getLogger(DmrCrcMaskManager.class);
+    private Logger LOGGER = LoggerFactory.getLogger(DMRCrcMaskManager.class);
     private Map<Integer, MaskTracker> mCsbkTrackerMapTS1 = new TreeMap<>();
     private Map<Integer, MaskTracker> mCsbkTrackerMapTS2 = new TreeMap<>();
     private Set<MaskTracker> mSortedTrackersTS1 = new TreeSet<>();
@@ -60,7 +55,7 @@ public class DmrCrcMaskManager
     /**
      * Constructs an instance
      */
-    public DmrCrcMaskManager()
+    public DMRCrcMaskManager()
     {
     }
 

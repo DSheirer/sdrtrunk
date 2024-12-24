@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,11 @@
 
 package io.github.dsheirer.vector.calibrate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.prefs.Preferences;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract calibration plugin base class
@@ -118,6 +117,24 @@ public abstract class Calibration
         for(int x = 0; x < samples.length; x++)
         {
             samples[x] = random.nextFloat() * 2.0f - 1.0f;
+        }
+
+        return samples;
+    }
+
+    /**
+     * Generates an array of floating point samples in the range 0.0 - 1.0
+     * @param size of array
+     * @return generated samples
+     */
+    protected float[] getPositiveFloatSamples(int size)
+    {
+        Random random = new Random();
+
+        float[] samples = new float[size];
+        for(int x = 0; x < samples.length; x++)
+        {
+            samples[x] = random.nextFloat();
         }
 
         return samples;

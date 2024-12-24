@@ -1,3 +1,22 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.BinaryMessage;
@@ -5,81 +24,37 @@ import io.github.dsheirer.bits.BinaryMessage;
 /**
  * Hamming(17,12,3) Error detection and correction utility.
  */
-public class Hamming17
+public class Hamming17 implements IHamming
 {
-    private static int[] CHECKSUMS = new int[]{0x1B, 0x1F, 0x1D, 0x1C, 0x0E, 0x07, 0x11, 0x1A, 0x0D, 0x14, 0x0A, 0x05};
+    private static int[] CHECKSUMS = new int[]{0x1B, 0x1F, 0x1D, 0x1C, 0x0E, 0x07, 0x11, 0x1A, 0x0D, 0x14, 0x0A, 0x05,
+            0x10, 0x08, 0x04, 0x02, 0x01};
 
     /**
-     * Performs error detection and correction of any single-bit errors and detection of any double-bit errors (SECDED)
+     * Calculates the bit error index of the Hamming(17,12,3) protected word that is contained in the binary message
+     * starting at the specified offset.
      *
-     * @param frame - binary frame containing a hamming(17,12,5) protected field
-     * @param startIndex - offset to the first bit of the field
-     * @return - 0 = no errors
-     * 1 = a single-bit error was detected and corrected
-     * 2 = two or more errors detected - no corrections made
+     * @param message containing a Hamming protected word
+     * @param offset to the start of the protected word
+     * @return message index for an error bit or -1 if no errors are detected or 1000 if more than one bit error detected.
      */
-    public static int checkAndCorrect(BinaryMessage frame, int startIndex)
+    public int getErrorIndex(BinaryMessage message, int offset)
     {
-        int syndrome = getSyndrome(frame, startIndex);
+        int syndrome = getSyndrome(message, offset);
 
-        switch(syndrome)
+        if(syndrome == 0)
         {
-            case 0:
-                return 0;
-            case 1:
-                frame.flip(startIndex + 16); //Parity 1
-                return 1;
-            case 2:
-                frame.flip(startIndex + 15); //Parity 2
-                return 1;
-            case 3:
-                frame.flip(startIndex + 11); //Data 1
-                return 1;
-            case 4:
-                frame.flip(startIndex + 14); //Parity 4
-                return 1;
-            case 5:
-                frame.flip(startIndex + 10); //Data 2
-                return 1;
-            case 6:
-                frame.flip(startIndex + 9); //Data 3
-                return 1;
-            case 7:
-                frame.flip(startIndex + 8); //Data 4
-                return 1;
-            case 8:
-                frame.flip(startIndex + 13); //Parity 8
-                return 1;
-            case 9:
-                frame.flip(startIndex + 7); //Data 5
-                return 1;
-            case 10:
-                frame.flip(startIndex + 6); //Data 6
-                return 1;
-            case 11:
-                frame.flip(startIndex + 5); //Data 7
-                return 1;
-            case 12:
-                frame.flip(startIndex + 4); //Data 8
-                return 1;
-            case 13:
-                frame.flip(startIndex + 3); //Data 9
-                return 1;
-            case 14:
-                frame.flip(startIndex + 2); //Data 10
-                return 1;
-            case 15:
-                frame.flip(startIndex + 1); //Data 11
-                return 1;
-            case 16:
-                frame.flip(startIndex + 12); //Parity 16
-                return 1;
-            case 17:
-                frame.flip(startIndex); //Data 12
-                return 1;
-            default:
-                return 2;
+            return NO_ERRORS;
         }
+
+        for(int index = 0; index < CHECKSUMS.length; index++)
+        {
+            if(syndrome == CHECKSUMS[index])
+            {
+                return index + offset;
+            }
+        }
+
+        return MULTIPLE_ERRORS;
     }
 
     /**
@@ -87,16 +62,14 @@ public class Hamming17
      *
      * @param frame - frame containing hamming protected word
      * @param startIndex - start bit index of the hamming protected word
-     * @return parity value, 0 - 16
+     * @return checksum value
      */
     private static int calculateChecksum(BinaryMessage frame, int startIndex)
     {
         int calculated = 0; //Starting value
 
         /* Iterate the set bits and XOR running checksum with lookup value */
-        for(int i = frame.nextSetBit(startIndex);
-            i >= startIndex && i < startIndex + 12;
-            i = frame.nextSetBit(i + 1))
+        for(int i = frame.nextSetBit(startIndex); i >= startIndex && i < startIndex + 12; i = frame.nextSetBit(i + 1))
         {
             calculated ^= CHECKSUMS[i - startIndex];
         }
@@ -112,12 +85,10 @@ public class Hamming17
      * @param startIndex - of bit 0 of the hamming protected word
      * @return - 0 (no errors) or 1 (single bit error corrected)
      */
-    private static int getSyndrome(BinaryMessage frame, int startIndex)
+    public static int getSyndrome(BinaryMessage frame, int startIndex)
     {
         int calculated = calculateChecksum(frame, startIndex);
-
         int checksum = frame.getInt(startIndex + 12, startIndex + 16);
-
         return (checksum ^ calculated);
     }
 }

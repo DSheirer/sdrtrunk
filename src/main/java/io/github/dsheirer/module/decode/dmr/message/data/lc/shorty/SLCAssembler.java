@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.Hamming17;
+import io.github.dsheirer.module.decode.dmr.bptc.BPTC_68_36;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
 import org.slf4j.Logger;
@@ -37,12 +37,23 @@ public class SLCAssembler
     private CorrectedBinaryMessage mAssemblingMessage;
     private int mFragmentCount = 0;
     private long mTimestamp;
+    private BPTC_68_36 mBPTC = new BPTC_68_36();
 
     /**
      * Constructs an instance
      */
     public SLCAssembler()
     {
+    }
+
+    /**
+     * Resets this assembler when a sync loss is detected to prevent malformed SLC messages.
+     */
+    public void reset()
+    {
+        mAssemblingMessage = null;
+        mFragmentCount = 0;
+        mTimestamp = System.currentTimeMillis();
     }
 
     /**
@@ -121,80 +132,20 @@ public class SLCAssembler
         return message;
     }
 
-    private static ShortLCMessage decode(BinaryMessage interleaved, long timestamp)
+    /**
+     * Performs error detection and correction and extracts the message from the BPTC protected interleaved message.
+     * @param interleaved message
+     * @param timestamp for the decoded message.
+     * @return decoded message.
+     */
+    private ShortLCMessage decode(BinaryMessage interleaved, long timestamp)
     {
         if(interleaved != null)
         {
-            boolean valid = true;
-
-            CorrectedBinaryMessage deinterleaved = new CorrectedBinaryMessage(68);
-            int i, src;
-
-            for(int index = 0; index < 67; index++)
-            {
-                if(interleaved.get(index))
-                {
-                    deinterleaved.set((index * 17 % 67));
-                }
-            }
-
-            if(interleaved.get(67))
-            {
-                deinterleaved.set(67);
-            }
-
-            int errorCount = 0;
-
-            for(int row = 0; row < 4; row++)
-            {
-                int rowErrorCount = Hamming17.checkAndCorrect(deinterleaved, row * 17);
-                errorCount += rowErrorCount;
-
-                if(rowErrorCount > 1)
-                {
-                    valid = false;
-                }
-            }
-
-            //If valid, check the column parity values
-            if(valid)
-            {
-                //Check the column parity values
-                for(int column = 0; column < 17; column++)
-                {
-                    boolean parity = deinterleaved.get(column);
-
-                    for(int y = 1; y < 4; y++)
-                    {
-                        parity ^= deinterleaved.get(column + (y * 17));
-                    }
-
-                    if(parity)
-                    {
-                        valid = false;
-                    }
-                }
-            }
-
-            //Extract the message
-            CorrectedBinaryMessage extractedMessage = new CorrectedBinaryMessage(51);
-
-            for(int row = 0; row < 3; row++)
-            {
-                for(int column = 0; column < 12; column++)
-                {
-                    extractedMessage.set(row * 12 + column, deinterleaved.get(row * 17 + column));
-                }
-            }
-
-            extractedMessage.setCorrectedBitCount(errorCount);
-            extractedMessage.setSize(36);
-            ShortLCMessage slco = LCMessageFactory.createShort(extractedMessage, timestamp, 0);
-
-
+            CorrectedBinaryMessage corrected = mBPTC.extract(interleaved);
             //Note: slco is timeslot-agnostic, so we use timeslot 0 every time
-//            ShortLCMessage slco = LCMessageFactory.createShort(decoded, timestamp, 0);
-            slco.setValid(valid);
+            ShortLCMessage slco = LCMessageFactory.createShort(corrected, timestamp, 0);
+            slco.setValid(corrected.getCorrectedBitCount() >= 0);
             return slco;
         }
 
@@ -230,19 +181,5 @@ public class SLCAssembler
             //Something went wrong and we overfilled the bitset
             dispatch();
         }
-    }
-
-    public static void main(String[] args)
-    {
-        String raw = "A0000C0000A0000C0000";
-        System.out.println(" RAW:" + raw);
-        String bits = "10100000000000000110000000000000001010000000000000011000000000000000";
-
-        BinaryMessage rawBin= BinaryMessage.load(bits);
-        System.out.println("ORIG:" + rawBin.toHexString());
-
-        ShortLCMessage slc = decode(rawBin, System.currentTimeMillis());
-
-        System.out.println(slc.toString());
     }
 }

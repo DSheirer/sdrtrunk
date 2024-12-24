@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.dsp.psk;
 
-import io.github.dsheirer.dsp.filter.interpolator.RealInterpolator;
+import io.github.dsheirer.dsp.filter.interpolator.InterpolatorScalar;
 import io.github.dsheirer.sample.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class InterpolatingSampleBuffer
     private float mMaximumSamplesPerSymbol;
     private float mMinimumSamplesPerSymbol;
 
-    private RealInterpolator mInterpolator = new RealInterpolator(1.0f);
+    private InterpolatorScalar mInterpolator = new InterpolatorScalar(1.0f);
 
     /**
      * Buffer to store complex sample data and produce interpolated samples.

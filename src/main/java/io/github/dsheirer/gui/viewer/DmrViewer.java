@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.viewer;
 
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.dmr.DMRHardSymbolProcessor;
 import io.github.dsheirer.module.decode.dmr.DMRMessageFramer;
 import io.github.dsheirer.module.decode.dmr.DMRMessageProcessor;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
@@ -168,7 +169,9 @@ public class DmrViewer extends VBox
                 public void run()
                 {
                     List<IMessage> messages = new ArrayList<>();
-                    DMRMessageFramer messageFramer = new DMRMessageFramer(null);
+                    DMRMessageFramer messageFramer = new DMRMessageFramer();
+                    messageFramer.start();
+                    DMRHardSymbolProcessor symbolProcessor = new DMRHardSymbolProcessor(messageFramer);
                     DecodeConfigDMR config = new DecodeConfigDMR();
                     config.setUseCompressedTalkgroups(useCompressed);
                     DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
@@ -180,7 +183,7 @@ public class DmrViewer extends VBox
                         while(reader.hasNext())
                         {
                             ByteBuffer buffer = reader.next();
-                            messageFramer.receive(buffer);
+                            symbolProcessor.receive(buffer);
                         }
                     }
                     catch(Exception ioe)

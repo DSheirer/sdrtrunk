@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,9 @@ package io.github.dsheirer.module.decode.dmr.message.data;
 
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.BPTC_196_96;
 import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_3_4_DMR;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.bptc.BPTC_196_96;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock1Rate;
 import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock1_2Rate;
@@ -52,6 +51,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.usb.USBData;
 import io.github.dsheirer.module.decode.dmr.message.type.DataPacketFormat;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.dmr.message.type.Vendor;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,33 +79,73 @@ public class DMRDataMessageFactory
 
         if(slotType.isValid())
         {
+            switch (slotType.getDataType())
+            {
+                case RATE_3_OF_4_DATA:
+                    return new DataBlock3_4Rate(pattern, getTrellisPayload(message), cach, slotType, timestamp, timeslot);
+                case RATE_1_DATA:
+                    return new DataBlock1Rate(pattern, message, cach, slotType, timestamp, timeslot);
+            }
+
+            //Get the BPTC(196,96) protected payload.  If the corrected bit count is -1, the payload/message is invalid
+            CorrectedBinaryMessage payload  = getPayload(message);
+
             switch(slotType.getDataType())
             {
                 case SLOT_IDLE:
-                    return new IDLEMessage(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage idle = new IDLEMessage(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        idle.setValid(false);
+                    }
+                    return idle;
                 case CSBK:
-                    return CSBKMessageFactory.create(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage csbk = CSBKMessageFactory.create(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        csbk.setValid(false);
+                    }
+                    return csbk;
                 case USB_DATA:
-                    CorrectedBinaryMessage usbdPayload = getPayload(message);
+                    CorrectedBinaryMessage usbdPayload = payload;
                     switch(USBData.getServiceType(usbdPayload))
                     {
                         case LIP_SHORT_LOCATION_REQUEST:
                         default:
-                            return new USBData(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                            DataMessage usb =new USBData(pattern, payload, cach, slotType, timestamp, timeslot);
+                            if(payload.getCorrectedBitCount() < 0)
+                            {
+                                usb.setValid(false);
+                            }
+                            return usb;
                     }
                 case MBC_ENC_HEADER:
                 case MBC_HEADER:
-                    return new MBCHeader(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage mbc = new MBCHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        mbc.setValid(false);
+                    }
+                    return mbc;
                 case CHANNEL_CONTROL_ENC_HEADER:
                 case PI_HEADER:
-                    return new PiHeader(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage pi = new PiHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        pi.setValid(false);
+                    }
+                    return pi;
                 case VOICE_HEADER:
-                    return new VoiceHeader(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage voice = new VoiceHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        voice.setValid(false);
+                    }
+                    return voice;
                 case DATA_ENC_HEADER:
                 case DATA_HEADER:
-                    CorrectedBinaryMessage payload = getPayload(message);
                     int crcBitCount = CRCDMR.correctCCITT80(payload, 0, 80, 0xCCCC);
-                    boolean valid = crcBitCount < 2;
+                    boolean valid = crcBitCount < 2 && payload.getCorrectedBitCount() != -1;
                     DataPacketFormat dpf = DataHeader.getDataPacketFormat(payload);
 
                     switch(dpf)
@@ -191,22 +231,44 @@ public class DMRDataMessageFactory
                             return dh;
                     }
                 case TLC:
-                    return new Terminator(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage tlc = new Terminator(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        tlc.setValid(false);
+                    }
+                    return tlc;
                 case RATE_1_OF_2_DATA:
-                    return new DataBlock1_2Rate(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
-                case RATE_3_OF_4_DATA:
-                    return new DataBlock3_4Rate(pattern, getTrellisPayload(message), cach, slotType, timestamp, timeslot);
-                case RATE_1_DATA:
-                    return new DataBlock1Rate(pattern, message, cach, slotType, timestamp, timeslot);
+                    DataMessage data = new DataBlock1_2Rate(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        data.setValid(false);
+                    }
+                    return data;
                 case MBC_BLOCK:
-                    return new MBCContinuationBlock(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage mbcBlock = new MBCContinuationBlock(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        mbcBlock.setValid(false);
+                    }
+                    return mbcBlock;
                 case RESERVED_15:
                 case UNKNOWN:
-                    return new UnknownDataMessage(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+                    DataMessage unk = new UnknownDataMessage(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
+                    {
+                        unk.setValid(false);
+                    }
+                    return unk;
             }
         }
 
-        return new UnknownDataMessage(pattern, getPayload(message), cach, slotType, timestamp, timeslot);
+        CorrectedBinaryMessage payload = getPayload(message);
+        DataMessage unk = new UnknownDataMessage(pattern, payload, cach, slotType, timestamp, timeslot);
+        if(payload.getCorrectedBitCount() < 0)
+        {
+            unk.setValid(false);
+        }
+        return unk;
     }
 
     /**

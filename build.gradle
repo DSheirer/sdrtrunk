@@ -164,6 +164,15 @@ application {
     }
 }
 
+test {
+    if(os.isWindows()) {
+        jvmArgs = jvmArgsWindows
+    }
+    else {
+        jvmArgs = jvmArgsLinux
+    }
+}
+
 jar {
     manifest {
         attributes (

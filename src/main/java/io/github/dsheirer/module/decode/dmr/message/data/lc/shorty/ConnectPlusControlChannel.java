@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRNetwork;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +58,7 @@ public class ConnectPlusControlChannel extends ShortLCMessage
         }
         sb.append("SLC MOTOROLA CON+ CONTROL CHANNEL NETWORK:").append(getNetwork());
         sb.append(" SITE:").append(getSite());
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac;
+package io.github.dsheirer.module.decode.dmr.bptc;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.Hamming16;
 
 /**
  * Block Product Turbo Code 16/2 for decoding a DMR Voice Frame F payload from the 32-bit EMB field.

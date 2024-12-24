@@ -22,7 +22,6 @@ package io.github.dsheirer.module.decode.dmr.message.data.csbk.standard;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
@@ -32,6 +31,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
 import io.github.dsheirer.module.decode.dmr.message.type.AbsoluteChannelParameters;
 import io.github.dsheirer.module.decode.dmr.message.type.DataType;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -1,3 +1,22 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2024 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.BinaryMessage;
@@ -8,7 +27,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 public class Hamming15
 {
     //DMR Checksums from generator matrix TS 102 361-1 Table B.15
-    private static int[] CHECKSUMS = new int[]{0x9, 0xD, 0xF, 0xE, 0x7, 0XA, 0x5, 0xB, 0xC, 0x6, 0x3};
+    private static int[] CHECKSUMS = new int[]{0x9, 0xD, 0xF, 0xE, 0x7, 0xA, 0x5, 0xB, 0xC, 0x6, 0x3, 0x8, 0x4, 0x2, 0x1};
     private static int[] ERROR_INDEX = new int[]{-1, 14, 13, 10, 12, 6, 9, 4, 11, 0, 5, 7, 8, 1, 3, 2};
 
     /**
@@ -28,7 +47,7 @@ public class Hamming15
             return offset + ERROR_INDEX[syndrome];
         }
 
-        return -1;
+        return IHamming.NO_ERRORS;
     }
 
     /**
@@ -58,7 +77,7 @@ public class Hamming15
      * @param offset to bit 0 of the hamming protected word
      * @return syndrome that can be used with the ERROR_INDEX error to find the index of the bit position error
      */
-    private static int getSyndrome(BinaryMessage message, int offset)
+    public static int getSyndrome(BinaryMessage message, int offset)
     {
         int calculated = calculateChecksum(message, offset);
         int checksum = message.getInt(offset + 11, offset + 14);

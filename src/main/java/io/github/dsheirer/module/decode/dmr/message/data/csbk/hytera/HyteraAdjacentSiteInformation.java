@@ -20,11 +20,11 @@
 package io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcement.AdjacentSiteInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 
 /**
  * Hytera Neighbor/Adjacent Site Information

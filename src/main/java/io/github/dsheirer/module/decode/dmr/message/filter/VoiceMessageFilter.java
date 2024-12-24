@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.filter;
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import java.util.function.Function;
 
@@ -51,8 +51,8 @@ public class VoiceMessageFilter extends Filter<IMessage, DMRSyncPattern>
         add(new FilterElement<>(DMRSyncPattern.MS_VOICE_FRAME_D));
         add(new FilterElement<>(DMRSyncPattern.MS_VOICE_FRAME_E));
         add(new FilterElement<>(DMRSyncPattern.MS_VOICE_FRAME_F));
-        add(new FilterElement<>(DMRSyncPattern.DIRECT_MODE_VOICE_TIMESLOT_1));
-        add(new FilterElement<>(DMRSyncPattern.DIRECT_MODE_VOICE_TIMESLOT_2));
+        add(new FilterElement<>(DMRSyncPattern.DIRECT_VOICE_TIMESLOT_1));
+        add(new FilterElement<>(DMRSyncPattern.DIRECT_VOICE_TIMESLOT_2));
     }
 
     @Override
