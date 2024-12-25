@@ -42,6 +42,7 @@ import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.RealOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
+import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,6 +114,7 @@ public class CalibrationManager
             sInstance.add(new FmDemodulatorCalibration());
             sInstance.add(new InterpolatorCalibration());
             sInstance.add(new MagnitudeCalibration());
+            sInstance.add(new P25P1SoftSyncCalibration());
             sInstance.add(new RealDcRemovalCalibration());
             sInstance.add(new RealHalfBand11TapFilterCalibration());
             sInstance.add(new RealHalfBand15TapFilterCalibration());

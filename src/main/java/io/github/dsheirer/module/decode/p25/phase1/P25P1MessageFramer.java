@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -231,7 +231,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         {
             switch(mDataUnitID)
             {
-                case PACKET_HEADER_DATA_UNIT:
+                case PACKET_DATA_UNIT_1:
                     mPDUSequence = PDUMessageFactory.createPacketSequence(mNAC, mCurrentTime, mBinaryMessage);
 
                     if(mPDUSequence != null)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,28 +17,34 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac;
+package io.github.dsheirer.module.decode.p25.phase1.sync;
+
+import io.github.dsheirer.dsp.symbol.Dibit;
 
 /**
- * Berlekemp Massey decoder using APCO-25 Generator Polynomial over GF(6)
+ * P25P1 sync detector that processes hard symbol (ie dibit) decisions.
  */
-public class ReedSolomon_63_P25 extends BerlekempMassey
+public class P25P1HardSyncDetector extends P25P1SyncDetector
 {
-    /**
-     * APCO-25 Reed-Solomon code is generated from a Galois Field(2^6) by the polynomial: a6 + a1 + a0.
-     * In binary, this is expressed as: 1000011 which is reversed to big-endian format for this algorithm
-     * See: TIA 102-BAAA paragraph 4.9 Reed-Solomon Code Generator Matrices
-     */
-    public static final int[] P25_GENERATOR_POLYNOMIAL = { 1, 1, 0, 0, 0, 0, 1 };
+    private static final int MAXIMUM_BIT_ERROR = 5;
+    private long mValue;
 
     /**
      * Constructs an instance
-     *
-     * @param n total symbols
-     * @param k message symbols
      */
-    public ReedSolomon_63_P25(int n, int k)
+    public P25P1HardSyncDetector()
     {
-        super(6, n, k, P25_GENERATOR_POLYNOMIAL);
+    }
+
+    /**
+     * Processes the dibit.
+     *
+     * @param dibit to process
+     * @return true if a sync pattern is detected.
+     */
+    public boolean process(Dibit dibit)
+    {
+        mValue = (Long.rotateLeft(mValue, 2) & SYNC_MASK) + dibit.getValue();
+        return Long.bitCount(mValue ^ SYNC_PATTERN) <= MAXIMUM_BIT_ERROR;
     }
 }
