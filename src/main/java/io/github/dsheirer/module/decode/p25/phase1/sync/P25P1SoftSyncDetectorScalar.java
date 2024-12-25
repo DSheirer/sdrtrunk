@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2024 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,28 +17,30 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac;
+package io.github.dsheirer.module.decode.p25.phase1.sync;
 
 /**
- * Berlekemp Massey decoder using APCO-25 Generator Polynomial over GF(6)
+ * Scalar implementation of P25 Phase 1 Soft Sync Detector.
  */
-public class ReedSolomon_63_P25 extends BerlekempMassey
+public class P25P1SoftSyncDetectorScalar extends P25P1SoftSyncDetector
 {
     /**
-     * APCO-25 Reed-Solomon code is generated from a Galois Field(2^6) by the polynomial: a6 + a1 + a0.
-     * In binary, this is expressed as: 1000011 which is reversed to big-endian format for this algorithm
-     * See: TIA 102-BAAA paragraph 4.9 Reed-Solomon Code Generator Matrices
-     */
-    public static final int[] P25_GENERATOR_POLYNOMIAL = { 1, 1, 0, 0, 0, 0, 1 };
-
-    /**
-     * Constructs an instance
+     * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft
+     * symbols that include this recent soft symbol.
      *
-     * @param n total symbols
-     * @param k message symbols
+     * @return correlation score.
      */
-    public ReedSolomon_63_P25(int n, int k)
+    public float calculate()
     {
-        super(6, n, k, P25_GENERATOR_POLYNOMIAL);
+        float symbol;
+        float score = 0;
+
+        for(int x = 0; x < 24; x++)
+        {
+            symbol = mSymbols[mSymbolPointer + x];
+            score += SYNC_PATTERN_SYMBOLS[x] * symbol;
+        }
+
+        return score;
     }
 }

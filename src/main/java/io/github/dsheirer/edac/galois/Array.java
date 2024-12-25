@@ -17,28 +17,41 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac;
+package io.github.dsheirer.edac.galois;
 
-/**
- * Berlekemp Massey decoder using APCO-25 Generator Polynomial over GF(6)
- */
-public class ReedSolomon_63_P25 extends BerlekempMassey
+public abstract class Array<T>
 {
-    /**
-     * APCO-25 Reed-Solomon code is generated from a Galois Field(2^6) by the polynomial: a6 + a1 + a0.
-     * In binary, this is expressed as: 1000011 which is reversed to big-endian format for this algorithm
-     * See: TIA 102-BAAA paragraph 4.9 Reed-Solomon Code Generator Matrices
-     */
-    public static final int[] P25_GENERATOR_POLYNOMIAL = { 1, 1, 0, 0, 0, 0, 1 };
+    public Array(int size)
+    {
+        allocate(size);
+    }
+
+    public abstract T get(int index);
+    public abstract void set(int index, T value);
+    public abstract void set_size(int size, boolean copy);
+    public abstract int size();
+    protected abstract void allocate(int size);
+
+    public void set_size(int size)
+    {
+        set_size(size, false);
+    }
 
     /**
-     * Constructs an instance
-     *
-     * @param n total symbols
-     * @param k message symbols
+     * Assigns the value to all elements of this array.  Resizes zero length array to have at least one element to
+     * receive the value assignment.
+     * @param value to assign.
      */
-    public ReedSolomon_63_P25(int n, int k)
+    public void set(T value)
     {
-        super(6, n, k, P25_GENERATOR_POLYNOMIAL);
+        if(size() == 0)
+        {
+            allocate(1);
+        }
+
+        for(int x = 0; x < size(); x++)
+        {
+            set(x, value);
+        }
     }
 }
