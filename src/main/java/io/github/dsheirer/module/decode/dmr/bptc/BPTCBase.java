@@ -50,6 +50,18 @@ public abstract class BPTCBase
     }
 
     /**
+     * Used by the correct() method to employ an optional attempt to correct multiple row, two-bit errors where each
+     * set of row errors don't shadow each other based on a test where the column cardinality is twice the row
+     * cardinality.  This is probably not mathematically correct and should only be enabled when the decoded message
+     * payload has a good CRC check after the extraction (ie. only use for FLC).
+     * @return true if enabled, false (default) otherwise
+     */
+    protected boolean canCorrectMultiRow2BitErrors()
+    {
+        return false;
+    }
+
+    /**
      * Performs error detection and correction.
      * @param message to correct
      * @return true if the message was corrected or false if there are uncorrectable errors.
@@ -97,6 +109,28 @@ public abstract class BPTCBase
                 {
                     correctedIndexes.addAll(solution);
                 }
+            }
+        }
+
+        //3: fix single row, multi-column errors
+        if(rows.cardinality() == 1 && !columns.isEmpty())
+        {
+            List<Integer> solution = correctMultiBitErrors(rows.nextSetBit(0), message, columns, rows);
+
+            if(!solution.isEmpty())
+            {
+                correctedIndexes.addAll(solution);
+            }
+        }
+
+        //4: fix one or more rows that each have 2 bit errors, not shadowing each other.
+        if(canCorrectMultiRow2BitErrors() && rows.cardinality() > 0 && columns.cardinality() / rows.cardinality() == 2)
+        {
+            List<Integer> solution = correctMultipleRowTwoBitErrorsNotShadowing(columns, rows, message);
+
+            if(!solution.isEmpty())
+            {
+                correctedIndexes.addAll(solution);
             }
         }
 
@@ -202,6 +236,90 @@ public abstract class BPTCBase
         }
 
         return columns;
+    }
+
+    /**
+     * Calculates the indices that make up the intersections of the row and column errors.
+     * @param rows bitmap indicating rows with errors
+     * @param columns bitmap indicating columns with errors
+     * @return set of intersection indices.
+     */
+    public List<Integer> getIntersectionIndices(BinaryMessage columns, BinaryMessage rows)
+    {
+        List<Integer> intersections = new ArrayList<>();
+
+        for(int row = rows.nextSetBit(0); row >= 0 && row < mRowCount; row = rows.nextSetBit(row + 1))
+        {
+            for(int column = columns.nextSetBit(0); column >= 0 && column < mColumnCount; column = columns.nextSetBit(column + 1))
+            {
+                intersections.add(getIndex(column, row));
+            }
+        }
+
+        return intersections;
+    }
+
+    /**
+     * Calculates the indices that make up the intersections of the row and column errors.
+     * @param rows bitmap indicating rows with errors
+     * @param columns bitmap indicating columns with errors
+     * @return set of intersection indices.
+     */
+    public List<Integer> getIntersectionIndices(BinaryMessage columns, int row)
+    {
+        List<Integer> intersections = new ArrayList<>();
+
+        for(int column = columns.nextSetBit(0); column >= 0 && column < mColumnCount; column = columns.nextSetBit(column + 1))
+        {
+            intersections.add(getIndex(column, row));
+        }
+
+        return intersections;
+    }
+
+    /**
+     * Correct multiple rows with two-bit errors each where the error columns are not shadowing each other.
+     * @param columns error map
+     * @param rows error map
+     * @param message to correct
+     * @return corrected indices
+     */
+    public List<Integer> correctMultipleRowTwoBitErrorsNotShadowing(BinaryMessage columns, BinaryMessage rows,
+                                                                    CorrectedBinaryMessage message)
+    {
+        List<Integer> solution = new ArrayList<>();
+
+        for(int row = rows.nextSetBit(0); row >= 0 && row < mRowCount; row = rows.nextSetBit(row + 1))
+        {
+            for(int column1 = columns.nextSetBit(0); column1 >= 0; column1 = columns.nextSetBit(column1 + 1))
+            {
+                for(int column2 = columns.nextSetBit(column1 + 1); column2 >= 0; column2 = columns.nextSetBit(column2 + 1))
+                {
+                    int index1 = getIndex(column1, row);
+                    int index2 = getIndex(column2, row);
+                    message.flip(index1);
+                    message.flip(index2);
+
+                    if(isRowCorrect(row, message))
+                    {
+                        solution.add(index1);
+                        solution.add(index2);
+                        columns.clear(column1);
+                        columns.clear(column2);
+                        rows.clear(row);
+                        column1 = mColumnCount;
+                        column2 = mColumnCount;
+                    }
+                    else
+                    {
+                        message.flip(index1);
+                        message.flip(index2);
+                    }
+                }
+            }
+        }
+
+        return solution;
     }
 
     /**
@@ -313,7 +431,18 @@ public abstract class BPTCBase
             int offset = row * mColumnCount;
             sb.append("Row ").append(row).append(": ");
             sb.append(message.getSubMessage(offset, offset + mColumnCount));
-            sb.append(" ").append(offset).append(":").append(offset + mColumnCount).append("\n");
+            sb.append(" (").append(offset).append(":").append(offset + mColumnCount).append(")");
+
+            for(int error = offset; error < offset + mColumnCount; error++)
+            {
+                if(message.get(error))
+                {
+                    sb.append(" ").append(error);
+                }
+            }
+
+            sb.append("\n");
+
         }
 
         System.out.println(sb);

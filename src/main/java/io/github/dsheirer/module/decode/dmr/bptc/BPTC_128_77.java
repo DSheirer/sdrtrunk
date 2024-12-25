@@ -35,6 +35,15 @@ public class BPTC_128_77 extends BPTCBase
     }
 
     /**
+     * Allow the base class to attempt to correct multiple rows of 2-bit errors each
+     */
+    @Override
+    protected boolean canCorrectMultiRow2BitErrors()
+    {
+        return true;
+    }
+
+    /**
      * Performs error detection and correction and extracts the payload from the BPTC encoded message.
      * @param message with BPTC encoding.
      * @return decoded message.
@@ -93,15 +102,15 @@ public class BPTC_128_77 extends BPTCBase
     public static void main(String[] args)
     {
         BPTC_128_77 bptc = new BPTC_128_77();
-        String deinterleavedRaw = "00000000000000000000000000000000001000000010010101011001001000010000000000000000000000000110101000010110111100010000111110011111";
+        String deinterleavedRaw = "00000100000101010000001000111000100000000001001101000010001001000000000010101000111100000000001000011000100010110010100100100000";
+        CorrectedBinaryMessage deinterleaved = new CorrectedBinaryMessage(BinaryMessage.load(deinterleavedRaw));
 
-        String deinterleavedReference = "00000000000000000000000000000000000000000010011100011001001000110000000000000000000000000110101000010110111100010000111110011111"; //No errors
+        String deinterleavedReference = "00000100000101010000011000111001100000000001001101000010001101100000000110101000111100000000101000011000100010110010100100100000"; //No errors
         CorrectedBinaryMessage deinterleavedReferenceMessage = new CorrectedBinaryMessage(BinaryMessage.load(deinterleavedReference));
 
-        String interleaved = "00000000000000000000000000010010000100010000001000000010000100010000001100000110001101100000001100000101001000010010010100110011"; //Under test
-        CorrectedBinaryMessage interleavedMessage = new CorrectedBinaryMessage(BinaryMessage.load(interleaved));
+//        String interleaved = "00000000000000000000000000010010000100010000001000000010000100010000001100000110001101100000001100000101001000010010010100110011"; //Under test
+//        CorrectedBinaryMessage interleavedMessage = new CorrectedBinaryMessage(BinaryMessage.load(interleaved));
 //        CorrectedBinaryMessage deinterleaved = deinterleave(interleavedMessage);
-        CorrectedBinaryMessage deinterleaved = new CorrectedBinaryMessage(BinaryMessage.load(deinterleavedRaw));
 
 
         String deinterleavedUncorrected = deinterleaved.toString();
@@ -120,6 +129,7 @@ public class BPTC_128_77 extends BPTCBase
             System.out.println("--------------------------------");
             System.out.println("Residual Error Map:");
             bptc.logErrorMap(deinterleaved);
+            System.out.println("Columns:" + bptc.getColumnErrors(deinterleaved) + " Rows:" + bptc.getRowErrors(deinterleaved));
             System.out.println("--------------------------------");
         }
         else

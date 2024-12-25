@@ -146,6 +146,15 @@ public class DMRMessageFramer implements Listener<Dibit>
             mBufferATimeslot = cach.getTimeslot();
             mBufferBTimeslot = (mBufferATimeslot == 1 ? 2 : 1);
         }
+        else if(mBufferAPattern.isMobileStationSyncPattern())
+        {
+            mBufferATimeslot = 1;
+            mBufferBTimeslot = 2;
+            if(mBufferBPattern == DMRSyncPattern.UNKNOWN)
+            {
+                mBufferBPattern = DMRSyncPattern.DIRECT_EMPTY_TIMESLOT;
+            }
+        }
 
         dispatch(DMRMessageFactory.create(mBufferAPattern, message, cach, getTimestamp(), mBufferATimeslot));
 
@@ -156,8 +165,8 @@ public class DMRMessageFramer implements Listener<Dibit>
             mBufferAPattern = DMRSyncPattern.getNextVoice(mBufferAPattern);
         }
 
-        //Automatically trigger buffer B burst collection if it is collecting a voice super frame.
-        if(mBufferBPattern.isVoicePattern())
+        //Automatically trigger buffer B burst collection if it is collecting a voice super frame or mobile direct.
+        if(mBufferBPattern.isVoicePattern() || mBufferBPattern == DMRSyncPattern.DIRECT_EMPTY_TIMESLOT)
         {
             mAssemblingBurst = true;
             mBufferAActive = false;
@@ -205,6 +214,16 @@ public class DMRMessageFramer implements Listener<Dibit>
             mBufferBTimeslot = cach.getTimeslot();
             mBufferATimeslot = (mBufferBTimeslot == 1 ? 2 : 1);
         }
+        else if(mBufferBPattern.isMobileStationSyncPattern())
+        {
+            mBufferBTimeslot = 1;
+            mBufferATimeslot = 2;
+
+            if(mBufferAPattern == DMRSyncPattern.UNKNOWN)
+            {
+                mBufferAPattern = DMRSyncPattern.DIRECT_EMPTY_TIMESLOT;
+            }
+        }
 
         dispatch(DMRMessageFactory.create(mBufferBPattern, burst, cach, getTimestamp(), mBufferBTimeslot));
 
@@ -215,8 +234,8 @@ public class DMRMessageFramer implements Listener<Dibit>
             mBufferBPattern = DMRSyncPattern.getNextVoice(mBufferBPattern);
         }
 
-        //Automatically trigger buffer A burst collection if it is collecting a voice super frame.
-        if(mBufferAPattern.isVoicePattern())
+        //Automatically trigger buffer A burst collection if it is collecting a voice super frame or mobile direct.
+        if(mBufferAPattern.isVoicePattern() || mBufferAPattern == DMRSyncPattern.DIRECT_EMPTY_TIMESLOT)
         {
             mAssemblingBurst = true;
             mBufferAActive = true;

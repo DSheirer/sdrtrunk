@@ -129,7 +129,12 @@ public class FLCAssembler
         {
             CorrectedBinaryMessage extractedMessage = mBPTC.extract(message);
             FullLCMessage flco = LCMessageFactory.createFull(extractedMessage, timestamp, timeslot, false);
-            flco.setValid(extractedMessage.getCorrectedBitCount() >= 0);
+
+            if(extractedMessage.getCorrectedBitCount() < 0)
+            {
+                flco.setValid(false);
+            }
+
             return flco;
         }
 
