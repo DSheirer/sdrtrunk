@@ -294,7 +294,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 case LOGICAL_LINK_DATA_UNIT_2:
                     processLDU(message);
                     break;
-                case PACKET_DATA_UNIT:
+                case PACKET_DATA_UNIT_BLOCK_1:
                     processPDU(message);
                     break;
                 case SUBNETWORK_DEPENDENT_CONVERGENCE_PROTOCOL:

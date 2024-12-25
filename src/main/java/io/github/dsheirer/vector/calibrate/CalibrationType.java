@@ -52,6 +52,7 @@ public enum CalibrationType
     MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 1),
     OSCILLATOR_REAL("Real Oscillator", 1),
+    P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 1),
     SQUELCHING_FM_DEMODULATOR("Squelching FM Demodulator", 1),
     WINDOW("Window", 1);
 

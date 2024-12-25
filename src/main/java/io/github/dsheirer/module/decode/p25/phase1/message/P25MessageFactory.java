@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.vselp.VSELP1Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.vselp.VSELP2Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +57,7 @@ public class P25MessageFactory
                 return new LDU1Message(message, nac, timestamp);
             case LOGICAL_LINK_DATA_UNIT_2:
                 return new LDU2Message(message, nac, timestamp);
-            case PACKET_HEADER_DATA_UNIT:
+            case PACKET_DATA_UNIT:
                 mLog.warn("WARNING: PDU messages must be created by the PDUMessageFactory");
                 return null;
             case TERMINATOR_DATA_UNIT:
@@ -71,10 +69,6 @@ public class P25MessageFactory
             case TRUNKING_SIGNALING_BLOCK_3:
                 mLog.warn("WARNING: TSBK messages must be created by the TSBKMessageFactory");
                 return null;
-            case VSELP1:
-                return new VSELP1Message(message, nac, timestamp);
-            case VSELP2:
-                return new VSELP2Message(message, nac, timestamp);
             default:
                 return new UnknownP25Message(message, nac, timestamp, dataUnitID);
         }

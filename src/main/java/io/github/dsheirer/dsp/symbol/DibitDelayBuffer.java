@@ -1,29 +1,27 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.dsp.symbol;
 
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +51,7 @@ public class DibitDelayBuffer
      */
     public void reset()
     {
-        for(int x = 0; x < mBuffer.length; x++)
-        {
-            mBuffer[x] = Dibit.D00_PLUS_1;
-        }
+        Arrays.fill(mBuffer, Dibit.D00_PLUS_1);
     }
 
     /**
@@ -80,6 +75,21 @@ public class DibitDelayBuffer
         }
 
         return mBuffer[index];
+    }
+
+    /**
+     * Returns the most recently stored Dibit.
+     */
+    public Dibit getLast()
+    {
+        int pointer = mPointer - 1;
+
+        if(pointer < 0)
+        {
+            pointer += mBuffer.length;
+        }
+
+        return mBuffer[pointer];
     }
 
     /**

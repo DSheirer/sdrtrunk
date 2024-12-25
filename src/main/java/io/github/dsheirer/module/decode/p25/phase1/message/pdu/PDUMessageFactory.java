@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,10 +87,33 @@ public class PDUMessageFactory
 
     private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
 
+    /**
+     * Creates a PDU sequence from the header
+     * @param nac for the system
+     * @param timestamp of the header message
+     * @param correctedBinaryMessage containing an interleaved, viterbi encoded header message.
+     * @return
+     */
     public static PDUSequence createPacketSequence(int nac, long timestamp, CorrectedBinaryMessage correctedBinaryMessage)
     {
-        //Get deinterleaved header chunk
-        BitSet interleaved = correctedBinaryMessage.get(PDU0_BEGIN, PDU0_END);
+        PDUHeader header = createHeader(correctedBinaryMessage);
+
+         if(header != null)
+        {
+            return new PDUSequence(header, timestamp, nac);
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a PDU header message
+     * @param message containing an interleaved, viterbi encoded message
+     * @return header or null.
+     */
+    public static PDUHeader createHeader(CorrectedBinaryMessage message)
+    {
+        BitSet interleaved = message.get(PDU0_BEGIN, PDU0_END);
         CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
 
         //Decode 1/2 rate trellis encoded PDU header
@@ -98,8 +121,7 @@ public class PDUMessageFactory
 
         if(viterbiDecoded != null)
         {
-            PDUHeader header = PDUHeaderFactory.getPDUHeader(viterbiDecoded);
-            return new PDUSequence(header, timestamp, nac);
+            return PDUHeaderFactory.getPDUHeader(viterbiDecoded);
         }
 
         return null;

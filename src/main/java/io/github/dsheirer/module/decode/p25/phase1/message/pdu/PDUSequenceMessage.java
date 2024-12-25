@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ public class PDUSequenceMessage extends P25P1Message
     @Override
     public P25P1DataUnitID getDUID()
     {
-        return P25P1DataUnitID.PACKET_DATA_UNIT;
+        return P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1;
     }
 
     @Override

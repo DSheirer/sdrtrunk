@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -231,31 +231,29 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         {
             switch(mDataUnitID)
             {
-                case PACKET_HEADER_DATA_UNIT:
+                case PACKET_DATA_UNIT:
                     mPDUSequence = PDUMessageFactory.createPacketSequence(mNAC, mCurrentTime, mBinaryMessage);
 
                     if(mPDUSequence != null)
                     {
-                        if(mPDUSequence.getHeader().isValid() &&
-                           mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
+                        if(mPDUSequence.getHeader().isValid() && mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
                         {
                             //Setup to catch the sequence of data blocks that follow the header
-                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT;
-                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT.getMessageLength());
+                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1;
+                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1.getMessageLength());
                             mAssemblingMessage = true;
                         }
                         else
                         {
                             //Process 44 bits/22 dibits of trailing nulls
                             mTrailingDibitsToSuppress = 22;
-
                             mMessageListener.receive(PDUMessageFactory.create(mPDUSequence, mNAC, getTimestamp()));
                             reset(mPDUSequence.getBitsProcessedCount());
                             mPDUSequence = null;
                         }
                     }
                     break;
-                case PACKET_DATA_UNIT:
+                case PACKET_DATA_UNIT_BLOCK_1:
                     if(mPDUSequence != null)
                     {
                         if(mPDUSequence.getHeader().isConfirmationRequired())
@@ -304,8 +302,8 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                         else
                         {
                             //Setup to catch the next data block
-                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT;
-                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT.getMessageLength());
+                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1;
+                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1.getMessageLength());
                             mAssemblingMessage = true;
                         }
                     }
