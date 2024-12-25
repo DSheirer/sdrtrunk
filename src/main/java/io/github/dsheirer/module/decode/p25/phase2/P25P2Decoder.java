@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,12 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
         mMessageProcessor = new P25P2MessageProcessor();
         mMessageProcessor.setMessageListener(getMessageListener());
         getDibitBroadcaster().addListener(mByteBufferAssembler);
+    }
+
+    @Override
+    public String getProtocolDescription()
+    {
+        return "P25 Phase 2";
     }
 
     /**

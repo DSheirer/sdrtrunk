@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
+import io.github.dsheirer.module.decode.p25.phase1.Modulation;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Category;
@@ -36,6 +36,7 @@ import io.github.dsheirer.rrapi.type.SubCategory;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.util.ThreadPool;
+import java.text.DecimalFormat;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.geometry.HPos;
@@ -52,8 +53,6 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.DecimalFormat;
 
 public class FrequencyEditor extends VBox
 {
@@ -421,7 +420,7 @@ public class FrequencyEditor extends VBox
             }
             else if(decodeConfiguration instanceof DecodeConfigP25Phase1)
             {
-                ((DecodeConfigP25Phase1)decodeConfiguration).setModulation(P25P1Decoder.Modulation.C4FM);
+                ((DecodeConfigP25Phase1)decodeConfiguration).setModulation(Modulation.C4FM);
             }
             channel.setDecodeConfiguration(decodeConfiguration);
             return channel;

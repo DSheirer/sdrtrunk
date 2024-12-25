@@ -243,6 +243,16 @@ public class BinaryMessage extends BitSet
         return mSize;
     }
 
+    /**
+     * Current size of the message indicating the quantity of bits that have been added to this message.  This value
+     * is less than or equal to the size() value.
+     * @return current size in bits.
+     */
+    public int currentSize()
+    {
+        return mPointer;
+    }
+
     public void setSize(int size)
     {
         mSize = size;

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Monitors decode sync events to adaptively control frequency correction broadcasts.
  */
+@Deprecated //Remove after P25P2 decoder gets updated
 public class FrequencyCorrectionSyncMonitor implements ISyncDetectListener, IFrequencyErrorProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(FrequencyCorrectionSyncMonitor.class);

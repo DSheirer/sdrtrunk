@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ public class DecodeConfigP25Phase1 extends DecodeConfigP25
     public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
     public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
 
-    private P25P1Decoder.Modulation mModulation = P25P1Decoder.Modulation.C4FM;
+    private Modulation mModulation = Modulation.C4FM;
 
     /**
      * Constructs an instance
@@ -49,12 +49,12 @@ public class DecodeConfigP25Phase1 extends DecodeConfigP25
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "modulation")
-    public P25P1Decoder.Modulation getModulation()
+    public Modulation getModulation()
     {
         return mModulation;
     }
 
-    public void setModulation(P25P1Decoder.Modulation modulation)
+    public void setModulation(Modulation modulation)
     {
         mModulation = modulation;
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,14 +97,14 @@ public class P25P1NetworkConfigurationMonitor
 
     private MotorolaBaseStationId mMotorolaBaseStationId;
 
-    private P25P1Decoder.Modulation mModulation;
+    private Modulation mModulation;
 
     /**
      * Constructs a network configuration monitor.
      *
      * @param modulation type used by the decoder
      */
-    public P25P1NetworkConfigurationMonitor(P25P1Decoder.Modulation modulation)
+    public P25P1NetworkConfigurationMonitor(Modulation modulation)
     {
         mModulation = modulation;
     }

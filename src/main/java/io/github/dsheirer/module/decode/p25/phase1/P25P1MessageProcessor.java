@@ -219,6 +219,10 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                 dispatch(message);
             }
         }
+        else
+        {
+            dispatch(message);
+        }
     }
 
     /**

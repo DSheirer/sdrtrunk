@@ -21,13 +21,15 @@ package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.filter.interpolator.LinearInterpolator;
 import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.symbol.DibitDelayLine;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
+import io.github.dsheirer.gui.viewer.sync.SyncResultsViewer;
+import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetector;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncDetectMode;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncModeMonitor;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.sync.visualizer.SyncResultsViewer;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -65,9 +67,10 @@ public class DMRSoftSymbolProcessor
     private static final int BUFFER_PROTECTED_REGION_DIBITS = 92;
     private static final int BUFFER_WORKSPACE_LENGTH_DIBITS = 25; //This can be adjusted for efficiency
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
-    private static final float EQUALIZER_LOOP_GAIN = 0.3f;
-    private static final float MAXIMUM_EQUALIZER_BALANCE = (float)(Math.PI / 4.0);
-    private static final float MAXIMUM_EQUALIZER_GAIN = 1.35f;
+    private static final int SYMBOL_RATE = 4800;
+    private static final float EQUALIZER_LOOP_GAIN = 0.15f;
+    private static final float MAXIMUM_EQUALIZER_BALANCE = (float)(Math.PI / 3.0);
+    private static final float MAXIMUM_EQUALIZER_GAIN = 1.25f;
     private static final float MAXIMUM_POSITIVE_SAMPLE_PHASE = 3.5f;
     private static final float MAXIMUM_NEGATIVE_SAMPLE_PHASE = -3.5f;
     private static final float SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION = 0.005f; //.5%
@@ -100,12 +103,13 @@ public class DMRSoftSymbolProcessor
     private int mBufferWorkspaceLength;
     private int mSymbolsSinceLastSync = 0;
     private SyncResultsViewer mSyncResultsViewer;
+    private FeedbackDecoder mFeedbackDecoder;
 
     /**
      * Constructs an instance
      * @param messageFramer to receive demodulated symbols/dibits and sync detect notifications
      */
-    public DMRSoftSymbolProcessor(DMRMessageFramer messageFramer)
+    public DMRSoftSymbolProcessor(DMRMessageFramer messageFramer, FeedbackDecoder feedbackDecoder)
     {
         if(messageFramer == null)
         {
@@ -113,6 +117,7 @@ public class DMRSoftSymbolProcessor
         }
 
         mMessageFramer = messageFramer;
+        mFeedbackDecoder = feedbackDecoder;
         mSyncModeMonitor.add(mSyncDetector);
         mSyncModeMonitor.add(mSyncDetectorSecondary);
     }
@@ -215,6 +220,7 @@ public class DMRSoftSymbolProcessor
                     }
 
                     softSymbol = LinearInterpolator.calculate(mBuffer[mBufferPointer], mBuffer[mBufferPointer + 1], mSamplePoint);
+                    mFeedbackDecoder.broadcast(softSymbol);
                     mSyncDetector.process(softSymbol);
                     Dibit symbol = toSymbol(softSymbol);
 
@@ -559,6 +565,8 @@ public class DMRSoftSymbolProcessor
         mEqualizerBalance = Math.min(mEqualizerBalance, MAXIMUM_EQUALIZER_BALANCE);
         mEqualizerBalance = Math.max(mEqualizerBalance, -MAXIMUM_EQUALIZER_BALANCE);
 
+        mFeedbackDecoder.processPLLError(mEqualizerBalance, SYMBOL_RATE);
+
         //Constrain gain between 1.0f and 1.35f
         mEqualizerGain = Math.min(mEqualizerGain, MAXIMUM_EQUALIZER_GAIN);
         mEqualizerGain = Math.max(mEqualizerGain, 1.0f);
@@ -608,7 +616,8 @@ public class DMRSoftSymbolProcessor
         Arrays.fill(sync, -1.57f); //Cutoff between -1 & -1 to show symbol timings
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        mSyncResultsViewer.receive(symbols, sync, samples, intervals, "BUFFER CONTENTS", countDownLatch);
+        mSyncResultsViewer.receive(symbols, sync, samples, intervals, mEqualizerBalance, mEqualizerGain,
+                "BUFFER CONTENTS", countDownLatch);
 
         try
         {
@@ -665,7 +674,7 @@ public class DMRSoftSymbolProcessor
         }
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        mSyncResultsViewer.receive(symbols, pattern.toSymbols(), samples, intervals,
+        mSyncResultsViewer.receive(symbols, pattern.toSymbols(), samples, intervals, mEqualizerBalance, mEqualizerGain,
                 pattern + " Score: " + score + (primary ? " PRIMARY" : " SECONDARY"), countDownLatch);
 
         try

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
+import io.github.dsheirer.module.decode.p25.phase1.Modulation;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -332,7 +332,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             DecodeConfigP25Phase1 decodeConfig = (DecodeConfigP25Phase1)config;
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
-            if(decodeConfig.getModulation() == P25P1Decoder.Modulation.C4FM)
+            if(decodeConfig.getModulation() == Modulation.C4FM)
             {
                 getC4FMToggleButton().setSelected(true);
                 getLSMToggleButton().setSelected(false);
@@ -366,7 +366,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
 
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
-        config.setModulation(getC4FMToggleButton().isSelected() ? P25P1Decoder.Modulation.C4FM : P25P1Decoder.Modulation.CQPSK);
+        config.setModulation(getC4FMToggleButton().isSelected() ? Modulation.C4FM : Modulation.CQPSK);
         getItem().setDecodeConfiguration(config);
     }
 

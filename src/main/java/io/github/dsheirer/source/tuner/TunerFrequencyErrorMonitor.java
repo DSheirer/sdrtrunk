@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,13 @@ package io.github.dsheirer.source.tuner;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Monitors frequency error measurements received from certain decoders (e.g. P25) and averages those
@@ -85,13 +84,9 @@ public class TunerFrequencyErrorMonitor implements Listener<SourceEvent>
             //Note: the measurements are the frequency correction being applied to each channel to compensate
             //for the error int the channel.  So, we report the negated value as the current error measurement
             broadcast(-(sum / mProcessingMeasurements.size()));
-        }
-        else
-        {
-            broadcast(0);
-        }
 
-        mProcessingMeasurements.clear();
+            mProcessingMeasurements.clear();
+        }
     }
 
     private void broadcast(int averageError)

@@ -26,14 +26,14 @@ import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulator;
 import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.carrier.CarrierOffsetProcessor;
-import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * The DMRMessageProcessor processes messages from the message framer to extract and reassemble link control and
  * embedded link control parameters.
  */
-public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplexSamplesListener, ISourceEventListener,
+public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, IComplexSamplesListener, ISourceEventListener,
                 ISourceEventProvider, Listener<ComplexSamples>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(DMRDecoder.class);
@@ -90,7 +90,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     private static final int SYMBOL_RATE = 4800;
     private static final float MAXIMUM_CARRIER_OFFSET = 5000.0f; //Threshold for retuning the signal.
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
-    private DifferentialDemodulator mDemodulator;
+    private DifferentialDemodulatorFloat mDemodulator;
     private final DMRMessageFramer mMessageFramer;
     private final DMRSoftSymbolProcessor mSymbolProcessor;
     private final DMRMessageProcessor mMessageProcessor;
@@ -111,7 +111,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     {
         DMRCrcMaskManager crcMaskManager = new DMRCrcMaskManager(config.getIgnoreCRCChecksums());
         mMessageFramer = new DMRMessageFramer(crcMaskManager);
-        mSymbolProcessor = new DMRSoftSymbolProcessor(mMessageFramer);
+        mSymbolProcessor = new DMRSoftSymbolProcessor(mMessageFramer, this);
         mMessageProcessor = new DMRMessageProcessor(config, crcMaskManager);
         mMessageProcessor.setMessageListener(getMessageListener());
         setSampleRate(25000.0);
@@ -171,7 +171,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
         mRRCFilterI = new RealFIRFilter(taps);
         mRRCFilterQ = new RealFIRFilter(taps);
 
-        mDemodulator = DifferentialDemodulatorFactory.getDemodulator(decimatedSampleRate, SYMBOL_RATE);
+        mDemodulator = DifferentialDemodulatorFactory.getFloatDemodulator(decimatedSampleRate, SYMBOL_RATE);
         mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
         mMessageFramer.setListener(mMessageProcessor);
         mMessageProcessor.setMessageListener(getMessageListener());
@@ -291,6 +291,12 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     public Listener<SourceEvent> getSourceEventListener()
     {
         return this::process;
+    }
+
+    @Override
+    public String getProtocolDescription()
+    {
+        return "DMR C4FM";
     }
 
     /**

@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.squelch;
 import io.github.dsheirer.dsp.squelch.INoiseSquelchController;
 import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
+import io.github.dsheirer.gui.symbol.ChannelView;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
@@ -72,7 +73,7 @@ import org.slf4j.LoggerFactory;
  * 1 for an operating range of 1-6.  The close slider uses a range of 0-5 that is combined with the open slider for a
  * range of (open + 0) to (open + 5).
  */
-public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState>
+public class NoiseSquelchView extends ChannelView implements Listener<NoiseSquelchState>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NoiseSquelchView.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
@@ -129,7 +130,6 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
     private Label mHysteresisValueLabel;
     private Button mResetButton;
 
-    private boolean mShowing = false;
     private boolean mControlsUpdated = true;
 
     /**
@@ -235,9 +235,10 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
      * Sets this view as showing and starts the chart update timer, or sets this view as hidden and stops the update timer
      * @param showing to indicate if this view is selected by the user and showing.
      */
+    @Override
     public void setShowing(boolean showing)
     {
-        mShowing = showing;
+        super.setShowing(showing);
         updateTimer();
     }
 
@@ -258,12 +259,12 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
      */
     private synchronized void updateTimer()
     {
-        if(mShowing && mController != null && mTimerFuture == null)
+        if(isShowing() && mController != null && mTimerFuture == null)
         {
             //Start the timer
             mTimerFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::updateChart, 0, 50, TimeUnit.MILLISECONDS);
         }
-        else if((!mShowing || mController == null) && mTimerFuture != null)
+        else if((!isShowing() || mController == null) && mTimerFuture != null)
         {
             cancelTimer();
         }
@@ -604,7 +605,7 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
      */
     private void updateControllerNoise()
     {
-        if(mController != null && mShowing)
+        if(mController != null && isShowing())
         {
             float open = getOpenNoiseThresholdFromSliderValue();
             float close = getCloseNoiseThresholdFromSliderValue();
@@ -669,7 +670,7 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
      */
     private void updateControllerHysteresis()
     {
-        if(mController != null && mShowing)
+        if(mController != null && isShowing())
         {
             int open = (int)getOpenHysteresisSlider().getValue();
             int close = (int)getCloseHysteresisSlider().getValue() + open;

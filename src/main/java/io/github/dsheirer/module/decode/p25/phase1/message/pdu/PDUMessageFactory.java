@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCHeader;
@@ -72,34 +68,46 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDC
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.response.ResponseMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
-import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
-import java.util.BitSet;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PDUMessageFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(PDUMessageFactory.class);
-
     private static final int[] BLOCK_0_UMBTC_OPCODE = {2, 3, 4, 5, 6, 7};
-    private static final int PDU0_BEGIN = 0;
-    private static final int PDU0_END = 196;
 
-    private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
-
+    /**
+     * Creates a PDU sequence from the header
+     * @param nac for the system
+     * @param timestamp of the header message
+     * @param correctedBinaryMessage containing an interleaved, viterbi encoded header message.
+     * @return
+     */
     public static PDUSequence createPacketSequence(int nac, long timestamp, CorrectedBinaryMessage correctedBinaryMessage)
     {
-        //Get deinterleaved header chunk
-        BitSet interleaved = correctedBinaryMessage.get(PDU0_BEGIN, PDU0_END);
-        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
+        PDUHeader header = createHeader(correctedBinaryMessage);
 
-        //Decode 1/2 rate trellis encoded PDU header
-        CorrectedBinaryMessage viterbiDecoded = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
-
-        if(viterbiDecoded != null)
+         if(header != null)
         {
-            PDUHeader header = PDUHeaderFactory.getPDUHeader(viterbiDecoded);
             return new PDUSequence(header, timestamp, nac);
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a PDU header message
+     * @param message containing an interleaved, viterbi encoded message
+     * @return header or null.
+     */
+    public static PDUHeader createHeader(CorrectedBinaryMessage message)
+    {
+        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 195));
+
+        if(decoded != null)
+        {
+            return PDUHeaderFactory.getPDUHeader(decoded);
         }
 
         return null;
@@ -310,84 +318,5 @@ public class PDUMessageFactory
             default:
                 return new PDUSequenceMessage(pduSequence, nac, timestamp);
         }
-    }
-
-    @Deprecated
-    public static PDUMessage getMessage(BinaryMessage message, P25P1DataUnitID duid, AliasList aliasList)
-    {
-        PDUFormat format = PDUFormat.fromValue(message.getInt(PDUMessage.FORMAT));
-
-//        switch(format)
-//        {
-//            case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
-//                Vendor vendor = Vendor.fromValue(
-//                    message.getInt(PDUMessage.VENDOR_ID));
-//
-//                switch(vendor)
-//                {
-//                    case STANDARD:
-//                        Opcode opcode = Opcode.fromValue(message.getInt(PDUMessage.OPCODE));
-//
-//                        switch(opcode)
-//                        {
-//                            case OSP_ADJACENT_STATUS_BROADCAST:
-//                                return new AdjacentStatusBroadcastExtended(message, duid, aliasList);
-//                            case OSP_CALL_ALERT:
-//                                return new CallAlertExtended(message, duid, aliasList);
-//                            case OSP_GROUP_AFFILIATION_QUERY:
-//                                return new GroupAffiliationQueryExtended(message, duid, aliasList);
-//                            case OSP_GROUP_AFFILIATION_RESPONSE:
-//                                return new GroupAffiliationResponseExtended(message, duid, aliasList);
-//                            case OSP_GROUP_DATA_CHANNEL_GRANT:
-//                                return new GroupDataChannelGrantExtended(message, duid, aliasList);
-//                            case OSP_GROUP_VOICE_CHANNEL_GRANT:
-//                                return new GroupVoiceChannelGrantExplicit(message, duid, aliasList);
-//                            case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
-//                                return new IndividualDataChannelGrantExtended(message, duid, aliasList);
-//                            case OSP_MESSAGE_UPDATE:
-//                                return new MessageUpdateExtended(message, duid, aliasList);
-//                            case OSP_NETWORK_STATUS_BROADCAST:
-//                                return new NetworkStatusBroadcastExtended(message, duid, aliasList);
-//                            case OSP_PROTECTION_PARAMETER_BROADCAST:
-//                                return new ProtectionParameterBroadcast(message, duid, aliasList);
-//                            case OSP_RFSS_STATUS_BROADCAST:
-//                                return new RFSSStatusBroadcastExtended(message,
-//                                    duid, aliasList);
-//                            case OSP_ROAMING_ADDRESS_UPDATE:
-//                                return new RoamingAddressUpdateExtended(message, duid, aliasList);
-//                            case OSP_STATUS_QUERY:
-//                                return new StatusQueryExtended(message, duid, aliasList);
-//                            case OSP_STATUS_UPDATE:
-//                                return new StatusUpdateExtended(message, duid,
-//                                    aliasList);
-//                            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-//                                return new TelephoneInterconnectChannelGrantExplicit(message, duid, aliasList);
-//                            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-//                                return new TelephoneInterconnectChannelGrantUpdateExplicit(message, duid, aliasList);
-//                            case OSP_UNIT_REGISTRATION_RESPONSE:
-//                                return new UnitRegistrationResponseExtended(message, duid, aliasList);
-//                            case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
-//                                return new UnitToUnitAnswerRequestExplicit(message, duid, aliasList);
-//                            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-//                                return new UnitToUnitVoiceChannelGrantExtended(message, duid, aliasList);
-//                            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-//                                return new UnitToUnitVoiceChannelGrantUpdateExtended(message, duid, aliasList);
-//                            default:
-//                                break;
-//                        }
-//                    case MOTOROLA:
-//                        break;
-//                    default:
-//                        break;
-//                }
-//
-//                return new PDUMessage(message, duid, aliasList);
-//
-//            case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
-//                return new PDUMessage(message, duid, aliasList);
-//            default:
-//                return new PDUMessage(message, duid, aliasList);
-//        }
-        return null;
     }
 }

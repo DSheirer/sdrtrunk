@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
@@ -145,20 +144,18 @@ public abstract class TSBKMessage extends P25P1Message
         StringBuilder sb = new StringBuilder();
         sb.append(super.getMessageStub());
 
-        if(isValid())
+        if(!isValid())
         {
-            sb.append(" ").append(getOpcode().getLabel());
-
-            P25Utils.pad(sb, 30);
-
-            if(isEncrypted())
-            {
-                sb.append(" ENCRYPTED");
-            }
+            sb.append(" **CRC-FAILED**");
         }
-        else
+
+        sb.append(" ").append(getOpcode().getLabel());
+
+        P25Utils.pad(sb, 30);
+
+        if(isEncrypted())
         {
-            sb.append("**CRC-FAILED**");
+            sb.append(" ENCRYPTED");
         }
 
         return sb.toString();

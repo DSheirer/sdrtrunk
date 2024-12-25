@@ -36,7 +36,7 @@ import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.PrimaryDecoder;
+import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.IComplexSamplesListener;
@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * audio to Noise Squelch.  Squelch operates on the noise level with open and close thresholds to pass low-noise audio
  * and block high-noise audio.  Audio is filtered and resampled to 8 kHz for downstream consumers.
  */
-public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener, IComplexSamplesListener,
+public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventListener, IComplexSamplesListener,
         Listener<ComplexSamples>, IRealBufferProvider, IDecoderStateEventProvider, INoiseSquelchController
 {
     private final static Logger mLog = LoggerFactory.getLogger(NBFMDecoder.class);
