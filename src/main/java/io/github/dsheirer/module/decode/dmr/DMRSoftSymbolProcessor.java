@@ -253,7 +253,7 @@ public class DMRSoftSymbolProcessor
         float offset = (mBufferPointer + mSamplePoint) + additionalOffset - (mObservedSamplesPerSymbol * 23);
 
         //Find the optimal symbol timing
-        float stepSize = mObservedSamplesPerSymbol / 10.0f;
+        float stepSize = mSyncLock ? (mObservedSamplesPerSymbol / 40.0f) : (mObservedSamplesPerSymbol / 10.0f);
         float stepSizeMin = 0.03f;
         float adjustment = 0.0f;
         float adjustmentMax = mObservedSamplesPerSymbol / 2.0f;
@@ -343,7 +343,7 @@ public class DMRSoftSymbolProcessor
 
         //Adjust the observed samples per symbol using the timing error measured across one or two bursts when we're in
         //fine sync mode and the timing error is not excessive.
-        if(mSyncLock && adjustment < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
+        if(mSyncLock && Math.abs(adjustment) < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
         {
             mObservedSamplesPerSymbol += (float)((double)adjustment / (double)mSymbolsSinceLastSync * 0.2);
         }

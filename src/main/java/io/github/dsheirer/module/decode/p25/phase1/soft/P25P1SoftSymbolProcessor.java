@@ -21,12 +21,15 @@ package io.github.dsheirer.module.decode.p25.phase1.soft;
 
 import io.github.dsheirer.dsp.filter.interpolator.PhaseAwareLinearInterpolator;
 import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.symbol.DibitDelayBuffer;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
-import io.github.dsheirer.module.decode.dmr.DibitDelayLine;
+import io.github.dsheirer.edac.BCH_63_16_11;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetector;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SyncDetector;
 import io.github.dsheirer.sample.Listener;
+
 import java.nio.ByteBuffer;
 
 public class P25P1SoftSymbolProcessor
@@ -34,12 +37,13 @@ public class P25P1SoftSymbolProcessor
     private static final int BUFFER_PROTECTED_REGION_DIBITS = 26; //Sync (24) plus 2
     private static final int BUFFER_WORKSPACE_LENGTH_DIBITS = 25; //This can be adjusted for efficiency
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
-    private static final int MAX_SYMBOLS_FOR_FINE_SYNC = 865; //Length of longest messages: LDU1 and LDU2
+    private static final int MAX_SYMBOLS_FOR_FINE_SYNC = 890; //Length of longest messages: LDU1 and LDU2
     private static final int MIN_SYMBOLS_FOR_TIMING_ADJUST = 72;
+    private static final int NID_DIBIT_LENGTH = 57; //56 dibits plus 1 status symbol
     private static final float MAX_POSITIVE_SOFT_SYMBOL = Dibit.D01_PLUS_3.getIdealPhase();
     private static final float MAX_NEGATIVE_SOFT_SYMBOL = Dibit.D11_MINUS_3.getIdealPhase();
     private static final float SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
-    private static final float SYNC_DETECTION_THRESHOLD = 70;
+    private static final float SYNC_DETECTION_THRESHOLD = 65;
     private static final float[] SYNC_PATTERN_SYMBOLS = P25P1SyncDetector.syncPatternToSymbols();
     private static final Dibit[] SYNC_PATTERN_DIBITS = P25P1SyncDetector.syncPatternToDibits();
     private P25P1SoftSyncDetector mSyncDetector = P25P1SoftSyncDetectorFactory.getDetector();
@@ -47,7 +51,7 @@ public class P25P1SoftSymbolProcessor
     private P25P1SoftSyncDetector mSyncDetectorLag2 = P25P1SoftSyncDetectorFactory.getDetector();
     private DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     private P25P1SoftMessageFramer mMessageFramer;
-    private DibitDelayLine mDibitDelayLine = new DibitDelayLine(24); //Length of the sync pattern
+    private NIDDibitDelayBuffer mDibitDelayBuffer = new NIDDibitDelayBuffer();
     private boolean mSyncLock = false;
     private float mLaggingSyncOffset1;
     private float mLaggingSyncOffset2;
@@ -58,7 +62,9 @@ public class P25P1SoftSymbolProcessor
     private int mBufferLoadPointer;
     private int mBufferPointer;
     private int mBufferWorkspaceLength;
-    private int mSymbolsSinceLastSync = 0;
+    private int mSymbolsSinceLastSync = NID_DIBIT_LENGTH + 1; //Set higher than NID length (72) to prevent false initial NID calculation.
+    private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
+
 
     /**
      * Constructs an instance
@@ -75,6 +81,11 @@ public class P25P1SoftSymbolProcessor
      */
     public void receive(float[] samples)
     {
+//TODO: the dibit delay buffer should hold both the sync and the NID.  On detection, attempt to optimize to over 95
+//TODO: score.  Test NID.  If NID passes, constrain the adjustment to +/- 0.5.  If the NID fails, set the adjustment
+//TODO: unconstrained and resample the symbols with the improved alignment.  The sync detector gets fed from a lagging
+//TODO: queue that should have the full sync and NID in the delay line, that can be resampled.
+
         int samplesPointer = 0;
 
         while(samplesPointer < samples.length)
@@ -102,6 +113,8 @@ public class P25P1SoftSymbolProcessor
 
                     if(mSymbolsSinceLastSync > MAX_SYMBOLS_FOR_FINE_SYNC)
                     {
+                        //Uncomment this after development/debug
+//                        mSymbolsSinceLastSync = NID_DIBIT_LENGTH + 1; //Reset to one higher than NID length
                         mSyncLock = false;
                     }
 
@@ -112,56 +125,52 @@ public class P25P1SoftSymbolProcessor
 
                     //Store the symbol in the delay line and broadcast the delayed ejected symbol to the message framer
                     //and the bitstream assembler.
-                    Dibit ejected = mDibitDelayLine.insert(symbol);
+                    Dibit ejected = mDibitDelayBuffer.getAndPut(symbol);
                     mMessageFramer.receive(ejected);
                     mDibitAssembler.receive(ejected);
 
+                    //Check for sync pattern
+                    float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
+                    float lag2 = mBufferPointer + mSamplePoint - mLaggingSyncOffset2;
+                    int lagIntegral1 = (int)Math.floor(lag1);
+                    int lagIntegral2 = (int)Math.floor(lag2);
+                    float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral1],
+                            mBuffer[lagIntegral1 + 1], lag1 - lagIntegral1);
+                    float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral2],
+                            mBuffer[lagIntegral2 + 1], lag2 - lagIntegral2);
+                    float scoreLag1 = mSyncDetectorLag1.process(softSymbolLag1);
+                    float scoreLag2 = mSyncDetectorLag2.process(softSymbolLag2);
                     float scorePrimary = mSyncDetector.process(softSymbol);
 
-                    if(mSyncLock && scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(0.0f))
+                    //If we're sync locked, attempt to evaluate sync only by the primary sync detector
+                    String tag = " - SCORE PRIMARY:" + scorePrimary + " LAG1:" + scoreLag1 + " LAG2:" + scoreLag2 + " SYMBOLS:" + mSymbolsSinceLastSync;
+                    if(mSyncLock && scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(0, "SYNC *PRIMARY*" + tag))
                     {
-                        System.out.println("SYNC LOCK - Score: " + scorePrimary + " Symbols: " + mSymbolsSinceLastSync);
-                        System.out.println("-------------------------------------------------------------------------");
+                        System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols: " + mSymbolsSinceLastSync);
                         mSymbolsSinceLastSync = 0;
-                        mMessageFramer.syncDetected();
                     }
-                    else
+                    else if(mSymbolsSinceLastSync > 1 && scoreLag1 > scorePrimary && scoreLag1 > scoreLag2 &&
+                            scoreLag1 > SYNC_DETECTION_THRESHOLD && optimize(-mLaggingSyncOffset1, "SYNC LAG 1" + tag))
                     {
-                        float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
-                        float lag2 = mBufferPointer + mSamplePoint - mLaggingSyncOffset2;
-                        int lagIntegral1 = (int)Math.floor(lag1);
-                        int lagIntegral2 = (int)Math.floor(lag2);
-                        float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral1],
-                                mBuffer[lagIntegral1 + 1], lag1 - lagIntegral1);
-                        float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral2],
-                                mBuffer[lagIntegral2 + 1], lag2 - lagIntegral2);
-                        float scoreLag1 = mSyncDetectorLag1.process(softSymbolLag1);
-                        float scoreLag2 = mSyncDetectorLag2.process(softSymbolLag2);
+                        System.out.println("SYNC LAG 1 - Score: " + scoreLag1 + " Symbols: " + mSymbolsSinceLastSync);
+                        mSymbolsSinceLastSync = 0;
+                    }
+                    else if(mSymbolsSinceLastSync > 1 && scoreLag2 > scorePrimary &&
+                            scoreLag2 > SYNC_DETECTION_THRESHOLD && optimize(-mLaggingSyncOffset2, "SYNC LAG 2" + tag))
+                    {
+                        System.out.println("SYNC LAG 2 - Score: " + scoreLag2 + " Symbols: " + mSymbolsSinceLastSync);
+                        mSymbolsSinceLastSync = 0;
+                    }
+                    else if(scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(0.0f, "SYNC PRIMARY" + tag))
+                    {
+//                            System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols: " + mSymbolsSinceLastSync);
+                        mSymbolsSinceLastSync = 0;
+                    }
 
-                        if(mSymbolsSinceLastSync > 1 && scoreLag1 > scorePrimary && scoreLag1 > scoreLag2 &&
-                                scoreLag1 > SYNC_DETECTION_THRESHOLD && optimize(-mLaggingSyncOffset1))
-                        {
-                            System.out.println("SYNC LAG 1 - Score: " + scoreLag1 + " Symbols: " + mSymbolsSinceLastSync);
-                            System.out.println("-------------------------------------------------------------------------");
-                            mSymbolsSinceLastSync = 0;
-                            mMessageFramer.syncDetected();
-                        }
-                        else if(mSymbolsSinceLastSync > 1 && scoreLag2 > scorePrimary &&
-                                scoreLag2 > SYNC_DETECTION_THRESHOLD && optimize(-mLaggingSyncOffset2))
-                        {
-                            System.out.println("SYNC LAG 2 - Score: " + scoreLag2 + " Symbols: " + mSymbolsSinceLastSync);
-                            System.out.println("-------------------------------------------------------------------------");
-                            mSymbolsSinceLastSync = 0;
-                            mMessageFramer.syncDetected();
-                        }
-                        else if(scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(0.0f))
-                        {
-                            System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols: " + mSymbolsSinceLastSync);
-                            System.out.println("-------------------------------------------------------------------------");
-                            mSymbolsSinceLastSync = 0;
-                            mMessageFramer.syncDetected();
-                            mSyncLock = true;
-                        }
+                    //Process the NID at 57 symbols to verify the sync detection was correct and set/clear sync lock state
+                    if(mSymbolsSinceLastSync == NID_DIBIT_LENGTH - 24)
+                    {
+                        processNID();
                     }
 
                     //Add another symbol's worth of samples to the counter
@@ -178,7 +187,7 @@ public class P25P1SoftSymbolProcessor
      * sync detector or an offset for the lagging sync detectors.
      * @return true if there is a positive sync detection.
      */
-    private boolean optimize(float additionalOffset)
+    private boolean optimize(float additionalOffset, String prefix)
     {
         boolean debugLogging = true;
 
@@ -187,7 +196,7 @@ public class P25P1SoftSymbolProcessor
         float offset = (mBufferPointer + mSamplePoint) + additionalOffset - (mObservedSamplesPerSymbol * 23);
 
         //Find the optimal symbol timing
-        float stepSize = mObservedSamplesPerSymbol / 10.0f;
+        float stepSize = mSyncLock ? (mObservedSamplesPerSymbol / 40.0f) : (mObservedSamplesPerSymbol / 10.0f);
         float stepSizeMin = 0.03f;
         float adjustment = 0.0f;
         float adjustmentMax = mObservedSamplesPerSymbol / 2.0f;
@@ -208,12 +217,19 @@ public class P25P1SoftSymbolProcessor
         float scoreRight = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol);
 
         StringBuilder debugSB = new StringBuilder();
+        debugSB.append("-------------------------------------------------------------------------").append("\n");
+        debugSB.append(prefix).append("\n");
 
         while(stepSize > stepSizeMin && Math.abs(adjustment) <= adjustmentMax)
         {
             if(scoreLeft > scoreRight && scoreLeft > scoreCenter)
             {
-                debugSB.append("Optimize - LEFT: " + scoreLeft + " Center: " + scoreCenter + " Right: " + scoreRight + " StepSize: " + stepSize + " Symbols Since Last Sync: " + mSymbolsSinceLastSync).append("\n");
+                debugSB.append("Optimize - LEFT: " + scoreLeft +
+                        " Center: " + scoreCenter +
+                        " Right: " + scoreRight +
+                        " StepSize: " + stepSize +
+                        " Adjustment: " + adjustment +
+                        " Symbols Since Last Sync: " + mSymbolsSinceLastSync).append("\n");
                 adjustment -= stepSize;
                 scoreRight = scoreCenter;
                 scoreCenter = scoreLeft;
@@ -225,7 +241,12 @@ public class P25P1SoftSymbolProcessor
             }
             else if(scoreRight > scoreLeft && scoreRight > scoreCenter)
             {
-                debugSB.append("Optimize - Left: " + scoreLeft + " Center: " + scoreCenter + " RIGHT: " + scoreRight + " StepSize: " + stepSize + " Symbols Since Last Sync: " + mSymbolsSinceLastSync).append("\n");
+                debugSB.append("Optimize - Left: " + scoreLeft +
+                        " Center: " + scoreCenter +
+                        " RIGHT: " + scoreRight +
+                        " StepSize: " + stepSize +
+                        " Adjustment: " + adjustment +
+                        " Symbols Since Last Sync: " + mSymbolsSinceLastSync).append("\n");
                 adjustment += stepSize;
                 scoreLeft = scoreCenter;
                 scoreCenter = scoreRight;
@@ -237,7 +258,12 @@ public class P25P1SoftSymbolProcessor
             }
             else
             {
-                debugSB.append("Optimize - LEFT: " + scoreLeft + " CENTER: " + scoreCenter + " Right: " + scoreRight + " StepSize: " + stepSize + " Symbols Since Last Sync: " + mSymbolsSinceLastSync).append("\n");
+                debugSB.append("Optimize - Left: " + scoreLeft +
+                        " CENTER: " + scoreCenter +
+                        " Right: " + scoreRight +
+                        " StepSize: " + stepSize +
+                        " Adjustment: " + adjustment +
+                        " Symbols Since Last Sync: " + mSymbolsSinceLastSync).append("\n");
                 stepSize *= 0.5f;
 
                 if(stepSize > stepSizeMin)
@@ -253,17 +279,18 @@ public class P25P1SoftSymbolProcessor
                     scoreRight = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol);
                 }
             }
+
+//            if(mSyncLock && Math.abs(adjustment) > 1.0)
+//            {
+//                //Abort trying to find anything better ... it's wasted effort
+//                debugSB.append(">>> Aborting optimization - excessive adjustment\n");
+//                stepSize = 0;
+//            }
         }
 
         //If we didn't find an optimal correlation score above the 95 threshold, return a false sync.
         if(scoreCenter < 95)
         {
-            debugSB.append("Optimize Failed - Score: " + scoreCenter + " - False Sync!!").append("\n");
-
-            if(debugLogging)
-            {
-                System.out.println(debugSB);
-            }
             return false;
         }
 
@@ -271,6 +298,13 @@ public class P25P1SoftSymbolProcessor
         {
             adjustment += additionalOffset;
         }
+
+//        if(mSyncLock && Math.abs(adjustment) > 0.5)
+//        {
+//            debugSB.append("*** SYNC LOCK ADJUSTMENT [" + adjustment + "] WAS CONSTRAINED TO +/- 0.5").append(" Additional: " + additionalOffset + "\n");
+//            adjustment = Math.min(adjustment, 0.5f);
+//            adjustment = Math.max(adjustment, -0.5f);
+//        }
 
         mSamplePoint += adjustment;
 
@@ -286,9 +320,11 @@ public class P25P1SoftSymbolProcessor
             mBufferPointer++;
         }
 
+        debugSB.append("Adjustment: " + adjustment + " Lock:" + mSyncLock + "\n");
+
         //Adjust the observed samples per symbol using the timing error measured across one or two bursts when we're in
         //fine sync mode and the timing error is not excessive.
-        if(mSyncLock && adjustment < 0.5 && mSymbolsSinceLastSync >= MIN_SYMBOLS_FOR_TIMING_ADJUST &&
+        if(mSyncLock && Math.abs(adjustment) < 0.5 && mSymbolsSinceLastSync >= MIN_SYMBOLS_FOR_TIMING_ADJUST &&
                 mSymbolsSinceLastSync <= MAX_SYMBOLS_FOR_FINE_SYNC)
         {
             debugSB.append("Observed SPS Before: " + mObservedSamplesPerSymbol).append("\n");
@@ -298,7 +334,7 @@ public class P25P1SoftSymbolProcessor
 
         //Overwrite the most recent 24 dibits with the detected sync so there's no sync bit errors
 //TODO: move this up to the receive() method as part of each sync detect
-        mDibitDelayLine.update(SYNC_PATTERN_DIBITS);
+//        mDibitDelayLine.update(SYNC_PATTERN_DIBITS);
 
         if(debugLogging)
         {
@@ -313,7 +349,6 @@ public class P25P1SoftSymbolProcessor
      * @param bufferPointer to the start of the samples in the soft symbol buffer
      * @param fractional position to interpolate within the 8 samples starting at the buffer pointer.
      * @param samplesPerSymbol spacing to test for.
-     * @param pattern to correlate against.
      * @return correlation score.
      */
     public float score(int bufferPointer, float fractional, float samplesPerSymbol)
@@ -372,6 +407,134 @@ public class P25P1SoftSymbolProcessor
     }
 
     /**
+     * Checks/tests the contents of the data unit buffer for a valid NID after a sync pattern is detected
+     */
+    private void processNID()
+    {
+        int[] nid = mDibitDelayBuffer.getNID();
+        int[] correctedNid = new int[63];
+        boolean unrecoverable = mNIDDecoder.decode(nid, correctedNid);
+
+        //Turn off sync lock if this was a bad decode so that we can get back onto fine sync
+        if(unrecoverable)
+        {
+            System.out.println("NID Processing Failed - Setting Sync Lock to OFF");
+            mSyncLock = false;
+        }
+        else
+        {
+            int nac = getNAC(correctedNid);
+            P25P1DataUnitID duid = getDataUnitID(correctedNid);
+            mMessageFramer.syncDetected(nac, duid);
+            mSyncLock = true;
+        }
+    }
+
+    /**
+     * Determines the Network Access Code (NAC) present in the nid value.
+     * @param nid in reverse bit order
+     * @return nac
+     */
+    public static int getNAC(int[] nid)
+    {
+        int nac = 0;
+
+        if(nid[51] == 1)
+        {
+            nac ^= 1;
+        }
+
+        if(nid[52] == 1)
+        {
+            nac ^= 2;
+        }
+
+        if(nid[53] == 1)
+        {
+            nac ^= 4;
+        }
+
+        if(nid[54] == 1)
+        {
+            nac ^= 8;
+        }
+
+        if(nid[55] == 1)
+        {
+            nac ^= 16;
+        }
+
+        if(nid[56] == 1)
+        {
+            nac ^= 32;
+        }
+
+        if(nid[57] == 1)
+        {
+            nac ^= 64;
+        }
+
+        if(nid[58] == 1)
+        {
+            nac ^= 128;
+        }
+
+        if(nid[59] == 1)
+        {
+            nac ^= 256;
+        }
+
+        if(nid[60] == 1)
+        {
+            nac ^= 512;
+        }
+
+        if(nid[61] == 1)
+        {
+            nac ^= 1024;
+        }
+
+        if(nid[62] == 1)
+        {
+            nac ^= 2048;
+        }
+
+        return nac;
+    }
+
+    /**
+     * Determines the data unit ID present in the nid value.
+     * @param nid in reverse bit order
+     * @return
+     */
+    public static P25P1DataUnitID getDataUnitID(int[] nid)
+    {
+        int duid = 0;
+
+        if(nid[47] == 1)
+        {
+            duid ^= 1;
+        }
+
+        if(nid[48] == 1)
+        {
+            duid ^= 2;
+        }
+
+        if(nid[49] == 1)
+        {
+            duid ^= 4;
+        }
+
+        if(nid[50] == 1)
+        {
+            duid ^= 8;
+        }
+
+        return P25P1DataUnitID.fromValue(duid);
+    }
+
+    /**
      * Decodes the sample value to determine the correct QPSK quadrant and maps the value to a Dibit symbol.
      * @param sample in radians.
      * @return symbol decision.
@@ -385,6 +548,55 @@ public class P25P1SoftSymbolProcessor
         else
         {
             return sample < -SYMBOL_QUADRANT_BOUNDARY ? Dibit.D11_MINUS_3 : Dibit.D10_MINUS_1;
+        }
+    }
+
+    /**
+     * Circular buffer for storing and accessing dibits and extract the NID.
+     */
+    public class NIDDibitDelayBuffer extends DibitDelayBuffer
+    {
+        /**
+         * Constructs a dibit delay buffer
+         */
+        public NIDDibitDelayBuffer()
+        {
+            super(NID_DIBIT_LENGTH);
+        }
+
+        public int[] getNID()
+        {
+            int[] nid = new int[63];
+
+            int nidPointer = 0;
+            int bufferPointer = mPointer - 1;
+            Dibit dibit = null;
+
+            while(nidPointer < 63)
+            {
+                if(bufferPointer < 0)
+                {
+                    bufferPointer += mBuffer.length;
+                }
+
+                dibit = mBuffer[bufferPointer];
+                nid[nidPointer++] = dibit.getBit2() ? 1 : 0;
+
+                if(nidPointer < 63)
+                {
+                    nid[nidPointer++] = dibit.getBit1() ? 1 : 0;
+                }
+
+                bufferPointer--;
+
+                //Skip the status symbol inserted at bit 70 that's in the middle of the NID at sync (48) plus nid (22) = 70
+                if(nidPointer == 22)
+                {
+                    bufferPointer--;
+                }
+            }
+
+            return nid;
         }
     }
 }

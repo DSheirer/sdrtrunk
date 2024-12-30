@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.soft;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.sample.Listener;
 
 public class P25P1SoftMessageFramer implements Listener<Dibit>
@@ -30,20 +31,23 @@ public class P25P1SoftMessageFramer implements Listener<Dibit>
     private int mDibitCounter = 0;
     private int mDibitSinceTimestampCounter = 0;
     private long mReferenceTimestamp = 0;
+    private P25P1DataUnitID mDetectedDUID = P25P1DataUnitID.UNKNOWN;
 
     @Override
     public void receive(Dibit dibit)
     {
-
     }
 
     /**
      * External trigger that a sync pattern is detected and the next arriving dibit is the start of the message that
      * contains that sync.
      */
-    public void syncDetected()
+    public void syncDetected(int nac, P25P1DataUnitID dataUnitID)
     {
-
+        StringBuilder sb = new StringBuilder();
+        sb.append("NAC: ").append(nac);
+        sb.append(" Data Unit: ").append(dataUnitID);
+        System.out.println(sb);
     }
 
     /**

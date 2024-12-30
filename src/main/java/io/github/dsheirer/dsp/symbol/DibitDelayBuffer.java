@@ -28,6 +28,8 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 /**
  * Circular buffer for storing and accessing dibits.
  */
@@ -53,10 +55,7 @@ public class DibitDelayBuffer
      */
     public void reset()
     {
-        for(int x = 0; x < mBuffer.length; x++)
-        {
-            mBuffer[x] = Dibit.D00_PLUS_1;
-        }
+        Arrays.fill(mBuffer, Dibit.D00_PLUS_1);
     }
 
     /**
