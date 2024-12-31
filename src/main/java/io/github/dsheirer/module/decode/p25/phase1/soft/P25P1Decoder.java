@@ -38,8 +38,10 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
+import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageProcessor;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -116,11 +118,12 @@ public class P25P1Decoder extends Decoder implements IByteBufferProvider, ICompl
     {
         mMessageFramer.setTimestamp(samples.timestamp());
 
+//TODO: should we use different filters for different radio formats (e.g. C4FM vs LSM vs Conventional)???
 
-        float[] i = mIBasebandFilter.filter(samples.i());
-        float[] q = mQBasebandFilter.filter(samples.q());
-//        float[] i = samples.i();
-//        float[] q = samples.q();
+//        float[] i = mIBasebandFilter.filter(samples.i());
+//        float[] q = mQBasebandFilter.filter(samples.q());
+        float[] i = samples.i();
+        float[] q = samples.q();
 
         //Process buffer for power measurements
         mPowerMonitor.process(i, q);
@@ -264,8 +267,7 @@ public class P25P1Decoder extends Decoder implements IByteBufferProvider, ICompl
         decoder.start();
 
         UserPreferences userPreferences = new UserPreferences();
-        DMRAudioModule audio1 = new DMRAudioModule(userPreferences, new AliasList(""), DMRMessage.TIMESLOT_1);
-        DMRAudioModule audio2 = new DMRAudioModule(userPreferences, new AliasList(""), DMRMessage.TIMESLOT_2);
+        P25P1AudioModule audio1 = new P25P1AudioModule(userPreferences, new AliasList(""));
 
         decoder.setMessageListener(new Listener<>()
         {
@@ -279,26 +281,19 @@ public class P25P1Decoder extends Decoder implements IByteBufferProvider, ICompl
             {
                 int errors = 0;
 
-                if(iMessage.getTimeslot() == DMRMessage.TIMESLOT_1)
-                {
-                    audio1.receive(iMessage);
-                }
-                if(iMessage.getTimeslot() == DMRMessage.TIMESLOT_2)
-                {
-                    audio2.receive(iMessage);
-                }
+                audio1.receive(iMessage);
 
-                if(iMessage instanceof DMRBurst burst)
+                if(iMessage instanceof P25P1Message message)
                 {
                     mBitCounter += 288;
-                    errors = burst.getMessage().getCorrectedBitCount();
+                    errors = message.getMessage().getCorrectedBitCount();
                     mTotalMessageCounter++;
 
                     if(mTotalMessageCounter == 492)
                     {
                         int a = 0;
                     }
-                    if(burst.isValid())
+                    if(message.isValid())
                     {
                         mBitErrorCounter += Math.max(errors, 0);
                         mValidMessageCounter++;

@@ -64,6 +64,8 @@ public class P25P1SoftSymbolProcessor
     private int mBufferWorkspaceLength;
     private int mSymbolsSinceLastSync = NID_DIBIT_LENGTH + 1; //Set higher than NID length (72) to prevent false initial NID calculation.
     private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
+    private P25P1DataUnitID mPreviousDUID;
+    private int mPreviousNAC;
 
 
     /**
@@ -418,14 +420,24 @@ public class P25P1SoftSymbolProcessor
         //Turn off sync lock if this was a bad decode so that we can get back onto fine sync
         if(unrecoverable)
         {
-            System.out.println("NID Processing Failed - Setting Sync Lock to OFF");
-            mSyncLock = false;
+            if(mPreviousDUID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
+            {
+                System.out.println("TSBK2/3 Detected - Continuing");
+            }
+            else
+            {
+                int nacC = getNAC(correctedNid);
+                P25P1DataUnitID duidC = getDataUnitID(correctedNid);
+                System.out.println("NID Processing Failed - Setting Sync Lock to OFF - NAC: " + nacC + " DUID: " + duidC);
+                mDibitDelayBuffer.log();
+                mSyncLock = false;
+            }
         }
         else
         {
-            int nac = getNAC(correctedNid);
-            P25P1DataUnitID duid = getDataUnitID(correctedNid);
-            mMessageFramer.syncDetected(nac, duid);
+            mPreviousNAC = getNAC(correctedNid);
+            mPreviousDUID = getDataUnitID(correctedNid);
+            mMessageFramer.syncDetected(mPreviousNAC, mPreviousDUID);
             mSyncLock = true;
         }
     }
@@ -580,12 +592,14 @@ public class P25P1SoftSymbolProcessor
                 }
 
                 dibit = mBuffer[bufferPointer];
-                nid[nidPointer++] = dibit.getBit2() ? 1 : 0;
 
-                if(nidPointer < 63)
+                //Skip the final parity bit when first loading the bits in reverse
+                if(nidPointer != 0)
                 {
-                    nid[nidPointer++] = dibit.getBit1() ? 1 : 0;
+                    nid[nidPointer++] = dibit.getBit2() ? 1 : 0;
                 }
+
+                nid[nidPointer++] = dibit.getBit1() ? 1 : 0;
 
                 bufferPointer--;
 
