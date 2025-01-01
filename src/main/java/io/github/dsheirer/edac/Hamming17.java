@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,13 @@ public class Hamming17 implements IHamming
         if(syndrome == 0)
         {
             return NO_ERRORS;
+        }
+
+        //If the syndrome indicates the error is in the final parity bit position, and we already have odd parity, then
+        //flag it as invalid for multiple errors.
+        if(syndrome == 1 && message.getSubMessage(offset, offset + 17).cardinality() % 2 == 1) //check final parity bit
+        {
+            return MULTIPLE_ERRORS;
         }
 
         for(int index = 0; index < CHECKSUMS.length; index++)
