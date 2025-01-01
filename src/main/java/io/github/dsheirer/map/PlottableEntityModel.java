@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +135,7 @@ public class PlottableEntityModel extends AbstractTableModel implements Listener
                 }
                 else
                 {
-                    LOGGER.warn("Received plottable decode event that does not contain a FROM identifier - cannot plot");
+//                    LOGGER.warn("Received plottable decode event that does not contain a FROM identifier - cannot plot");
                 }
             });
         }
