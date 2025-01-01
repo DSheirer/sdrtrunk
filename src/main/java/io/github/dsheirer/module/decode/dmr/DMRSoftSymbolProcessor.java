@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,7 @@ public class DMRSoftSymbolProcessor
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
     private static final float MAX_POSITIVE_SOFT_SYMBOL = Dibit.D01_PLUS_3.getIdealPhase();
     private static final float MAX_NEGATIVE_SOFT_SYMBOL = Dibit.D11_MINUS_3.getIdealPhase();
+    private static final float SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION = 0.005f; //.5%
     private static final float SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
     private static final float SYNC_DETECTION_THRESHOLD = 60;
     private DMRSyncModeMonitor mSyncModeMonitor = new DMRSyncModeMonitor();
@@ -73,11 +74,14 @@ public class DMRSoftSymbolProcessor
     private float mLaggingSyncOffset2;
     private float mObservedSamplesPerSymbol;
     private float mSamplesPerSymbol;
+    private float mMaxSamplesPerSymbol;
+    private float mMinSamplesPerSymbol;
     private float mSamplePoint;
     private float[] mBuffer;
     private int mBufferLoadPointer;
     private int mBufferPointer;
     private int mBufferWorkspaceLength;
+    private int mBufferInterpolatorReservedRegion;
     private int mSymbolsSinceLastSync = 0;
 
     /**
@@ -158,7 +162,7 @@ public class DMRSoftSymbolProcessor
             samplesPointer += copyLength;
             mBufferLoadPointer += copyLength;
 
-            while(mBufferPointer < (mBufferLoadPointer - 7)) //Interpolator needs 1 and optimizer needs 6 pad spaces
+            while(mBufferPointer < (mBufferLoadPointer - mBufferInterpolatorReservedRegion))
             {
                 mBufferPointer++;
                 mSamplePoint--;
@@ -253,7 +257,7 @@ public class DMRSoftSymbolProcessor
         float offset = (mBufferPointer + mSamplePoint) + additionalOffset - (mObservedSamplesPerSymbol * 23);
 
         //Find the optimal symbol timing
-        float stepSize = mObservedSamplesPerSymbol / 10.0f;
+        float stepSize = mSyncLock ? (mObservedSamplesPerSymbol / 40.0f) : (mObservedSamplesPerSymbol / 10.0f);
         float stepSizeMin = 0.03f;
         float adjustment = 0.0f;
         float adjustmentMax = mObservedSamplesPerSymbol / 2.0f;
@@ -343,9 +347,18 @@ public class DMRSoftSymbolProcessor
 
         //Adjust the observed samples per symbol using the timing error measured across one or two bursts when we're in
         //fine sync mode and the timing error is not excessive.
-        if(mSyncLock && adjustment < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
+        if(mSyncLock && Math.abs(adjustment) < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
         {
             mObservedSamplesPerSymbol += (float)((double)adjustment / (double)mSymbolsSinceLastSync * 0.2);
+
+            if(mObservedSamplesPerSymbol > mMaxSamplesPerSymbol)
+            {
+                mObservedSamplesPerSymbol = mMaxSamplesPerSymbol;
+            }
+            else if(mObservedSamplesPerSymbol < mMinSamplesPerSymbol)
+            {
+                mObservedSamplesPerSymbol = mMinSamplesPerSymbol;
+            }
         }
 
         //If the timing error adjustment is high enough, resample the symbols.  Otherwise, overwrite the captured sync
@@ -402,15 +415,22 @@ public class DMRSoftSymbolProcessor
     {
         float score = 0;
         float[] symbols = pattern.toSymbols();
-        float[] softSymbols = new float[24];
-        int integral;
+        int integral, maxPointer = mBuffer.length - 1;
+        float softSymbol = 0.0f;
 
         for(int x = 0; x < 24; x++)
         {
-            float softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional);
-            softSymbol = Math.min(softSymbol, MAX_POSITIVE_SOFT_SYMBOL);
-            softSymbol = Math.max(softSymbol, MAX_NEGATIVE_SOFT_SYMBOL);
-            softSymbols[x] = softSymbol;
+            if(bufferPointer < maxPointer)
+            {
+                softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional);
+                softSymbol = Math.min(softSymbol, MAX_POSITIVE_SOFT_SYMBOL);
+                softSymbol = Math.max(softSymbol, MAX_NEGATIVE_SOFT_SYMBOL);
+            }
+            else
+            {
+                softSymbol = 0.0f;
+            }
+
             score += softSymbol * symbols[x];
             fractional += samplesPerSymbol;
             integral = (int)Math.floor(fractional);
@@ -428,6 +448,10 @@ public class DMRSoftSymbolProcessor
     public void setSamplesPerSymbol(float samplesPerSymbol)
     {
         mSamplesPerSymbol = samplesPerSymbol;
+        mMaxSamplesPerSymbol = samplesPerSymbol * (1.0f + SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION);
+        mMinSamplesPerSymbol = samplesPerSymbol * (1.0f - SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION);
+        //Protected region for score() method to avoid IndexOutOfBounds = Max Adjustment + Max Step Size for Max SPS
+        mBufferInterpolatorReservedRegion = (int)Math.ceil((mMaxSamplesPerSymbol / 2.0f) + (mMaxSamplesPerSymbol / 10.0f));
         mObservedSamplesPerSymbol = mSamplesPerSymbol;
         mSamplePoint = mSamplesPerSymbol;
         mLaggingSyncOffset1 = mSamplesPerSymbol / 3;
