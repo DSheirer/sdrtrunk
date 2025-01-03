@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetector;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SyncDetector;
 import io.github.dsheirer.sample.Listener;
-
 import java.nio.ByteBuffer;
 
 public class P25P1SoftSymbolProcessor
@@ -66,6 +65,7 @@ public class P25P1SoftSymbolProcessor
     private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
     private P25P1DataUnitID mPreviousDUID;
     private int mPreviousNAC;
+    private int mDebugTotalSymbols;
 
 
     /**
@@ -112,6 +112,7 @@ public class P25P1SoftSymbolProcessor
                 if(mSamplePoint < 1)
                 {
                     mSymbolsSinceLastSync++;
+                    mDebugTotalSymbols++;
 
                     if(mSymbolsSinceLastSync > MAX_SYMBOLS_FOR_FINE_SYNC)
                     {
@@ -191,7 +192,7 @@ public class P25P1SoftSymbolProcessor
      */
     private boolean optimize(float additionalOffset, String prefix)
     {
-        boolean debugLogging = true;
+        boolean debugLogging = false;
 
         //Offset is the start of the first sample of the first symbol of the sync pattern calculated from the current
         //buffer pointer and sample point which should be the final sample of the final symbol of the detected sync.
@@ -428,7 +429,7 @@ public class P25P1SoftSymbolProcessor
             {
                 int nacC = getNAC(correctedNid);
                 P25P1DataUnitID duidC = getDataUnitID(correctedNid);
-                System.out.println("NID Processing Failed - Setting Sync Lock to OFF - NAC: " + nacC + " DUID: " + duidC);
+                System.out.println("NID Processing Failed - Setting Sync Lock to OFF - NAC: " + nacC + " DUID: " + duidC + " Symbols:" + mDebugTotalSymbols);
                 mDibitDelayBuffer.log();
                 mSyncLock = false;
             }
