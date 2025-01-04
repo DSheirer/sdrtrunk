@@ -28,6 +28,6 @@ playlist(s) before you use the nightly builds.**  Note: the nightly release is u
 committed to the code base, so it's not really 'nightly' as much as it is 'current'.
 
 ## Minimum System Requirements
-* **Operating System:** Windows (~~32 or~~ 64-bit), Linux (~~32 or~~ 64-bit) or Mac/Linux (64-bit, 10.14 or higher)
+* **Operating System:** Windows (~~32 or~~ 64-bit), Linux (~~32 or~~ 64-bit) or Mac (64-bit, 12.x or higher)
 * **CPU:** 4-core
 * **RAM:** 8GB or more (preferred).  Depending on usage, 4GB may be sufficient.
