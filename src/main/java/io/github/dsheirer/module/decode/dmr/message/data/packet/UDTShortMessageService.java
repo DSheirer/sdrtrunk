@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,9 +92,9 @@ public class UDTShortMessageService extends DMRMessage
                 case VENDOR_PROPRIETARY_9:
                 case MIXED_FORMAT:
                 case UNKNOWN:
-                    LOGGER.warn("Unrecognized UDT Short Data Format: " + mHeader.getFormat() +
-                            " - Please send this to the sdrtrunk developer - Hex:" + getMessage().toHexString() +
-                            " As String:" + new String(getMessage().getBytes()));
+//                    LOGGER.warn("Unrecognized UDT Short Data Format: " + mHeader.getFormat() +
+//                            " - Please send this to the sdrtrunk developer - Hex:" + getMessage().toHexString() +
+//                            " As String:" + new String(getMessage().getBytes()));
                     mSMS = "Error:" + new String(getMessage().getBytes());
                     break;
             }

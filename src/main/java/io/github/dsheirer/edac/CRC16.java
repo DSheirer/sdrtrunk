@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ public class CRC16
         polynomial.setSize(message.size());
 
         int previousX = 0;
-        for(int x = copy.nextSetBit(0); x < copy.size() - 16; x = copy.nextSetBit(x + 1))
+        for(int x = copy.nextSetBit(0); x >= 0 && x < copy.size() - 16; x = copy.nextSetBit(x + 1))
         {
             polynomial.rotateRight(x - previousX, previousX, 17 + x);
             previousX = x;

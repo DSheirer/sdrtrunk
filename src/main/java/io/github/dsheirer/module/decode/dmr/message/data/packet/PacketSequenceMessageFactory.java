@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ public class PacketSequenceMessageFactory
                         case SHORT_DATA:
                             return createDefinedShortData(packetSequence, packet);
                         default:
-                            mLog.info("Unknown Packet SAP: " + primaryHeader.getServiceAccessPoint() + " - returning unknown packet");
+//                            mLog.info("Unknown Packet SAP: " + primaryHeader.getServiceAccessPoint() + " - returning unknown packet");
                             return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
                                     packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
                     }
@@ -204,9 +204,9 @@ public class PacketSequenceMessageFactory
         {
             if(packetSequence.getProprietaryDataHeader() != null)
             {
-                mLog.info("Unknown Proprietary Packet Header Type - creating unknown packet. Data Packet Format: " +
-                        packetSequence.getPacketSequenceHeader().getDataPacketFormat() + " Proprietary Header: " +
-                        packetSequence.getProprietaryDataHeader().getClass());
+//                mLog.info("Unknown Proprietary Packet Header Type - creating unknown packet. Data Packet Format: " +
+//                        packetSequence.getPacketSequenceHeader().getDataPacketFormat() + " Proprietary Header: " +
+//                        packetSequence.getProprietaryDataHeader().getClass());
             }
 
             return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
@@ -230,7 +230,7 @@ public class PacketSequenceMessageFactory
                     return new DMRPacketMessage(packetSequence, new IPV4Packet(packet, 0), packet,
                         packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
                 default:
-                    mLog.info("Unrecognized IP Packet Version: " + version + " - returning unknown packet");
+//                    mLog.info("Unrecognized IP Packet Version: " + version + " - returning unknown packet");
                     return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
                         packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
             }

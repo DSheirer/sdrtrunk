@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,38 +18,34 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import java.util.EnumSet;
+
 /**
  * The Data Unit ID (DUID) is part of the Network ID (NID) field and indicates the type of message.
  */
 public enum P25P1DataUnitID
 {
-    HEADER_DATA_UNIT(0, 648 + 10, true, "HDU  "),
-    UNKNOWN_1(1, -1, false, "UNK01"),
-    UNKNOWN_2(2, -1, false, "UNK02"),
-    TERMINATOR_DATA_UNIT(3, 28, true, "TDU  "),
-    UNKNOWN_4(4, -1, false, "UNK04"),
+    HEADER_DATA_UNIT(0, 678, true, "HDU  "),
+    TERMINATOR_DATA_UNIT(3, 30, true, "TDU  "),
     LOGICAL_LINK_DATA_UNIT_1(5, 1568, true, "LDU1 "),
-    VSELP1(6, 64 + 1616, false, "VSEL1"),
-    UNKNOWN_8(8, -1, false, "UNK08"),
-    VSELP2(9, 1616 + 64, false, "VSEL2"),
+    TRUNKING_SIGNALING_BLOCK_1(7, 248, false, "TSBK1"),
     LOGICAL_LINK_DATA_UNIT_2(10, 1568, true, "LDU2 "),
-    UNKNOWN_11(11, -1, false, "UNK11"),
-    PACKET_HEADER_DATA_UNIT(12, 196, false, "PDUH "),
-    PACKET_DATA_UNIT(-1, 196, false, "PDU  "),
-    UNKNOWN_13(13, -1, false, "UNK13"),
-    UNKNOWN_14(14, -1, false, "UNK14"),
-    TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 308, true, "TDULC"),
+    PACKET_DATA_UNIT_1(12, 1200, false, "PDU"),
+    TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 432, true, "TDULC"),
+
+    //Set to length of LDU plus sync/nid so that next sync detect can force it to a best guess
+    PLACEHOLDER(-1, 1800, false, "PLACEHOLDER"), //Originally: 1686
 
     //The following are not true data unit identifiers, rather they are used as identifiers
     ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "AMBTC"),
     IP_PACKET_DATA(-1, 0, false, "IPPKT"),
+    PACKET_DATA_UNIT(-1, 196, false, "PDU  "),
     SUBNETWORK_DEPENDENT_CONVERGENCE_PROTOCOL(-1, 0, false, "SNDCP"),
-    TRUNKING_SIGNALING_BLOCK_1(7, 196, false, "TSBK1"),
-    TRUNKING_SIGNALING_BLOCK_2(7, 196, false, "TSBK2"),
-    TRUNKING_SIGNALING_BLOCK_3(7, 196, false, "TSBK3"),
+    TRUNKING_SIGNALING_BLOCK_2(7, 464, false, "TSBK2"),
+    TRUNKING_SIGNALING_BLOCK_3(7, 720, false, "TSBK3"),
     UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "UMBTC"),
 
-    UNKNOWN(-1, -1, false, "UNKN ");
+    UNKNOWN(-1, -1, false, "UNKNOWN");
 
     private int mValue;
     private int mMessageLength;
@@ -62,6 +58,19 @@ public enum P25P1DataUnitID
         mMessageLength = length;
         mTrailingStatusDibit = trailingStatusDibit;
         mLabel = label;
+    }
+
+    public static final EnumSet<P25P1DataUnitID> VALID_PRIMARY_DUIDS = EnumSet.of(HEADER_DATA_UNIT, TERMINATOR_DATA_UNIT,
+            LOGICAL_LINK_DATA_UNIT_1, LOGICAL_LINK_DATA_UNIT_2, PACKET_DATA_UNIT_1, PACKET_DATA_UNIT,
+            TRUNKING_SIGNALING_BLOCK_1, TERMINATOR_DATA_UNIT_LINK_CONTROL);
+
+    /**
+     * Indicates if this DUID is a primary DUID carried by the NID.
+     * @return true if a primary DUID.
+     */
+    public boolean isValidPrimaryDUID()
+    {
+        return VALID_PRIMARY_DUIDS.contains(this);
     }
 
     /**
@@ -105,38 +114,20 @@ public enum P25P1DataUnitID
         {
             case 0:
                 return HEADER_DATA_UNIT;
-            case 1:
-                return UNKNOWN_1;
-            case 2:
-                return UNKNOWN_2;
             case 3:
                 return TERMINATOR_DATA_UNIT;
-            case 4:
-                return UNKNOWN_4;
             case 5:
                 return LOGICAL_LINK_DATA_UNIT_1;
-            case 6:
-                return VSELP1;
             case 7:
                 return TRUNKING_SIGNALING_BLOCK_1;
-            case 8:
-                return UNKNOWN_8;
-            case 9:
-                return VSELP2;
             case 10:
                 return LOGICAL_LINK_DATA_UNIT_2;
-            case 11:
-                return UNKNOWN_11;
             case 12:
-                return PACKET_HEADER_DATA_UNIT;
-            case 13:
-                return UNKNOWN_13;
-            case 14:
-                return UNKNOWN_14;
+                return PACKET_DATA_UNIT_1;
             case 15:
                 return TERMINATOR_DATA_UNIT_LINK_CONTROL;
             default:
-                throw new IllegalArgumentException("Data Unit ID must be in range 0 - 15");
+                return UNKNOWN;
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -895,7 +895,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 {
                     //Log when a CSBK that is not the Unknown CSBK is processed, to detect when new opcodes are added
                     //that are not ChannelGrant subclass implementations.
-                    if(!(csbk instanceof UnknownCSBKMessage))
+                    if(!(csbk instanceof UnknownCSBKMessage) && csbk.isValid())
                     {
                         mLog.error("Unrecognized DMR channel grant CSBK ignored: " + csbk.getClass());
                     }

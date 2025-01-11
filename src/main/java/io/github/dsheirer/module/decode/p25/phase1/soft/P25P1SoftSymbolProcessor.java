@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,16 +24,21 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitDelayBuffer;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.edac.BCH_63_16_11;
+import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetector;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SyncDetector;
 import io.github.dsheirer.sample.Listener;
-
 import java.nio.ByteBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class P25P1SoftSymbolProcessor
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(P25P1SoftSymbolProcessor.class);
+    private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LOGGER);
+
     private static final int BUFFER_PROTECTED_REGION_DIBITS = 26; //Sync (24) plus 2
     private static final int BUFFER_WORKSPACE_LENGTH_DIBITS = 25; //This can be adjusted for efficiency
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
@@ -62,11 +67,13 @@ public class P25P1SoftSymbolProcessor
     private int mBufferLoadPointer;
     private int mBufferPointer;
     private int mBufferWorkspaceLength;
+    private int mPreviousMessageSymbolLength;
     private int mSymbolsSinceLastSync = NID_DIBIT_LENGTH + 1; //Set higher than NID length (72) to prevent false initial NID calculation.
     private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
-    private P25P1DataUnitID mPreviousDUID;
+    private P25P1DataUnitID mPreviousDUID = P25P1DataUnitID.UNKNOWN;
     private int mPreviousNAC;
-
+    private int mDebugTotalSymbols;
+    private long mDebugSampleCount = 0;
 
     /**
      * Constructs an instance
@@ -109,15 +116,20 @@ public class P25P1SoftSymbolProcessor
                 mBufferPointer++;
                 mSamplePoint--;
 
+                mDebugSampleCount++;
+
                 if(mSamplePoint < 1)
                 {
                     mSymbolsSinceLastSync++;
+                    mDebugTotalSymbols++;
 
                     if(mSymbolsSinceLastSync > MAX_SYMBOLS_FOR_FINE_SYNC)
                     {
                         //Uncomment this after development/debug
 //                        mSymbolsSinceLastSync = NID_DIBIT_LENGTH + 1; //Reset to one higher than NID length
                         mSyncLock = false;
+                        mPreviousDUID = P25P1DataUnitID.UNKNOWN;
+                        mPreviousNAC = 0;
                     }
 
                     float softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[mBufferPointer],
@@ -125,11 +137,15 @@ public class P25P1SoftSymbolProcessor
 
                     Dibit symbol = toSymbol(softSymbol);
 
-                    //Store the symbol in the delay line and broadcast the delayed ejected symbol to the message framer
-                    //and the bitstream assembler.
+                    mMessageFramer.receive(symbol);
+
+                    //Store the symbol in the delay line for sync detection and NID processing so that we can correct
+                    // the sync bits before sending to the dibit assembler for bitstream recording.
                     Dibit ejected = mDibitDelayBuffer.getAndPut(symbol);
-                    mMessageFramer.receive(ejected);
                     mDibitAssembler.receive(ejected);
+//TODO: maybe shrink the dibit delay line back down to just the sync pattern ... that's all that we'll have to replace.  It
+//      might be a good experiment to see if we can further optimize when the NID processing fails ... can we readjust
+//      the sampling to the point that the NID error detection passes?
 
                     //Check for sync pattern
                     float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
@@ -148,24 +164,28 @@ public class P25P1SoftSymbolProcessor
                     String tag = " - SCORE PRIMARY:" + scorePrimary + " LAG1:" + scoreLag1 + " LAG2:" + scoreLag2 + " SYMBOLS:" + mSymbolsSinceLastSync;
                     if(mSyncLock && scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(0, "SYNC *PRIMARY*" + tag))
                     {
-                        System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols: " + mSymbolsSinceLastSync);
+                        mPreviousMessageSymbolLength = mSymbolsSinceLastSync;
+//                        System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols Previous: " + mPreviousMessageSymbolLength + " Samples: " + mDebugSampleCount);
                         mSymbolsSinceLastSync = 0;
                     }
                     else if(mSymbolsSinceLastSync > 1 && scoreLag1 > scorePrimary && scoreLag1 > scoreLag2 &&
                             scoreLag1 > SYNC_DETECTION_THRESHOLD && optimize(-mLaggingSyncOffset1, "SYNC LAG 1" + tag))
                     {
-                        System.out.println("SYNC LAG 1 - Score: " + scoreLag1 + " Symbols: " + mSymbolsSinceLastSync);
+                        mPreviousMessageSymbolLength = mSymbolsSinceLastSync;
+//                        System.out.println("SYNC LAG 1 - Score: " + scoreLag1 + " Symbols Previous: " + mPreviousMessageSymbolLength + " Samples: " + mDebugSampleCount);
                         mSymbolsSinceLastSync = 0;
                     }
                     else if(mSymbolsSinceLastSync > 1 && scoreLag2 > scorePrimary &&
                             scoreLag2 > SYNC_DETECTION_THRESHOLD && optimize(-mLaggingSyncOffset2, "SYNC LAG 2" + tag))
                     {
-                        System.out.println("SYNC LAG 2 - Score: " + scoreLag2 + " Symbols: " + mSymbolsSinceLastSync);
+                        mPreviousMessageSymbolLength = mSymbolsSinceLastSync;
+//                        System.out.println("SYNC LAG 2 - Score: " + scoreLag2 + " Symbols Previous: " + mPreviousMessageSymbolLength + " Samples: " + mDebugSampleCount);
                         mSymbolsSinceLastSync = 0;
                     }
                     else if(scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(0.0f, "SYNC PRIMARY" + tag))
                     {
-//                            System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols: " + mSymbolsSinceLastSync);
+                        mPreviousMessageSymbolLength = mSymbolsSinceLastSync;
+//                        System.out.println("SYNC PRIMARY - Score: " + scorePrimary + " Symbols Previous: " + mPreviousMessageSymbolLength + " Samples: " + mDebugSampleCount);
                         mSymbolsSinceLastSync = 0;
                     }
 
@@ -191,7 +211,8 @@ public class P25P1SoftSymbolProcessor
      */
     private boolean optimize(float additionalOffset, String prefix)
     {
-        boolean debugLogging = true;
+        boolean debugLogging = false;
+//        debugLogging = mDebugSampleCount < 22854518;
 
         //Offset is the start of the first sample of the first symbol of the sync pattern calculated from the current
         //buffer pointer and sample point which should be the final sample of the final symbol of the detected sync.
@@ -301,12 +322,12 @@ public class P25P1SoftSymbolProcessor
             adjustment += additionalOffset;
         }
 
-//        if(mSyncLock && Math.abs(adjustment) > 0.5)
-//        {
-//            debugSB.append("*** SYNC LOCK ADJUSTMENT [" + adjustment + "] WAS CONSTRAINED TO +/- 0.5").append(" Additional: " + additionalOffset + "\n");
-//            adjustment = Math.min(adjustment, 0.5f);
-//            adjustment = Math.max(adjustment, -0.5f);
-//        }
+        if(mSyncLock && Math.abs(adjustment) > 0.5)
+        {
+            debugSB.append("*** SYNC LOCK ADJUSTMENT [" + adjustment + "] WAS CONSTRAINED TO +/- 0.5").append(" Additional: " + additionalOffset + "\n");
+            adjustment = Math.min(adjustment, 0.5f);
+            adjustment = Math.max(adjustment, -0.5f);
+        }
 
         mSamplePoint += adjustment;
 
@@ -413,33 +434,136 @@ public class P25P1SoftSymbolProcessor
      */
     private void processNID()
     {
-        int[] nid = mDibitDelayBuffer.getNID();
+        int[] demodulatedNid = mDibitDelayBuffer.getNID();
         int[] correctedNid = new int[63];
-        boolean unrecoverable = mNIDDecoder.decode(nid, correctedNid);
 
-        //Turn off sync lock if this was a bad decode so that we can get back onto fine sync
-        if(unrecoverable)
+        //The decoder returns true if the message is unrecoverable or non-correctable, so we invert to become a valid flag.
+        boolean validNID = !mNIDDecoder.decode(demodulatedNid, correctedNid);
+
+        int duidValue = getDataUnitIDValue(correctedNid);
+        P25P1DataUnitID duida = P25P1DataUnitID.fromValue(duidValue);
+        int nac = getNAC(correctedNid);
+
+        log(demodulatedNid, duida, nac, validNID);
+
+        if(validNID)
         {
-            if(mPreviousDUID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
+            mPreviousNAC = getNAC(correctedNid);
+            mPreviousDUID = P25P1DataUnitID.fromValue(duidValue);
+            mSyncLock = true;
+
+//            System.out.println("  ^^ Valid NID Detected - NAC:" + mPreviousNAC + " DUID:" + mPreviousDUID);
+
+            if(!mPreviousDUID.isValidPrimaryDUID())
             {
-                System.out.println("TSBK2/3 Detected - Continuing");
-            }
-            else
-            {
-                int nacC = getNAC(correctedNid);
-                P25P1DataUnitID duidC = getDataUnitID(correctedNid);
-                System.out.println("NID Processing Failed - Setting Sync Lock to OFF - NAC: " + nacC + " DUID: " + duidC);
-                mDibitDelayBuffer.log();
-                mSyncLock = false;
+                LOGGING_SUPPRESSOR.info("P25P1 DUID Value", 3, "P25 Phase 1 - non-standard data " +
+                        "unit ID value detected [" + duidValue + "]");
             }
         }
         else
         {
-            mPreviousNAC = getNAC(correctedNid);
-            mPreviousDUID = getDataUnitID(correctedNid);
-            mMessageFramer.syncDetected(mPreviousNAC, mPreviousDUID);
-            mSyncLock = true;
+            //Since we only get to here following a solid sync correlation, make an educated guess about the DUID even when
+            //the NID error correction fails.
+            P25P1DataUnitID duid = P25P1DataUnitID.fromValue(duidValue);
+
+//            System.out.println("  ## NID Processing Failed - Parsed DUID: " + duid + "(" + duidValue + ") Total Symbols:" + mDebugTotalSymbols);
+
+//            switch(mPreviousDUID)
+//            {
+//                case HEADER_DATA_UNIT:
+//                    if(!duid.isValidPrimaryDUID() && mPreviousMessageSymbolLength == 396) //Length of an HDU in symbols
+//                    {
+//                        //This might be a stretch, but let's err on the side of voice.
+//                        mPreviousDUID = P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_1;
+//                        System.out.println("  (@-@) Corrected DUID from [" + duid.name() + "] to [" + mPreviousDUID.name() + "]  *****************");
+//                    }
+//                    else
+//                    {
+//                        mSyncLock = duid.isValidPrimaryDUID();
+//                        mPreviousDUID = duid;
+//                    }
+//                    break;
+//                case LOGICAL_LINK_DATA_UNIT_1:
+//                    if(mPreviousMessageSymbolLength >= 845)
+//                    {
+//                        //There should always be an LDU2 following an LDU1
+//                        mPreviousDUID = P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_2;
+//                        System.out.println("  (@-@) Corrected DUID from [" + duid.name() + "] to [" + mPreviousDUID.name() + "]  *****************");
+//                    }
+//                    else
+//                    {
+//                        mSyncLock = duid.isValidPrimaryDUID();
+//                        mPreviousDUID = duid;
+//                    }
+//                    break;
+//                case LOGICAL_LINK_DATA_UNIT_2:
+//                    if(!duid.isValidPrimaryDUID() && mPreviousMessageSymbolLength >= 845)
+//                    {
+//                        //Should be either an LDU1 or TDU ... set it to LDU1 and if not, message framer will revert it to TDU.
+//                        mPreviousDUID = P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_1;
+//                        mSyncLock = true;
+//                        System.out.println("  (@-@) Corrected DUID from [" + duid.name() + "] to [" + mPreviousDUID.name() + "]  *****************");
+//                    }
+//                    else
+//                    {
+//                        mSyncLock = duid.isValidPrimaryDUID();
+//                        mPreviousDUID = duid;
+//                    }
+//                    break;
+//                case TERMINATOR_DATA_UNIT:
+//                    if(!duid.isValidPrimaryDUID() && mPreviousMessageSymbolLength == 72)
+//                    {
+//                        //If the previous message was a TDU and 72 symbols long, there's a good chance this is also a TDU
+//                        mPreviousDUID = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
+//                        mSyncLock = true;
+//                        System.out.println("  (@-@) Corrected DUID from [" + duid.name() + "] to [" + mPreviousDUID.name() + "]  *****************");
+//                    }
+//                    else
+//                    {
+//                        mSyncLock = duid.isValidPrimaryDUID();
+//                        mPreviousDUID = duid;
+//                    }
+//                    break;
+//                case TRUNKING_SIGNALING_BLOCK_1:
+//                    System.out.println("  TSBK2/3 Detected - Continuing");
+//                    //Do nothing -
+//                    break;
+//                default:
+//                    if(!duid.isValidPrimaryDUID() && mPreviousMessageSymbolLength == 72)
+//                    {
+//                        //If the previous message was 72 symbols long (ie a TDU), there's a good chance this is also a TDU
+//                        mPreviousDUID = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
+//                        System.out.println("  (@-@) Corrected DUID from [" + duid.name() + "] to [" + mPreviousDUID.name() + "]  *****************");
+//                    }
+//                    else
+//                    {
+//                        System.out.println("  No Correction - DUID [" + duid.name() + "] Previous [" + mPreviousDUID.name() + "]  *****************");
+//                        mPreviousDUID = duid;
+//                    }
+//                    mSyncLock = false;
+//                    break;
+//            }
+
+            mPreviousDUID = P25P1DataUnitID.PLACEHOLDER;
         }
+
+        mMessageFramer.syncDetected(mPreviousNAC, mPreviousDUID, validNID);
+    }
+
+    private static void log(int[] a, P25P1DataUnitID duid, int nac, boolean corrected)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("NID: ");
+        for(int i: a)
+        {
+            sb.append(i);
+        }
+
+        sb.append(" NAC:").append(nac);
+        sb.append(" DUID:").append(duid);
+        sb.append(" CORRECTED:").append(corrected);
+
+        System.out.println(sb);
     }
 
     /**
@@ -521,6 +645,16 @@ public class P25P1SoftSymbolProcessor
      */
     public static P25P1DataUnitID getDataUnitID(int[] nid)
     {
+        return P25P1DataUnitID.fromValue(getDataUnitIDValue(nid));
+    }
+
+    /**
+     * Determines the data unit ID present in the nid value.
+     * @param nid in reverse bit order
+     * @return
+     */
+    public static int getDataUnitIDValue(int[] nid)
+    {
         int duid = 0;
 
         if(nid[47] == 1)
@@ -543,7 +677,7 @@ public class P25P1SoftSymbolProcessor
             duid ^= 8;
         }
 
-        return P25P1DataUnitID.fromValue(duid);
+        return duid;
     }
 
     /**
@@ -603,8 +737,9 @@ public class P25P1SoftSymbolProcessor
 
                 bufferPointer--;
 
-                //Skip the status symbol inserted at bit 70 that's in the middle of the NID at sync (48) plus nid (22) = 70
-                if(nidPointer == 22)
+                //Skip the status symbol inserted at bit 70 that's in the middle of the NID at sync (48) plus
+                // nid (22) = 70, but since we skip nid(0), we adjust this to test for index 21.
+                if(nidPointer == 21)
                 {
                     bufferPointer--;
                 }
