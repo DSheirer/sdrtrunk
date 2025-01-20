@@ -37,6 +37,7 @@ import io.github.dsheirer.identifier.alias.DmrTalkerAliasIdentifier;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
+import io.github.dsheirer.message.EmptyTimeslotPlaceholderMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.TimeslotMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -44,7 +45,6 @@ import io.github.dsheirer.module.decode.dmr.channel.DMRAbsoluteChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.event.DMRDecodeEvent;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
@@ -316,7 +316,11 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 processSMS(sms);
             }
-            else if(message instanceof DMRMessage)
+            else if(isValid(message) && message instanceof DMRMessage)
+            {
+                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
+            }
+            else if(message instanceof EmptyTimeslotPlaceholderMessage)
             {
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
             }
@@ -555,9 +559,6 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 updateCurrentCall(DecodeEventType.CALL, "REPEATER", message.getTimestamp());
             }
-
-            //Use the timeslot as the talkgroup identifier since DCDM & simple repeater modes don't use talkgroups
-            getIdentifierCollection().update(DMRTalkgroup.create(getTimeslot()));
         }
         else
         {
@@ -1292,10 +1293,8 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 break;
             case FULL_STANDARD_GROUP_VOICE_CHANNEL_USER:
-                if(message instanceof GroupVoiceChannelUser)
+                if(message instanceof GroupVoiceChannelUser gvcu)
                 {
-                    GroupVoiceChannelUser gvcu = (GroupVoiceChannelUser)message;
-
                     if(isTerminator)
                     {
                         closeCurrentCallEvent(message.getTimestamp());
