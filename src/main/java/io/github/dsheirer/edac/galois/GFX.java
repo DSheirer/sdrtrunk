@@ -25,7 +25,7 @@ public class GFX
 {
     private int mDegree = -1;
     private int mQ = 0;
-    private Array<GF> mCoefficients = new GFArray(0);
+    private GFArray mCoefficients;
 
     public GFX(int q, int[] values)
     {
@@ -37,9 +37,9 @@ public class GFX
         this(q);
         Validate.isTrue(degree >= 0, "degree must be greater than or equal to 0");
         mDegree = degree;
-        mCoefficients.set_size(degree);
+        mCoefficients.set_size(degree + 1);
 
-        for(int i = 0; i < degree; i++)
+        for(int i = 0; i < degree + 1; i++)
         {
             mCoefficients.get(i).set(q, -1);
         }
@@ -49,19 +49,18 @@ public class GFX
     {
         Validate.isTrue(q >= 0, "Q must be greater than or equal to 0");
         mQ = q;
+        mCoefficients = new GFArray(0, mQ);
     }
 
-    public GFX()
+    public GFArray getCoefficients()
     {
-    }
+        GFArray coefficients = new GFArray(mDegree + 1, mQ);
 
-    public Array<GF> getCoefficients()
-    {
-        Array<GF> coefficients = new GFArray(mDegree);
-        for(int i = 0; i < mDegree; i++)
+        for(int i = 0; i < mDegree + 1; i++)
         {
-            coefficients.set(i, mCoefficients.get(i));
+            coefficients.set(i, mCoefficients.get(i).copyOf());
         }
+
         return coefficients;
     }
 
@@ -74,21 +73,16 @@ public class GFX
     {
         Validate.isTrue(degree >= -1, "degree must be greater than or equal to -1");
         mDegree = degree;
-        mCoefficients.set_size(degree);
+        mCoefficients.set_size(degree + 1, true);
     }
 
     public int get_true_degree()
     {
         int i = mDegree;
 
-        while(mCoefficients.get(i).get_value() == -1)
+        while(i > -1 && mCoefficients.get(i).get_value() == -1)
         {
             i--;
-
-            if(i == -1)
-            {
-                break;
-            }
         }
 
         return i;
@@ -109,9 +103,8 @@ public class GFX
 
     public GFX copyOf()
     {
-        GFX gfx = new GFX();
+        GFX gfx = new GFX(mQ);
         gfx.mDegree = mDegree;
-        gfx.mQ = mQ;
         gfx.mCoefficients = getCoefficients();
         return gfx;
     }
@@ -121,8 +114,15 @@ public class GFX
         Validate.isTrue(q >= 0, "Q must be greater than or equal to 0");
         mQ = q;
 
+        if(mCoefficients == null)
+        {
+            mCoefficients = new GFArray(0, mQ);
+        }
+
         mDegree = values.length - 1;
-        for(int i = 0; i < mDegree; i++)
+        mCoefficients.set_size(values.length);
+
+        for(int i = 0; i < values.length; i++)
         {
             mCoefficients.get(i).set(q, values[i]);
         }
@@ -130,16 +130,21 @@ public class GFX
 
     public GF evaluate(GF ingf)
     {
-        Validate.isTrue(getSize() == ingf.size(), "not the same field");
+        Validate.isTrue(getSize() == ingf.get_size(), "not the same field");
 
         GF temp = mCoefficients.get(0).copyOf();
         GF ingfpower = ingf.copyOf();
 
         for(int i = 1; i < mDegree + 1; i++)
         {
-            temp.addEquals(mCoefficients.get(i).multiply(ingfpower));
+            GF coefficient = mCoefficients.get(i);
+            GF multiplied = coefficient.multiply(ingfpower);
+            temp.addEquals(multiplied);
             ingfpower.multiplyEquals(ingf);
         }
+
+//        GF clearingOperation = new GF(mQ, mQ - 1 - ingf.get_value());
+//        temp.addEquals(clearingOperation);
 
         return temp;
     }
@@ -183,17 +188,16 @@ public class GFX
         {
             for(int j = mDegree + 1; j < mCoefficients.size(); j++)
             {
-                GF gf = new GF();
-                gf.set(mQ, -1);
+                GF gf = new GF(mQ, -1);
                 mCoefficients.set(j, gf);
             }
 
-            mDegree = gfx.mDegree;
+            setDegree(gfx.mDegree);
         }
 
         for(int i = 0; i < gfx.mDegree + 1; i++)
         {
-            mCoefficients.get(i).add(gfx.mCoefficients.get(i));
+            mCoefficients.get(i).addEquals(gfx.mCoefficients.get(i));
         }
     }
 
@@ -233,7 +237,11 @@ public class GFX
         {
             for(j = 0; j < ingfx.mDegree + 1; j++)
             {
-                mCoefficients.get(i + j).addEquals(tempcoeffs.get(i).multiply(ingfx.mCoefficients.get(j)));
+                GF gf = mCoefficients.get(i + j);
+                GF gfJ = ingfx.mCoefficients.get(j);
+                GF tempI = tempcoeffs.get(i);
+                GF product = tempI.multiply(gfJ);
+                gf.addEquals(product);
             }
         }
 

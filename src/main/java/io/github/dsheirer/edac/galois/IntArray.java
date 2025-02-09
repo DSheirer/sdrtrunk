@@ -22,13 +22,27 @@ package io.github.dsheirer.edac.galois;
 import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 
+/**
+ * Array of integers.
+ */
 public class IntArray extends Array<Integer>
 {
     private int[] mData;
 
+    /**
+     * Constructs an instance of the specified size with data defaulting to zeroes.
+     * @param size of array
+     */
     public IntArray(int size)
     {
         super(size);
+    }
+
+    public IntArray copyOf()
+    {
+        IntArray clone = new IntArray(mData.length);
+        clone.mData = Arrays.copyOf(mData, mData.length);
+        return clone;
     }
 
     @Override
@@ -86,5 +100,11 @@ public class IntArray extends Array<Integer>
         {
             allocate(size);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return Arrays.toString(mData);
     }
 }

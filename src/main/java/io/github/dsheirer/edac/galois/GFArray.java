@@ -25,10 +25,12 @@ import org.apache.commons.lang3.Validate;
 public class GFArray extends Array<GF>
 {
     private GF[] mData;
+    private int mQ;
 
-    public GFArray(int size)
+    public GFArray(int size, int q)
     {
         super(size);
+        mQ = q;
     }
 
     @Override
@@ -66,11 +68,16 @@ public class GFArray extends Array<GF>
     @Override
     protected void allocate(int size)
     {
+        if(size == 0)
+        {
+            size = 1;
+        }
+
         mData = new GF[size];
 
         for(int x = 0; x < size; x++)
         {
-            mData[x] = new GF();
+            mData[x] = new GF(mQ);
         }
     }
 
@@ -86,13 +93,14 @@ public class GFArray extends Array<GF>
 
         if(copy)
         {
+            int currentSize = mData.length;
             mData = Arrays.copyOf(mData, size);
 
-            if(size > size())
+            if(size > currentSize)
             {
-                for(int i = size(); i < size; i++)
+                for(int i = currentSize; i < size; i++)
                 {
-                    mData[i] = new GF();
+                    mData[i] = new GF(mQ);
                 }
             }
         }
@@ -100,5 +108,11 @@ public class GFArray extends Array<GF>
         {
             allocate(size);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return Arrays.toString(mData);
     }
 }

@@ -31,87 +31,93 @@ public class GF
     private int mM;
     private int mQ;
     private int mValue;
-    private Array<Array<Integer>> alphapow = new IntArrayArray(0);
-    private Array<Array<Integer>> logalpha = new IntArrayArray(0);
+    private static final IntArrayArray alphapow = new IntArrayArray(0);
+    private static final IntArrayArray logalpha = new IntArrayArray(0);
 
-    public GF()
+    /**
+     * Private copy/clone constructor creates a new instance with the provided values.
+     */
+    private GF(int m, int q, int value)
     {
+        mM = m;
+        mQ = q;
+        mValue = value;
     }
 
-    public GF(int qvalue)
+    public GF(int q, int value)
     {
-        if(qvalue == 0)
+        set(q, value);
+    }
+
+    public GF(int q)
+    {
+        if(q == 0)
         {
             mValue = -1; // qvalue==0 gives the zeroth element
         }
         else
         {
-            set_size(qvalue);
+            set_size(q);
         }
     }
 
-    public GF(int qvalue, int inexp)
+    public void set_size(int q)
     {
-        set(qvalue, inexp);
-    }
+        mQ = q;
+        mM = (int) Math.round(Math.log(q) / Math.log(2));
+        Validate.isTrue((1 << mM) == q, "q [" + mQ + "] must be a power of 2 and m[" + mM + "] where (2 ^ m) == q");
+        Validate.isTrue(mM > 0 && mM <= 16, "q must be positive and less than or equal to 2^16");
 
-    public void set_size(int qValue)
-    {
-        mQ = qValue;
-        int m = (int) Math.round(Math.log(qValue));
-        Validate.isTrue((1 << m) == qValue, "q must be a power of 2 where (2 ^ m) == q");
-        Validate.isTrue(m > 0 && m <= 16, "q must be positive and less than or equal to 2^16");
-
-        int reduce, temp, n;
-
-        if(alphapow.size() < (m + 1))
+        if(alphapow.size() < (mM + 1))
         {
-            alphapow.set_size(m + 1, true);
-            logalpha.set_size(m + 1, true);
-        }
+            alphapow.set_size(mM + 1, true);
+            logalpha.set_size(mM + 1, true);
 
-        if(alphapow.get(m).size() == 0)
-        {
-            alphapow.get(m).set_size(qValue);
-            logalpha.get(m).set_size(qValue);
-            alphapow.get(m).set(0);
-            logalpha.get(m).set(0);
-
-            if(m == 1) //GF(2), special case
+            if(alphapow.get(mM).size() == 0)
             {
-                alphapow.get(1).set(0, 1);
-                logalpha.get(1).set(0, -1);
-                logalpha.get(1).set(1, 0);
-            }
-        }
-        else
-        {
-            reduce = reducetable[m - 2];
-            alphapow.get(m).set(0, 1);
-            for(n = 1; n < (1 << m) - 1; n++)
-            {
-                temp = alphapow.get(m).get(n - 1);
-                temp = (temp << 1);
-                if((temp & (1 << m)) > 0)
+                IntArray ap = alphapow.get(mM);
+                IntArray la = logalpha.get(mM);
+                ap.set_size(q);
+                la.set_size(q);
+
+                if(mM == 1) //GF(2), special case
                 {
-                    alphapow.get(m).set(n, (temp & ~(1 << m)) ^ reduce);
+                    ap.set(0, 1);
+                    la.set(0, -1);
+                    la.set(1, 0);
                 }
                 else
                 {
-                    alphapow.get(m).set(n, temp); //if no alpha**m termp, store as is
+                    int temp, n;
+                    int reduce = reducetable[mM - 2];
+                    ap.set(0, 1);
+                    int qMask = 1 << mM;
+                    for(n = 1; n < qMask - 1; n++)
+                    {
+                        temp = ap.get(n - 1);
+                        temp = (temp << 1);
+                        if((temp & qMask) > 0)
+                        {
+                            ap.set(n, (temp & ~qMask) ^ reduce);
+                        }
+                        else
+                        {
+                            ap.set(n, temp); //if no alpha**m term, store as is
+                        }
+                    }
+
+                    la.set(0, -1); //special case, actually log(0)=-inf
+
+                    for(n = 0; n < qMask - 1; n++)
+                    {
+                        la.set(ap.get(n), n);
+                    }
                 }
-
-                logalpha.get(m).set(0, -1); //special case, actually log(0)=-inf
-            }
-
-            for(n = 0; n < (1 << m) - 1; n++)
-            {
-                logalpha.get(m).set(alphapow.get(m).get(n), n);
             }
         }
     }
 
-    public int size()
+    public int get_size()
     {
         return mQ;
     }
@@ -153,7 +159,7 @@ public class GF
      * }
      *
      * Adds the gf argument to this GF.
-     * @param gf to add.
+     * @param ingf to add.
      * @return this.
      */
     public void addEquals(GF ingf)
@@ -166,6 +172,14 @@ public class GF
         else if(ingf.mValue != -1)
         {
             Validate.isTrue(mM == ingf.mM, "Not the same field");
+
+            //TODO: remove debug ..
+            int a = alphapow.get(mM).get(mValue);
+            int b = alphapow.get(mM).get(ingf.mValue);
+            int x = a ^ b;
+            int la = logalpha.get(mM).get(x);
+
+
             mValue = logalpha.get(mM).get(alphapow.get(mM).get(mValue) ^ alphapow.get(mM).get(ingf.mValue));
         }
     }
@@ -182,22 +196,6 @@ public class GF
         return temp;
     }
 
-    /**
-     * Multiplies this GF with the gf artument.
-     *
-     *
-     * inline void GF::operator*=(const GF &ingf)
-     * {
-     *   if (value == -1 || ingf.value == -1)
-     *     value = -1;
-     *   else {
-     *     it_assert_debug(ingf.m == m, "GF::op+=, not same field");
-     *     value = (value + ingf.value) % (q[m] - 1);
-     *   }
-     * }
-     *
-     * @param gf
-     */
     public void multiplyEquals(GF ingf)
     {
         if(mValue == -1 || ingf.get_value() == -1)
@@ -206,9 +204,23 @@ public class GF
         }
         else
         {
-            Validate.isTrue(mM == ingf.mM, "Not the same field");
             mValue = (mValue + ingf.mValue) % (q[mM] - 1);
         }
+    }
+
+    public GFX multiply(GFX ingfx)
+    {
+        Validate.isTrue(get_size() == ingfx.getSize(), "Not the same field");
+        GFX temp = ingfx.copyOf();
+
+        for(int i = 0; i < ingfx.getDegree() + 1; i++)
+        {
+            GF coefficient = temp.get(i);
+            coefficient.multiplyEquals(this);
+            temp.set(i, coefficient);
+        }
+
+        return temp;
     }
 
     public GF divide(GF gf)
@@ -225,7 +237,7 @@ public class GF
         if(mValue != -1)
         {
             Validate.isTrue(mM == ingf.mM, "Not the same field");
-            mValue = (mValue - ingf.get_value() + q[mM] - 1) % (q[mM] - 1);
+            mValue = (mValue - ingf.mValue + q[mM] - 1) % (q[mM] - 1);
         }
     }
 
@@ -236,12 +248,12 @@ public class GF
      */
     public boolean eq(GF ingf)
     {
-        if(mValue == -1 || ingf.get_value() == -1)
+        if(mValue == -1 || ingf.mValue == -1)
         {
             return true;
         }
 
-        if(mM == ingf.mM && mValue == ingf.get_value())
+        if(mM == ingf.mM && mValue == ingf.mValue)
         {
             return true;
         }
@@ -251,6 +263,14 @@ public class GF
 
     public GF copyOf()
     {
-        return new GF(mQ, mValue);
+        return new GF(mM, mQ, mValue);
     }
+
+
+    @Override
+    public String toString()
+    {
+        return "GF m:" + mM + " q:" + mQ + " value:" + mValue;
+    }
+
 }

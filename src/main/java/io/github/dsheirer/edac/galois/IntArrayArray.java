@@ -22,17 +22,35 @@ package io.github.dsheirer.edac.galois;
 import java.util.Arrays;
 import org.apache.commons.lang3.Validate;
 
-public class IntArrayArray extends Array<Array<Integer>>
+/**
+ * Array of an array of integers.
+ */
+public class IntArrayArray extends Array<IntArray>
 {
-    private Array<Integer>[] mData;
+    private IntArray[] mData;
 
+    /**
+     * Constructs an instance of the specified size with all members instantiated to zero length arrays.
+     * @param size of array.
+     */
     public IntArrayArray(int size)
     {
         super(size);
     }
 
+    public IntArrayArray copyOf()
+    {
+        IntArrayArray copy = new IntArrayArray(mData.length);
+        for(int i = 0; i < mData.length; i++)
+        {
+            copy.set(get(i).copyOf());
+        }
+
+        return copy;
+    }
+
     @Override
-    public Array<Integer> get(int index)
+    public IntArray get(int index)
     {
         if(index < mData.length)
         {
@@ -43,14 +61,16 @@ public class IntArrayArray extends Array<Array<Integer>>
     }
 
     @Override
-    public void set(int index, Array<Integer> value)
+    public void set(int index, IntArray value)
     {
         if(index < mData.length)
         {
             mData[index] = value;
         }
-
-        throw new IllegalArgumentException("Index [" + index + "] out of bounds for size [" + size() + "]");
+        else
+        {
+            throw new IllegalArgumentException("Index [" + index + "] out of bounds for size [" + size() + "] and data length [" + mData.length + "]");
+        }
     }
 
     @Override
@@ -63,13 +83,15 @@ public class IntArrayArray extends Array<Array<Integer>>
             return;
         }
 
-        if(copy)
+        if(copy && size() > 0)
         {
+            int currentSize = size();
+
             mData = Arrays.copyOf(mData, size);
 
-            if(size > size())
+            if(currentSize < size())
             {
-                for(int i = size(); i < size; i++)
+                for(int i = currentSize; i < size(); i++)
                 {
                     mData[i] = new IntArray(0);
                 }
@@ -96,5 +118,11 @@ public class IntArrayArray extends Array<Array<Integer>>
         {
             mData[i] = new IntArray(0);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return Arrays.toString(mData);
     }
 }
