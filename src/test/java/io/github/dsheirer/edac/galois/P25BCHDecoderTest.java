@@ -20,6 +20,7 @@
 package io.github.dsheirer.edac.galois;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.BCHDecoder31_21;
 
 public class P25BCHDecoderTest
 {
@@ -157,17 +158,34 @@ public class P25BCHDecoderTest
         return passes;
     }
 
+    public void testExample31_21()
+    {
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage(31);
+
+        int[] c = {0, 3, 4, 5, 6, 8, 10, 14, 16, 17, 18, 20, 21, 23, 24, 25};
+        int[] r = {0, 3, 5, 6, 8, 10, 14, 16, 17, 20, 21, 23, 24, 25};
+
+        for(int bit: c)
+        {
+            message.set(bit);
+        }
+
+        BCHDecoder31_21 decoder = new BCHDecoder31_21();
+        decoder.decode(message);
+    }
+
     public static void main(String[] args)
     {
         P25BCHDecoderTest test = new P25BCHDecoderTest();
+        test.testExample31_21();
 //        test.testOneBitErrors();
 
-        CorrectedBinaryMessage message = P25BCHDecoderTest.create(1, 1);
-        message.flip(0);
-
-        P25BCHDecoder decoder = new P25BCHDecoder();
-        boolean passes = test.testOneBit(decoder, message, 1);
-
-        System.out.println("PASS: " + passes);
+//        CorrectedBinaryMessage message = P25BCHDecoderTest.create(1, 1);
+//        message.flip(0);
+//
+//        P25BCHDecoder decoder = new P25BCHDecoder();
+//        boolean passes = test.testOneBit(decoder, message, 0);
+//
+//        System.out.println("PASS: " + passes);
     }
 }

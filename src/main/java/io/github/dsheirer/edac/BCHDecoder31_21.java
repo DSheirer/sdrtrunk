@@ -17,24 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac.galois;
+package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
 import java.util.Arrays;
 
 /**
- * P25 BCH(63,16) decoder using the Berlekamp-Massey algorithm.
+ * BCH(31,21,2) decoder using the Berlekamp-Massey algorithm.
  */
-public class P25BCHDecoder
+public class BCHDecoder31_21
 {
-    private static final int PRIMITIVE_POLYNOMIAL_BCH_63_61_1 = 0x43; //M1(x) = x^6 + x + 1
+//    private static final int PRIMITIVE_POLYNOMIAL_BCH_31_21_2 = 0x1D; //M1(x) = x^4 + x^3 + x^2 + 1
+    private static final int PRIMITIVE_POLYNOMIAL_BCH_31_21_2 = 0x25; //M1(x) = x^5 + x^2 + 1
     public static final int FLAG_MESSAGE_UNCORRECTABLE = -1;
-    private static final int N = 63; // Codeword length
-    private static final int K = 16; // Message length
-    private static final int T = 11; // Error-correcting capability
-    public static final IntField NAC_FIELD = IntField.length12(0);
-    public static final IntField DUID_FIELD = IntField.length4(12);
+    private static final int N = 31; // Codeword length
+    private static final int K = 21; // Message length
+    private static final int T = 2; // Error-correcting capability
 
 //    //Galois field GF(6) using primitive polynomial: x^6 + x + 1 (63,61,1)
 //    private static final int[] ALPHA_TO = {1, 2, 4, 8, 16, 32, 3, 6, 12, 24, 48, 35, 5, 10, 20, 40, 19, 38, 15, 30, 60,
@@ -52,15 +50,15 @@ public class P25BCHDecoder
         initializeGaloisField();
     }
 
-    public P25BCHDecoder()
+    public BCHDecoder31_21()
     {
     }
 
     private static void initializeGaloisField()
     {
-        // Initialize Galois Field GF(2^6)
-        int m = 6;
-        int primitive_poly = PRIMITIVE_POLYNOMIAL_BCH_63_61_1;
+        // Initialize Galois Field GF(2^5)
+        int m = 5;
+        int primitive_poly = PRIMITIVE_POLYNOMIAL_BCH_31_21_2;
         int mask = 1;
         ALPHA_TO[m] = 0;
         for (int i = 0; i < m; i++) {
@@ -91,17 +89,9 @@ public class P25BCHDecoder
 
 
     /**
-     * Decodes the received BCH(63,16) protected 64-bit NID containing the NAC (bits 0-11) and DUID (bits 12-15).
-     * @param receivedMessage with NAC and DUID in index positions 0-15 and BCH parity bits in positions 16-62 with the
-     * optional message parity bit in position 63.  Note the final parity bit is ignored for decoding.
-     * @param observedNAC that has previously been decoded to use when attempting to repair a non-repairable codeword
-     * by overwriting the NAC field with this value and then attempting error correction again.
-     *
-     * Note: the message codeword is repaired in place and the results of that attempted repair are stored in the
-     * corrected bits count field.  A zero value indicates no errors.  A positive value, up to 11, indicates the
-     * number of bits that were repaired.  A negative value indicates a non-repairable codeword.
+     * Decodes the received BCH(31,21) protected
      */
-    public void decode(CorrectedBinaryMessage receivedMessage, int observedNAC)
+    public void decode(CorrectedBinaryMessage receivedMessage)
     {
         //Calculate the error syndromes from the message.
         int[] syndromes = calculateSyndromes(receivedMessage);
@@ -128,7 +118,7 @@ public class P25BCHDecoder
         {
             //Flip the original message bits according to the error locations.  Note: the error locations are in
             //reverse bit order, so they have to be subtracted from (63-1) to get the normal message index location.
-            receivedMessage.flip(62 - errorLocation);
+            receivedMessage.flip(N - 1 - errorLocation);
         }
 
         //Re-test the syndromes to validate the correction operation
@@ -143,19 +133,7 @@ public class P25BCHDecoder
             //Uncorrectable bit errors in the message.  Reverse the error locations because they didn't work
             for(int errorLocation : errorLocations)
             {
-                receivedMessage.flip(62 - errorLocation);
-            }
-
-            //If the observedNAC value is greater than zero, attempt to recover the codeword by overwriting the NAC
-            //field in the codeword and attempt error correction one more time.
-            if(observedNAC >= 0)
-            {
-                receivedMessage.setInt(observedNAC, NAC_FIELD);
-                decode(receivedMessage, -1); //Recursive call
-            }
-            else
-            {
-                receivedMessage.setCorrectedBitCount(FLAG_MESSAGE_UNCORRECTABLE);
+                receivedMessage.flip(N - 1 - errorLocation);
             }
         }
     }
@@ -175,7 +153,7 @@ public class P25BCHDecoder
             s[i - 1] = 0;
             for(int j = 0; j < N; j++)
             {
-                if(received.get(62 - j)) //Access the message bits (0 - 62) in reverse order
+                if(received.get(N - 1 - j)) //Access the message bits (0 - 30) in reverse order
                 {
                     s[i - 1] ^= ALPHA_TO[(i * j) % N];
                 }
