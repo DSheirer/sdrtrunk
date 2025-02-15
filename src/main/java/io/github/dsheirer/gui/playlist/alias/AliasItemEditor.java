@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -694,13 +694,15 @@ public class AliasItemEditor extends Editor<Alias>
             p25Menu.getItems().add(new AddUserStatusItem());
             p25Menu.getItems().add(new AddUnitStatusItem());
             p25Menu.getItems().add(new SeparatorMenuItem());
-            p25Menu.getItems().add(new AddTonesItem("Audio Tones (Phase 2 Only)"));
+            p25Menu.getItems().add(new AddTonesItem("AMBE Audio Tones (Phase 2 Only)"));
 
             Menu dmrMenu = new ProtocolMenu(Protocol.DMR);
             dmrMenu.getItems().add(new AddTalkgroupItem(Protocol.DMR));
             dmrMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.DMR));
             dmrMenu.getItems().add(new AddRadioIdItem(Protocol.DMR));
             dmrMenu.getItems().add(new AddRadioIdRangeItem(Protocol.DMR));
+            dmrMenu.getItems().add(new AddTonesItem("AMBE Audio Tones"));
+
 
             Menu fleetsyncMenu = new ProtocolMenu(Protocol.FLEETSYNC);
             fleetsyncMenu.getItems().add(new AddTalkgroupItem(Protocol.FLEETSYNC));
