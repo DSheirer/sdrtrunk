@@ -20,7 +20,6 @@
 package io.github.dsheirer.edac.galois;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.BCHDecoder31_21;
 
 public class P25BCHDecoderTest
 {
@@ -174,10 +173,27 @@ public class P25BCHDecoderTest
         decoder.decode(message);
     }
 
+    public void testExample15_7()
+    {
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage(15);
+
+        int[] c = {0, 1, 3, 4, 5, 6, 7, 10, 11};
+        int[] r = {0, 1, 3, 4, 5, 6, 8, 10, 11};
+
+        for(int bit: r)
+        {
+            message.set(bit);
+        }
+
+        BCHDecoder15_7 decoder = new BCHDecoder15_7();
+        decoder.decode(message);
+    }
+
     public static void main(String[] args)
     {
         P25BCHDecoderTest test = new P25BCHDecoderTest();
-        test.testExample31_21();
+        test.testExample15_7();
+//        test.testExample31_21();
 //        test.testOneBitErrors();
 
 //        CorrectedBinaryMessage message = P25BCHDecoderTest.create(1, 1);

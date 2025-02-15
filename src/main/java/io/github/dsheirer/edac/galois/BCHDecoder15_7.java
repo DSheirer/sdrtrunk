@@ -17,21 +17,21 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac;
+package io.github.dsheirer.edac.galois;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import java.util.Arrays;
 
 /**
- * BCH(31,21,2) decoder using the Berlekamp-Massey algorithm.
+ * BCH(15,7,5) decoder using the Berlekamp-Massey algorithm.
  */
-public class BCHDecoder31_21
+public class BCHDecoder15_7
 {
-//    private static final int PRIMITIVE_POLYNOMIAL_BCH_31_21_2 = 0x1D; //M1(x) = x^4 + x^3 + x^2 + 1
-    private static final int PRIMITIVE_POLYNOMIAL_BCH_31_21_2 = 0x25; //M1(x) = x^5 + x^2 + 1
+    //Note: primitive poly is x^4 + x^1 + 1 (10011) but we use it in reverse order here
+    private static final int PRIMITIVE_POLYNOMIAL_BCH_15_7_2 = 0x19; //M1(x) = x^4 + x^3 + 1 = 11001
     public static final int FLAG_MESSAGE_UNCORRECTABLE = -1;
-    private static final int N = 31; // Codeword length
-    private static final int K = 21; // Message length
+    private static final int N = 15; // Codeword length
+    private static final int K = 7; // Message length
     private static final int T = 2; // Error-correcting capability
 
 //    //Galois field GF(6) using primitive polynomial: x^6 + x + 1 (63,61,1)
@@ -50,15 +50,15 @@ public class BCHDecoder31_21
         initializeGaloisField();
     }
 
-    public BCHDecoder31_21()
+    public BCHDecoder15_7()
     {
     }
 
     private static void initializeGaloisField()
     {
         // Initialize Galois Field GF(2^5)
-        int m = 5;
-        int primitive_poly = PRIMITIVE_POLYNOMIAL_BCH_31_21_2;
+        int m = 4;
+        int primitive_poly = PRIMITIVE_POLYNOMIAL_BCH_15_7_2;
         int mask = 1;
         ALPHA_TO[m] = 0;
         for (int i = 0; i < m; i++) {
