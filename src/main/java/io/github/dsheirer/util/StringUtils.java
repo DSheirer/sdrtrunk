@@ -54,7 +54,7 @@ public class StringUtils
 
         for (String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS)
         {
-            filename = filename.replace(illegalCharacter, "_");
+            filename = filename.replace(illegalCharacter, "-");
         }
 
         return filename;
