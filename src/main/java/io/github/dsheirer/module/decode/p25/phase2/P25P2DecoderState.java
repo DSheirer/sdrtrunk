@@ -262,9 +262,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     continueState(State.CALL);
                 }
             }
-            else if(message instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
+            else if(message instanceof MotorolaTalkerAliasComplete talkerAlias && talkerAlias.isValid())
             {
-                mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
+                mTrafficChannelManager.getTalkerAliasManager().update(talkerAlias.getRadio(), talkerAlias.getTalkerAlias());
             }
         }
     }
