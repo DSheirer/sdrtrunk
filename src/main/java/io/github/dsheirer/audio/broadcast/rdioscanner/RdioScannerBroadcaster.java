@@ -38,6 +38,7 @@ import io.github.dsheirer.identifier.configuration.ConfigurationLongIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
+import io.github.dsheirer.identifier.alias.TalkerAliasIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.IOException;
@@ -227,6 +228,7 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                 long timestampSeconds = (int)(audioRecording.getStartTime() / 1E3);
                 String talkgroup = getTo(audioRecording);
                 String radioId = getFrom(audioRecording);
+                String talkerAlias = getTalkerAlias(audioRecording);
                 Long frequency = getFrequency(audioRecording);
                 String patches = getPatches(audioRecording);
                 String talkgroupLabel = getTalkgroupLabel(audioRecording);
@@ -261,6 +263,7 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                             .addPart(FormField.TALKGROUP_ID, talkgroup)
                             .addPart(FormField.SOURCE, radioId)
                             .addPart(FormField.FREQUENCY, frequency)
+                            .addPart(FormField.TALKER_ALIAS, talkerAlias)
                             .addPart(FormField.TALKGROUP_LABEL, talkgroupLabel)
                             .addPart(FormField.TALKGROUP_GROUP, talkgroupGroup)
                             .addPart(FormField.SYSTEM_LABEL, systemLabel)
@@ -406,6 +409,24 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
         }
 
         return "0";
+    }
+
+    private static String getTalkerAlias(AudioRecording audioRecording)
+    {
+        for(Identifier identifier: audioRecording.getIdentifierCollection().getIdentifiers(Role.FROM))
+        {
+            if(identifier instanceof TalkerAliasIdentifier)
+            {
+                TalkerAliasIdentifier talkerID = (TalkerAliasIdentifier)identifier;
+
+                if(talkerID.isValid())
+                {
+                    return talkerID.getValue();
+                }
+            }
+        }
+
+        return "";
     }
 
     /**

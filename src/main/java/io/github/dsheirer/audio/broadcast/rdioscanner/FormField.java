@@ -36,6 +36,7 @@ public enum FormField
     SOURCES("sources"),
     SYSTEM("system"),
     SYSTEM_LABEL("systemLabel"),
+    TALKER_ALIAS("talkerAlias"),
     TALKGROUP_ID("talkgroup"),
     TALKGROUP_GROUP("talkgroupGroup"),
     TALKGROUP_LABEL("talkgroupLabel"),
