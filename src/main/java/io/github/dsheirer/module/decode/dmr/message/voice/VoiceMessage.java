@@ -74,7 +74,7 @@ public abstract class VoiceMessage extends DMRBurst
             frame_2[i] = getMessage().getByte(96 + i * 8);
         }
         // 4 bits and 4 bits
-        frame_3[4] = (byte)((getMessage().getByte(128) & 0xF0) | (getMessage().getByte(180) >> 4));
+        frame_2[4] = (byte)((getMessage().getByte(128) & 0xF0) | (getMessage().getByte(180) >> 4));
         // copy last 4 byte
         for(int i = 0; i < 4; i++)
         {
