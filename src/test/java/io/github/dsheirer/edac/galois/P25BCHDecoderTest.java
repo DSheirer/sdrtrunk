@@ -20,6 +20,9 @@
 package io.github.dsheirer.edac.galois;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.galois.bch.linux.BCHDecoder;
+import io.github.dsheirer.edac.galois.bch.linux.P25BCHDecoder_63_16;
+import java.util.Arrays;
 
 public class P25BCHDecoderTest
 {
@@ -159,40 +162,106 @@ public class P25BCHDecoderTest
 
     public void testExample31_21()
     {
-        CorrectedBinaryMessage message = new CorrectedBinaryMessage(31);
+        CorrectedBinaryMessage messageOriginal = new CorrectedBinaryMessage(31);
+        CorrectedBinaryMessage messageWithErrors = new CorrectedBinaryMessage(31);
 
-        int[] c = {0, 3, 4, 5, 6, 8, 10, 14, 16, 17, 18, 20, 21, 23, 24, 25};
-        int[] r = {0, 3, 5, 6, 8, 10, 14, 16, 17, 20, 21, 23, 24, 25};
+//        int[] r = {0, 3, 5, 6, 8, 10, 14, 16, 17, 20, 21, 23, 24, 25};
+        int[] r = {0, 3, 4, 5, 6, 8, 10, 14, 16, 17, 18, 20, 21, 23, 24, 25};
 
-        for(int bit: c)
+        for(int bit: r)
         {
-            message.set(bit);
+            messageOriginal.set(bit);
+        }
+
+        for(int bit: r)
+        {
+            messageWithErrors.set(bit);
+        }
+
+        int[] inducedErrors = {4,18};
+
+        for(int error: inducedErrors)
+        {
+            messageWithErrors.flip(error);
         }
 
         BCHDecoder31_21 decoder = new BCHDecoder31_21();
-        decoder.decode(message);
+        System.out.println("Processing Original No-Error Message");
+        System.out.println(messageOriginal);
+        decoder.decode(messageOriginal);
+
+        System.out.println("\nInducing Errors At the Following Indices: " + Arrays.toString(inducedErrors));
+
+        System.out.println("\nProcessing Error Message");
+        System.out.println(messageWithErrors);
+        decoder.decode(messageWithErrors);
+
     }
 
     public void testExample15_7()
     {
-        CorrectedBinaryMessage message = new CorrectedBinaryMessage(15);
+        CorrectedBinaryMessage messageC = new CorrectedBinaryMessage(15);
+        CorrectedBinaryMessage messageR = new CorrectedBinaryMessage(15);
 
-        int[] c = {0, 1, 3, 4, 5, 6, 7, 10, 11};
-        int[] r = {0, 1, 3, 4, 5, 6, 8, 10, 11};
+//        int[] c = {0, 1, 3, 4, 5, 6, 7, 10, 11};
+//        int[] r = {0, 1, 3, 4, 5, 6, 8, 10, 11}; //Errors: 7, 8
 
+        int[] c = {0, 2, 8};
+        int[] r = {0, 8};
+
+        for(int bit: c)
+        {
+            messageC.set(bit);
+        }
         for(int bit: r)
         {
-            message.set(bit);
+            messageR.set(bit);
         }
 
         BCHDecoder15_7 decoder = new BCHDecoder15_7();
-        decoder.decode(message);
+        System.out.println("Processing Original No-Error Message");
+        System.out.println(messageC);
+        decoder.decode(messageC);
+        System.out.println("\nProcessing Error Message");
+        System.out.println(messageR);
+        decoder.decode(messageR);
+    }
+
+    public void testNewDecoder()
+    {
+        BCHDecoder decoder = new P25BCHDecoder_63_16();
+
+        int nac = 534;
+        int duid = 2;
+        CorrectedBinaryMessage message = create(nac, duid);
+
+        CorrectedBinaryMessage flipped = new CorrectedBinaryMessage(63);
+        for(int x = 0; x < 63; x++)
+        {
+            if(message.get(x))
+            {
+                flipped.set(62 - x);
+            }
+        }
+
+        System.out.println("Message: " + message);
+        System.out.println("Flipped: " + flipped);
+
+        flipped.flip(2);
+        flipped.flip(7);
+
+        decoder.decode(flipped);
+        System.out.println("Test Complete!");
     }
 
     public static void main(String[] args)
     {
         P25BCHDecoderTest test = new P25BCHDecoderTest();
-        test.testExample15_7();
+        test.testNewDecoder();
+
+
+
+//        test.testExample15_7();
 //        test.testExample31_21();
 //        test.testOneBitErrors();
 
@@ -203,5 +272,6 @@ public class P25BCHDecoderTest
 //        boolean passes = test.testOneBit(decoder, message, 0);
 //
 //        System.out.println("PASS: " + passes);
+
     }
 }

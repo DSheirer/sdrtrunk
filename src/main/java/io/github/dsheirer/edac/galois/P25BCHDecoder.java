@@ -36,7 +36,7 @@ public class P25BCHDecoder
     public static final IntField NAC_FIELD = IntField.length12(0);
     public static final IntField DUID_FIELD = IntField.length4(12);
 
-//    //Galois field GF(6) using primitive polynomial: x^6 + x + 1 (63,61,1)
+//    //Galois field GF(6) using primitive polynomial: x^6 + x + 1
 //    private static final int[] ALPHA_TO = {1, 2, 4, 8, 16, 32, 3, 6, 12, 24, 48, 35, 5, 10, 20, 40, 19, 38, 15, 30, 60,
 //            59, 53, 41, 17, 34, 7, 14, 28, 56, 51, 37, 9, 18, 36, 11, 22, 44, 27, 54, 47, 29, 58, 55, 45, 25, 50, 39,
 //            13, 26, 52, 43, 21, 42, 23, 46, 31, 62, 63, 61, 57, 49, 33, 0};
@@ -342,4 +342,6 @@ public class P25BCHDecoder
 
         return ALPHA_TO[(INDEX_OF[a] + INDEX_OF[b]) % N];
     }
+
+
 }

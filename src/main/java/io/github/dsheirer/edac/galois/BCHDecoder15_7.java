@@ -153,8 +153,11 @@ public class BCHDecoder15_7
             s[i - 1] = 0;
             for(int j = 0; j < N; j++)
             {
+//                if(received.get(j)) //Access the message bits (0 - 30) in forward order
                 if(received.get(N - 1 - j)) //Access the message bits (0 - 30) in reverse order
                 {
+                    int index = (i * j) % N;
+//                    System.out.println("i:" + i + " j:" + j + " index:" + index + " Lookup:" + ALPHA_TO[index]);
                     s[i - 1] ^= ALPHA_TO[(i * j) % N];
                 }
             }
