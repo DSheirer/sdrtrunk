@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,18 @@
 
 package io.github.dsheirer.gui.viewer;
 
-import io.github.dsheirer.message.IMessage;
+import com.google.common.eventbus.EventBus;
+import io.github.dsheirer.channel.state.DecoderStateEvent;
+import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRHardSymbolProcessor;
 import io.github.dsheirer.module.decode.dmr.DMRMessageFramer;
 import io.github.dsheirer.module.decode.dmr.DMRMessageProcessor;
+import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.record.binary.BinaryReader;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -77,9 +83,9 @@ public class DmrViewer extends VBox
     private Preferences mPreferences = Preferences.userNodeForPackage(DmrViewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
-    private TableView<IMessage> mMessageTableView;
-    private ObservableList<IMessage> mMessages = FXCollections.observableArrayList();
-    private FilteredList<IMessage> mFilteredMessages = new FilteredList<>(mMessages);
+    private TableView<MessagePackage> mMessagePackageTableView;
+    private ObservableList<MessagePackage> mMessagePackages = FXCollections.observableArrayList();
+    private FilteredList<MessagePackage> mFilteredMessagePackages = new FilteredList<>(mMessagePackages);
     private CheckBox mShowTS0;
     private CheckBox mShowTS1;
     private CheckBox mShowTS2;
@@ -89,6 +95,7 @@ public class DmrViewer extends VBox
     private Button mFindButton;
     private Button mFindNextButton;
     private ProgressIndicator mLoadingIndicator;
+    private MessagePackageViewer mMessagePackageViewer;
 
     public DmrViewer()
     {
@@ -99,9 +106,10 @@ public class DmrViewer extends VBox
         fileBox.setMaxWidth(Double.MAX_VALUE);
         fileBox.setAlignment(Pos.CENTER_LEFT);
         fileBox.setSpacing(5);
+        getSelectedFileLabel().setAlignment(Pos.BASELINE_CENTER);
+
         HBox.setHgrow(getSelectFileButton(), Priority.NEVER);
         HBox.setHgrow(getSelectedFileLabel(), Priority.ALWAYS);
-        getSelectedFileLabel().setAlignment(Pos.BASELINE_CENTER);
 
         HBox compressedBox = new HBox();
         compressedBox.setAlignment(Pos.CENTER_RIGHT);
@@ -130,9 +138,10 @@ public class DmrViewer extends VBox
 
         VBox.setVgrow(fileBox, Priority.NEVER);
         VBox.setVgrow(filterBox, Priority.NEVER);
-        VBox.setVgrow(getMessageTableView(), Priority.ALWAYS);
+        VBox.setVgrow(getMessagePackageTableView(), Priority.ALWAYS);
+        VBox.setVgrow(getMessagePackageViewer(), Priority.NEVER);
 
-        getChildren().addAll(fileBox, filterBox, getMessageTableView());
+        getChildren().addAll(fileBox, filterBox, getMessagePackageTableView(), getMessagePackageViewer());
     }
 
     /**
@@ -158,7 +167,7 @@ public class DmrViewer extends VBox
     {
         if(file != null && file.exists())
         {
-            mMessages.clear();
+            mMessagePackages.clear();
             getLoadingIndicator().setVisible(true);
             getSelectedFileLabel().setText("Loading ...");
             final boolean useCompressed = getUseCompressedTalkgroups().isSelected();
@@ -168,7 +177,7 @@ public class DmrViewer extends VBox
                 @Override
                 public void run()
                 {
-                    List<IMessage> messages = new ArrayList<>();
+                    List<MessagePackage> messagePackages = new ArrayList<>();
                     DMRMessageFramer messageFramer = new DMRMessageFramer();
                     messageFramer.start();
                     DMRHardSymbolProcessor symbolProcessor = new DMRHardSymbolProcessor(messageFramer);
@@ -176,7 +185,48 @@ public class DmrViewer extends VBox
                     config.setUseCompressedTalkgroups(useCompressed);
                     DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
                     messageFramer.setListener(messageProcessor);
-                    messageProcessor.setMessageListener(message -> messages.add(message));
+                    MessagePackager messagePackager = new MessagePackager();
+
+                    //Setup a temporary event bus to capture channel start processing requests
+                    EventBus eventBus = new EventBus("debug");
+                    eventBus.register(messagePackager);
+                    Channel empty = new Channel("Empty");
+                    empty.setDecodeConfiguration(new DecodeConfigDMR());
+                    DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(empty);
+                    trafficChannelManager.setInterModuleEventBus(eventBus);
+
+                    //Register to receive events
+                    trafficChannelManager.addDecodeEventListener(messagePackager::add);
+                    DMRDecoderState decoderState1 = new DMRDecoderState(empty, 1, trafficChannelManager);
+                    Broadcaster<DecoderStateEvent> decoderStateEventBroadcaster1 = new Broadcaster<>();
+                    decoderState1.setDecoderStateListener(decoderStateEventBroadcaster1);
+                    decoderStateEventBroadcaster1.addListener(messagePackager::add);
+                    DMRDecoderState decoderState2 = new DMRDecoderState(empty, 2, trafficChannelManager);
+                    decoderState1.addDecodeEventListener(messagePackager::add);
+                    decoderState1.start();
+
+                    Broadcaster<DecoderStateEvent> decoderStateEventBroadcaster2 = new Broadcaster<>();
+                    decoderState2.setDecoderStateListener(decoderStateEventBroadcaster2);
+                    decoderStateEventBroadcaster2.addListener(messagePackager::add);
+                    decoderState2.addDecodeEventListener(messagePackager::add);
+                    decoderState2.start();
+
+                    messageProcessor.setMessageListener(message -> {
+                        //Add the initial message to the packager so that it can be combined with any decoder state events.
+                        messagePackager.add(message);
+                        if(message.getTimeslot() == P25P1Message.TIMESLOT_1)
+                        {
+                            decoderState1.receive(message);
+                        }
+                        else if(message.getTimeslot() == P25P1Message.TIMESLOT_2)
+                        {
+                            decoderState2.receive(message);
+                        }
+
+                        //Collect the packaged message with events
+                        messagePackages.add(messagePackager.getMessageWithEvents());
+                    });
+
 
                     try(BinaryReader reader = new BinaryReader(file.toPath(), 200))
                     {
@@ -194,8 +244,8 @@ public class DmrViewer extends VBox
                     Platform.runLater(() -> {
                         getLoadingIndicator().setVisible(false);
                         getSelectedFileLabel().setText(file.getName());
-                        mMessages.addAll(messages);
-                        getMessageTableView().scrollTo(0);
+                        mMessagePackages.addAll(messagePackages);
+                        getMessagePackageTableView().scrollTo(0);
                     });
                 }
             });
@@ -207,7 +257,7 @@ public class DmrViewer extends VBox
      */
     private void updateFilters()
     {
-        Predicate<IMessage> timeslotPredicate = message ->
+        Predicate<MessagePackage> timeslotPredicate = message ->
                 (getShowTS0().isSelected() && (message.getTimeslot() == 0)) ||
                         (getShowTS1().isSelected() && (message.getTimeslot() == 1)) ||
                         (getShowTS2().isSelected() && (message.getTimeslot() == 2));
@@ -216,12 +266,12 @@ public class DmrViewer extends VBox
 
         if(filterText == null || filterText.isEmpty())
         {
-            mFilteredMessages.setPredicate(timeslotPredicate);
+            mFilteredMessagePackages.setPredicate(timeslotPredicate);
         }
         else
         {
-            Predicate<IMessage> textPredicate = message -> message.toString().toLowerCase().contains(filterText.toLowerCase());
-            mFilteredMessages.setPredicate(timeslotPredicate.and(textPredicate));
+            Predicate<MessagePackage> textPredicate = message -> message.toString().toLowerCase().contains(filterText.toLowerCase());
+            mFilteredMessagePackages.setPredicate(timeslotPredicate.and(textPredicate));
         }
     }
 
@@ -233,12 +283,12 @@ public class DmrViewer extends VBox
     {
         if(text != null && !text.isEmpty())
         {
-            for(IMessage message: mFilteredMessages)
+            for(MessagePackage messagePackage: mFilteredMessagePackages)
             {
-                if(message.toString().toLowerCase().contains(text.toLowerCase()))
+                if(messagePackage.toString().toLowerCase().contains(text.toLowerCase()))
                 {
-                    getMessageTableView().getSelectionModel().select(message);
-                    getMessageTableView().scrollTo(message);
+                    getMessagePackageTableView().getSelectionModel().select(messagePackage);
+                    getMessagePackageTableView().scrollTo(messagePackage);
                     return;
                 }
             }
@@ -253,7 +303,7 @@ public class DmrViewer extends VBox
     {
         if(text != null && !text.isEmpty())
         {
-            IMessage selected = getMessageTableView().getSelectionModel().getSelectedItem();
+            MessagePackage selected = getMessagePackageTableView().getSelectionModel().getSelectedItem();
 
             if(selected == null)
             {
@@ -261,18 +311,18 @@ public class DmrViewer extends VBox
                 return;
             }
 
-            int row = mFilteredMessages.indexOf(selected);
+            int row = mFilteredMessagePackages.indexOf(selected);
 
-            for(int x = row + 1; x < mFilteredMessages.size(); x++)
+            for(int x = row + 1; x < mFilteredMessagePackages.size(); x++)
             {
-                if(x < mFilteredMessages.size())
+                if(x < mFilteredMessagePackages.size())
                 {
-                    IMessage message = mFilteredMessages.get(x);
+                    MessagePackage messagePackage = mFilteredMessagePackages.get(x);
 
-                    if(message.toString().toLowerCase().contains(text.toLowerCase()))
+                    if(messagePackage.toString().toLowerCase().contains(text.toLowerCase()))
                     {
-                        getMessageTableView().getSelectionModel().select(message);
-                        getMessageTableView().scrollTo(message);
+                        getMessagePackageTableView().getSelectionModel().select(messagePackage);
+                        getMessagePackageTableView().scrollTo(messagePackage);
                         return;
                     }
                 }
@@ -280,26 +330,41 @@ public class DmrViewer extends VBox
         }
     }
 
-    /**
-     * List view control with DMR messages
-     */
-    private TableView<IMessage> getMessageTableView()
+    private MessagePackageViewer getMessagePackageViewer()
     {
-        if(mMessageTableView == null)
+        if(mMessagePackageViewer == null)
         {
-            mMessageTableView = new TableView<>();
-            mMessageTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            mMessageTableView.setPlaceholder(getLoadingIndicator());
-            SortedList<IMessage> sortedList = new SortedList<>(mFilteredMessages);
-            sortedList.comparatorProperty().bind(mMessageTableView.comparatorProperty());
-            mMessageTableView.setItems(sortedList);
+            mMessagePackageViewer = new MessagePackageViewer();
+            mMessagePackageViewer.setMaxWidth(Double.MAX_VALUE);
 
-            mMessageTableView.setOnKeyPressed(event ->
+            //Register for table selection events to display the selected value.
+            getMessagePackageTableView().getSelectionModel().selectedItemProperty()
+                    .addListener((observable, oldValue, newValue) -> getMessagePackageViewer().set(newValue));
+        }
+
+        return mMessagePackageViewer;
+    }
+
+    /**
+     * List view control with DMR message packages
+     */
+    private TableView<MessagePackage> getMessagePackageTableView()
+    {
+        if(mMessagePackageTableView == null)
+        {
+            mMessagePackageTableView = new TableView<>();
+            mMessagePackageTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            mMessagePackageTableView.setPlaceholder(getLoadingIndicator());
+            SortedList<MessagePackage> sortedList = new SortedList<>(mFilteredMessagePackages);
+            sortedList.comparatorProperty().bind(mMessagePackageTableView.comparatorProperty());
+            mMessagePackageTableView.setItems(sortedList);
+
+            mMessagePackageTableView.setOnKeyPressed(event ->
             {
                 if(KEY_CODE_COPY.match(event))
                 {
                     final Set<Integer> rows = new TreeSet<>();
-                    for (final TablePosition tablePosition : mMessageTableView.getSelectionModel().getSelectedCells())
+                    for (final TablePosition tablePosition : mMessagePackageTableView.getSelectionModel().getSelectedCells())
                     {
                         rows.add(tablePosition.getRow());
                     }
@@ -319,7 +384,7 @@ public class DmrViewer extends VBox
 
                         boolean firstCol = true;
 
-                        for (final TableColumn<?, ?> column : mMessageTableView.getColumns())
+                        for (final TableColumn<?, ?> column : mMessagePackageTableView.getColumns())
                         {
                             if(firstCol)
                             {
@@ -360,18 +425,34 @@ public class DmrViewer extends VBox
             messageColumn.setText("Message");
             messageColumn.setCellValueFactory((Callback<TableColumn.CellDataFeatures, ObservableValue>) param -> {
                 SimpleStringProperty property = new SimpleStringProperty();
-                if(param.getValue() instanceof IMessage message)
+                if(param.getValue() instanceof MessagePackage messagePackage)
                 {
-                    property.set(message.toString());
+                    property.set(messagePackage.getMessage().toString());
                 }
 
                 return property;
             });
 
-            mMessageTableView.getColumns().addAll(timestampColumn, validColumn, timeslotColumn, messageColumn);
+            TableColumn decodeEventCountColumn = new TableColumn();
+            decodeEventCountColumn.setPrefWidth(50);
+            decodeEventCountColumn.setText("Events");
+            decodeEventCountColumn.setCellValueFactory(new PropertyValueFactory<>("decodeEventCount"));
+
+            TableColumn decoderStateEventCountColumn = new TableColumn();
+            decoderStateEventCountColumn.setPrefWidth(50);
+            decoderStateEventCountColumn.setText("States");
+            decoderStateEventCountColumn.setCellValueFactory(new PropertyValueFactory<>("decoderStateEventCount"));
+
+            TableColumn channelStartCountColumn = new TableColumn();
+            channelStartCountColumn.setPrefWidth(50);
+            channelStartCountColumn.setText("Starts");
+            channelStartCountColumn.setCellValueFactory(new PropertyValueFactory<>("channelStartProcessingRequestCount"));
+
+            mMessagePackageTableView.getColumns().addAll(timestampColumn, validColumn, timeslotColumn, messageColumn,
+                    decodeEventCountColumn, decoderStateEventCountColumn, channelStartCountColumn);
         }
 
-        return mMessageTableView;
+        return mMessagePackageTableView;
     }
 
     /**

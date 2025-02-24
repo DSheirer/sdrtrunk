@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support and Questions - How do I XXX?  Does it support XXX?
+    url: https://github.com/DSheirer/sdrtrunk/wiki/Support
+    about: Please ask your user questions here -- DO NOT create an issue if you have a user question please!!

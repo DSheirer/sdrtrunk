@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -707,6 +707,28 @@ public class BinaryMessage extends BitSet
             else
             {
                 clear(indices[x]);
+            }
+        }
+    }
+
+    /**
+     * Sets the integer value to the field described by the argument.
+     * @param value to set
+     * @param intField describing the indices of the field.
+     */
+    public void setInt(int value, IntField intField)
+    {
+        for(int x = 0; x < intField.width(); x++)
+        {
+            int mask = 1 << (intField.width() - x - 1);
+
+            if((value & mask) == mask)
+            {
+                set(intField.start() + x);
+            }
+            else
+            {
+                clear(intField.start() + x);
             }
         }
     }
