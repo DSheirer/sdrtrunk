@@ -71,7 +71,7 @@ public class P25BCHDecoder_63_16 extends BCHDecoder_63
         GFPoly elp = bch.compute_error_locator_polynomial(syndromes);
         System.out.println("ELP: " + Arrays.toString(elp.mC) + " Of Degree:" + elp.mDegree);
 
-        int[] roots = bch.find_poly_roots(elp);
+        int[] roots = bch.find_poly_roots(elp, 1);
         System.out.println("Roots: " + Arrays.toString(roots));
     }
 

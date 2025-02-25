@@ -62,7 +62,7 @@ public class BCHDecoder
 
     /*
      * Creates lookup table for finding the roots of a degree 2 error locator polynomial.
-     * See: https://github.com/Parrot-Developers/bch.c build_deg2_base() method.
+     * See: https://github.com/Parrot-Developers/bch/blob/master/lib/bch.c build_deg2_base() method.
      */
     private void buildDegree2Base()
     {
@@ -119,7 +119,7 @@ public class BCHDecoder
      * find roots of a polynomial, using BTZ algorithm; see the beginning of this
      * file for details
      */
-    public int[] find_poly_roots(GFPoly poly)
+    public int[] find_poly_roots(GFPoly poly, int k)
     {
         int[] roots = new int[0];
 
@@ -136,24 +136,276 @@ public class BCHDecoder
                 roots = find_poly_deg3_roots(poly);
                 break;
             case 4:
-                //                cnt = find_poly_deg4_roots(bch, poly, roots);
+                roots = find_poly_deg4_roots(poly);
                 break;
             default:
                 /* factor polynomial using Berlekamp Trace Algorithm (BTA) */
-                //                cnt = 0;
-                //                if (poly->deg && (k <= GF_M(bch)))
-                //                {
-                //                    gf_poly f1, f2;
-                //                    factor_polynomial(bch, k, poly, &f1, &f2);
-                //                    if (f1)
-                //                        cnt += find_poly_roots(bch, k+1, f1, roots);
-                //                    if (f2)
-                //                        cnt += find_poly_roots(bch, k+1, f2, roots+cnt);
-                //                }
+                if (poly.mDegree != 0 && (k <= mM))
+                {
+                    GFPoly[] factors = factor_polynomial(k, poly);
+
+                    if (factors != null && factors.length == 2)
+                    {
+                        int[] aRoots = find_poly_roots(factors[0], k + 1);
+                        int[] bRoots = find_poly_roots(factors[1], k + 1);
+
+                        roots = new int[aRoots.length + bRoots.length];
+
+                        System.arraycopy(aRoots, 0, roots, 0, aRoots.length);
+                        System.arraycopy(bRoots, 0, roots, aRoots.length, bRoots.length);
+                    }
+                    else if (factors != null && factors.length > 0)
+                    {
+                        roots = find_poly_roots(factors[0], k + 1);
+                    }
+                }
                 break;
         }
 
+        //Invert the error roots since we had to process the message in reverse bit order
+//        for(int x = 0; x < roots.length; x++)
+//        {
+//            roots[x] = mN - 1 - roots[x];
+//        }
+
         return roots;
+    }
+
+    /*
+     * factor a polynomial using Berlekamp Trace algorithm (BTA)
+     */
+    public GFPoly[] factor_polynomial(int k, GFPoly f)
+    {
+        GFPoly f2 = new GFPoly(2 * mT);
+        GFPoly q = new GFPoly(2 * mT);
+        GFPoly tk = new GFPoly(2 * mT);
+        GFPoly z = new GFPoly(2 * mT);
+        GFPoly gcd = new GFPoly(1);
+
+//        struct gf_poly *f2 = bch->poly_2t[0];
+//        struct gf_poly *q  = bch->poly_2t[1];
+//        struct gf_poly *tk = bch->poly_2t[2];
+//        struct gf_poly *z  = bch->poly_2t[3];
+//        struct gf_poly *gcd;
+//        dbg("factoring %s...\n", gf_poly_str(f));
+        GFPoly g = new GFPoly(1);
+        GFPoly h;
+        f.copyTo(g);
+    	h = null;
+
+        /* compute f log representation only once */
+//        gf_poly_logrep(bch, f, bch->cache);
+//        int[] rep = gf_poly_logrep(f);
+
+        /* tk = Tr(a^k.X) mod f */
+
+        tk = compute_trace_bk_mod(k, f, z);
+
+        if (tk.mDegree > 0)
+        {
+            /* compute g = gcd(f, tk) (destructive operation) */
+//            gf_poly_copy(f2, f);
+            f.copyTo(f2);
+
+            gcd = gf_poly_gcd(f2, tk);
+
+            if (gcd.mDegree < f.mDegree)
+            {
+                /* compute h=f/gcd(f,tk); this will modify f and q */
+                gf_poly_div(f, gcd, q);
+
+                /* store g and h in-place (clobbering f) */
+//TODO: here we are instantiating h to hold the additional results.
+//TODO:    			*h = &((struct gf_poly_deg1 *)f)[gcd->deg].poly;
+
+//                gf_poly_copy(*g, gcd);
+//                gcd.copyTo(g);
+//                gf_poly_copy(*h, q);
+//                q.copyTo(h);
+
+                GFPoly[] results = new GFPoly[2];
+                results[0] = gcd;
+//                results[0] = g;
+                results[1] = q;
+//                results[1] = h;
+                return results;
+            }
+
+        }
+
+        GFPoly[] results = new GFPoly[1];
+        results[0] = g;
+        return results;
+    }
+
+    /*
+     * compute polynomial Euclidean division quotient in GF(2^m)[X]
+     */
+    public void gf_poly_div(GFPoly a, GFPoly b, GFPoly q)
+    {
+        if (a.mDegree >= b.mDegree)
+        {
+            q.mDegree = a.mDegree - b.mDegree;
+            /* compute a mod b (modifies a) */
+            gf_poly_mod(a, b);
+            /* quotient is stored in upper part of polynomial a */
+//            memcpy(q.mC, a.mC[b.mDegree], (1 + q.mDegree) * sizeof(unsigned int));
+            //memcpy(to, from, quantity)
+            System.arraycopy(a.mC, b.mDegree, q.mC, 0, 1 + q.mDegree);
+        }
+        else
+        {
+            q.mDegree = 0;
+            q.mC[0] = 0;
+        }
+    }
+
+
+    /*
+     * compute polynomial GCD (Greatest Common Divisor) in GF(2^m)[X]
+     */
+    public GFPoly gf_poly_gcd(GFPoly a, GFPoly b)
+    {
+        GFPoly tmp;
+
+        if (a.mDegree < b.mDegree)
+        {
+            tmp = b;
+            b = a;
+            a = tmp;
+        }
+
+        while (b.mDegree > 0)
+        {
+            gf_poly_mod(a, b);
+            tmp = b;
+            b = a;
+            a = tmp;
+        }
+
+        return a;
+    }
+
+
+    /*
+     * Given a polynomial f and an integer k, compute Tr(a^kX) mod f
+     * This is used in Berlekamp Trace algorithm for splitting polynomials
+     */
+    public GFPoly compute_trace_bk_mod(int k, GFPoly f, GFPoly z)
+    {
+    	int m = mM;
+        int i, j;
+
+        /* z contains z^2j mod f */
+        z.mDegree = 1;
+        z.mC[0] = 0;
+        z.mC[1] = a_pow_tab[k];
+
+        GFPoly outTK = new GFPoly(f.mC.length);
+        outTK.mDegree = 0;
+
+        for (i = 0; i < m; i++)
+        {
+            /* add a^(k*2^i)(z^(2^i) mod f) and compute (z^(2^i) mod f)^2 */
+            for (j = z.mDegree; j >= 0; j--)
+            {
+                outTK.mC[j] ^= z.mC[j];
+                z.mC[2 * j] = gf_sqr(z.mC[j]);
+                z.mC[2 * j + 1] = 0;
+            }
+
+            if (z.mDegree > outTK.mDegree)
+            {
+                outTK.mDegree = z.mDegree;
+            }
+
+            if (i < m-1)
+            {
+                z.mDegree *= 2;
+                /* z^(2(i+1)) mod f = (z^(2^i) mod f)^2 mod f */
+                gf_poly_mod(z, f);
+            }
+        }
+
+        while (outTK.mC[outTK.mDegree] == 0 && outTK.mDegree != 0)
+        {
+            outTK.mDegree--;
+        }
+
+        return outTK;
+    }
+
+    /*
+     * compute polynomial Euclidean division remainder in GF(2^m)[X]
+     */
+    public void gf_poly_mod(GFPoly a, GFPoly b)
+    {
+        int la, p, m;
+        int i, j;
+        int[] c = Arrays.copyOf(a.mC, a.mC.length);
+        int d = b.mDegree;
+
+        if (a.mDegree < d)  //TODO: move this up to the start of the method so we can exit early
+        {
+            return;
+        }
+
+        /* reuse or compute log representation of denominator */
+//        if (!rep) {
+//            rep = bch->cache;
+//            gf_poly_logrep(bch, b, rep);
+//        }
+        int[] rep = gf_poly_logrep(b);
+
+        for (j = a.mDegree; j >= d; j--)
+        {
+            if (c[j] != 0)
+            {
+                la = a_log(c[j]);
+                p = j-d;
+
+                for (i = 0; i < d; i++, p++)
+                {
+                    m = rep[i];
+
+                    if (m >= 0)
+                    {
+                        c[p] ^= a_pow_tab[mod_s(m + la)];
+                    }
+                }
+            }
+        }
+
+        a.mDegree = d - 1;
+
+        while (c[a.mDegree] == 0 && a.mDegree != 0)
+        {
+            a.mDegree--;
+        }
+
+        //Reassign c back to a's polynomial
+        a.mC = c;
+    }
+
+
+    /*
+     * build monic, log-based representation of a polynomial
+     */
+    public int[] gf_poly_logrep(GFPoly a)
+    {
+        int i;
+        int d = a.mDegree;
+        int l = mN - a_log(a.mC[a.mDegree]);
+
+        int[] rep = new int[d];
+
+        /* represent 0 values with -1; warning, rep[d] is not set to 1 */
+        for (i = 0; i < d; i++)
+        {
+            rep[i] = a.mC[i] != 0 ? mod_s(a_log(a.mC[i]) + l) : -1;
+        }
+
+        return rep;
     }
 
     /*
@@ -252,6 +504,81 @@ public class BCHDecoder
                         roots[n++] = a_ilog(tmp[i]);
                     }
                 }
+            }
+        }
+
+        return roots;
+    }
+
+    /*
+     * compute roots of a degree 4 polynomial over GF(2^m)
+     */
+    public int[] find_poly_deg4_roots(GFPoly poly)
+    {
+        int[] roots = new int[poly.mDegree];
+
+        int i, l, n = 0;
+        int a, b, c, d, e = 0, f, a2, b2, c2, e4;
+
+        if (poly.mC[0] == 0)
+        {
+            return new int[0];
+        }
+
+        /* transform polynomial into monic X^4 + aX^3 + bX^2 + cX + d */
+        e4 = poly.mC[4];
+        d = gf_div(poly.mC[0], e4);
+        c = gf_div(poly.mC[1], e4);
+        b = gf_div(poly.mC[2], e4);
+        a = gf_div(poly.mC[3], e4);
+
+        /* use Y=1/X transformation to get an affine polynomial */
+        if (a != 0)
+        {
+            /* first, eliminate cX by using z=X+e with ae^2+c=0 */
+            if (c != 0)
+            {
+                /* compute e such that e^2 = c/a */
+                f = gf_div(c, a);
+                l = a_log(f);
+                l += ((l & 1) != 0) ? mN : 0;
+                e = a_pow(l / 2);
+
+                /*
+                 * use transformation z=X+e:
+                 * z^4+e^4 + a(z^3+ez^2+e^2z+e^3) + b(z^2+e^2) +cz+ce+d
+                 * z^4 + az^3 + (ae+b)z^2 + (ae^2+c)z+e^4+be^2+ae^3+ce+d
+                 * z^4 + az^3 + (ae+b)z^2 + e^4+be^2+d
+                 * z^4 + az^3 +     b'z^2 + d'
+                 */
+                d = a_pow(2 * l) ^ gf_mul(b, f) ^ d;
+                b = gf_mul(a, e) ^ b;
+            }
+
+            /* now, use Y=1/X to get Y^4 + b/dY^2 + a/dY + 1/d */
+            if (d == 0)
+            {
+                /* assume all roots have multiplicity 1 */
+                return new int[0];
+            }
+
+            c2 = gf_inv(d);
+            b2 = gf_div(a, d);
+            a2 = gf_div(b, d);
+        } else {
+            /* polynomial is already affine */
+            c2 = d;
+            b2 = c;
+            a2 = b;
+        }
+        /* find the 4 roots of this affine polynomial */
+        if (find_affine4_roots(a2, b2, c2, roots) == 4)
+        {
+            for (i = 0; i < 4; i++)
+            {
+                /* post-process roots (reverse transformations) */
+                f = a != 0 ? gf_inv(roots[i]) : roots[i];
+                roots[i] = a_ilog(f ^ e);
             }
         }
 
@@ -517,6 +844,11 @@ public class BCHDecoder
         return a != 0 ? a_pow_tab[mod_s(a_log_tab[a] + mN - a_log_tab[b])] : 0;
     }
 
+    private int gf_inv(int a)
+    {
+        return a_pow_tab[mN - a_log_tab[a]];
+    }
+
     public static class GFPoly
     {
         public int mDegree = 0;
@@ -549,14 +881,17 @@ public class BCHDecoder
     {
         int j;
         int twoT = 2 * mT;
+        int nMinus1 = mN - 1;
         int[] syndromes = new int[twoT];
 
-        //Calculate for each set bin in message from bit position 0 to N - 1 across 2*T syndromes
+        //Use the binary message feature to iterate across the set bit positions to calculate the syndromes for each
+        //set bit.  We iterate the bit positions in order from MSB to LSB, however we calculate the syndrome as if each
+        //set bit is accessed in reverse order by subtracting the iterated bit position from (N-1).
         for(int i = message.nextSetBit(0); i >= 0 && i < mN; i = message.nextSetBit(i + 1))
         {
             for(j = 0; j < twoT; j += 2)
             {
-                syndromes[j] ^= a_pow((j + 1) * i);
+                syndromes[j] ^= a_pow((j + 1) * (nMinus1 - i));
             }
         }
 
@@ -567,6 +902,8 @@ public class BCHDecoder
         {
             syndromes[2 * j + 1] = gf_sqr(syndromes[j]);
         }
+
+        System.out.println("Syndromes: " + Arrays.toString(syndromes));
 
         return syndromes;
     }
@@ -702,9 +1039,22 @@ public class BCHDecoder
         int[] syndromes = computeSyndromes(message);
         GFPoly elp = compute_error_locator_polynomial(syndromes);
         System.out.println(elp);
-        int[] roots = find_poly_roots(elp);
+        int k = 1; //Recursive call argument
+        int[] roots = find_poly_roots(elp, k);
+
+        //Invert the error roots
+        for(int x = 0; x < roots.length; x++)
+        {
+            roots[x] = mN - 1 - roots[x];
+        }
+
         System.out.println("Error Roots:" + Arrays.toString(roots));
 
+        for(int error: roots)
+        {
+            message.flip(error);
+        }
+        message.setCorrectedBitCount(roots.length);
         //TODO: correct the roots.
     }
 
@@ -745,7 +1095,7 @@ public class BCHDecoder
         GFPoly elp = bch.compute_error_locator_polynomial(syndromes);
         System.out.println("ELP: " + Arrays.toString(elp.mC) + " Of Degree:" + elp.mDegree);
 
-        int[] roots = bch.find_poly_roots(elp);
+        int[] roots = bch.find_poly_roots(elp, 1);
         System.out.println("Roots: " + Arrays.toString(roots));
     }
 }

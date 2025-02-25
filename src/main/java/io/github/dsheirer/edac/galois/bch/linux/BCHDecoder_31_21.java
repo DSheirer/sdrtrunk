@@ -66,7 +66,7 @@ public class BCHDecoder_31_21 extends BCHDecoder_31
         GFPoly elp = bch.compute_error_locator_polynomial(syndromes);
         System.out.println("ELP: " + Arrays.toString(elp.mC) + " Of Degree:" + elp.mDegree);
 
-        int[] roots = bch.find_poly_roots(elp);
+        int[] roots = bch.find_poly_roots(elp, 1);
         System.out.println("Roots: " + Arrays.toString(roots));
 
         CorrectedBinaryMessage messageOriginal = new CorrectedBinaryMessage(31);

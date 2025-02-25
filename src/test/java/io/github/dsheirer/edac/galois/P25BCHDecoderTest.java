@@ -83,82 +83,30 @@ public class P25BCHDecoderTest
         return cbm;
     }
 
-    public void testOneBitErrors()
+    /**
+     * Verify that the decoder can correct all 1-bit errors across the message bits 0-62.  Note: this test ignores the
+     * unused parity bit at index 63.
+     * @param decoder that can correct one-bit errors.
+     * @param message that is fully formed across indices 0-62 with BCH parity bits
+     * @return true if the test is successful
+     */
+    public boolean testOneBitErrors(BCHDecoder decoder, CorrectedBinaryMessage message)
     {
-        P25BCHDecoder decoder = new P25BCHDecoder();
-
-        int nac = 1;
-        int duid = 1;
-        CorrectedBinaryMessage baseMessage = create(nac, duid);
-
-        boolean passes = testSequence(decoder, baseMessage);
-
-        System.out.println("Passes: " + passes);
-    }
-
-    private boolean test(P25BCHDecoder decoder, CorrectedBinaryMessage message, int maxErrorCount, int currentError)
-    {
-        boolean passes = true;
-
-        if(currentError < maxErrorCount)
+        for(int error = 0; error < 63; error++)
         {
-            for(int index = currentError; index < 63 - maxErrorCount + 2; index++)
+            CorrectedBinaryMessage copy = message.getSubMessage(0, 62);
+            copy.flip(error);
+            decoder.decode(copy);
+            copy.xor(message);
+            if(copy.cardinality() > 0)
             {
-                CorrectedBinaryMessage testMessage = new CorrectedBinaryMessage(message);
-                testMessage.flip(index);
-                passes ^= testOneBit(decoder, testMessage, index + 1);
-
-                if(index < (63 - maxErrorCount - currentError))
-                {
-                    //Recursive call
-                    passes ^= test(decoder, testMessage, maxErrorCount, index + 1);
-                }
+                return false;
             }
         }
 
-        return passes;
+        return true;
     }
 
-    private boolean testOneBit(P25BCHDecoder decoder, CorrectedBinaryMessage message, int startIndex)
-    {
-        boolean passes = true;
-
-        for(int i = startIndex; i < 63; i++)
-        {
-            CorrectedBinaryMessage testMessage = new CorrectedBinaryMessage(message);
-            testMessage.flip(i);
-            decoder.decode(testMessage, -1);
-
-            if(testMessage.getCorrectedBitCount() < 0)
-            {
-                passes = false;
-            }
-        }
-
-        return passes;
-    }
-
-    private boolean testSequence(P25BCHDecoder decoder, CorrectedBinaryMessage message)
-    {
-        boolean passes = true;
-
-        CorrectedBinaryMessage testMessage = new CorrectedBinaryMessage(message);
-
-        int errorIndex = 0;
-
-        while(errorIndex < 11 && passes)
-        {
-            for(int error = 0; error <= errorIndex; error++)
-            {
-                testMessage.flip(error);
-            }
-            decoder.decode(testMessage, -1);
-            passes = testMessage.getCorrectedBitCount() >= 0;
-            errorIndex++;
-        }
-
-        return passes;
-    }
 
     public void testExample31_21()
     {
@@ -235,30 +183,31 @@ public class P25BCHDecoderTest
         int duid = 2;
         CorrectedBinaryMessage message = create(nac, duid);
 
-        CorrectedBinaryMessage flipped = new CorrectedBinaryMessage(63);
-        for(int x = 0; x < 63; x++)
+        System.out.println("Message: " + message);
+
+        int[] errors = {2, 3, 4, 7, 22, 31};
+
+        for(int error: errors)
         {
-            if(message.get(x))
-            {
-                flipped.set(62 - x);
-            }
+            message.flip(error);
         }
 
-        System.out.println("Message: " + message);
-        System.out.println("Flipped: " + flipped);
+        System.out.println("M w/Err: " + message);
+        System.out.println("Error Indices: " + Arrays.toString(errors));
 
-        flipped.flip(2);
-        flipped.flip(7);
+        decoder.decode(message);
 
-        decoder.decode(flipped);
         System.out.println("Test Complete!");
     }
 
     public static void main(String[] args)
     {
         P25BCHDecoderTest test = new P25BCHDecoderTest();
-        test.testNewDecoder();
+        BCHDecoder decoder = new P25BCHDecoder_63_16();
+        CorrectedBinaryMessage message = create(534, 2);
 
+        boolean success = test.testOneBitErrors(decoder, message);
+        System.out.println("One Bit Error Test: " + (success ? "PASS" : "FAIL"));
 
 
 //        test.testExample15_7();
