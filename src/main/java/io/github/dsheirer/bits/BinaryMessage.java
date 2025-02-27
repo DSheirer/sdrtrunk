@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -415,8 +415,8 @@ public class BinaryMessage extends BitSet
         boolean[] returnValue = null;
 
         if(startIndex >= 0 &&
-            startIndex < endIndex &&
-            endIndex < mSize)
+                startIndex < endIndex &&
+                endIndex < mSize)
         {
             returnValue = new boolean[endIndex - startIndex + 1];
 
@@ -447,7 +447,7 @@ public class BinaryMessage extends BitSet
         if(bits.length > 32)
         {
             throw new IllegalArgumentException("Overflow - must be 32 bits "
-                + "or less to fit into a primitive integer value");
+                    + "or less to fit into a primitive integer value");
         }
 
         int value = 0;
@@ -676,7 +676,7 @@ public class BinaryMessage extends BitSet
         if(bits.length > 32)
         {
             throw new IllegalArgumentException("Overflow - must be 32 bits "
-                + "or less to fit into a primitive integer value");
+                    + "or less to fit into a primitive integer value");
         }
 
         int value = 0;
@@ -712,6 +712,28 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Sets the integer value to the field described by the argument.
+     * @param value to set
+     * @param intField describing the indices of the field.
+     */
+    public void setInt(int value, IntField intField)
+    {
+        for(int x = 0; x < intField.width(); x++)
+        {
+            int mask = 1 << (intField.width() - x - 1);
+
+            if((value & mask) == mask)
+            {
+                set(intField.start() + x);
+            }
+            else
+            {
+                clear(intField.start() + x);
+            }
+        }
+    }
+
+    /**
      * Returns the byte value represented by the bit array
      *
      * @param bits - an array of bit positions that will be treated as if they
@@ -724,7 +746,7 @@ public class BinaryMessage extends BitSet
         if(bits.length != 8)
         {
             throw new IllegalArgumentException("Invalid - there must be 8"
-                + "indexes to form a proper byte");
+                    + "indexes to form a proper byte");
         }
 
         int value = 0;
@@ -756,7 +778,7 @@ public class BinaryMessage extends BitSet
         if(bits.length != 8)
         {
             throw new IllegalArgumentException("Invalid - there must be 8"
-                + "indexes to form a proper byte");
+                    + "indexes to form a proper byte");
         }
 
         int value = 0;
@@ -884,7 +906,7 @@ public class BinaryMessage extends BitSet
         if(bits.length > 64)
         {
             throw new IllegalArgumentException("Overflow - must be 64 bits "
-                + "or less to fit into a primitive long value");
+                    + "or less to fit into a primitive long value");
         }
 
         long value = 0;
@@ -916,7 +938,7 @@ public class BinaryMessage extends BitSet
         if(bits.length > 64)
         {
             throw new IllegalArgumentException("Overflow - must be 64 bits "
-                + "or less to fit into a primitive long value");
+                    + "or less to fit into a primitive long value");
         }
 
         long value = 0;
@@ -1004,7 +1026,7 @@ public class BinaryMessage extends BitSet
         else
         {
             throw new IllegalArgumentException("BitSetBuffer.getHex() "
-                + "maximum array length is 63 bits");
+                    + "maximum array length is 63 bits");
         }
     }
 
@@ -1025,7 +1047,7 @@ public class BinaryMessage extends BitSet
         if(FastMath.abs(end - start) > 32)
         {
             throw new IllegalArgumentException("Overflow - must be 32 bits "
-                + "or less to fit into a primitive integer value");
+                    + "or less to fit into a primitive integer value");
         }
 
         int value = 0;
@@ -1100,7 +1122,7 @@ public class BinaryMessage extends BitSet
         if(FastMath.abs(end - start) > 64)
         {
             throw new IllegalArgumentException("Overflow - must be 64 bits "
-                + "or less to fit into a primitive long value");
+                    + "or less to fit into a primitive long value");
         }
 
         long value = 0;
@@ -1255,7 +1277,7 @@ public class BinaryMessage extends BitSet
         if(!message.matches("[01]*"))
         {
             throw new IllegalArgumentException(
-                "Message must contain only zeros and ones");
+                    "Message must contain only zeros and ones");
         }
 
         BinaryMessage buffer = new BinaryMessage(message.length());
