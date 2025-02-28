@@ -108,7 +108,7 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
         sb.append("MOTOROLA TALKER ALIAS COMPLETE");
         sb.append(" RADIO:").append(getRadio());
         sb.append(" TG:").append(getTalkgroup());
-        sb.append(" ALIAS:").append(getAlias());
+        sb.append(" ALIAS:").append(getTalkerAlias());
         sb.append(" SEQUENCE:").append(mSequence);
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
@@ -134,7 +134,7 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
     /**
      * Decoded alias string
      */
-    public P25TalkerAliasIdentifier getAlias()
+    public P25TalkerAliasIdentifier getTalkerAlias()
     {
         if(mAlias == null)
         {
@@ -276,7 +276,7 @@ public class MotorolaTalkerAliasComplete extends TimeslotMessage implements IMes
             //Only add the alias if it passes the CRC check.
             if(isValid())
             {
-                mIdentifiers.add(getAlias());
+                mIdentifiers.add(getTalkerAlias());
             }
         }
 
