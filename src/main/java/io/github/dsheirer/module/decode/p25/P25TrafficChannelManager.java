@@ -1799,7 +1799,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                                     .findFirst()
                                     .ifPresent(rejectedFrequency -> {
                                         mAllocatedTrafficChannelMap.remove(rejectedFrequency);
-                                        mAvailablePhase1TrafficChannelQueue.add(channel);
+                                        mAvailablePhase2TrafficChannelQueue.add(channel);
 
                                         //Leave the tracked event in the map so that it doesn't get recreated.  The channel
                                         //processing manager set the 'tuner not available' in the details already
