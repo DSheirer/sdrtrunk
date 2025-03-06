@@ -287,7 +287,7 @@ public class AudioRecordingManager implements Listener<AudioSegment>
         }
 
         StringBuilder sbFinal = new StringBuilder();
-        sbFinal.append(TimeStamp.getTimeStamp("_"));
+        sbFinal.append(TimeStamp.getTimeStamp("_")).append("_");
 
         //Remove any illegal filename characters
         String cleaned = StringUtils.replaceIllegalCharacters(sb.toString());
