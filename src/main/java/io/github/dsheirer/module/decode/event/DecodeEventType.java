@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ public enum DecodeEventType
     SMS("SMS"),
     STATION_ID("Station ID"),
     STATUS("Status"),
+    TEXT_MESSAGE("Text Message"),
     UDP_PACKET("UDP/IP Packet"),
     UNKNOWN_PACKET("Unknown Packet"),
     XCMP("Motorola XCMP"),

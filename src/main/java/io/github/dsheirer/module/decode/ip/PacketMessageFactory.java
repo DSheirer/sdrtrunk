@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Header;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.mototrbo.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.tms.TMSPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.xcmp.XCMPPacket;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.ip.udp.UDPPort;
@@ -132,7 +133,7 @@ public class PacketMessageFactory
             case 4005: //Automatic Registration Service
                 return new ARSPacket(binaryMessage, offset);
             case 4007: //Text Message Service
-                break;
+                return new TMSPacket(binaryMessage, offset);
             case 4008: //Telemetry Service
                 break;
             case 4009: //Over The Air Programming (OTAP)
