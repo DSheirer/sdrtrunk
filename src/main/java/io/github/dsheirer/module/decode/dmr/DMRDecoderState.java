@@ -101,6 +101,7 @@ import io.github.dsheirer.module.decode.ip.hytera.shortdata.HyteraShortDataPacke
 import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.tms.TMSPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.xcmp.XCMPPacket;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
@@ -500,6 +501,19 @@ public class DMRDecoderState extends TimeslotDecoderState
                     .identifiers(mic)
                     .timeslot(getTimeslot())
                     .details(lrrp.toString())
+                    .build();
+            broadcast(shortDataEvent);
+        }
+        //Motorola TMS
+        else if(packet.getPacket() instanceof TMSPacket tms)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            DecodeEvent shortDataEvent = DMRDecodeEvent.builder(DecodeEventType.TEXT_MESSAGE, packet.getTimestamp())
+                    .channel(getCurrentChannel())
+                    .identifiers(mic)
+                    .timeslot(getTimeslot())
+                    .details(tms.toString())
                     .build();
             broadcast(shortDataEvent);
         }
