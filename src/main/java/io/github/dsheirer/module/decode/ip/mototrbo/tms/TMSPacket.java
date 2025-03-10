@@ -57,7 +57,8 @@ public class TMSPacket extends Packet
      */
     public String getTextMessage()
     {
-        int byteCount = (getMessage().length() - 32) / 8;
+        //Payload starts at packet offset, after 32-bit header
+        int byteCount = (getMessage().length() - getOffset() - 32) / 8;
 
         if(byteCount > 0)
         {
@@ -68,6 +69,7 @@ public class TMSPacket extends Packet
                 message[x] = getMessage().getByte(getOffset() + 32 + (x * 8));
             }
 
+            //Characters are 16-bit, UTF-16 Little Endian
             return new String(message, StandardCharsets.UTF_16LE);
         }
 
