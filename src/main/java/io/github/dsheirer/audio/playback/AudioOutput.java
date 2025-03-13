@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -282,7 +282,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             return;
         }
 
-        if(buffer != null)
+        if(buffer != null && buffer.array().length > 0)
         {
             int wrote = 0;
 
@@ -303,102 +303,22 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
                 checkStart();
 
-                 //Something is causing the source data line to fail to accept audio byte data via the write() method
-                 //and this seems to have started around JDK22, maybe.  We can detect when this happens and close() and
-                 //reopen the data line to clear the error.
-                if(!mOutput.isRunning() && wrote <= 0 && buffer.array().length > 0)
+                //Something is causing the source data line to fail to accept audio byte data via the write() method
+                //and this seems to have started around JDK22, maybe.  When this happens, close and then re-open the
+                //data line to clear the error state.  Note: in testing this error condition, the line is showing
+                //the buffer is empty and the capacity is fully available, so it should have accepted attempts to write
+                //data, but it failed, as indicated by wrote=0.
+                if(!mOutput.isRunning() && wrote <= 0)
                 {
                     mOutput.close();
 
                     try
                     {
-                        mOutput = (SourceDataLine)mMixer.getLine(mLineInfo);
-
-                        if(mOutput != null)
-                        {
-                            try
-                            {
-                                Control gain = mOutput.getControl(FloatControl.Type.MASTER_GAIN);
-                                mGainControl = (FloatControl) gain;
-                            }
-                            catch(IllegalArgumentException iae)
-                            {
-                                LOGGING_SUPPRESSOR.error("no gain control", 2, "Couldn't obtain " +
-                                        "MASTER GAIN control for stereo line [" + mMixer.getMixerInfo().getName() + " | " +
-                                        getChannelName() + "]");
-                            }
-
-                            try
-                            {
-                                Control mute = mOutput.getControl(BooleanControl.Type.MUTE);
-                                mMuteControl = (BooleanControl) mute;
-                            }
-                            catch(IllegalArgumentException iae)
-                            {
-                                LOGGING_SUPPRESSOR.error("no mute control", 2, "Couldn't obtain " +
-                                        "MASTER MUTE control for stereo line [" + mMixer.getMixerInfo().getName() + " | " +
-                                        getChannelName() + "]");
-                            }
-
-                            LOGGING_SUPPRESSOR.info("reopen audio output success", 2,
-                                    "Closed and reopened audio output - success - mOutput is not null");
-                        }
-                        else
-                        {
-                            LOGGING_SUPPRESSOR.info("reopen audio output fail", 2,
-                                    "Closed and reopened audio output - fail - mOutput is null");
-                            return;
-                        }
+                        mOutput.open();
                     }
-                    catch(LineUnavailableException lue)
+                    catch(Exception e)
                     {
-                        LOGGING_SUPPRESSOR.error("reopen fail for lua", 2, "Attempt to reopen " +
-                                "audio source data line failed", lue);
-                        return;
-                    }
-
-                    try
-                    {
-                        mOutput.open(mAudioFormat, mRequestedBufferSize);
-
-                        //Start threshold: buffer is full with 10% or less of capacity remaining
-                        mBufferStartThreshold = (int) (mOutput.getBufferSize() * 0.10);
-
-                        //Stop threshold: buffer is empty with 90% or more capacity available
-                        mBufferStopThreshold = (int) (mOutput.getBufferSize() * 0.90);
-
-                        try
-                        {
-                            Control gain = mOutput.getControl(FloatControl.Type.MASTER_GAIN);
-                            mGainControl = (FloatControl) gain;
-                        }
-                        catch(IllegalArgumentException iae)
-                        {
-                            mLog.warn("Couldn't obtain MASTER GAIN control for stereo line [" + getChannelName() +
-                                    "] after reopening the source data line");
-                        }
-
-                        try
-                        {
-                            Control mute = mOutput.getControl(BooleanControl.Type.MUTE);
-                            mMuteControl = (BooleanControl) mute;
-                        }
-                        catch(IllegalArgumentException iae)
-                        {
-                            mLog.warn("Couldn't obtain MUTE control for stereo line [" + getChannelName() +
-                                    "] after reopening the source data line");
-                        }
-
-                        mAudioStartEvent = new AudioEvent(AudioEvent.Type.AUDIO_STARTED, getChannelName());
-                        mAudioStopEvent = new AudioEvent(AudioEvent.Type.AUDIO_STOPPED, getChannelName());
-                        mCanProcessAudio = true;
-                    }
-                    catch(LineUnavailableException e)
-                    {
-                        LOGGING_SUPPRESSOR.error("failed reopen source data line lua", 2,
-                                "Failed to (re)open the source data line for audio output - mixer [" +
-                                mMixer.getMixerInfo().getName() + "]");
-                        return;
+                        mLog.error("Error after closing and attempting to reopen audio output", e);
                     }
                 }
             }
