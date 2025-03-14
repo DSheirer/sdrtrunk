@@ -85,11 +85,17 @@ public class IntegerFormatter extends TextFormatter<Integer>
         public Change apply(Change change)
         {
             //Only validate if the user added text to the control.  Otherwise, allow it to go through
-            if(change.getText() != null)
+            if(!change.getText().equals(""))
             {
                 String updatedText = change.getControlNewText();
 
                 if(updatedText == null || updatedText.isEmpty())
+                {
+                    return change;
+                }
+                
+                // don't validate yet if input is only a minus sign
+                if(updatedText.equals("-"))
                 {
                     return change;
                 }
