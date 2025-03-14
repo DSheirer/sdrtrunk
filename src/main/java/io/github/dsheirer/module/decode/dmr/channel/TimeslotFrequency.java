@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@ import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.util.Callback;
 
 /**
@@ -40,6 +42,7 @@ public class TimeslotFrequency
     private LongProperty mUplinkFrequencyProperty = new SimpleLongProperty();
     private DoubleProperty mDownlinkMhzProperty = new SimpleDoubleProperty();
     private DoubleProperty mUplinkMhzProperty = new SimpleDoubleProperty();
+    private StringProperty mDescriptionProperty = new SimpleStringProperty();
 
     /**
      * Constructs an instance
@@ -58,6 +61,12 @@ public class TimeslotFrequency
         copy.setDownlinkFrequency(getDownlinkFrequency());
         copy.setUplinkFrequency(getUplinkFrequency());
         return copy;
+    }
+
+    @JsonIgnore
+    public StringProperty descriptionProperty()
+    {
+        return mDescriptionProperty;
     }
 
     /**
@@ -122,7 +131,7 @@ public class TimeslotFrequency
     }
 
     @JsonIgnore
-    public String getLogicalSlotNumbers()
+    public void updateDescription()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -148,7 +157,25 @@ public class TimeslotFrequency
             sb.append("(empty)");
         }
 
-        return sb.toString();
+        setDescription(sb.toString());
+    }
+
+    /**
+     * Description of the logical slot numbers for the channel number.
+     */
+    @JsonIgnore
+    public String getDescription()
+    {
+        return mDescriptionProperty.get();
+    }
+
+    /**
+     * Sets the description of the timeslots for the channel number.
+     * @param description of the logical timeslots for the channel number.
+     */
+    public void setDescription(String description)
+    {
+        mDescriptionProperty.set(description);
     }
 
     /**
@@ -158,6 +185,7 @@ public class TimeslotFrequency
     public void setNumber(int lcn)
     {
         mNumberProperty.set(lcn);
+        updateDescription();
     }
 
     /**
@@ -212,6 +240,6 @@ public class TimeslotFrequency
     public static Callback<TimeslotFrequency,Observable[]> extractor()
     {
         return (TimeslotFrequency tf) -> new Observable[] {tf.getNumberProperty(), tf.downlinkFrequencyProperty(),
-            tf.uplinkFrequencyProperty(), tf.getDownlinkMHz(), tf.getUplinkMHz()};
+            tf.uplinkFrequencyProperty(), tf.getDownlinkMHz(), tf.getUplinkMHz(), tf.descriptionProperty()};
     }
 }

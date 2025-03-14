@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -176,36 +176,14 @@ public class CapacityMaxOpenModeVoiceChannelUpdate extends CSBKMessage implement
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        if(hasTimeslot1())
-        {
-            getChannelTS1().apply(timeslotFrequencies);
-        }
-        if(hasTimeslot2())
-        {
-            getChannelTS2().apply(timeslotFrequencies);
-        }
+        getChannelTS1().apply(timeslotFrequencies);
+        getChannelTS2().apply(timeslotFrequencies);
     }
 
     @Override
     public int[] getLogicalChannelNumbers()
     {
-        boolean ts1 = hasTimeslot1();
-        boolean ts2 = hasTimeslot2();
-
-        if(ts1 && ts2)
-        {
-            return new int[]{getChannelTS1().getChannelNumber(), getChannelTS2().getChannelNumber()};
-        }
-        else if(ts1)
-        {
-            return new int[]{getChannelTS1().getChannelNumber()};
-        }
-        else if(ts2)
-        {
-            return new int[]{getChannelTS2().getChannelNumber()};
-        }
-
-        return new int[0];
+        return new int[]{getChannelTS1().getChannelNumber(), getChannelTS2().getChannelNumber()};
     }
 
     @Override

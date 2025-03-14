@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -258,42 +258,19 @@ public class CapacityMaxAdvantageModeVoiceChannelUpdate extends CSBKMessage impl
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        if(hasChannel1Timeslot1())
-        {
-            getChannel1TS1().apply(timeslotFrequencies);
-        }
-        if(hasChannel1Timeslot2())
-        {
-            getChannel1TS2().apply(timeslotFrequencies);
-        }
-        if(hasChannel2Timeslot1())
-        {
-            getChannel2TS1().apply(timeslotFrequencies);
-        }
-        if(hasChannel2Timeslot2())
-        {
-            getChannel2TS2().apply(timeslotFrequencies);
-        }
+        getChannel1TS1().apply(timeslotFrequencies);
+        getChannel1TS2().apply(timeslotFrequencies);
+        getChannel2TS1().apply(timeslotFrequencies);
+        getChannel2TS2().apply(timeslotFrequencies);
     }
 
     @Override
     public int[] getLogicalChannelNumbers()
     {
-        //Since both timeslots share the same LCN, we use just TS1's channel for both channel 1 and channel 2
-        if((hasChannel1Timeslot1() || hasChannel1Timeslot2()) && (hasChannel2Timeslot1() || hasChannel2Timeslot2()))
-        {
-            return new int[]{getChannel1TS1().getChannelId(), getChannel2TS1().getChannelId()};
-        }
-        else if((hasChannel1Timeslot1() || hasChannel1Timeslot2()))
-        {
-            return new int[]{getChannel1TS1().getChannelId()};
-        }
-        else if((hasChannel2Timeslot1() || hasChannel2Timeslot2()))
-        {
-            return new int[]{getChannel2TS1().getChannelId()};
-        }
-
-        return getChannel1TS1().getLogicalChannelNumbers();
+        return new int[]{getChannel1TS1().getChannelNumber(),
+                         getChannel1TS2().getChannelNumber(),
+                         getChannel2TS1().getChannelNumber(),
+                         getChannel2TS2().getChannelNumber()};
     }
 
     @Override

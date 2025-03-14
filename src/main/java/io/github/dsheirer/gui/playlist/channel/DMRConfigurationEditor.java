@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -296,7 +296,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 
             TableColumn<TimeslotFrequency,String> lsnColumn = new TableColumn("IDs (TS1/TS2)");
             lsnColumn.setPrefWidth(225);
-            lsnColumn.setCellValueFactory(new PropertyValueFactory<>("logicalSlotNumbers"));
+            lsnColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
             mTimeslotFrequencyTable.getColumns().addAll(lsnColumn);
 
 
