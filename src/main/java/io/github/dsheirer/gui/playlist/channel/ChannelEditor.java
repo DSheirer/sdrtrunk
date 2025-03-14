@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -479,25 +479,6 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
             nameColumn.setPrefWidth(200);
 
             TableColumn frequencyColumn = new TableColumn("Frequency");
-            frequencyColumn.setComparator((o1, o2) -> {
-                if(o1 instanceof Channel c1 && o2 instanceof Channel c2)
-                {
-                    if(!c1.getFrequencyList().isEmpty() && !c2.getFrequencyList().isEmpty())
-                    {
-                        return Long.compare(c1.getFrequencyList().get(0), c2.getFrequencyList().get(0));
-                    }
-                    else if(!c1.getFrequencyList().isEmpty())
-                    {
-                        return Long.compare(c1.getFrequencyList().get(0), 0l);
-                    }
-                    else if(!c2.getFrequencyList().isEmpty())
-                    {
-                        return Long.compare(0l, c2.getFrequencyList().get(0));
-                    }
-                }
-
-                return Integer.compare(o1.hashCode(), o2.hashCode());
-            });
             frequencyColumn.setCellValueFactory(new FrequencyCellValueFactory());
             frequencyColumn.setPrefWidth(100);
 
