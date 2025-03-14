@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,11 +42,12 @@ public class DataHeader extends HeaderMessage
      * @param slotType for this data message
      * @param timestamp message was received
      * @param timeslot for the DMR burst
+     * @param linkControl message from the payload
      */
     public DataHeader(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
                       long timestamp, int timeslot)
     {
-        super(syncPattern, message, cach, slotType, timestamp, timeslot);
+        super(syncPattern, message, cach, slotType, timestamp, timeslot, null);
     }
 
     @Override

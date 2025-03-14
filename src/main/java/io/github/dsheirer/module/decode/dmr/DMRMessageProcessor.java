@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
+import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
@@ -63,28 +64,31 @@ import org.slf4j.LoggerFactory;
 public class DMRMessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageProcessor.class);
-    private DecodeConfigDMR mConfigDMR;
-    private VoiceSuperFrameProcessor mSuperFrameProcessor1 = new VoiceSuperFrameProcessor();
-    private VoiceSuperFrameProcessor mSuperFrameProcessor2 = new VoiceSuperFrameProcessor();
-    private FLCAssembler mFLCAssemblerTimeslot1 = new FLCAssembler(1);
-    private FLCAssembler mFLCAssemblerTimeslot2 = new FLCAssembler(2);
-    private MBCAssembler mMBCAssembler;
-    private PacketSequenceAssembler mPacketSequenceAssembler;
-    private SLCAssembler mSLCAssembler = new SLCAssembler();
-    private TalkerAliasAssembler mTalkerAliasAssembler = new TalkerAliasAssembler();
+    private final DecodeConfigDMR mConfigDMR;
+    private final VoiceSuperFrameProcessor mSuperFrameProcessor1 = new VoiceSuperFrameProcessor();
+    private final VoiceSuperFrameProcessor mSuperFrameProcessor2 = new VoiceSuperFrameProcessor();
+    private final FLCAssembler mFLCAssemblerTimeslot1;
+    private final FLCAssembler mFLCAssemblerTimeslot2;
+    private final MBCAssembler mMBCAssembler;
+    private final PacketSequenceAssembler mPacketSequenceAssembler;
+    private final SLCAssembler mSLCAssembler = new SLCAssembler();
+    private final TalkerAliasAssembler mTalkerAliasAssembler = new TalkerAliasAssembler();
     private Listener<IMessage> mMessageListener;
-    private Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
-    private DMRCrcMaskManager mCrcMaskManager = new DMRCrcMaskManager();
-    private boolean mIgnoreCrcChecksums;
+    private final Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
+    private final DMRCrcMaskManager mCrcMaskManager;
 
     /**
      * Constructs an instance
+     * @param config for the DMR decoder
+     * @param crcMaskManager for message error detection and correction.
      */
-    public DMRMessageProcessor(DecodeConfigDMR config)
+    public DMRMessageProcessor(DecodeConfigDMR config, DMRCrcMaskManager crcMaskManager)
     {
         mConfigDMR = config;
-        mIgnoreCrcChecksums = config.getIgnoreCRCChecksums();
-        mMBCAssembler = new MBCAssembler(mIgnoreCrcChecksums);
+        mCrcMaskManager = crcMaskManager;
+        mMBCAssembler = new MBCAssembler(crcMaskManager.isIgnoreCRCChecksums());
+        mFLCAssemblerTimeslot1 = new FLCAssembler(1, crcMaskManager);
+        mFLCAssemblerTimeslot2 = new FLCAssembler(2, crcMaskManager);
 
         for(TimeslotFrequency timeslotFrequency: config.getTimeslotMap())
         {
@@ -102,7 +106,7 @@ public class DMRMessageProcessor implements Listener<IMessage>
      */
     private boolean isValid(IMessage message)
     {
-        return mIgnoreCrcChecksums || message.isValid();
+        return mCrcMaskManager.isIgnoreCRCChecksums() || message.isValid();
     }
 
     /**
@@ -123,10 +127,12 @@ public class DMRMessageProcessor implements Listener<IMessage>
             mFLCAssemblerTimeslot2.reset();
         }
 
-        //Detect and correct messages employing an alternate CRC mask pattern.
-        if(!message.isValid() && message instanceof CSBKMessage csbk)
+        //Detect and correct messages employing an alternate CRC mask pattern (ie RAS) when ignore CRC is disabled
+        if(message instanceof CSBKMessage csbk && !message.isValid())
         {
-            mCrcMaskManager.check(csbk);
+            int opcode = csbk.getOpcode().getValue();
+            int residual = CRCDMR.calculateResidual(csbk.getMessage(), 0, 80);
+            csbk.setValid(mCrcMaskManager.isValidCSBK(opcode, residual, csbk.getTimestamp()));
         }
 
         if(message instanceof FullLCMessage flc)
@@ -199,10 +205,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
             }
         }
         //Extract the Short Link Control message fragment from the DMR burst message when it has one
-        else if(message instanceof DMRBurst)
+        else if(message instanceof DMRBurst dmrBurst)
         {
-            DMRBurst dmrBurst = (DMRBurst)message;
-
             if(dmrBurst.hasCACH())
             {
                 CACH cach = dmrBurst.getCACH();
@@ -272,9 +276,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
      */
     private void enrich(IMessage message)
     {
-        if(message instanceof ITimeslotFrequencyReceiver)
+        if(message instanceof ITimeslotFrequencyReceiver receiver)
         {
-            ITimeslotFrequencyReceiver receiver = (ITimeslotFrequencyReceiver)message;
             int[] lcns = receiver.getLogicalChannelNumbers();
 
             List<TimeslotFrequency> timeslotFrequencies = new ArrayList<>();
@@ -316,8 +319,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
                 }
                 catch(Exception e)
                 {
-                    mLog.error("Error applying compressed talkgroup setting to identifier in message: " + message +
-                            " [" + message.getClass() + "]");
+                    mLog.error("Error applying compressed talkgroup setting to identifier in message: {} [{}]",
+                            message, message.getClass());
                 }
             }
 

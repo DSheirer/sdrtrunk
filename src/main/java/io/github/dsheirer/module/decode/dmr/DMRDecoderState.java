@@ -150,9 +150,9 @@ public class DMRDecoderState extends TimeslotDecoderState
         }
 
         //For RAS protected systems, allows user to ignore CRC checksums and still decode the system
-        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR)
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR config)
         {
-            mIgnoreCRCChecksums = ((DecodeConfigDMR)channel.getDecodeConfiguration()).getIgnoreCRCChecksums();
+            mIgnoreCRCChecksums = config.getIgnoreCRCChecksums();
         }
     }
 
@@ -857,7 +857,10 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                     //Channel rotation monitor normally uses only CONTROL state, so when we detect that we're a
                     //Capacity plus system, add ACTIVE as an active state to the monitor.  This can be requested repeatedly.
-                    getInterModuleEventBus().post(CAPACITY_PLUS_ACTIVE_STATE_REQUEST);
+                    if(getInterModuleEventBus() != null)
+                    {
+                        getInterModuleEventBus().post(CAPACITY_PLUS_ACTIVE_STATE_REQUEST);
+                    }
 
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
 

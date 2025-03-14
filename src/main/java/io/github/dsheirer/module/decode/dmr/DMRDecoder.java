@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,12 +86,12 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     private static final int SYMBOL_RATE = 4800;
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
     private DQPSKDemodulator mDemodulator;
-    private DMRMessageFramer mMessageFramer = new DMRMessageFramer();
-    private DMRSoftSymbolProcessor mSymbolProcessor = new DMRSoftSymbolProcessor(mMessageFramer);
-    private DMRMessageProcessor mMessageProcessor;
+    private final DMRMessageFramer mMessageFramer;
+    private final DMRSoftSymbolProcessor mSymbolProcessor;
+    private final DMRMessageProcessor mMessageProcessor;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
-    private PowerMonitor mPowerMonitor = new PowerMonitor();
+    private final PowerMonitor mPowerMonitor = new PowerMonitor();
 
     /**
      * Constructs an instance
@@ -99,7 +99,10 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
      */
     public DMRDecoder(DecodeConfigDMR config, boolean isTrafficChannel)
     {
-        mMessageProcessor = new DMRMessageProcessor(config);
+        DMRCrcMaskManager crcMaskManager = new DMRCrcMaskManager(config.getIgnoreCRCChecksums());
+        mMessageFramer = new DMRMessageFramer(crcMaskManager);
+        mSymbolProcessor = new DMRSoftSymbolProcessor(mMessageFramer);
+        mMessageProcessor = new DMRMessageProcessor(config, crcMaskManager);
         mMessageProcessor.setMessageListener(getMessageListener());
         setSampleRate(25000.0);
 
@@ -259,11 +262,9 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
      */
     private void process(SourceEvent sourceEvent)
     {
-        switch(sourceEvent.getEvent())
+        if(sourceEvent != null && sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
         {
-            case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                setSampleRate(sourceEvent.getValue().doubleValue());
-                break;
+            setSampleRate(sourceEvent.getValue().doubleValue());
         }
     }
 
@@ -329,10 +330,6 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
                     errors = burst.getMessage().getCorrectedBitCount();
                     mTotalMessageCounter++;
 
-                    if(mTotalMessageCounter == 492)
-                    {
-                        int a = 0;
-                    }
                     if(burst.isValid())
                     {
                         mBitErrorCounter += Math.max(errors, 0);

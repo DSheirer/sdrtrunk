@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.edac.Checksum_5_DMR;
-import io.github.dsheirer.edac.ReedSolomon_12_9_4_DMR;
+import io.github.dsheirer.edac.RS_12_9_DMR;
+import io.github.dsheirer.module.decode.dmr.DMRCrcMaskManager;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.EncryptionParameters;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
@@ -63,9 +64,18 @@ import org.slf4j.LoggerFactory;
 public class LCMessageFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(LCMessageFactory.class);
-    private static final ReedSolomon_12_9_4_DMR REED_SOLOMON_12_9_4_DMR = new ReedSolomon_12_9_4_DMR();
     private static final int TERMINATOR_LINK_CONTROL_CRC_MASK = 0x99;
     private static final int VOICE_LINK_CONTROL_CRC_MASK = 0x96;
+    private final DMRCrcMaskManager mMaskManager;
+
+    /**
+     * Constructs an instance
+     * @param maskManager to check and/or override error detection
+     */
+    public LCMessageFactory(DMRCrcMaskManager maskManager)
+    {
+        mMaskManager = maskManager;
+    }
 
     /**
      * Creates a full link control message specifically for the PI_HEADER message type.
@@ -74,7 +84,7 @@ public class LCMessageFactory
      * @param timeslot of the original message
      * @return encryption parameters link control.
      */
-    public static FullLCMessage createFullEncryption(CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public FullLCMessage createFullEncryption(CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
         return new EncryptionParameters(message, timestamp, timeslot);
     }
@@ -87,28 +97,27 @@ public class LCMessageFactory
      * @param isTerminator set to true if this is LC for a terminator data burst.
      * @return message class
      */
-    public static FullLCMessage createFull(CorrectedBinaryMessage message, long timestamp, int timeslot, boolean isTerminator)
+    public FullLCMessage createFull(CorrectedBinaryMessage message, long timestamp, int timeslot, boolean isTerminator)
     {
         if(message == null)
         {
             throw new IllegalArgumentException("Message cannot be null");
         }
 
-        boolean valid = true;
+        int residual = 0;
 
         if(message.size() == 77)
         {
-            valid = Checksum_5_DMR.isValid(message);
+            residual = Checksum_5_DMR.isValid(message);
         }
         else if(message.size() == 96)
         {
-            //RS(12,9,4) can correct up to floor(4/2) = 1 bit error.
-            valid = REED_SOLOMON_12_9_4_DMR.correctFullLinkControl(message,
-                    isTerminator ? TERMINATOR_LINK_CONTROL_CRC_MASK : VOICE_LINK_CONTROL_CRC_MASK);
+            //RS(12,9,4) can correct up to floor((12-9)/2) = 1 symbol (or up to 8 bits if they are in the same symbol).
+            residual = RS_12_9_DMR.correct(message, isTerminator ? TERMINATOR_LINK_CONTROL_CRC_MASK : VOICE_LINK_CONTROL_CRC_MASK);
         }
         else
         {
-            mLog.warn("Unrecognized Link Control Message Size: " + message.size());
+            mLog.warn("Unrecognized Link Control Message Size: {}", message.size());
         }
 
         LCOpcode opcode = FullLCMessage.getOpcode(message);
@@ -116,13 +125,29 @@ public class LCMessageFactory
         //Some Hytera Tier-3 systems use a zero-valued mask when the FLC is carried in the voice header or terminator
         //and in the same transmission it uses the standard mask when carried across the voice frames. It doesn't make
         //sense, but maybe it's a bug in their software implementation?
-        if(!valid && message.size() == 96 && opcode == LCOpcode.FULL_STANDARD_GROUP_VOICE_CHANNEL_USER)
+        if(residual != 0 && message.size() == 96 && opcode == LCOpcode.FULL_STANDARD_GROUP_VOICE_CHANNEL_USER)
         {
             //Retry the RS(12,9,4) with a mask value of zero
-            valid = REED_SOLOMON_12_9_4_DMR.correctFullLinkControl(message, 0);
+            residual = RS_12_9_DMR.correct(message, 0);
         }
 
-        FullLCMessage flc = null;
+        boolean valid = (residual != 0);
+
+        if(!valid)
+        {
+            if(message.size() == 96)
+            {
+                //Check if the residual CRC check value is commonly seen for this opcode (ie RAS).
+                valid = mMaskManager.isValidRS12_9(opcode.getValue(), residual, timestamp);
+            }
+            else
+            {
+                //Check if the residual CRC check value is commonly seen for this opcode (ie RAS).
+                valid = mMaskManager.isValidCRC5(opcode.getValue(), residual, timestamp);
+            }
+        }
+
+        FullLCMessage flc;
 
         switch(opcode)
         {
@@ -208,47 +233,24 @@ public class LCMessageFactory
     {
         LCOpcode opcode = ShortLCMessage.getOpcode(message);
 
-        ShortLCMessage slc = null;
-
-        switch(opcode)
+        ShortLCMessage slc = switch(opcode)
         {
-            case SHORT_STANDARD_NULL_MESSAGE:
-                slc = new NullMessage(message, timestamp, timeslot);
-                break;
-            case SHORT_STANDARD_ACTIVITY_UPDATE:;
-                slc = new ActivityUpdateMessage(message, timestamp, timeslot);
-                break;
-            case SHORT_CAPACITY_PLUS_REST_CHANNEL_NOTIFICATION:
-                slc = new CapacityPlusRestChannel(message, timestamp, timeslot);
-                break;
-            case SHORT_CONNECT_PLUS_CONTROL_CHANNEL:
-                slc = new ConnectPlusControlChannel(message, timestamp, timeslot);
-                break;
-            case SHORT_CONNECT_PLUS_TRAFFIC_CHANNEL:
-                slc = new ConnectPlusTrafficChannel(message, timestamp, timeslot);
-                break;
-            case SHORT_STANDARD_CONTROL_CHANNEL_SYSTEM_PARAMETERS:
-                slc = new ControlChannelSystemParameters(message, timestamp, timeslot);
-                break;
-            case SHORT_STANDARD_TRAFFIC_CHANNEL_SYSTEM_PARAMETERS:
-                slc = new TrafficChannelSystemParameters(message, timestamp, timeslot);
-                break;
-            case SHORT_HYTERA_XPT_CHANNEL:
-            case SHORT_STANDARD_XPT_CHANNEL:
-                slc = new HyteraXPTChannel(message, timestamp, timeslot);
-                break;
-            case SHORT_STANDARD_UNKNOWN:
-            default:
-                slc = new UnknownShortLCMessage(message, timestamp, timeslot);
-                break;
-        }
+            case SHORT_STANDARD_NULL_MESSAGE -> new NullMessage(message, timestamp, timeslot);
+            case SHORT_STANDARD_ACTIVITY_UPDATE -> new ActivityUpdateMessage(message, timestamp, timeslot);
+            case SHORT_CAPACITY_PLUS_REST_CHANNEL_NOTIFICATION ->
+                    new CapacityPlusRestChannel(message, timestamp, timeslot);
+            case SHORT_CONNECT_PLUS_CONTROL_CHANNEL -> new ConnectPlusControlChannel(message, timestamp, timeslot);
+            case SHORT_CONNECT_PLUS_TRAFFIC_CHANNEL -> new ConnectPlusTrafficChannel(message, timestamp, timeslot);
+            case SHORT_STANDARD_CONTROL_CHANNEL_SYSTEM_PARAMETERS ->
+                    new ControlChannelSystemParameters(message, timestamp, timeslot);
+            case SHORT_STANDARD_TRAFFIC_CHANNEL_SYSTEM_PARAMETERS ->
+                    new TrafficChannelSystemParameters(message, timestamp, timeslot);
+            case SHORT_HYTERA_XPT_CHANNEL, SHORT_STANDARD_XPT_CHANNEL ->
+                    new HyteraXPTChannel(message, timestamp, timeslot);
+            default -> new UnknownShortLCMessage(message, timestamp, timeslot);
+        };
 
-        boolean valid = CRCDMR.crc8(message, 36) == 0;
-
-//        System.out.println("SLC MSG:" + message.toHexString() + " CRC-8 RESIDUAL: " + CRCDMR.crc8(message, 36));
-//
-        slc.setValid(valid);
-
+        slc.setValid(CRCDMR.crc8(message, 36) == 0);
         return slc;
     }
 }

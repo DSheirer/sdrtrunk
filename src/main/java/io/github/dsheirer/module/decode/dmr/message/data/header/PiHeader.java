@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessageFactory;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 
 /**
@@ -40,24 +39,12 @@ public class PiHeader extends HeaderMessage
      * @param slotType for this data message
      * @param timestamp message was received
      * @param timeslot for the DMR burst
+     * @param linkControl message from payload
      */
-    public PiHeader(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
+    public PiHeader(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
+                    long timestamp, int timeslot, LCMessage linkControl)
     {
-        super(syncPattern, message, cach, slotType, timestamp, timeslot);
-    }
-
-    /**
-     * Access the embedded link control message
-     */
-    public LCMessage getLCMessage()
-    {
-        if(mLCMessage == null)
-        {
-            //Overrides default to ignore opcode and construct an encryption parameters message.
-            mLCMessage = LCMessageFactory.createFullEncryption(getMessage(), getTimestamp(), getTimeslot());
-        }
-
-        return mLCMessage;
+        super(syncPattern, message, cach, slotType, timestamp, timeslot, linkControl);
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.EmptyTimeslotPlaceholderMessage;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.dmr.DMRCrcMaskManager;
 import io.github.dsheirer.module.decode.dmr.message.data.DMRDataMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
@@ -31,9 +32,22 @@ import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * DMR Message Factory class for creating messages from DMR bursts.
+ */
 public class DMRMessageFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageFactory.class);
+    private DMRDataMessageFactory mDataMessageFactory;
+
+    /**
+     * Constructs an instance
+     * @param crcMaskManager for error detection and correction.
+     */
+    public DMRMessageFactory(DMRCrcMaskManager crcMaskManager)
+    {
+        mDataMessageFactory = new DMRDataMessageFactory(crcMaskManager);
+    }
 
     /**
      * Creates a DMR message wrapper for the binary message.  DMR message type is specified by the sync pattern.
@@ -43,8 +57,8 @@ public class DMRMessageFactory
      * @param timeslot for the burst
      * @return DMRMessage instance or null for UNKNOWN sync pattern
      */
-    public static IMessage create(DMRSyncPattern syncPattern, CorrectedBinaryMessage binaryMessage, CACH cach,
-                                  long timestamp, int timeslot)
+    public IMessage create(DMRSyncPattern syncPattern, CorrectedBinaryMessage binaryMessage, CACH cach, long timestamp,
+                           int timeslot)
     {
         switch(syncPattern)
         {
@@ -60,11 +74,11 @@ public class DMRMessageFactory
                 return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, 2);
             case BASE_STATION_DATA:
             case MOBILE_STATION_DATA:
-                return DMRDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, timeslot);
+                return mDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, timeslot);
             case DIRECT_DATA_TIMESLOT_1:
-                return DMRDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 1);
+                return mDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 1);
             case DIRECT_DATA_TIMESLOT_2:
-                return DMRDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 2);
+                return mDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 2);
             case DIRECT_EMPTY_TIMESLOT:
                 return new EmptyTimeslotPlaceholderMessage(timestamp, 288, Protocol.DMR, timeslot);
             case UNKNOWN:

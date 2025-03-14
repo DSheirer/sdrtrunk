@@ -2,18 +2,24 @@
   <dictionary name="denny">
     <words>
       <w>bahroo</w>
+      <w>baseband</w>
       <w>basebanded</w>
       <w>broadcastify</w>
+      <w>cach</w>
       <w>correlator</w>
       <w>deinterleave</w>
       <w>descrambled</w>
+      <w>dibit</w>
       <w>dinf</w>
+      <w>dqpsk</w>
       <w>esnid</w>
       <w>fleetsync</w>
       <w>heterdyned</w>
       <w>heterodynes</w>
+      <w>hytera</w>
       <w>icecast</w>
       <w>ident</w>
+      <w>lcns</w>
       <w>nutall</w>
       <w>overflowable</w>
       <w>polyphase</w>

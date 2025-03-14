@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,12 @@ public class DmrTalkerAliasIdentifier extends TalkerAliasIdentifier
     public Protocol getProtocol()
     {
         return Protocol.DMR;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "A-" + super.toString();
     }
 
     public static DmrTalkerAliasIdentifier create(String value)

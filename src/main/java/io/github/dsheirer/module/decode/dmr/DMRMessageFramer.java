@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import java.util.Arrays;
  * DMR message framer.  Processes a DMR symbol stream to produce DMR messages/bursts.  Employs two symbol buffers to
  * track and frame both DMR timeslots.  Responds to external sync detections to alternately activate one of the two
  * buffers and capture a DMR burst, convert it to the correct message format and send it to a message listener.
- *
+ * <p>
  * This framer is able to detect DMR Direct mode and track one active and one inactive timeslot across each voice
  * super frame in addition to framing base and mobile station data and voice bursts.
  */
@@ -44,8 +44,8 @@ public class DMRMessageFramer implements Listener<Dibit>
     private static final int DIBIT_CACH_START = 0;
     private static final int DIBIT_BURST_END = 144;
     private Listener<IMessage> mMessageListener;
-    private Dibit[] mBufferA = new Dibit[144];
-    private Dibit[] mBufferB = new Dibit[144];
+    private final Dibit[] mBufferA = new Dibit[144];
+    private final Dibit[] mBufferB = new Dibit[144];
     private int mBufferAPointer = 0;
     private int mBufferBPointer = 0;
     private DMRSyncPattern mBufferAPattern = DMRSyncPattern.UNKNOWN;
@@ -58,14 +58,16 @@ public class DMRMessageFramer implements Listener<Dibit>
     private int mDibitSinceTimestampCounter = 0;
     private long mReferenceTimestamp = 0;
     private boolean mRunning = false;
+    private final DMRMessageFactory mMessageFactory;
 
     /**
      * Constructs an instance
      */
-    public DMRMessageFramer()
+    public DMRMessageFramer(DMRCrcMaskManager crcMaskManager)
     {
         Arrays.fill(mBufferA, Dibit.D00_PLUS_1);
         Arrays.fill(mBufferB, Dibit.D00_PLUS_1);
+        mMessageFactory = new DMRMessageFactory(crcMaskManager);
     }
 
     /**
@@ -138,7 +140,7 @@ public class DMRMessageFramer implements Listener<Dibit>
 
         mDibitCounter = 0;
 
-        CorrectedBinaryMessage message = getMessage(mBufferA, DIBIT_CACH_START, DIBIT_BURST_END);
+        CorrectedBinaryMessage message = getMessage(mBufferA);
         CACH cach = CACH.getCACH(message);
 
         if(mBufferAPattern.hasCACH() && cach.isValid() && mBufferATimeslot != cach.getTimeslot())
@@ -156,7 +158,7 @@ public class DMRMessageFramer implements Listener<Dibit>
             }
         }
 
-        dispatch(DMRMessageFactory.create(mBufferAPattern, message, cach, getTimestamp(), mBufferATimeslot));
+        dispatch(mMessageFactory.create(mBufferAPattern, message, cach, getTimestamp(), mBufferATimeslot));
 
         //Since voice frames only have sync on the first burst, we use pseudo-patterns to track the rest of the bursts
         //across the voice super-frame.  If the current pattern is a voice frame, set it to the next pseudo voice sync.
@@ -206,7 +208,7 @@ public class DMRMessageFramer implements Listener<Dibit>
 
         mDibitCounter = 0;
 
-        CorrectedBinaryMessage burst = getMessage(mBufferB, DIBIT_CACH_START, DIBIT_BURST_END);
+        CorrectedBinaryMessage burst = getMessage(mBufferB);
         CACH cach = CACH.getCACH(burst);
 
         if(mBufferBPattern.hasCACH() && cach.isValid() && mBufferBTimeslot != cach.getTimeslot())
@@ -225,7 +227,7 @@ public class DMRMessageFramer implements Listener<Dibit>
             }
         }
 
-        dispatch(DMRMessageFactory.create(mBufferBPattern, burst, cach, getTimestamp(), mBufferBTimeslot));
+        dispatch(mMessageFactory.create(mBufferBPattern, burst, cach, getTimestamp(), mBufferBTimeslot));
 
         //Since voice frames only have sync on the first burst, we use pseudo-patterns to track the rest of the bursts
         //across the voice super-frame.  If the current pattern is a voice frame, set it to the next pseudo voice sync.
@@ -249,7 +251,7 @@ public class DMRMessageFramer implements Listener<Dibit>
 
     /**
      * Dispatches the message to the registered message listener.
-     * @param message
+     * @param message to dispatch
      */
     private void dispatch(IMessage message)
     {
@@ -286,17 +288,16 @@ public class DMRMessageFramer implements Listener<Dibit>
 
     /**
      * Creates a binary message from the dibit buffer.
+     *
      * @param buffer containing dibits
-     * @param start index inclusive
-     * @param end index exclusive.
      * @return binary message
      */
-    private CorrectedBinaryMessage getMessage(Dibit[] buffer, int start, int end)
+    private CorrectedBinaryMessage getMessage(Dibit[] buffer)
     {
-        CorrectedBinaryMessage message = new CorrectedBinaryMessage(2 * (end - start));
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage(2 * (DMRMessageFramer.DIBIT_BURST_END - DMRMessageFramer.DIBIT_CACH_START));
 
-        Dibit dibit = null;
-        for(int i = start; i < end; i++)
+        Dibit dibit;
+        for(int i = DMRMessageFramer.DIBIT_CACH_START; i < DMRMessageFramer.DIBIT_BURST_END; i++)
         {
             dibit = buffer[i];
             message.add(dibit.getBit1(), dibit.getBit2());
