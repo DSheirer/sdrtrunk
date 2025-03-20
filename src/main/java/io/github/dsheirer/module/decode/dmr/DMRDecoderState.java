@@ -1490,8 +1490,10 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 sb.append("\n\n");
             }
-
-            sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
+            if (mChannel.isTrafficChannel())
+            {
+                sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
+            }
         }
 
         return sb.toString();
