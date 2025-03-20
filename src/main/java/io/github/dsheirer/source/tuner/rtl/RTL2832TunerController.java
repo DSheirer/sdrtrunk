@@ -579,7 +579,12 @@ public class RTL2832TunerController extends USBTunerController
     {
         short address = 1;
         int value = (enabled ? 0x18 : 0x10);
-        writeDemodRegister(Page.ONE, address, value, 1);
+
+        boolean isEnabledAlready = isI2CRepeaterEnabled();
+        if (isEnabledAlready != enabled) {
+           // mLog.info("trying to " + (enabled ? "enable" : "disable") + " i2c repeater, which is currently " + (isEnabledAlready ? "enabled" : "disabled"));
+            writeDemodRegister(Page.ONE, address, value, 1);
+        }
     }
 
     /**
