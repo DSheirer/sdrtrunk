@@ -34,7 +34,8 @@
      API_KEY("api_key"),
      SOURCE_LIST("source_list"),
      FREQ_LIST("freq_list"),
-     PATCHES("patches");
+     PATCH_LIST("patch_list"),
+     TALKER_ALIAS("talker_alias");
 
      private String mHeader;
 
