@@ -78,8 +78,8 @@ public abstract class BCH
     /**
      * Lookup tables.  Note: naming convention is from the original C++ implementation.
      */
-    private int[] a_pow_tab;
-    private int[] a_log_tab;
+    public int[] a_pow_tab;
+    public int[] a_log_tab;
     private int[] xi_tab;
 
     /**

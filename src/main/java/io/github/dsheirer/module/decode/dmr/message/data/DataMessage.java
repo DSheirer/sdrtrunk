@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,6 +67,14 @@ public abstract class DataMessage extends DMRBurst
     public int getBPTCReservedBits()
     {
         return getMessage().getInt(BPTC_RESERVED_BITS);
+    }
+
+    /**
+     * Value of the reserved bits.  Normally this is 2 for RAS enabled systems.
+     */
+    public int getRAS()
+    {
+        return getBPTCReservedBits();
     }
 
     /**

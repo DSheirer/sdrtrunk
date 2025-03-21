@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_3_4_DMR;
+import io.github.dsheirer.module.decode.dmr.DMRCrcMaskManager;
 import io.github.dsheirer.module.decode.dmr.bptc.BPTC_196_96;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock1Rate;
@@ -45,6 +46,8 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.VoiceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraDataEncryptionHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MNISProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MotorolaDataEncryptionHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.data.usb.USBData;
@@ -62,6 +65,16 @@ public class DMRDataMessageFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRDataMessageFactory.class);
     private static final ViterbiDecoder_3_4_DMR VITERBI_DECODER = new ViterbiDecoder_3_4_DMR();
+    private final LCMessageFactory mLinkControlMessageFactory;
+
+    /**
+     * Constructs an instance
+     * @param maskManager for managing CSBK and link control error detection.
+     */
+    public DMRDataMessageFactory(DMRCrcMaskManager maskManager)
+    {
+        mLinkControlMessageFactory = new LCMessageFactory(maskManager);
+    }
 
     /**
      * Creates a data message class
@@ -72,8 +85,8 @@ public class DMRDataMessageFactory
      * @param timeslot for the message
      * @return data message instance
      */
-    public static DataMessage create(DMRSyncPattern pattern, CorrectedBinaryMessage message, CACH cach, long timestamp,
-                                     int timeslot)
+    public DataMessage create(DMRSyncPattern pattern, CorrectedBinaryMessage message, CACH cach, long timestamp,
+                              int timeslot)
     {
         SlotType slotType = SlotType.getSlotType(message);
 
@@ -107,18 +120,12 @@ public class DMRDataMessageFactory
                     }
                     return csbk;
                 case USB_DATA:
-                    CorrectedBinaryMessage usbdPayload = payload;
-                    switch(USBData.getServiceType(usbdPayload))
+                    DataMessage usb = new USBData(pattern, payload, cach, slotType, timestamp, timeslot);
+                    if(payload.getCorrectedBitCount() < 0)
                     {
-                        case LIP_SHORT_LOCATION_REQUEST:
-                        default:
-                            DataMessage usb =new USBData(pattern, payload, cach, slotType, timestamp, timeslot);
-                            if(payload.getCorrectedBitCount() < 0)
-                            {
-                                usb.setValid(false);
-                            }
-                            return usb;
+                        usb.setValid(false);
                     }
+                    return usb;
                 case MBC_ENC_HEADER:
                 case MBC_HEADER:
                     DataMessage mbc = new MBCHeader(pattern, payload, cach, slotType, timestamp, timeslot);
@@ -129,14 +136,18 @@ public class DMRDataMessageFactory
                     return mbc;
                 case CHANNEL_CONTROL_ENC_HEADER:
                 case PI_HEADER:
-                    DataMessage pi = new PiHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                    LCMessage piLinkControl = mLinkControlMessageFactory.createFullEncryption(payload, timestamp,
+                            timeslot);
+                    DataMessage pi = new PiHeader(pattern, payload, cach, slotType, timestamp, timeslot, piLinkControl);
                     if(payload.getCorrectedBitCount() < 0)
                     {
                         pi.setValid(false);
                     }
                     return pi;
                 case VOICE_HEADER:
-                    DataMessage voice = new VoiceHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                    LCMessage vhLinkControl = mLinkControlMessageFactory.createFull(payload, timestamp, timeslot, false);
+                    DataMessage voice = new VoiceHeader(pattern, payload, cach, slotType, timestamp, timeslot,
+                            vhLinkControl);
                     if(payload.getCorrectedBitCount() < 0)
                     {
                         voice.setValid(false);
@@ -151,7 +162,8 @@ public class DMRDataMessageFactory
                     switch(dpf)
                     {
                         case CONFIRMED_DATA_PACKET:
-                            ConfirmedDataHeader cdh = new ConfirmedDataHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                            ConfirmedDataHeader cdh = new ConfirmedDataHeader(pattern, payload, cach, slotType,
+                                    timestamp, timeslot);
                             cdh.setValid(valid);
                             return cdh;
                         case PROPRIETARY_DATA_PACKET:
@@ -231,7 +243,8 @@ public class DMRDataMessageFactory
                             return dh;
                     }
                 case TLC:
-                    DataMessage tlc = new Terminator(pattern, payload, cach, slotType, timestamp, timeslot);
+                    LCMessage tlcLinkControl = mLinkControlMessageFactory.createFull(payload, timestamp, timeslot, true);
+                    DataMessage tlc = new Terminator(pattern, payload, cach, slotType, timestamp, timeslot, tlcLinkControl);
                     if(payload.getCorrectedBitCount() < 0)
                     {
                         tlc.setValid(false);
@@ -285,8 +298,7 @@ public class DMRDataMessageFactory
     /**
      * De-scramble, decode and error check a BPTC protected raw message and return a 96-bit error corrected
      * payload or null.
-     * @param message
-     * @return
+     * @param message containing a payload
      */
     private static CorrectedBinaryMessage getPayload(CorrectedBinaryMessage message)
     {

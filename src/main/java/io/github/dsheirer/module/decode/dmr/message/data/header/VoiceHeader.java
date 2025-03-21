@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@
 package io.github.dsheirer.module.decode.dmr.message.data.header;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 
 /**
  * Voice Header data message.
@@ -38,17 +39,22 @@ public class VoiceHeader extends HeaderMessage
      * @param slotType for this data message
      * @param timestamp message was received
      * @param timeslot for the DMR burst
+     * @param linkControl payload message
      */
     public VoiceHeader(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
-                       long timestamp, int timeslot)
+                       long timestamp, int timeslot, LCMessage linkControl)
     {
-        super(syncPattern, message, cach, slotType, timestamp, timeslot);
+        super(syncPattern, message, cach, slotType, timestamp, timeslot, linkControl);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
+        if(hasRAS())
+        {
+            sb.append("RAS:").append(getBPTCReservedBits()).append(" ");
+        }
         sb.append("CC:").append(getSlotType().getColorCode());
         sb.append(" VOICE HEADER");
         sb.append(" ").append(getLCMessage());

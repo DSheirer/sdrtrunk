@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,9 +44,9 @@ public class Checksum_5_DMR
     /**
      * Indicates if the 77-bit Full Link Control message is valid.
      * @param message to check
-     * @return true if the checksum matches.
+     * @return residual value leftover from xor of the calculated and transmitted checksums.
      */
-    public static boolean isValid(CorrectedBinaryMessage message)
+    public static int isValid(CorrectedBinaryMessage message)
     {
         int accumulator = message.getInt(LC_0);
         accumulator += message.getInt(LC_1);
@@ -57,10 +57,8 @@ public class Checksum_5_DMR
         accumulator += message.getInt(LC_6);
         accumulator += message.getInt(LC_7);
         accumulator += message.getInt(LC_8);
-
         accumulator = accumulator % 31;
         int checksum = message.getInt(CHECKSUM);
-
-        return accumulator == checksum;
+        return accumulator ^ checksum;
     }
 }

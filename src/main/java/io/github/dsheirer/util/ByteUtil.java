@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,5 +61,17 @@ public class ByteUtil
         }
 
         return sb.toString();
+    }
+
+    public static String toHexString(int[] intBytes)
+    {
+        byte[] converted = new byte[intBytes.length];
+
+        for(int x = 0; x < intBytes.length; x++)
+        {
+            converted[x] = (byte)(intBytes[x] & 0xFF);
+        }
+
+        return toHexString(converted);
     }
 }

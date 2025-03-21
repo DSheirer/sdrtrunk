@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.viewer;
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.module.decode.dmr.DMRCrcMaskManager;
 import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRHardSymbolProcessor;
 import io.github.dsheirer.module.decode.dmr.DMRMessageFramer;
@@ -80,12 +81,12 @@ public class DmrViewer extends VBox
     private static final Logger mLog = LoggerFactory.getLogger(DmrViewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
     private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.dmr";
-    private Preferences mPreferences = Preferences.userNodeForPackage(DmrViewer.class);
+    private final Preferences mPreferences = Preferences.userNodeForPackage(DmrViewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
     private TableView<MessagePackage> mMessagePackageTableView;
-    private ObservableList<MessagePackage> mMessagePackages = FXCollections.observableArrayList();
-    private FilteredList<MessagePackage> mFilteredMessagePackages = new FilteredList<>(mMessagePackages);
+    private final ObservableList<MessagePackage> mMessagePackages = FXCollections.observableArrayList();
+    private final FilteredList<MessagePackage> mFilteredMessagePackages = new FilteredList<>(mMessagePackages);
     private CheckBox mShowTS0;
     private CheckBox mShowTS1;
     private CheckBox mShowTS2;
@@ -178,12 +179,13 @@ public class DmrViewer extends VBox
                 public void run()
                 {
                     List<MessagePackage> messagePackages = new ArrayList<>();
-                    DMRMessageFramer messageFramer = new DMRMessageFramer();
+                    DMRCrcMaskManager crcMaskManager = new DMRCrcMaskManager(false);
+                    DMRMessageFramer messageFramer = new DMRMessageFramer(crcMaskManager);
                     messageFramer.start();
                     DMRHardSymbolProcessor symbolProcessor = new DMRHardSymbolProcessor(messageFramer);
                     DecodeConfigDMR config = new DecodeConfigDMR();
                     config.setUseCompressedTalkgroups(useCompressed);
-                    DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
+                    DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config, crcMaskManager);
                     messageFramer.setListener(messageProcessor);
                     MessagePackager messagePackager = new MessagePackager();
 

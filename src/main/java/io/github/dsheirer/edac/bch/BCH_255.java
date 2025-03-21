@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,28 +17,30 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.edac;
+package io.github.dsheirer.edac.bch;
 
-/**
- * Berlekemp Massey decoder for GF(8) using DMR Generator Polynomial
- */
-public class ReedSolomon_255_DMR extends BerlekempMassey
+import java.util.Arrays;
+
+public class BCH_255 extends BCH
 {
-    /**
-     * DMR Reed-Solomon code is generated from a Galois Field(2^8) by the polynomial: a8 + a4 + a3 + a2 + a0.
-     * In binary, this is expressed as: 100011101 which is reversed to big-endian format for this algorithm
-     * See: TS 102-361-1 paragraph B.3.6 Reed-Solomon(12,9)
-     */
-    public static final int[] DMR_GENERATOR_POLYNOMIAL = {1, 0, 1, 1, 1, 0, 0, 0, 1};
+    public static final int M = 8;
 
     /**
-     * Constructs an instance of RS(total symbols, message symbols)
-     *
-     * @param n total symbols
-     * @param k message symbols
+     * Constructs an instance
+     * @param k data bits size
+     * @param t error detection and correction capacity of the generator polynomial used to create the codewords.
      */
-    public ReedSolomon_255_DMR(int n, int k)
+    public BCH_255(int k, int t)
     {
-        super(8, n, k, DMR_GENERATOR_POLYNOMIAL);
+//        super(M, k, t, PRIMITIVE_POLYNOMIAL_GF_255);
+        super(M, k, t, 0x12D);
+    }
+
+    public static void main(String[] args)
+    {
+        BCH_255 b = new BCH_255(M, 1);
+
+        System.out.println("ALOG: " + Arrays.toString(b.a_log_tab));
+        System.out.println("APOW: " + Arrays.toString(b.a_pow_tab));
     }
 }
