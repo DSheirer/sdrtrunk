@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -123,6 +123,7 @@ public class TalkerAliasManager
     {
         StringBuilder sb = new StringBuilder();
         sb.append("Active System Radio Aliases\n");
+        sb.append("  Radio\tTalker Alias (TA-)\n");
         List<Integer> radios = new ArrayList<>(mAliasMap.keySet());
 
         if(radios.size() > 0)
@@ -131,7 +132,7 @@ public class TalkerAliasManager
             for(Integer radio : radios)
             {
                 sb.append("  ").append(radio);
-                sb.append("\t").append(mAliasMap.get(radio).getValue());
+                sb.append("\t").append(mAliasMap.get(radio));
                 sb.append("\n");
             }
         }

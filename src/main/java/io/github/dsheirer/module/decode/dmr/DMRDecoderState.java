@@ -35,6 +35,7 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.alias.DmrTalkerAliasIdentifier;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.EmptyTimeslotPlaceholderMessage;
@@ -354,7 +355,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         //Only respond if this is a standard/control channel (not a traffic channel).
         if(mChannel.isStandardChannel() && getCurrentFrequency() > 0 &&
             restChannel.getDownlinkFrequency() > 0 &&
-            restChannel.getDownlinkFrequency() != getCurrentFrequency() && mTrafficChannelManager != null)
+            restChannel.getDownlinkFrequency() != getCurrentFrequency() && hasTrafficChannelManager())
         {
             mTrafficChannelManager.convertToTrafficChannel(mChannel, getCurrentFrequency(), restChannel,
                 mNetworkConfigurationMonitor);
@@ -1206,6 +1207,13 @@ public class DMRDecoderState extends TimeslotDecoderState
                         DmrTalkerAliasIdentifier updated = DmrTalkerAliasIdentifier
                                 .create(alias.getTalkerAliasIdentifier().getValue() + talkerAlias.getValue());
                         getIdentifierCollection().update(updated);
+
+                        Identifier fromRadio = getIdentifierCollection().getFromIdentifier();
+
+                        if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
+                        {
+                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
+                        }
                     }
                     else
                     {
@@ -1232,6 +1240,13 @@ public class DMRDecoderState extends TimeslotDecoderState
                         DmrTalkerAliasIdentifier updated = DmrTalkerAliasIdentifier.create(talkerAlias.getValue() +
                                 alias.getTalkerAliasIdentifier().getValue());
                         getIdentifierCollection().update(updated);
+
+                        Identifier fromRadio = getIdentifierCollection().getFromIdentifier();
+
+                        if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
+                        {
+                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
+                        }
                     }
                     else
                     {
@@ -1492,10 +1507,13 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             if(networkAdded)
             {
-                sb.append("\n\n");
+                sb.append("\n");
             }
 
-            sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
+            if(hasTrafficChannelManager())
+            {
+                sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
+            }
         }
 
         return sb.toString();
