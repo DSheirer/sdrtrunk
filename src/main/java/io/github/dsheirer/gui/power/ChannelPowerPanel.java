@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -223,7 +223,8 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
                 }
             }
         });
-        labelPanel.add(mLogIndexesButton);
+        //This is a debug button to log the current settings to the app log.
+//        labelPanel.add(mLogIndexesButton);
 
         fftPanel.add(labelPanel, "wrap");
 
