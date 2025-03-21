@@ -1246,21 +1246,22 @@ public class DMRDecoderState extends TimeslotDecoderState
                 }
                 break;
             case FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER:
-                if(message instanceof CapacityPlusWideAreaVoiceChannelUser)
+                if(message instanceof CapacityPlusWideAreaVoiceChannelUser cpwavcu)
                 {
-                    CapacityPlusWideAreaVoiceChannelUser cpuo4 = (CapacityPlusWideAreaVoiceChannelUser)message;
-
-                    updateRestChannel(cpuo4.getRestChannel());
+                    updateRestChannel(cpwavcu.getRestChannel());
 
                     if(isTerminator)
                     {
                         closeCurrentCallEvent(message.getTimestamp());
                         getIdentifierCollection().remove(Role.FROM);
-                        getIdentifierCollection().update(cpuo4.getTalkgroup());
+                        getIdentifierCollection().update(cpwavcu.getTalkgroup());
                     }
                     else
                     {
                         getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = cpwavcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
