@@ -27,6 +27,7 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import io.github.dsheirer.source.tuner.network.AddNetworkTunerDialog;
 import io.github.dsheirer.source.tuner.recording.AddRecordingTunerDialog;
 import java.awt.Color;
 import java.awt.Component;
@@ -71,6 +72,7 @@ public class TunerViewPanel extends JPanel
     private JideSplitPane mSplitPane;
     private JButton mAddRecordingButton;
     private JButton mRemoveRecordingButton;
+    private JButton mAddNetworkButton;
 
     /**
      * Constructs an instance
@@ -193,6 +195,7 @@ public class TunerViewPanel extends JPanel
         buttonPanel.setLayout(new MigLayout("insets 0 1 3 0", "", ""));
         buttonPanel.add(getAddRecordingButton());
         buttonPanel.add(getRemoveRecordingButton());
+        buttonPanel.add(getAddNetworkButton());
         tunerTablePanel.add(buttonPanel);
 
         tunerTablePanel.setPreferredSize(new Dimension(200,200));
@@ -253,6 +256,22 @@ public class TunerViewPanel extends JPanel
         }
 
         return mRemoveRecordingButton;
+    }
+
+    private JButton getAddNetworkButton()
+    {
+        if (mAddNetworkButton == null)
+        {
+            mAddNetworkButton = new JButton("Add Network Tuner");
+            mAddNetworkButton.addActionListener(e ->
+            {
+                AddNetworkTunerDialog dialog = new AddNetworkTunerDialog(mTunerConfigurationManager);
+                dialog.setLocationRelativeTo(TunerViewPanel.this);
+                EventQueue.invokeLater(() -> dialog.setVisible(true));
+            });
+        }
+
+        return mAddNetworkButton;
     }
 
     /**
