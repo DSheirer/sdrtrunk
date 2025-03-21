@@ -50,7 +50,7 @@ public class DmrTalkerAliasIdentifier extends TalkerAliasIdentifier
     @Override
     public String toString()
     {
-        return "A-" + super.toString();
+        return "TA-" + super.toString();
     }
 
     public static DmrTalkerAliasIdentifier create(String value)
