@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,8 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisT
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasBlock2;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasBlock3;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasBlock4;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode42;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisUnknownOpcode43;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSBlock1;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSBlock2;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaEmergencyAlarmActivation;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaFailsoft;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupGroupDelete;
@@ -161,10 +161,10 @@ public class LinkControlWordFactory
 
             case L3HARRIS_RETURN_TO_CONTROL_CHANNEL:
                 return new LCHarrisReturnToControlChannel(message);
-            case L3HARRIS_UNKNOWN_2A:
-                return new LCHarrisUnknownOpcode42(message);
-            case L3HARRIS_UNKNOWN_2B:
-                return new LCHarrisUnknownOpcode43(message);
+            case L3HARRIS_TALKER_GPS_BLOCK1:
+                return new LCHarrisTalkerGPSBlock1(message);
+            case L3HARRIS_TALKER_GPS_BLOCK2:
+                return new LCHarrisTalkerGPSBlock2(message);
             case L3HARRIS_TALKER_ALIAS_BLOCK_1:
                 return new LCHarrisTalkerAliasBlock1(message);
             case L3HARRIS_TALKER_ALIAS_BLOCK_2:

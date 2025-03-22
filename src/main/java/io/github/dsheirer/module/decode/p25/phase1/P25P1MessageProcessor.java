@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,9 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.IExtendedSourceMes
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.HarrisTalkerAliasAssembler;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasBase;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSBlock1;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSBlock2;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSComplete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaTalkerAliasAssembler;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSourceIDExtension;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
@@ -68,6 +71,8 @@ public class P25P1MessageProcessor implements Listener<IMessage>
     private HDUMessage mHeldHDUMessage;
     private LDU1Message mHeldLDU1Message;
     private LDU2Message mHeldLDU2Message;
+    private LCHarrisTalkerGPSBlock1 mHeldHarrisGPSBlock1;
+    private long mHeldHarrisGPSBlock1Timestamp;
 
     /**
      * Motorola talker alias assembler for link control header and data blocks.
@@ -139,6 +144,26 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                 processSourceIDExtension(null);
 
                 dispatch(ldu1);
+
+                //Process Harris Talker GPS messages
+                if(lcw instanceof LCHarrisTalkerGPSBlock1 block1)
+                {
+                    mHeldHarrisGPSBlock1 = block1;
+                    mHeldHarrisGPSBlock1Timestamp = ldu1.getTimestamp();
+                }
+                else if(lcw instanceof LCHarrisTalkerGPSBlock2 block2 && mHeldHarrisGPSBlock1 != null)
+                {
+                    //Ensure block 1 and block 2 are within 2 seconds of each other
+                    if(Math.abs(ldu1.getTimestamp() - mHeldHarrisGPSBlock1Timestamp) < 2000)
+                    {
+                        LCHarrisTalkerGPSComplete gps = LCHarrisTalkerGPSComplete.create(mHeldHarrisGPSBlock1, block2,
+                                ldu1.getTimestamp());
+                        dispatch(gps);
+                    }
+
+                    mHeldHarrisGPSBlock1 = null;
+                    mHeldHarrisGPSBlock1Timestamp = 0;
+                }
             }
             else if(message instanceof LDU2Message ldu2)
             {
