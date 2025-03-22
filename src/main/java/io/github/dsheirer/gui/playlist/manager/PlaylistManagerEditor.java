@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.manager;
@@ -30,6 +27,12 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -42,6 +45,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -52,13 +56,6 @@ import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Editor for managing playlists via the playlist manager
@@ -198,6 +195,15 @@ public class PlaylistManagerEditor extends HBox
 
             mPlaylistTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> updateButtons());
 
+            //User double-clicks on an entry - make that entry the selected playlist.
+            mPlaylistTableView.setOnMouseClicked(event ->
+            {
+                if(event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
+                {
+                    selectPlayist(getPlaylistTableView().getSelectionModel().getSelectedItem());
+                }
+            });
+
             List<Path> playlistPaths = mUserPreferences.getPlaylistPreference().getPlaylistList();
 
             mPlaylistTableView.getItems().addAll(playlistPaths);
@@ -237,6 +243,79 @@ public class PlaylistManagerEditor extends HBox
         return mButtonBox;
     }
 
+    /**
+     * Selects the specified playlist and makes it the current playlist.
+     * @param selected playlist.
+     */
+    private void selectPlayist(Path selected)
+    {
+        if(selected != null)
+        {
+            Path current = mUserPreferences.getPlaylistPreference().getPlaylist();
+
+            try
+            {
+                mPlaylistManager.setPlaylist(selected);
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error loading playlist [" + (selected != null ? selected.toString() : "null") + "]");
+
+                new Alert(Alert.AlertType.ERROR, "Unable to load selected playlist.  " +
+                        "Reverting to previous playlist", ButtonType.OK).show();
+
+                try
+                {
+                    mPlaylistManager.setPlaylist(current);
+                }
+                catch(IOException ioe2)
+                {
+                    mLog.error("Error reverting to previous playlist [" +
+                            (current != null ? current.toString() : "null") + "]");
+                }
+            }
+
+            final List<Channel> autoStartChannels = mPlaylistManager.getChannelModel().getAutoStartChannels();
+
+            if(autoStartChannels.size() > 0)
+            {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Would you like to auto-start your channels?", ButtonType.YES, ButtonType.NO);
+                alert.setTitle("Auto-Start Channels");
+                alert.setHeaderText("Discovered [" + autoStartChannels.size() + "] auto-start channel" +
+                        (autoStartChannels.size() > 1 ? "s" : ""));
+                alert.showAndWait().ifPresent(buttonType -> {
+                    if(buttonType == ButtonType.YES)
+                    {
+                        boolean error = false;
+
+                        for(Channel channel: autoStartChannels)
+                        {
+                            try
+                            {
+                                mPlaylistManager.getChannelProcessingManager().start(channel);
+                            }
+                            catch(ChannelException ce)
+                            {
+                                error = true;
+                            }
+                        }
+
+                        if(error)
+                        {
+                            Alert errorAlert = new Alert(Alert.AlertType.ERROR,
+                                    "Unable to start some or all of the auto-start channels",
+                                    ButtonType.OK);
+                            errorAlert.setTitle("Channel Auto-Start Error(s)");
+                            errorAlert.setHeaderText("Auto-Start Error");
+                            errorAlert.showAndWait();
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     private Button getSelectButton()
     {
         if(mSelectButton == null)
@@ -244,74 +323,7 @@ public class PlaylistManagerEditor extends HBox
             mSelectButton = new Button("Select");
             mSelectButton.setTooltip(new Tooltip("Sets the selected playlist as the current playlist"));
             mSelectButton.setMaxWidth(Double.MAX_VALUE);
-            mSelectButton.setOnAction(event -> {
-                Path current = mUserPreferences.getPlaylistPreference().getPlaylist();
-                Path selected = getPlaylistTableView().getSelectionModel().getSelectedItem();
-
-                if(selected != null)
-                {
-                    try
-                    {
-                        mPlaylistManager.setPlaylist(selected);
-                    }
-                    catch(IOException ioe)
-                    {
-                        mLog.error("Error loading playlist [" + (selected != null ? selected.toString() : "null") + "]");
-
-                        new Alert(Alert.AlertType.ERROR, "Unable to load selected playlist.  " +
-                            "Reverting to previous playlist", ButtonType.OK).show();
-
-                        try
-                        {
-                            mPlaylistManager.setPlaylist(current);
-                        }
-                        catch(IOException ioe2)
-                        {
-                            mLog.error("Error reverting to previous playlist [" +
-                                (current != null ? current.toString() : "null") + "]");
-                        }
-                    }
-
-                    final List<Channel> autoStartChannels = mPlaylistManager.getChannelModel().getAutoStartChannels();
-
-                    if(autoStartChannels.size() > 0)
-                    {
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                            "Would you like to auto-start your channels?", ButtonType.YES, ButtonType.NO);
-                        alert.setTitle("Auto-Start Channels");
-                        alert.setHeaderText("Discovered [" + autoStartChannels.size() + "] auto-start channel" +
-                            (autoStartChannels.size() > 1 ? "s" : ""));
-                        alert.showAndWait().ifPresent(buttonType -> {
-                            if(buttonType == ButtonType.YES)
-                            {
-                                boolean error = false;
-
-                                for(Channel channel: autoStartChannels)
-                                {
-                                    try
-                                    {
-                                        mPlaylistManager.getChannelProcessingManager().start(channel);
-                                    }
-                                    catch(ChannelException ce)
-                                    {
-                                        error = true;
-                                    }
-                                }
-
-                                if(error)
-                                {
-                                    Alert errorAlert = new Alert(Alert.AlertType.ERROR,
-                                        "Unable to start some or all of the auto-start channels",
-                                        ButtonType.OK);
-                                    errorAlert.setTitle("Channel Auto-Start Error(s)");
-                                    errorAlert.setHeaderText("Auto-Start Error");
-                                    errorAlert.showAndWait();
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            mSelectButton.setOnAction(event -> {selectPlayist(getPlaylistTableView().getSelectionModel().getSelectedItem());});
         }
 
         return mSelectButton;
