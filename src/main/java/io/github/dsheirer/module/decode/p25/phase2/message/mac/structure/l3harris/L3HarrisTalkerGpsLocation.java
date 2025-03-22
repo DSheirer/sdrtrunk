@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.l3harris;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.identifier.P25Location;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureVendor;
@@ -39,37 +38,12 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
  */
 public class L3HarrisTalkerGpsLocation extends MacStructureVendor
 {
-    public static final SimpleDateFormat SDF = new SimpleDateFormat("HH:mm:ss");
+    private static final DecimalFormat GPS_FORMAT = new DecimalFormat("0.000000");
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("HH:mm:ss");
     static {
         SDF.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
-    private static final DecimalFormat GPS_FORMAT = new DecimalFormat("0.000000");
-    private static final DecimalFormat FIXED = new DecimalFormat("000");
-
-    //Bits 24 & 25 not set in sample data - seems unused for a 1/5000th of a minute number system
-    private static final IntField LATITUDE_MINUTES_FRACTIONAL = IntField.range(24, 38);
-    private static final int LATITUDE_HEMISPHERE = 40;
-    //Bit 39 & 41 not set in sample data
-    private static final IntField LATITUDE_MINUTES = IntField.range(42, 47);
-    private static final IntField LATITUDE_DEGREES = IntField.range(48, 55);
-
-    //Bits 56 & 57 not set in sample data - seems unused for a 1/5000th of a minute number system
-    private static final IntField LONGITUDE_MINUTES_FRACTIONAL = IntField.range(56, 70);
-    private static final int LONGITUDE_HEMISPHERE = 72;
-    //Bit 71 & 73 not set in sample data
-    private static final IntField LONGITUDE_MINUTES = IntField.range(74, 79);
-    private static final IntField LONGITUDE_DEGREES = IntField.range(80, 87);
-
-    //There's a leading bit missing from GPS Time to get from (2^16) to (2^17) needed address space (86,400 total seconds)
-    private static final IntField GPS_TIME = IntField.range(88, 103);
-
-    private static final IntField U1 = IntField.length8(OCTET_14_BIT_104);
-    private static final IntField U2 = IntField.length8(OCTET_15_BIT_112);
-    private static final IntField U3 = IntField.length8(OCTET_16_BIT_120);
-    private static final IntField U4 = IntField.length8(OCTET_17_BIT_128);
-
-    //This may not be accurate.
-    private static final IntField HEADING = IntField.range(119, 127);
+    private static final int DATA_OFFSET = 24;
 
     private P25Location mLocation;
     private GeoPosition mGeoPosition;
@@ -102,10 +76,11 @@ public class L3HarrisTalkerGpsLocation extends MacStructureVendor
             sb.append("VENDOR:").append(getVendor()).append(" TALKER GPS ");
         }
 
-        sb.append(GPS_FORMAT.format(getLatitude())).append(" ").append(GPS_FORMAT.format(getLongitude()));
+        GeoPosition geo = getGeoPosition();
+        sb.append(GPS_FORMAT.format(geo.getLatitude())).append(" ").append(GPS_FORMAT.format(geo.getLongitude()));
         sb.append(" HEADING:").append(getHeading());
         sb.append(" TIME:").append(SDF.format(getTimestampMs()));
-        sb.append(" MSG:").append(getMessage().toHexString());
+        sb.append(" UTC MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 
@@ -115,7 +90,7 @@ public class L3HarrisTalkerGpsLocation extends MacStructureVendor
      */
     public int getHeading()
     {
-        return getInt(HEADING);
+        return L3HarrisGPS.parseHeading(getMessage(), getOffset() + DATA_OFFSET);
     }
 
     /**
@@ -124,7 +99,7 @@ public class L3HarrisTalkerGpsLocation extends MacStructureVendor
      */
     public long getTimestampMs()
     {
-        return getInt(GPS_TIME) * 1000; //Convert seconds to milliseconds.
+        return L3HarrisGPS.parseTimestamp(getMessage(), getOffset() + DATA_OFFSET);
     }
 
     /**
@@ -135,7 +110,8 @@ public class L3HarrisTalkerGpsLocation extends MacStructureVendor
     {
         if(mLocation == null)
         {
-            mLocation = P25Location.createFrom(getLatitude(), getLongitude());
+            GeoPosition geoPosition = getGeoPosition();
+            mLocation = P25Location.createFrom(geoPosition.getLatitude(), geoPosition.getLongitude());
         }
 
         return mLocation;
@@ -149,60 +125,11 @@ public class L3HarrisTalkerGpsLocation extends MacStructureVendor
     {
         if(mGeoPosition == null)
         {
-            mGeoPosition = new GeoPosition(getLatitude(), getLongitude());
+            mGeoPosition = new GeoPosition(L3HarrisGPS.parseLatitude(getMessage(), getOffset() + DATA_OFFSET),
+                                           L3HarrisGPS.parseLongitude(getMessage(), getOffset() + DATA_OFFSET));
         }
 
         return mGeoPosition;
-    }
-
-    /**
-     * GPS location - latitude
-     * @return latitude degrees decimal
-     */
-    public double getLatitude()
-    {
-        return (getLatitudeDegrees() + (getLatitudeMinutes() / 60.0)) * (getMessage().get(LATITUDE_HEMISPHERE + getOffset()) ? -1 : 1);
-    }
-
-    /**
-     * Latitude degrees
-     */
-    private double getLatitudeDegrees()
-    {
-        return getInt(LATITUDE_DEGREES);
-    }
-
-    /**
-     * Latitude minutes
-     */
-    private double getLatitudeMinutes()
-    {
-        return getInt(LATITUDE_MINUTES) + getInt(LATITUDE_MINUTES_FRACTIONAL) / 5000d;
-    }
-
-    /**
-     * GPS location - longitude
-     * @return longitude degrees decimal
-     */
-    public double getLongitude()
-    {
-        return (getLongitudeDegrees() + (getLongitudeMinutes() / 60.0))  * (getMessage().get(LONGITUDE_HEMISPHERE + getOffset()) ? -1 : 1);
-    }
-
-    /**
-     * Longitude degrees
-     */
-    private double getLongitudeDegrees()
-    {
-        return getInt(LONGITUDE_DEGREES);
-    }
-
-    /**
-     * Longitude minutes
-     */
-    private double getLongitudeMinutes()
-    {
-        return getInt(LONGITUDE_MINUTES) + getInt(LONGITUDE_MINUTES_FRACTIONAL) / 5000d;
     }
 
     @Override

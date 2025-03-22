@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisReturnToControlChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasComplete;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSComplete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaEmergencyAlarmActivation;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaTalkComplete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaUnitGPS;
@@ -325,6 +326,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         else if(iMessage instanceof LCHarrisTalkerAliasComplete talkerAlias)
         {
             processTalkerAlias(talkerAlias);
+        }
+        else if(iMessage instanceof LinkControlWord lcw)
+        {
+            processLC(lcw, iMessage.getTimestamp(), false);
         }
     }
 
@@ -2075,6 +2080,26 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 break;
             case MOTOROLA_UNIT_GPS:
                 if(lcw instanceof LCMotorolaUnitGPS gps)
+                {
+                    mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), gps.getLocation(), timestamp, lcw.toString());
+
+                    //We want to preserve the current TO/FROM and any other identifiers for the GPS event and add the GPS location
+                    MutableIdentifierCollection mic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    mic.update(gps.getIdentifiers());
+
+                    PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, timestamp)
+                            .location(gps.getGeoPosition())
+                            .channel(getCurrentChannel())
+                            .details(gps.getLocation().toString())
+                            .end(timestamp)
+                            .protocol(Protocol.APCO25)
+                            .identifiers(mic)
+                            .build();
+                    broadcast(event);
+                }
+                break;
+            case L3HARRIS_TALKER_GPS_COMPLETE:
+                if(lcw instanceof LCHarrisTalkerGPSComplete gps)
                 {
                     mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), gps.getLocation(), timestamp, lcw.toString());
 

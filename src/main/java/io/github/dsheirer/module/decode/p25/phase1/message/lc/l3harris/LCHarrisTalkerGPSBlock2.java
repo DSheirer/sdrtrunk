@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,19 +26,16 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * L3Harris Unknown Opcode 43 (0x2B)
- * <p>
- * Observed in a voice traffic channel carried by an LDU1.  This was transmitted once following an Opcode 42 (0x2A)
- * which is also unknown.
+ * L3Harris Talker GPS - Block 2/2 (Opcode:0x2B)
  */
-public class LCHarrisUnknownOpcode43 extends LinkControlWord
+public class LCHarrisTalkerGPSBlock2 extends LinkControlWord
 {
     /**
      * Constructs a Link Control Word from the binary message sequence.
      *
      * @param message
      */
-    public LCHarrisUnknownOpcode43(CorrectedBinaryMessage message)
+    public LCHarrisTalkerGPSBlock2(CorrectedBinaryMessage message)
     {
         super(message);
     }
@@ -58,7 +55,7 @@ public class LCHarrisUnknownOpcode43 extends LinkControlWord
         }
         else
         {
-            sb.append("L3HARRIS UNKNOWN OPCODE 43 MSG:").append(getMessage().toHexString());
+            sb.append("L3HARRIS TALKER GPS BLOCK 2/2 MSG:").append(getMessage().toHexString());
         }
         return sb.toString();
     }

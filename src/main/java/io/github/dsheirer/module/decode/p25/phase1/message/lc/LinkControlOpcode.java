@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,8 +106,9 @@ public enum LinkControlOpcode
     MOTOROLA_UNKNOWN("MOTOROLA UNKNOWN", -1),
 
     L3HARRIS_RETURN_TO_CONTROL_CHANNEL("UNKNOWN OPCODE 10", 10),
-    L3HARRIS_UNKNOWN_2A("UNKNOWN OPCODE 42", 42),
-    L3HARRIS_UNKNOWN_2B("UNKNOWN OPCODE 43", 43),
+    L3HARRIS_TALKER_GPS_BLOCK1("TALKER GPS 1/2", 42),
+    L3HARRIS_TALKER_GPS_BLOCK2("TALKER GPS 2/2", 43),
+    L3HARRIS_TALKER_GPS_COMPLETE("TALKER GPS", -2),
     L3HARRIS_TALKER_ALIAS_BLOCK_1("TALKER ALIAS BLOCK 1", 50),
     L3HARRIS_TALKER_ALIAS_BLOCK_2("TALKER ALIAS BLOCK 2", 51),
     L3HARRIS_TALKER_ALIAS_BLOCK_3("TALKER ALIAS BLOCK 3", 52),
@@ -151,8 +152,7 @@ public enum LinkControlOpcode
     /**
      * L3Harris Opcodes
      */
-    public static final EnumSet<LinkControlOpcode> L3HARRIS_OPCODES = EnumSet.of(L3HARRIS_RETURN_TO_CONTROL_CHANNEL,
-            L3HARRIS_UNKNOWN_2A, L3HARRIS_UNKNOWN_2B, L3HARRIS_TALKER_ALIAS_BLOCK_1, L3HARRIS_TALKER_ALIAS_BLOCK_2,
+    public static final EnumSet<LinkControlOpcode> L3HARRIS_OPCODES = EnumSet.of(L3HARRIS_RETURN_TO_CONTROL_CHANNEL, L3HARRIS_TALKER_GPS_BLOCK1, L3HARRIS_TALKER_GPS_BLOCK2, L3HARRIS_TALKER_ALIAS_BLOCK_1, L3HARRIS_TALKER_ALIAS_BLOCK_2,
             L3HARRIS_TALKER_ALIAS_BLOCK_3, L3HARRIS_TALKER_ALIAS_BLOCK_4, L3HARRIS_UNKNOWN);
 
     /**
@@ -221,9 +221,9 @@ public enum LinkControlOpcode
                     case 10:
                         return L3HARRIS_RETURN_TO_CONTROL_CHANNEL;
                     case 42:
-                        return L3HARRIS_UNKNOWN_2A;
+                        return L3HARRIS_TALKER_GPS_BLOCK1;
                     case 43:
-                        return L3HARRIS_UNKNOWN_2B;
+                        return L3HARRIS_TALKER_GPS_BLOCK2;
                     case 50:
                         return L3HARRIS_TALKER_ALIAS_BLOCK_1;
                     case 51:
