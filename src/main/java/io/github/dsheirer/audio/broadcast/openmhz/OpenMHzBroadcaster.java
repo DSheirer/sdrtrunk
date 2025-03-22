@@ -40,6 +40,7 @@
  import io.github.dsheirer.identifier.patch.PatchGroup;
  import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
  import io.github.dsheirer.identifier.radio.RadioIdentifier;
+ import io.github.dsheirer.identifier.alias.TalkerAliasIdentifier;
  import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
  import io.github.dsheirer.util.ThreadPool;
  import org.slf4j.Logger;
@@ -249,6 +250,7 @@
                  long timestampSeconds = (int)(audioRecording.getStartTime() / 1E3);
                  String talkgroup = getTo(audioRecording);
                  String radioId = getFrom(audioRecording);
+                 String talkerAlias = getTalkerAlias(audioRecording);
                  Long frequency = getFrequency(audioRecording);
                  String patches = getPatches(audioRecording);
                  String talkgroupLabel = getTalkgroupLabel(audioRecording);
@@ -282,8 +284,8 @@
                              .addPart(FormField.TALKGROUP_NUM, talkgroup)
                              .addPart(FormField.EMERGENCY, 0)
                              .addPart(FormField.API_KEY, getBroadcastConfiguration().getApiKey())
-                             // For future use if OpenMHz supports patch information
-                             //.addPart(FormField.PATCHES, patches)
+                             .addPart(FormField.PATCH_LIST, patches)
+                             .addPart(FormField.TALKER_ALIAS, talkerAlias)
                              .addPart(FormField.SOURCE_LIST, "[{ \"pos\": 0.00, \"src\": " + radioId + "}]");
 
                          HttpRequest fileRequest = HttpRequest.newBuilder()
@@ -546,6 +548,28 @@
 
         return "[]";
     }
+
+    /**
+     * Creates a formatted string with talkerAlias identifier
+     */
+    private static String getTalkerAlias(AudioRecording audioRecording)
+    {
+        for(Identifier identifier: audioRecording.getIdentifierCollection().getIdentifiers(Role.FROM))
+        {
+            if(identifier instanceof TalkerAliasIdentifier)
+            {
+                TalkerAliasIdentifier talkerID = (TalkerAliasIdentifier)identifier;
+
+                if(talkerID.isValid())
+                {
+                    return talkerID.getValue();
+                }
+            }
+        }
+
+        return "";
+    }
+
 
      /**
       * Tests both the connection and configuration against the OpenMHz Call API service
