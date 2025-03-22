@@ -50,6 +50,8 @@ public enum TunerType
     RSP_DUO_2("RSPduo Tuner 2"),
     RSP_DX("RSPdx"),
 
+    RTL_TCP("rtl-tcp"),
+
     TEST("Test"),
     RECORDING("Recording"),
     UNKNOWN("Unknown");
@@ -85,6 +87,11 @@ public enum TunerType
     public static final EnumSet<TunerType> SUPPORTED_SOUND_CARD_TUNERS = EnumSet.of(FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
 
     /**
+     * Supported network tuner Types
+     */
+    public static EnumSet<TunerType> SUPPORTED_NETWORK_TUNERS = EnumSet.of(RTL_TCP);
+
+    /**
      * Indicates if this tuner is supported as a USB tuner
      */
     public boolean isSupportedUsbTuner()
@@ -98,6 +105,14 @@ public enum TunerType
     public boolean isSupportedSoundCardTuner()
     {
         return SUPPORTED_SOUND_CARD_TUNERS.contains(this);
+    }
+
+    /**
+     * Indicates if this tuner type is supported as a network tuner
+     */
+    public boolean isSupportedNetworkTuner()
+    {
+        return SUPPORTED_NETWORK_TUNERS.contains(this);
     }
 
     @Override
