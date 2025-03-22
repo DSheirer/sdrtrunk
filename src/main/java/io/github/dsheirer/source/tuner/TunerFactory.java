@@ -50,6 +50,8 @@ import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerEditor;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
+import io.github.dsheirer.source.tuner.network.NetworkTunerEditor;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerEditor;
 import io.github.dsheirer.source.tuner.rtl.EmbeddedTuner;
@@ -452,6 +454,8 @@ public class TunerFactory
                 return new RspDuoTuner2Configuration(uniqueID);
             case RSP_DX:
                 return new RspDxTunerConfiguration(uniqueID);
+            case RTL_TCP:
+                return new NetworkTunerConfiguration(uniqueID);
             default:
                 throw new IllegalArgumentException("Unrecognized tuner type [" + type.name() + "]");
         }
@@ -516,6 +520,8 @@ public class TunerFactory
                         discoveredTuner.getClass());
             case RECORDING_TUNER:
                 return new RecordingTunerEditor(userPreferences, tunerManager, discoveredTuner);
+            case NETWORK_TUNER:
+                return new NetworkTunerEditor(userPreferences, tunerManager, discoveredTuner);           
             case RTL2832:
                 if(discoveredTuner.hasTuner())
                 {

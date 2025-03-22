@@ -23,6 +23,7 @@ import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
+import io.github.dsheirer.source.tuner.manager.DiscoveredNetworkTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -71,7 +72,7 @@ public class TunerViewPanel extends JPanel
     private TableRowSorter<DiscoveredTunerModel> mRowSorter;
     private JideSplitPane mSplitPane;
     private JButton mAddRecordingButton;
-    private JButton mRemoveRecordingButton;
+    private JButton mRemoveTunerButton;
     private JButton mAddNetworkButton;
 
     /**
@@ -102,7 +103,7 @@ public class TunerViewPanel extends JPanel
         mTunerTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mTunerTable.getSelectionModel().addListSelectionListener(event ->
         {
-            getRemoveRecordingButton().setEnabled(false);
+            getRemoveTunerButton().setEnabled(false);
 
             if(!event.getValueIsAdjusting())
             {
@@ -114,7 +115,7 @@ public class TunerViewPanel extends JPanel
 
                     DiscoveredTuner selected = mDiscoveredTunerModel.getDiscoveredTuner(modelRow);
                     mDiscoveredTunerEditor.setItem(selected);
-                    getRemoveRecordingButton().setEnabled(selected instanceof DiscoveredRecordingTuner);
+                    getRemoveTunerButton().setEnabled(selected instanceof DiscoveredRecordingTuner || selected instanceof DiscoveredNetworkTuner);
                 }
             }
         });
@@ -194,8 +195,8 @@ public class TunerViewPanel extends JPanel
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new MigLayout("insets 0 1 3 0", "", ""));
         buttonPanel.add(getAddRecordingButton());
-        buttonPanel.add(getRemoveRecordingButton());
         buttonPanel.add(getAddNetworkButton());
+        buttonPanel.add(getRemoveTunerButton());
         tunerTablePanel.add(buttonPanel);
 
         tunerTablePanel.setPreferredSize(new Dimension(200,200));
@@ -229,13 +230,13 @@ public class TunerViewPanel extends JPanel
         return mAddRecordingButton;
     }
 
-    private JButton getRemoveRecordingButton()
+    private JButton getRemoveTunerButton()
     {
-        if(mRemoveRecordingButton == null)
+        if(mRemoveTunerButton == null)
         {
-            mRemoveRecordingButton = new JButton("Remove Recording Tuner");
-            mRemoveRecordingButton.setEnabled(false);
-            mRemoveRecordingButton.addActionListener(e -> {
+            mRemoveTunerButton = new JButton("Remove Tuner");
+            mRemoveTunerButton.setEnabled(false);
+            mRemoveTunerButton.addActionListener(e -> {
                 int[] indexes = mTunerTable.getSelectionModel().getSelectedIndices();
 
                 //With single selection mode this should always be length one
@@ -244,18 +245,18 @@ public class TunerViewPanel extends JPanel
                     int modelIndex = mTunerTable.convertRowIndexToModel(indexes[0]);
                     DiscoveredTuner selected = mDiscoveredTunerModel.getDiscoveredTuner(modelIndex);
 
-                    if(selected instanceof DiscoveredRecordingTuner discoveredRecordingTuner)
+                    if(selected instanceof DiscoveredRecordingTuner || selected instanceof DiscoveredNetworkTuner)
                     {
-                        mLog.info("Removing Tuner: " + discoveredRecordingTuner);
-                        discoveredRecordingTuner.stop();
-                        mTunerConfigurationManager.removeTunerConfiguration(discoveredRecordingTuner.getTunerConfiguration());
-                        EventQueue.invokeLater(() -> mDiscoveredTunerModel.removeDiscoveredTuner(discoveredRecordingTuner));
+                        mLog.info("Removing Tuner: " + selected);
+                        selected.stop();
+                        mTunerConfigurationManager.removeTunerConfiguration(selected.getTunerConfiguration());
+                        EventQueue.invokeLater(() -> mDiscoveredTunerModel.removeDiscoveredTuner(selected));
                     }
                 }
             });
         }
 
-        return mRemoveRecordingButton;
+        return mRemoveTunerButton;
     }
 
     private JButton getAddNetworkButton()
@@ -265,7 +266,7 @@ public class TunerViewPanel extends JPanel
             mAddNetworkButton = new JButton("Add Network Tuner");
             mAddNetworkButton.addActionListener(e ->
             {
-                AddNetworkTunerDialog dialog = new AddNetworkTunerDialog(mTunerConfigurationManager);
+                AddNetworkTunerDialog dialog = new AddNetworkTunerDialog(mUserPreferences, mDiscoveredTunerModel, mTunerConfigurationManager);
                 dialog.setLocationRelativeTo(TunerViewPanel.this);
                 EventQueue.invokeLater(() -> dialog.setVisible(true));
             });
