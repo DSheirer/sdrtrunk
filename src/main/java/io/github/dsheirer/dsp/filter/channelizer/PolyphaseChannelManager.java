@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -302,9 +302,16 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
             case NOTIFICATION_RECORDING_FILE_LOADED:
                 //no-op
+                break;
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                //Re-broadcast this event to each channel so that the decoders can reset error tracking function(s).
+                List<TunerChannelSource> channels = new ArrayList<>(mChannelSources);
+                for(TunerChannelSource channel: channels)
+                {
+                    channel.broadcastConsumerSourceEvent(sourceEvent);
+                }
                 break;
             default:
                 mLog.info("Unrecognized source event: " + sourceEvent);

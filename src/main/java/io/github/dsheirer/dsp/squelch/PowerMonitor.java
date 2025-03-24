@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ public class PowerMonitor
     /**
      * Broadcasts the source event to an optional register listener
      */
-    private void broadcast(SourceEvent event)
+    public void broadcast(SourceEvent event)
     {
         if(mSourceEventListener != null)
         {

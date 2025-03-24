@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -147,9 +147,9 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-            case NOTIFICATION_PLL_FREQUENCY:
+            case NOTIFICATION_CARRIER_OFFSET_FREQUENCY:
             case NOTIFICATION_STOP_SAMPLE_STREAM:
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                 //no-op
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
@@ -198,7 +198,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * Broadcasts the source event to the outbound sample stream consumer.
      * @param sourceEvent to broadcast
      */
-    protected void broadcastConsumerSourceEvent(SourceEvent sourceEvent)
+    public void broadcastConsumerSourceEvent(SourceEvent sourceEvent)
     {
         if(mConsumerSourceEventListener != null)
         {

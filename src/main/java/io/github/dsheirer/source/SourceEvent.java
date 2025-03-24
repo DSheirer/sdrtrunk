@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ public class SourceEvent
         NOTIFICATION_FREQUENCY_ROTATION_FAILURE,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED,
-        NOTIFICATION_PLL_FREQUENCY,
+        NOTIFICATION_CARRIER_OFFSET_FREQUENCY,
         NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_SQUELCH_THRESHOLD,
@@ -245,13 +245,13 @@ public class SourceEvent
     }
 
     /**
-     * Creates a new PLL frequency error measurement notification event.
+     * Creates a new carrier offset measurement notification event.
      *
-     * @param frequencyError in hertz
+     * @param carrierOffset in hertz
      */
-    public static SourceEvent pllFrequencyMeasurement(long frequencyError)
+    public static SourceEvent carrierOffsetMeasurement(long carrierOffset)
     {
-        return new SourceEvent(Event.NOTIFICATION_PLL_FREQUENCY, frequencyError);
+        return new SourceEvent(Event.NOTIFICATION_CARRIER_OFFSET_FREQUENCY, carrierOffset);
     }
 
     /**
@@ -318,7 +318,7 @@ public class SourceEvent
     /**
      * Creates a new channel count change event
      *
-     * @param channelCount
+     * @param channelCount of channels
      */
     public static SourceEvent channelCountChange(int channelCount)
     {

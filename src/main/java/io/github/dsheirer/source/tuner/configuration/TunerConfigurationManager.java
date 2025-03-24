@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -179,7 +179,30 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
                     }
                 }
             }
+        }
+    }
 
+    /**
+     * Updates the tuner configuration with the current tuner PPM setting so that the value can be stored across
+     * sessions.
+     * @param discoveredTuner that has an updated PPM value.
+     */
+    public void updateTunerPPM(DiscoveredTuner discoveredTuner)
+    {
+        if(discoveredTuner != null)
+        {
+            TunerType tunerType = discoveredTuner.getTuner().getTunerType();
+
+            if(tunerType != TunerType.RECORDING)
+            {
+                TunerConfiguration tunerConfiguration = getTunerConfiguration(tunerType, discoveredTuner.getId());
+
+                if(tunerConfiguration != null)
+                {
+                    tunerConfiguration.setFrequencyCorrection(discoveredTuner.getTuner().getTunerController().getFrequencyCorrection());
+                    saveConfigurations();
+                }
+            }
         }
     }
 

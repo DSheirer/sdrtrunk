@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
     private int mBandwidth = 0;
     private int mChannelBandwidth = 0;
 
-    private long mPllTrackingFrequency = 0;
+    private long mEstimatedCarrierOffsetFrequency = 0;
     private Point mCursorLocation = new Point(0, 0);
     private boolean mCursorVisible = false;
 
@@ -103,12 +103,12 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
     }
 
     /**
-     * Sets the tracking frequency of the Phase Locked Loop (PLL)
-     * @param pllTrackingFrequency current setting.  Set to 0 to reset.
+     * Sets the estimated carrier offset of the channel's signal
+     * @param estimatedCarrierOffsetFrequency current setting.  Set to 0 to reset.
      */
-    public void setPllTrackingFrequency(long pllTrackingFrequency)
+    public void setEstimatedCarrierOffsetFrequency(long estimatedCarrierOffsetFrequency)
     {
-        mPllTrackingFrequency = pllTrackingFrequency;
+        mEstimatedCarrierOffsetFrequency = estimatedCarrierOffsetFrequency;
     }
 
     /**
@@ -212,7 +212,7 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
         graphics.setRenderingHints(RENDERING_HINTS);
         drawFrequencies(graphics);
         drawCursor(graphics);
-        drawPLL(graphics);
+        drawEstimatedCarrierOffset(graphics);
         drawChannelBandwidth(graphics);
     }
 
@@ -326,16 +326,16 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
     }
 
     /**
-     * Draws the Phase Locked Loop tracking frequency, offset from channel center
+     * Draws the estimated carrier offset measured by the CarrierOffsetProcessor
      */
-    private void drawPLL(Graphics2D graphics)
+    private void drawEstimatedCarrierOffset(Graphics2D graphics)
     {
-        if(mPllTrackingFrequency == 0)
+        if(mEstimatedCarrierOffsetFrequency == 0)
         {
             return;
         }
 
-        long frequency = mFrequency - mPllTrackingFrequency;
+        long frequency = mFrequency + mEstimatedCarrierOffsetFrequency;
         double xAxis = getAxisFromFrequency(frequency);
 
         double height = getSize().getHeight() - mSpectrumInset;
@@ -349,7 +349,7 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
     }
 
     /**
-     * Draws the Phase Locked Loop tracking frequency, offset from channel center
+     * Draws the channel bandwidth indicators
      */
     private void drawChannelBandwidth(Graphics2D graphics)
     {

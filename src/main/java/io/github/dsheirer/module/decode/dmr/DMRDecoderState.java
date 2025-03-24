@@ -223,7 +223,7 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private boolean isValid(IMessage message)
     {
-        return mIgnoreCRCChecksums || message.isValid();
+        return message != null && (mIgnoreCRCChecksums || message.isValid());
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,9 @@ package io.github.dsheirer.source.tuner.manager;
 
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
+import java.text.DecimalFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.DecimalFormat;
 
 /**
  * Monitors measured frequency error PPM values from the tuner and (when enabled) applies the current
@@ -35,6 +34,7 @@ public class FrequencyErrorCorrectionManager
 
     private static final double FREQUENCY_CORRECTION_ERROR_THRESHOLD = 0.4;
     private static final long AUTO_CORRECTION_OBSERVATION_PERIOD_MILLISECONDS = 30 * 1000; //30 seconds
+    private static final long INITIAL_AUTO_CORRECTION_OBSERVATION_PERIOD_MILLISECONDS = 5 * 1000; //5 seconds
     private long mObservationPeriodStart;
     private double mPPMRequired;
     private boolean mEnabled = true;
@@ -97,7 +97,6 @@ public class FrequencyErrorCorrectionManager
             try
             {
                 mLog.info("Auto-Correcting Tuner PPM to [" + mDecimalFormat.format(frequencyCorrection) + "]");
-
                 mTunerController.setFrequencyCorrection(frequencyCorrection);
                 reset();
             }
@@ -117,7 +116,8 @@ public class FrequencyErrorCorrectionManager
         {
             if(mObservationPeriodStart == 0)
             {
-                mObservationPeriodStart = System.currentTimeMillis();
+                mObservationPeriodStart = System.currentTimeMillis() - AUTO_CORRECTION_OBSERVATION_PERIOD_MILLISECONDS +
+                        INITIAL_AUTO_CORRECTION_OBSERVATION_PERIOD_MILLISECONDS;
                 mPPMRequired = ppm;
             }
             else
