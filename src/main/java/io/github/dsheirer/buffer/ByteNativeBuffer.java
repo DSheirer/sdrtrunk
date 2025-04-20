@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import java.util.Iterator;
  */
 public class ByteNativeBuffer extends AbstractNativeBuffer
 {
-    private static final int FRAGMENT_SIZE = 2048;
+    private static final int FRAGMENT_SIZE = 8192;
     private final static float[] LOOKUP_VALUES;
     private float mAverageDc;
 
