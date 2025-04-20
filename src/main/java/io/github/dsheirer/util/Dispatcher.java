@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,6 +154,49 @@ public class Dispatcher<E> implements Listener<E>
             {
                 mExecutorService.shutdown();
                 mExecutorService = null;
+            }
+        }
+    }
+
+    /**
+     * Stops this buffer processor and flushes the queue to the listener
+     */
+    public void flushAndStop()
+    {
+        if(mRunning.compareAndSet(true, false))
+        {
+            if(mScheduledFuture != null)
+            {
+                //Note: this has to be false because downstream implementations may have acquired locks and they must
+                //be able to release those locks or we'll get a deadlock situation.
+                mScheduledFuture.cancel(false);
+                mScheduledFuture = null;
+            }
+
+            if(mExecutorService != null)
+            {
+                mExecutorService.shutdown();
+                mExecutorService = null;
+            }
+
+            List<E> elements = new ArrayList<>();
+
+            mQueue.drainTo(elements);
+
+            for(E element: elements)
+            {
+                if(mListener != null)
+                {
+                    try
+                    {
+                        mListener.receive(element);
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error while flusing and dispatching element [" + element.getClass() + "] to listener [" +
+                                mListener.getClass() + "]", t);
+                    }
+                }
             }
         }
     }

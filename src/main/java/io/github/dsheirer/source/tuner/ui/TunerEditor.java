@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -755,9 +755,11 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     @Override
     public void receive(TunerEvent tunerEvent)
     {
-        if(tunerEvent.getEvent().equals(TunerEvent.Event.UPDATE_MEASURED_FREQUENCY_ERROR))
+        switch(tunerEvent.getEvent())
         {
-            SwingUtils.run(() -> getFrequencyPanel().updateFrequencyError());
+            //Note: called methods are responsible for executing on the swing thread.
+            case UPDATE_MEASURED_FREQUENCY_ERROR -> getFrequencyPanel().updateFrequencyError();
+            case UPDATE_FREQUENCY_ERROR -> getFrequencyPanel().updatePPM();
         }
     }
 
@@ -944,6 +946,18 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                 {
                     getMeasuredPPMLabel().setText("");
                 }
+            });
+        }
+
+        /**
+         * Updates or refreshes the displayed tuner PPM setting.
+         */
+        public void updatePPM()
+        {
+            SwingUtils.run(() -> {
+                setLoading(true);
+                getFrequencyCorrectionSpinner().setValue(getTuner().getTunerController().getFrequencyCorrection());
+                setLoading(false);
             });
         }
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,11 +70,11 @@ import org.usb4java.LibUsb;
 public class TunerManager implements IDiscoveredTunerStatusListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(TunerManager.class);
-    private UserPreferences mUserPreferences;
-    private DiscoveredTunerModel mDiscoveredTunerModel = new DiscoveredTunerModel();
-    private TunerConfigurationManager mTunerConfigurationManager;
-    private HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
-    private Context mLibUsbApplicationContext = new Context();
+    private final UserPreferences mUserPreferences;
+    private final DiscoveredTunerModel mDiscoveredTunerModel;
+    private final TunerConfigurationManager mTunerConfigurationManager;
+    private final HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
+    private final Context mLibUsbApplicationContext = new Context();
     private boolean mLibUsbInitialized = false;
     private SDRplay mSDRplay;
 
@@ -86,6 +86,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     {
         mUserPreferences = userPreferences;
         mTunerConfigurationManager = new TunerConfigurationManager(userPreferences);
+        mDiscoveredTunerModel = new DiscoveredTunerModel(mTunerConfigurationManager);
     }
 
     /**

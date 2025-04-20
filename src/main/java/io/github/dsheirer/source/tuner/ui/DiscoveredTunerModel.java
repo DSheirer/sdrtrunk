@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package io.github.dsheirer.source.tuner.ui;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
+import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredUSBTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
@@ -62,13 +63,15 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     private List<Listener<TunerEvent>> mTunerEventListeners = new ArrayList<>();
     private DecimalFormat mFrequencyFormat = new DecimalFormat("0.00000");
     private Lock mLock = new ReentrantLock();
-
+    private TunerConfigurationManager mTunerConfigurationManager;
 
     /**
      * Constructs an instance
+     * @param tunerConfigurationManager to update tuner configurations from tuners.
      */
-    public DiscoveredTunerModel()
+    public DiscoveredTunerModel(TunerConfigurationManager tunerConfigurationManager)
     {
+        mTunerConfigurationManager = tunerConfigurationManager;
     }
 
     /**
@@ -425,8 +428,8 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
 
             try
             {
-                DiscoveredTuner matching = getDiscoveredTuner(event.getTuner());
-                int index = mDiscoveredTuners.indexOf(matching);
+                DiscoveredTuner matchingTuner = getDiscoveredTuner(event.getTuner());
+                int index = mDiscoveredTuners.indexOf(matchingTuner);
 
                 if(index >= 0)
                 {
@@ -440,6 +443,12 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
                             break;
                         case NOTIFICATION_ERROR_STATE:
                             EventQueue.invokeLater(() -> fireTableRowsUpdated(index, index));
+                            break;
+                        case UPDATE_FREQUENCY_ERROR:
+                            if(mTunerConfigurationManager != null)
+                            {
+                                mTunerConfigurationManager.updateTunerPPM(matchingTuner);
+                            }
                             break;
                         default:
                             break;

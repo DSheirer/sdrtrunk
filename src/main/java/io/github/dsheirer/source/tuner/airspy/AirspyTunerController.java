@@ -201,7 +201,6 @@ public class AirspyTunerController extends USBTunerController
             {
                 setFrequency(config.getFrequency());
                 setFrequencyCorrection(config.getFrequencyCorrection());
-                getFrequencyErrorCorrectionManager().setEnabled(config.getAutoPPMCorrectionEnabled());
 
                 setIFGain(config.getIFGain());
                 setMixerGain(config.getMixerGain());

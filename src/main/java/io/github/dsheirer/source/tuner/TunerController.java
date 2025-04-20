@@ -596,6 +596,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     public void setMeasuredFrequencyError(int measuredFrequencyError)
     {
         mMeasuredFrequencyError = measuredFrequencyError;
+        getFrequencyErrorCorrectionManager().updatePPM(getPPMFrequencyError());
     }
 
     /**

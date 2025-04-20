@@ -28,6 +28,7 @@ import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorFactory;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.carrier.CarrierOffsetProcessor;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
@@ -84,6 +85,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     private static final Logger LOGGER = LoggerFactory.getLogger(DMRDecoder.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final int SYMBOL_RATE = 4800;
+    private static final float MAXIMUM_CARRIER_OFFSET = 5000.0f; //Threshold for retuning the signal.
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
     private DQPSKDemodulator mDemodulator;
     private final DMRMessageFramer mMessageFramer;
@@ -92,6 +94,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
     private final PowerMonitor mPowerMonitor = new PowerMonitor();
+    private final CarrierOffsetProcessor mCarrierOffsetProcessor = new CarrierOffsetProcessor();
 
     /**
      * Constructs an instance
@@ -137,6 +140,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
         mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
         mMessageFramer.setListener(mMessageProcessor);
         mMessageProcessor.setMessageListener(getMessageListener());
+        mCarrierOffsetProcessor.setSampleRate(sampleRate);
     }
 
     /**
@@ -147,6 +151,7 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     public void receive(ComplexSamples samples)
     {
         mMessageFramer.setTimestamp(samples.timestamp());
+
         float[] i = mIBasebandFilter.filter(samples.i());
         float[] q = mQBasebandFilter.filter(samples.q());
 
@@ -155,6 +160,25 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
 
         float[] demodulated = mDemodulator.demodulate(i, q);
         mSymbolProcessor.receive(demodulated);
+
+        //Estimate carrier offset and broadcast at each update. This value is used in the channel spectral display,
+        // and it's also processed by the tuner's PPM error monitor to auto-adjust the tuner PPM value.
+        if(mCarrierOffsetProcessor.process(samples))
+        {
+            //Tuner PPM Monitor - negate the value to indicate channel error from tuner's PPM that's causing the offset
+            mPowerMonitor.broadcast(SourceEvent.frequencyErrorMeasurement(-mCarrierOffsetProcessor.getEstimatedOffset()));
+
+            //Channel spectral display - when there's a carrier send the estimate, otherwise send a zero to cause the
+            //display to blank the carrier offset measurement indicator line
+            if(mCarrierOffsetProcessor.hasCarrier())
+            {
+                mPowerMonitor.broadcast(SourceEvent.carrierOffsetMeasurement(mCarrierOffsetProcessor.getEstimatedOffset()));
+            }
+            else
+            {
+                mPowerMonitor.broadcast(SourceEvent.carrierOffsetMeasurement(0));
+            }
+        }
     }
 
     /**
@@ -262,9 +286,17 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
      */
     private void process(SourceEvent sourceEvent)
     {
-        if(sourceEvent != null && sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
+        if(sourceEvent != null)
         {
-            setSampleRate(sourceEvent.getValue().doubleValue());
+            switch(sourceEvent.getEvent())
+            {
+                case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                    setSampleRate(sourceEvent.getValue().doubleValue());
+                    break;
+                case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                    mCarrierOffsetProcessor.reset();
+                    break;
+            }
         }
     }
 

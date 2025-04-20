@@ -297,18 +297,6 @@ public class RTL2832TunerController extends USBTunerController
         return mBiasTEnabled;
     }
 
-    /**
-     * Overrides updates for measured frequency error so that the updates can also be applied to the
-     * frequency error correction manager for automatic PPM updating.
-     * @param measuredFrequencyError in hertz averaged over a 5 second interval.
-     */
-    @Override
-    public void setMeasuredFrequencyError(int measuredFrequencyError)
-    {
-        super.setMeasuredFrequencyError(measuredFrequencyError);
-        getFrequencyErrorCorrectionManager().updatePPM(getPPMFrequencyError());
-    }
-
     private void setIFFrequency(int frequency) throws LibUsbException
     {
         long ifFrequency = ((long) TWO_TO_22_POWER * (long) frequency) / (long) mOscillatorFrequency * -1;

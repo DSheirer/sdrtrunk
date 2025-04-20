@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ public class FrequencyCorrectionSyncMonitor implements ISyncDetectListener, IFre
     @Override
     public void processFrequencyError(long frequencyError)
     {
-        mFeedbackDecoder.broadcast(SourceEvent.pllFrequencyMeasurement(frequencyError));
+        mFeedbackDecoder.broadcast(SourceEvent.carrierOffsetMeasurement(-frequencyError));
 
         //Only rebroadcast as a frequency error measurement if the sync count is more than 2
         if(mSyncCount > 2)

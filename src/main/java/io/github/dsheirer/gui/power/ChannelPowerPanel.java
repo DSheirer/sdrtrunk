@@ -43,7 +43,6 @@ import java.awt.EventQueue;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.List;
@@ -73,29 +72,25 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private static final String NOT_AVAILABLE = "Not Available";
-    private PlaylistManager mPlaylistManager;
+    private final PlaylistManager mPlaylistManager;
     private ProcessingChain mProcessingChain;
-    private ComplexSamplesToNativeBufferModule mSampleStreamTapModule = new ComplexSamplesToNativeBufferModule();
-    private ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
-    private DFTResultsConverter mDFTResultsConverter = new ComplexDecibelConverter();
-    private JLayeredPane mLayeredPanel;
+    private final ComplexSamplesToNativeBufferModule mSampleStreamTapModule = new ComplexSamplesToNativeBufferModule();
+    private final ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
     private SpectrumPanel mSpectrumPanel;
-    private FrequencyOverlayPanel mFrequencyOverlayPanel;
-    private DbPowerMeter mPowerMeter = new DbPowerMeter();
-    private PeakMonitor mPeakMonitor = new PeakMonitor(DbPowerMeter.DEFAULT_MINIMUM_POWER);
-    private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
-    private SpinnerNumberModel mNoiseFloorSpinnerModel;
-    private JSpinner mNoiseFloorSpinner;
-    private JLabel mPowerLabel;
-    private JLabel mPeakLabel;
-    private JLabel mSquelchLabel;
-    private JLabel mSquelchValueLabel;
-    private JLabel mPllFrequencyLabel;
-    private JLabel mPllFrequencyValueLabel;
-    private JButton mSquelchUpButton;
-    private JButton mSquelchDownButton;
-    private JButton mLogIndexesButton;
-    private JCheckBox mSquelchAutoTrackCheckBox;
+    private final FrequencyOverlayPanel mFrequencyOverlayPanel;
+    private final DbPowerMeter mPowerMeter = new DbPowerMeter();
+    private final PeakMonitor mPeakMonitor = new PeakMonitor(DbPowerMeter.DEFAULT_MINIMUM_POWER);
+    private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
+    private final SpinnerNumberModel mNoiseFloorSpinnerModel;
+    private final JLabel mPowerLabel;
+    private final JLabel mPeakLabel;
+    private final JLabel mSquelchLabel;
+    private final JLabel mSquelchValueLabel;
+    private final JLabel mEstimatedCarrierOffsetFrequencyLabel;
+    private final JLabel mEstimatedCarrierOffsetFrequencyValueLabel;
+    private final JButton mSquelchUpButton;
+    private final JButton mSquelchDownButton;
+    private final JCheckBox mSquelchAutoTrackCheckBox;
     private double mSquelchThreshold;
     private boolean mPanelVisible = false;
     private boolean mDftProcessing = false;
@@ -165,27 +160,27 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         fftPanel.setLayout(new MigLayout("insets 0", "[grow,fill]", "[][grow,fill]"));
 
         JPanel labelPanel = new JPanel();
-        labelPanel.setLayout(new MigLayout("insets 0", "[grow,fill][right][grow,fill][right][grow,fill][]", ""));
+        labelPanel.setLayout(new MigLayout("insets 0", "[grow,fill][right][grow,fill][right][][]", ""));
         labelPanel.add(new JLabel("Channel Spectrum"));
 
-        mPllFrequencyLabel = new JLabel("PLL:");
-        mPllFrequencyLabel.setEnabled(false);
-        labelPanel.add(mPllFrequencyLabel);
-        mPllFrequencyValueLabel = new JLabel("0 Hz");
-        mPllFrequencyValueLabel.setEnabled(false);
-        labelPanel.add(mPllFrequencyValueLabel);
+        mEstimatedCarrierOffsetFrequencyLabel = new JLabel("Estimated Carrier Offset:");
+        mEstimatedCarrierOffsetFrequencyLabel.setEnabled(false);
+        labelPanel.add(mEstimatedCarrierOffsetFrequencyLabel);
+        mEstimatedCarrierOffsetFrequencyValueLabel = new JLabel("0 Hz");
+        mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
+        labelPanel.add(mEstimatedCarrierOffsetFrequencyValueLabel);
 
         mNoiseFloorSpinnerModel = new SpinnerNumberModel(18, 8, 36, 1);
         mNoiseFloorSpinnerModel.addChangeListener(e -> {
             Number number = mNoiseFloorSpinnerModel.getNumber();
             mSpectrumPanel.setSampleSize(number.doubleValue());
         });
-        mNoiseFloorSpinner = new JSpinner(mNoiseFloorSpinnerModel);
-        labelPanel.add(mNoiseFloorSpinner);
+        JSpinner noiseFloorSpinner = new JSpinner(mNoiseFloorSpinnerModel);
+        labelPanel.add(noiseFloorSpinner);
         labelPanel.add(new JLabel("Spectral Display Noise Floor"));
 
-        mLogIndexesButton = new JButton("Log Settings");
-        mLogIndexesButton.addActionListener(e -> {
+        JButton logIndexesButton = new JButton("Log Settings");
+        logIndexesButton.addActionListener(e -> {
             if(mProcessingChain != null)
             {
                 Source source = mProcessingChain.getSource();
@@ -229,7 +224,6 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         fftPanel.add(labelPanel, "wrap");
 
         mFrequencyOverlayPanel = new FrequencyOverlayPanel(settingsManager);
-
         mSpectrumPanel = new SpectrumPanel(settingsManager);
         mSpectrumPanel.setSampleSize(18.0);
 
@@ -237,8 +231,8 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
          * The layered pane holds the overlapping spectrum and channel panels
          * and manages the sizing of each panel with the resize listener
          */
-        mLayeredPanel = new JLayeredPane();
-        mLayeredPanel.addComponentListener(new ResizeListener());
+        JLayeredPane layeredPanel = new JLayeredPane();
+        layeredPanel.addComponentListener(new ResizeListener());
 
         /**
          * Create a mouse adapter to handle mouse events over the spectrum
@@ -251,15 +245,16 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         mFrequencyOverlayPanel.addMouseWheelListener(mouser);
 
         //Add the spectrum and channel panels to the layered panel
-        mLayeredPanel.add(mSpectrumPanel, 0, 0);
-        mLayeredPanel.add(mFrequencyOverlayPanel, 1, 0);
+        layeredPanel.add(mSpectrumPanel, 0, 0);
+        layeredPanel.add(mFrequencyOverlayPanel, 1, 0);
 
-        fftPanel.add(mLayeredPanel);
+        fftPanel.add(layeredPanel);
         add(fftPanel);
 
         mSampleStreamTapModule.setListener(mComplexDftProcessor);
-        mComplexDftProcessor.addConverter(mDFTResultsConverter);
-        mDFTResultsConverter.addListener(mSpectrumPanel);
+        DFTResultsConverter DFTResultsConverter = new ComplexDecibelConverter();
+        mComplexDftProcessor.addConverter(DFTResultsConverter);
+        DFTResultsConverter.addListener(mSpectrumPanel);
         mSpectrumPanel.clearSpectrum();
     }
 
@@ -323,21 +318,21 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     }
 
     /**
-     * Updates the decoder's PLL frequency on the swing dispatch thread
-     * @param trackingFrequency that is currently measured.
+     * Updates the CarrierOffsetProcessor's current carrier offset tracking frequency
+     * @param carrierOffsetFrequency that is currently measured/estimated.
      */
-    private void updatePllFrequency(long trackingFrequency)
+    private void updateEstimatedCarrierOffsetFrequency(long carrierOffsetFrequency)
     {
         //Note: we flip the sign on the error measurement because the value represents the amount of offset the PLL
         //has to apply to move the signal to center/baseband
         EventQueue.invokeLater(() -> {
-            String formattedValue = NumberFormat.getInstance().format(-trackingFrequency);
-            mPllFrequencyValueLabel.setText(formattedValue + " Hz");
-            mPllFrequencyValueLabel.setEnabled(true);
-            mPllFrequencyLabel.setEnabled(true);
+            String formattedValue = NumberFormat.getInstance().format(carrierOffsetFrequency);
+            mEstimatedCarrierOffsetFrequencyValueLabel.setText(formattedValue + " Hz");
+            mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(true);
+            mEstimatedCarrierOffsetFrequencyLabel.setEnabled(true);
         });
 
-        mFrequencyOverlayPanel.setPllTrackingFrequency(trackingFrequency);
+        mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(carrierOffsetFrequency);
     }
 
     /**
@@ -349,9 +344,8 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         {
             Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
 
-            if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration)
+            if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration configuration)
             {
-                ISquelchConfiguration configuration = (ISquelchConfiguration)channel.getDecodeConfiguration();
                 configuration.setSquelchThreshold(threshold);
                 mPlaylistManager.schedulePlaylistSave();
             }
@@ -366,9 +360,8 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     {
         Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
 
-        if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration)
+        if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration configuration)
         {
-            ISquelchConfiguration configuration = (ISquelchConfiguration)channel.getDecodeConfiguration();
             configuration.setSquelchAutoTrack(autoTrack);
             mPlaylistManager.schedulePlaylistSave();
         }
@@ -393,12 +386,12 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
 
         mPeakLabel.setText("0");
         mPowerLabel.setText("0");
-        mPllFrequencyLabel.setEnabled(false);
-        mPllFrequencyValueLabel.setText("0 Hz");
-        mPllFrequencyValueLabel.setEnabled(false);
+        mEstimatedCarrierOffsetFrequencyLabel.setEnabled(false);
+        mEstimatedCarrierOffsetFrequencyValueLabel.setText("0 Hz");
+        mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
         mFrequencyOverlayPanel.process(SourceEvent.frequencyChange(null, 0));
         mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(0));
-        mFrequencyOverlayPanel.setPllTrackingFrequency(0);
+        mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(0);
         mFrequencyOverlayPanel.setChannelBandwidth(0);
 
         mSquelchLabel.setEnabled(false);
@@ -449,7 +442,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
 
                 if(!tunerChannels.isEmpty())
                 {
-                    mFrequencyOverlayPanel.setChannelBandwidth(tunerChannels.get(0).getBandwidth());
+                    mFrequencyOverlayPanel.setChannelBandwidth(tunerChannels.getFirst().getBandwidth());
                 }
             }
         }
@@ -483,7 +476,6 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
                             mPowerMeter.setPeak(peak);
                             mPeakLabel.setText(DECIMAL_FORMAT.format(peak));
                         });
-
                     }
                 case NOTIFICATION_SQUELCH_THRESHOLD ->
                         {
@@ -491,30 +483,22 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
                             mSquelchThreshold = threshold;
                             setConfigSquelchThreshold((int)threshold);
 
-                            EventQueue.invokeLater(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    mPowerMeter.setSquelchThreshold(threshold);
-                                    mSquelchLabel.setEnabled(true);
-                                    mSquelchValueLabel.setEnabled(true);
-                                    mSquelchValueLabel.setText(DECIMAL_FORMAT.format(threshold));
-                                    mSquelchDownButton.setEnabled(true);
-                                    mSquelchUpButton.setEnabled(true);
-                                }
+                            EventQueue.invokeLater(() -> {
+                                mPowerMeter.setSquelchThreshold(threshold);
+                                mSquelchLabel.setEnabled(true);
+                                mSquelchValueLabel.setEnabled(true);
+                                mSquelchValueLabel.setText(DECIMAL_FORMAT.format(threshold));
+                                mSquelchDownButton.setEnabled(true);
+                                mSquelchUpButton.setEnabled(true);
                             });
                         }
-                case NOTIFICATION_PLL_FREQUENCY ->
+                case NOTIFICATION_CARRIER_OFFSET_FREQUENCY ->
                 {
-                    if(sourceEvent.hasValue())
-                    {
-                        updatePllFrequency(sourceEvent.getValue().longValue());
-                    }
+                    updateEstimatedCarrierOffsetFrequency(sourceEvent.getValue().longValue());
                 }
                 case NOTIFICATION_SQUELCH_AUTO_TRACK ->
                 {
-                    boolean autoTrack = sourceEvent.getValue().intValue() == 1 ? true : false;
+                    boolean autoTrack = sourceEvent.getValue().intValue() == 1;
                     setConfigSquelchAutoTrack(autoTrack);
                     EventQueue.invokeLater(() -> {
                         mSquelchAutoTrackCheckBox.setSelected(autoTrack);
@@ -549,18 +533,10 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
      */
     public class MouseEventProcessor extends MouseInputAdapter
     {
-        public MouseEventProcessor()
-        {
-        }
-
-        @Override public void mouseWheelMoved(MouseWheelEvent e) {}
         @Override public void mouseMoved(MouseEvent event)
         {
             update(event);
         }
-        @Override public void mouseDragged(MouseEvent event) {}
-        @Override public void mousePressed(MouseEvent e) {}
-        @Override public void mouseClicked(MouseEvent event) {}
 
         /**
          * Updates the cursor display while the mouse is performing actions

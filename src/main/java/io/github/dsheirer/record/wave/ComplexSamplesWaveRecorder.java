@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,6 +106,39 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
             if(mBufferProcessor != null)
             {
                 mBufferProcessor.stop();
+                mBufferProcessor.setListener(null);
+            }
+
+            if(mWriter != null)
+            {
+                //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
+                //close method will also rename the file and this can sometimes take a few seconds.
+                ThreadPool.CACHED.submit(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            mWriter.close();
+                        }
+                        catch(IOException ioe)
+                        {
+                            mLog.error("Error closing baseband I/Q recorder", ioe);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    public void flushAndStop()
+    {
+        if(mRunning.compareAndSet(true, false))
+        {
+            if(mBufferProcessor != null)
+            {
+                mBufferProcessor.flushAndStop();
                 mBufferProcessor.setListener(null);
             }
 
