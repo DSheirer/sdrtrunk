@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,25 @@ public abstract class DMRSoftSyncDetector extends DMRSyncDetector
      * @return best sync correlation score where the best detected pattern is available at
      * @see DmrSyncDetector#getDetectedPattern() method.
      */
-    protected abstract float calculate();
+    public abstract float calculate();
+
+    /**
+     * Processes the demodulated soft symbol value into the buffer.
+     *
+     * @param dibitSymbol to process that represents the soft demodulated symbol value in phase angle/radians.
+     * @return correlation score.
+     */
+    public void process(float dibitSymbol)
+    {
+        if(Math.abs(dibitSymbol) > 4)
+        {
+            int a = 0;
+        }
+        mSymbols[mSymbolPointer] = dibitSymbol;
+        mSymbols[mSymbolPointer + 24] = dibitSymbol;
+        mSymbolPointer++;
+        mSymbolPointer %= 24;
+    }
 
     /**
      * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft
@@ -77,17 +95,9 @@ public abstract class DMRSoftSyncDetector extends DMRSyncDetector
      * @param dibitSymbol to process that represents the soft demodulated symbol value in phase angle/radians.
      * @return correlation score.
      */
-    public float process(float dibitSymbol)
+    public float processAndCalculate(float dibitSymbol)
     {
-        //Constrain symbol to maximum positive or negative value to limit noisy symbols.
-        dibitSymbol = Math.min(dibitSymbol, MAX_POSITIVE);
-        dibitSymbol = Math.max(dibitSymbol, MAX_NEGATIVE);
-
-        mSymbols[mSymbolPointer] = dibitSymbol;
-        mSymbols[mSymbolPointer + 24] = dibitSymbol;
-        mSymbolPointer++;
-        mSymbolPointer %= 24;
-
+        process(dibitSymbol);
         return calculate();
     }
 }

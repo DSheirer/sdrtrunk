@@ -23,6 +23,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulator;
 import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorFactory;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
@@ -39,6 +40,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
+import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -52,6 +54,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -91,8 +94,10 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     private final DMRMessageFramer mMessageFramer;
     private final DMRSoftSymbolProcessor mSymbolProcessor;
     private final DMRMessageProcessor mMessageProcessor;
-    private IRealFilter mIBasebandFilter;
-    private IRealFilter mQBasebandFilter;
+    private IRealFilter mBasebandFilterI;
+    private IRealFilter mBasebandFilterQ;
+    private RealFIRFilter mRRCFilterI;
+    private RealFIRFilter mRRCFilterQ;
     private final PowerMonitor mPowerMonitor = new PowerMonitor();
     private final CarrierOffsetProcessor mCarrierOffsetProcessor = new CarrierOffsetProcessor();
 
@@ -134,8 +139,11 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
         }
 
         mPowerMonitor.setSampleRate((int)sampleRate);
-        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter(sampleRate));
-        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter(sampleRate));
+        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(sampleRate));
+        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(sampleRate));
+        float[] taps = FilterFactory.getRootRaisedCosine(sampleRate / SYMBOL_RATE, 16, 0.2f);
+        mRRCFilterI = new RealFIRFilter(taps);
+        mRRCFilterQ = new RealFIRFilter(taps);
         mDemodulator = DQPSKDemodulatorFactory.getDemodulator(sampleRate, SYMBOL_RATE);
         mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
         mMessageFramer.setListener(mMessageProcessor);
@@ -152,33 +160,42 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     {
         mMessageFramer.setTimestamp(samples.timestamp());
 
-        float[] i = mIBasebandFilter.filter(samples.i());
-        float[] q = mQBasebandFilter.filter(samples.q());
+        float[] i = mBasebandFilterI.filter(samples.i());
+        float[] q = mBasebandFilterQ.filter(samples.q());
 
-        //Process buffer for power measurements
-        mPowerMonitor.process(i, q);
+        //Process buffer for power measurements before the pulse shaping filter
+//        mPowerMonitor.process(i, q);
+
+        //Apply square root raised cosine pulse shaping filter
+//        i = mRRCFilterI.filter(i);
+//        q = mRRCFilterQ.filter(q);
 
         float[] demodulated = mDemodulator.demodulate(i, q);
+
+        //The samples are differentially decoded and ready to be timing aligned.  However, there's an additional PI/4
+        //rotation that's introduced at the transmitter that hasn't been subtracted from the samples, so the
+        // constellation is a star pattern instead of a square pattern and we can exploit that easier.
         mSymbolProcessor.receive(demodulated);
 
         //Estimate carrier offset and broadcast at each update. This value is used in the channel spectral display,
-        // and it's also processed by the tuner's PPM error monitor to auto-adjust the tuner PPM value.
-        if(mCarrierOffsetProcessor.process(samples))
-        {
-            //Tuner PPM Monitor - negate the value to indicate channel error from tuner's PPM that's causing the offset
-            mPowerMonitor.broadcast(SourceEvent.frequencyErrorMeasurement(-mCarrierOffsetProcessor.getEstimatedOffset()));
-
-            //Channel spectral display - when there's a carrier send the estimate, otherwise send a zero to cause the
-            //display to blank the carrier offset measurement indicator line
-            if(mCarrierOffsetProcessor.hasCarrier())
-            {
-                mPowerMonitor.broadcast(SourceEvent.carrierOffsetMeasurement(mCarrierOffsetProcessor.getEstimatedOffset()));
-            }
-            else
-            {
-                mPowerMonitor.broadcast(SourceEvent.carrierOffsetMeasurement(0));
-            }
-        }
+        // and it's also processed by the tuner's PPM error monitor to auto-adjust the tuner PPM value.  Carrier offset
+        // is calculated completely independent of the signalling.
+//        if(mCarrierOffsetProcessor.process(samples))
+//        {
+//            //Tuner PPM Monitor - negate the value to indicate channel error from tuner's PPM that's causing the offset
+//            mPowerMonitor.broadcast(SourceEvent.frequencyErrorMeasurement(-mCarrierOffsetProcessor.getEstimatedOffset()));
+//
+//            //Channel spectral display - when there's a carrier send the estimate, otherwise send a zero to cause the
+//            //display to blank the carrier offset measurement indicator line
+//            if(mCarrierOffsetProcessor.hasCarrier())
+//            {
+//                mPowerMonitor.broadcast(SourceEvent.carrierOffsetMeasurement(mCarrierOffsetProcessor.getEstimatedOffset()));
+//            }
+//            else
+//            {
+//                mPowerMonitor.broadcast(SourceEvent.carrierOffsetMeasurement(0));
+//            }
+//        }
     }
 
     /**
@@ -310,6 +327,10 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     {
         LOGGER.info("Starting ...");
 
+
+        DMRSyncPattern sync = DMRSyncPattern.BASE_STATION_DATA;
+        System.out.println("Dibits: " + Arrays.toString(sync.toDibits()));
+
         //        String directory = "D:\\DQPSK Equalizer Research\\"; //Windows
         String directory = "/media/denny/T9/DQPSK Equalizer Research/"; //Linux
 //        String file = directory + "DMR_1_CAPPLUS.wav";
@@ -319,12 +340,13 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
 //        String file = directory + "20230819_064344_454575000_JPJ_Communications_(DMR)_Madison_Control_28_baseband.wav";
 //        String file = directory + "DMR_DCDM_4_4_baseband_20220318_142716.wav";
 //        String file = directory + "DMR_4_20241213_Saianet.wav";
-        String file = directory + "DMR_5_20241217_031219_451425000_SaiaNet_Onondaga_SaiaNet_Control_1_baseband.wav";
+//        String file = directory + "DMR_5_20241217_031219_451425000_SaiaNet_Onondaga_SaiaNet_Control_1_baseband.wav";
 //        String file = directory + "DMR_6_20241217_031511_451425000_SaiaNet_Onondaga_SaiaNet_Control_50_baseband.wav";
 //        String file = directory + "DMR_7_20241217_031651_451250000_SaiaNet_Onondaga_SaiaNet_Control_50_baseband.wav";
 //        String file = directory + "DMR_8_20241217_031845_461662500_SaiaNet_(Tier_III)_Onondaga_Control_25_baseband.wav";
 //        String file = directory + "DMR_9_CAPPLUS_encrypted_American_Airlines_Maricopa_Control_29_baseband.wav";
 //        String file = directory + "DMR_10_CAP_ENCRYPTED_20241222_035408_935487500_American_Airlines_Maricopa_Control_1_baseband.wav";
+        String file = directory + "DMR_12_20250420_061639_451250000_SaiaNet_Onondaga_SaiaNet-Control_1_baseband.wav";
 
         boolean autoReplay = false;
 

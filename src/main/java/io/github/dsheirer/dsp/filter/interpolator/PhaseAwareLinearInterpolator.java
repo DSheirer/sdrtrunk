@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,11 @@ public class PhaseAwareLinearInterpolator
      */
     public static float calculate(float x1, float x2, float mu)
     {
+        if(mu < 0 || mu > 1)
+        {
+            throw new IllegalArgumentException("mu [" + mu + "]must be between 0 and 1");
+        }
+
         //Detect phase wrap at the +PI/-PI boundary ... ignore opposite side of the unit circle at 0 axis
         if(x1 * x2 < -Math.PI)
         {

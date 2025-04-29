@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,6 +75,12 @@ public class DQPSKDemodulatorVector512 extends DQPSKDemodulator
         float[] interpolatedQ = new float[VECTOR_SPECIES.length()];
         float[] decodedPhases = new float[sampleLength];
         FloatVector iPrevious, qPreviousConjugate, iCurrent, qCurrent, differentialI, differentialQ;
+        FloatVector pi4I = FloatVector.zero(VECTOR_SPECIES).broadcast(PI_4_ROTATION);
+        FloatVector pi4Q = pi4I.neg();
+        FloatVector decoded;
+
+        float[] diffI = new float[sampleLength];
+        float[] diffQ = new float[sampleLength];
 
         //Differential demodulation.
         for(int x = 0; x < sampleLength; x += VECTOR_SPECIES.length())
@@ -86,21 +92,45 @@ public class DQPSKDemodulatorVector512 extends DQPSKDemodulator
             int index;
             for(int y = 0; y < VECTOR_SPECIES.length(); y++)
             {
-                index = offset + y;
-                interpolatedI[y] = mInterpolator.filter(mIBuffer, index, mu);
-                interpolatedQ[y] = mInterpolator.filter(mQBuffer, index, mu);
+                try
+                {
+                    index = offset + y;
+                    interpolatedI[y] = mInterpolator.filter(mIBuffer, index, mu);
+                    interpolatedQ[y] = mInterpolator.filter(mQBuffer, index, mu);
+                }
+                catch(Exception e)
+                {
+                    //Ignore
+                }
             }
+
             iCurrent = FloatVector.fromArray(VECTOR_SPECIES, interpolatedI, 0);
             qCurrent = FloatVector.fromArray(VECTOR_SPECIES, interpolatedQ, 0);
 
-            //Multiply current complex sample by the complex conjugate of previous complex sample.
+            //Differential decode - multiply current complex sample by the complex conjugate of previous complex sample.
             differentialI = iPrevious.mul(iCurrent).sub(qPreviousConjugate.mul(qCurrent));
             differentialQ = iPrevious.mul(qCurrent).add(iCurrent.mul(qPreviousConjugate));
 
+
+            //Rotate decoded samples by Pi/4 to remove the extract rotation applied at the transmitter.
+            //Pi/4 is same value for both I and Q
+//            differentialI = differentialI.mul(pi4I).min(differentialQ.mul(pi4I));
+//            differentialQ = differentialQ.mul(pi4I).add(differentialI.mul(pi4I));
+
+            differentialI.intoArray(diffI, x);
+            differentialQ.intoArray(diffQ, x);
+
             //Calculate phase angles using Arc Tangent and export to the decoded phases array.
-            differentialQ.lanewise(VectorOperators.ATAN2, differentialI).intoArray(decodedPhases, x);
+            decoded = differentialQ.lanewise(VectorOperators.ATAN2, differentialI);
+            decoded = decoded.add(PI_4_ROTATION);
+            decoded.intoArray(decodedPhases, x);
         }
 
+        unwrapPhases(decodedPhases);
+
+//        System.out.println("I: " + Arrays.toString(diffI));
+//        System.out.println("Q: " + Arrays.toString(diffQ));
+//        System.out.println("D: " + Arrays.toString(decodedPhases));
         return decodedPhases;
     }
 }

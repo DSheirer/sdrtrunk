@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@ import io.github.dsheirer.dsp.fm.IDemodulator;
  */
 public abstract class DQPSKDemodulator implements IDemodulator
 {
+    public static final float PI_4_ROTATION = (float)Math.cos(Math.PI/4.0);
+    private static final float TWO_PI = (float)Math.PI * 2.0f;
     private int mSymbolRate;
     private float mSampleRate;
     private float mSamplesPerSymbol;
@@ -61,4 +63,28 @@ public abstract class DQPSKDemodulator implements IDemodulator
     {
         return mSamplesPerSymbol;
     }
+
+    /**
+     * Processes the contents of the sample phases buffer to correct when a series of sample phase wraps temporarily
+     * and returns within a sequence of samples.
+     *
+     * Note: for a true phase rollover, this process will correct a small number of samples and then eventually allow
+     * the phase rollover to occur.
+     */
+    public static void unwrapPhases(float[] phases)
+    {
+        for(int x = 1; x < phases.length; x++)
+        {
+            if(phases[x - 1] < 0 && phases[x] > Math.PI)
+            {
+                phases[x] -= TWO_PI;
+            }
+//            else if(phases[x - 1] > 0 && phases[x] < -Math.PI)
+//            {
+//                phases[x] += TWO_PI;
+//            }
+        }
+    }
+
+
 }

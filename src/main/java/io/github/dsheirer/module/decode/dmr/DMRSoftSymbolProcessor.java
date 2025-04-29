@@ -56,11 +56,14 @@ public class DMRSoftSymbolProcessor
     private static final int BUFFER_PROTECTED_REGION_DIBITS = 92;
     private static final int BUFFER_WORKSPACE_LENGTH_DIBITS = 25; //This can be adjusted for efficiency
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
+    private static final float TWO_PI = (float)Math.PI * 2.0f;
     private static final float MAX_POSITIVE_SOFT_SYMBOL = Dibit.D01_PLUS_3.getIdealPhase();
     private static final float MAX_NEGATIVE_SOFT_SYMBOL = Dibit.D11_MINUS_3.getIdealPhase();
     private static final float SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION = 0.005f; //.5%
     private static final float SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
     private static final float SYNC_DETECTION_THRESHOLD = 60;
+    private static final float PHASE_WRAP_THRESHOLD = 2.0f;
+    private static final float PI_AS_FLOAT = (float)Math.PI;
     private DMRSyncModeMonitor mSyncModeMonitor = new DMRSyncModeMonitor();
     private DMRSoftSyncDetector mSyncDetector = DMRSoftSyncDetectorFactory.getDetector();
     private DMRSoftSyncDetector mSyncDetectorLag1 = DMRSoftSyncDetectorFactory.getDetector();
@@ -146,6 +149,9 @@ public class DMRSoftSymbolProcessor
      */
     public void receive(float[] samples)
     {
+        float[] symbols = new float[(int)(samples.length / mSamplesPerSymbol) + 4];
+        int symbolsPointer = 0;
+
         int samplesPointer = 0;
 
         while(samplesPointer < samples.length)
@@ -171,13 +177,29 @@ public class DMRSoftSymbolProcessor
                 {
                     mSymbolsSinceLastSync++;
 
-                    if(mSymbolsSinceLastSync > 144)
+                    if(mSyncLock && mSymbolsSinceLastSync > 288)
                     {
+                        //TODO: how are we handling voice sync patterns here?
+                        System.out.println(">> Setting Sync Lock False");
                         mSyncLock = false;
+                        mSyncDetectorLag1.reset();
+                        mSyncDetectorLag2.reset();
+                    }
+
+                    if(mSamplePoint < 0)
+                    {
+                        float a = mBuffer[mBufferPointer];
+                        float b = mBuffer[mBufferPointer + 1];
+                        float c = mSamplePoint;
+                        //TODO: why is the mSamplePoint less than -1 and also less than zero?
+                        int d = 0;
                     }
 
                     float softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[mBufferPointer],
                             mBuffer[mBufferPointer + 1], mSamplePoint);
+
+
+                    //                    symbols[symbolsPointer++] = softSymbol;
 
                     Dibit symbol = toSymbol(softSymbol);
 
@@ -187,57 +209,94 @@ public class DMRSoftSymbolProcessor
                     mMessageFramer.receive(ejected);
                     mDibitAssembler.receive(ejected);
 
-                    float scorePrimary = mSyncDetector.process(softSymbol);
-
-                    if(mSyncLock && scorePrimary > SYNC_DETECTION_THRESHOLD &&
-                            optimize(mSyncDetector.getDetectedPattern(), 0.0f))
+                    if(mSyncLock && mSymbolsSinceLastSync < 144)
                     {
-                        mSymbolsSinceLastSync = 0;
-                        mSyncModeMonitor.detected(mSyncDetector.getDetectedPattern());
-                        mMessageFramer.syncDetected(mSyncDetector.getDetectedPattern());
+                        mSyncDetector.process(softSymbol);
                     }
                     else
                     {
-                        float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
-                        float lag2 = mBufferPointer + mSamplePoint - mLaggingSyncOffset2;
-                        int lagIntegral1 = (int)Math.floor(lag1);
-                        int lagIntegral2 = (int)Math.floor(lag2);
-                        float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral1],
-                                mBuffer[lagIntegral1 + 1], lag1 - lagIntegral1);
-                        float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral2],
-                                mBuffer[lagIntegral2 + 1], lag2 - lagIntegral2);
-                        float scoreLag1 = mSyncDetectorLag1.process(softSymbolLag1);
-                        float scoreLag2 = mSyncDetectorLag2.process(softSymbolLag2);
+                        float scorePrimary = mSyncDetector.processAndCalculate(softSymbol);
 
-                        if(mSymbolsSinceLastSync > 1 && scoreLag1 > scorePrimary && scoreLag1 > scoreLag2 &&
-                                scoreLag1 > SYNC_DETECTION_THRESHOLD &&
-                                optimize(mSyncDetectorLag1.getDetectedPattern(), -mLaggingSyncOffset1))
-                        {
-                            mSymbolsSinceLastSync = 0;
-                            mSyncModeMonitor.detected(mSyncDetectorLag1.getDetectedPattern());
-                            mMessageFramer.syncDetected(mSyncDetectorLag1.getDetectedPattern());
-                        }
-                        else if(mSymbolsSinceLastSync > 1 && scoreLag2 > scorePrimary &&
-                                scoreLag2 > SYNC_DETECTION_THRESHOLD &&
-                                optimize(mSyncDetectorLag2.getDetectedPattern(), -mLaggingSyncOffset2))
-                        {
-                            mSymbolsSinceLastSync = 0;
-                            mSyncModeMonitor.detected(mSyncDetectorLag2.getDetectedPattern());
-                            mMessageFramer.syncDetected(mSyncDetectorLag2.getDetectedPattern());
-                        }
-                        else if(scorePrimary > SYNC_DETECTION_THRESHOLD &&
+                        System.out.println("Score Primary: " + scorePrimary);
+
+                        if(mSyncLock && scorePrimary > SYNC_DETECTION_THRESHOLD &&
                                 optimize(mSyncDetector.getDetectedPattern(), 0.0f))
                         {
                             mSymbolsSinceLastSync = 0;
-                            mSyncLock = true;
                             mSyncModeMonitor.detected(mSyncDetector.getDetectedPattern());
                             mMessageFramer.syncDetected(mSyncDetector.getDetectedPattern());
                         }
-                    }
+                        else
+                        {
+                            //When not in sync lock, feed all 3x sync detectors
+                            float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
+                            float lag2 = mBufferPointer + mSamplePoint - mLaggingSyncOffset2;
+                            int lagIntegral1 = (int)Math.floor(lag1);
+                            int lagIntegral2 = (int)Math.floor(lag2);
+                            float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral1],
+                                    mBuffer[lagIntegral1 + 1], lag1 - lagIntegral1);
+                            float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral2],
+                                    mBuffer[lagIntegral2 + 1], lag2 - lagIntegral2);
+                            mSyncDetectorLag1.process(softSymbolLag1);
+                            mSyncDetectorLag2.process(softSymbolLag2);
 
-                    //Add another symbol's worth of samples to the counter
-                    mSamplePoint += mObservedSamplesPerSymbol;
+                            if(scorePrimary > SYNC_DETECTION_THRESHOLD && optimize(mSyncDetector.getDetectedPattern(), 0.0f))
+                            {
+                                mSymbolsSinceLastSync = 0;
+                                mSyncLock = true;
+                                mSyncModeMonitor.detected(mSyncDetector.getDetectedPattern());
+                                mMessageFramer.syncDetected(mSyncDetector.getDetectedPattern());
+                            }
+                            else
+                            {
+                                float scoreLag1 = mSyncDetectorLag1.calculate();
+
+                                if(scoreLag1 > SYNC_DETECTION_THRESHOLD && optimize(mSyncDetectorLag1.getDetectedPattern(), -mLaggingSyncOffset1))
+                                {
+                                    mSymbolsSinceLastSync = 0;
+                                    mSyncModeMonitor.detected(mSyncDetectorLag1.getDetectedPattern());
+                                    mMessageFramer.syncDetected(mSyncDetectorLag1.getDetectedPattern());
+                                }
+                                else
+                                {
+                                    float scoreLag2 = mSyncDetectorLag2.calculate();
+
+                                    if(scoreLag2 > SYNC_DETECTION_THRESHOLD && optimize(mSyncDetectorLag2.getDetectedPattern(), -mLaggingSyncOffset2))
+                                    {
+                                        mSymbolsSinceLastSync = 0;
+                                        mSyncModeMonitor.detected(mSyncDetectorLag2.getDetectedPattern());
+                                        mMessageFramer.syncDetected(mSyncDetectorLag2.getDetectedPattern());
+                                    }
+                                }
+                            }
+                        }
+
+                        //Add another symbol's worth of samples to the counter
+                        mSamplePoint += mObservedSamplesPerSymbol;
+                    }
                 }
+            }
+        }
+    }
+
+    /**
+     * Processes the contents of the sample phases buffer to correct when a series of sample phase wraps temporarily
+     * and returns within a sequence of samples.
+     *
+     * Note: for a true phase rollover, this process will correct a small number of samples and then eventually allow
+     * the phase rollover to occur.
+     */
+    public static void unwrapPhases(float[] phases)
+    {
+        for(int x = 1; x < phases.length; x++)
+        {
+            if(phases[x - 1] > 0 && phases[x] < -Math.PI)
+            {
+                phases[x] += TWO_PI;
+            }
+            else if(phases[x - 1] < 0 && phases[x] > Math.PI)
+            {
+                phases[x] -= TWO_PI;
             }
         }
     }
@@ -252,6 +311,7 @@ public class DMRSoftSymbolProcessor
      */
     private boolean optimize(DMRSyncPattern pattern, float additionalOffset)
     {
+        float before = mSamplePoint;
         //Offset is the start of the first sample of the first symbol of the sync pattern calculated from the current
         //buffer pointer and sample point which should be the final sample of the final symbol of the detected sync.
         float offset = (mBufferPointer + mSamplePoint) + additionalOffset - (mObservedSamplesPerSymbol * 23);
@@ -326,6 +386,8 @@ public class DMRSoftSymbolProcessor
             return false;
         }
 
+        System.out.println("Score: " + scoreCenter + " Adjust: " + adjustment + " Additional: " + additionalOffset);
+
         if(additionalOffset != 0.0)
         {
             adjustment += additionalOffset;
@@ -345,11 +407,18 @@ public class DMRSoftSymbolProcessor
             mBufferPointer++;
         }
 
+        System.out.println("mSamplePoint: " + mSamplePoint + " Adjustment: " + adjustment + " Additional: " + additionalOffset);
+
         //Adjust the observed samples per symbol using the timing error measured across one or two bursts when we're in
         //fine sync mode and the timing error is not excessive.
         if(mSyncLock && Math.abs(adjustment) < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
         {
             mObservedSamplesPerSymbol += (float)((double)adjustment / (double)mSymbolsSinceLastSync * 0.2);
+
+            if(mObservedSamplesPerSymbol < 10 || mObservedSamplesPerSymbol > 11)
+            {
+                int a = 0;
+            }
 
             if(mObservedSamplesPerSymbol > mMaxSamplesPerSymbol)
             {
@@ -360,6 +429,8 @@ public class DMRSoftSymbolProcessor
                 mObservedSamplesPerSymbol = mMinSamplesPerSymbol;
             }
         }
+
+        System.out.println("mSamplePoint: " + mSamplePoint + " Adjustment: " + adjustment + " Additional: " + additionalOffset + " Observed SPS:" + mObservedSamplesPerSymbol);
 
         //If the timing error adjustment is high enough, resample the symbols.  Otherwise, overwrite the captured sync
         //pattern in the delay buffer with the detected sync pattern to eliminate any sync bit errors.
@@ -399,6 +470,8 @@ public class DMRSoftSymbolProcessor
             //Overwrite the most recent 24 dibits with the detected sync so there's no sync bit errors
             mDibitDelayLine.update(pattern.toDibits());
         }
+
+//        System.out.println("Adjustment: " + (mSamplePoint - before));
 
         return true;
     }
