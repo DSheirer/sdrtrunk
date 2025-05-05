@@ -40,7 +40,8 @@ public abstract class DQPSKDemodulator implements IDemodulator
     protected int mInterpolationOffset;
     protected final Interpolator mInterpolator = InterpolatorFactory.getInterpolator();
 
-   /**
+
+    /**
      * Constructor
      * @param sampleRate in Hertz
      * @param symbolRate symbols per second
@@ -75,16 +76,25 @@ public abstract class DQPSKDemodulator implements IDemodulator
     {
         for(int x = 1; x < phases.length; x++)
         {
-            if(phases[x - 1] < 0 && phases[x] > Math.PI)
-            {
-                phases[x] -= TWO_PI;
-            }
+//            if(phases[x - 1] < 0 && phases[x] > Math.PI)
+//            {
+//                phases[x] -= TWO_PI;
+//            }
 //            else if(phases[x - 1] > 0 && phases[x] < -Math.PI)
 //            {
 //                phases[x] += TWO_PI;
 //            }
+            if(Math.abs(phases[x - 1] - phases[x]) > Math.PI)
+            {
+                if(phases[x - 1] > 0 && phases[x] < 0 && phases[x] + TWO_PI < 5)
+                {
+                    phases[x] += TWO_PI;
+                }
+                else if(phases[x - 1] < 0 && phases[x] > 0 && phases[x] - TWO_PI > 5)
+                {
+                    phases[x] -= TWO_PI;
+                }
+            }
         }
     }
-
-
 }

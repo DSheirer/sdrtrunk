@@ -158,7 +158,10 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
     @Override
     public void receive(ComplexSamples samples)
     {
+//        System.out.println("I: " + Arrays.toString(samples.i()));
+//        System.out.println("Q: " + Arrays.toString(samples.q()));
         mMessageFramer.setTimestamp(samples.timestamp());
+//        UnityGain.process(samples);
 
         float[] i = mBasebandFilterI.filter(samples.i());
         float[] q = mBasebandFilterQ.filter(samples.q());
@@ -347,6 +350,8 @@ public class DMRDecoder extends Decoder implements IByteBufferProvider, IComplex
 //        String file = directory + "DMR_9_CAPPLUS_encrypted_American_Airlines_Maricopa_Control_29_baseband.wav";
 //        String file = directory + "DMR_10_CAP_ENCRYPTED_20241222_035408_935487500_American_Airlines_Maricopa_Control_1_baseband.wav";
         String file = directory + "DMR_12_20250420_061639_451250000_SaiaNet_Onondaga_SaiaNet-Control_1_baseband.wav";
+//        String file = directory + "DMR_13_HETERO_20250502_025012_451250000_SaiaNet_Onondaga_SaiaNet-Control_1_baseband.wav";
+//        String file = directory + "DMR_14_POLY_20250502_031053_451250000_SaiaNet_Onondaga_SaiaNet-Control_1_baseband.wav";
 
         boolean autoReplay = false;
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -238,6 +238,32 @@ public enum DMRSyncPattern
     public String toString()
     {
         return mLabel;
+    }
+
+    public float[] toISamples()
+    {
+        float[] samples = new float[24];
+        Dibit[] dibits = toDibits();
+
+        for(int x = 0; x < 24; x++)
+        {
+            samples[x] = dibits[x].getIdealI() > 0 ? 1.0f : -1.0f;
+        }
+
+        return samples;
+    }
+
+    public float[] toQSamples()
+    {
+        float[] samples = new float[24];
+        Dibit[] dibits = toDibits();
+
+        for(int x = 0; x < 24; x++)
+        {
+            samples[x] = dibits[x].getIdealQ() > 0 ? 1.0f : -1.0f;
+        }
+
+        return samples;
     }
 
     /**

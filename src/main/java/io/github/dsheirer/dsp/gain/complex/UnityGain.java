@@ -19,11 +19,22 @@
 
 package io.github.dsheirer.dsp.gain.complex;
 
+import io.github.dsheirer.sample.complex.ComplexSamples;
+
 /**
  * Applies gain to the I/Q values to achieve unity gain on at least one sample.
  */
 public class UnityGain
 {
+    /**
+     * Processes the I/Q samples and applies gain to achieve close to unity gain across the values.
+     * @param samples to process
+     */
+    public static void process(ComplexSamples samples)
+    {
+        process(samples.i(), samples.q());
+    }
+
     /**
      * Processes the I/Q samples and applies gain to achieve close to unity gain across the values.
      * @param iSamples to process

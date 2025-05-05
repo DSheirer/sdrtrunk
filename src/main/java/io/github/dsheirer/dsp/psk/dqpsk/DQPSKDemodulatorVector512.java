@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.dsp.psk.dqpsk;
 
+import io.github.dsheirer.dsp.gain.complex.UnityGain;
 import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
@@ -81,6 +82,10 @@ public class DQPSKDemodulatorVector512 extends DQPSKDemodulator
 
         float[] diffI = new float[sampleLength];
         float[] diffQ = new float[sampleLength];
+        float[] diffIRotated = new float[sampleLength];
+        float[] diffQRotated = new float[sampleLength];
+
+        FloatVector rotate = FloatVector.zero(VECTOR_SPECIES).broadcast(PI_4_ROTATION);
 
         //Differential demodulation.
         for(int x = 0; x < sampleLength; x += VECTOR_SPECIES.length())
@@ -111,26 +116,37 @@ public class DQPSKDemodulatorVector512 extends DQPSKDemodulator
             differentialI = iPrevious.mul(iCurrent).sub(qPreviousConjugate.mul(qCurrent));
             differentialQ = iPrevious.mul(qCurrent).add(iCurrent.mul(qPreviousConjugate));
 
-
-            //Rotate decoded samples by Pi/4 to remove the extract rotation applied at the transmitter.
-            //Pi/4 is same value for both I and Q
-//            differentialI = differentialI.mul(pi4I).min(differentialQ.mul(pi4I));
-//            differentialQ = differentialQ.mul(pi4I).add(differentialI.mul(pi4I));
-
             differentialI.intoArray(diffI, x);
             differentialQ.intoArray(diffQ, x);
 
+            //Rotate 45 degrees.
+            iCurrent = differentialI.mul(rotate).sub(differentialQ.mul(rotate));
+            qCurrent = differentialQ.mul(rotate).add(differentialI.mul(rotate));
+
+            iCurrent.intoArray(diffIRotated, x);
+            qCurrent.intoArray(diffQRotated, x);
+
+            //Rotate decoded samples by Pi/4 to remove the extract rotation applied at the transmitter.
+            //Pi/4 is same value for both I and Q
+
             //Calculate phase angles using Arc Tangent and export to the decoded phases array.
-            decoded = differentialQ.lanewise(VectorOperators.ATAN2, differentialI);
-            decoded = decoded.add(PI_4_ROTATION);
+//            decoded = differentialQ.lanewise(VectorOperators.ATAN2, differentialI);
+            decoded = qCurrent.lanewise(VectorOperators.ATAN2, iCurrent);
+//            decoded = decoded.add(PI_4_ROTATION);
             decoded.intoArray(decodedPhases, x);
         }
+//        System.out.println("D: " + Arrays.toString(decodedPhases));
 
         unwrapPhases(decodedPhases);
+        UnityGain.process(diffI, diffQ);
+        UnityGain.process(diffIRotated, diffQRotated);
 
-//        System.out.println("I: " + Arrays.toString(diffI));
-//        System.out.println("Q: " + Arrays.toString(diffQ));
-//        System.out.println("D: " + Arrays.toString(decodedPhases));
+        System.out.println("I: " + Arrays.toString(diffI));
+        System.out.println("Q: " + Arrays.toString(diffQ));
+        System.out.println("I Rot: " + Arrays.toString(diffIRotated));
+        System.out.println("Q Rot: " + Arrays.toString(diffQRotated));
+
+        //        System.out.println("D: " + Arrays.toString(decodedPhases));
         return decodedPhases;
     }
 }
