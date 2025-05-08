@@ -20,6 +20,8 @@
 package io.github.dsheirer.dsp.psk.dqpsk;
 
 import java.util.Arrays;
+
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -101,5 +103,72 @@ public class DQPSKDemodulatorVector256 extends DQPSKDemodulator
         }
 
         return decodedPhases;
+    }
+
+    public ComplexSamples demodulate2(float[] i, float[] q)
+    {
+        int sampleLength = i.length;
+        int bufferOverlap = mBufferOverlap;
+        float mu = mMu;
+
+        //Copy previous buffer residual samples to beginning of buffer.
+        System.arraycopy(mIBuffer, mIBuffer.length - bufferOverlap, mIBuffer, 0, bufferOverlap);
+        System.arraycopy(mQBuffer, mQBuffer.length - bufferOverlap, mQBuffer, 0, bufferOverlap);
+
+        //Resize I/Q buffers if necessary
+        int requiredBufferLength = sampleLength + bufferOverlap;
+        if(mIBuffer.length != requiredBufferLength)
+        {
+            if(i.length % VECTOR_SPECIES.length() != 0)
+            {
+                throw new IllegalArgumentException("Buffer length must be a multiple of " + VECTOR_SPECIES.length());
+            }
+            mIBuffer = Arrays.copyOf(mIBuffer, requiredBufferLength);
+            mQBuffer = Arrays.copyOf(mQBuffer, requiredBufferLength);
+        }
+
+        //Append new samples to the residual samples from the previous buffer.
+        System.arraycopy(i, 0, mIBuffer, bufferOverlap, sampleLength);
+        System.arraycopy(q, 0, mQBuffer, bufferOverlap, sampleLength);
+        //mIDecoded, mQDecoded and mPhase will be filled below during the decoding process.
+
+        float[] interpolatedI = new float[VECTOR_SPECIES.length()];
+        float[] interpolatedQ = new float[VECTOR_SPECIES.length()];
+        float[] decodedI = new float[sampleLength];
+        float[] decodedQ = new float[sampleLength];
+        FloatVector iPrevious, qPreviousConjugate, iCurrent, qCurrent, differentialI, differentialQ;
+        FloatVector rotate = FloatVector.zero(VECTOR_SPECIES).broadcast(PI_4_ROTATION);
+
+        //Differential demodulation.
+        for(int x = 0; x < sampleLength; x += VECTOR_SPECIES.length())
+        {
+            iPrevious = FloatVector.fromArray(VECTOR_SPECIES, mIBuffer, x);
+            qPreviousConjugate = FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x).neg(); //Complex Conjugate
+
+            int offset = mInterpolationOffset + x;
+            int index;
+            for(int y = 0; y < VECTOR_SPECIES.length(); y++)
+            {
+                index = offset + y;
+                interpolatedI[y] = mInterpolator.filter(mIBuffer, index, mu);
+                interpolatedQ[y] = mInterpolator.filter(mQBuffer, index, mu);
+            }
+
+            iCurrent = FloatVector.fromArray(VECTOR_SPECIES, interpolatedI, 0);
+            qCurrent = FloatVector.fromArray(VECTOR_SPECIES, interpolatedQ, 0);
+
+            //Differential decode - multiply current complex sample by the complex conjugate of previous complex sample.
+            differentialI = iPrevious.mul(iCurrent).sub(qPreviousConjugate.mul(qCurrent));
+            differentialQ = iPrevious.mul(qCurrent).add(iCurrent.mul(qPreviousConjugate));
+
+            //Rotate 45 degrees.
+            iCurrent = differentialI.mul(rotate).sub(differentialQ.mul(rotate));
+            qCurrent = differentialQ.mul(rotate).add(differentialI.mul(rotate));
+
+            iCurrent.intoArray(decodedI, x);
+            qCurrent.intoArray(decodedQ, x);
+        }
+
+        return new ComplexSamples(decodedI, decodedQ, System.currentTimeMillis());
     }
 }

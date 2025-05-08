@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.dmr.sync2;
 
-import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
 import java.util.Arrays;
 
@@ -28,10 +27,8 @@ import java.util.Arrays;
  */
 public class DMRSoftSyncDetector2 extends DMRSyncDetector2
 {
-    protected static final float MAX_POSITIVE = Dibit.D01_PLUS_3.getIdealPhase();
-    protected static final float MAX_NEGATIVE = Dibit.D11_MINUS_3.getIdealPhase();
-    protected static final float[] BASE_DATA_I = DMRSyncPattern.BASE_STATION_DATA.toISamples();
-    protected static final float[] BASE_DATA_Q = DMRSyncPattern.BASE_STATION_DATA.toQSamples();
+    protected static final float[] BASE_DATA = DMRSyncPattern.BASE_STATION_DATA.toQSamples();
+    protected static final float[] BASE_VOICE = DMRSyncPattern.BASE_STATION_VOICE.toQSamples();
 
     protected float[] mISymbols = new float[48]; //2x longer than 48-bit/24-dibit DMR sync patterns.
     protected float[] mQSymbols = new float[48]; //2x longer than 48-bit/24-dibit DMR sync patterns.
@@ -49,6 +46,12 @@ public class DMRSoftSyncDetector2 extends DMRSyncDetector2
         Arrays.fill(mISymbols, 0.0f);
         Arrays.fill(mQSymbols, 0.0f);
         mSymbolPointer = 0;
+    }
+
+    public void log()
+    {
+        System.out.println("I: " + Arrays.toString(mISymbols));
+        System.out.println("Q: " + Arrays.toString(mQSymbols));
     }
 
     /**
@@ -69,15 +72,34 @@ public class DMRSoftSyncDetector2 extends DMRSyncDetector2
     public float calculate()
     {
         float accumulator = 0.0f;
+        float iAccumulator = 0.0f;
 
         for(int x = 0; x < 24; x++)
         {
             //The I branch of the symbol is always negative in a sync pattern - just add the negated value
-            accumulator += -mISymbols[mSymbolPointer + x];
-            accumulator += BASE_DATA_Q[x] * mQSymbols[mSymbolPointer + x];
+            iAccumulator += mISymbols[mSymbolPointer + x];
+            accumulator += BASE_DATA[x] * mQSymbols[mSymbolPointer + x];
         }
 
-        return accumulator;
+        iAccumulator *= -1;
+
+        float bestScore = accumulator + iAccumulator;
+        mDetectedPattern = DMRSyncPattern.BASE_STATION_DATA;
+
+        accumulator = iAccumulator;
+
+        for(int x = 0; x < 24; x++)
+        {
+            accumulator += BASE_VOICE[x] * mQSymbols[mSymbolPointer + x];
+        }
+
+        if(accumulator > bestScore)
+        {
+            bestScore = accumulator;
+            mDetectedPattern = DMRSyncPattern.BASE_STATION_VOICE;
+        }
+
+        return bestScore;
     }
 
     /**
@@ -104,5 +126,14 @@ public class DMRSoftSyncDetector2 extends DMRSyncDetector2
     {
         process(i, q);
         return calculate();
+    }
+
+    public static void main(String[] args)
+    {
+        DMRSoftSyncDetector2 detector = new DMRSoftSyncDetector2();
+
+        detector.process(1.0f, 1.0f);
+        float score = detector.calculate();
+
     }
 }

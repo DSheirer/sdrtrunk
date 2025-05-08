@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.filter.interpolator.PhaseAwareLinearInterpolator;
+import io.github.dsheirer.dsp.gain.complex.UnityGain;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetector;
@@ -27,6 +28,7 @@ import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncDetectMode;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncModeMonitor;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.sync2.DMRSoftSyncDetector2;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -69,6 +71,11 @@ public class DMRSoftSymbolProcessor
     private DMRSoftSyncDetector mSyncDetector = DMRSoftSyncDetectorFactory.getDetector();
     private DMRSoftSyncDetector mSyncDetectorLag1 = DMRSoftSyncDetectorFactory.getDetector();
     private DMRSoftSyncDetector mSyncDetectorLag2 = DMRSoftSyncDetectorFactory.getDetector();
+
+    private DMRSoftSyncDetector2 mSyncDetector2 = new DMRSoftSyncDetector2();
+    private DMRSoftSyncDetector2 mSyncDetector2Lag1 = new DMRSoftSyncDetector2();
+    private DMRSoftSyncDetector2 mSyncDetector2Lag2 = new DMRSoftSyncDetector2();
+
     private DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     //Dibit delay line sizing: CACH(12) + MESSAGE_PREFIX(54) + SYNC(24)
     private DibitDelayLine mDibitDelayLine = new DibitDelayLine(90);
@@ -81,14 +88,16 @@ public class DMRSoftSymbolProcessor
     private float mMaxSamplesPerSymbol;
     private float mMinSamplesPerSymbol;
     private float mSamplePoint;
-    private float[] mBuffer;
+    private float[] mBufferI;
+    private float[] mBufferQ;
     private int mBufferLoadPointer;
     private int mBufferPointer;
     private int mBufferWorkspaceLength;
     private int mBufferInterpolatorReservedRegion;
     private int mSymbolsSinceLastSync = 0;
 
-    private int mDebugSampleCounter;
+    private int mDebugSymbolCounter;
+    private long mDebugSampleCounter;
 
     /**
      * Constructs an instance
@@ -146,14 +155,120 @@ public class DMRSoftSymbolProcessor
         mMessageFramer.setTimestamp(timestamp);
     }
 
+    public void receive(float[] i, float[] q)
+    {
+        UnityGain.process(i, q);
+        int samplesPointer = 0;
+
+        while(samplesPointer < i.length)
+        {
+            if(mBufferLoadPointer == mBufferI.length)
+            {
+                System.arraycopy(mBufferI, mBufferWorkspaceLength, mBufferI, 0, mBufferI.length - mBufferWorkspaceLength);
+                System.arraycopy(mBufferQ, mBufferWorkspaceLength, mBufferQ, 0, mBufferQ.length - mBufferWorkspaceLength);
+                mBufferLoadPointer -= mBufferWorkspaceLength;
+                mBufferPointer -= mBufferWorkspaceLength;
+            }
+
+            int copyLength = Math.min(mBufferI.length - mBufferLoadPointer, i.length - samplesPointer);
+            System.arraycopy(i, samplesPointer, mBufferI, mBufferLoadPointer, copyLength);
+            System.arraycopy(q, samplesPointer, mBufferQ, mBufferLoadPointer, copyLength);
+            samplesPointer += copyLength;
+            mBufferLoadPointer += copyLength;
+
+            while(mBufferPointer < (mBufferLoadPointer - mBufferInterpolatorReservedRegion))
+            {
+                mBufferPointer++;
+                mSamplePoint--;
+                mDebugSampleCounter++;
+
+                if(mSamplePoint < 1)
+                {
+                    mSymbolsSinceLastSync++;
+
+                    float softI = PhaseAwareLinearInterpolator.calculate(mBufferI[mBufferPointer],
+                            mBufferI[mBufferPointer + 1], mSamplePoint);
+                    float softQ = PhaseAwareLinearInterpolator.calculate(mBufferQ[mBufferPointer],
+                            mBufferQ[mBufferPointer + 1], mSamplePoint);
+                    float primaryScore = mSyncDetector2.processAndCalculate(softI, softQ);
+
+                    float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
+                    int lagIntegral1 = (int)Math.floor(lag1);
+                    float softILag1 = PhaseAwareLinearInterpolator.calculate(mBufferI[lagIntegral1],
+                            mBufferI[lagIntegral1 + 1], lag1 - lagIntegral1);
+                    float softQLag1 = PhaseAwareLinearInterpolator.calculate(mBufferQ[lagIntegral1],
+                            mBufferQ[lagIntegral1 + 1], lag1 - lagIntegral1);
+                    float lag1Score = mSyncDetector2Lag1.processAndCalculate(softILag1, softQLag1);
+
+//                    float lag2 = mBufferPointer + mSamplePoint - mLaggingSyncOffset2;
+//                    int lagIntegral2 = (int)Math.floor(lag2);
+//                    float softILag2 = PhaseAwareLinearInterpolator.calculate(mBufferI[lagIntegral2],
+//                            mBufferI[lagIntegral2 + 1], lag2 - lagIntegral2);
+//                    float softQLag2 = PhaseAwareLinearInterpolator.calculate(mBufferQ[lagIntegral2],
+//                            mBufferQ[lagIntegral2 + 1], lag2 - lagIntegral2);
+//                    float lag2Score = mSyncDetector2Lag2.processAndCalculate(softILag2, softQLag2);
+
+                    mDebugSymbolCounter++;
+
+//                    if(mDebugSampleCounter < 11802)
+//                    {
+//                        boolean high = (lag2Score > 10) || (lag1Score > 10) || (primaryScore > 10);
+//                        System.out.println(mDebugSymbolCounter + " Lag2:  " + lag2Score + " Lag1: " + lag1Score + " Primary: " + primaryScore + " Elapsed: " + mDebugSymbolCounter + (high ? " <<<<<<<<<<<<<<<<<<<<<<<<<" : ""));
+//
+//                        if(mDebugSymbolCounter == 989)
+//                        {
+//                            System.out.println("\nLog\n");
+//                            mSyncDetector2.log();
+//                        }
+//                    }
+
+                    float threshold = 18f;
+
+//                    if(primaryScore > threshold || lag1Score > threshold || lag2Score > threshold)
+                    if(primaryScore > threshold || lag1Score > threshold)
+                    {
+//                        System.out.println(mDebugSymbolCounter + " Lag2:  " + lag2Score + " Lag1: " + lag1Score + " Primary: " + primaryScore + " Elapsed: " + mDebugSymbolCounter);
+                        System.out.println(mDebugSymbolCounter + " Lag1: " + lag1Score + " Primary: " + primaryScore + " Elapsed: " + mDebugSymbolCounter);
+
+                        if(primaryScore > threshold)
+                        {
+                            System.out.println("PRIMARY - " + mSyncDetector2.getDetectedPattern() + " Sample:" + mDebugSampleCounter);
+                            optimize2(mSyncDetector2.getDetectedPattern(), 0, primaryScore);
+//                            mSyncDetector2.log();
+                        }
+                        else if(lag1Score > threshold)
+                        {
+                            System.out.println("LAG 1 - " + mSyncDetector2Lag1.getDetectedPattern() + " Sample:" + mDebugSampleCounter);
+                            optimize2(mSyncDetector2Lag1.getDetectedPattern(), -mLaggingSyncOffset1, lag1Score);
+//                            mSyncDetector2Lag1.log();
+                        }
+//                        else if(lag2Score > threshold)
+//                        {
+//                            System.out.println("LAG 2 - " + mSyncDetector2Lag2.getDetectedPattern() + " Sample:" + mDebugSampleCounter);
+//                            optimize2(mSyncDetector2Lag2.getDetectedPattern(), -mLaggingSyncOffset2, lag2Score);
+////                            mSyncDetector2Lag2.log();
+//                        }
+
+                        mDebugSymbolCounter = 0;
+                    }
+//                    else if(mDebugSymbolCounter % 144 == 0)
+//                    {
+//                        System.out.println(mDebugSymbolCounter + " Lag1:  " + lag1Score + " Lag1: " + lag1Score + " Primary: " + primaryScore + " Elapsed: " + mDebugSymbolCounter + " NO HIT **");
+//                    }
+
+                    //Add another symbol's worth of samples to the counter
+                    mSamplePoint += mObservedSamplesPerSymbol;
+                }
+            }
+        }
+    }
+
     /**
      * Primary input method for receiving a stream of demodulated samples to process into symbols.
      * @param samples to process
      */
     public void receive(float[] samples)
     {
-        mDebugSampleCounter += samples.length;
-
         float[] symbols = new float[(int)(samples.length / mSamplesPerSymbol) + 4];
         int symbolsPointer = 0;
 
@@ -161,15 +276,15 @@ public class DMRSoftSymbolProcessor
 
         while(samplesPointer < samples.length)
         {
-            if(mBufferLoadPointer == mBuffer.length)
+            if(mBufferLoadPointer == mBufferI.length)
             {
-                System.arraycopy(mBuffer, mBufferWorkspaceLength, mBuffer, 0, mBuffer.length - mBufferWorkspaceLength);
+                System.arraycopy(mBufferI, mBufferWorkspaceLength, mBufferI, 0, mBufferI.length - mBufferWorkspaceLength);
                 mBufferLoadPointer -= mBufferWorkspaceLength;
                 mBufferPointer -= mBufferWorkspaceLength;
             }
 
-            int copyLength = Math.min(mBuffer.length - mBufferLoadPointer, samples.length - samplesPointer);
-            System.arraycopy(samples, samplesPointer, mBuffer, mBufferLoadPointer, copyLength);
+            int copyLength = Math.min(mBufferI.length - mBufferLoadPointer, samples.length - samplesPointer);
+            System.arraycopy(samples, samplesPointer, mBufferI, mBufferLoadPointer, copyLength);
             samplesPointer += copyLength;
             mBufferLoadPointer += copyLength;
 
@@ -191,8 +306,8 @@ public class DMRSoftSymbolProcessor
 //                        mSyncDetectorLag2.reset();
 //                    }
 
-                    float softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[mBufferPointer],
-                            mBuffer[mBufferPointer + 1], mSamplePoint);
+                    float softSymbol = PhaseAwareLinearInterpolator.calculate(mBufferI[mBufferPointer],
+                            mBufferI[mBufferPointer + 1], mSamplePoint);
 
                     //                    symbols[symbolsPointer++] = softSymbol;
 
@@ -216,10 +331,10 @@ public class DMRSoftSymbolProcessor
 //                        System.out.println("Sample Pointer: " + samplesPointer + " Lag2: " + lag2);
                         int lagIntegral1 = (int)Math.floor(lag1);
                         int lagIntegral2 = (int)Math.floor(lag2);
-                        float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral1],
-                                mBuffer[lagIntegral1 + 1], lag1 - lagIntegral1);
-                        float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral2],
-                                mBuffer[lagIntegral2 + 1], lag2 - lagIntegral2);
+                        float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBufferI[lagIntegral1],
+                                mBufferI[lagIntegral1 + 1], lag1 - lagIntegral1);
+                        float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBufferI[lagIntegral2],
+                                mBufferI[lagIntegral2 + 1], lag2 - lagIntegral2);
                         mSyncDetector.process(softSymbol);
                         mSyncDetectorLag1.process(softSymbolLag1);
                         mSyncDetectorLag2.process(softSymbolLag2);
@@ -383,7 +498,7 @@ public class DMRSoftSymbolProcessor
             }
         }
 
-        float[] logSamples = Arrays.copyOfRange(mBuffer, mBufferPointer - 250, mBufferPointer);
+        float[] logSamples = Arrays.copyOfRange(mBufferI, mBufferPointer - 250, mBufferPointer);
 
         System.out.println("\nBuff: " + Arrays.toString(logSamples));
         System.out.println("Sync: " + Arrays.toString(getSync(pattern)));
@@ -457,8 +572,182 @@ public class DMRSoftSymbolProcessor
 
                 if(resampleStartIntegral >= 0)
                 {
-                    float resampledSoftSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[resampleStartIntegral],
-                            mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+                    float resampledSoftSymbol = PhaseAwareLinearInterpolator.calculate(mBufferI[resampleStartIntegral],
+                            mBufferI[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+                    mDibitDelayLine.insert(toSymbol(resampledSoftSymbol));
+                }
+                else
+                {
+                    //This shouldn't happen since there's 2x dibits of padding on the front side, but just in case.
+                    mDibitDelayLine.insert(Dibit.D01_PLUS_3);
+                }
+
+                resampleStart += mObservedSamplesPerSymbol;
+            }
+
+            //We don't need to resample the sync region ... just use the actual sync dibit values.
+            for(Dibit dibit: pattern.toDibits())
+            {
+                mDibitDelayLine.insert(dibit);
+            }
+        }
+        else
+        {
+            //Overwrite the most recent 24 dibits with the detected sync so there's no sync bit errors
+            mDibitDelayLine.update(pattern.toDibits());
+        }
+
+//        System.out.println("Adjustment: " + (mSamplePoint - before));
+
+        return true;
+    }
+
+    /**
+     * Adjusts the symbol timing and symbol spacing to identify the best achievable sync correlation score and apply
+     * those adjustments when the correlation score exceeds a positive sync detection threshold.
+     * @param pattern that was detected
+     * @param additionalOffset from current mBufferPointer and mSamplePoint.  This can be zero offset for the primary
+     * sync detector or an offset for the lagging sync detectors.
+     * @return true if there is a positive sync detection.
+     */
+    private boolean optimize2(DMRSyncPattern pattern, float additionalOffset, float detectionScore)
+    {
+        float before = mSamplePoint;
+        //Offset is the start of the first sample of the first symbol of the sync pattern calculated from the current
+        //buffer pointer and sample point which should be the final sample of the final symbol of the detected sync.
+        float offset = (mBufferPointer + mSamplePoint) + additionalOffset - (mObservedSamplesPerSymbol * 23);
+
+        //Find the optimal symbol timing
+        float stepSize = mSyncLock ? (mObservedSamplesPerSymbol / 40.0f) : (mObservedSamplesPerSymbol / 10.0f);
+        float stepSizeMin = 0.03f;
+        float adjustment = 0.0f;
+        float adjustmentMax = mObservedSamplesPerSymbol / 2.0f;
+        float candidate = offset;
+
+        int candidateIntegral = (int)Math.floor(candidate);
+        float candidateFractional = candidate - candidateIntegral;
+        float scoreCenter = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+
+        candidate = offset - stepSize;
+        candidateIntegral = (int)Math.floor(candidate);
+        candidateFractional = candidate - candidateIntegral;
+        float scoreLeft = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+
+        candidate = offset + stepSize;
+        candidateIntegral = (int)Math.floor(candidate);
+        candidateFractional = candidate - candidateIntegral;
+        float scoreRight = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+
+        while(stepSize > stepSizeMin && Math.abs(adjustment) <= adjustmentMax)
+        {
+            if(scoreLeft > scoreRight && scoreLeft > scoreCenter)
+            {
+                adjustment -= stepSize;
+                scoreRight = scoreCenter;
+                scoreCenter = scoreLeft;
+
+                candidate = offset + adjustment - stepSize;
+                candidateIntegral = (int)Math.floor(candidate);
+                candidateFractional = candidate - candidateIntegral;
+                scoreLeft = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+            }
+            else if(scoreRight > scoreLeft && scoreRight > scoreCenter)
+            {
+                adjustment += stepSize;
+                scoreLeft = scoreCenter;
+                scoreCenter = scoreRight;
+
+                candidate = offset + adjustment + stepSize;
+                candidateIntegral = (int)Math.floor(candidate);
+                candidateFractional = candidate - candidateIntegral;
+                scoreRight = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+            }
+            else
+            {
+                stepSize *= 0.5f;
+
+                if(stepSize > stepSizeMin)
+                {
+                    candidate = offset + adjustment - stepSize;
+                    candidateIntegral = (int)Math.floor(candidate);
+                    candidateFractional = candidate - candidateIntegral;
+                    scoreLeft = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+
+                    candidate = offset + adjustment + stepSize;
+                    candidateIntegral = (int)Math.floor(candidate);
+                    candidateFractional = candidate - candidateIntegral;
+                    scoreRight = score2(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+                }
+            }
+        }
+
+        System.out.println("Score - Optimized: " + scoreCenter + " Original: " + detectionScore + " Adjustment: " + adjustment);
+
+        //If we didn't find an optimal correlation score above the 95 threshold, return a false sync.
+        if(scoreCenter < 95)
+        {
+            return false;
+        }
+
+
+        if(additionalOffset != 0.0)
+        {
+            adjustment += additionalOffset;
+        }
+
+        mSamplePoint += adjustment;
+
+        while(mSamplePoint < 0)
+        {
+            mSamplePoint++;
+            mBufferPointer--;
+        }
+
+        while(mSamplePoint > 1)
+        {
+            mSamplePoint--;
+            mBufferPointer++;
+        }
+
+        //Adjust the observed samples per symbol using the timing error measured across one or two bursts when we're in
+        //fine sync mode and the timing error is not excessive.
+        if(mSyncLock && Math.abs(adjustment) < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
+        {
+            mObservedSamplesPerSymbol += (float)((double)adjustment / (double)mSymbolsSinceLastSync * 0.2);
+
+            if(mObservedSamplesPerSymbol < 10 || mObservedSamplesPerSymbol > 11)
+            {
+                int a = 0;
+            }
+
+            if(mObservedSamplesPerSymbol > mMaxSamplesPerSymbol)
+            {
+                mObservedSamplesPerSymbol = mMaxSamplesPerSymbol;
+            }
+            else if(mObservedSamplesPerSymbol < mMinSamplesPerSymbol)
+            {
+                mObservedSamplesPerSymbol = mMinSamplesPerSymbol;
+            }
+        }
+
+        System.out.println("mSamplePoint: " + mSamplePoint + " Adjustment: " + adjustment + " Additional: " + additionalOffset + " Observed SPS:" + mObservedSamplesPerSymbol);
+
+        //If the timing error adjustment is high enough, resample the symbols.  Otherwise, overwrite the captured sync
+        //pattern in the delay buffer with the detected sync pattern to eliminate any sync bit errors.
+        if(Math.abs(adjustment) > 0.05)
+        {
+            float resampleStart = mBufferPointer + mSamplePoint;
+            resampleStart -= (89 * mObservedSamplesPerSymbol); //Start at 89 (+ 1 current = 90) symbols
+            int resampleStartIntegral;
+
+            for(int x = 0; x < 66; x++)
+            {
+                resampleStartIntegral = (int)Math.floor(resampleStart);
+
+                if(resampleStartIntegral >= 0)
+                {
+                    float resampledSoftSymbol = PhaseAwareLinearInterpolator.calculate(mBufferI[resampleStartIntegral],
+                            mBufferI[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
                     mDibitDelayLine.insert(toSymbol(resampledSoftSymbol));
                 }
                 else
@@ -513,7 +802,7 @@ public class DMRSoftSymbolProcessor
     {
         float score = 0;
         float[] symbols = pattern.toSymbols();
-        int integral, maxPointer = mBuffer.length - 1;
+        int integral, maxPointer = mBufferI.length - 1;
         float softSymbol = 0.0f;
 
         float[] debugSymbols = new float[symbols.length];
@@ -523,7 +812,7 @@ public class DMRSoftSymbolProcessor
         {
             if(bufferPointer < maxPointer)
             {
-                softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional);
+                softSymbol = PhaseAwareLinearInterpolator.calculate(mBufferI[bufferPointer], mBufferI[bufferPointer + 1], fractional);
 //                softSymbol = Math.min(softSymbol, MAX_POSITIVE_SOFT_SYMBOL);
 //                softSymbol = Math.max(softSymbol, MAX_NEGATIVE_SOFT_SYMBOL);
             }
@@ -535,6 +824,46 @@ public class DMRSoftSymbolProcessor
             debugSymbols[pointer++] = softSymbol;
 
             score += softSymbol * symbols[x];
+            fractional += samplesPerSymbol;
+            integral = (int)Math.floor(fractional);
+            bufferPointer += integral;
+            fractional -= integral;
+        }
+
+        return score;
+    }
+
+    /**
+     * Calculates the sync correlation score for sync pattern at the specified offsets and symbol timing.
+     * @param bufferPointer to the start of the samples in the soft symbol buffer
+     * @param fractional position to interpolate within the 8 samples starting at the buffer pointer.
+     * @param samplesPerSymbol spacing to test for.
+     * @param pattern to correlate against.
+     * @return correlation score.
+     */
+    public float score2(int bufferPointer, float fractional, float samplesPerSymbol, DMRSyncPattern pattern)
+    {
+        float score = 0;
+        float[] qSamples = pattern.toQSamples();
+        int integral, maxPointer = mBufferI.length - 1;
+        float softSymbolI, softSymbolQ;
+
+        for(int x = 0; x < 24; x++)
+        {
+            if(bufferPointer < maxPointer)
+            {
+                softSymbolI = PhaseAwareLinearInterpolator.calculate(mBufferI[bufferPointer], mBufferI[bufferPointer + 1], fractional);
+                softSymbolQ = PhaseAwareLinearInterpolator.calculate(mBufferQ[bufferPointer], mBufferQ[bufferPointer + 1], fractional);
+            }
+            else
+            {
+                softSymbolI = 0.0f;
+                softSymbolQ = 0.0f;
+            }
+
+            score -= softSymbolI;
+            score += softSymbolQ * qSamples[x];
+
             fractional += samplesPerSymbol;
             integral = (int)Math.floor(fractional);
             bufferPointer += integral;
@@ -557,11 +886,12 @@ public class DMRSoftSymbolProcessor
         mBufferInterpolatorReservedRegion = (int)Math.ceil((mMaxSamplesPerSymbol / 2.0f) + (mMaxSamplesPerSymbol / 10.0f));
         mObservedSamplesPerSymbol = mSamplesPerSymbol;
         mSamplePoint = mSamplesPerSymbol;
-        mLaggingSyncOffset1 = mSamplesPerSymbol / 3;
+        mLaggingSyncOffset1 = mSamplesPerSymbol / 2;
         mLaggingSyncOffset2 = mLaggingSyncOffset1 * 2;
         mBufferWorkspaceLength = (int)Math.ceil(BUFFER_WORKSPACE_LENGTH_DIBITS * mSamplesPerSymbol);
         int bufferLength = (int)(Math.ceil(BUFFER_LENGTH_DIBITS * mSamplesPerSymbol));
-        mBuffer = new float[bufferLength];
+        mBufferI = new float[bufferLength];
+        mBufferQ = new float[bufferLength];
         mBufferLoadPointer = (int)Math.ceil(BUFFER_PROTECTED_REGION_DIBITS * mSamplesPerSymbol);
         mBufferPointer = mBufferLoadPointer;
     }
