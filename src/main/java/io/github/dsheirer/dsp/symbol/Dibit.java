@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@ package io.github.dsheirer.dsp.symbol;
 
 public enum Dibit
 {
-    D01_PLUS_3(false, true, 1, 4, 1, (float)(Math.PI / 4 * 3), (float)-Math.sin(Math.toRadians(45)), (float)Math.sin(Math.toRadians(45))),
-    D00_PLUS_1(false, false, 0, 0, 0, (float)(Math.PI / 4.0), (float)Math.sin(Math.toRadians(45)), (float)Math.sin(Math.toRadians(45))),
-    D10_MINUS_1(true, false, 2, 8, 2, (float)(Math.PI / -4.0), (float)Math.sin(Math.toRadians(45)), (float)-Math.sin(Math.toRadians(45))),
-    D11_MINUS_3(true, true, 3, 12, 3, (float)(Math.PI / 4 * -3), (float)-Math.sin(Math.toRadians(45)), (float)-Math.sin(Math.toRadians(45)));
+    D01_PLUS_3(false, true, 1, 4, 1, (float)((Math.PI / 4) * 3)),
+    D00_PLUS_1(false, false, 0, 0, 0, (float)(Math.PI / 4)),
+    D10_MINUS_1(true, false, 2, 8, 2, (float)(Math.PI / -4)),
+    D11_MINUS_3(true, true, 3, 12, 3, (float)((Math.PI / 4) * -3));
 
     private boolean mBit1;
     private boolean mBit2;
@@ -32,8 +32,6 @@ public enum Dibit
     private int mHighValue;
     private int mValue;
     private float mPhase;
-    private float mIdealI;
-    private float mIdealQ;
 
     /**
      * Dibit constructor.
@@ -43,10 +41,8 @@ public enum Dibit
      * @param highValue integer value of the high order bit
      * @param value integer value combined of both bits.
      * @param phase optimal phase value for this symbol when transmitted.
-     * @param idealI ideal inphase value for this symbol when transmitted.
-     * @param idealQ ideal quadrature value for this symbol when transmitted.
      */
-    Dibit(boolean bit1, boolean bit2, int lowValue, int highValue, int value, float phase, float idealI, float idealQ)
+    Dibit(boolean bit1, boolean bit2, int lowValue, int highValue, int value, float phase)
     {
         mBit1 = bit1;
         mBit2 = bit2;
@@ -54,8 +50,6 @@ public enum Dibit
         mHighValue = highValue;
         mValue = value;
         mPhase = phase;
-        mIdealI = idealI;
-        mIdealQ = idealQ;
     }
 
     /**
@@ -73,24 +67,6 @@ public enum Dibit
     public float getIdealPhase()
     {
         return mPhase;
-    }
-
-    /**
-     * Ideal inphase value when this symbol is transmitted.
-     * @return ideal I
-     */
-    public float getIdealI()
-    {
-        return mIdealI;
-    }
-
-    /**
-     * Ideal quadrature value when this symbol is transmitted.
-     * @return ideal Q
-     */
-    public float getIdealQ()
-    {
-        return mIdealQ;
     }
 
     /**

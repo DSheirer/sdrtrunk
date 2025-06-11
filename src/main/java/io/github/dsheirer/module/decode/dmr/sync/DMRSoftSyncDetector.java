@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,29 +65,32 @@ public abstract class DMRSoftSyncDetector extends DMRSyncDetector
 
     /**
      * Worker method to be implemented by the subclass implementation.
-     * @return best sync correlation score where the best detected pattern is available at
-     * @see DmrSyncDetector#getDetectedPattern() method.
+     * @return best sync correlation score where the best detected pattern is available at getDetectedPattern().
      */
-    protected abstract float calculate();
+    public abstract float calculate();
 
     /**
      * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft
      * symbols that include this recent soft symbol.
      *
      * @param dibitSymbol to process that represents the soft demodulated symbol value in phase angle/radians.
-     * @return correlation score.
      */
-    public float process(float dibitSymbol)
+    public void process(float dibitSymbol)
     {
-        //Constrain symbol to maximum positive or negative value to limit noisy symbols.
-        dibitSymbol = Math.min(dibitSymbol, MAX_POSITIVE);
-        dibitSymbol = Math.max(dibitSymbol, MAX_NEGATIVE);
-
         mSymbols[mSymbolPointer] = dibitSymbol;
         mSymbols[mSymbolPointer + 24] = dibitSymbol;
         mSymbolPointer++;
         mSymbolPointer %= 24;
+    }
 
+    /**
+     * Process the symbol and calculate the sync detection score.
+     * @param symbol to process
+     * @return sync detection score.
+     */
+    public float processAndCalculate(float symbol)
+    {
+        process(symbol);
         return calculate();
     }
 }

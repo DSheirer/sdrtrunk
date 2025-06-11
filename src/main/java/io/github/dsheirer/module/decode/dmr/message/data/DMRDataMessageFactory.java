@@ -302,8 +302,8 @@ public class DMRDataMessageFactory
      */
     private static CorrectedBinaryMessage getPayload(CorrectedBinaryMessage message)
     {
-        CorrectedBinaryMessage descrambled = extract(message);
-        return BPTC_196_96.extract(descrambled);
+        CorrectedBinaryMessage extracted = extract(message);
+        return BPTC_196_96.extract(extracted);
     }
 
     /**
@@ -321,7 +321,7 @@ public class DMRDataMessageFactory
             {
                 extracted.add(message.get(i));
             }
-            for(int i = 190; i < 190 + 98; i++)
+            for(int i = 190; i < 288; i++)
             {
                 extracted.add(message.get(i));
             }

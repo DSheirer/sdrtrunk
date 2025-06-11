@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ public enum CalibrationType
     AM_DEMODULATOR("AM Demodulator", 1),
     DC_REMOVAL_REAL("Real DC Removal Filter", 1),
     DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 1),
-    DQPSK_DEMODULATOR("DQPSK Demodulator", 1),
+    DIFFERENTIAL_DEMODULATOR("DQPSK Demodulator", 1),
     FILTER_FIR("FIR Filter", 1),
     FILTER_HALF_BAND_REAL_11_TAP("Real Half-Band Decimation Filter - 11 Tap", 1),
     FILTER_HALF_BAND_REAL_15_TAP("Real Half-Band Decimation Filter - 15 Tap", 1),

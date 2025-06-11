@@ -112,6 +112,15 @@ public class DMRMessageFramer implements Listener<Dibit>
         }
     }
 
+    /**
+     * Indicates if the framer is assembling a burst and the active timeslot is assembling a voice superframe.
+     */
+    public boolean isVoiceSuperFrame()
+    {
+        return mAssemblingBurst && ((mBufferAActive && mBufferAPattern.isVoicePattern()) ||
+                                    (!mBufferAActive && mBufferBPattern.isVoicePattern()));
+    }
+
     private void dispatchBufferA()
     {
         mDibitCounter -= 144;
