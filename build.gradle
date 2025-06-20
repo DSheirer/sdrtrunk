@@ -193,6 +193,11 @@ idea {
     }
 }
 
+javadoc {
+    options.addStringOption('-add-modules', 'jdk.incubator.vector')
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 /**
  * Runtime target OS and CPU image names.  We append version here so that version details are at end of zip filename.
  */
