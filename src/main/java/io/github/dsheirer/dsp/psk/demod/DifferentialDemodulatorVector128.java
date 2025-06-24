@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.psk.dqpsk;
+package io.github.dsheirer.dsp.psk.demod;
 
 import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * DQPSK demodulator that uses Vector SIMD calculations for demodulating the sample stream.
+ * Differential demodulator that uses Vector SIMD 128 calculations for demodulating the sample stream.
  */
-public class DQPSKDemodulatorVector256 extends DQPSKDemodulator
+public class DifferentialDemodulatorVector128 extends DifferentialDemodulator
 {
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_256;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DifferentialDemodulatorVector128.class);
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_128;
 
     /**
      * Constructor
@@ -37,7 +40,7 @@ public class DQPSKDemodulatorVector256 extends DQPSKDemodulator
      * @param sampleRate in Hertz
      * @param symbolRate symbols per second
      */
-    public DQPSKDemodulatorVector256(double sampleRate, int symbolRate)
+    public DifferentialDemodulatorVector128(double sampleRate, int symbolRate)
     {
         super(sampleRate, symbolRate);
     }
@@ -72,7 +75,7 @@ public class DQPSKDemodulatorVector256 extends DQPSKDemodulator
 
         float[] interpolatedI = new float[VECTOR_SPECIES.length()];
         float[] interpolatedQ = new float[VECTOR_SPECIES.length()];
-        float[] decodedPhases = new float[sampleLength];
+        float[] decodedPhases = new float[i.length];
         FloatVector iPrevious, qPreviousConjugate, iCurrent, qCurrent, differentialI, differentialQ;
 
         //Differential demodulation.

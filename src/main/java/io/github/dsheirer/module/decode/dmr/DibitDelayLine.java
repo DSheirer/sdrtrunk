@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,5 +74,24 @@ public class DibitDelayLine
             mDelayLine[mPointer++] = dibit;
             mPointer %= mLength;
         }
+    }
+
+    public void log()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        int pointer = mPointer;
+        for(int i = 0; i < mDelayLine.length; i++)
+        {
+            Dibit dibit = mDelayLine[pointer];
+            sb.append(dibit.getBit1() ? "1" : "0");
+            sb.append(dibit.getBit2() ? "1" : "0");
+            sb.append(" ");
+
+            pointer++;
+            pointer = pointer % mLength;
+        }
+
+        System.out.println(sb);
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.psk.dqpsk;
+package io.github.dsheirer.dsp.psk.demod;
 
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
@@ -26,11 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Factory for creating DQPSK demodulators
+ * Factory for creating PSK differential demodulators
  */
-public class DQPSKDemodulatorFactory
+public class DifferentialDemodulatorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(DQPSKDemodulatorFactory.class);
+    private static final Logger mLog = LoggerFactory.getLogger(DifferentialDemodulatorFactory.class);
 
     /**
      * Creates the optimal demodulator using calibration data to select the optimal implementation from scalar and
@@ -39,17 +39,17 @@ public class DQPSKDemodulatorFactory
      * @param symbolRate in Hertz
      * @return demodulator instance
      */
-    public static DQPSKDemodulator getDemodulator(double sampleRate, int symbolRate)
+    public static DifferentialDemodulator getDemodulator(double sampleRate, int symbolRate)
     {
-        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.DQPSK_DEMODULATOR);
+        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.DIFFERENTIAL_DEMODULATOR);
 
         return switch(implementation)
         {
-            case VECTOR_SIMD_64 -> new DQPSKDemodulatorVector64(sampleRate, symbolRate);
-            case VECTOR_SIMD_128 -> new DQPSKDemodulatorVector128(sampleRate, symbolRate);
-            case VECTOR_SIMD_256 -> new DQPSKDemodulatorVector256(sampleRate, symbolRate);
-            case VECTOR_SIMD_512 -> new DQPSKDemodulatorVector512(sampleRate, symbolRate);
-            default -> new DQPSKDemodulatorScalar(sampleRate, symbolRate); //Includes SCALAR case
+            case VECTOR_SIMD_64 -> new DifferentialDemodulatorVector64(sampleRate, symbolRate);
+            case VECTOR_SIMD_128 -> new DifferentialDemodulatorVector128(sampleRate, symbolRate);
+            case VECTOR_SIMD_256 -> new DifferentialDemodulatorVector256(sampleRate, symbolRate);
+            case VECTOR_SIMD_512 -> new DifferentialDemodulatorVector512(sampleRate, symbolRate);
+            default -> new DifferentialDemodulatorScalar(sampleRate, symbolRate); //Includes SCALAR case
         };
     }
 }

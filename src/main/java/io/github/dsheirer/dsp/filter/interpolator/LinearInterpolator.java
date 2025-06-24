@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,13 +20,10 @@
 package io.github.dsheirer.dsp.filter.interpolator;
 
 /**
- * Linear interpolator for values in the range: -PI > 0 > PI with awareness of phase wrapping across the
- * (+/-) PI boundary.
+ * Linear interpolator.
  */
-public class PhaseAwareLinearInterpolator
+public class LinearInterpolator
 {
-    public static final float TWO_PI = (float)(Math.PI * 2.0);
-
     /**
      * Calculates an interpolated value between x1 and x2 at a linear position mu between 0.0 and 1.0
      * @param x1 first value
@@ -36,39 +33,16 @@ public class PhaseAwareLinearInterpolator
      */
     public static float calculate(float x1, float x2, float mu)
     {
-        //Detect phase wrap at the +PI/-PI boundary ... ignore opposite side of the unit circle at 0 axis
-        if(x1 * x2 < -Math.PI)
+        if(mu < 0 || mu > 1)
         {
-            if(x1 > 0)
-            {
-                float value = x1 + ((TWO_PI + x2 - x1) * mu);
-
-                if(value > Math.PI)
-                {
-                    return -TWO_PI + value;
-                }
-                else
-                {
-                    return value;
-                }
-            }
-            else
-            {
-                float value = x1 + ((-TWO_PI + x2 - x1) * mu);
-
-                if(value < -Math.PI)
-                {
-                    return TWO_PI + value;
-                }
-                else
-                {
-                    return value;
-                }
-            }
+            throw new IllegalArgumentException("mu [" + mu + "] must be between 0 and 1");
         }
-        else
-        {
-            return x1 + ((x2 - x1) * mu);
-        }
+
+        return x1 + ((x2 - x1) * mu);
+    }
+
+    public static float calculate(float x1, float x2, double mu)
+    {
+        return calculate(x1, x2, (float)mu);
     }
 }

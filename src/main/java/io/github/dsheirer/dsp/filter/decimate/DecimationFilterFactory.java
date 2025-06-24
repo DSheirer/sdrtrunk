@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ public class DecimationFilterFactory
         switch(decimationRate)
         {
             case 0:
+            case 1:
                 return new RealDecimateX0Filter();
             case 2:
                 return new RealDecimateX2Filter();

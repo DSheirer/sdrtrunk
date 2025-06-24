@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.dmr;
 
-import io.github.dsheirer.dsp.filter.interpolator.PhaseAwareLinearInterpolator;
+import io.github.dsheirer.dsp.filter.interpolator.LinearInterpolator;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetector;
@@ -27,18 +27,22 @@ import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncDetectMode;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncModeMonitor;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.sync.visualizer.SyncResultsViewer;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 /**
  * DMR soft symbol processor.  Processes a stream of differentially decoded samples to align to the symbol timing and
  * symbol period and extract symbols from the sample stream.
  *
- * Uses three soft sync correlation detectors to achieve initial sync lock with a primary sync detector and two lagging
- * sync detectors sampling at 1/3 and 2/3 of the symbol period to ensure the sync is detected while only calculating at
- * each symbol period interval.  Once a sync is detected, sync lock is declared and the lagging sync detectors are
- * disabled. Sync lock disables whenever the quantity of processed symbols exceeds one DMR burst length and the
- * lagging detectors re-enable.
+ * Uses two soft sync correlation detectors to achieve initial fine sync with a primary sync detector and a lagging
+ * sync detector sampling at 1/2 the symbol period to ensure the sync is detected while only calculating at each symbol
+ * period interval.  Once a sync is detected, fine sync is declared and the lagging sync detector is disabled. Fine sync
+ * disables whenever the quantity of processed symbols exceeds one DMR burst length and the lagging detector
+ * re-enables.
  *
  * The sync mode monitor processes the sync detections to identify the dominant sync mode for the channel and then
  * disables processing of the two unused sync modes (BASE STATION, MOBILE STATION, or DIRECT MODE) for the remainder
@@ -50,39 +54,52 @@ import java.nio.ByteBuffer;
  * the message framer along with the sync detection.
  *
  * Buffer Structure & Size = 129 Dibits: [2 pad][12 CACH][54 Message Prefix][24 Sync][24 workspace][1 pad]
+ *
+ * The equalizer calculates balance and gain values to apply to the differentially decoded sample stream to optimize
+ * the constellation skew and openness. The equalizer is updated at each quality sync detection and then the equalizer
+ * values are applied across the entire burst through to the next sync detection.  DMR sync patterns are made up of
+ * equal quantities of +3 and -3 symbols which support the equalizer update approach.
  */
 public class DMRSoftSymbolProcessor
 {
     private static final int BUFFER_PROTECTED_REGION_DIBITS = 92;
     private static final int BUFFER_WORKSPACE_LENGTH_DIBITS = 25; //This can be adjusted for efficiency
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
-    private static final float MAX_POSITIVE_SOFT_SYMBOL = Dibit.D01_PLUS_3.getIdealPhase();
-    private static final float MAX_NEGATIVE_SOFT_SYMBOL = Dibit.D11_MINUS_3.getIdealPhase();
+    private static final float EQUALIZER_LOOP_GAIN = 0.3f;
+    private static final float MAXIMUM_EQUALIZER_BALANCE = (float)(Math.PI / 4.0);
+    private static final float MAXIMUM_EQUALIZER_GAIN = 1.35f;
+    private static final float MAXIMUM_POSITIVE_SAMPLE_PHASE = 3.5f;
+    private static final float MAXIMUM_NEGATIVE_SAMPLE_PHASE = -3.5f;
     private static final float SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION = 0.005f; //.5%
     private static final float SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
     private static final float SYNC_DETECTION_THRESHOLD = 60;
+    private static final float SYNC_OPTIMIZED_THRESHOLD = 80;
+    private static final float SYNC_EQUALIZED_THRESHOLD = 100;
+    private static final float TWO_PI = (float)(Math.PI * 2.0);
     private DMRSyncModeMonitor mSyncModeMonitor = new DMRSyncModeMonitor();
     private DMRSoftSyncDetector mSyncDetector = DMRSoftSyncDetectorFactory.getDetector();
-    private DMRSoftSyncDetector mSyncDetectorLag1 = DMRSoftSyncDetectorFactory.getDetector();
-    private DMRSoftSyncDetector mSyncDetectorLag2 = DMRSoftSyncDetectorFactory.getDetector();
+    private DMRSoftSyncDetector mSyncDetectorSecondary = DMRSoftSyncDetectorFactory.getDetector();
     private DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     //Dibit delay line sizing: CACH(12) + MESSAGE_PREFIX(54) + SYNC(24)
     private DibitDelayLine mDibitDelayLine = new DibitDelayLine(90);
     private DMRMessageFramer mMessageFramer;
-    private boolean mSyncLock = false;
-    private float mLaggingSyncOffset1;
-    private float mLaggingSyncOffset2;
-    private float mObservedSamplesPerSymbol;
-    private float mSamplesPerSymbol;
-    private float mMaxSamplesPerSymbol;
-    private float mMinSamplesPerSymbol;
-    private float mSamplePoint;
+    private boolean mFineSync = false;
+    private boolean mEqualizerInitialized = false;
+    private double mNoiseStandardDeviationThreshold;
+    private double mSecondarySyncOffset;
+    private double mSamplesPerSymbol;
+    private double mObservedSamplesPerSymbol;
+    private double mSamplePoint;
+    private float mEqualizerBalance = 0.0f;
+    private float mEqualizerGain = 1.0f;
+    private float mOptimizeFineIncrement;
     private float[] mBuffer;
+    private int mBufferInterpolatorReservedRegion;
     private int mBufferLoadPointer;
     private int mBufferPointer;
     private int mBufferWorkspaceLength;
-    private int mBufferInterpolatorReservedRegion;
     private int mSymbolsSinceLastSync = 0;
+    private SyncResultsViewer mSyncResultsViewer;
 
     /**
      * Constructs an instance
@@ -97,21 +114,17 @@ public class DMRSoftSymbolProcessor
 
         mMessageFramer = messageFramer;
         mSyncModeMonitor.add(mSyncDetector);
-        mSyncModeMonitor.add(mSyncDetectorLag1);
-        mSyncModeMonitor.add(mSyncDetectorLag2);
+        mSyncModeMonitor.add(mSyncDetectorSecondary);
     }
 
     /**
      * Sets base station sync detection mode.  This disables detection for MOBILE and DIRECT sync patterns.  This can
      * be used for traffic channels that are known to be part of a base station.
-     * @param baseStationMode true for base mode only, false otherwise.
+     * @param enabled true for base mode only, false otherwise.
      */
-    public void setBaseStationMode(boolean baseStationMode)
+    public void setBaseStationMode(boolean enabled)
     {
-        if(baseStationMode)
-        {
-            mSyncModeMonitor.setMode(DMRSyncDetectMode.BASE_ONLY);
-        }
+        mSyncModeMonitor.setMode(enabled ? DMRSyncDetectMode.BASE_ONLY : DMRSyncDetectMode.AUTOMATIC);
     }
 
     /**
@@ -162,6 +175,33 @@ public class DMRSoftSymbolProcessor
             samplesPointer += copyLength;
             mBufferLoadPointer += copyLength;
 
+            for(int x = mBufferPointer; x < mBufferLoadPointer; x++)
+            {
+                //Unwrap phases
+                if(mBuffer[x - 1] > 1.5f && mBuffer[x] < -1.5f)
+                {
+                    mBuffer[x] += TWO_PI;
+                }
+                else if(mBuffer[x - 1] < -1.5f && mBuffer[x] > 1.5f)
+                {
+                    mBuffer[x] -= TWO_PI;
+                }
+
+                //Apply equalizer adjustments
+                mBuffer[x] += mEqualizerBalance;
+                mBuffer[x] *= mEqualizerGain;
+
+                //Allow the equalized buffer samples to exceed PI (3.14) by a small factor (3.5) to ensure the optimize
+                // and equalizer update functions work correctly.  The toSymbol() method will correctly map any symbols
+                // that exceed +/- PI into the correct quadrant.
+                mBuffer[x] = Math.min(mBuffer[x], MAXIMUM_POSITIVE_SAMPLE_PHASE);
+                mBuffer[x] = Math.max(mBuffer[x], MAXIMUM_NEGATIVE_SAMPLE_PHASE);
+            }
+
+            float softSymbol, primaryScore, secondaryScore;
+            double secondary;
+            int secondaryIntegral;
+
             while(mBufferPointer < (mBufferLoadPointer - mBufferInterpolatorReservedRegion))
             {
                 mBufferPointer++;
@@ -169,16 +209,13 @@ public class DMRSoftSymbolProcessor
 
                 if(mSamplePoint < 1)
                 {
-                    mSymbolsSinceLastSync++;
-
                     if(mSymbolsSinceLastSync > 144)
                     {
-                        mSyncLock = false;
+                        mFineSync = false;
                     }
 
-                    float softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[mBufferPointer],
-                            mBuffer[mBufferPointer + 1], mSamplePoint);
-
+                    softSymbol = LinearInterpolator.calculate(mBuffer[mBufferPointer], mBuffer[mBufferPointer + 1], mSamplePoint);
+                    mSyncDetector.process(softSymbol);
                     Dibit symbol = toSymbol(softSymbol);
 
                     //Store the symbol in the delay line and broadcast the delayed ejected symbol to the message framer
@@ -186,52 +223,64 @@ public class DMRSoftSymbolProcessor
                     Dibit ejected = mDibitDelayLine.insert(symbol);
                     mMessageFramer.receive(ejected);
                     mDibitAssembler.receive(ejected);
+                    mSymbolsSinceLastSync++;
 
-                    float scorePrimary = mSyncDetector.process(softSymbol);
-
-                    if(mSyncLock && scorePrimary > SYNC_DETECTION_THRESHOLD &&
-                            optimize(mSyncDetector.getDetectedPattern(), 0.0f))
+                    if(mFineSync)
                     {
-                        mSymbolsSinceLastSync = 0;
-                        mSyncModeMonitor.detected(mSyncDetector.getDetectedPattern());
-                        mMessageFramer.syncDetected(mSyncDetector.getDetectedPattern());
+                        if(mSymbolsSinceLastSync >= 144)
+                        {
+                            if(mMessageFramer.isVoiceSuperFrame())
+                            {
+                                mSymbolsSinceLastSync -= 144;
+                            }
+                            else
+                            {
+                                primaryScore = mSyncDetector.calculate();
+
+                                //Debug - visualize the sync to show samples and symbol timing
+//                                if(primaryScore > SYNC_DETECTION_THRESHOLD)
+//                                {
+//                                    visualizeSyncDetect(mSyncDetector.getDetectedPattern(), primaryScore, true);
+//                                }
+
+                                if(primaryScore > SYNC_DETECTION_THRESHOLD && optimizeFine(mSyncDetector.getDetectedPattern()))
+                                {
+                                    //Update the sync mode monitor and message framer
+                                    mSyncModeMonitor.detected(mSyncDetector.getDetectedPattern());
+                                    mMessageFramer.syncDetected(mSyncDetector.getDetectedPattern());
+                                    mSymbolsSinceLastSync = 0;
+                                }
+                                else
+                                {
+                                    mFineSync = false;
+                                    mSyncDetectorSecondary.reset();
+                                    secondary = mBufferPointer + mSamplePoint - mSecondarySyncOffset;
+                                    secondaryIntegral = (int)Math.floor(secondary);
+                                    softSymbol = LinearInterpolator.calculate(mBuffer[secondaryIntegral], mBuffer[secondaryIntegral + 1], secondary - secondaryIntegral);
+                                    mSyncDetectorSecondary.process(softSymbol);
+                                }
+                            }
+                        }
                     }
                     else
                     {
-                        float lag1 = mBufferPointer + mSamplePoint - mLaggingSyncOffset1;
-                        float lag2 = mBufferPointer + mSamplePoint - mLaggingSyncOffset2;
-                        int lagIntegral1 = (int)Math.floor(lag1);
-                        int lagIntegral2 = (int)Math.floor(lag2);
-                        float softSymbolLag1 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral1],
-                                mBuffer[lagIntegral1 + 1], lag1 - lagIntegral1);
-                        float softSymbolLag2 = PhaseAwareLinearInterpolator.calculate(mBuffer[lagIntegral2],
-                                mBuffer[lagIntegral2 + 1], lag2 - lagIntegral2);
-                        float scoreLag1 = mSyncDetectorLag1.process(softSymbolLag1);
-                        float scoreLag2 = mSyncDetectorLag2.process(softSymbolLag2);
+                        primaryScore = mSyncDetector.calculate();
+                        secondary = mBufferPointer + mSamplePoint - mSecondarySyncOffset;
+                        secondaryIntegral = (int)Math.floor(secondary);
+                        softSymbol = LinearInterpolator.calculate(mBuffer[secondaryIntegral], mBuffer[secondaryIntegral + 1], secondary - secondaryIntegral);
+                        secondaryScore = mSyncDetectorSecondary.processAndCalculate(softSymbol);
 
-                        if(mSymbolsSinceLastSync > 1 && scoreLag1 > scorePrimary && scoreLag1 > scoreLag2 &&
-                                scoreLag1 > SYNC_DETECTION_THRESHOLD &&
-                                optimize(mSyncDetectorLag1.getDetectedPattern(), -mLaggingSyncOffset1))
+                        if(primaryScore > SYNC_DETECTION_THRESHOLD && optimizeCoarse(mSyncDetector.getDetectedPattern(), 0))
                         {
-                            mSymbolsSinceLastSync = 0;
-                            mSyncModeMonitor.detected(mSyncDetectorLag1.getDetectedPattern());
-                            mMessageFramer.syncDetected(mSyncDetectorLag1.getDetectedPattern());
-                        }
-                        else if(mSymbolsSinceLastSync > 1 && scoreLag2 > scorePrimary &&
-                                scoreLag2 > SYNC_DETECTION_THRESHOLD &&
-                                optimize(mSyncDetectorLag2.getDetectedPattern(), -mLaggingSyncOffset2))
-                        {
-                            mSymbolsSinceLastSync = 0;
-                            mSyncModeMonitor.detected(mSyncDetectorLag2.getDetectedPattern());
-                            mMessageFramer.syncDetected(mSyncDetectorLag2.getDetectedPattern());
-                        }
-                        else if(scorePrimary > SYNC_DETECTION_THRESHOLD &&
-                                optimize(mSyncDetector.getDetectedPattern(), 0.0f))
-                        {
-                            mSymbolsSinceLastSync = 0;
-                            mSyncLock = true;
-                            mSyncModeMonitor.detected(mSyncDetector.getDetectedPattern());
                             mMessageFramer.syncDetected(mSyncDetector.getDetectedPattern());
+                            mFineSync = true;
+                            mSymbolsSinceLastSync = 0;
+                        }
+                        else if(secondaryScore > SYNC_DETECTION_THRESHOLD && optimizeCoarse(mSyncDetectorSecondary.getDetectedPattern(), -mSecondarySyncOffset))
+                        {
+                            mMessageFramer.syncDetected(mSyncDetectorSecondary.getDetectedPattern());
+                            mFineSync = true;
+                            mSymbolsSinceLastSync = 0;
                         }
                     }
 
@@ -243,6 +292,28 @@ public class DMRSoftSymbolProcessor
     }
 
     /**
+     * Indicates if the samples in the sample buffer that contain a detected sync pattern have a standard deviation
+     * that is lower than the expected sample to sample deviation for a modulated signal.  False detects against
+     * noise tend to have a standard deviation that is 2x the expected value.
+     * @param offset to the sample representing the final symbol in the detected sync pattern.
+     * @return true if the standard deviation is more than expected.
+     */
+    private boolean isNoisy(double offset)
+    {
+        StandardDeviation standardDeviation = new StandardDeviation();
+        int start = (int)Math.floor(offset - (23 * mObservedSamplesPerSymbol));
+        int end = (int)Math.ceil(offset);
+        end = Math.min(end, mBuffer.length - 1);
+
+        for(int i = start; i < end; i++)
+        {
+            standardDeviation.increment(mBuffer[i] - mBuffer[i + 1]);
+        }
+
+        return standardDeviation.getResult() > mNoiseStandardDeviationThreshold;
+    }
+
+    /**
      * Adjusts the symbol timing and symbol spacing to identify the best achievable sync correlation score and apply
      * those adjustments when the correlation score exceeds a positive sync detection threshold.
      * @param pattern that was detected
@@ -250,32 +321,32 @@ public class DMRSoftSymbolProcessor
      * sync detector or an offset for the lagging sync detectors.
      * @return true if there is a positive sync detection.
      */
-    private boolean optimize(DMRSyncPattern pattern, float additionalOffset)
+    private boolean optimizeCoarse(DMRSyncPattern pattern, double additionalOffset)
     {
         //Offset is the start of the first sample of the first symbol of the sync pattern calculated from the current
         //buffer pointer and sample point which should be the final sample of the final symbol of the detected sync.
-        float offset = (mBufferPointer + mSamplePoint) + additionalOffset - (mObservedSamplesPerSymbol * 23);
+        double offset = mBufferPointer + mSamplePoint + additionalOffset;
+
+        //Reject any sync detections where the sample:sample standard deviation exceeds the noise threshold.
+        if(isNoisy(offset))
+        {
+            return false;
+        }
 
         //Find the optimal symbol timing
-        float stepSize = mSyncLock ? (mObservedSamplesPerSymbol / 40.0f) : (mObservedSamplesPerSymbol / 10.0f);
-        float stepSizeMin = 0.03f;
-        float adjustment = 0.0f;
-        float adjustmentMax = mObservedSamplesPerSymbol / 2.0f;
-        float candidate = offset;
+        double stepSize = mSamplesPerSymbol / 8.0; //Start at 1/8th of the samples per symbol
+        double stepSizeMin = mOptimizeFineIncrement;
+        double adjustment = 0.0;
+        double adjustmentMax = mSamplesPerSymbol / 4.0;
+        double candidate = offset;
 
-        int candidateIntegral = (int)Math.floor(candidate);
-        float candidateFractional = candidate - candidateIntegral;
-        float scoreCenter = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+        float scoreCenter = score(candidate, mObservedSamplesPerSymbol, pattern);
 
         candidate = offset - stepSize;
-        candidateIntegral = (int)Math.floor(candidate);
-        candidateFractional = candidate - candidateIntegral;
-        float scoreLeft = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+        float scoreLeft = score(candidate, mObservedSamplesPerSymbol, pattern);
 
         candidate = offset + stepSize;
-        candidateIntegral = (int)Math.floor(candidate);
-        candidateFractional = candidate - candidateIntegral;
-        float scoreRight = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+        float scoreRight = score(candidate, mObservedSamplesPerSymbol, pattern);
 
         while(stepSize > stepSizeMin && Math.abs(adjustment) <= adjustmentMax)
         {
@@ -286,9 +357,7 @@ public class DMRSoftSymbolProcessor
                 scoreCenter = scoreLeft;
 
                 candidate = offset + adjustment - stepSize;
-                candidateIntegral = (int)Math.floor(candidate);
-                candidateFractional = candidate - candidateIntegral;
-                scoreLeft = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+                scoreLeft = score(candidate, mObservedSamplesPerSymbol, pattern);
             }
             else if(scoreRight > scoreLeft && scoreRight > scoreCenter)
             {
@@ -297,9 +366,7 @@ public class DMRSoftSymbolProcessor
                 scoreCenter = scoreRight;
 
                 candidate = offset + adjustment + stepSize;
-                candidateIntegral = (int)Math.floor(candidate);
-                candidateFractional = candidate - candidateIntegral;
-                scoreRight = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+                scoreRight = score(candidate, mObservedSamplesPerSymbol, pattern);
             }
             else
             {
@@ -308,14 +375,10 @@ public class DMRSoftSymbolProcessor
                 if(stepSize > stepSizeMin)
                 {
                     candidate = offset + adjustment - stepSize;
-                    candidateIntegral = (int)Math.floor(candidate);
-                    candidateFractional = candidate - candidateIntegral;
-                    scoreLeft = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+                    scoreLeft = score(candidate, mObservedSamplesPerSymbol, pattern);
 
                     candidate = offset + adjustment + stepSize;
-                    candidateIntegral = (int)Math.floor(candidate);
-                    candidateFractional = candidate - candidateIntegral;
-                    scoreRight = score(candidateIntegral, candidateFractional, mObservedSamplesPerSymbol, pattern);
+                    scoreRight = score(candidate, mObservedSamplesPerSymbol, pattern);
                 }
             }
         }
@@ -326,11 +389,7 @@ public class DMRSoftSymbolProcessor
             return false;
         }
 
-        if(additionalOffset != 0.0)
-        {
-            adjustment += additionalOffset;
-        }
-
+        adjustment += additionalOffset;
         mSamplePoint += adjustment;
 
         while(mSamplePoint < 0)
@@ -345,38 +404,27 @@ public class DMRSoftSymbolProcessor
             mBufferPointer++;
         }
 
-        //Adjust the observed samples per symbol using the timing error measured across one or two bursts when we're in
-        //fine sync mode and the timing error is not excessive.
-        if(mSyncLock && Math.abs(adjustment) < 0.5 && mSymbolsSinceLastSync > 143 && mSymbolsSinceLastSync < 289)
-        {
-            mObservedSamplesPerSymbol += (float)((double)adjustment / (double)mSymbolsSinceLastSync * 0.2);
+        boolean resample = !mEqualizerInitialized || (Math.abs(adjustment) > 0.25);
 
-            if(mObservedSamplesPerSymbol > mMaxSamplesPerSymbol)
-            {
-                mObservedSamplesPerSymbol = mMaxSamplesPerSymbol;
-            }
-            else if(mObservedSamplesPerSymbol < mMinSamplesPerSymbol)
-            {
-                mObservedSamplesPerSymbol = mMinSamplesPerSymbol;
-            }
-        }
+        updateEqualizer(pattern);
+//        visualizeSyncDetect(pattern, scoreCenter, true);
 
-        //If the timing error adjustment is high enough, resample the symbols.  Otherwise, overwrite the captured sync
-        //pattern in the delay buffer with the detected sync pattern to eliminate any sync bit errors.
-        if(Math.abs(adjustment) > 0.05)
+        //If the equalizer was just initialized or the timing error adjustment is high enough, resample the symbols.
+        // Otherwise, overwrite the captured sync pattern in the delay buffer with the detected sync pattern to
+        // eliminate any sync bit errors.
+        if(resample)
         {
-            float resampleStart = mBufferPointer + mSamplePoint;
-            resampleStart -= (89 * mObservedSamplesPerSymbol); //Start at 89 (+ 1 current = 90) symbols
-            int resampleStartIntegral;
+            double resamplePointer = mBufferPointer + mSamplePoint;
+            resamplePointer -= (89 * mObservedSamplesPerSymbol); //Start at 89 (+ 1 current = 90) symbols
+            int integral;
 
             for(int x = 0; x < 66; x++)
             {
-                resampleStartIntegral = (int)Math.floor(resampleStart);
+                integral = (int)Math.floor(resamplePointer);
 
-                if(resampleStartIntegral >= 0)
+                if(integral >= 0)
                 {
-                    float resampledSoftSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[resampleStartIntegral],
-                            mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+                    float resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[integral], mBuffer[integral + 1], resamplePointer - integral);
                     mDibitDelayLine.insert(toSymbol(resampledSoftSymbol));
                 }
                 else
@@ -385,7 +433,7 @@ public class DMRSoftSymbolProcessor
                     mDibitDelayLine.insert(Dibit.D01_PLUS_3);
                 }
 
-                resampleStart += mObservedSamplesPerSymbol;
+                resamplePointer += mObservedSamplesPerSymbol;
             }
 
             //We don't need to resample the sync region ... just use the actual sync dibit values.
@@ -404,27 +452,256 @@ public class DMRSoftSymbolProcessor
     }
 
     /**
-     * Calculates the sync correlation score for sync pattern at the specified offsets and symbol timing.
-     * @param bufferPointer to the start of the samples in the soft symbol buffer
-     * @param fractional position to interpolate within the 8 samples starting at the buffer pointer.
+     * Performs fine-grained symbol timing optimization of +/- .4% of the samples per symbol as needed.
+     * @param pattern that was detected
+     * @return true if detection score exceeds the optimized and equalized threshold for a quality sync detect.
+     */
+    private boolean optimizeFine(DMRSyncPattern pattern)
+    {
+        //Offset is the sample for the last symbol of the detected sync pattern.
+        double offset = mBufferPointer + mSamplePoint;
+        float currentScore = score(offset, mObservedSamplesPerSymbol, pattern);
+        double candidate = offset - mOptimizeFineIncrement;
+        float candidateScore = score(candidate, mObservedSamplesPerSymbol, pattern);
+        boolean adjusted = false;
+
+        if(candidateScore > currentScore)
+        {
+            mSamplePoint -= mOptimizeFineIncrement;
+            adjusted = true;
+        }
+        else
+        {
+            candidate = offset + mOptimizeFineIncrement;
+            candidateScore = score(candidate, mObservedSamplesPerSymbol, pattern);
+
+            if(candidateScore > currentScore)
+            {
+                mSamplePoint += mOptimizeFineIncrement;
+                adjusted = true;
+            }
+        }
+
+        if(adjusted)
+        {
+            while(mSamplePoint < 0)
+            {
+                mSamplePoint++;
+                mBufferPointer--;
+            }
+
+            while(mSamplePoint > 1)
+            {
+                mSamplePoint--;
+                mBufferPointer++;
+            }
+        }
+
+        if(candidateScore > SYNC_OPTIMIZED_THRESHOLD)
+        {
+            updateEqualizer(pattern);
+        }
+
+        return candidateScore > SYNC_EQUALIZED_THRESHOLD;
+    }
+
+    /**
+     * Update the equalizer balance and gain when the sync pattern is detected in the sample buffer.  This method
+     * resamples the symbols and compares each soft symbol to the ideal symbol phase to develop average error
+     * measurements for balance and gain.  On initial sync detection, the equalizer settings are applied to the
+     * samples in the buffer allowing the symbols to be resampled during coarse sync acquisition.
+     * @param pattern that was detected.
+     */
+    private void updateEqualizer(DMRSyncPattern pattern)
+    {
+        float[] symbols = pattern.toSymbols();
+        double resampleStart = mBufferPointer + mSamplePoint;
+        int resampleStartIntegral = (int)Math.floor(resampleStart);
+        float resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
+                mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+        float balanceAccumulator = resampledSoftSymbol - symbols[23];
+        float gainAccumulator = Math.abs(symbols[23]) - Math.abs(resampledSoftSymbol);
+
+        resampleStart -= (23 * mObservedSamplesPerSymbol); //Start at 89 (+ 1 current = 90) symbols
+        resampleStartIntegral = (int)Math.floor(resampleStart);
+
+        for(int x = 0; x < 23; x++)
+        {
+            if(resampleStartIntegral >= 0)
+            {
+                resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
+                        mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+                balanceAccumulator += resampledSoftSymbol - symbols[x];
+                gainAccumulator += Math.abs(symbols[x]) - Math.abs(resampledSoftSymbol);
+            }
+
+            resampleStart += mObservedSamplesPerSymbol;
+            resampleStartIntegral = (int)Math.floor(resampleStart);
+        }
+
+        //Average the accumulated error over 24 sync symbols
+        balanceAccumulator /= -24.0f;
+        gainAccumulator /= (24.0f * Dibit.D01_PLUS_3.getIdealPhase());
+
+        if(mEqualizerInitialized)
+        {
+            //Limit equalizer adjustments at each sync after the initial equalizer setup.
+            mEqualizerBalance += (balanceAccumulator * EQUALIZER_LOOP_GAIN);
+            mEqualizerGain += (gainAccumulator * EQUALIZER_LOOP_GAIN);
+        }
+        else
+        {
+            mEqualizerBalance += balanceAccumulator;
+            mEqualizerGain += gainAccumulator;
+        }
+
+        //Constrain balance to +/- PI/4
+        mEqualizerBalance = Math.min(mEqualizerBalance, MAXIMUM_EQUALIZER_BALANCE);
+        mEqualizerBalance = Math.max(mEqualizerBalance, -MAXIMUM_EQUALIZER_BALANCE);
+
+        //Constrain gain between 1.0f and 1.35f
+        mEqualizerGain = Math.min(mEqualizerGain, MAXIMUM_EQUALIZER_GAIN);
+        mEqualizerGain = Math.max(mEqualizerGain, 1.0f);
+
+        if(!mEqualizerInitialized)
+        {
+            //Apply the initial gain settings to the samples in the buffer so that the symbols can be resampled.
+            for(int x = 0; x < mBufferPointer; x++)
+            {
+                mBuffer[x] = (mBuffer[x] + mEqualizerBalance) * mEqualizerGain;
+            }
+
+            mEqualizerInitialized = true;
+        }
+    }
+
+    /**
+     * Debug method to visualize the contents of the sample buffer.
+     */
+    public void visualizeBufferContents()
+    {
+        //This will block until the viewer is constructed and showing.
+        if(mSyncResultsViewer == null)
+        {
+            mSyncResultsViewer = new SyncResultsViewer();
+        }
+
+        int offset = 3;
+        int length = (int)Math.ceil(mObservedSamplesPerSymbol * 90) + (2 * offset);
+        int end = mBufferPointer + offset;
+        int start = end - length;
+        float[] symbols = new float[90];
+        float[] samples = Arrays.copyOfRange(mBuffer, start, end);
+
+        float[] intervals = new float[90];
+
+        int adjust = mBufferPointer - length + offset;
+        double pointer = mBufferPointer + mSamplePoint - adjust;
+
+        for(int x = 89; x >= 0; x--)
+        {
+            intervals[x] = (float)pointer;
+            pointer -= mObservedSamplesPerSymbol;
+        }
+
+        float[] sync = new float[90];
+        Arrays.fill(sync, -1.57f); //Cutoff between -1 & -1 to show symbol timings
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mSyncResultsViewer.receive(symbols, sync, samples, intervals, "BUFFER CONTENTS", countDownLatch);
+
+        try
+        {
+            countDownLatch.await();
+        }
+        catch(InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Debug method to visualize the contents of the sync detection for the samples and symbols and symbol timing.
+     * @param pattern that was detected.
+     * @param score from the sync detector
+     * @param primary sync detector (true) or secondary (false)
+     */
+    public void visualizeSyncDetect(DMRSyncPattern pattern, float score, boolean primary)
+    {
+        //This will block until the viewer is constructed and showing.
+        if(mSyncResultsViewer == null)
+        {
+            mSyncResultsViewer = new SyncResultsViewer();
+        }
+
+        int offset = 3;
+        int length = (int)Math.ceil(mObservedSamplesPerSymbol * 23) + (2 * offset);
+        int end = mBufferPointer + offset;
+        int start = end - length;
+        float[] symbols = new float[24];
+        float[] samples = Arrays.copyOfRange(mBuffer, start, end);
+
+        float[] intervals = new float[24];
+
+        int adjust = mBufferPointer - length + offset;
+        double pointer = mBufferPointer + mSamplePoint - adjust;
+
+        double symbolPointer = mBufferPointer + mSamplePoint - (mObservedSamplesPerSymbol * 23);
+        int symbolIntegral = (int)Math.floor(symbolPointer);
+        double mu = symbolPointer - symbolIntegral;
+
+        for(int x = 0; x < 24; x++)
+        {
+            symbols[x] = LinearInterpolator.calculate(mBuffer[symbolIntegral], mBuffer[symbolIntegral + 1], mu);
+            symbolPointer += mObservedSamplesPerSymbol;
+            symbolIntegral = (int)Math.floor(symbolPointer);
+            mu = symbolPointer - symbolIntegral;
+        }
+
+        for(int x = 23; x >= 0; x--)
+        {
+            intervals[x] = (float)pointer;
+            pointer -= mObservedSamplesPerSymbol;
+        }
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mSyncResultsViewer.receive(symbols, pattern.toSymbols(), samples, intervals,
+                pattern + " Score: " + score + (primary ? " PRIMARY" : " SECONDARY"), countDownLatch);
+
+        try
+        {
+            countDownLatch.await();
+        }
+        catch(InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Calculates the sync correlation score for sync pattern ending at the specified offset and samples per symbol interval.
+     * @param offset to the final symbol in the soft symbol buffer
      * @param samplesPerSymbol spacing to test for.
      * @param pattern to correlate against.
      * @return correlation score.
      */
-    public float score(int bufferPointer, float fractional, float samplesPerSymbol, DMRSyncPattern pattern)
+    public float score(double offset, double samplesPerSymbol, DMRSyncPattern pattern)
     {
-        float score = 0;
         float[] symbols = pattern.toSymbols();
-        int integral, maxPointer = mBuffer.length - 1;
-        float softSymbol = 0.0f;
+        int maxPointer = mBuffer.length - 1;
+        float softSymbol;
+
+        double pointer = offset - (samplesPerSymbol * 23.0);
+        int bufferPointer = (int)Math.floor(pointer);
+        double fractional = pointer - bufferPointer;
+
+        float score = 0;
 
         for(int x = 0; x < 24; x++)
         {
             if(bufferPointer < maxPointer)
             {
-                softSymbol = PhaseAwareLinearInterpolator.calculate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional);
-                softSymbol = Math.min(softSymbol, MAX_POSITIVE_SOFT_SYMBOL);
-                softSymbol = Math.max(softSymbol, MAX_NEGATIVE_SOFT_SYMBOL);
+                softSymbol = LinearInterpolator.calculate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional);
             }
             else
             {
@@ -432,10 +709,9 @@ public class DMRSoftSymbolProcessor
             }
 
             score += softSymbol * symbols[x];
-            fractional += samplesPerSymbol;
-            integral = (int)Math.floor(fractional);
-            bufferPointer += integral;
-            fractional -= integral;
+            pointer += samplesPerSymbol;
+            bufferPointer = (int)Math.floor(pointer);
+            fractional = pointer - bufferPointer;
         }
 
         return score;
@@ -448,14 +724,14 @@ public class DMRSoftSymbolProcessor
     public void setSamplesPerSymbol(float samplesPerSymbol)
     {
         mSamplesPerSymbol = samplesPerSymbol;
-        mMaxSamplesPerSymbol = samplesPerSymbol * (1.0f + SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION);
-        mMinSamplesPerSymbol = samplesPerSymbol * (1.0f - SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION);
+        float maxSamplesPerSymbol = samplesPerSymbol * (1.0f + SAMPLES_PER_SYMBOL_ALLOWABLE_DEVIATION);
+        mOptimizeFineIncrement = samplesPerSymbol * .004f; //Adjust at .4%
         //Protected region for score() method to avoid IndexOutOfBounds = Max Adjustment + Max Step Size for Max SPS
-        mBufferInterpolatorReservedRegion = (int)Math.ceil((mMaxSamplesPerSymbol / 2.0f) + (mMaxSamplesPerSymbol / 10.0f));
+        mBufferInterpolatorReservedRegion = (int)Math.ceil((maxSamplesPerSymbol / 2.0f) + (maxSamplesPerSymbol / 10.0f));
         mObservedSamplesPerSymbol = mSamplesPerSymbol;
+        mNoiseStandardDeviationThreshold = Dibit.D01_PLUS_3.getIdealPhase() * 2 / mSamplesPerSymbol * 1.2; //120% of optimal
         mSamplePoint = mSamplesPerSymbol;
-        mLaggingSyncOffset1 = mSamplesPerSymbol / 3;
-        mLaggingSyncOffset2 = mLaggingSyncOffset1 * 2;
+        mSecondarySyncOffset = mSamplesPerSymbol / 2.0;
         mBufferWorkspaceLength = (int)Math.ceil(BUFFER_WORKSPACE_LENGTH_DIBITS * mSamplesPerSymbol);
         int bufferLength = (int)(Math.ceil(BUFFER_LENGTH_DIBITS * mSamplesPerSymbol));
         mBuffer = new float[bufferLength];

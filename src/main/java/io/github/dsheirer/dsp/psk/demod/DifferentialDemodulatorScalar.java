@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,30 +17,25 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.psk.dqpsk;
+package io.github.dsheirer.dsp.psk.demod;
 
 import java.util.Arrays;
-import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.VectorOperators;
-import jdk.incubator.vector.VectorSpecies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DQPSK demodulator that uses Vector SIMD 128 calculations for demodulating the sample stream.
+ * Differential demodulator that uses scalar calculations for demodulating the sample stream.
  */
-public class DQPSKDemodulatorVector128 extends DQPSKDemodulator
+public class DifferentialDemodulatorScalar extends DifferentialDemodulator
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DQPSKDemodulatorVector128.class);
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_128;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DifferentialDemodulatorScalar.class);
 
     /**
      * Constructor
      *
-     * @param sampleRate in Hertz
      * @param symbolRate symbols per second
      */
-    public DQPSKDemodulatorVector128(double sampleRate, int symbolRate)
+    public DifferentialDemodulatorScalar(double sampleRate, int symbolRate)
     {
         super(sampleRate, symbolRate);
     }
@@ -60,10 +55,6 @@ public class DQPSKDemodulatorVector128 extends DQPSKDemodulator
         int requiredBufferLength = sampleLength + bufferOverlap;
         if(mIBuffer.length != requiredBufferLength)
         {
-            if(i.length % VECTOR_SPECIES.length() != 0)
-            {
-                throw new IllegalArgumentException("Buffer length must be a multiple of " + VECTOR_SPECIES.length());
-            }
             mIBuffer = Arrays.copyOf(mIBuffer, requiredBufferLength);
             mQBuffer = Arrays.copyOf(mQBuffer, requiredBufferLength);
         }
@@ -73,34 +64,24 @@ public class DQPSKDemodulatorVector128 extends DQPSKDemodulator
         System.arraycopy(q, 0, mQBuffer, bufferOverlap, sampleLength);
         //mIDecoded, mQDecoded and mPhase will be filled below during the decoding process.
 
-        float[] interpolatedI = new float[VECTOR_SPECIES.length()];
-        float[] interpolatedQ = new float[VECTOR_SPECIES.length()];
         float[] decodedPhases = new float[i.length];
-        FloatVector iPrevious, qPreviousConjugate, iCurrent, qCurrent, differentialI, differentialQ;
+        float iPrevious, qPreviousConjugate, iCurrent, qCurrent, differentialI, differentialQ;
 
         //Differential demodulation.
-        for(int x = 0; x < sampleLength; x += VECTOR_SPECIES.length())
+        for(int x = 0; x < sampleLength; x++)
         {
-            iPrevious = FloatVector.fromArray(VECTOR_SPECIES, mIBuffer, x);
-            qPreviousConjugate = FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x).neg(); //Complex Conjugate
+            iPrevious = mIBuffer[x];
+            qPreviousConjugate = -mQBuffer[x]; //Complex Conjugate
 
             int offset = mInterpolationOffset + x;
-            int index;
-            for(int y = 0; y < VECTOR_SPECIES.length(); y++)
-            {
-                index = offset + y;
-                interpolatedI[y] = mInterpolator.filter(mIBuffer, index, mu);
-                interpolatedQ[y] = mInterpolator.filter(mQBuffer, index, mu);
-            }
-            iCurrent = FloatVector.fromArray(VECTOR_SPECIES, interpolatedI, 0);
-            qCurrent = FloatVector.fromArray(VECTOR_SPECIES, interpolatedQ, 0);
+            iCurrent = mInterpolator.filter(mIBuffer, offset, mu);
+            qCurrent = mInterpolator.filter(mQBuffer, offset, mu);
 
             //Multiply current complex sample by the complex conjugate of previous complex sample.
-            differentialI = iPrevious.mul(iCurrent).sub(qPreviousConjugate.mul(qCurrent));
-            differentialQ = iPrevious.mul(qCurrent).add(iCurrent.mul(qPreviousConjugate));
+            differentialI = (iPrevious * iCurrent) - (qPreviousConjugate * qCurrent);
+            differentialQ = (iPrevious * qCurrent) + (iCurrent * qPreviousConjugate);
 
-            //Calculate phase angles using Arc Tangent and export to the decoded phases array.
-            differentialQ.lanewise(VectorOperators.ATAN2, differentialI).intoArray(decodedPhases, x);
+            decodedPhases[x] = (float)Math.atan2(differentialQ, differentialI);
         }
 
         return decodedPhases;

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
 
 package io.github.dsheirer.vector.calibrate.demodulator;
 
-import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulator;
-import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorScalar;
-import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorVector128;
-import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorVector256;
-import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorVector512;
-import io.github.dsheirer.dsp.psk.dqpsk.DQPSKDemodulatorVector64;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulator;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorScalar;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorVector128;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorVector256;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorVector512;
+import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorVector64;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
@@ -32,26 +32,26 @@ import io.github.dsheirer.vector.calibrate.Implementation;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 /**
- * Calibrates DQPSK demodulator options
+ * Calibrates differential demodulator options
  */
-public class DqpskDemodulatorCalibration extends Calibration
+public class DifferentialDemodulatorCalibration extends Calibration
 {
     private static final int BUFFER_SIZE = 2048;
     private static final int ITERATION_DURATION_MS = 1000;
     private static final int WARMUP_ITERATIONS = 5;
     private static final int TEST_ITERATIONS = 5;
-    private DQPSKDemodulator mScalarDemodulator = new DQPSKDemodulatorScalar(50000.0, 4800);
-    private final DQPSKDemodulator mVectorDemodulator64 = new DQPSKDemodulatorVector64(50000.0, 4800);
-    private final DQPSKDemodulator mVectorDemodulator128 = new DQPSKDemodulatorVector128(50000.0, 4800);
-    private final DQPSKDemodulator mVectorDemodulator256 = new DQPSKDemodulatorVector256(50000.0, 4800);
-    private final DQPSKDemodulator mVectorDemodulator512 = new DQPSKDemodulatorVector512(50000.0, 4800);
+    private DifferentialDemodulator mScalarDemodulator = new DifferentialDemodulatorScalar(50000.0, 4800);
+    private final DifferentialDemodulator mVectorDemodulator64 = new DifferentialDemodulatorVector64(50000.0, 4800);
+    private final DifferentialDemodulator mVectorDemodulator128 = new DifferentialDemodulatorVector128(50000.0, 4800);
+    private final DifferentialDemodulator mVectorDemodulator256 = new DifferentialDemodulatorVector256(50000.0, 4800);
+    private final DifferentialDemodulator mVectorDemodulator512 = new DifferentialDemodulatorVector512(50000.0, 4800);
 
     /**
      * Constructs an instance
      */
-    public DqpskDemodulatorCalibration()
+    public DifferentialDemodulatorCalibration()
     {
-        super(CalibrationType.DQPSK_DEMODULATOR);
+        super(CalibrationType.DIFFERENTIAL_DEMODULATOR);
     }
 
     @Override public void calibrate() throws CalibrationException
@@ -273,7 +273,7 @@ public class DqpskDemodulatorCalibration extends Calibration
 
     public static void main(String[] args)
     {
-        DqpskDemodulatorCalibration calibration = new DqpskDemodulatorCalibration();
+        DifferentialDemodulatorCalibration calibration = new DifferentialDemodulatorCalibration();
 
         try
         {

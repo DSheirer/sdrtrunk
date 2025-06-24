@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
 import io.github.dsheirer.vector.calibrate.airspy.AirspySampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.airspy.AirspyUnpackedCalibration;
 import io.github.dsheirer.vector.calibrate.airspy.AirspyUnpackedInterleavedCalibration;
-import io.github.dsheirer.vector.calibrate.demodulator.DqpskDemodulatorCalibration;
+import io.github.dsheirer.vector.calibrate.demodulator.DifferentialDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.filter.FirFilterCalibration;
 import io.github.dsheirer.vector.calibrate.filter.RealDcRemovalCalibration;
@@ -108,7 +108,7 @@ public class CalibrationManager
             sInstance.add(new ComplexOscillatorCalibration());
             sInstance.add(new ComplexMixerCalibration());
             sInstance.add(new DMRSoftSyncCalibration());
-            sInstance.add(new DqpskDemodulatorCalibration());
+            sInstance.add(new DifferentialDemodulatorCalibration());
             sInstance.add(new FirFilterCalibration());
             sInstance.add(new FmDemodulatorCalibration());
             sInstance.add(new InterpolatorCalibration());
@@ -281,7 +281,7 @@ public class CalibrationManager
     {
         CalibrationManager manager = getInstance();
 //        manager.reset();
-        manager.reset(CalibrationType.DQPSK_DEMODULATOR);
+        manager.reset(CalibrationType.DIFFERENTIAL_DEMODULATOR);
 
         if(!manager.isCalibrated())
         {

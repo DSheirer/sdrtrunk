@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -609,14 +609,14 @@ public class SDRTrunk implements Listener<TunerEvent>
 
                 final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
-                EventQueue.invokeLater(() -> {
+                ThreadPool.CACHED.submit(() -> {
                     try
                     {
                         ImageIO.write(image, "png", captureFile.toFile());
                     }
                     catch(IOException e)
                     {
-                        mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
+                        mLog.error("Couldn't write screen capture to file [" + captureFile + "]", e);
                     }
                 });
             }

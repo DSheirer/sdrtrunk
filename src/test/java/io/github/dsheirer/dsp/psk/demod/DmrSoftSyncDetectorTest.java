@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.psk.dqpsk;
+package io.github.dsheirer.dsp.psk.demod;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.module.decode.dmr.sync.DMRSoftSyncDetector;
@@ -60,11 +60,11 @@ public class DmrSoftSyncDetectorTest
             for(Dibit dibit: pattern.toDibits())
             {
                 symbol = toSymbol(dibit);
-                scalar.process(symbol);
-                vector64.process(symbol);
-                vector128.process(symbol);
-                vector256.process(symbol);
-                vector512.process(symbol);
+                scalar.processAndCalculate(symbol);
+                vector64.processAndCalculate(symbol);
+                vector128.processAndCalculate(symbol);
+                vector256.processAndCalculate(symbol);
+                vector512.processAndCalculate(symbol);
             }
 
             assertSame(scalar.getDetectedPattern(), pattern, "Scalar Detector Did Not Correctly Detect Pattern: " + pattern);

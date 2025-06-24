@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.psk.dqpsk;
+package io.github.dsheirer.dsp.psk.demod;
 
 import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
@@ -27,19 +27,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DQPSK demodulator that uses Vector SIMD 512 calculations for demodulating the sample stream.
+ * Differential demodulator that uses Vector SIMD 64 calculations for demodulating the sample stream.
  */
-public class DQPSKDemodulatorVector512 extends DQPSKDemodulator
+public class DifferentialDemodulatorVector64 extends DifferentialDemodulator
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DQPSKDemodulatorVector512.class);
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_512;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DifferentialDemodulatorVector64.class);
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_64;
 
     /**
      * Constructor
      *
+     * @param sampleRate in Hertz
      * @param symbolRate symbols per second
      */
-    public DQPSKDemodulatorVector512(double sampleRate, int symbolRate)
+    public DifferentialDemodulatorVector64(double sampleRate, int symbolRate)
     {
         super(sampleRate, symbolRate);
     }
@@ -70,10 +71,11 @@ public class DQPSKDemodulatorVector512 extends DQPSKDemodulator
         //Append new samples to the residual samples from the previous buffer.
         System.arraycopy(i, 0, mIBuffer, bufferOverlap, sampleLength);
         System.arraycopy(q, 0, mQBuffer, bufferOverlap, sampleLength);
+        //mIDecoded, mQDecoded and mPhase will be filled below during the decoding process.
 
         float[] interpolatedI = new float[VECTOR_SPECIES.length()];
         float[] interpolatedQ = new float[VECTOR_SPECIES.length()];
-        float[] decodedPhases = new float[sampleLength];
+        float[] decodedPhases = new float[i.length];
         FloatVector iPrevious, qPreviousConjugate, iCurrent, qCurrent, differentialI, differentialQ;
 
         //Differential demodulation.
