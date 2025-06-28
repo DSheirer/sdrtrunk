@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 package io.github.dsheirer.audio.broadcast.broadcastify;
 
 import com.google.common.net.HttpHeaders;
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.AudioRecording;
@@ -32,6 +34,7 @@ import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.ConfigurationLongIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
@@ -45,6 +48,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedTransferQueue;
@@ -76,6 +80,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         .build();
     private long mLastConnectionAttempt;
     private long mConnectionAttemptInterval = 5000; //Every 5 seconds
+    final private AliasModel mAliasModel;
 
     /**
      * Constructs an instance of the broadcaster
@@ -86,6 +91,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                                        MP3Setting mp3Setting, AliasModel aliasModel)
     {
         super(config);
+        mAliasModel = aliasModel;
     }
 
     /**
@@ -443,9 +449,33 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     /**
      * Creates a formatted string with the TO identifiers or uses a default of zero (0)
      */
-    private static String getTo(AudioRecording audioRecording)
+    private String getTo(AudioRecording audioRecording)
     {
         Identifier identifier = audioRecording.getIdentifierCollection().getToIdentifier();
+
+        //Alias the TO value when the user specifies a 'Stream As Talkgroup'
+        if(identifier != null)
+        {
+            AliasListConfigurationIdentifier config = audioRecording.getIdentifierCollection().getAliasListConfiguration();
+
+            if(config != null)
+            {
+                AliasList aliasList = mAliasModel.getAliasList(config.getValue());
+
+                if(aliasList != null)
+                {
+                    List<Alias> aliases = aliasList.getAliases(identifier);
+
+                    for(Alias a: aliases)
+                    {
+                        if(a.getStreamTalkgroupAlias() != null)
+                        {
+                            return String.valueOf(a.getStreamTalkgroupAlias().getValue());
+                        }
+                    }
+                }
+            }
+        }
 
         if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
         {

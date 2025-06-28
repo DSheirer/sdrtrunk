@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.alias;
 
@@ -30,13 +27,22 @@ import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.record.Record;
+import io.github.dsheirer.alias.id.talkgroup.StreamAsTalkgroup;
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -45,13 +51,6 @@ import javafx.collections.transformation.FilteredList;
 import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Alias provides an aliasing (e.g. name, color, etc) container that is linked to multiple alias identifiers and
@@ -74,6 +73,7 @@ public class Alias
     private StringProperty mName = new SimpleStringProperty();
     private ObservableList<AliasID> mAliasIDs = FXCollections.observableArrayList();
     private ObservableList<AliasAction> mAliasActions = FXCollections.observableArrayList();
+    private ObjectProperty<StreamAsTalkgroup> mStreamTalkgroupAlias = new SimpleObjectProperty<>();
 
     /**
      * Constructs an instance and sets the specified name.
@@ -180,6 +180,12 @@ public class Alias
         return mColor;
     }
 
+    @JsonIgnore
+    public ObjectProperty streamTalkgroupAliasProperty()
+    {
+        return mStreamTalkgroupAlias;
+    }
+
     /**
      * Icon name property
      */
@@ -227,6 +233,24 @@ public class Alias
     public void setName(String name)
     {
         mName.set(name);
+    }
+
+    /**
+     * Alias name
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "stream_talkgroup_alias")
+    public StreamAsTalkgroup getStreamTalkgroupAlias()
+    {
+        return mStreamTalkgroupAlias.get();
+    }
+
+    /**
+     * Sets the stream as talkgroup value that will be used in the TO field for streamed audio calls.
+     * @param streamTalkgroupAlias with a talkgroup value.
+     */
+    public void setStreamTalkgroupAlias(StreamAsTalkgroup streamTalkgroupAlias)
+    {
+        mStreamTalkgroupAlias.set(streamTalkgroupAlias);
     }
 
     /**
@@ -710,6 +734,7 @@ public class Alias
     {
         return (Alias a) -> new Observable[] {a.recordableProperty(), a.streamableProperty(), a.colorProperty(),
             a.aliasListNameProperty(), a.groupProperty(), a.iconNameProperty(), a.nameProperty(), a.aliasIds(),
-            a.aliasActions(), a.nonAudioIdentifierCountProperty(), a.overlapProperty()};
+            a.aliasActions(), a.nonAudioIdentifierCountProperty(), a.overlapProperty(), a.priorityProperty(),
+                a.streamTalkgroupAliasProperty()};
     }
 }
