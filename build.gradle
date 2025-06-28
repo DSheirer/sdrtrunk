@@ -142,6 +142,8 @@ def jvmArgsWindows =
          '--add-modules=jdk.incubator.vector',   //Project Panama Vector API is still in incubator
          '--enable-preview', //Project Panama Vector API is still in incubator
          '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
+         '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
+         '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
          '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //SDRPlay API library path
 
 /**
@@ -151,6 +153,8 @@ def jvmArgsLinux =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-modules=jdk.incubator.vector',   //Needed while Project Panama API is still in incubator
          '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
+         '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
+         '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
          '--enable-native-access=ALL-UNNAMED'] //SDRPlay API library path
 
 application {
