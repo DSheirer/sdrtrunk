@@ -44,12 +44,14 @@ import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.StreamAsTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormatter;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.playlist.alias.action.ActionEditor;
 import io.github.dsheirer.gui.playlist.alias.action.ActionEditorFactory;
@@ -95,7 +97,9 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -152,6 +156,8 @@ public class AliasItemEditor extends Editor<Alias>
     private Button mDeleteActionButton;
     private VBox mActionEditorBox;
     private VBox mIdentifierEditorBox;
+    private TextField mStreamAsTalkgroupField;
+    private TextFormatter<Integer> mStreamAsIntegerTextFormatter = new IntegerFormatter(1,0xFFFF);
 
     private Map<AliasIDType,IdentifierEditor> mIdentifierEditorMap = new HashMap<>();
     private EmptyIdentifierEditor mEmptyIdentifierEditor = new EmptyIdentifierEditor();
@@ -358,6 +364,10 @@ public class AliasItemEditor extends Editor<Alias>
                     alias.addAliasID(selected);
                 }
 
+                //Set or clear the 'Stream As Talkgroup' value.
+                Integer streamAsTalkgroup = mStreamAsIntegerTextFormatter.getValue();
+                alias.setStreamTalkgroupAlias(streamAsTalkgroup != null ? new StreamAsTalkgroup(streamAsTalkgroup) : null);
+
                 //Remove and replace the remaining non-audio identifiers
                 alias.removeNonAudioIdentifiers();
 
@@ -366,8 +376,16 @@ public class AliasItemEditor extends Editor<Alias>
                     //Create a copy of the identifier so that the alias and the editor don't have the same instance
                     //and reset the overlap flag (if set) so that the alias list can reevaluate the overlap state.
                     AliasID copy = AliasFactory.copyOf(aliasID);
-                    copy.setOverlap(false);
-                    alias.addAliasID(copy);
+
+                    if(copy != null)
+                    {
+                        copy.setOverlap(false);
+                        alias.addAliasID(copy);
+                    }
+                    else
+                    {
+                        mLog.warn("Unable to create a copy of alias ID: " + aliasID);
+                    }
                 }
 
                 //Remove and replace alias actions
@@ -413,6 +431,29 @@ public class AliasItemEditor extends Editor<Alias>
     public void dispose()
     {
         MyEventBus.getGlobalEventBus().unregister(this);
+    }
+
+    /**
+     * Editor field for the stream this alias as a different talkgroup value
+     */
+    private TextField getStreamAsTalkgroupField()
+    {
+        if(mStreamAsTalkgroupField == null)
+        {
+            mStreamAsTalkgroupField = new TextField();
+            mStreamAsTalkgroupField.setDisable(true);
+            mStreamAsTalkgroupField.setTextFormatter(mStreamAsIntegerTextFormatter);
+            mStreamAsTalkgroupField.setTooltip(new Tooltip("When specified, all streamed call audio will use this " +
+                    "talkgroup value in place of the decoded talkgroup value."));
+            mStreamAsTalkgroupField.textProperty().addListener((o, old, newV) -> {
+                if(getItem() != null)
+                {
+                    modifiedProperty().set(true);
+                }
+            });
+        }
+
+        return mStreamAsTalkgroupField;
     }
 
     private VBox getTitledPanesBox()
@@ -792,7 +833,7 @@ public class AliasItemEditor extends Editor<Alias>
 
             VBox selectedBox = new VBox();
             VBox.setVgrow(getSelectedStreamsView(), Priority.ALWAYS);
-            selectedBox.getChildren().addAll(new Label("Selected"),getSelectedStreamsView());
+            selectedBox.getChildren().addAll(new Label("Selected"), getSelectedStreamsView());
 
             HBox hbox = new HBox();
             hbox.setSpacing(10);
@@ -800,7 +841,17 @@ public class AliasItemEditor extends Editor<Alias>
             HBox.setHgrow(selectedBox, Priority.ALWAYS);
             hbox.getChildren().addAll(availableBox, buttonBox, selectedBox);
 
-            mStreamPane = new TitledPane("Streaming", hbox);
+            VBox vbox = new VBox();
+            vbox.setSpacing(10);
+            VBox.setVgrow(hbox, Priority.ALWAYS);
+            Label label = new Label("Stream this Alias as Talkgroup:");
+            HBox streamAsHBox = new HBox();
+            streamAsHBox.setAlignment(Pos.CENTER_LEFT);
+            streamAsHBox.setSpacing(10);
+            streamAsHBox.getChildren().addAll(label, getStreamAsTalkgroupField());
+            vbox.getChildren().addAll(hbox, streamAsHBox);
+
+            mStreamPane = new TitledPane("Streaming", vbox);
             mStreamPane.setExpanded(false);
         }
 
@@ -809,33 +860,44 @@ public class AliasItemEditor extends Editor<Alias>
 
     private void updateStreamViews()
     {
-        Platform.runLater(new Runnable()
-        {
-            @Override
-            public void run()
+        Platform.runLater(() -> {
+            getAvailableStreamsView().getItems().clear();
+            getSelectedStreamsView().getItems().clear();
+            getAvailableStreamsView().setDisable(getItem() == null);
+            getSelectedStreamsView().setDisable(getItem() == null);
+            getStreamAsTalkgroupField().setDisable(getItem() == null);
+
+            if(getItem() != null)
             {
-                getAvailableStreamsView().getItems().clear();
-                getSelectedStreamsView().getItems().clear();
-                getAvailableStreamsView().setDisable(getItem() == null);
-                getSelectedStreamsView().setDisable(getItem() == null);
+                List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
 
-                if(getItem() != null)
+                Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
+
+                for(BroadcastChannel channel: selectedChannels)
                 {
-                    List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
-
-                    Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
-
-                    for(BroadcastChannel channel: selectedChannels)
+                    if(availableStreams.contains(channel.getChannelName()))
                     {
-                        if(availableStreams.contains(channel.getChannelName()))
-                        {
-                            availableStreams.remove(channel.getChannelName());
-                        }
+                        availableStreams.remove(channel.getChannelName());
                     }
-
-                    getSelectedStreamsView().getItems().addAll(selectedChannels);
-                    getAvailableStreamsView().getItems().addAll(availableStreams);
                 }
+
+                getSelectedStreamsView().getItems().addAll(selectedChannels);
+                getAvailableStreamsView().getItems().addAll(availableStreams);
+
+                AliasID streamAs = getItem().getStreamTalkgroupAlias();
+
+                if(streamAs instanceof StreamAsTalkgroup sat)
+                {
+                    mStreamAsIntegerTextFormatter.setValue(sat.getValue());
+                }
+                else
+                {
+                    mStreamAsIntegerTextFormatter.setValue(null);
+                }
+            }
+            else
+            {
+                mStreamAsIntegerTextFormatter.setValue(null);
             }
         });
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,17 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
@@ -40,17 +51,6 @@ import org.apache.mina.http.api.HttpVersion;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUpdater
 {
@@ -212,9 +212,19 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
 
             if(to != null)
             {
-                sb.append("TO:").append(to);
-
                 List<Alias> aliases = aliasList.getAliases(to);
+
+                //Check for 'Stream As Talkgroup' alias and use this instead of the decoded TO value.
+                Optional<Alias> streamAs = aliases.stream().filter(alias -> alias.getStreamTalkgroupAlias() != null).findFirst();
+
+                if(streamAs.isPresent())
+                {
+                    sb.append("TO:").append(streamAs.get().getStreamTalkgroupAlias().getValue());
+                }
+                else
+                {
+                    sb.append("TO:").append(to);
+                }
 
                 if(!aliases.isEmpty())
                 {

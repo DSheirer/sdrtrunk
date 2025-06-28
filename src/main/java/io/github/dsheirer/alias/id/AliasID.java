@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ import io.github.dsheirer.alias.id.record.Record;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.StreamAsTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
@@ -70,6 +71,7 @@ import javafx.util.Callback;
     @JsonSubTypes.Type(value = RadioRange.class, name = "radioRange"),
     @JsonSubTypes.Type(value = Record.class, name = "record"),
     @JsonSubTypes.Type(value = SiteID.class, name = "siteID"),
+    @JsonSubTypes.Type(value = StreamAsTalkgroup.class, name = "streamAsTalkgroup"),
     @JsonSubTypes.Type(value = Talkgroup.class, name = "talkgroup"),
     @JsonSubTypes.Type(value = TalkgroupRange.class, name = "talkgroupRange"),
     @JsonSubTypes.Type(value = TonesID.class, name = "tones"),
