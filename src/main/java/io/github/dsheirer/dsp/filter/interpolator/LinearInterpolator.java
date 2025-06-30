@@ -33,9 +33,13 @@ public class LinearInterpolator
      */
     public static float calculate(float x1, float x2, float mu)
     {
-        if(mu < 0 || mu > 1)
+        if(mu < 0)
         {
-            throw new IllegalArgumentException("mu [" + mu + "] must be between 0 and 1");
+            return x1;
+        }
+        else if(mu > 1)
+        {
+            return x2;
         }
 
         return x1 + ((x2 - x1) * mu);
