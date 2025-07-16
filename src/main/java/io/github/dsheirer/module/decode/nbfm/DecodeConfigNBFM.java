@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.nbfm;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
@@ -30,6 +31,10 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 public class DecodeConfigNBFM extends DecodeConfigAnalog
 {
     private boolean mAudioFilter = true;
+    private float mSquelchNoiseOpenThreshold = NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD;
+    private float mSquelchNoiseCloseThreshold = NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD;
+    private int mSquelchHysteresisOpenThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD;
+    private int mSquelchHysteresisCloseThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_CLOSE_THRESHOLD;
 
     /**
      * Constructs an instance
@@ -87,5 +92,101 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     public void setAudioFilter(boolean audioFilter)
     {
         mAudioFilter = audioFilter;
+    }
+
+    /**
+     * Squelch noise open threshold in the range 0.0 to 1.0 with a default of 0.1
+     * @return noise open threshold
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "squelchNoiseOpenThreshold")
+    public float getSquelchNoiseOpenThreshold()
+    {
+        return mSquelchNoiseOpenThreshold;
+    }
+
+    /**
+     * Squelch noise close threshold in the range 0.0 to 1.0, greater than or equal to open threshold, with a default of 0.2
+     * @return noise close threshold
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "squelchNoiseCloseThreshold")
+    public float getSquelchNoiseCloseThreshold()
+    {
+        return mSquelchNoiseCloseThreshold;
+    }
+
+    /**
+     * Sets the squelch noise threshold.
+     * @param open in range 0.0 to 1.0 with a default of 0.1
+     */
+    public void setSquelchNoiseOpenThreshold(float open)
+    {
+        if(open < NoiseSquelch.MINIMUM_NOISE_THRESHOLD || open > NoiseSquelch.MAXIMUM_NOISE_THRESHOLD)
+        {
+            throw new IllegalArgumentException("Squelch noise open threshold is out of range: " + open);
+        }
+
+        mSquelchNoiseOpenThreshold = open;
+    }
+
+    /**
+     * Sets the squelch noise close threshold.
+     * @param close in range 0.0 to 1.0 and greater than or equal to open, with a default of 0.1
+     */
+    public void setSquelchNoiseCloseThreshold(float close)
+    {
+        if(close < NoiseSquelch.MINIMUM_NOISE_THRESHOLD || close > NoiseSquelch.MAXIMUM_NOISE_THRESHOLD)
+        {
+            throw new IllegalArgumentException("Squelch noise close threshold is out of range: " + close);
+        }
+
+        mSquelchNoiseCloseThreshold = close;
+    }
+
+    /**
+     * Squelch hysteresis open threshold in range 1-10 with a default of 4.
+     * @return hysteresis open threshold
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "squelchHysteresisOpenThreshold")
+    public int getSquelchHysteresisOpenThreshold()
+    {
+        return mSquelchHysteresisOpenThreshold;
+    }
+
+    /**
+     * Sets the squelch time threshold in the range 1-10.
+     * @param open threshold
+     */
+    public void setSquelchHysteresisOpenThreshold(int open)
+    {
+        if(open < NoiseSquelch.MINIMUM_HYSTERESIS_THRESHOLD || open > NoiseSquelch.MAXIMUM_HYSTERESIS_THRESHOLD)
+        {
+            throw new IllegalArgumentException("Squelch hysteresis open threshold is out of range: " + open);
+        }
+
+        mSquelchHysteresisOpenThreshold = open;
+    }
+
+    /**
+     * Squelch hysteresis close threshold in range 1-10 with a default of 4.
+     * @return hysteresis close threshold
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "squelchHysteresisCloseThreshold")
+    public int getSquelchHysteresisCloseThreshold()
+    {
+        return mSquelchHysteresisCloseThreshold;
+    }
+
+    /**
+     * Sets the squelch close threshold in the range 1-10.
+     * @param close threshold
+     */
+    public void setSquelchHysteresisCloseThreshold(int close)
+    {
+        if(close < NoiseSquelch.MINIMUM_HYSTERESIS_THRESHOLD || close > NoiseSquelch.MAXIMUM_HYSTERESIS_THRESHOLD)
+        {
+            throw new IllegalArgumentException("Squelch hysteresis close threshold is out of range: " + close);
+        }
+
+        mSquelchHysteresisCloseThreshold = close;
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
-import io.github.dsheirer.gui.control.DbPowerMeter;
 import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
@@ -70,12 +69,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TitledPane mRecordPane;
     private TitledPane mSourcePane;
     private TextField mTalkgroupField;
-    private TextField mSquelchThresholdField;
-    private ToggleSwitch mSquelchAutoTrackSwitch;
     private ToggleSwitch mAudioFilterEnable;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
-    private final IntegerFormatter mSquelchTextFormatter = new IntegerFormatter((int)DbPowerMeter.DEFAULT_MINIMUM_POWER,
-            (int)DbPowerMeter.DEFAULT_MAXIMUM_POWER);
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
 
@@ -140,23 +135,6 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(getBandwidthButton(), 1, 0);
             gridPane.getChildren().add(getBandwidthButton());
-
-            Label squelchLabel = new Label("Squelch Threshold");
-            GridPane.setHalignment(squelchLabel, HPos.RIGHT);
-            GridPane.setConstraints(squelchLabel, 2, 0);
-            gridPane.getChildren().add(squelchLabel);
-
-            GridPane.setConstraints(getSquelchThresholdField(), 3, 0);
-            gridPane.getChildren().add(getSquelchThresholdField());
-
-            Label autoTrackLabel = new Label("Squelch Auto-Track");
-            GridPane.setHalignment(autoTrackLabel, HPos.RIGHT);
-            GridPane.setConstraints(autoTrackLabel, 4, 0);
-            gridPane.getChildren().add(autoTrackLabel);
-
-            GridPane.setConstraints(getSquelchAutoTrackSwitch(), 5, 0);
-            GridPane.setHalignment(getSquelchAutoTrackSwitch(), HPos.LEFT);
-            gridPane.getChildren().add(getSquelchAutoTrackSwitch());
 
             Label talkgroupLabel = new Label("Talkgroup To Assign");
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
@@ -354,32 +332,6 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         return mTalkgroupField;
     }
 
-    private TextField getSquelchThresholdField()
-    {
-        if(mSquelchThresholdField == null)
-        {
-            mSquelchThresholdField = new TextField();
-            mSquelchThresholdField.setTextFormatter(mSquelchTextFormatter);
-            mSquelchTextFormatter.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mSquelchThresholdField;
-    }
-
-    /**
-     * Squelch noise floor auto-track feature.
-     */
-    private ToggleSwitch getSquelchAutoTrackSwitch()
-    {
-        if(mSquelchAutoTrackSwitch == null)
-        {
-            mSquelchAutoTrackSwitch = new ToggleSwitch();
-            mSquelchAutoTrackSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mSquelchAutoTrackSwitch;
-    }
-
     /**
      * Updates the talkgroup editor's text formatter.
      * @param value to set in the control.
@@ -458,10 +410,6 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             }
 
             updateTextFormatter(decodeConfigNBFM.getTalkgroup());
-            getSquelchThresholdField().setDisable(false);
-            mSquelchTextFormatter.setValue(decodeConfigNBFM.getSquelchThreshold());
-            getSquelchAutoTrackSwitch().setDisable(false);
-            getSquelchAutoTrackSwitch().setSelected(decodeConfigNBFM.isSquelchAutoTrack());
             getAudioFilterEnable().setDisable(false);
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
         }
@@ -476,9 +424,6 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             updateTextFormatter(0);
             getTalkgroupField().setDisable(true);
-            getSquelchThresholdField().setDisable(true);
-            getSquelchAutoTrackSwitch().setDisable(true);
-            getSquelchAutoTrackSwitch().setSelected(false);
             getAudioFilterEnable().setDisable(true);
             getAudioFilterEnable().setSelected(false);
         }
@@ -515,8 +460,6 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         }
 
         config.setTalkgroup(talkgroup);
-        config.setSquelchThreshold(mSquelchTextFormatter.getValue());
-        config.setSquelchAutoTrack(getSquelchAutoTrackSwitch().isSelected());
         config.setAudioFilter(getAudioFilterEnable().isSelected());
         getItem().setDecodeConfiguration(config);
     }

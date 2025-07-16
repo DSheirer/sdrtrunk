@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.am;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import io.github.dsheirer.dsp.squelch.ISquelchConfiguration;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
@@ -27,8 +28,11 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 /**
  * AM decoder configuration
  */
-public class DecodeConfigAM extends DecodeConfigAnalog
+public class DecodeConfigAM extends DecodeConfigAnalog implements ISquelchConfiguration
 {
+    private int mSquelchThreshold = -78;
+    private boolean mSquelchAutoTrack = true;
+
 	public DecodeConfigAM()
     {
     }
@@ -67,5 +71,47 @@ public class DecodeConfigAM extends DecodeConfigAnalog
             default:
                 throw new IllegalArgumentException("Unrecognized AM bandwidth value: " + getBandwidth());
         }
+    }
+
+    /**
+     * Sets squelch threshold
+     * @param threshold (dB)
+     */
+    @JacksonXmlProperty(isAttribute =  true, localName = "squelch")
+    @Override
+    public void setSquelchThreshold(int threshold)
+    {
+        mSquelchThreshold = threshold;
+    }
+
+    /**
+     * Squelch threshold
+     * @return threshold (dB)
+     */
+    @Override
+    public int getSquelchThreshold()
+    {
+        return mSquelchThreshold;
+    }
+
+    /**
+     * Enable or disable the squelch noise floor auto-track feature.
+     * @param autoTrack true to enable.
+     */
+    @JacksonXmlProperty(isAttribute =  true, localName = "autoTrack")
+    @Override
+    public void setSquelchAutoTrack(boolean autoTrack)
+    {
+        mSquelchAutoTrack = autoTrack;
+    }
+
+    /**
+     * Indicates if the squelch noise floor auto-track feature is enabled.
+     * @return true if enabled.
+     */
+    @Override
+    public boolean isSquelchAutoTrack()
+    {
+        return mSquelchAutoTrack;
     }
 }

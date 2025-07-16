@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,11 +58,11 @@ public class FilterViewer extends Application
      */
     private float[] getFilter()
     {
-        int filterLength = 47;
-        WindowType windowType = WindowType.HAMMING;
+        int filterLength = 31;
+        WindowType windowType = WindowType.BLACKMAN_HARRIS_7;
 
-//        float[] taps = FilterFactory.getHalfBand(filterLength, windowType);
-        float[] taps = FilterFactory.getRootRaisedCosine(50000.0 / 4800.0, 20, 0.2f);
+        float[] taps = FilterFactory.getHighPass(8000, 3000, filterLength, windowType);
+//        float[] taps = FilterFactory.getRootRaisedCosine(50000.0 / 4800.0, 20, 0.2f);
 
 //        taps = HilbertTransform.HALF_BAND_FILTER_47_TAP;
 

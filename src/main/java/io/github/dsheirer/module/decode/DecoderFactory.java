@@ -447,18 +447,19 @@ public class DecoderFactory
      * @param aliasList for the channel
      * @param decodeConfig for the channel
      */
-    private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
-
-        if(!(decodeConfig instanceof DecodeConfigAM))
+    private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
+    {
+        if(decodeConfig instanceof DecodeConfigAM configAM)
+        {
+            modules.add(new AMDecoder(configAM));
+            modules.add(new AMDecoderState(channel.getName(), configAM));
+            modules.add(new AudioModule(aliasList, 0, 60000, AUDIO_FILTER_ENABLE));
+        }
+        else
         {
             throw new IllegalArgumentException("Can't create AM decoder - unrecognized decode config type: " +
                     (decodeConfig != null ? decodeConfig.getClass() : "null/empty"));
         }
-
-        DecodeConfigAM decodeConfigAM = (DecodeConfigAM) decodeConfig;
-        modules.add(new AMDecoder(decodeConfigAM));
-        modules.add(new AMDecoderState(channel.getName(), decodeConfigAM));
-        modules.add(new AudioModule(aliasList, 0, 60000, AUDIO_FILTER_ENABLE));
     }
 
     /**
@@ -758,9 +759,12 @@ public class DecoderFactory
                 case NBFM:
                     DecodeConfigNBFM origNBFM = (DecodeConfigNBFM)config;
                     DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
+                    copyNBFM.setAudioFilter(origNBFM.isAudioFilter());
                     copyNBFM.setBandwidth(origNBFM.getBandwidth());
-                    copyNBFM.setSquelchThreshold(origNBFM.getSquelchThreshold());
-                    copyNBFM.setSquelchAutoTrack(origNBFM.isSquelchAutoTrack());
+                    copyNBFM.setSquelchHysteresisCloseThreshold(origNBFM.getSquelchHysteresisCloseThreshold());
+                    copyNBFM.setSquelchHysteresisOpenThreshold(origNBFM.getSquelchHysteresisOpenThreshold());
+                    copyNBFM.setSquelchNoiseOpenThreshold(origNBFM.getSquelchNoiseOpenThreshold());
+                    copyNBFM.setSquelchNoiseCloseThreshold(origNBFM.getSquelchNoiseCloseThreshold());
                     copyNBFM.setTalkgroup(origNBFM.getTalkgroup());
                     return copyNBFM;
                 case P25_PHASE1:

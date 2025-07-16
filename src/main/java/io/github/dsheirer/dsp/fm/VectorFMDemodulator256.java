@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.dsp.fm;
 
-import io.github.dsheirer.vector.VectorUtilities;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * FM demodulator that uses JDK 17+ SIMD vector intrinsics
  */
-public class VectorFMDemodulator256 implements IDemodulator
+public class VectorFMDemodulator256 extends VectorFMDemodulator
 {
     private static final Logger mLog = LoggerFactory.getLogger(VectorFMDemodulator256.class);
     protected static final float ZERO = 0.0f;
@@ -44,9 +43,14 @@ public class VectorFMDemodulator256 implements IDemodulator
     {
     }
 
-    @Override public float[] demodulate(float[] i, float[] q)
+    @Override
+    public float[] demodulate(float[] i, float[] q)
     {
-        VectorUtilities.checkComplexArrayLength(i, q, VECTOR_SPECIES);
+        //Fallback to scalar implementation if the buffer size is not a multiple of the vector implementation.
+        if(i.length % VECTOR_SPECIES.length() != 0)
+        {
+            return getScalarImplementation().demodulate(i,q);
+        }
 
         if(mIBuffer.length != (i.length + BUFFER_OVERLAP))
         {
