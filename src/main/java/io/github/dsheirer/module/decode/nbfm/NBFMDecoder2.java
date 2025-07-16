@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.module.decode.analog;
+package io.github.dsheirer.module.decode.nbfm;
 
+import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventProvider;
 import io.github.dsheirer.channel.state.State;
@@ -28,11 +29,13 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
-import io.github.dsheirer.dsp.fm.ISquelchingDemodulator;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.dsp.squelch.INoiseSquelchController;
 import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
 import io.github.dsheirer.dsp.window.WindowType;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -47,49 +50,66 @@ import org.slf4j.LoggerFactory;
 /**
  * Abstract analog decoder module with integrated squelch control
  */
-public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements ISourceEventListener, ISourceEventProvider,
-        IComplexSamplesListener, Listener<ComplexSamples>, IRealBufferProvider,
-        IDecoderStateEventProvider, INoiseSquelchController
+public class NBFMDecoder2 extends PrimaryDecoder implements ISourceEventListener, ISourceEventProvider, IComplexSamplesListener, Listener<ComplexSamples>, IRealBufferProvider, IDecoderStateEventProvider, INoiseSquelchController
 {
-    private final static Logger mLog = LoggerFactory.getLogger(SquelchingAnalogDecoder.class);
+    private final static Logger mLog = LoggerFactory.getLogger(NBFMDecoder2.class);
     private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
+    private final IDemodulator mDemodulator = FmDemodulatorFactory.getFmDemodulator();
+    private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
+    private final NoiseSquelch mNoiseSquelch;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
-    private final ISquelchingDemodulator mDemodulator;
     private RealResampler mResampler;
-    private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
     private Listener<float[]> mResampledBufferListener;
     private Listener<DecoderStateEvent> mDecoderStateEventListener;
     private final double mChannelBandwidth;
-    protected boolean mSquelch = true;
-    private final NoiseSquelch mNoiseSquelch = new NoiseSquelch(0.1f, 0.2f, 4, 6);
 
     /**
      * Constructs an instance
      *
-     * @param config to setup the decoder
-     * @param squelchingDemodulator implementation (e.g. AM or FM).
+     * @param config to setup the NBFM decoder
      */
-    public SquelchingAnalogDecoder(DecodeConfigAnalog config, ISquelchingDemodulator squelchingDemodulator)
+    public NBFMDecoder2(DecodeConfigNBFM config)
     {
         super(config);
-        mDemodulator = squelchingDemodulator;
-		mChannelBandwidth = config.getBandwidth().getValue();
-		mDemodulator.setSquelchThreshold(config.getSquelchThreshold());
+
+        //Save channel bandwidth to setup channel baseband filter.
+        mChannelBandwidth = config.getBandwidth().getValue();
+        mNoiseSquelch = new NoiseSquelch(config.getSquelchNoiseOpenThreshold(), config.getSquelchNoiseCloseThreshold(),
+                config.getSquelchHysteresisOpenThreshold(), config.getSquelchHysteresisCloseThreshold());
+
+        //Send squelch controlled audio to the resampler and notify the decoder state that the call continues.
+        mNoiseSquelch.setAudioListener(audio -> {
+            mResampler.resample(audio);
+            notifyCallContinuation();
+        });
+
+        //Notify the decoder state of call starts and ends
+        mNoiseSquelch.setSquelchStateListener(squelchState -> {
+            if(squelchState == SquelchState.SQUELCH)
+            {
+                notifyCallEnd();
+            }
+            else
+            {
+                notifyCallStart();
+            }
+        });
     }
 
     @Override
-    public void setSquelchOverride(boolean override)
+    public DecoderType getDecoderType()
     {
-        mNoiseSquelch.setSquelchOverride(override);
+        return DecoderType.NBFM;
     }
 
     @Override
-    public void setHysteresisThreshold(int open, int close)
+    public void setNoiseSquelchStateListener(Listener<NoiseSquelchState> listener)
     {
-        mNoiseSquelch.setHysteresisThreshold(open, close);
+        System.out.println("NBFM decoder ... registering listener: " + listener);
+        mNoiseSquelch.setNoiseSquelchStateListener(listener);
     }
 
     @Override
@@ -99,9 +119,15 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
     }
 
     @Override
-    public void setNoiseSquelchStateListener(Listener<NoiseSquelchState> listener)
+    public void setHysteresisThreshold(int open, int close)
     {
-        mNoiseSquelch.setNoiseSquelchStateListener(listener);
+        mNoiseSquelch.setHysteresisThreshold(open, close);
+    }
+
+    @Override
+    public void setSquelchOverride(boolean override)
+    {
+        mNoiseSquelch.setSquelchOverride(override);
     }
 
     /**
@@ -133,6 +159,7 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
 
     /**
      * Broadcasts the demodulated audio samples to the registered listener.
+     *
      * @param demodulatedSamples to broadcast
      */
     protected void broadcast(float[] demodulatedSamples)
@@ -180,8 +207,7 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
     {
         if(mIDecimationFilter == null || mQDecimationFilter == null)
         {
-            throw new IllegalStateException("NBFM demodulator module must receive a sample rate change source " +
-                    "event before it can process complex sample buffers");
+            throw new IllegalStateException("NBFM demodulator module must receive a sample rate change source " + "event before it can process complex sample buffers");
         }
 
         float[] decimatedI = mIDecimationFilter.decimateReal(samples.i());
@@ -194,64 +220,11 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
 
         mNoiseSquelch.process(demodulated);
 
-        if(mResampler != null)
+        //Once we process the samples, if the ending state is squelch closed, update the decoder state that we are idle.
+        if(mNoiseSquelch.isSquelched())
         {
-            //Squelch changed while processing this audio buffer
-            if(mDemodulator.isSquelchChanged())
-            {
-                if(mDemodulator.isMuted())
-                {
-                    //Demodulator says to mute and we're already muted/squelched = Continue IDLE
-                    if(mSquelch)
-                    {
-                        notifyIdle();
-                    }
-                    //Demodulator says to mute and we are unmuted = Squelch and End Call
-                    else
-                    {
-                        mSquelch = true;
-                        notifyCallEnd();
-                    }
-                }
-                else
-                {
-                    //Demodulator says to unmute and we're muted/squelched = Unmute and Start Call
-                    if(mSquelch)
-                    {
-                        mSquelch = false;
-                        notifyCallStart();
-                    }
-                    //Demodulator says to unmute and we're already unmuted = Continue Call
-                    else
-                    {
-                        notifyCallContinuation();
-                    }
-
-                    mResampler.resample(demodulated);
-                }
-            }
-            else
-            {
-                //Demodulator says squelch state didn't change and we're muted/squelched = Continue IDLE
-                if(mSquelch)
-                {
-                    notifyIdle();
-                }
-                //Demodulator says squelch state didn't change and we're unmuted/unsquelched = Continue CALL
-                else
-                {
-                    notifyCallContinuation();
-                    mResampler.resample(demodulated);
-                }
-            }
-        }
-        else
-        {
-            //This shouldn't happen
             notifyIdle();
         }
-
-
     }
 
     /**
@@ -321,7 +294,7 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
     @Override
     public void setSourceEventListener(Listener<SourceEvent> listener)
     {
-        mDemodulator.setSourceEventListener(listener);
+        //        mDemodulator.setSourceEventListener(listener);
     }
 
     /**
@@ -330,7 +303,7 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
     @Override
     public void removeSourceEventListener()
     {
-        mDemodulator.setSourceEventListener(null);
+        //        mDemodulator.setSourceEventListener(null);
     }
 
     /**
@@ -349,7 +322,7 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
                 case REQUEST_CHANGE_SQUELCH_THRESHOLD:
                 case REQUEST_CURRENT_SQUELCH_AUTO_TRACK:
                 case REQUEST_CHANGE_SQUELCH_AUTO_TRACK:
-                    mDemodulator.receive(sourceEvent);
+                    //                    mDemodulator.receive(sourceEvent);
                     break;
                 case NOTIFICATION_SAMPLE_RATE_CHANGE:
                     if(mIBasebandFilter != null)
@@ -383,12 +356,8 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
 
                     if((decimatedSampleRate < (2.0 * mChannelBandwidth)))
                     {
-                        throw new IllegalStateException(getDecoderType().name() + " demodulator with channel bandwidth [" +
-                                mChannelBandwidth + "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth +
-                                "] - sample rate of [" + decimatedSampleRate + "] is not supported"));
+                        throw new IllegalStateException(getDecoderType().name() + " demodulator with channel bandwidth [" + mChannelBandwidth + "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth + "] - sample rate of [" + decimatedSampleRate + "] is not supported"));
                     }
-
-                    mDemodulator.setSampleRate((int) decimatedSampleRate);
 
                     mNoiseSquelch.setSampleRate(decimatedSampleRate);
 
@@ -397,16 +366,7 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
 
                     float[] coefficients = null;
 
-                    FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                            .sampleRate(decimatedSampleRate * 2)
-                            .gridDensity(16)
-                            .oddLength(true)
-                            .passBandCutoff(passBandStop)
-                            .passBandAmplitude(1.0)
-                            .passBandRipple(0.01)
-                            .stopBandStart(stopBandStart)
-                            .stopBandAmplitude(0.0)
-                            .stopBandRipple(0.005) //Approximately 90 dB attenuation
+                    FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder().sampleRate(decimatedSampleRate * 2).gridDensity(16).oddLength(true).passBandCutoff(passBandStop).passBandAmplitude(1.0).passBandRipple(0.01).stopBandStart(stopBandStart).stopBandAmplitude(0.0).stopBandRipple(0.005) //Approximately 90 dB attenuation
                             .build();
 
                     try
@@ -415,25 +375,20 @@ public abstract class SquelchingAnalogDecoder extends PrimaryDecoder implements 
                     }
                     catch(FilterDesignException fde)
                     {
-                        mLog.error("Couldn't design demodulator remez filter for sample rate [" + sampleRate +
-                                "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
-                                "] - will proceed using sinc (low-pass) filter");
+                        mLog.error("Couldn't design demodulator remez filter for sample rate [" + sampleRate + "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart + "] - will proceed using sinc (low-pass) filter");
                     }
 
                     if(coefficients == null)
                     {
-                        mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate +
-                                "] pass band stop [" + passBandStop +
-                                "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
-                        coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60,
-                                WindowType.HAMMING, true);
+                        mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate + "] pass band stop [" + passBandStop + "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
+                        coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60, WindowType.HAMMING, true);
                     }
 
                     mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
                     mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
 
                     mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
-                    mResampler.setListener(resampled -> broadcast(resampled));
+                    mResampler.setListener(NBFMDecoder2.this::broadcast);
                     break;
             }
         }

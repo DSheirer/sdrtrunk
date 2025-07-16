@@ -21,9 +21,10 @@ package io.github.dsheirer.gui.power;
 
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
-import io.github.dsheirer.dsp.squelch.ISquelchConfiguration;
-import io.github.dsheirer.gui.control.DbPowerMeter;
+import io.github.dsheirer.dsp.squelch.INoiseSquelchController;
+import io.github.dsheirer.gui.squelch.NoiseSquelchView;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamplesToNativeBufferModule;
@@ -46,115 +47,51 @@ import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.List;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.Icon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.MouseInputAdapter;
 
 /**
- * Display for channel power and squelch details
+ * Display for channel FFT and squelch details
  */
-public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChain>
+public class ChannelSpectrumSquelchPanel extends JPanel implements Listener<ProcessingChain>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(ChannelPowerPanel.class);
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
+    private static final Logger mLog = LoggerFactory.getLogger(ChannelSpectrumSquelchPanel.class);
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
-    private static final String NOT_AVAILABLE = "Not Available";
     private final PlaylistManager mPlaylistManager;
     private ProcessingChain mProcessingChain;
     private final ComplexSamplesToNativeBufferModule mSampleStreamTapModule = new ComplexSamplesToNativeBufferModule();
     private final ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
     private SpectrumPanel mSpectrumPanel;
     private final FrequencyOverlayPanel mFrequencyOverlayPanel;
-    private final DbPowerMeter mPowerMeter = new DbPowerMeter();
-    private final PeakMonitor mPeakMonitor = new PeakMonitor(DbPowerMeter.DEFAULT_MINIMUM_POWER);
     private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
     private final SpinnerNumberModel mNoiseFloorSpinnerModel;
-    private final JLabel mPowerLabel;
-    private final JLabel mPeakLabel;
-    private final JLabel mSquelchLabel;
-    private final JLabel mSquelchValueLabel;
     private final JLabel mEstimatedCarrierOffsetFrequencyLabel;
     private final JLabel mEstimatedCarrierOffsetFrequencyValueLabel;
-    private final JButton mSquelchUpButton;
-    private final JButton mSquelchDownButton;
-    private final JCheckBox mSquelchAutoTrackCheckBox;
-    private double mSquelchThreshold;
     private boolean mPanelVisible = false;
     private boolean mDftProcessing = false;
+    private final NoiseSquelchView mNoiseSquelchView = new NoiseSquelchView();
 
     /**
      * Constructs an instance.
      */
-    public ChannelPowerPanel(PlaylistManager playlistManager, SettingsManager settingsManager)
+    public ChannelSpectrumSquelchPanel(PlaylistManager playlistManager, SettingsManager settingsManager)
     {
         mPlaylistManager = playlistManager;
 
-        setLayout(new MigLayout("", "[][][][grow,fill]", "[grow,fill]"));
-        mPowerMeter.setPeakVisible(true);
-        mPowerMeter.setSquelchThresholdVisible(true);
-        add(mPowerMeter);
-
-        JPanel valuePanel = new JPanel();
-        valuePanel.setLayout(new MigLayout("", "[right][left][][]", ""));
-
-        mPeakLabel = new JLabel("0");
-        mPeakLabel.setToolTipText("Current peak power level in decibels.");
-        valuePanel.add(new JLabel("Peak:"));
-        valuePanel.add(mPeakLabel, "wrap");
-
-        mPowerLabel = new JLabel("0");
-        mPowerLabel.setToolTipText("Current Power level in decibels");
-        valuePanel.add(new JLabel("Power:"));
-        valuePanel.add(mPowerLabel, "wrap");
-
-        mSquelchLabel = new JLabel("Squelch:");
-        mSquelchLabel.setEnabled(false);
-        valuePanel.add(mSquelchLabel);
-        mSquelchValueLabel = new JLabel(NOT_AVAILABLE);
-        mSquelchValueLabel.setToolTipText("Squelch threshold value in decibels");
-        mSquelchValueLabel.setEnabled(false);
-        valuePanel.add(mSquelchValueLabel, "wrap");
-
-        IconFontSwing.register(FontAwesome.getIconFont());
-        Icon iconUp = IconFontSwing.buildIcon(FontAwesome.ANGLE_UP, 12);
-        mSquelchUpButton = new JButton(iconUp);
-        mSquelchUpButton.setToolTipText("Increases the squelch threshold value");
-        mSquelchUpButton.setEnabled(false);
-        mSquelchUpButton.addActionListener(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold + 1)));
-        valuePanel.add(mSquelchUpButton);
-
-        Icon iconDown = IconFontSwing.buildIcon(FontAwesome.ANGLE_DOWN, 12);
-        mSquelchDownButton = new JButton(iconDown);
-        mSquelchDownButton.setToolTipText("Decreases the squelch threshold value.");
-        mSquelchDownButton.setEnabled(false);
-        mSquelchDownButton.addActionListener(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold - 1)));
-        valuePanel.add(mSquelchDownButton, "wrap");
-
-        mSquelchAutoTrackCheckBox = new JCheckBox("Auto Track");
-        mSquelchAutoTrackCheckBox.setToolTipText("Enable or disable monitoring of the noise floor to auto-adjust the " +
-                "squelch threshold value maintaining a consistent level/buffer above the noise floor");
-        mSquelchAutoTrackCheckBox.setEnabled(false);
-        mSquelchAutoTrackCheckBox.addActionListener(e ->
-        {
-            broadcast(SourceEvent.requestSquelchAutoTrack(mSquelchAutoTrackCheckBox.isSelected()));
-        });
-        valuePanel.add(mSquelchAutoTrackCheckBox, "span,left");
-
-        add(valuePanel);
-        add(new JSeparator(JSeparator.VERTICAL));
+        setLayout(new MigLayout("insets 0", "[grow,fill]", "[grow,fill]"));
 
         JPanel fftPanel = new JPanel();
         fftPanel.setLayout(new MigLayout("insets 0", "[grow,fill]", "[][grow,fill]"));
@@ -249,7 +186,24 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         layeredPanel.add(mFrequencyOverlayPanel, 1, 0);
 
         fftPanel.add(layeredPanel);
-        add(fftPanel);
+
+        JFXPanel noiseSquelchPanel = new JFXPanel();
+
+        Platform.runLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Scene scene = new Scene(mNoiseSquelchView);
+                noiseSquelchPanel.setScene(scene);
+            }
+        });
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.add(fftPanel, JSplitPane.LEFT);
+        splitPane.add(noiseSquelchPanel, JSplitPane.RIGHT);
+        splitPane.setDividerLocation(0.5);
+        add(splitPane);
 
         mSampleStreamTapModule.setListener(mComplexDftProcessor);
         DFTResultsConverter DFTResultsConverter = new ComplexDecibelConverter();
@@ -272,6 +226,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     {
         mPanelVisible = visible;
         updateFFTProcessing();
+        mNoiseSquelchView.setShowing(visible);
     }
 
     /**
@@ -335,38 +290,6 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(carrierOffsetFrequency);
     }
 
-    /**
-     * Updates the channel's decode configuration with a new squelch threshold value
-     */
-    private void setConfigSquelchThreshold(int threshold)
-    {
-        if(mProcessingChain != null)
-        {
-            Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
-
-            if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration configuration)
-            {
-                configuration.setSquelchThreshold(threshold);
-                mPlaylistManager.schedulePlaylistSave();
-            }
-        }
-    }
-
-    /**
-     * Updates the channel configuration squelch auto-track feature setting.
-     * @param autoTrack true to enable.
-     */
-    private void setConfigSquelchAutoTrack(boolean autoTrack)
-    {
-        Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
-
-        if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration configuration)
-        {
-            configuration.setSquelchAutoTrack(autoTrack);
-            mPlaylistManager.schedulePlaylistSave();
-        }
-    }
-
     private void broadcast(SourceEvent sourceEvent)
     {
         if(mProcessingChain != null)
@@ -381,11 +304,6 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
      */
     private void reset()
     {
-        mPeakMonitor.reset();
-        mPowerMeter.reset();
-
-        mPeakLabel.setText("0");
-        mPowerLabel.setText("0");
         mEstimatedCarrierOffsetFrequencyLabel.setEnabled(false);
         mEstimatedCarrierOffsetFrequencyValueLabel.setText("0 Hz");
         mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
@@ -393,14 +311,6 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(0));
         mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(0);
         mFrequencyOverlayPanel.setChannelBandwidth(0);
-
-        mSquelchLabel.setEnabled(false);
-        mSquelchValueLabel.setText("Not Available");
-        mSquelchValueLabel.setEnabled(false);
-        mSquelchUpButton.setEnabled(false);
-        mSquelchDownButton.setEnabled(false);
-        mSquelchAutoTrackCheckBox.setEnabled(false);
-        mSquelchAutoTrackCheckBox.setSelected(false);
     }
 
     /**
@@ -412,6 +322,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         //Disconnect the FFT panel
         if(mProcessingChain != null)
         {
+            mNoiseSquelchView.setController(null);
             mProcessingChain.removeSourceEventListener(mSourceEventProcessor);
             mProcessingChain.removeModule(mSampleStreamTapModule);
         }
@@ -423,6 +334,17 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
 
         if(mProcessingChain != null)
         {
+            PrimaryDecoder primaryDecoder = mProcessingChain.getPrimaryDecoder();
+            if(primaryDecoder instanceof INoiseSquelchController controller)
+            {
+                System.out.println("Adding noise squelch controller to the view");
+                mNoiseSquelchView.setController(controller);
+            }
+            else
+            {
+                System.out.println("Uh oh!!!!" + primaryDecoder.getClass().getName());
+            }
+
             mProcessingChain.addSourceEventListener(mSourceEventProcessor);
             mProcessingChain.addModule(mSampleStreamTapModule);
 
@@ -464,46 +386,9 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         {
             switch(sourceEvent.getEvent())
             {
-                case NOTIFICATION_CHANNEL_POWER ->
-                    {
-                        final double power = sourceEvent.getValue().doubleValue();
-                        final double peak = mPeakMonitor.process(power);
-
-                        EventQueue.invokeLater(() -> {
-                            mPowerMeter.setPower(power);
-                            mPowerLabel.setText(DECIMAL_FORMAT.format(power));
-
-                            mPowerMeter.setPeak(peak);
-                            mPeakLabel.setText(DECIMAL_FORMAT.format(peak));
-                        });
-                    }
-                case NOTIFICATION_SQUELCH_THRESHOLD ->
-                        {
-                            final double threshold = sourceEvent.getValue().doubleValue();
-                            mSquelchThreshold = threshold;
-                            setConfigSquelchThreshold((int)threshold);
-
-                            EventQueue.invokeLater(() -> {
-                                mPowerMeter.setSquelchThreshold(threshold);
-                                mSquelchLabel.setEnabled(true);
-                                mSquelchValueLabel.setEnabled(true);
-                                mSquelchValueLabel.setText(DECIMAL_FORMAT.format(threshold));
-                                mSquelchDownButton.setEnabled(true);
-                                mSquelchUpButton.setEnabled(true);
-                            });
-                        }
                 case NOTIFICATION_CARRIER_OFFSET_FREQUENCY ->
                 {
                     updateEstimatedCarrierOffsetFrequency(sourceEvent.getValue().longValue());
-                }
-                case NOTIFICATION_SQUELCH_AUTO_TRACK ->
-                {
-                    boolean autoTrack = sourceEvent.getValue().intValue() == 1;
-                    setConfigSquelchAutoTrack(autoTrack);
-                    EventQueue.invokeLater(() -> {
-                        mSquelchAutoTrackCheckBox.setSelected(autoTrack);
-                        mSquelchAutoTrackCheckBox.setEnabled(true);
-                    });
                 }
             }
         }

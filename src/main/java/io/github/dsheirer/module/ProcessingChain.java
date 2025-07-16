@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.message.MessageHistory;
+import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.module.decode.event.DecodeEventHistory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
@@ -166,6 +167,23 @@ public class ProcessingChain implements Listener<ChannelEvent>
     public AbstractChannelState getChannelState()
     {
         return mChannelState;
+    }
+
+    /**
+     * Retrieves the primary decoder module
+     * @return primary decoder or null.
+     */
+    public PrimaryDecoder getPrimaryDecoder()
+    {
+        for(Module module : mModules)
+        {
+            if(module instanceof PrimaryDecoder primaryDecoder)
+            {
+                return primaryDecoder;
+            }
+        }
+
+        return null;
     }
 
     /**

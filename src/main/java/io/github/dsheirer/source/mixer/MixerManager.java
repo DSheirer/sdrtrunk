@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@ import io.github.dsheirer.sample.adapter.RealShortAdapter;
 import io.github.dsheirer.source.config.SourceConfigMixer;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.MixerTunerType;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +39,6 @@ import javax.sound.sampled.Mixer;
 import javax.sound.sampled.Port;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
 
 /**
  * Utility class for accessing input, output and tuner mixers
@@ -483,35 +483,13 @@ public class MixerManager
 
     public static void main(String[] args)
     {
-        MixerTunerType mixerTunerType = MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS;
-        TargetDataLine targetDataLine = getTunerTargetDataLine(mixerTunerType);
+        List<MixerChannelConfiguration> configs = MixerManager.getOutputMixers();
 
-        if(targetDataLine != null)
+        for(MixerChannelConfiguration config : configs)
         {
-            try
-            {
-                targetDataLine.open(mixerTunerType.getAudioFormat());
-                mLog.info(targetDataLine.getFormat().toString());
-                targetDataLine.start();
-                byte[] bytes = new byte[1024];
-                int read = targetDataLine.read(bytes, 0, bytes.length);
-
-                while(read > 0)
-                {
-                    mLog.debug("Read:" + read);
-                    read = 0;
-//                    read = targetDataLine.read(bytes, 0, bytes.length);
-                }
-
-                targetDataLine.close();
-
-                mLog.debug("Done!");
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
+            System.out.println(config);
         }
 
+        System.out.println(MixerManager.getMixerDevices());
     }
 }
