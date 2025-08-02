@@ -37,6 +37,7 @@ public abstract class DifferentialDemodulator implements IDemodulator
     protected int mBufferOverlap;
     protected int mInterpolationOffset;
     protected final Interpolator mInterpolator = InterpolatorFactory.getInterpolator();
+    private DifferentialDemodulatorScalar mScalar;
 
    /**
      * Constructor
@@ -57,6 +58,20 @@ public abstract class DifferentialDemodulator implements IDemodulator
             mInterpolationOffset++;
             mBufferOverlap++;
         }
+    }
+
+    /**
+     * Scalar implementation for fallback when the sample buffer size is not compatible with the vector implementation.
+     * @return scalar implementation lazy instantiated when needed.
+     */
+    protected DifferentialDemodulatorScalar getScalarImplementation()
+    {
+        if(mScalar == null)
+        {
+            mScalar = new DifferentialDemodulatorScalar(mSampleRate, mSymbolRate);
+        }
+
+        return mScalar;
     }
 
     /**

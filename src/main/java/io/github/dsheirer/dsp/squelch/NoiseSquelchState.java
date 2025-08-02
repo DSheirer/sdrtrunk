@@ -17,33 +17,19 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.fm;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package io.github.dsheirer.dsp.squelch;
 
 /**
- * FM demodulator that uses JDK 17+ SIMD vector intrinsics
+ * Noise Squelch operating status record.  Captures a snapshot in time of the squelch status.
+ * @param squelch state, on (true) or off (false)
+ * @param squelchOverride on (true) or off (false)
+ * @param noise - current noise variance
+ * @param noiseOpenThreshold for determining un-squelch state
+ * @param noiseCloseThreshold for determining squelch state
+ * @param hysteresis in units of 10-milliseconds
+ * @param hysteresisOpenThreshold for toggling the squelch state.
+ * @param hysteresisCloseThreshold for toggling the squelch state.
  */
-public abstract class VectorFMDemodulator implements IDemodulator
-{
-    private static final Logger mLog = LoggerFactory.getLogger(VectorFMDemodulator.class);
-    private ScalarFMDemodulator mScalar;
-
-    public VectorFMDemodulator()
-    {
-    }
-
-    /**
-     * Access the scalar implementation when the sample buffer size is not a multiple of the vector size.
-     */
-    protected ScalarFMDemodulator getScalarImplementation()
-    {
-        if(mScalar == null)
-        {
-            mScalar = new ScalarFMDemodulator();
-        }
-
-        return mScalar;
-    }
-}
+public record NoiseSquelchState(boolean squelch, boolean squelchOverride, float noise, float noiseOpenThreshold,
+                                float noiseCloseThreshold, int hysteresis, int hysteresisOpenThreshold,
+                                int hysteresisCloseThreshold){}

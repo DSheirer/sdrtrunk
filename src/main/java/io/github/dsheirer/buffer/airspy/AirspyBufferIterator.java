@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import java.util.Iterator;
 public abstract class AirspyBufferIterator<T> implements Iterator<T>
 {
     protected static final float SCALE_SIGNED_12_BIT_TO_FLOAT = 1.0f / 2048.0f;
-    protected static final int FRAGMENT_SIZE = 2048;
+    protected static final int FRAGMENT_SIZE = 4096;
     protected static final float[] COEFFICIENTS =
             HilbertTransform.convertHalfBandToHilbert(HilbertTransform.HALF_BAND_FILTER_47_TAP);
 

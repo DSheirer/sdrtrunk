@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ package io.github.dsheirer.channel.metadata;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
-import io.github.dsheirer.gui.power.ChannelPowerPanel;
+import io.github.dsheirer.gui.channel.ChannelSpectrumPanel;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
@@ -42,7 +42,7 @@ public class NowPlayingPanel extends JPanel
     private final ChannelDetailPanel mChannelDetailPanel;
     private final DecodeEventPanel mDecodeEventPanel;
     private final MessageActivityPanel mMessageActivityPanel;
-    private final ChannelPowerPanel mChannelPowerPanel;
+    private final ChannelSpectrumPanel mChannelSpectrumSquelchPanel;
     private JideTabbedPane mTabbedPane;
     private JideSplitPane mSplitPane;
     private boolean mDetailTabsVisible;
@@ -58,7 +58,7 @@ public class NowPlayingPanel extends JPanel
         mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
         mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
-        mChannelPowerPanel = new ChannelPowerPanel(playlistManager, settingsManager);
+        mChannelSpectrumSquelchPanel = new ChannelSpectrumPanel(playlistManager, settingsManager);
         mDetailTabsVisible = detailTabsVisible;
 
         init();
@@ -96,12 +96,12 @@ public class NowPlayingPanel extends JPanel
             mTabbedPane.addTab("Details", mChannelDetailPanel);
             mTabbedPane.addTab("Events", mDecodeEventPanel);
             mTabbedPane.addTab("Messages", mMessageActivityPanel);
-            mTabbedPane.addTab("Channel", mChannelPowerPanel);
+            mTabbedPane.addTab("Channel", mChannelSpectrumSquelchPanel);
             mTabbedPane.setFont(this.getFont());
             mTabbedPane.setForeground(Color.BLACK);
             //Register state change listener to toggle visibility state for channel tab to turn-on/off FFT processing
-            mTabbedPane.addChangeListener(e -> mChannelPowerPanel.setPanelVisible(getTabbedPane().getSelectedIndex() == getTabbedPane()
-                    .indexOfComponent(mChannelPowerPanel)));
+            mTabbedPane.addChangeListener(e -> mChannelSpectrumSquelchPanel.setPanelVisible(getTabbedPane().getSelectedIndex() == getTabbedPane()
+                    .indexOfComponent(mChannelSpectrumSquelchPanel)));
         }
 
         return mTabbedPane;
@@ -135,6 +135,6 @@ public class NowPlayingPanel extends JPanel
         mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mDecodeEventPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelPowerPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelSpectrumSquelchPanel);
     }
 }

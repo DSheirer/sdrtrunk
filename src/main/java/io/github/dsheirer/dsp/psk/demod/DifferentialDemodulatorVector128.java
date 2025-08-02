@@ -48,6 +48,11 @@ public class DifferentialDemodulatorVector128 extends DifferentialDemodulator
     @Override
     public float[] demodulate(float[] i, float[] q)
     {
+        if(i.length % VECTOR_SPECIES.length() != 0)
+        {
+            return getScalarImplementation().demodulate(i,q);
+        }
+
         int sampleLength = i.length;
         int bufferOverlap = mBufferOverlap;
         float mu = mMu;
@@ -60,10 +65,6 @@ public class DifferentialDemodulatorVector128 extends DifferentialDemodulator
         int requiredBufferLength = sampleLength + bufferOverlap;
         if(mIBuffer.length != requiredBufferLength)
         {
-            if(i.length % VECTOR_SPECIES.length() != 0)
-            {
-                throw new IllegalArgumentException("Buffer length must be a multiple of " + VECTOR_SPECIES.length());
-            }
             mIBuffer = Arrays.copyOf(mIBuffer, requiredBufferLength);
             mQBuffer = Arrays.copyOf(mQBuffer, requiredBufferLength);
         }
