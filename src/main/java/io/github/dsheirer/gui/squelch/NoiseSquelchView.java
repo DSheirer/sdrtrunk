@@ -242,6 +242,18 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
     }
 
     /**
+     * Cancels the chart update timer.
+     */
+    private synchronized void cancelTimer()
+    {
+        if(mTimerFuture != null)
+        {
+            mTimerFuture.cancel(true);
+            mTimerFuture = null;
+        }
+    }
+
+    /**
      * Updates the timer to process incoming decoder states and update the XY chart values.
      */
     private synchronized void updateTimer()
@@ -253,9 +265,7 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
         }
         else if((!mShowing || mController == null) && mTimerFuture != null)
         {
-            mTimerFuture.cancel(true);
-            mTimerFuture = null;
-            clearChartAndControls();
+            cancelTimer();
         }
     }
 
@@ -320,47 +330,50 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
     }
 
     /**
-     * Clears any displayed chart data and disables the noise and hysteresis sliders and buttons.
+     * Resets/clears chart and controls.
      */
-    private void clearChartAndControls()
+    private void reset()
     {
-        Platform.runLater(() -> {
-            synchronized(mSquelchStateHistory)
-            {
-                mSquelchStateHistory.clear();
-            }
+        //Clear the squelch state history
+        synchronized(mSquelchStateHistory)
+        {
+            mSquelchStateHistory.clear();
+        }
 
-            updateChart();
+        //Clear the chart axis
+        getActivityChart().setDisable(true);
+        for(int x = 0; x < HISTORY_BUFFER_SIZE; x++)
+        {
+            mNoiseSeries.getData().get(x).setYValue(0);
+            mNoiseOpenThresholdSeries.getData().get(x).setYValue(0);
+            mNoiseCloseThresholdSeries.getData().get(x).setYValue(0);
+            mHysteresisSeries.getData().get(x).setYValue(0);
+            mHysteresisOpenThresholdSeries.getData().get(x).setYValue(0);
+            mHysteresisCloseThresholdSeries.getData().get(x).setYValue(0);
+        }
 
-            //Hysteresis controls
-            getOpenHysteresisSlider().setDisable(true);
-            getOpenHysteresisSlider().setValue(0);
-            getCloseHysteresisSlider().setDisable(true);
-            getCloseHysteresisSlider().setValue(0);
-            getHysteresisValueLabel().setDisable(true);
+        //Hysteresis controls
+        getOpenHysteresisSlider().setDisable(true);
+        getOpenHysteresisSlider().setValue(0);
+        getCloseHysteresisSlider().setDisable(true);
+        getCloseHysteresisSlider().setValue(0);
+        getHysteresisValueLabel().setDisable(true);
+        getHysteresisValueLabel().setText(NOT_AVAILABLE);
 
-            //Noise controls
-            getOpenNoiseSlider().setDisable(true);
-            getOpenNoiseSlider().setValue(0);
-            getCloseNoiseSlider().setValue(0);
-            getCloseNoiseSlider().setDisable(true);
-            getNoiseValueLabel().setDisable(true);
+        //Noise controls
+        getOpenNoiseSlider().setDisable(true);
+        getOpenNoiseSlider().setValue(0);
+        getCloseNoiseSlider().setValue(0);
+        getCloseNoiseSlider().setDisable(true);
+        getNoiseValueLabel().setDisable(true);
+        getNoiseValueLabel().setText(NOT_AVAILABLE);
 
-            getActivityChart().setDisable(true);
-            getSquelchOverrideButton().setDisable(true);
-            getSquelchStateLabel().setDisable(true);
-            getSquelchStateLabel().setText(NOT_AVAILABLE);
-            getResetButton().setDisable(true);
+        getResetButton().setDisable(true);
+        getSquelchOverrideButton().setDisable(true);
+        getSquelchStateLabel().setDisable(true);
+        getSquelchStateLabel().setText(NOT_AVAILABLE);
 
-            mControlsUpdated = false;
-
-            //Setting the slider values triggers a delayed label update. Submit a separate delayed update onto the
-            // UI thread queue to clear the labels after the slider value triggered label updates are processed.
-            Platform.runLater(() -> {
-                getHysteresisValueLabel().setText(NOT_AVAILABLE);
-                getNoiseValueLabel().setText(NOT_AVAILABLE);
-            });
-        });
+        mControlsUpdated = false;
     }
 
     /**
@@ -474,9 +487,10 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
     }
 
     /**
-     * Sets the noise squelch controller for this view.  If the controller is non-null, registers this view to receive
-     * state events from the controller.  If a previous controller is already registered then it is unregistered before
-     * registering on the new controller.
+     * Sets the noise squelch controller for this view.  Unregisters the previous controller, clears the display and
+     * registers the new controller on the JavaFX UI thread if it is non-null.
+     *
+     * Note: this method is invoked by the Swing UI thread in response to user action.
      *
      * @param controller to set (non-null) or clear (null).
      */
@@ -484,29 +498,36 @@ public class NoiseSquelchView extends VBox implements Listener<NoiseSquelchState
     {
         try
         {
+            cancelTimer();
+
+            //Unregister from previous controller.
             if(mController != null)
             {
                 mController.setNoiseSquelchStateListener(null);
             }
 
-            mController = controller;
+            //Nullify the controller so the reset doesn't trigger any save actions.
+            mController = null;
 
-            if(mController != null)
-            {
-                mControlsUpdated = false;
-                mController.setNoiseSquelchStateListener(this);
-            }
-            else
-            {
-                clearChartAndControls();
-            }
+            //Since this is invoked on the Swing UI thread, transfer control to the JavaFX UI thread since we're
+            //accessing the JavaFX controls.
+            Platform.runLater(() -> {
+                reset();
+
+                mController = controller;
+
+                if(mController != null)
+                {
+                    mController.setNoiseSquelchStateListener(NoiseSquelchView.this);
+                }
+
+                updateTimer();
+            });
         }
         catch(Exception e)
         {
             LOGGER.error("Error updating noise squelch controller", e);
         }
-
-        updateTimer();
     }
 
     /**
