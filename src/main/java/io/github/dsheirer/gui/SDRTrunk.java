@@ -376,13 +376,17 @@ public class SDRTrunk implements Listener<TunerEvent>
             Dimension spectral = mUserPreferences.getSwingPreference().getDimension(SPECTRAL_PANEL_IDENTIFIER);
             if(spectral != null)
             {
-                mSpectralPanel.setSize(spectral);
+                Dimension pref = mSpectralPanel.getPreferredSize();
+                mSpectralPanel.setPreferredSize(new Dimension(pref.width, spectral.height));
+                // mSpectralPanel.setSize(spectral);
             }
 
             Dimension controller = mUserPreferences.getSwingPreference().getDimension(CONTROLLER_PANEL_IDENTIFIER);
             if(controller != null)
             {
-                mControllerPanel.setSize(controller);
+                Dimension pref = mControllerPanel.getPreferredSize();
+                mControllerPanel.setPreferredSize(new Dimension(pref.width, controller.height));
+                // mControllerPanel.setSize(controller);
             }
 
             mMainGui.setSize(dimension);
@@ -396,7 +400,6 @@ public class SDRTrunk implements Listener<TunerEvent>
         {
             mMainGui.setSize(new Dimension(1280, 800));
         }
-
         mSplitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
         mSplitPane.setDividerSize(5);
         mSplitPane.add(mSpectralPanel);
