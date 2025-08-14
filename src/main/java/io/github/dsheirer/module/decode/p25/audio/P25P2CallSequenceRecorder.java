@@ -51,8 +51,8 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
 
     private static final String PROTOCOL = "APCO25-PHASE2";
 
-    private TimeslotCallSequenceProcessor mTimeslot0Processor = new TimeslotCallSequenceProcessor(0);
     private TimeslotCallSequenceProcessor mTimeslot1Processor = new TimeslotCallSequenceProcessor(1);
+    private TimeslotCallSequenceProcessor mTimeslot2Processor = new TimeslotCallSequenceProcessor(2);
 
     /**
      * Constructs a P25-Phase2 MBE call sequence recorder.
@@ -71,8 +71,8 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
     @Override
     public void stop()
     {
-        mTimeslot0Processor.flush();
         mTimeslot1Processor.flush();
+        mTimeslot2Processor.flush();
     }
 
     /**
@@ -89,11 +89,11 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
             {
                 switch(p25p2.getTimeslot())
                 {
-                    case 0:
-                        mTimeslot0Processor.process(p25p2);
-                        break;
                     case 1:
                         mTimeslot1Processor.process(p25p2);
+                        break;
+                    case 2:
+                        mTimeslot2Processor.process(p25p2);
                         break;
                 }
             }
