@@ -367,6 +367,14 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
             }
             else
             {
+                Component rightComponent = mSplitPane.getRightComponent();
+
+                if(rightComponent != mSignalPowerView)
+                {
+                    mSplitPane.remove(rightComponent);
+                    mSplitPane.setRightComponent(mSignalPowerView);
+                }
+
                 mNoiseSquelchView.setController(null);
                 mSignalPowerView.setProcessingChain(null);
             }
