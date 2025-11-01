@@ -68,7 +68,7 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
         mTable.setRowSorter(mTableRowSorter);
         mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
         setLayout(new MigLayout("insets 0 0 0 0", "[][grow,fill]", "[]0[grow,fill]"));
-        mHistoryManagementPanel = new HistoryManagementPanel<>(mMessageModel, "Message Filter Editor");
+        mHistoryManagementPanel = new HistoryManagementPanel<>(mMessageModel, "Message Filter Editor", mUserPreferences);
         add(mHistoryManagementPanel, "span,growx");
         add(new JScrollPane(mTable), "span,grow");
     }

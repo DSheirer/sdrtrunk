@@ -99,7 +99,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
         updateCellRenderers();
-        mHistoryManagementPanel = new HistoryManagementPanel<>(mEventModel, "Event Filter Editor");
+        mHistoryManagementPanel = new HistoryManagementPanel<>(mEventModel, "Event Filter Editor", mUserPreferences);
         mHistoryManagementPanel.updateFilterSet(mFilterSet);
         add(mHistoryManagementPanel, "span,growx");
         mEmptyScroller = new JScrollPane(mTable);

@@ -22,12 +22,14 @@ package io.github.dsheirer.gui.channel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
 import io.github.dsheirer.gui.power.SignalPowerView;
+import io.github.dsheirer.gui.preference.colortheme.ColorThemeManager;
 import io.github.dsheirer.gui.squelch.NoiseSquelchView;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamplesToNativeBufferModule;
 import io.github.dsheirer.settings.SettingsManager;
@@ -92,7 +94,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     /**
      * Constructs an instance.
      */
-    public ChannelSpectrumPanel(PlaylistManager playlistManager, SettingsManager settingsManager)
+    public ChannelSpectrumPanel(PlaylistManager playlistManager, SettingsManager settingsManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
         mNoiseSquelchView = new NoiseSquelchView(mPlaylistManager);
@@ -198,6 +200,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         //Spin noise squelch panel construction off onto the JavafX UI thread.
         Platform.runLater(() -> {
             Scene scene = new Scene(mNoiseSquelchView);
+            ColorThemeManager.applyThemeToScene(scene, userPreferences);
             mNoiseSquelchPanel.setScene(scene);
         });
 

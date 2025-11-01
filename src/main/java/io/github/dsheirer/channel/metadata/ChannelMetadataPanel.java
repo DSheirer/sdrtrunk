@@ -144,10 +144,23 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mForegroundColors.put(State.DATA, Color.BLUE);
         mBackgroundColors.put(State.ENCRYPTED, Color.MAGENTA);
         mForegroundColors.put(State.ENCRYPTED, Color.WHITE);
-        mBackgroundColors.put(State.FADE, Color.LIGHT_GRAY);
-        mForegroundColors.put(State.FADE, Color.DARK_GRAY);
-        mBackgroundColors.put(State.IDLE, Color.WHITE);
-        mForegroundColors.put(State.IDLE, Color.DARK_GRAY);
+        
+        // Adjust FADE and IDLE colors based on dark mode
+        if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+        {
+            mBackgroundColors.put(State.FADE, new Color(60, 60, 60));
+            mForegroundColors.put(State.FADE, new Color(187, 187, 187));
+            mBackgroundColors.put(State.IDLE, new Color(43, 43, 43));
+            mForegroundColors.put(State.IDLE, new Color(187, 187, 187));
+        }
+        else
+        {
+            mBackgroundColors.put(State.FADE, Color.LIGHT_GRAY);
+            mForegroundColors.put(State.FADE, Color.DARK_GRAY);
+            mBackgroundColors.put(State.IDLE, Color.WHITE);
+            mForegroundColors.put(State.IDLE, Color.DARK_GRAY);
+        }
+        
         mBackgroundColors.put(State.RESET, Color.PINK);
         mForegroundColors.put(State.RESET, Color.YELLOW);
         mBackgroundColors.put(State.TEARDOWN, Color.DARK_GRAY);
