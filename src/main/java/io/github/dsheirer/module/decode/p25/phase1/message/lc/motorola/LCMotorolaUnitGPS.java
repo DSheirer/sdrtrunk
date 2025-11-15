@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,14 +35,10 @@ public class LCMotorolaUnitGPS extends LinkControlWord
 {
     private static final double LATITUDE_MULTIPLIER = 90.0 / 0x7FFFFF;
     private static final double LONGITUDE_MULTIPLIER = 180.0 / 0x7FFFFF;
-
-    private static final int LATITUDE_SIGN = 24;
-    private static final FragmentedIntField LATITUDE = FragmentedIntField.of(25, 26, 27, 28, 29, 30, 31, 32, 33,
-            34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47);
-    private static final int LONGITUDE_SIGN = 48;
-    private static final FragmentedIntField LONGITUDE = FragmentedIntField.of(49, 50, 51, 52, 53, 54, 55, 56,
-            57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71);
-
+    private static final FragmentedIntField LATITUDE_TWOS_COMPLEMENT = FragmentedIntField.of(24, 25, 26, 27, 28,
+            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47);
+    private static final FragmentedIntField LONGITUDE_TWOS_COMPLEMENT = FragmentedIntField.of(48, 49, 50, 51,
+            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71);
     private P25Location mLocation;
     private GeoPosition mGeoPosition;
     private List<Identifier> mIdentifiers;
@@ -98,7 +94,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
      */
     public double getLatitude()
     {
-        return getInt(LATITUDE) * LATITUDE_MULTIPLIER * (getMessage().get(LATITUDE_SIGN) ? -1 : 1);
+        return parse24BitInteger(getInt(LATITUDE_TWOS_COMPLEMENT)) * LATITUDE_MULTIPLIER;
     }
 
     /**
@@ -107,7 +103,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
      */
     public double getLongitude()
     {
-        return getInt(LONGITUDE) * LONGITUDE_MULTIPLIER * (getMessage().get(LONGITUDE_SIGN) ? -1 : 1);
+        return parse24BitInteger(getInt(LONGITUDE_TWOS_COMPLEMENT)) * LONGITUDE_MULTIPLIER;
     }
 
     /**
@@ -123,5 +119,21 @@ public class LCMotorolaUnitGPS extends LinkControlWord
         }
 
         return mIdentifiers;
+    }
+
+    /**
+     * Parses a 24-bit two-complement number to a signed integer.
+     * @param value with 24 bits
+     * @return signed integer value.
+     */
+    public static int parse24BitInteger(int value)
+    {
+        //If high-order bit is set, perform sign extension setting the 8x high order bits as a signed 32-bit integer
+        if((value & 0x800000) == 0x800000)
+        {
+            value |= 0xFF000000;
+        }
+
+        return value;
     }
 }
