@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,17 +23,21 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
+import io.github.dsheirer.protocol.Protocol;
+import java.util.Collections;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * P25 Packet Data Unit header
  */
-public class PDUHeader implements IBitErrorProvider
+public class PDUHeader implements IBitErrorProvider, IMessage
 {
     private final static Logger mLog = LoggerFactory.getLogger(PDUHeader.class);
 
@@ -64,6 +68,30 @@ public class PDUHeader implements IBitErrorProvider
     public CorrectedBinaryMessage getMessage()
     {
         return mMessage;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public long getTimestamp()
+    {
+        return 0;
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.APCO25;
+    }
+
+    @Override
+    public int getTimeslot()
+    {
+        return 0;
     }
 
     /**
@@ -184,7 +212,7 @@ public class PDUHeader implements IBitErrorProvider
         sb.append(getFormat().getLabel());
         sb.append(isConfirmationRequired() ? " CONFIRMED" : " UNCONFIRMED");
         sb.append(" VENDOR:").append(getVendor().getLabel());
-        sb.append(isOutbound() ? "TO" : "FROM").append(" LLID").append(getTargetLLID());
+        sb.append(isOutbound() ? " TO" : " FROM").append(" LLID:").append(getTargetLLID());
 
         return sb.toString();
     }

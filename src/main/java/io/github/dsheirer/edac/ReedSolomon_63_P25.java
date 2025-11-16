@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ public class ReedSolomon_63_P25 extends BerlekempMassey
     /**
      * APCO-25 Reed-Solomon code is generated from a Galois Field(2^6) by the polynomial: a6 + a1 + a0.
      * In binary, this is expressed as: 1000011 which is reversed to big-endian format for this algorithm
-     * See: TIA 102-BAAA paragraph 5.9 Reed-Solomon Code Generator Matrices
+     * See: TIA 102-BAAA paragraph 4.9 Reed-Solomon Code Generator Matrices
      */
     public static final int[] P25_GENERATOR_POLYNOMIAL = { 1, 1, 0, 0, 0, 0, 1 };
 

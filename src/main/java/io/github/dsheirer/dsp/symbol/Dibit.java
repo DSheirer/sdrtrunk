@@ -265,15 +265,24 @@ public enum Dibit
         }
     }
 
-    public static void main(String[] args)
+    /**
+     * Number of bit errors between this dibit and the expected dibit argument.
+     * @param dibit to compare
+     * @return 0, 1 or 2 bit errors
+     */
+    public int getBitErrorFrom(Dibit dibit)
     {
-        byte a = (byte)0x1B;
+        int xor = getValue() ^ dibit.getValue();
 
-        Dibit d1 = Dibit.parse(a, 0);
-        Dibit d2 = Dibit.parse(a, 1);
-        Dibit d3 = Dibit.parse(a, 2);
-        Dibit d4 = Dibit.parse(a, 3);
+        if(xor == 0)
+        {
+            return 0;
+        }
+        else if(xor == 3)
+        {
+            return 2;
+        }
 
-        System.out.println("1: " + d1 + " 2:" + d2 + " 3:" + d3 + " 4:" + d4);
+        return 1;
     }
 }

@@ -22,34 +22,30 @@ package io.github.dsheirer.dsp.psk.demod;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating PSK differential demodulators
  */
 public class DifferentialDemodulatorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(DifferentialDemodulatorFactory.class);
-
     /**
-     * Creates the optimal demodulator using calibration data to select the optimal implementation from scalar and
-     * vector options, or defaults to the scalar implementation if the calibration wasn't executed.
+     * Creates the optimal float output demodulator using calibration data to select the optimal implementation from
+     * scalar and vector options, or defaults to the scalar implementation if the calibration wasn't executed.
      * @param sampleRate in Hertz
      * @param symbolRate in Hertz
      * @return demodulator instance
      */
-    public static DifferentialDemodulator getDemodulator(double sampleRate, int symbolRate)
+    public static DifferentialDemodulatorFloat getFloatDemodulator(double sampleRate, int symbolRate)
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.DIFFERENTIAL_DEMODULATOR);
 
         return switch(implementation)
         {
-            case VECTOR_SIMD_64 -> new DifferentialDemodulatorVector64(sampleRate, symbolRate);
-            case VECTOR_SIMD_128 -> new DifferentialDemodulatorVector128(sampleRate, symbolRate);
-            case VECTOR_SIMD_256 -> new DifferentialDemodulatorVector256(sampleRate, symbolRate);
-            case VECTOR_SIMD_512 -> new DifferentialDemodulatorVector512(sampleRate, symbolRate);
-            default -> new DifferentialDemodulatorScalar(sampleRate, symbolRate); //Includes SCALAR case
+            case VECTOR_SIMD_64 -> new DifferentialDemodulatorFloatVector64(sampleRate, symbolRate);
+            case VECTOR_SIMD_128 -> new DifferentialDemodulatorFloatVector128(sampleRate, symbolRate);
+            case VECTOR_SIMD_256 -> new DifferentialDemodulatorFloatVector256(sampleRate, symbolRate);
+            case VECTOR_SIMD_512 -> new DifferentialDemodulatorFloatVector512(sampleRate, symbolRate);
+            default -> new DifferentialDemodulatorFloatScalar(sampleRate, symbolRate); //Includes SCALAR case
         };
     }
 }

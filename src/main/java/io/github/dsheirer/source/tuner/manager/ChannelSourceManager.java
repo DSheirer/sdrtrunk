@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -95,6 +95,7 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      */
     public void addSourceEventListener(Listener<SourceEvent> listener)
     {
+        System.out.println("ChannelSourceManager regisering: " + listener.getClass());
         mSourceEventBroadcaster.addListener(listener);
     }
 

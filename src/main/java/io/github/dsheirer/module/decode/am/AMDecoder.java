@@ -36,7 +36,7 @@ import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.PrimaryDecoder;
+import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.IComplexSamplesListener;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * AM decoder module with integrated squelch control
  */
-public class AMDecoder extends PrimaryDecoder implements ISourceEventListener, ISourceEventProvider,
+public class AMDecoder extends SquelchControlDecoder implements ISourceEventListener, ISourceEventProvider,
         IComplexSamplesListener, Listener<ComplexSamples>, IRealBufferProvider,
         IDecoderStateEventProvider, INoiseSquelchController
 {
