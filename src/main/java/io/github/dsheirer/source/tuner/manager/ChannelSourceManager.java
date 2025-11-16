@@ -95,7 +95,6 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      */
     public void addSourceEventListener(Listener<SourceEvent> listener)
     {
-        System.out.println("ChannelSourceManager regisering: " + listener.getClass());
         mSourceEventBroadcaster.addListener(listener);
     }
 
