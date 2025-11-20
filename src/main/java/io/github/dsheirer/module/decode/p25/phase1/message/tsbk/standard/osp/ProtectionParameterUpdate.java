@@ -29,6 +29,7 @@ import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25Encrypti
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,7 @@ public class ProtectionParameterUpdate extends OSPMessage
         {
             int algorithm = getMessage().getInt(ALGORITHM_ID);
             int key = getMessage().getInt(KEY_ID);
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(algorithm, key));
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25, APCO25EncryptionKey.create(algorithm, key));
         }
 
         return mEncryptionKey;
