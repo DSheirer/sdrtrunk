@@ -998,6 +998,18 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Returns the long field formatted as a hex value using zero prefixes to pad the hex character count to fully
+     * represent the size (width) of the field.
+     * @param field to parse as hex
+     * @return hex value.
+     */
+    public String getHex(LongField field)
+    {
+        int width = Math.ceilDiv(field.width(), 4);
+        return String.format("%0" + width + "X", getLong(field));
+    }
+
+    /**
      * Format the byte value that starts at the specified index as hexadecimal.  If the length of the message is less
      * than the start index plus 7 bits, then the value represents those bits as high-order bits with zero padding in
      * the least significant bits to make up the 8 bit value.
