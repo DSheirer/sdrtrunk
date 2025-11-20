@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
-    private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 25000;
+    private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 12500;
 
     /**
      * Determines how many processed channel results to dispatch for threaded IFFT processing per batch

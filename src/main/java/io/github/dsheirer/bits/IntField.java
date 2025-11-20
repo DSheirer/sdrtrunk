@@ -60,7 +60,27 @@ public record IntField(int start, int end)
     }
 
     /**
-     * Utility constructor method for a field with one four bits of length.
+     * Utility constructor method for a field with two bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length2(int start)
+    {
+        return new IntField(start, (start + 1));
+    }
+
+    /**
+     * Utility constructor method for a field with three bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length3(int start)
+    {
+        return new IntField(start, (start + 2));
+    }
+
+    /**
+     * Utility constructor method for a field with four bits of length.
      * @param start index (inclusive)
      * @return constructed bit field.
      */
@@ -70,7 +90,17 @@ public record IntField(int start, int end)
     }
 
     /**
-     * Utility constructor method for a field with one four bits of length.
+     * Utility constructor method for a field with five bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length5(int start)
+    {
+        return new IntField(start, (start + 4));
+    }
+
+    /**
+     * Utility constructor method for a field with six bits of length.
      * @param start index (inclusive)
      * @return constructed bit field.
      */
@@ -90,6 +120,26 @@ public record IntField(int start, int end)
     }
 
     /**
+     * Utility constructor method for a field with nine bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length9(int start)
+    {
+        return new IntField(start, (start + 8));
+    }
+
+    /**
+     * Utility constructor method for a field with ten bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length10(int start)
+    {
+        return new IntField(start, (start + 9));
+    }
+
+    /**
      * Utility constructor method for a field with 12 bits of length.
      * @param start index (inclusive)
      * @return constructed bit field.
@@ -97,6 +147,16 @@ public record IntField(int start, int end)
     public static IntField length12(int start)
     {
         return new IntField(start, (start + 11));
+    }
+
+    /**
+     * Utility constructor method for a field with 15 bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length15(int start)
+    {
+        return new IntField(start, (start + 14));
     }
 
     /**

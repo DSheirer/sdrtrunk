@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,27 @@ public enum Dibit
         mValue = value;
         mPhase = phase;
     }
+
+    private static final float SOFT_SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
+
+    /**
+     * Decodes the sample value to determine the correct QPSK quadrant and maps the value to a Dibit symbol.
+     * @param sample in radians.
+     * @return symbol decision.
+     */
+    public static Dibit fromSample(float sample)
+    {
+        if(sample > 0)
+        {
+            return sample > SOFT_SYMBOL_QUADRANT_BOUNDARY ? Dibit.D01_PLUS_3 : Dibit.D00_PLUS_1;
+        }
+        else
+        {
+            return sample < -SOFT_SYMBOL_QUADRANT_BOUNDARY ? Dibit.D11_MINUS_3 : Dibit.D10_MINUS_1;
+        }
+    }
+
+
 
     /**
      * Binary value of the symbol

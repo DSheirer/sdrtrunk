@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.edac.Hamming10;
 import io.github.dsheirer.edac.ReedSolomon_24_12_13_P25;
 import io.github.dsheirer.identifier.Identifier;
@@ -210,7 +210,7 @@ public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         if(getLinkControlWord().isValid() && getLinkControlWord() instanceof IFrequencyBandReceiver)
         {
