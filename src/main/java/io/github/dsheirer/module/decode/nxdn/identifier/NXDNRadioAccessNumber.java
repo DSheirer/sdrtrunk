@@ -1,0 +1,54 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.nxdn.identifier;
+
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.protocol.Protocol;
+
+/**
+ * NXDN Radio Access Number (RAN)
+ */
+public class NXDNRadioAccessNumber extends IntegerIdentifier
+{
+    public NXDNRadioAccessNumber(int ran)
+    {
+        super(ran, IdentifierClass.NETWORK, Form.RAN, Role.BROADCAST);
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.NXDN;
+    }
+
+    /**
+     * Creates the identifier
+     * @param ran value
+     * @return identifier
+     */
+    public static NXDNRadioAccessNumber create(int ran)
+    {
+        return new NXDNRadioAccessNumber(ran);
+    }
+
+}

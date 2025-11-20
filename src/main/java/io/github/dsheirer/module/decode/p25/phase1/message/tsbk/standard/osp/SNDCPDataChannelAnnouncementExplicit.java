@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +14,19 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,8 +46,8 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
     private static final int[] DATA_ACCESS_CONTROL = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
     private DataServiceOptions mServiceOptions;
-    private IChannelDescriptor mChannel;
-    private List<IChannelDescriptor> mChannels;
+    private IBandChannelDescriptor mChannel;
+    private List<IBandChannelDescriptor> mChannels;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -102,7 +100,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
         return mServiceOptions;
     }
 
-    public IChannelDescriptor getChannel()
+    public IBandChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -138,7 +136,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

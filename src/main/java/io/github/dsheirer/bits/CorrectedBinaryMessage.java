@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.bits;
 
+import java.nio.ByteOrder;
 import java.util.BitSet;
 
 public class CorrectedBinaryMessage extends BinaryMessage
@@ -52,6 +53,45 @@ public class CorrectedBinaryMessage extends BinaryMessage
     {
         this(message.size());
         this.xor(message);
+    }
+
+    /**
+     * Creates a new message loaded from the hexadecimal string
+     * @param hex representing the bits of the message
+     * @return new message
+     */
+    public static CorrectedBinaryMessage loadHex(String hex)
+    {
+        return new CorrectedBinaryMessage(BinaryMessage.loadHex(hex));
+    }
+
+    /**
+     * Overloads the parent method to return this type.
+     * @param binary message to load
+     * @return loaded message
+     */
+    public static CorrectedBinaryMessage load(String binary)
+    {
+        return new CorrectedBinaryMessage(BinaryMessage.load(binary));
+    }
+
+    /**
+     * Constructs a binary frame from the byte array with length set to the
+     * number of bits contained in the byte array
+     */
+    public static CorrectedBinaryMessage from(byte[] data, ByteOrder byteOrder)
+    {
+        if(byteOrder == ByteOrder.LITTLE_ENDIAN)
+        {
+            return new CorrectedBinaryMessage(from(data));
+        }
+        else
+        {
+            CorrectedBinaryMessage frame = new CorrectedBinaryMessage(data.length * 8);
+            BitSet bitSet = BitSet.valueOf(data);
+            frame.xor(bitSet);
+            return frame;
+        }
     }
 
     @Override

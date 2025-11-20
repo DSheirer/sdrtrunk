@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,6 +74,18 @@ public class DibitDelayLine
     }
 
     /**
+     * Inserts the dibit array into the buffer
+     * @param dibits to fill
+     */
+    public void fill(Dibit[] dibits)
+    {
+        for(Dibit dibit: dibits)
+        {
+            insert(dibit);
+        }
+    }
+
+    /**
      * Adjusts the pointer to correct a dibit stuff/delete.
      * @param offset to adjust.
      */
@@ -110,7 +122,7 @@ public class DibitDelayLine
     public void log()
     {
         StringBuilder sb = new StringBuilder();
-
+        sb.append("Pointer [").append(mPointer).append("] ");
         int pointer = mPointer;
         for(int i = 0; i < mDelayLine.length; i++)
         {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -147,9 +147,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     {
         float[] i = mIBasebandFilter.filter(samples.i());
         float[] q = mQBasebandFilter.filter(samples.q());
-
-        //Process the buffer for power measurements
-        mPowerMonitor.process(i, q);
 
         ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);

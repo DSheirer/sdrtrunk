@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.SortedSet;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
@@ -38,8 +39,8 @@ import org.slf4j.LoggerFactory;
 public class PolyphaseChannelSourceManager extends ChannelSourceManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSourceManager.class);
-    private PolyphaseChannelManager mPolyphaseChannelManager;
-    private TunerController mTunerController;
+    private final PolyphaseChannelManager mPolyphaseChannelManager;
+    private final TunerController mTunerController;
 
     /**
      * Constructs an instance
@@ -53,6 +54,12 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         //Register to receive channel count change notifications for rebroadcasting
         mPolyphaseChannelManager.addSourceEventListener(this::process);
         mTunerController.addListener(mPolyphaseChannelManager);
+    }
+
+    @Override
+    public TunerFrequencyErrorManager getTunerFrequencyErrorManager()
+    {
+        return mTunerController.getTunerFrequencyErrorManager();
     }
 
     @Override
@@ -429,9 +436,10 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     {
         TunerChannelSource tunerChannelSource = null;
 
+        mTunerController.getLock().lock();
+
         try
         {
-            mTunerController.getLock().lock();
             if(isTunable(tunerChannel))
             {
                 //Get a new set of currently tuned channels
@@ -499,11 +507,6 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
                 //Lock the frequency and sample rate controls on the tuner controller so users can't change them
                 //when the polyphase manager has channels allocated
                 mTunerController.setLockedSampleRate(getTunerChannelCount() > 0);
-                break;
-            case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
-                //Rebroadcast these frequency measurement errors to the tuner and tuner controller
-                //for display and/or correction
-                broadcast(sourceEvent);
                 break;
             default:
                 mLog.info("Unrecognized source event: " + sourceEvent);

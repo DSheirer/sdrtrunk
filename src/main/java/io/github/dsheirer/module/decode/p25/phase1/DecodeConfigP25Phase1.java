@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,6 +66,6 @@ public class DecodeConfigP25Phase1 extends DecodeConfigP25
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(50000.0, 12500, 5750.0, 6500.0);
+        return new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0);
     }
 }

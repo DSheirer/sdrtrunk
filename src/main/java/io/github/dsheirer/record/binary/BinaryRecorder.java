@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ public class BinaryRecorder extends Module implements IByteBufferListener
     private BinaryWriter mBinaryWriter = new BinaryWriter();
     private int mBytesRecordedCounter;
     private Protocol mProtocol;
+    private int mBitRate;
     private long mFrequency;
 
     /**
@@ -64,14 +65,16 @@ public class BinaryRecorder extends Module implements IByteBufferListener
      * @param baseRecordingPath where the recording should be created
      * @param recordingIdentifier to include in the recording file name.
      * @param protocol to include as a values in the recording file name
+     * @param bitRate for the protocol
      * @param frequency in hertz
      */
-    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier, Protocol protocol, long frequency)
+    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier, Protocol protocol, int bitRate, long frequency)
     {
         mBaseRecordingPath = baseRecordingPath;
         mRecordingIdentifier = recordingIdentifier;
         mBufferProcessor.setListener(mBinaryWriter);
         mProtocol = protocol;
+        mBitRate = bitRate;
         mFrequency = frequency;
     }
 

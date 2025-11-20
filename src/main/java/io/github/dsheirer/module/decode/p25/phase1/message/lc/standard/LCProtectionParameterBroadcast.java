@@ -26,6 +26,8 @@ import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
+import io.github.dsheirer.protocol.Protocol;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,8 +68,8 @@ public class LCProtectionParameterBroadcast extends LinkControlWord
     {
         if(mEncryptionKey == null)
         {
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getInt(ALGORITHM_ID),
-                getInt(KEY_ID)));
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25,
+                    APCO25EncryptionKey.create(getInt(ALGORITHM_ID), getInt(KEY_ID)));
         }
 
         return mEncryptionKey;

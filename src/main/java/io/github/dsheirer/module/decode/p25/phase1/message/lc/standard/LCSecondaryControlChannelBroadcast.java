@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
@@ -49,8 +49,8 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     private List<Identifier> mIdentifiers;
     private Identifier mRFSS;
     private Identifier mSite;
-    private IChannelDescriptor mChannelA;
-    private IChannelDescriptor mChannelB;
+    private IBandChannelDescriptor mChannelA;
+    private IBandChannelDescriptor mChannelB;
     private SystemServiceClass mSystemServiceClassA;
     private SystemServiceClass mSystemServiceClassB;
 
@@ -100,7 +100,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         return mSite;
     }
 
-    public IChannelDescriptor getChannelA()
+    public IBandChannelDescriptor getChannelA()
     {
         if(mChannelA == null)
         {
@@ -115,7 +115,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         return getInt(CHANNEL_NUMBER_A) != getInt(CHANNEL_NUMBER_B) && getInt(SERVICE_CLASS_B) != 0;
     }
 
-    public IChannelDescriptor getChannelB()
+    public IBandChannelDescriptor getChannelB()
     {
         if(mChannelB == null)
         {
@@ -164,9 +164,9 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
+        List<IBandChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
         if(hasChannelB())
         {

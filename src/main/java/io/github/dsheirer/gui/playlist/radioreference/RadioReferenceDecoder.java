@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,10 @@ import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.identifier.talkgroup.UnknownTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.mpt1327.identifier.MPT1327Talkgroup;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.preference.UserPreferences;
@@ -146,10 +149,14 @@ public class RadioReferenceDecoder
         {
             case APCO25:
                 return APCO25Talkgroup.create(value);
+            case DMR:
+                return DMRTalkgroup.create(value);
             case LTR:
                 return LTRTalkgroup.create(value);
             case MPT1327:
                 return MPT1327Talkgroup.createTo(value);
+            case NXDN:
+                return NXDNTalkgroupIdentifier.createTo(value);
             case PASSPORT:
                 return PassportTalkgroup.create(value);
             default:
@@ -386,6 +393,55 @@ public class RadioReferenceDecoder
     }
 
     /**
+     * Indicates if the specified site is an NXDN site that has site frequencies that can be converted
+     * to channel frequency map
+     * @param systemInformation to determine the system type
+     * @param site containing site frequencies
+     */
+    public boolean hasChannelMap(SystemInformation systemInformation, Site site)
+    {
+        Type type = getType(systemInformation);
+        return type != null && type.getName().contains("NXDN") && !site.getSiteFrequencies().isEmpty();
+    }
+
+    /**
+     * Creates a channel frequency map listing from the radio reference site's list of site frequencies for the site
+     * @param systemInformation to detect the system type (NXDN)
+     * @param site containing 1 or more site frequencies
+     * @return list of timeslot frequency mappings or an empty list.
+     */
+    public List<ChannelFrequency> getChannelMap(SystemInformation systemInformation, Site site)
+    {
+        if(hasChannelMap(systemInformation, site))
+        {
+            List<ChannelFrequency> frequencies = new ArrayList<>();
+
+            for(SiteFrequency siteFrequency: site.getSiteFrequencies())
+            {
+                int lcn = siteFrequency.getLogicalChannelNumber();
+
+                if(siteFrequency.getChannelId() != null)
+                {
+                    try
+                    {
+                        lcn = Integer.parseInt(siteFrequency.getChannelId());
+                    }
+                    catch(Exception e)
+                    {
+                        //Do nothing, we couldn't parse the LSN from the channel ID value
+                    }
+                }
+
+                frequencies.add(new ChannelFrequency(lcn, (long)(siteFrequency.getFrequency() * 1E6), 0));
+            }
+
+            return frequencies;
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
      * Identifies the sdrtrunk protocol used by the system.
      * @param system to identify
      * @return protocol or UNKNOWN if the protocol is not supported by sdrtrunk.
@@ -430,6 +486,7 @@ public class RadioReferenceDecoder
                 }
                 break;
             case "NXDN":
+                return Protocol.NXDN;
             case "EDACS":
             case "TETRA":
             case "Midland CMS":
@@ -439,6 +496,8 @@ public class RadioReferenceDecoder
             case "Other":
             default:
         }
+
+//        mLog.info("Type:" + type + " Flavor:" + flavor + " Voice:" + voice);
 
         return Protocol.UNKNOWN;
     }
@@ -503,6 +562,7 @@ public class RadioReferenceDecoder
                     }
                     break;
                 case "NXDN":
+                    return DecoderType.NXDN;
 
                 case "EDACS":
                 case "TETRA":

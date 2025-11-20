@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.alias.id.talkgroup;
@@ -50,6 +47,8 @@ public enum TalkgroupFormat
         "<html>MPT-1327 valid ranges are 0-127(prefix)<br>and 1-8192(ident) (ie. 000-0001 to 127-8192)"),
     NBFM("*****", 1, 0xFFFF, "1 to 65,535",
             "NBFM valid value range is 1-65,535"),
+    NXDN("*****", 1, 0xFFFF, "1 to 65,535",
+            "NXDN talkgroup valid range is 1 to 65,535"),
     PASSPORT("*****", 1, 0xFFFF, "1 to 65,535",
         "Passport valid value range is 1-65,535"),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
@@ -139,6 +138,8 @@ public enum TalkgroupFormat
                 return MPT1327;
             case NBFM:
                 return NBFM;
+            case NXDN:
+                return NXDN;
             case PASSPORT:
                 return PASSPORT;
             default:

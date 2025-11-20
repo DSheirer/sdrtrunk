@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.identifier.channel;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.protocol.Protocol;
 import java.text.DecimalFormat;
@@ -27,7 +27,7 @@ import java.text.DecimalFormat;
 /**
  * Standard AM/FM channel with discrete frequency
  */
-public class StandardChannel implements IChannelDescriptor
+public class StandardChannel implements IBandChannelDescriptor
 {
     private static final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat("0.0000");
     private long mFrequency;

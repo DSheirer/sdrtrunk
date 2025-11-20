@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -54,10 +55,20 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     private NativeSampleDelayBuffer mSampleDelayBuffer;
     private boolean mRunning = true;
 
+    /**
+     * Constructs an instance
+     * @param tunerController for the tuner
+     */
     public HeterodyneChannelSourceManager(TunerController tunerController)
     {
         mTunerController = tunerController;
         mTunerController.addListener(this);
+    }
+
+    @Override
+    public TunerFrequencyErrorManager getTunerFrequencyErrorManager()
+    {
+        return mTunerController.getTunerFrequencyErrorManager();
     }
 
     @Override
@@ -114,39 +125,38 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
         TunerChannelSource source = null;
 
+        mTunerController.getLock().lock();
+
         try
         {
-            mTunerController.getLock().lock();
             if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, mTunerChannels))
             {
-                try
-                {
-                    //Attempt to create the channel source first, in case we get a filter design exception
-                    HalfBandTunerChannelSource tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
-                            tunerChannel, mTunerController.getSampleRate(), channelSpecification, threadName);
+                //Attempt to create the channel source first, in case we get a filter design exception
+                HalfBandTunerChannelSource<?> tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
+                        tunerChannel, mTunerController.getSampleRate(), channelSpecification, threadName,
+                        getTunerFrequencyErrorManager());
 
-                    //Add to the list of channel sources so that it will receive the tuner frequency change
-                    mChannelSources.add(tunerChannelSource);
+                //Add to the list of channel sources so that it will receive the tuner frequency change
+                mChannelSources.add(tunerChannelSource);
 
-                    //Set the current tuner frequency
-                    tunerChannelSource.setFrequency(mTunerController.getFrequency());
+                //Set the current tuner frequency
+                tunerChannelSource.setFrequency(mTunerController.getFrequency());
 
-                    //Add to the channel list and update the tuner center frequency as needed
-                    mTunerChannels.add(tunerChannel);
-                    updateTunerFrequency();
+                //Add to the channel list and update the tuner center frequency as needed
+                mTunerChannels.add(tunerChannel);
+                updateTunerFrequency();
 
-                    //Lock the tuner controller frequency and sample rate
-                    mTunerController.setLockedSampleRate(true);
+                //Lock the tuner controller frequency and sample rate
+                mTunerController.setLockedSampleRate(true);
 
-                    broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
+                broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
-                    source = tunerChannelSource;
-                }
-                catch(FilterDesignException fde)
-                {
-                    mLog.error("Error creating CIC tuner channel source - couldn't design cleanup filter", fde);
-                }
+                source = tunerChannelSource;
             }
+        }
+        catch(FilterDesignException fde)
+        {
+            mLog.error("Error creating CIC tuner channel source - couldn't design cleanup filter", fde);
         }
         finally
         {
@@ -216,6 +226,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+            case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                 //no-op
                 break;
             default:
@@ -328,12 +339,11 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                         broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
                     }
                     break;
-                case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
-                    //Rebroadcast so that the tuner source can process this event
-                    broadcast(sourceEvent);
-                    break;
                 case NOTIFICATION_CHANNEL_COUNT_CHANGE:
                     //Lock the tuner controller frequency & sample rate when we're processing channels
+                    break;
+                case REQUEST_FREQUENCY_CORRECTION:
+                    //Ignore
                     break;
                 default:
                     mLog.info("Unrecognized Source Event received from channel: " + sourceEvent);

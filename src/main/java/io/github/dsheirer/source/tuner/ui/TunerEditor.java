@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -246,7 +246,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                     if(tuner != null)
                     {
                         boolean enabled = getAutoPPMCheckBox().isSelected();
-                        getTuner().getTunerController().getFrequencyErrorCorrectionManager().setEnabled(enabled);
+                        getTuner().getTunerController().getTunerFrequencyErrorManager().setEnabled(enabled);
                         save();
                     }
                 }
@@ -917,7 +917,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                 getMinimumFrequencyTextField().setFrequency(tuner.getTunerController().getMinimumFrequency());
                 getMaximumFrequencyTextField().setFrequency(tuner.getTunerController().getMaximumFrequency());
                 getFrequencyCorrectionSpinner().setValue(tuner.getTunerController().getFrequencyCorrection());
-                getAutoPPMCheckBox().setSelected(tuner.getTunerController().getFrequencyErrorCorrectionManager().isEnabled());
+                getAutoPPMCheckBox().setSelected(tuner.getTunerController().getTunerFrequencyErrorManager().isEnabled());
                 getFrequencyControl().addListener(getTuner().getTunerController());
                 getTuner().getTunerController().addListener(getFrequencyControl());
                 getMeasuredPPMLabel().setText(tuner.getTunerController().getMeasuredErrorStatus());
