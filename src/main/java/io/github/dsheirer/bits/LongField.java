@@ -119,4 +119,14 @@ public record LongField(int start, int end)
     {
         return new LongField(start, (start + 31));
     }
+
+    /**
+     * Utility constructor method for a field with eight octets of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static LongField length64(int start)
+    {
+        return new LongField(start, (start + 63));
+    }
 }
