@@ -54,13 +54,20 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferP
      */
     private void getNextBuffer()
     {
+        closeAndBroadcast();
+        mCurrentBuffer = ByteBuffer.allocate(mBufferSize);
+    }
+
+    /**
+     * Closes the current buffer and broadcasts it to an optionally registered listener
+     */
+    private void closeAndBroadcast()
+    {
         if(mCurrentBuffer != null && mBufferListener != null)
         {
             mCurrentBuffer.flip();
             mBufferListener.receive(mCurrentBuffer);
         }
-
-        mCurrentBuffer = ByteBuffer.allocate(mBufferSize);
     }
 
     @Override
@@ -97,6 +104,14 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferP
                 getNextBuffer();
             }
         }
+    }
+
+    /**
+     * Flush any buffered bits to the registered listener.
+     */
+    public void flush()
+    {
+        closeAndBroadcast();
     }
 
     /**

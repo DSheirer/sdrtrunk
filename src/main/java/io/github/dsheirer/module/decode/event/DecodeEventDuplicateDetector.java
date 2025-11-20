@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,12 +101,19 @@ public class DecodeEventDuplicateDetector
         }
 
         /**
-         * Generates a unique event key that is a combinatio of the TO identifier value and the details of the event.
+         * Generates a unique event key that is a combination of the TO identifier value and the details of the event.
          * @param event for the key
          * @return generated key.
          */
         private static String getKey(IDecodeEvent event)
         {
+            if(event.getIdentifierCollection().getFromIdentifier() != null)
+            {
+                return event.getIdentifierCollection().getToIdentifier().toString() +
+                        event.getIdentifierCollection().getFromIdentifier().toString() +
+                        event.getDetails();
+            }
+
             return event.getIdentifierCollection().getToIdentifier().toString() + event.getDetails();
         }
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase2;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
@@ -67,7 +67,7 @@ public class P25P2NetworkConfigurationMonitor
     private RfssStatusBroadcastExplicit mRFSSStatusBroadcastExplicit;
 
     //Current Site Secondary Control Channels
-    private Map<String,IChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
+    private Map<String, IBandChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
 
     //SNDCP Data Channel
     private SNDCPDataChannelAnnouncement mSNDCPDataChannelAnnouncement;
@@ -139,7 +139,7 @@ public class P25P2NetworkConfigurationMonitor
             case PHASE1_79_SECONDARY_CONTROL_CHANNEL_BROADCAST_IMPLICIT:
                 if(mac instanceof SecondaryControlChannelBroadcastImplicit sccba)
                 {
-                    for(IChannelDescriptor channel: sccba.getChannels())
+                    for(IBandChannelDescriptor channel: sccba.getChannels())
                     {
                         mSecondaryControlChannels.put(channel.toString(), channel);
                     }
@@ -178,7 +178,7 @@ public class P25P2NetworkConfigurationMonitor
             case PHASE1_E9_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
                 if(mac instanceof SecondaryControlChannelBroadcastExplicit sccbe)
                 {
-                    for(IChannelDescriptor channel: sccbe.getChannels())
+                    for(IBandChannelDescriptor channel: sccbe.getChannels())
                     {
                         mSecondaryControlChannels.put(channel.toString(), channel);
                     }

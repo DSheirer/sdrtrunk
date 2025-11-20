@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
@@ -135,9 +135,9 @@ public class GroupVoiceChannelGrantUpdate extends OSPMessage implements IFrequen
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
+        List<IBandChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
 
         if(hasGroupB())

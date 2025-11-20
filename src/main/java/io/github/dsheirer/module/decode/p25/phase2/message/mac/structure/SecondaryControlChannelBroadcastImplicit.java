@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
@@ -41,8 +41,8 @@ public class SecondaryControlChannelBroadcastImplicit extends SecondaryControlCh
     private static final IntField CHANNEL_NUMBER_2 = IntField.length12(OCTET_7_BIT_48 + 4);
     private static final IntField SYSTEM_SERVICE_CLASS_2 = IntField.length8(OCTET_9_BIT_64);
 
-    private IChannelDescriptor mChannel1;
-    private IChannelDescriptor mChannel2;
+    private IBandChannelDescriptor mChannel1;
+    private IBandChannelDescriptor mChannel2;
     private SystemServiceClass mSystemServiceClass1;
     private SystemServiceClass mSystemServiceClass2;
     private List<Identifier> mIdentifiers;
@@ -77,7 +77,7 @@ public class SecondaryControlChannelBroadcastImplicit extends SecondaryControlCh
         return sb.toString();
     }
 
-    public IChannelDescriptor getChannel1()
+    public IBandChannelDescriptor getChannel1()
     {
         if(mChannel1 == null)
         {
@@ -102,7 +102,7 @@ public class SecondaryControlChannelBroadcastImplicit extends SecondaryControlCh
         return getInt(CHANNEL_NUMBER_1) != getInt(CHANNEL_NUMBER_2) && getInt(SYSTEM_SERVICE_CLASS_2) != 0;
     }
 
-    public IChannelDescriptor getChannel2()
+    public IBandChannelDescriptor getChannel2()
     {
         if(hasChannelB() && mChannel2 == null)
         {
@@ -136,9 +136,9 @@ public class SecondaryControlChannelBroadcastImplicit extends SecondaryControlCh
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
+        List<IBandChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel1());
 
         if(hasChannelB())

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.preference.duplicate.ICallManagementProvider;
 import io.github.dsheirer.preference.duplicate.TestCallManagementProvider;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -169,7 +170,7 @@ public class DuplicateCallDetectionTest
         audioSegment1.addIdentifier(SiteConfigurationIdentifier.create("Test Site 1"));
         audioSegment1.addIdentifier(APCO25Talkgroup.create(1));
         audioSegment1.addIdentifier(APCO25RadioIdentifier.createFrom(2));
-        EncryptionKeyIdentifier eki1 = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(Encryption.AES_256, 1));
+        EncryptionKeyIdentifier eki1 = EncryptionKeyIdentifier.create(Protocol.APCO25, APCO25EncryptionKey.create(Encryption.AES_256, 1));
         audioSegment1.addIdentifier(eki1);
         audioSegment1.addAudio(new float[2]);
 
@@ -178,7 +179,7 @@ public class DuplicateCallDetectionTest
         audioSegment2.addIdentifier(SiteConfigurationIdentifier.create("Test Site 1"));
         audioSegment2.addIdentifier(APCO25Talkgroup.create(2));
         audioSegment2.addIdentifier(APCO25RadioIdentifier.createFrom(2));
-        EncryptionKeyIdentifier eki2 = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(Encryption.UNENCRYPTED, 1));
+        EncryptionKeyIdentifier eki2 = EncryptionKeyIdentifier.create(Protocol.APCO25, APCO25EncryptionKey.create(Encryption.UNENCRYPTED, 1));
         audioSegment2.addIdentifier(eki2);
         audioSegment1.addAudio(new float[2]);
 

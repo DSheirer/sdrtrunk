@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.p25.P25FrequencyBandPreloadDataContent;
@@ -210,9 +210,9 @@ public class P25P2MessageProcessor implements Listener<IMessage>
                             /* Insert frequency band identifier update messages into channel-type messages */
                             if(macMessage.getMacStructure() instanceof IFrequencyBandReceiver receiver)
                             {
-                                List<IChannelDescriptor> channels = receiver.getChannels();
+                                List<IBandChannelDescriptor> channels = receiver.getChannels();
 
-                                for(IChannelDescriptor channel : channels)
+                                for(IBandChannelDescriptor channel : channels)
                                 {
                                     int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
 

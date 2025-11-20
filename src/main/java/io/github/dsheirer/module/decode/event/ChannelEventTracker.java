@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25;
+package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
@@ -28,33 +28,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Wrapper to track the state of a traffic channel event to manage updates from the control channel and the traffic
- * channel and to assist in determining when the communicants of a traffic channel have changed, indicating the need
- * for a new event.
+ * Base channel event tracker
+ * @param <T> type of decode event being tracked.
  */
-public class P25TrafficChannelEventTracker
+public abstract class ChannelEventTracker<T extends DecodeEvent>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(P25TrafficChannelEventTracker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChannelEventTracker.class);
     private static final long STALE_EVENT_THRESHOLD_MS = 2000;
     private static final long MAX_TDMA_DATA_CHANNEL_EVENT_DURATION_MS = 15000;
-    private P25ChannelGrantEvent mEvent;
     private boolean mStarted = false;
     private boolean mComplete = false;
+    private final T mEvent;
 
     /**
      * Constructs an instance
-     * @param event to track for the traffic channel.
+     * @param event to be tracked
      */
-    public P25TrafficChannelEventTracker(P25ChannelGrantEvent event)
+    public ChannelEventTracker(T event)
     {
         mEvent = event;
     }
 
     /**
      * Access the underlying traffic channel event that is being tracked.
+     *
      * @return event.
      */
-    public P25ChannelGrantEvent getEvent()
+    public T getEvent()
     {
         return mEvent;
     }
@@ -62,6 +62,7 @@ public class P25TrafficChannelEventTracker
     /**
      * Indicates if this event is stale relative to the provided timestamp.  Staleness is determined by the time delta
      * between the event's end time and timestamp argument.
+     *
      * @param timestamp to check for staleness
      * @return true if the delta time exceeds a threshold.
      */
@@ -76,23 +77,23 @@ public class P25TrafficChannelEventTracker
     }
 
     /**
-     * Indicates if the TDMA data channel duration exceeds the threshold (15 seconds)
+     * Indicates if the data channel duration exceeds the threshold (15 seconds)
      */
-    public boolean exceedsMaxTDMADataDuration()
+    public boolean exceedsMaxDataDuration()
     {
         return getEvent().getDuration() > MAX_TDMA_DATA_CHANNEL_EVENT_DURATION_MS;
     }
 
     /**
      * Adds the identifier to the tracked event if the event's identifier collection does not already have it.
+     *
      * @param identifier to add
      */
     public void addIdentifierIfMissing(Identifier identifier)
     {
         if(identifier != null && !getEvent().getIdentifierCollection().hasIdentifier(identifier))
         {
-            MutableIdentifierCollection mic = new MutableIdentifierCollection(getEvent().getIdentifierCollection()
-                    .getIdentifiers());
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(getEvent().getIdentifierCollection().getIdentifiers());
             mic.update(identifier);
             getEvent().setIdentifierCollection(mic);
         }
@@ -101,7 +102,8 @@ public class P25TrafficChannelEventTracker
     /**
      * Adds the additional details to the tracked event if the current event details are null or if they do not contain
      * the additional details.
-     * @param additionalDetails
+     *
+     * @param additionalDetails for the event
      */
     public void addDetailsIfMissing(String additionalDetails)
     {
@@ -135,6 +137,7 @@ public class P25TrafficChannelEventTracker
 
     /**
      * Indicates if the tracked event from identifier is non null and that it is different to the from argument.
+     *
      * @param fromToCompare against the current event from identifier.
      * @return true if they are different.
      */
@@ -153,6 +156,7 @@ public class P25TrafficChannelEventTracker
     /**
      * Checks the call for staleness and verifies that the call event TO identifier is equal to the TO identifier
      * in the provided identifier collection.
+     *
      * @param toCompareIC containing a TO and optionally a FROM identifier to compare.
      * @param timestamp to check for staleness
      * @return true if the call identifiers are the same and the call is not stale.
@@ -195,6 +199,7 @@ public class P25TrafficChannelEventTracker
 
     /**
      * Indicates if the event has been marked as complete by traffic channel signalling.
+     *
      * @return complete status.
      */
     public boolean isComplete()
@@ -204,6 +209,7 @@ public class P25TrafficChannelEventTracker
 
     /**
      * Indicates if the event has been marked as started by the traffic channel for HDU or LDU signalling.
+     *
      * @return started status.
      */
     public boolean isStarted()
@@ -236,6 +242,7 @@ public class P25TrafficChannelEventTracker
      *
      * Note: once the event is being updated from the traffic channel, any attempts to update from the control channel
      * are ignored.
+     *
      * @param timestamp to assign.
      */
     public void updateDurationTraffic(long timestamp)
@@ -255,6 +262,7 @@ public class P25TrafficChannelEventTracker
      * Mark the event as complete and assign final end timestamp to the event.
      *
      * Note: further attempts to complete an already complete event are ignored.
+     *
      * @param timestamp to assign.
      * @return true if the timestamp was updated
      */
@@ -272,6 +280,7 @@ public class P25TrafficChannelEventTracker
 
     /**
      * Updates the details for the tracked event.
+     *
      * @param details to update
      */
     public void setDetails(String details)
@@ -281,6 +290,7 @@ public class P25TrafficChannelEventTracker
 
     /**
      * Updates the channel descriptor for the tracked event.
+     *
      * @param channelDescriptor to update.
      */
     public void addChannelDescriptorIfMissing(IChannelDescriptor channelDescriptor)

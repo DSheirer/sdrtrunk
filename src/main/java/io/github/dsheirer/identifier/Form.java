@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ public enum Form
     ARS_USER,
     ARS_PASSWORD,
     CALL_PROGRESS_TONE,
+    CATEGORY,
     CHANNEL,
     CHANNEL_DESCRIPTOR,
     CHANNEL_NAME,
@@ -49,6 +50,7 @@ public enum Form
     NETWORK_ACCESS_CODE,
     PATCH_GROUP,
     RADIO,
+    RAN,
     RF_SUBSYSTEM,
     SCRAMBLE_PARAMETERS,
     SHORT_DATA_MESSAGE,

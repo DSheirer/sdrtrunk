@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.icon.IconModel;
@@ -388,9 +388,9 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
             String formatted = null;
 
-            if(value instanceof IChannelDescriptor)
+            if(value instanceof IBandChannelDescriptor)
             {
-                IChannelDescriptor channelDescriptor = (IChannelDescriptor)value;
+                IBandChannelDescriptor channelDescriptor = (IBandChannelDescriptor)value;
 
                 long frequency = channelDescriptor.getDownlinkFrequency();
 

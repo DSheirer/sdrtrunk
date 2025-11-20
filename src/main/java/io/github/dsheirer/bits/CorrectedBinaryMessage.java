@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,26 @@ public class CorrectedBinaryMessage extends BinaryMessage
     {
         this(message.size());
         this.xor(message);
+    }
+
+    /**
+     * Creates a new message loaded from the hexadecimal string
+     * @param hex representing the bits of the message
+     * @return new message
+     */
+    public static CorrectedBinaryMessage loadHex(String hex)
+    {
+        return new CorrectedBinaryMessage(BinaryMessage.loadHex(hex));
+    }
+
+    /**
+     * Overloads the parent method to return this type.
+     * @param binary message to load
+     * @return loaded message
+     */
+    public static CorrectedBinaryMessage load(String binary)
+    {
+        return new CorrectedBinaryMessage(BinaryMessage.load(binary));
     }
 
     @Override

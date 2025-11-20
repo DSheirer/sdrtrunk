@@ -20,7 +20,7 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
@@ -55,7 +55,7 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
     private Identifier mSystem;
     private Identifier mSite;
     private Identifier mRfss;
-    private IChannelDescriptor mChannel;
+    private IBandChannelDescriptor mChannel;
     private SystemServiceClass mSystemServiceClass;
     private List<Identifier> mIdentifiers;
     private List<String> mSiteFlags;
@@ -184,7 +184,7 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
         return mRfss;
     }
 
-    public IChannelDescriptor getChannel()
+    public IBandChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -220,9 +220,9 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
+        List<IBandChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }

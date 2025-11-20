@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,15 @@ public record LongField(int start, int end)
         {
             throw new IllegalArgumentException("Long field start index must be less than end index");
         }
+    }
+
+    /**
+     * Width of the field in bit positions
+     * @return width
+     */
+    public int width()
+    {
+        return end() - start() + 1;
     }
 
     /**
@@ -118,5 +127,15 @@ public record LongField(int start, int end)
     public static LongField length32(int start)
     {
         return new LongField(start, (start + 31));
+    }
+
+    /**
+     * Utility constructor method for a field with eight octets of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static LongField length64(int start)
+    {
+        return new LongField(start, (start + 63));
     }
 }

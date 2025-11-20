@@ -30,7 +30,9 @@ import io.github.dsheirer.protocol.Protocol;
 
 public class EncryptionKeyIdentifier extends Identifier<EncryptionKey>
 {
-    public EncryptionKeyIdentifier(EncryptionKey value, IdentifierClass identifierClass, Form form, Role role)
+    private Protocol mProtocol;
+
+    public EncryptionKeyIdentifier(Protocol protocol, EncryptionKey value, IdentifierClass identifierClass, Form form, Role role)
     {
         super(value, identifierClass, form, role);
     }
@@ -38,7 +40,7 @@ public class EncryptionKeyIdentifier extends Identifier<EncryptionKey>
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.APCO25;
+        return mProtocol;
     }
 
     public boolean isEncrypted()
@@ -46,8 +48,8 @@ public class EncryptionKeyIdentifier extends Identifier<EncryptionKey>
         return getValue() != null && getValue().isEncrypted();
     }
 
-    public static EncryptionKeyIdentifier create(EncryptionKey encryptionKey)
+    public static EncryptionKeyIdentifier create(Protocol protocol, EncryptionKey encryptionKey)
     {
-        return new EncryptionKeyIdentifier(encryptionKey, IdentifierClass.USER, Form.ENCRYPTION_KEY, Role.ANY);
+        return new EncryptionKeyIdentifier(protocol, encryptionKey, IdentifierClass.USER, Form.ENCRYPTION_KEY, Role.ANY);
     }
 }

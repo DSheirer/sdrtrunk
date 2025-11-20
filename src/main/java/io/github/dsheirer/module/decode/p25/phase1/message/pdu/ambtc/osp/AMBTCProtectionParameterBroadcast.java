@@ -28,6 +28,7 @@ import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25Encrypti
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +99,8 @@ public class AMBTCProtectionParameterBroadcast extends AMBTCMessage
     {
         if(mEncryptionKey == null && hasDataBlock(0))
         {
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getHeader().getMessage().getInt(HEADER_ALGORITHM_ID),
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25,
+                APCO25EncryptionKey.create(getHeader().getMessage().getInt(HEADER_ALGORITHM_ID),
                 getDataBlock(0).getMessage().getInt(BLOCK_0_KEY_ID)));
         }
 

@@ -25,6 +25,8 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
+import io.github.dsheirer.protocol.Protocol;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -141,7 +143,7 @@ public class EncryptionSyncParameters implements IEncryptionSyncParameters
                 algorithm = Encryption.UNENCRYPTED.getValue(); //0x80
             }
 
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(algorithm, key));
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25, APCO25EncryptionKey.create(algorithm, key));
         }
 
         return mEncryptionKey;
