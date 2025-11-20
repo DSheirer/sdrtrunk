@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
@@ -46,7 +46,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
     private List<Identifier> mIdentifiers;
     private Identifier mWACN;
     private Identifier mSystem;
-    private IChannelDescriptor mChannel;
+    private IBandChannelDescriptor mChannel;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -88,7 +88,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
         return mSystem;
     }
 
-    public IChannelDescriptor getChannel()
+    public IBandChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -116,7 +116,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         return Collections.singletonList(getChannel());
     }

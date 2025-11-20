@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupForm
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MDC1200TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
@@ -47,14 +48,12 @@ import org.slf4j.LoggerFactory;
  */
 public class TalkgroupFormatPreference extends Preference
 {
-    private final static Logger mLog = LoggerFactory.getLogger(TalkgroupFormatPreference.class);
-    private Preferences mPreferences = Preferences.userNodeForPackage(TalkgroupFormatPreference.class);
-
     public static final String TALKGROUP_FORMAT_PROPERTY = "talkgroup.format.";
     public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = "talkgroup.fixed.width.";
-
-    private Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new EnumMap<>(Protocol.class);
-    private Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new EnumMap<>(Protocol.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TalkgroupFormatPreference.class);
+    private final Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new EnumMap<>(Protocol.class);
+    private final Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new EnumMap<>(Protocol.class);
+    private final Preferences mPreferences = Preferences.userNodeForPackage(TalkgroupFormatPreference.class);
 
     /**
      * Constructs an instance of identifier formatting preference.
@@ -151,9 +150,12 @@ public class TalkgroupFormatPreference extends Preference
             case DMR:
             case MDC1200:
             case NBFM:
+            case NXDN:
             case PASSPORT:
             case UNKNOWN:
+                return IntegerFormat.DECIMAL;
             default:
+                LOGGER.warn("Unrecognized protocol for default format: " + protocol);
                 return IntegerFormat.DECIMAL;
         }
     }
@@ -172,9 +174,12 @@ public class TalkgroupFormatPreference extends Preference
             case DMR:
             case MDC1200:
             case NBFM:
+            case NXDN:
             case PASSPORT:
             case UNKNOWN:
+                return IntegerFormat.DECIMAL_HEXADECIMAL;
             default:
+//                mLog.warn("Unrecognized protocol for talkgroup/radio formatting: " + protocol);
                 return IntegerFormat.DECIMAL_HEXADECIMAL;
         }
     }
@@ -194,8 +199,11 @@ public class TalkgroupFormatPreference extends Preference
             case LTR_NET:
             case MPT1327:
             case NBFM:
+            case NXDN:
+                return true;
             case UNKNOWN:
             default:
+                LOGGER.warn("Unrecognized protocol for default/fixed width: " + protocol);
                 return true;
         }
     }
@@ -338,6 +346,9 @@ public class TalkgroupFormatPreference extends Preference
             case NBFM:
                 return AnalogTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.NBFM),
                         isTalkgroupFixedWidth(Protocol.NBFM));
+            case NXDN:
+                return NXDNTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.NXDN),
+                        isTalkgroupFixedWidth(Protocol.NXDN));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));
@@ -380,6 +391,9 @@ public class TalkgroupFormatPreference extends Preference
             case DMR:
                 return DMRTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.DMR),
                     isTalkgroupFixedWidth(Protocol.DMR));
+            case NXDN:
+                return NXDNTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.NXDN),
+                        isTalkgroupFixedWidth(Protocol.NXDN));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));

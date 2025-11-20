@@ -1,0 +1,535 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.nxdn.layer3;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
+import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.ProprietaryForm;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.Vendor;
+import io.github.dsheirer.module.decode.nxdn.layer3.typed.Information1;
+import io.github.dsheirer.module.decode.nxdn.layer3.typed.Information3;
+import io.github.dsheirer.module.decode.nxdn.layer3.typed.Information4;
+import io.github.dsheirer.module.decode.nxdn.layer3.typed.SCCH;
+import java.util.EnumSet;
+
+/**
+ * Enumeration of NXDN message types.
+ */
+public enum NXDNMessageType
+{
+    CONTROL_IN_01_CC_VOICE_CALL_REQUEST(1, "VOICE CALL REQUEST"),
+    CONTROL_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE(2, "VOICE CALL RECEPTION RESPONSE"),
+    CONTROL_IN_03_CC_VOICE_CALL_CONNECTION_REQUEST(3, "VOICE CALL CONNECTION REQUEST"),
+    CONTROL_IN_09_CC_DATA_CALL_REQUEST(9, "DATA CALL REQUEST"),
+    CONTROL_IN_10_CC_DATA_CALL_RECEPTION_RESPONSE(10, "DATA CALL RECEPTION RESPONSE"),
+    CONTROL_IN_17_CC_DISCONNECT_REQUEST(17, "DISCONNECT REQUEST"),
+    CONTROL_IN_32_MM_REGISTRATION_REQUEST(32, "REGISTRATION REQUEST"),
+    CONTROL_IN_34_MM_REGISTRATION_CLEAR_REQUEST(34, "REGISTRATION C REQUEST"),
+    CONTROL_IN_36_MM_GROUP_REGISTRATION_REQUEST(36, "GROUP REGISTRATION REQUEST"),
+    CONTROL_IN_41_MM_AUTHENTICATION_INQUIRY_RESPONSE(41, "AUTHORIZATION INQUIRY RESPONSE"),
+    CONTROL_IN_43_MM_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM(43, "AUTHORIZATION INQUIRY RESPONSE 2"),
+    CONTROL_IN_48_CC_STATUS_INQUIRY_REQUEST(48, "STATUS INQUIRY REQUEST"),
+    CONTROL_IN_49_CC_STATUS_INQUIRY_RESPONSE(49, "STATUS INQUIRY RESPONSE"),
+    CONTROL_IN_50_CC_STATUS_REQUEST(50, "STATUS REQUEST"),
+    CONTROL_IN_51_CC_STATUS_RESPONSE(51, "STATUS RESPONSE"),
+    CONTROL_IN_52_CC_REMOTE_CONTROL_REQUEST(52, "REMOTE CONTROL REQUEST"),
+    CONTROL_IN_53_CC_REMOTE_CONTROL_RESPONSE(53, "REMOTE CONTROL RESPONSE"),
+    CONTROL_IN_55_CC_REMOTE_CONTROL_RESPONSE_WITH_ESN(55, "REMOTE CONTROL E RESPONSE"),
+    CONTROL_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER(56, "SHORT DATA CALL REQUEST HEADER"),
+    CONTROL_IN_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA(57, "SHORT DATA CALL REQUEST USER DATA"),
+    CONTROL_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR(58, "SHORT DATA CALL INITIALIZATION VECTOR"),
+    CONTROL_IN_59_CC_SHORT_DATA_CALL_RESPONSE(59, "SHORT DATA CALL RESPONSE"),
+
+    CONTROL_OUT_01_CC_VOICE_CALL_RESPONSE(1, "VOICE CALL RESPONSE"),
+    CONTROL_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST(2, "VOICE CALL RECEPTION REQUEST"),
+    CONTROL_OUT_03_CC_VOICE_CALL_CONNECTION_RESPONSE(3, "VOICE CALL CONNECTION RESPONSE"),
+    CONTROL_OUT_04_CC_VOICE_CALL_ASSIGNMENT(4, "VOICE CALL ASSIGNMENT"),
+    CONTROL_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE(5, "VOICE CALL ASSIGNMENT DUPLICATE"),
+    CONTROL_OUT_09_CC_DATA_CALL_RESPONSE(9, "DATA CALL RESPONSE"),
+    CONTROL_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST(10, "DATA CALL RECEPTION REQUEST"),
+    CONTROL_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE(13, "DATA CALL ASSIGNMENT DUPLICATE"),
+    CONTROL_OUT_14_CC_DATA_CALL_ASSIGNMENT(14, "DATA CALL ASSIGNMENT"),
+    CONTROL_OUT_16_CC_IDLE(16, "IDLE"),
+    CONTROL_OUT_17_CC_DISCONNECT(17, "DISCONNECT"),
+    CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION(23, "DIGITAL STATION ID"),
+    CONTROL_OUT_24_BC_SITE_INFORMATION(24, "SITE INFORMATION"),
+    CONTROL_OUT_25_BC_SERVICE_INFORMATION(25, "SERVICE INFORMATION"),
+    CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION(26, "CONTROL CHANNEL INFORMATION"),
+    CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION(27, "ADJACENT SITE INFORMATION"),
+    CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION(28, "FAILURE STATUS INFORMATION"),
+    CONTROL_OUT_32_MM_REGISTRATION_RESPONSE(32, "REGISTRATION RESPONSE"),
+    CONTROL_OUT_34_MM_REGISTRATION_CLEAR_RESPONSE(34, "REGISTRATION C RESPONSE"),
+    CONTROL_OUT_35_MM_REGISTRATION_COMMAND(35, "REG C RESPONSE"),
+    CONTROL_OUT_36_MM_GROUP_REGISTRATION_RESPONSE(36, "GROUP REGISTRATION RESPONSE"),
+    CONTROL_OUT_40_MM_AUTHENTICATION_INQUIRY_REQUEST(40, "AUTHORIZATION INQUIRY REQUEST"),
+    CONTROL_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM(42, "AUTHORIZATION INQUIRY REQUEST 2"),
+    CONTROL_OUT_48_CC_STATUS_INQUIRY_REQUEST(48, "STATUS INQUIRY REQUEST"),
+    CONTROL_OUT_49_CC_STATUS_INQUIRY_RESPONSE(49, "STATUS INQUIRY RESPONSE"),
+    CONTROL_OUT_50_CC_STATUS_REQUEST(50, "STATUS REQUEST"),
+    CONTROL_OUT_51_CC_STATUS_RESPONSE(51, "STATUS RESPONSE"),
+    CONTROL_OUT_52_CC_REMOTE_CONTROL_REQUEST(52, "REMOTE CONTROL REQUEST"),
+    CONTROL_OUT_53_CC_REMOTE_CONTROL_RESPONSE(53, "REMOTE CONTROL RESPONSE"),
+    CONTROL_OUT_54_CC_REMOTE_CONTROL_REQUEST_WITH_ESN(54, "REMOTE CONTROL E REQUEST"),
+    CONTROL_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER(56, "SHORT DATA CALL REQUEST HEADER"),
+    CONTROL_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA(57, "SHORT DATA CALL REQUEST USER DATA"),
+    CONTROL_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR(58, "SHORT DATA CALL INITIALIZATION VECTOR"),
+    CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE(59, "SHORT DATA CALL RESPONSE"),
+
+    TRAFFIC_IN_01_CC_VOICE_CALL(1, "VOICE CALL"),
+    TRAFFIC_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE(2, "VOICE CALL RECEPTION RESPONSE"),
+    TRAFFIC_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR(3, "VOICE CALL INITIALIZATION VECTOR"),
+    TRAFFIC_IN_08_CC_TRANSMISSION_RELEASE(8, "TRANSMISSION RELEASE"),
+    TRAFFIC_IN_09_CC_DATA_CALL_HEADER(9, "DATA CALL HEADER"),
+    TRAFFIC_IN_11_CC_DATA_CALL_BLOCK(11, "DATA CALL BLOCK"),
+    TRAFFIC_IN_12_CC_DATA_CALL_ACKNOWLEDGE(12, "DATA CALL ACKNOWLEDGE"),
+    TRAFFIC_IN_15_CC_HEADER_DELAY(15, "HEADER DELAY"),
+    TRAFFIC_IN_16_CC_IDLE(16, "IDLE"),
+    TRAFFIC_IN_17_CC_DISCONNECT_REQUEST(17, "DISCONNECT REQUEST"),
+    TRAFFIC_IN_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM(42, "AUTHORIZATION INQUIRY REQUEST 2"),
+    TRAFFIC_IN_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM(43, "AUTHORIZATION INQUIRY RESPONSE 2"),
+    TRAFFIC_IN_48_CC_STATUS_INQUIRY_REQUEST(48, "STATUS INQUIRY REQUEST"),
+    TRAFFIC_IN_49_CC_STATUS_INQUIRY_RESPONSE(49, "STATUS INQUIRY RESPONSE"),
+    TRAFFIC_IN_50_CC_STATUS_REQUEST(50, "STATUS REQUEST"),
+    TRAFFIC_IN_51_CC_STATUS_RESPONSE(51, "STATUS RESPONSE"),
+    TRAFFIC_IN_52_CC_REMOTE_CONTROL_REQUEST(52, "REMOTE CONTROL REQUEST"),
+    TRAFFIC_IN_53_CC_REMOTE_CONTROL_RESPONSE(53, "REMOTE CONTROL RESPONSE"),
+    TRAFFIC_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER(56, "SHORT DATA CALL REQUEST HEADER"),
+    TRAFFIC_IN_57_CC_SHORT_DATA_CALL_BLOCK(57, "SHORT DATA CALL BLOCK"),
+    TRAFFIC_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR(58, "SHORT DATA CALL INITIALIZATION VECTOR"),
+    TRAFFIC_IN_59_CC_SHORT_DATA_CALL_RESPONSE(59, "SHORT DATA CALL RESPONSE"),
+
+    TRAFFIC_OUT_01_CC_VOICE_CALL(1, "VOICE CALL"),
+    TRAFFIC_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST(2, "VOICE CALL RECEPTION REQUEST"),
+    TRAFFIC_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR(3, "VOICE CALL INITIALIZATION VECTOR"),
+    TRAFFIC_OUT_04_CC_VOICE_CALL_ASSIGNMENT(4, "VOICE CALL ASSIGNMENT"),
+    TRAFFIC_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE(5, "VOICE CALL ASSIGNMENT DUP"),
+    TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION(7, "TRANSMISSION RELEASE EXTENSION"),
+    TRAFFIC_OUT_08_CC_TRANSMISSION_RELEASE(8, "TRANSMISSION RELEASE"),
+    TRAFFIC_OUT_09_CC_DATA_CALL_HEADER(9, "DATA CALL HEADER"),
+    TRAFFIC_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST(10, "DATA CALL RECEPTION REQUEST"),
+    TRAFFIC_OUT_11_CC_DATA_CALL_BLOCK(11, "DATA CALL USER DATA"),
+    TRAFFIC_OUT_12_CC_DATA_CALL_ACKNOWLEDGE(12, "DATA CALL ACKNOWLEDGE"),
+    TRAFFIC_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE(13, "DATA CALL ASSIGNMENT DUPLICATE"),
+    TRAFFIC_OUT_14_CC_DATA_CALL_ASSIGNMENT(14, "DATA CALL ASSIGNMENT DUPLICATE"),
+    TRAFFIC_OUT_15_CC_HEADER_DELAY(15, "HEADER DELAY"),
+    TRAFFIC_OUT_16_CC_IDLE(16, "IDLE"),
+    TRAFFIC_OUT_17_CC_DISCONNECT(17, "DISCONNECT"),
+    TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION(23, "DIGITAL STATION ID"),
+    TRAFFIC_OUT_24_BC_SITE_INFORMATION(24, "SITE INFORMATION"),
+    TRAFFIC_OUT_25_BC_SERVICE_INFORMATION(25, "SERVICE INFORMATION"),
+    TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION(26, "CONTROL CHANNEL INFORMATION"),
+    TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION(27, "ADJACENT SITE INFORMATION"),
+    TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION(28, "FAILURE STATUS INFORMATION"),
+    TRAFFIC_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM(42, "AUTHORIZATION REQUEST 2"),
+    TRAFFIC_OUT_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM(43, "AUTHORIZATION RESPONSE 2"),
+    TRAFFIC_OUT_48_CC_STATUS_INQUIRY_REQUEST(48, "STATUS INQUIRY REQUEST"),
+    TRAFFIC_OUT_49_CC_STATUS_INQUIRY_RESPONSE(49, "STATUS INQUIRY RESPONSE"),
+    TRAFFIC_OUT_50_CC_STATUS_REQUEST(50, "STATUS REQUEST"),
+    TRAFFIC_OUT_51_CC_STATUS_RESPONSE(51, "STATUS RESPONSE"),
+    TRAFFIC_OUT_52_CC_REMOTE_CONTROL_REQUEST(52, "REMOTE CONTROL REQUEST"),
+    TRAFFIC_OUT_53_CC_REMOTE_CONTROL_RESPONSE(53, "REMOTE CONTROL RESPONSE"),
+    TRAFFIC_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER(56, "SHORT DATA CALL REQUEST HEADER"),
+    TRAFFIC_OUT_57_CC_SHORT_DATA_CALL_BLOCK(57, "SHORT DATA CALL REQUEST USER"),
+    TRAFFIC_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR(58, "SHORT DATA CALL INITIALIZATION VECTOR"),
+    TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE(59, "SHORT DATA CALL RESPONSE"),
+
+    PROPRIETARY_FORM(63, "PROPRIETARY FORM"),
+    TALKER_ALIAS(0x82, "TALKER ALIAS"),
+    TALKER_ALIAS_COMPLETE(0x0, "TALKER ALIAS COMPLETE"),
+
+    //Type D SCCH messages
+    SCCH_IN_INFO_4_CALL_IN_PROGRESS_DESTINATION(-1, "CALL IN PROGRESS - DESTINATION INFO 4"),
+    SCCH_IN_INFO_4_CALL_COMPLETE_DESTINATION(-1, "CALL COMPLETE - DESTINATION INFO 4"),
+    SCCH_IN_INFO_3_CALL_IN_PROGRESS_SOURCE(-1, "CALL IN PROGRESS - SOURCE ID"),
+    SCCH_IN_INFO_3_INITIALIZATION_VECTOR_PART2(-1, "INITIALIZATION VECTOR PART 2"),
+    SCCH_IN_INFO_2_CALL_IN_PROGRESS_DESTINATION(-1, "CALL IN PROGRESS DESTINATION INFO 2"),
+    SCCH_IN_INFO_1_CALL_INFO(-1, "CALL INFO"),
+    SCCH_IN_INFO_1_INITIALIZATION_VECTOR_PART1(-1, "INITIALIZATION VECTOR PART 1"),
+    SCCH_IN_UNKNOWN(-1, "UNKNOWN"),
+
+    SCCH_OUT_INFO_4_CALL_IN_PROGRESS_DESTINATION(-1, "CALL IN PROGRESS - DESTINATION INFO 4"),
+    SCCH_OUT_INFO_4_CALL_COMPLETE_DESTINATION(-1, "CALL COMPLETE - DESTINATION INFO 4"),
+    SCCH_OUT_INFO_4_REPEATER_IDLE(-1, "REPEATER IDLE"),
+    SCCH_OUT_INFO_4_REPEATER_HALT(-1, "REPEATER HALT"),
+    SCCH_OUT_INFO_4_REPEATER_FREE(-1, "REPEATER FREE"),
+    SCCH_OUT_INFO_4_SITE_ID(-1, "SITE ID"),
+    SCCH_OUT_INFO_3_CALL_IN_PROGRESS_SOURCE(-1, "CALL IN PROGRESS - SOURCE ID"),
+    SCCH_OUT_INFO_3_INITIALIZATION_VECTOR_PART2(-1, "INITIALIZATION VECTOR PART 2"),
+    SCCH_OUT_INFO_2_CALL_IN_PROGRESS_DESTINATION(-1, "CALL IN PROGRESS DESTINATION INFO 2"),
+    SCCH_OUT_INFO_1_CALL_INFO(-1, "CALL INFO"),
+    SCCH_OUT_INFO_1_INITIALIZATION_VECTOR_PART1(-1, "INITIALIZATION VECTOR PART 1"),
+    SCCH_OUT_UNKNOWN(-1, "UNKNOWN"),
+
+    UNKNOWN(-1, "UNKNOWN");
+
+    private final int mValue;
+    private final String mLabel;
+
+    /**
+     * Constructs an instance
+     *
+     * @param value for the entry
+     */
+    NXDNMessageType(int value, String label)
+    {
+        mValue = value;
+        mLabel = label;
+    }
+
+    /**
+     * Control channel message types
+     */
+    public static final EnumSet<NXDNMessageType> CONTROL = EnumSet.range(CONTROL_IN_01_CC_VOICE_CALL_REQUEST, CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE);
+
+    /**
+     * Traffic channel message types
+     */
+    public static final EnumSet<NXDNMessageType> TRAFFIC = EnumSet.range(TRAFFIC_IN_01_CC_VOICE_CALL, TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE);
+
+    /**
+     * Broadcast message types
+     */
+    public static final EnumSet<NXDNMessageType> BROADCAST = EnumSet.of(CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION, CONTROL_OUT_24_BC_SITE_INFORMATION, CONTROL_OUT_25_BC_SERVICE_INFORMATION, CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION, CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION, CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION, TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION, TRAFFIC_OUT_24_BC_SITE_INFORMATION, TRAFFIC_OUT_25_BC_SERVICE_INFORMATION, TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION, TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION, TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION);
+
+    private static final EnumSet<NXDNMessageType> CONTROL_IN_CALL_CONTROL_LOW = EnumSet.range(CONTROL_IN_01_CC_VOICE_CALL_REQUEST, CONTROL_IN_17_CC_DISCONNECT_REQUEST);
+    private static final EnumSet<NXDNMessageType> CONTROL_IN_CALL_CONTROL_HIGH = (EnumSet.range(CONTROL_IN_48_CC_STATUS_INQUIRY_REQUEST, CONTROL_IN_59_CC_SHORT_DATA_CALL_RESPONSE));
+    public static final EnumSet<NXDNMessageType> CONTROL_IN_CALL_CONTROL = merge(CONTROL_IN_CALL_CONTROL_LOW, CONTROL_IN_CALL_CONTROL_HIGH);
+    public static final EnumSet<NXDNMessageType> CONTROL_IN_MOBILITY_MANAGEMENT = EnumSet.range(CONTROL_IN_32_MM_REGISTRATION_REQUEST, CONTROL_IN_43_MM_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM);
+
+    public static final EnumSet<NXDNMessageType> CONTROL_OUT_BROADCAST = EnumSet.range(CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION, CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION);
+    private static final EnumSet<NXDNMessageType> CONTROL_OUT_CALL_CONTROL_LOW = EnumSet.range(CONTROL_OUT_01_CC_VOICE_CALL_RESPONSE, CONTROL_OUT_17_CC_DISCONNECT);
+    private static final EnumSet<NXDNMessageType> CONTROL_OUT_CALL_CONTROL_HIGH = (EnumSet.range(CONTROL_OUT_48_CC_STATUS_INQUIRY_REQUEST, CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE));
+    public static final EnumSet<NXDNMessageType> CONTROL_OUT_CALL_CONTROL = merge(CONTROL_OUT_CALL_CONTROL_LOW, CONTROL_OUT_CALL_CONTROL_HIGH);
+    public static final EnumSet<NXDNMessageType> CONTROL_OUT_MOBILITY_MANAGEMENT = EnumSet.range(CONTROL_OUT_32_MM_REGISTRATION_RESPONSE, CONTROL_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM);
+
+    private static final EnumSet<NXDNMessageType> TRAFFIC_IN_CALL_CONTROL_LOW = EnumSet.range(TRAFFIC_IN_01_CC_VOICE_CALL, TRAFFIC_IN_17_CC_DISCONNECT_REQUEST);
+    private static final EnumSet<NXDNMessageType> TRAFFIC_IN_CALL_CONTROL_HIGH = (EnumSet.range(TRAFFIC_IN_48_CC_STATUS_INQUIRY_REQUEST, TRAFFIC_IN_59_CC_SHORT_DATA_CALL_RESPONSE));
+    public static final EnumSet<NXDNMessageType> TRAFFIC_IN_CALL_CONTROL = merge(TRAFFIC_IN_CALL_CONTROL_LOW, TRAFFIC_IN_CALL_CONTROL_HIGH);
+    public static final EnumSet<NXDNMessageType> TRAFFIC_IN_MOBILITY_MANAGEMENT = EnumSet.range(TRAFFIC_IN_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM, TRAFFIC_IN_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM);
+
+    public static final EnumSet<NXDNMessageType> TRAFFIC_OUT_BROADCAST = EnumSet.range(TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION, TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION);
+    private static final EnumSet<NXDNMessageType> TRAFFIC_OUT_CALL_CONTROL_LOW = EnumSet.range(TRAFFIC_OUT_01_CC_VOICE_CALL, TRAFFIC_OUT_17_CC_DISCONNECT);
+    private static final EnumSet<NXDNMessageType> TRAFFIC_OUT_CALL_CONTROL_HIGH = (EnumSet.range(TRAFFIC_OUT_48_CC_STATUS_INQUIRY_REQUEST, TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE));
+    public static final EnumSet<NXDNMessageType> TRAFFIC_OUT_CALL_CONTROL = merge(TRAFFIC_OUT_CALL_CONTROL_LOW, TRAFFIC_OUT_CALL_CONTROL_HIGH);
+    public static final EnumSet<NXDNMessageType> TRAFFIC_OUT_MOBILITY_MANAGEMENT = EnumSet.range(TRAFFIC_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM, TRAFFIC_OUT_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM);
+
+    public static final EnumSet<NXDNMessageType> TYPE_D_OUT = EnumSet.range(SCCH_OUT_INFO_4_CALL_IN_PROGRESS_DESTINATION, SCCH_OUT_UNKNOWN);
+    public static final EnumSet<NXDNMessageType> TYPE_D_IN = EnumSet.range(SCCH_IN_INFO_4_CALL_IN_PROGRESS_DESTINATION, SCCH_IN_UNKNOWN);
+
+    public static final EnumSet<NXDNMessageType> OTHER = EnumSet.of(PROPRIETARY_FORM, TALKER_ALIAS, TALKER_ALIAS_COMPLETE);
+
+    /**
+     * Merge two enumsets
+     *
+     * @param a set
+     * @param b set
+     * @param <T> type of set
+     * @return merged
+     */
+    private static <T extends Enum<T>> EnumSet<T> merge(EnumSet<T> a, EnumSet<T> b)
+    {
+        final EnumSet<T> union = EnumSet.copyOf(a);
+        union.addAll(b);
+        return union;
+    }
+
+    /**
+     * Call control message types
+     */
+    public static final EnumSet<NXDNMessageType> CALL_CONTROL = EnumSet.of(TRAFFIC_IN_01_CC_VOICE_CALL);
+
+    /**
+     * Indicates if this message type is a broadcast message
+     */
+    public boolean isBroadcast()
+    {
+        return BROADCAST.contains(this);
+    }
+
+    /**
+     * Indicates if this message type is a control channel message
+     */
+    public boolean isControl()
+    {
+        return CONTROL.contains(this);
+    }
+
+    /**
+     * Indicates if this message type is a traffic channel message
+     */
+    public boolean isTraffic()
+    {
+        return TRAFFIC.contains(this);
+    }
+
+    /**
+     * Value for the enumeration type
+     *
+     * @return value
+     */
+    public int getValue()
+    {
+        return mValue;
+    }
+
+    /**
+     * Display label
+     *
+     * @return label
+     */
+    @Override
+    public String toString()
+    {
+        return mLabel;
+    }
+
+    /**
+     * Utility method to lookup a vendor proprietary message type
+     *
+     * @param vendor for the message
+     * @param value of the message type
+     * @return message type or UNKNOWN
+     */
+    public static NXDNMessageType getProprietary(Vendor vendor, int value)
+    {
+        switch(vendor)
+        {
+            case JVC:
+                switch(value)
+                {
+                    case 0x82:
+                        return TALKER_ALIAS;
+                }
+            default:
+        }
+
+        return PROPRIETARY_FORM;
+    }
+
+    /**
+     * Utility method to lookup the message type for the proprietary form message
+     *
+     * @param message in proprietary form
+     * @return message type or UNKNOWN
+     */
+    public static NXDNMessageType getProprietary(CorrectedBinaryMessage message)
+    {
+        Vendor vendor = ProprietaryForm.getVendor(message);
+        int type = ProprietaryForm.getTypeValue(message);
+        return getProprietary(vendor, type);
+    }
+
+    /**
+     * Utility method to look up the inbound control channel message type.
+     *
+     * @param message containing the type value to lookup
+     * @return matching entry or UNKNOWN if the value is not recognized.
+     */
+    public static NXDNMessageType getControlInbound(CorrectedBinaryMessage message)
+    {
+        int typeValue = NXDNLayer3Message.getTypeValue(message);
+
+        return switch(typeValue)
+        {
+            case 1 -> CONTROL_IN_01_CC_VOICE_CALL_REQUEST;
+            case 2 -> CONTROL_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE;
+            case 3 -> CONTROL_IN_03_CC_VOICE_CALL_CONNECTION_REQUEST;
+            case 9 -> CONTROL_IN_09_CC_DATA_CALL_REQUEST;
+            case 10 -> CONTROL_IN_10_CC_DATA_CALL_RECEPTION_RESPONSE;
+            case 17 -> CONTROL_IN_17_CC_DISCONNECT_REQUEST;
+            case 32 -> CONTROL_IN_32_MM_REGISTRATION_REQUEST;
+            case 34 -> CONTROL_IN_34_MM_REGISTRATION_CLEAR_REQUEST;
+            case 36 -> CONTROL_IN_36_MM_GROUP_REGISTRATION_REQUEST;
+            case 41 -> CONTROL_IN_41_MM_AUTHENTICATION_INQUIRY_RESPONSE;
+            case 43 -> CONTROL_IN_43_MM_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM;
+            case 48 -> CONTROL_IN_48_CC_STATUS_INQUIRY_REQUEST;
+            case 49 -> CONTROL_IN_49_CC_STATUS_INQUIRY_RESPONSE;
+            case 50 -> CONTROL_IN_50_CC_STATUS_REQUEST;
+            case 51 -> CONTROL_IN_51_CC_STATUS_RESPONSE;
+            case 52 -> CONTROL_IN_52_CC_REMOTE_CONTROL_REQUEST;
+            case 53 -> CONTROL_IN_53_CC_REMOTE_CONTROL_RESPONSE;
+            case 55 -> CONTROL_IN_55_CC_REMOTE_CONTROL_RESPONSE_WITH_ESN;
+            case 56 -> CONTROL_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER;
+            case 57 -> CONTROL_IN_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA;
+            case 58 -> CONTROL_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR;
+            case 59 -> CONTROL_IN_59_CC_SHORT_DATA_CALL_RESPONSE;
+            case 63 -> getProprietary(message);
+            default -> UNKNOWN;
+        };
+    }
+
+    /**
+     * Utility method to look up the outbound control channel message type.
+     *
+     * @param message containing the type value to lookup
+     * @return matching entry or UNKNOWN if the value is not recognized.
+     */
+    public static NXDNMessageType getControlOutbound(CorrectedBinaryMessage message)
+    {
+        int typeValue = NXDNLayer3Message.getTypeValue(message);
+
+        return switch(typeValue)
+        {
+            case 1 -> CONTROL_OUT_01_CC_VOICE_CALL_RESPONSE;
+            case 2 -> CONTROL_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST;
+            case 3 -> CONTROL_OUT_03_CC_VOICE_CALL_CONNECTION_RESPONSE;
+            case 4 -> CONTROL_OUT_04_CC_VOICE_CALL_ASSIGNMENT;
+            case 5 -> CONTROL_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE;
+            case 9 -> CONTROL_OUT_09_CC_DATA_CALL_RESPONSE;
+            case 10 -> CONTROL_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST;
+            case 13 -> CONTROL_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE;
+            case 14 -> CONTROL_OUT_14_CC_DATA_CALL_ASSIGNMENT;
+            case 16 -> CONTROL_OUT_16_CC_IDLE;
+            case 17 -> CONTROL_OUT_17_CC_DISCONNECT;
+            case 23 -> CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION;
+            case 24 -> CONTROL_OUT_24_BC_SITE_INFORMATION;
+            case 25 -> CONTROL_OUT_25_BC_SERVICE_INFORMATION;
+            case 26 -> CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION;
+            case 27 -> CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION;
+            case 32 -> CONTROL_OUT_32_MM_REGISTRATION_RESPONSE;
+            case 34 -> CONTROL_OUT_34_MM_REGISTRATION_CLEAR_RESPONSE;
+            case 35 -> CONTROL_OUT_35_MM_REGISTRATION_COMMAND;
+            case 36 -> CONTROL_OUT_36_MM_GROUP_REGISTRATION_RESPONSE;
+            case 40 -> CONTROL_OUT_40_MM_AUTHENTICATION_INQUIRY_REQUEST;
+            case 42 -> CONTROL_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM;
+            case 48 -> CONTROL_OUT_48_CC_STATUS_INQUIRY_REQUEST;
+            case 49 -> CONTROL_OUT_49_CC_STATUS_INQUIRY_RESPONSE;
+            case 50 -> CONTROL_OUT_50_CC_STATUS_REQUEST;
+            case 51 -> CONTROL_OUT_51_CC_STATUS_RESPONSE;
+            case 52 -> CONTROL_OUT_52_CC_REMOTE_CONTROL_REQUEST;
+            case 53 -> CONTROL_OUT_53_CC_REMOTE_CONTROL_RESPONSE;
+            case 54 -> CONTROL_OUT_54_CC_REMOTE_CONTROL_REQUEST_WITH_ESN;
+            case 56 -> CONTROL_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER;
+            case 57 -> CONTROL_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA;
+            case 58 -> CONTROL_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR;
+            case 59 -> CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE;
+            case 63 -> getProprietary(message);
+            default -> UNKNOWN;
+        };
+    }
+
+    /**
+     * Utility method to look up the outbound traffic channel message type.
+     *
+     * @param message containing the type value to lookup
+     * @return matching entry or UNKNOWN if the value is not recognized.
+     */
+    public static NXDNMessageType getTrafficOutbound(CorrectedBinaryMessage message)
+    {
+        int typeValue = NXDNLayer3Message.getTypeValue(message);
+
+        return switch(typeValue)
+        {
+            case 1 -> TRAFFIC_OUT_01_CC_VOICE_CALL;
+            case 2 -> TRAFFIC_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST;
+            case 3 -> TRAFFIC_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR;
+            case 4 -> TRAFFIC_OUT_04_CC_VOICE_CALL_ASSIGNMENT;
+            case 5 -> TRAFFIC_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE;
+            case 7 -> TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION;
+            case 8 -> TRAFFIC_OUT_08_CC_TRANSMISSION_RELEASE;
+            case 9 -> TRAFFIC_OUT_09_CC_DATA_CALL_HEADER;
+            case 10 -> TRAFFIC_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST;
+            case 11 -> TRAFFIC_OUT_11_CC_DATA_CALL_BLOCK;
+            case 12 -> TRAFFIC_OUT_12_CC_DATA_CALL_ACKNOWLEDGE;
+            case 13 -> TRAFFIC_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE;
+            case 14 -> TRAFFIC_OUT_14_CC_DATA_CALL_ASSIGNMENT;
+            case 15 -> TRAFFIC_OUT_15_CC_HEADER_DELAY;
+            case 16 -> TRAFFIC_OUT_16_CC_IDLE;
+            case 17 -> TRAFFIC_OUT_17_CC_DISCONNECT;
+            case 23 -> TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION;
+            case 25 -> TRAFFIC_OUT_25_BC_SERVICE_INFORMATION;
+            case 26 -> TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION;
+            case 27 -> TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION;
+            case 28 -> TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION;
+            case 42 -> TRAFFIC_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM;
+            case 43 -> TRAFFIC_OUT_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM;
+            case 48 -> TRAFFIC_OUT_48_CC_STATUS_INQUIRY_REQUEST;
+            case 49 -> TRAFFIC_OUT_49_CC_STATUS_INQUIRY_RESPONSE;
+            case 50 -> TRAFFIC_OUT_50_CC_STATUS_REQUEST;
+            case 51 -> TRAFFIC_OUT_51_CC_STATUS_RESPONSE;
+            case 52 -> TRAFFIC_OUT_52_CC_REMOTE_CONTROL_REQUEST;
+            case 53 -> TRAFFIC_OUT_53_CC_REMOTE_CONTROL_RESPONSE;
+            case 56 -> TRAFFIC_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER;
+            case 57 -> TRAFFIC_OUT_57_CC_SHORT_DATA_CALL_BLOCK;
+            case 58 -> TRAFFIC_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR;
+            case 59 -> TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE;
+            case 63 -> getProprietary(message);
+            default -> UNKNOWN;
+        };
+    }
+
+    /**
+     * Utility method to look up the inbound traffic channel message type.
+     *
+     * @param message containing the type value to lookup
+     * @return matching entry or UNKNOWN if the value is not recognized.
+     */
+    public static NXDNMessageType getTrafficInbound(CorrectedBinaryMessage message)
+    {
+        int typeValue = NXDNLayer3Message.getTypeValue(message);
+
+        return switch(typeValue)
+        {
+            case 1 -> TRAFFIC_IN_01_CC_VOICE_CALL;
+            case 3 -> TRAFFIC_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR;
+            case 8 -> TRAFFIC_IN_08_CC_TRANSMISSION_RELEASE;
+            case 9 -> TRAFFIC_IN_09_CC_DATA_CALL_HEADER;
+            case 11 -> TRAFFIC_IN_11_CC_DATA_CALL_BLOCK;
+            case 12 -> TRAFFIC_IN_12_CC_DATA_CALL_ACKNOWLEDGE;
+            case 15 -> TRAFFIC_IN_15_CC_HEADER_DELAY;
+            case 16 -> TRAFFIC_IN_16_CC_IDLE;
+            case 17 -> TRAFFIC_IN_17_CC_DISCONNECT_REQUEST;
+            case 23 -> CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION;
+            case 42 -> TRAFFIC_IN_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM;
+            case 43 -> TRAFFIC_IN_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM;
+            case 48 -> TRAFFIC_IN_48_CC_STATUS_INQUIRY_REQUEST;
+            case 49 -> TRAFFIC_IN_49_CC_STATUS_INQUIRY_RESPONSE;
+            case 50 -> TRAFFIC_IN_50_CC_STATUS_REQUEST;
+            case 51 -> TRAFFIC_IN_51_CC_STATUS_RESPONSE;
+            case 52 -> TRAFFIC_IN_52_CC_REMOTE_CONTROL_REQUEST;
+            case 53 -> TRAFFIC_IN_53_CC_REMOTE_CONTROL_RESPONSE;
+            case 56 -> TRAFFIC_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER;
+            case 57 -> TRAFFIC_IN_57_CC_SHORT_DATA_CALL_BLOCK;
+            case 58 -> TRAFFIC_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR;
+            case 59 -> TRAFFIC_IN_59_CC_SHORT_DATA_CALL_RESPONSE;
+            case 63 -> getProprietary(message);
+            default -> UNKNOWN;
+        };
+    }
+
+    /**
+     * NXDN Type-D SCCH message type lookup
+     *
+     * @param message that is SCCH
+     * @return message type
+     */
+    public static NXDNMessageType getSCCH(CorrectedBinaryMessage message, LICH lich)
+    {
+        return switch(SCCH.getStructure(message))
+        {
+            case 0 -> Information4.getMessageType(message, lich);
+            case 1 -> Information3.getMessageType(message, lich);
+            case 2 -> lich.isOutbound() ? NXDNMessageType.SCCH_OUT_INFO_2_CALL_IN_PROGRESS_DESTINATION :
+                NXDNMessageType.SCCH_IN_INFO_2_CALL_IN_PROGRESS_DESTINATION;
+            case 3 -> Information1.getMessageType(message, lich);
+            default -> lich.isOutbound() ? NXDNMessageType.SCCH_OUT_UNKNOWN : NXDNMessageType.SCCH_IN_UNKNOWN;
+        };
+    }
+}

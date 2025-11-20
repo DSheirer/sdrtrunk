@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ import io.github.dsheirer.module.decode.ltrnet.DecodeConfigLTRNet;
 import io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
@@ -39,13 +40,14 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = DecodeConfigAM.class, name = "decodeConfigAM"),
+    @JsonSubTypes.Type(value = DecodeConfigDMR.class, name = "decodeConfigDMR"),
     @JsonSubTypes.Type(value = DecodeConfigLTRNet.class, name = "decodeConfigLTRNet"),
     @JsonSubTypes.Type(value = DecodeConfigLTRStandard.class, name = "decodeConfigLTRStandard"),
     @JsonSubTypes.Type(value = DecodeConfigMPT1327.class, name = "decodeConfigMPT1327"),
     @JsonSubTypes.Type(value = DecodeConfigNBFM.class, name = "decodeConfigNBFM"),
+    @JsonSubTypes.Type(value = DecodeConfigNXDN.class, name = "decodeConfigNXDN"),
     @JsonSubTypes.Type(value = DecodeConfigP25.class, name = "decodeConfigP25"),
-    @JsonSubTypes.Type(value = DecodeConfigPassport.class, name = "decodeConfigPassport"),
-    @JsonSubTypes.Type(value = DecodeConfigDMR.class, name = "decodeConfigDMR")
+    @JsonSubTypes.Type(value = DecodeConfigPassport.class, name = "decodeConfigPassport")
 })
 @JacksonXmlRootElement(localName = "decode_configuration")
 public abstract class DecodeConfiguration extends Configuration

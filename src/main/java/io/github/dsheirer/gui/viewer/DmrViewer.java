@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -468,6 +468,10 @@ public class DmrViewer extends VBox
             mSelectFileButton = new Button("Select ...");
             mSelectFileButton.onActionProperty().set(event -> {
                 FileChooser fileChooser = new FileChooser();
+                FileChooser.ExtensionFilter f1 = new FileChooser.ExtensionFilter("Demodulated Bitstream Recording (*.bits)", "*.bits");
+                FileChooser.ExtensionFilter f2 = new FileChooser.ExtensionFilter("All Files *.*", "*.*");
+                fileChooser.getExtensionFilters().addAll(f1, f2);
+                fileChooser.setSelectedExtensionFilter(f1);
                 fileChooser.setTitle("Select DMR .bits Recording");
                 String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
                 if(lastDirectory != null)
@@ -478,7 +482,6 @@ public class DmrViewer extends VBox
                         fileChooser.setInitialDirectory(file);
                     }
                 }
-                fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("sdrtrunk bits recording", "*.bits"));
                 File selected = fileChooser.showOpenDialog(getScene().getWindow());
 
                 if(selected != null)

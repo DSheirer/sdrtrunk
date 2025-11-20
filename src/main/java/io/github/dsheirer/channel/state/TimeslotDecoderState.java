@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.channel.state;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -89,9 +89,9 @@ public abstract class TimeslotDecoderState extends DecoderState
                     {
                         setCurrentChannel(((ChannelDescriptorConfigurationIdentifier)identifier).getValue());
                     }
-                    else if(identifier instanceof IChannelDescriptor)
+                    else if(identifier instanceof IBandChannelDescriptor)
                     {
-                        setCurrentChannel((IChannelDescriptor)identifier);
+                        setCurrentChannel((IBandChannelDescriptor)identifier);
                     }
                     else if(identifier instanceof FrequencyConfigurationIdentifier fci)
                     {

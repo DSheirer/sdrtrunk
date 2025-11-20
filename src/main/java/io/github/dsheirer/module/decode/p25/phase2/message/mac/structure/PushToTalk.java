@@ -29,6 +29,8 @@ import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25Encrypti
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
+import io.github.dsheirer.protocol.Protocol;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -120,7 +122,8 @@ public class PushToTalk extends MacStructure
     {
         if(mEncryptionKey == null)
         {
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getInt(ALGORITHM_ID), getInt(KEY_ID)));
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25,
+                    APCO25EncryptionKey.create(getInt(ALGORITHM_ID), getInt(KEY_ID)));
         }
 
         return mEncryptionKey;

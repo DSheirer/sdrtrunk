@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -421,9 +421,8 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                         mSquelchController.setSquelchLock(true);
                         break;
                     case REQUEST_CHANGE_CALL_TIMEOUT:
-                        if(event instanceof ChangeChannelTimeoutEvent)
+                        if(event instanceof ChangeChannelTimeoutEvent timeout)
                         {
-                            ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
                             mStateMachine.setFadeTimeoutBufferMilliseconds(timeout.getCallTimeoutMilliseconds());
                         }
                     case CONTINUATION:
@@ -471,7 +470,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
      * Proxy between the internal identifier collection and the external update notification listener.  This proxy
      * enables access to internal components to broadcast silent identifier update notifications externally.
      */
-    public class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
+    public static class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
     {
         private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
 

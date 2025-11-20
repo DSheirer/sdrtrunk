@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -1043,7 +1044,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      * Updates the current channel from channel grant and update messaging.
      * @param channelDescriptor to compare to the current frequency.
      */
-    private void updateCurrentChannel(IChannelDescriptor channelDescriptor)
+    private void updateCurrentChannel(IBandChannelDescriptor channelDescriptor)
     {
         if(getCurrentChannel() == null &&
                 getCurrentFrequency() > 0 &&

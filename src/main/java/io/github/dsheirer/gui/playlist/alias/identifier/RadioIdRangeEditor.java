@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@ import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
@@ -35,9 +37,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Editor for radio ID range alias identifiers
@@ -293,6 +292,10 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
                 new IntegerFormatter(0,0xFFFFFF), "Format: 0 - 16777215"));
         details.add(new RadioIdDetail(Protocol.APCO25, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFFFF),
                 new HexFormatter(0,0xFFFFFF), "Format: 0 - FFFFFF"));
+        details.add(new RadioIdDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
+                new IntegerFormatter(0,0xFFFF),"Format: 0 - 65,535"));
+        details.add(new RadioIdDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
+                new IntegerFormatter(0,0xFFFF),"Format: 0 - FFFF"));
         details.add(new RadioIdDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0x7FFFFF),
                 new IntegerFormatter(0,0x7FFFFF), "Format: 0 - 8388607"));
         details.add(new RadioIdDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0x7FFFFF),

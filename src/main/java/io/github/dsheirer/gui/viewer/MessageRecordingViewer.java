@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Utility application to load and view .bits recording file with the messages fully parsed.
  *
- * Supported Protocols: DMR, APCO25 Phase 1 and Phase 2.
+ * Supported Protocols: DMR, NXDN, and APCO25 Phase 1 and Phase 2.
  */
 public class MessageRecordingViewer extends VBox
 {
@@ -50,6 +50,7 @@ public class MessageRecordingViewer extends VBox
     private MenuBar mMenuBar;
     private TabPane mTabPane;
     private int mTabCounterDmr = 1;
+    private int mTabCounterNxdn = 1;
     private int mTabCounterP25P1 = 1;
     private int mTabCounterP25P2 = 1;
     private UserPreferences mUserPreferences = new UserPreferences();
@@ -77,6 +78,12 @@ public class MessageRecordingViewer extends VBox
                 getTabPane().getTabs().add(tab);
                 getTabPane().getSelectionModel().select(tab);
             });
+            MenuItem nxdnMenuItem = new MenuItem("NXDN");
+            nxdnMenuItem.onActionProperty().set(event -> {
+                Tab tab = new LabeledTab("NXDN-" + mTabCounterNxdn++, new NxdnViewer(mUserPreferences));
+                getTabPane().getTabs().add(tab);
+                getTabPane().getSelectionModel().select(tab);
+            });
             MenuItem p25p1MenuItem = new MenuItem("P25 Phase 1");
             p25p1MenuItem.onActionProperty().set(event -> {
                 Tab tab = new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mUserPreferences));
@@ -89,7 +96,7 @@ public class MessageRecordingViewer extends VBox
                 getTabPane().getTabs().add(tab);
                 getTabPane().getSelectionModel().select(tab);
             });
-            createNewViewerMenu.getItems().addAll(dmrMenuItem, p25p1MenuItem, p25p2MenuItem);
+            createNewViewerMenu.getItems().addAll(nxdnMenuItem, p25p1MenuItem, p25p2MenuItem);
 
             MenuItem exitMenu = new MenuItem("Exit");
             exitMenu.onActionProperty().set(event -> ((Stage)getScene().getWindow()).close());
@@ -110,6 +117,7 @@ public class MessageRecordingViewer extends VBox
             mTabPane = new TabPane();
             mTabPane.setMaxHeight(Double.MAX_VALUE);
             mTabPane.getTabs().add(new LabeledTab("DMR-" + mTabCounterDmr++, new DmrViewer()));
+            mTabPane.getTabs().add(new LabeledTab("NXDN-" + mTabCounterNxdn++, new NxdnViewer(mUserPreferences)));
             mTabPane.getTabs().add(new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mUserPreferences)));
             mTabPane.getTabs().add(new LabeledTab("P25P2-" + mTabCounterP25P2++, new P25P2Viewer()));
         }
