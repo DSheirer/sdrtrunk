@@ -25,6 +25,8 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
+import io.github.dsheirer.protocol.Protocol;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -80,7 +82,8 @@ public class EncryptionSynchronizationSequence extends P25P2Message implements I
     {
         if(mEncryptionKey == null && isValid())
         {
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getAlgorithmId(), getEncryptionKeyId()));
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25,
+                    APCO25EncryptionKey.create(getAlgorithmId(), getEncryptionKeyId()));
         }
 
         return mEncryptionKey;

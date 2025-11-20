@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.dmr.channel;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
@@ -35,7 +35,7 @@ import org.apache.commons.lang3.Validate;
  *
  * Note: timeslots are tracked as 1 and 2
  */
-public abstract class DMRChannel extends IntegerIdentifier implements IChannelDescriptor,  ITimeslotFrequencyReceiver
+public abstract class DMRChannel extends IntegerIdentifier implements IBandChannelDescriptor,  ITimeslotFrequencyReceiver
 {
     private TimeslotFrequency mTimeslotFrequency;
     private int mTimeslot;

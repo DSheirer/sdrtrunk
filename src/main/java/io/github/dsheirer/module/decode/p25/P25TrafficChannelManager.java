@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
@@ -666,9 +666,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param timestamp for the message that is being processed
      * @return
      */
-    public IChannelDescriptor processP2TrafficCurrentUser(long frequency, int timeslot, IChannelDescriptor channelDescriptor,
-                                                          ServiceOptions serviceOptions, MacOpcode macOpcode,
-                                                          IdentifierCollection ic, long timestamp, String additionalDetails, String context)
+    public IBandChannelDescriptor processP2TrafficCurrentUser(long frequency, int timeslot, IBandChannelDescriptor channelDescriptor,
+                                                              ServiceOptions serviceOptions, MacOpcode macOpcode,
+                                                              IdentifierCollection ic, long timestamp, String additionalDetails, String context)
     {
         mLock.lock();
 
@@ -816,7 +816,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      */
     public void processP1TrafficCallStart(long frequency, Identifier<?> talkgroup, Identifier<?> radio,
                                           EncryptionKeyIdentifier eki, ServiceOptions serviceOptions,
-                                          IChannelDescriptor channelDescriptor, long timestamp)
+                                          IBandChannelDescriptor channelDescriptor, long timestamp)
     {
         mLock.lock();
 
@@ -951,7 +951,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            IChannelDescriptor channelDescriptor = null;
+            IBandChannelDescriptor channelDescriptor = null;
 
             P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
@@ -1018,7 +1018,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param timestamp for the message that is being processed
      * @return channel descriptor for the event or null
      */
-    public void processP1TrafficCurrentUser(long frequency, IChannelDescriptor channelDescriptor,
+    public void processP1TrafficCurrentUser(long frequency, IBandChannelDescriptor channelDescriptor,
                                             DecodeEventType decodeEventType, ServiceOptions serviceOptions,
                                             IdentifierCollection ic, long timestamp, String additionalDetails, String context)
     {

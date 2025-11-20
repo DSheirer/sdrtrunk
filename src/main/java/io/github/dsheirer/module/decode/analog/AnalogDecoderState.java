@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.analog;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
@@ -42,7 +42,7 @@ public abstract class AnalogDecoderState extends DecoderState implements ISource
     private final static Logger mLog = LoggerFactory.getLogger(AnalogDecoderState.class);
     private Listener<SourceEvent> mSourceEventListener = new SourceEventListener();
     private DecodeEvent mDecodeEvent;
-    private IChannelDescriptor mChannelDescriptor = null;
+    private IBandChannelDescriptor mChannelDescriptor = null;
 
     public AnalogDecoderState()
     {

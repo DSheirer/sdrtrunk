@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
@@ -41,7 +41,7 @@ public class SecondaryControlChannelBroadcastExplicit extends SecondaryControlCh
     private static final IntField RECEIVE_CHANNEL_NUMBER = IntField.length12(OCTET_6_BIT_40 + 4);
     private static final IntField SYSTEM_SERVICE_CLASS = IntField.length8(OCTET_8_BIT_56);
 
-    private IChannelDescriptor mChannel;
+    private IBandChannelDescriptor mChannel;
     private SystemServiceClass mSystemServiceClass;
     private List<Identifier> mIdentifiers;
 
@@ -70,7 +70,7 @@ public class SecondaryControlChannelBroadcastExplicit extends SecondaryControlCh
         return sb.toString();
     }
 
-    public IChannelDescriptor getChannel()
+    public IBandChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -105,7 +105,7 @@ public class SecondaryControlChannelBroadcastExplicit extends SecondaryControlCh
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         return Collections.singletonList(getChannel());
     }

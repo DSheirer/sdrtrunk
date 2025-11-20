@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 package io.github.dsheirer.module.decode.event;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.preference.PreferenceType;
@@ -111,7 +111,7 @@ public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent> implem
                 case COLUMN_TO_ALIAS:
                     return event.getIdentifierCollection();
                 case COLUMN_CHANNEL:
-                    IChannelDescriptor channelDescriptor = event.getChannelDescriptor();
+                    IBandChannelDescriptor channelDescriptor = event.getChannelDescriptor();
 
                     if(channelDescriptor != null)
                     {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -283,7 +283,7 @@ public class P25TrafficChannelEventTracker
      * Updates the channel descriptor for the tracked event.
      * @param channelDescriptor to update.
      */
-    public void addChannelDescriptorIfMissing(IChannelDescriptor channelDescriptor)
+    public void addChannelDescriptorIfMissing(IBandChannelDescriptor channelDescriptor)
     {
         if(channelDescriptor != null && getEvent().getChannelDescriptor() == null)
         {

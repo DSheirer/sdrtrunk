@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.channel.state;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -38,7 +38,7 @@ public abstract class DecoderState extends AbstractDecoderState
 {
     private MutableIdentifierCollection mIdentifierCollection;
     protected Listener<IdentifierUpdateNotification> mConfigurationIdentifierListener;
-    protected IChannelDescriptor mCurrentChannel;
+    protected IBandChannelDescriptor mCurrentChannel;
     private long mCurrentFrequency;
 
     /**
@@ -114,7 +114,7 @@ public abstract class DecoderState extends AbstractDecoderState
     /**
      * Optional current channel descriptor
      */
-    protected IChannelDescriptor getCurrentChannel()
+    protected IBandChannelDescriptor getCurrentChannel()
     {
         return mCurrentChannel;
     }
@@ -122,7 +122,7 @@ public abstract class DecoderState extends AbstractDecoderState
     /**
      * Sets the current channel descriptor
      */
-    public void setCurrentChannel(IChannelDescriptor channel)
+    public void setCurrentChannel(IBandChannelDescriptor channel)
     {
         mCurrentChannel = channel;
     }

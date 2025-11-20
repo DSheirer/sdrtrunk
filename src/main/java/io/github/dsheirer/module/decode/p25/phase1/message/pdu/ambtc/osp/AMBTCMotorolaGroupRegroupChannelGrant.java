@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
@@ -52,7 +52,7 @@ public class AMBTCMotorolaGroupRegroupChannelGrant extends AMBTCMessage implemen
     private Identifier mSourceAddress;
     private Identifier mGroupAddress;
     private List<Identifier> mIdentifiers;
-    private List<IChannelDescriptor> mChannels;
+    private List<IBandChannelDescriptor> mChannels;
 
     /**
      * Constructs an instance
@@ -164,7 +164,7 @@ public class AMBTCMotorolaGroupRegroupChannelGrant extends AMBTCMessage implemen
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

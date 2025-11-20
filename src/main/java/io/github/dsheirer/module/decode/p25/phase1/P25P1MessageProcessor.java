@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.message.AbstractMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.P25FrequencyBandPreloadDataContent;
@@ -310,9 +310,9 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         {
             IFrequencyBandReceiver receiver = (IFrequencyBandReceiver)message;
 
-            List<IChannelDescriptor> channels = receiver.getChannels();
+            List<IBandChannelDescriptor> channels = receiver.getChannels();
 
-            for(IChannelDescriptor channel : channels)
+            for(IBandChannelDescriptor channel : channels)
             {
                 int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
 

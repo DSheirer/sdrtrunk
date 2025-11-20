@@ -23,7 +23,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioModule;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
@@ -129,7 +129,7 @@ public class DecoderFactory
      */
     public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
                                           UserPreferences userPreferences, TrafficChannelManager trafficChannelManager,
-                                          IChannelDescriptor channelDescriptor)
+                                          IBandChannelDescriptor channelDescriptor)
     {
         List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences,
                 trafficChannelManager, channelDescriptor);
@@ -150,7 +150,7 @@ public class DecoderFactory
      */
     public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
                                                  UserPreferences userPreferences, TrafficChannelManager trafficChannelManager,
-                                                 IChannelDescriptor channelDescriptor)
+                                                 IBandChannelDescriptor channelDescriptor)
     {
         List<Module> modules = new ArrayList<>();
 
@@ -211,7 +211,7 @@ public class DecoderFactory
      */
     private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules,
                                          AliasList aliasList, TrafficChannelManager trafficChannelManager,
-                                         IChannelDescriptor channelDescriptor)
+                                         IBandChannelDescriptor channelDescriptor)
     {
 
         modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
@@ -268,7 +268,7 @@ public class DecoderFactory
      */
     private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules,
                                          AliasList aliasList, TrafficChannelManager trafficChannelManager,
-                                         IChannelDescriptor channelDescriptor)
+                                         IBandChannelDescriptor channelDescriptor)
     {
         if(channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 p1)
         {
@@ -478,7 +478,7 @@ public class DecoderFactory
      */
     private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules,
                                    AliasList aliasList, DecodeConfigDMR decodeConfig,
-                                   TrafficChannelManager trafficChannelManager, IChannelDescriptor channelDescriptor)
+                                   TrafficChannelManager trafficChannelManager, IBandChannelDescriptor channelDescriptor)
     {
         modules.add(new DMRDecoder(decodeConfig, channel.isTrafficChannel()));
 

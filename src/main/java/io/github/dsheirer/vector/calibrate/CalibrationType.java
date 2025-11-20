@@ -48,6 +48,7 @@ public enum CalibrationType
     INTERPOLATOR("Interpolator", 1),
     MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 1),
+    NXDN_SOFT_SYNC_DETECTOR("NXDN Soft Sync Detector", 1),
     OSCILLATOR_REAL("Real Oscillator", 1),
     P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 1),
     SAMPLE_PACKED_CONVERTER("Packed Sample Converter", 1),

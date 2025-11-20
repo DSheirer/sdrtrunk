@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
@@ -50,9 +50,9 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements IFrequ
     private Identifier mLocationRegistrationArea;
     private Identifier mRfss;
     private Identifier mSite;
-    private IChannelDescriptor mChannel;
+    private IBandChannelDescriptor mChannel;
     private List<Identifier> mIdentifiers;
-    private List<IChannelDescriptor> mChannels;
+    private List<IBandChannelDescriptor> mChannels;
 
     public AMBTCAdjacentStatusBroadcast(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -120,7 +120,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements IFrequ
                 getDataBlock(0).getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
     }
 
-    public IChannelDescriptor getChannel()
+    public IBandChannelDescriptor getChannel()
     {
         if(mChannel == null && hasDataBlock(0))
         {
@@ -170,7 +170,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements IFrequ
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

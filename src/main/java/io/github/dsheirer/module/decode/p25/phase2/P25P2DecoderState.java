@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -1043,7 +1043,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      * Updates the current channel from channel grant and update messaging.
      * @param channelDescriptor to compare to the current frequency.
      */
-    private void updateCurrentChannel(IChannelDescriptor channelDescriptor)
+    private void updateCurrentChannel(IBandChannelDescriptor channelDescriptor)
     {
         if(getCurrentChannel() == null &&
                 getCurrentFrequency() > 0 &&
@@ -1074,7 +1074,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     }
 
     @Override
-    public void setCurrentChannel(IChannelDescriptor channel)
+    public void setCurrentChannel(IBandChannelDescriptor channel)
     {
         if(channel == null)
         {
@@ -1112,7 +1112,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         {
             if(mac instanceof IServiceOptionsProvider sop)
             {
-                IChannelDescriptor currentChannel = mTrafficChannelManager.processP2TrafficCurrentUser(getCurrentFrequency(),
+                IBandChannelDescriptor currentChannel = mTrafficChannelManager.processP2TrafficCurrentUser(getCurrentFrequency(),
                         getTimeslot(), getCurrentChannel(), sop.getServiceOptions(), mac.getOpcode(),
                         getIdentifierCollection().copyOf(), message.getTimestamp(), null, message.toString());
 
@@ -1762,7 +1762,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      * @param eventType of event
      * @param details to populate for the event
      */
-    private void broadcast(MacMessage message, MacStructure mac, IChannelDescriptor channel, DecodeEventType eventType,
+    private void broadcast(MacMessage message, MacStructure mac, IBandChannelDescriptor channel, DecodeEventType eventType,
                            String details)
     {
         MutableIdentifierCollection mic = getUpdatedMutableIdentifierCollection(mac);

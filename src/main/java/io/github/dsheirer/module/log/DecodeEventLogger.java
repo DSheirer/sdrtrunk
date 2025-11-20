@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ package io.github.dsheirer.module.log;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -134,7 +134,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
             cells.add("");
         }
 
-        IChannelDescriptor descriptor = event.getChannelDescriptor();
+        IBandChannelDescriptor descriptor = event.getChannelDescriptor();
         cells.add(descriptor != null ? descriptor : "");
 
         if(descriptor != null)

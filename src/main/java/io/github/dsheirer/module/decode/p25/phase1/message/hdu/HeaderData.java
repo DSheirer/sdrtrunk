@@ -27,6 +27,8 @@ import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25Encrypti
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
+import io.github.dsheirer.protocol.Protocol;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,7 +132,7 @@ public class HeaderData
     {
         if(mEncryptionKey == null)
         {
-            mEncryptionKey = EncryptionKeyIdentifier.create(APCO25EncryptionKey.create(getMessage().getInt(ALGORITHM_ID),
+            mEncryptionKey = EncryptionKeyIdentifier.create(Protocol.APCO25, APCO25EncryptionKey.create(getMessage().getInt(ALGORITHM_ID),
                 getMessage().getInt(KEY_ID)));
         }
 

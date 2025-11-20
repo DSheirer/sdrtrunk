@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -77,7 +77,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
         protected long mDuration;
         protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
-        protected IChannelDescriptor mChannelDescriptor;
+        protected IBandChannelDescriptor mChannelDescriptor;
         protected String mDetails;
         private ServiceOptions mServiceOptions;
         private int mTimeslot = -1;
@@ -118,7 +118,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
          * Sets the channel descriptor for this event
          * @param channelDescriptor
          */
-        public P25ChannelGrantDecodeEventBuilder channelDescriptor(IChannelDescriptor channelDescriptor)
+        public P25ChannelGrantDecodeEventBuilder channelDescriptor(IBandChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
             return this;

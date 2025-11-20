@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
 
 package io.github.dsheirer.module.decode.p25.identifier.channel;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.Objects;
 
-public class P25Channel implements IChannelDescriptor
+public class P25Channel implements IBandChannelDescriptor
 {
     private IFrequencyBand mFrequencyBand;
     private int mBandIdentifier;

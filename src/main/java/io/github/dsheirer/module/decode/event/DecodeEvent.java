@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.module.decode.event;
 
 import com.google.common.base.Joiner;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.protocol.Protocol;
 
@@ -34,7 +34,7 @@ public class DecodeEvent implements IDecodeEvent
     private long mTimeEnd;
     private DecodeEventType mDecodeEventType;
     private IdentifierCollection mIdentifierCollection;
-    private IChannelDescriptor mChannelDescriptor;
+    private IBandChannelDescriptor mChannelDescriptor;
     private String mDetails;
     private Protocol mProtocol;
     private int mTimeslot = -1;
@@ -174,7 +174,7 @@ public class DecodeEvent implements IDecodeEvent
      * Channel descriptor for the channel
      */
     @Override
-    public IChannelDescriptor getChannelDescriptor()
+    public IBandChannelDescriptor getChannelDescriptor()
     {
         return mChannelDescriptor;
     }
@@ -182,7 +182,7 @@ public class DecodeEvent implements IDecodeEvent
     /**
      * Sets the channel descriptor for the event
      */
-    public void setChannelDescriptor(IChannelDescriptor channelDescriptor)
+    public void setChannelDescriptor(IBandChannelDescriptor channelDescriptor)
     {
         mChannelDescriptor = channelDescriptor;
     }
@@ -274,7 +274,7 @@ public class DecodeEvent implements IDecodeEvent
         protected long mDuration;
         protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
-        protected IChannelDescriptor mChannelDescriptor;
+        protected IBandChannelDescriptor mChannelDescriptor;
         protected String mDetails;
         protected Protocol mProtocol = Protocol.UNKNOWN;
         protected int mTimeslot = -1;
@@ -312,7 +312,7 @@ public class DecodeEvent implements IDecodeEvent
          * Sets the channel descriptor for this event
          * @param channelDescriptor
          */
-        public DecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
+        public DecodeEventBuilder channel(IBandChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
             return this;

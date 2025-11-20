@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.event;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.protocol.Protocol;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
@@ -114,7 +114,7 @@ public class PlottableDecodeEvent extends DecodeEvent
         private long mDuration;
         private DecodeEventType mDecodeEventType;
         private IdentifierCollection mIdentifierCollection;
-        private IChannelDescriptor mChannelDescriptor;
+        private IBandChannelDescriptor mChannelDescriptor;
         private String mDetails;
         private Protocol mProtocol = Protocol.UNKNOWN;
         private GeoPosition mGeoPosition;
@@ -154,7 +154,7 @@ public class PlottableDecodeEvent extends DecodeEvent
          * Sets the channel descriptor for this event
          * @param channelDescriptor
          */
-        public PlottableDecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
+        public PlottableDecodeEventBuilder channel(IBandChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
             return this;

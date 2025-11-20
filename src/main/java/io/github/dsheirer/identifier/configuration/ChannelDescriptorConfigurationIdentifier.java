@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.identifier.configuration;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -31,12 +30,12 @@ import io.github.dsheirer.protocol.Protocol;
  * Configuration identifier that identifies a channel descriptor.   This is primarily used to broadcast the channel
  * descriptor for a traffic channel so that it is aware of what channel number and frequency it is decoding.
  */
-public class ChannelDescriptorConfigurationIdentifier extends Identifier<IChannelDescriptor>
+public class ChannelDescriptorConfigurationIdentifier extends Identifier<IBandChannelDescriptor>
 {
     /**
      * Constructs a channel descriptor configuration identifier
      */
-    public ChannelDescriptorConfigurationIdentifier(IChannelDescriptor value)
+    public ChannelDescriptorConfigurationIdentifier(IBandChannelDescriptor value)
     {
         super(value, IdentifierClass.CONFIGURATION, Form.CHANNEL_DESCRIPTOR, Role.ANY);
     }

@@ -998,6 +998,18 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Returns the long field formatted as a hex value using zero prefixes to pad the hex character count to fully
+     * represent the size (width) of the field.
+     * @param field to parse as hex
+     * @return hex value.
+     */
+    public String getHex(LongField field)
+    {
+        int width = Math.ceilDiv(field.width(), 4);
+        return String.format("%0" + width + "X", getLong(field));
+    }
+
+    /**
      * Format the byte value that starts at the specified index as hexadecimal.  If the length of the message is less
      * than the start index plus 7 bits, then the value represents those bits as high-order bits with zero padding in
      * the least significant bits to make up the 8 bit value.
@@ -1315,37 +1327,15 @@ public class BinaryMessage extends BitSet
             throw new IllegalArgumentException("Message must contain only 0-9 and A-F hexadecimal characters");
         }
 
-        int length = hex.length() / 2;
+        BinaryMessage message = new BinaryMessage(hex.length() * 4);
 
-        if(length * 2 < hex.length())
+        for(int x = 0; x < hex.length(); x++)
         {
-            length++;
+            String rawHex = hex.substring(x, x + 1);
+            message.setInt(Integer.parseInt(rawHex, 16), IntField.length4(x * 4));
         }
 
-        BinaryMessage buffer = new BinaryMessage(length * 8);
-
-        int bufferOffset = 0;
-        for(int x = 0; x < hex.length(); x += 2)
-        {
-            int endIndex = x + 2;
-            if(endIndex > hex.length())
-            {
-                endIndex--;
-            }
-
-            String rawHex = hex.substring(x, endIndex);
-
-            if(rawHex.length() == 1)
-            {
-                rawHex = rawHex + "0";
-            }
-
-            int value = Integer.parseInt(rawHex, 16);
-            buffer.setByte(bufferOffset, (byte)(value & 0xFF));
-            bufferOffset += 8;
-        }
-
-        return buffer;
+        return message;
     }
 
     /**
