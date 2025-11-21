@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.settings.MapViewSetting;
 import io.github.dsheirer.settings.SettingsManager;
+import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.OSMTileFactoryInfo;
@@ -49,9 +52,6 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.TableModelEvent;
-import java.awt.EventQueue;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Swing map panel.
@@ -218,19 +218,19 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         if(mTrackHistoryTable == null)
         {
             mTrackHistoryTable = new JTable(mTrackHistoryModel);
-//            mTrackHistoryTable.getSelectionModel().addListSelectionListener(e ->
-//            {
-//                if(getCenterOnSelectedCheckBox().isSelected())
-//                {
-//                    int modelIndex = getTrackHistoryTable().convertRowIndexToModel(getTrackHistoryTable().getSelectedRow());
-//                    TimestampedGeoPosition geo = mTrackHistoryModel.get(modelIndex);
-//
-//                    if(geo != null)
-//                    {
-//                        mMapViewer.setCenterPosition(geo);
-//                    }
-//                }
-//            });
+            mTrackHistoryTable.getSelectionModel().addListSelectionListener(e ->
+            {
+                if(getCenterOnSelectedCheckBox().isSelected())
+                {
+                    int modelIndex = getTrackHistoryTable().convertRowIndexToModel(getTrackHistoryTable().getSelectedRow());
+                    TimestampedGeoPosition geo = mTrackHistoryModel.get(modelIndex);
+
+                    if(geo != null)
+                    {
+                        mMapViewer.setCenterPosition(geo);
+                    }
+                }
+            });
         }
 
         return mTrackHistoryTable;

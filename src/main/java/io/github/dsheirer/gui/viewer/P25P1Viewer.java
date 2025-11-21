@@ -170,6 +170,7 @@ public class P25P1Viewer extends VBox
 
                 Broadcaster<IMessage> messageBroadcaster = new Broadcaster<>();
                 messageFramer.setListener(messageBroadcaster);
+                messageFramer.start();
                 messageBroadcaster.addListener(messageProcessor);
 
                 Channel empty = new Channel("Empty");
