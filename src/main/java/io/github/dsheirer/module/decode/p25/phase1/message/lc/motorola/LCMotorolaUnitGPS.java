@@ -19,8 +19,9 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.FragmentedIntField;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.identifier.P25Location;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
@@ -35,10 +36,11 @@ public class LCMotorolaUnitGPS extends LinkControlWord
 {
     private static final double LATITUDE_MULTIPLIER = 90.0 / 0x7FFFFF;
     private static final double LONGITUDE_MULTIPLIER = 180.0 / 0x7FFFFF;
-    private static final FragmentedIntField LATITUDE_TWOS_COMPLEMENT = FragmentedIntField.of(24, 25, 26, 27, 28,
-            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47);
-    private static final FragmentedIntField LONGITUDE_TWOS_COMPLEMENT = FragmentedIntField.of(48, 49, 50, 51,
-            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71);
+
+    private static final int LATITUDE_SIGN = 24;
+    private static final IntField LATITUDE = IntField.range(25, 47);
+    private static final int LONGITUDE_SIGN = 48;
+    private static final IntField LONGITUDE = IntField.range(49, 71);
     private P25Location mLocation;
     private GeoPosition mGeoPosition;
     private List<Identifier> mIdentifiers;
@@ -57,6 +59,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
     {
         StringBuilder sb = new StringBuilder();
         sb.append("MOTOROLA UNIT GPS LOCATION: ").append(getLatitude()).append(" ").append(getLongitude());
+        sb.append(" MSG:").append(getMessage());
         return sb.toString();
     }
 
@@ -94,7 +97,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
      */
     public double getLatitude()
     {
-        return parse24BitInteger(getInt(LATITUDE_TWOS_COMPLEMENT)) * LATITUDE_MULTIPLIER;
+        return getInt(LATITUDE) * LATITUDE_MULTIPLIER * (getMessage().get(LATITUDE_SIGN) ? -1 : 1);
     }
 
     /**
@@ -103,7 +106,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
      */
     public double getLongitude()
     {
-        return parse24BitInteger(getInt(LONGITUDE_TWOS_COMPLEMENT)) * LONGITUDE_MULTIPLIER;
+        return getInt(LONGITUDE) * LONGITUDE_MULTIPLIER + (getMessage().get(LONGITUDE_SIGN) ? -180 : 0);
     }
 
     /**
@@ -121,19 +124,15 @@ public class LCMotorolaUnitGPS extends LinkControlWord
         return mIdentifiers;
     }
 
-    /**
-     * Parses a 24-bit two-complement number to a signed integer.
-     * @param value with 24 bits
-     * @return signed integer value.
-     */
-    public static int parse24BitInteger(int value)
+    static void main()
     {
-        //If high-order bit is set, perform sign extension setting the 8x high order bits as a signed 32-bit integer
-        if((value & 0x800000) == 0x800000)
-        {
-            value |= 0xFF000000;
-        }
+        BinaryMessage mick = BinaryMessage.load("000001101001000000000000101100011010110101010011011000101001000001000010");
+        BinaryMessage newj = BinaryMessage.load("000001101001000000000000001110010000011010111110110010110011100011000010");
 
-        return value;
+        LCMotorolaUnitGPS motoMick = new LCMotorolaUnitGPS(new CorrectedBinaryMessage(mick));
+        LCMotorolaUnitGPS motoNewJ = new LCMotorolaUnitGPS(new CorrectedBinaryMessage(newj));
+
+        System.out.println("MICK: " + motoMick);
+        System.out.println("NEWJ: " + motoNewJ);
     }
 }
