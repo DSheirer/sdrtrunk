@@ -152,10 +152,6 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
         {
             process((LDU1Message)lduMessage);
         }
-        else if(lduMessage instanceof LDU2Message)
-        {
-            process((LDU2Message)lduMessage);
-        }
 
         List<byte[]> voiceFrames = lduMessage.getIMBEFrames();
 
@@ -170,6 +166,10 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
             baseTimestamp += 20;
         }
 
+        if(lduMessage instanceof LDU2Message)
+        {
+            process((LDU2Message)lduMessage);
+        }
     }
 
     private void process(LinkControlWord lcw)
