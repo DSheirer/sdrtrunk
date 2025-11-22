@@ -1212,7 +1212,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                         if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
                         {
-                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
+                            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),radio, updated);
                         }
                     }
                     else
@@ -1245,7 +1245,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                         if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
                         {
-                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
+                            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),radio, updated);
                         }
                     }
                     else

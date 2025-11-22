@@ -320,7 +320,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         }
         else if(iMessage instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
         {
-            mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
+            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),tac.getRadio(), tac.getAlias());
             mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), tac.getAlias(), tac.getTimestamp(), tac.toString());
         }
         else if(iMessage instanceof LCHarrisTalkerAliasComplete talkerAlias)
@@ -343,7 +343,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
         if(identifier instanceof RadioIdentifier radioIdentifier)
         {
-            mTrafficChannelManager.getTalkerAliasManager().update(radioIdentifier, talkerAlias.getTalkerAlias());
+            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),radioIdentifier, talkerAlias.getTalkerAlias());
         }
 
         mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), talkerAlias.getTalkerAlias(), talkerAlias.getTimestamp(), talkerAlias.toString());
