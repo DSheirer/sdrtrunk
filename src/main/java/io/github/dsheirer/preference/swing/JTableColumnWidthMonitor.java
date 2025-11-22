@@ -25,6 +25,7 @@ import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.EventQueue;
 import javax.swing.JTable;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
@@ -60,7 +61,12 @@ public class JTableColumnWidthMonitor
         mTable = table;
         mKey = key;
 
-        restoreColumnWidths();
+        mTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+
+        // Wait until the UI is realized to set preferred column widths
+        EventQueue.invokeLater(this::restoreColumnWidths);
+
+        // Keep listening for drag-resizes so you can re-save new widths
         mTable.getColumnModel().addColumnModelListener(mColumnResizeListener);
     }
 
