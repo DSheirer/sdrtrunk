@@ -354,11 +354,11 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         //Only respond if this is a standard/control channel (not a traffic channel).
         if(mChannel.isStandardChannel() && getCurrentFrequency() > 0 &&
-            restChannel.getDownlinkFrequency() > 0 &&
-            restChannel.getDownlinkFrequency() != getCurrentFrequency() && hasTrafficChannelManager())
+                restChannel.getDownlinkFrequency() > 0 &&
+                restChannel.getDownlinkFrequency() != getCurrentFrequency() && hasTrafficChannelManager())
         {
             mTrafficChannelManager.convertToTrafficChannel(mChannel, getCurrentFrequency(), restChannel,
-                mNetworkConfigurationMonitor);
+                    mNetworkConfigurationMonitor);
         }
     }
 
@@ -770,7 +770,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                                 ServiceRadioCheck src = (ServiceRadioCheck)csbk;
                                 broadcast(getDecodeEvent(csbk, DecodeEventType.RADIO_CHECK,
                                         src.getServiceDescription() + " SERVICE FOR " +
-                                        (src.isTalkgroupTarget() ? "TALKGROUP" : "RADIO")));
+                                                (src.isTalkgroupTarget() ? "TALKGROUP" : "RADIO")));
                             }
                             break;
                     }
@@ -902,7 +902,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         IdentifierCollection mergedIdentifiers = getMergedIdentifierCollection(csbk.getIdentifiers());
                         mTrafficChannelManager.processChannelGrant(channel, mergedIdentifiers, csbk.getOpcode(),
-                            csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     else
                     {
@@ -1027,7 +1027,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         IdentifierCollection mergedIdentifiers = getMergedIdentifierCollection(csbk.getIdentifiers());
                         mTrafficChannelManager.processChannelGrant(channel, mergedIdentifiers, csbk.getOpcode(),
-                            csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     else
                     {
@@ -1039,21 +1039,21 @@ public class DMRDecoderState extends TimeslotDecoderState
                 break;
             case MOTOROLA_CONPLUS_REGISTRATION_REQUEST:
                 DecodeEvent event = DMRDecodeEvent.builder(DecodeEventType.REQUEST, csbk.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .details("Registration Request")
-                    .identifiers(new IdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(getTimeslot())
-                    .build();
+                        .channel(getCurrentChannel())
+                        .details("Registration Request")
+                        .identifiers(new IdentifierCollection(csbk.getIdentifiers()))
+                        .timeslot(getTimeslot())
+                        .build();
                 broadcast(event);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_REGISTRATION_RESPONSE:
                 DecodeEvent regRespEvent = DMRDecodeEvent.builder(DecodeEventType.RESPONSE, csbk.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .details("Registration Response")
-                    .identifiers(new IdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(getTimeslot())
-                    .build();
+                        .channel(getCurrentChannel())
+                        .details("Registration Response")
+                        .identifiers(new IdentifierCollection(csbk.getIdentifiers()))
+                        .timeslot(getTimeslot())
+                        .build();
                 broadcast(regRespEvent);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
@@ -1066,7 +1066,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         IdentifierCollection mergedIdentifiers = getMergedIdentifierCollection(csbk.getIdentifiers());
                         mTrafficChannelManager.processChannelGrant(channel, mergedIdentifiers, csbk.getOpcode(),
-                            csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     else
                     {
@@ -1078,11 +1078,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 break;
             case MOTOROLA_CONPLUS_TALKGROUP_AFFILIATION:
                 DecodeEvent affiliateEvent = DMRDecodeEvent.builder(DecodeEventType.AFFILIATE, csbk.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .details("TALKGROUP AFFILIATION")
-                    .identifiers(new IdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(getTimeslot())
-                    .build();
+                        .channel(getCurrentChannel())
+                        .details("TALKGROUP AFFILIATION")
+                        .identifiers(new IdentifierCollection(csbk.getIdentifiers()))
+                        .timeslot(getTimeslot())
+                        .build();
                 broadcast(affiliateEvent);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
@@ -1171,7 +1171,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = cpgvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -1212,7 +1212,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                         if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
                         {
-                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
+                            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),radio, updated);
                         }
                     }
                     else
@@ -1245,7 +1245,7 @@ public class DMRDecoderState extends TimeslotDecoderState
 
                         if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
                         {
-                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
+                            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),radio, updated);
                         }
                     }
                     else
@@ -1296,7 +1296,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = hgvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
 
                     }
                 }
@@ -1321,7 +1321,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = huuvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
-                            DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -1339,7 +1339,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = gvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -1359,7 +1359,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = uuvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
-                            DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -1442,11 +1442,11 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(mCurrentCallEvent == null)
         {
             mCurrentCallEvent = DMRDecodeEvent.builder(type, timestamp)
-                .channel(getCurrentChannel())
-                .details(details)
-                .identifiers(getIdentifierCollection().copyOf())
-                .timeslot(getTimeslot())
-                .build();
+                    .channel(getCurrentChannel())
+                    .details(details)
+                    .identifiers(getIdentifierCollection().copyOf())
+                    .timeslot(getTimeslot())
+                    .build();
         }
         else
         {
