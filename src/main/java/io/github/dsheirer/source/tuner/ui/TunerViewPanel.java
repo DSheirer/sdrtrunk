@@ -214,6 +214,13 @@ public class TunerViewPanel extends JPanel
         if(mAddRecordingButton == null)
         {
             mAddRecordingButton = new JButton("Add Recording Tuner");
+            mAddRecordingButton.setOpaque(true);
+            mAddRecordingButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mAddRecordingButton.setBackground(new java.awt.Color(43, 43, 43));
+                mAddRecordingButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mAddRecordingButton.addActionListener(e ->
             {
                 AddRecordingTunerDialog dialog = new AddRecordingTunerDialog(mUserPreferences, mDiscoveredTunerModel,

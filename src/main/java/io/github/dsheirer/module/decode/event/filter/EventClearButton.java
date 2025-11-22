@@ -73,6 +73,8 @@ public class EventClearButton extends JideSplitButton
         private JSlider initializeHistorySlider()
         {
             final JSlider slider = new JSlider();
+            slider.setOpaque(true);
+            // Dark mode colors will be applied by UIManager if enabled
             slider.setMinimum(0);
             slider.setMaximum(2000);
             slider.setMajorTickSpacing(500);
