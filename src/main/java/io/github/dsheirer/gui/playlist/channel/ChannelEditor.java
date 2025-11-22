@@ -440,7 +440,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             TableColumn<Channel,Boolean> autoStartColumn = new TableColumn<>("Auto-Start");
             autoStartColumn.setCellValueFactory(new PropertyValueFactory<>("autoStart"));
-            autoStartColumn.setPrefWidth(95);
+            autoStartColumn.setPrefWidth(85);
             autoStartColumn.setCellFactory(param -> {
                 TableCell<Channel,Boolean> tableCell = new TableCell<>()
                 {
@@ -476,7 +476,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             TableColumn nameColumn = new TableColumn("Name");
             nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-            nameColumn.setPrefWidth(200);
+            nameColumn.setPrefWidth(175);
 
             TableColumn frequencyColumn = new TableColumn("Frequency");
             frequencyColumn.setCellValueFactory(new FrequencyCellValueFactory());
@@ -486,8 +486,12 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
             protocolColumn.setCellValueFactory(new ProtocolCellValueFactory());
             protocolColumn.setPrefWidth(100);
 
+            TableColumn aliaslistColumn = new TableColumn("Alias List");
+            aliaslistColumn.setCellValueFactory(new AliasListCellValueFactory());
+            aliaslistColumn.setPrefWidth(150);
+
             mChannelTableView.getColumns().addAll(systemColumn, siteColumn, nameColumn, frequencyColumn, protocolColumn,
-                playingColumn, autoStartColumn);
+                playingColumn, autoStartColumn, aliaslistColumn);
             mChannelTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
@@ -710,6 +714,33 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             return mFrequency;
         }
+    }
+    /**
+     * Alias List value factory                     @@@@@@@@@@@@@@@@@@@@@@@   My Add Alias List
+     */
+    public class AliasListCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
+            ObservableValue<String>>
+    {
+
+        private SimpleStringProperty mAliasList = new SimpleStringProperty();
+
+        @Override
+        public ObservableValue<String> call(TableColumn.CellDataFeatures<Channel, String> param)
+        {
+            Channel alist = param.getValue();
+
+            if(alist != null)
+            {
+                mAliasList.set(alist.getAliasListName().toString());
+            }
+            else
+            {
+                mAliasList.set(null);
+            }
+
+            return mAliasList;
+        }
+
     }
 
     /**
