@@ -17,25 +17,47 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.message;
+package io.github.dsheirer.module.decode.nxdn.type;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Factory for creating NXDN messages
+ * Error flags for transmitted data blocks.
  */
-public class NXDNMessageFactory
+public class ErrorBlockFlags
 {
-    public static NXDNMessage getTCOutbound(NXDNMessageType type, CorrectedBinaryMessage message, long timestamp)
+    private final int mFlags;
+
+    /**
+     * Constructs an instance
+     * @param flags in a 16-bit field where MSB = block 15 and LSB = block 1.
+     */
+    public ErrorBlockFlags(int flags)
     {
-        return switch (type)
+        mFlags = flags;
+    }
+
+    @Override
+    public String toString()
+    {
+        if(mFlags == 0)
         {
-            case TC_VOICE_CALL -> new VoiceCall(message, timestamp);
-            case TC_VOICE_CALL_INITIALIZATION_VECTOR -> new VoiceCallInitializationVector(message, timestamp);
-            case TC_DATA_CALL_HEADER -> new DataCallHeader(message, timestamp);
-            case TC_DATA_CALL_BLOCK -> new DataCallBlock(message, timestamp);
-            case TC_DATA_CALL_ACKNOWLEDGE -> new DataCallAcknowledge(message, timestamp);
-            default -> null;
-        };
+            return "NO ERRORS";
+        }
+        else
+        {
+            List<Integer> errorBlocks = new ArrayList<>();
+
+            for(int x = 0; x < 16; x++)
+            {
+                if((mFlags & x) == x)
+                {
+                    errorBlocks.add(x);
+                }
+            }
+
+            return "ERROR BLOCKS " + errorBlocks;
+        }
     }
 }
