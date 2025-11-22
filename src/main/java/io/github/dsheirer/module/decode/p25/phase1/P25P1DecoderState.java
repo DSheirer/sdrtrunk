@@ -320,7 +320,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         }
         else if(iMessage instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
         {
-            mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
+            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),tac.getRadio(), tac.getAlias());
             mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), tac.getAlias(), tac.getTimestamp(), tac.toString());
         }
         else if(iMessage instanceof LCHarrisTalkerAliasComplete talkerAlias)
@@ -343,7 +343,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
         if(identifier instanceof RadioIdentifier radioIdentifier)
         {
-            mTrafficChannelManager.getTalkerAliasManager().update(radioIdentifier, talkerAlias.getTalkerAlias());
+            mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),radioIdentifier, talkerAlias.getTalkerAlias());
         }
 
         mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), talkerAlias.getTalkerAlias(), talkerAlias.getTimestamp(), talkerAlias.toString());
@@ -1207,7 +1207,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     processTSBKChannelGrantUpdate(tsbk);
                     break;
 
-                    //Network Configuration Messages
+                //Network Configuration Messages
                 case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
                 case MOTOROLA_OSP_SYSTEM_LOADING:
                 case MOTOROLA_OSP_BASE_STATION_ID:
@@ -1450,7 +1450,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     if(tsbk instanceof CancelServiceRequest csr)
                     {
                         broadcastEvent(tsbk, DecodeEventType.REQUEST, "CANCEL SERVICE:" + csr.getServiceType() +
-                            " REASON:" + csr.getCancelReason() + (csr.hasAdditionalInformation() ? " INFO:" +
+                                " REASON:" + csr.getCancelReason() + (csr.hasAdditionalInformation() ? " INFO:" +
                                 csr.getAdditionalInformation() : ""));
                     }
                     break;
@@ -1473,7 +1473,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     if(tsbk instanceof GroupAffiliationQueryResponse gaqr)
                     {
                         broadcastEvent(tsbk, DecodeEventType.RESPONSE, "AFFILIATION - GROUP:" +
-                            gaqr.getGroupAddress() + " ANNOUNCEMENT GROUP:" + gaqr.getAnnouncementGroupAddress());
+                                gaqr.getGroupAddress() + " ANNOUNCEMENT GROUP:" + gaqr.getAnnouncementGroupAddress());
                     }
                     break;
                 case ISP_UNIT_DE_REGISTRATION_REQUEST:
@@ -1484,14 +1484,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     if(tsbk instanceof UnitRegistrationRequest urr)
                     {
                         broadcastEvent(tsbk, DecodeEventType.REGISTER, (urr.isEmergency() ? "EMERGENCY " : "") +
-                            "UNIT REGISTRATION REQUEST - CAPABILITY:" + urr.getCapability());
+                                "UNIT REGISTRATION REQUEST - CAPABILITY:" + urr.getCapability());
                     }
                     break;
                 case ISP_LOCATION_REGISTRATION_REQUEST:
                     if(tsbk instanceof LocationRegistrationRequest lrr)
                     {
                         broadcastEvent(tsbk, DecodeEventType.REGISTER, (lrr.isEmergency() ? "EMERGENCY " : "") +
-                            "LOCATION REGISTRATION REQUEST - CAPABILITY:" + lrr.getCapability());
+                                "LOCATION REGISTRATION REQUEST - CAPABILITY:" + lrr.getCapability());
                     }
                     break;
                 case ISP_PROTECTION_PARAMETER_REQUEST:
@@ -1605,9 +1605,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof SNDCPReconnectRequest srr)
         {
             broadcastEvent(tsbk, DecodeEventType.REQUEST,
- 		"SNDCP RECONNECT " + (srr.hasDataToSend() ? "- DATA TO SEND " : "")
-                    + srr.getDataServiceOptions())
-;
+                    "SNDCP RECONNECT " + (srr.hasDataToSend() ? "- DATA TO SEND " : "")
+                            + srr.getDataServiceOptions())
+            ;
         }
     }
 
@@ -1616,7 +1616,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof SNDCPDataPageResponse sdpr)
         {
             broadcastEvent(tsbk, DecodeEventType.RESPONSE,
- 		sdpr.getAnswerResponse() + " SNDCP DATA " + sdpr.getDataServiceOptions());
+                    sdpr.getAnswerResponse() + " SNDCP DATA " + sdpr.getDataServiceOptions());
         }
     }
 
@@ -1625,7 +1625,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof TelephoneInterconnectAnswerResponse tiar)
         {
             broadcastEvent(tsbk, DecodeEventType.RESPONSE,
- 		tiar.getAnswerResponse() + " TELEPHONE INTERCONNECT " + tiar.getServiceOptions());
+                    tiar.getAnswerResponse() + " TELEPHONE INTERCONNECT " + tiar.getServiceOptions());
         }
     }
 
@@ -1634,7 +1634,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof UnitToUnitVoiceServiceAnswerResponse uuvsar)
         {
             broadcastEvent(tsbk, DecodeEventType.RESPONSE,
- 		uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getServiceOptions());
+                    uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getServiceOptions());
         }
     }
 
@@ -1652,7 +1652,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof LocationRegistrationResponse lrr)
         {
             broadcastEvent(tsbk, DecodeEventType.REGISTER,
- 		lrr.getResponse() + " LOCATION REGISTRATION - GROUP:" + lrr.getGroupAddress());
+                    lrr.getResponse() + " LOCATION REGISTRATION - GROUP:" + lrr.getGroupAddress());
         }
     }
 
@@ -1672,8 +1672,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(tsbk instanceof DenyResponse dr)
         {
             broadcastEvent(tsbk, DecodeEventType.RESPONSE,
- 		"DENY: " + dr.getDeniedServiceType().getDescription() +
-                    " REASON: " + dr.getDenyReason() + " - INFO: " + dr.getAdditionalInfo());
+                    "DENY: " + dr.getDeniedServiceType().getDescription() +
+                            " REASON: " + dr.getDenyReason() + " - INFO: " + dr.getAdditionalInfo());
         }
         else if(tsbk instanceof MotorolaDenyResponse mdr)
         {
