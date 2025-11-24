@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 {
     private static final Logger mLog = LoggerFactory.getLogger(IcecastHTTPAudioBroadcaster.class);
+    private static final long CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS = 5000; // 5 seconds
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
     private static final String HTTP_1_0_OK_HEX_DUMP = "48 54 54 50 2F 31 2E 30 20 32 30 30 20 4F 4B";
 
@@ -61,6 +62,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
+	private AtomicBoolean mConnectionFailureLogged = new AtomicBoolean(false);
 
     /**
      * Creates an Icecast 2.4.x compatible broadcaster using HTTP 1.1 protocol.  This broadcaster is
@@ -141,7 +143,8 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
             if(mSocketConnector == null)
             {
                 mSocketConnector = new NioSocketConnector();
-                mSocketConnector.setConnectTimeoutCheckInterval(10000);
+                mSocketConnector.setConnectTimeoutMillis(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS);
+                mSocketConnector.setConnectTimeoutCheckInterval(1000);
 
 //                LoggingFilter loggingFilter = new LoggingFilter(IcecastHTTPAudioBroadcaster.class);
 //                loggingFilter.setMessageReceivedLogLevel(LogLevel.DEBUG);
@@ -160,37 +163,58 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 {
                     setBroadcastState(BroadcastState.CONNECTING);
 
-                    try
-                    {
+                    try {
                         ConnectFuture future = mSocketConnector
                             .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
                                 getBroadcastConfiguration().getPort()));
-                        future.awaitUninterruptibly();
-                        mStreamingSession = future.getSession();
-                    }
-                    catch(RuntimeIoException rie)
-                    {
+
+                        boolean connected;
+                        try {
+                            connected = future.await(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+							if (mConnectionFailureLogged.compareAndSet(false, true)) {
+								mLog.debug("HTTP connect attempt interrupted");
+							}
+                            setBroadcastState(BroadcastState.DISCONNECTED);
+                            mLastConnectionAttempt = System.currentTimeMillis();
+                            future.cancel();
+                            disconnect();
+                            return;
+                        }
+
+                        if (connected && future.isConnected()) {
+                            mStreamingSession = future.getSession();
+                            mConnecting.set(false);
+							mConnectionFailureLogged.set(false);
+                            return;
+                        } else {
+							if (mConnectionFailureLogged.compareAndSet(false, true)) {
+								mLog.debug("HTTP connect attempt timed out ({} ms) or not connected",
+										   CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS);
+							}
+                            setBroadcastState(BroadcastState.DISCONNECTED);
+                            mLastConnectionAttempt = System.currentTimeMillis();
+                            future.cancel();
+                            disconnect();
+                        }
+                    } catch (RuntimeIoException rie) {
                         Throwable throwableCause = rie.getCause();
-
-                        if(throwableCause instanceof ConnectException)
-                        {
-                            setBroadcastState(BroadcastState.NO_SERVER);
-                        }
-                        else if(throwableCause != null)
-                        {
-                            setBroadcastState(BroadcastState.DISCONNECTED);
-                            mLog.debug("Failed to connect", rie);
-                        }
-                        else
-                        {
-                            setBroadcastState(BroadcastState.DISCONNECTED);
-                            mLog.debug("Failed to connect - no exception is available");
-                        }
-
+                        setBroadcastState(BroadcastState.DISCONNECTED);
+						if (mConnectionFailureLogged.compareAndSet(false, true)) {
+							if (throwableCause != null) {
+								mLog.debug("Failed to connect", rie);
+							} else {
+								mLog.debug("Failed to connect - no exception is available");
+							}
+						}
+                        mLastConnectionAttempt = System.currentTimeMillis();
                         disconnect();
+                    } finally {
+                        if (!connected()) {
+                            mConnecting.set(false);
+                        }
                     }
-
-                    mConnecting.set(false);
                 }
             };
 
@@ -209,6 +233,11 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         if(mStreamingSession != null)
         {
             mStreamingSession.closeNow();
+        }
+        
+        mLastConnectionAttempt = System.currentTimeMillis();
+        if(!getBroadcastState().isErrorState()) {
+            setBroadcastState(BroadcastState.DISCONNECTED);
         }
     }
 
@@ -288,6 +317,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         @Override
         public void sessionClosed(IoSession session) throws Exception
         {
+            mLastConnectionAttempt = System.currentTimeMillis();
             //If there is already an error state, don't override it.  Otherwise, set state to disconnected
             if(!getBroadcastState().isErrorState())
             {
@@ -323,6 +353,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                     if(hexDump.startsWith(HTTP_1_0_OK_HEX_DUMP))
                     {
                         setBroadcastState(BroadcastState.CONNECTED);
+						mConnectionFailureLogged.set(false);
                     }
                     else
                     {
@@ -405,6 +436,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                     case SUCCESS_OK:
                         setBroadcastState(BroadcastState.CONNECTED);
                         mConnecting.set(false);
+						mConnectionFailureLogged.set(false);
                         break;
                     case CLIENT_ERROR_UNAUTHORIZED:
                         setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
