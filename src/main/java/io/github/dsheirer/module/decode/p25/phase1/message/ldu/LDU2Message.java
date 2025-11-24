@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.edac.Hamming10;
 import io.github.dsheirer.edac.ReedSolomon_24_16_9_P25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LDU2Message extends LDUMessage
 {
@@ -38,30 +37,30 @@ public class LDU2Message extends LDUMessage
 
     private static final int[] GOLAY_WORD_STARTS = {288, 298, 308, 318, 472, 482, 492, 502, 656, 666, 676, 686,
         840, 850, 860, 870, 1024, 1034, 1044, 1054, 1208, 1218, 1228, 1238};
-    private static final int[] CW_HEX_0 = {288, 289, 290, 291, 292, 293};
-    private static final int[] CW_HEX_1 = {298, 299, 300, 301, 302, 303};
-    private static final int[] CW_HEX_2 = {308, 309, 310, 311, 312, 313};
-    private static final int[] CW_HEX_3 = {318, 319, 320, 321, 322, 323};
-    private static final int[] CW_HEX_4 = {472, 473, 474, 475, 475, 477};
-    private static final int[] CW_HEX_5 = {482, 483, 484, 485, 486, 487};
-    private static final int[] CW_HEX_6 = {492, 493, 494, 495, 496, 497};
-    private static final int[] CW_HEX_7 = {502, 503, 504, 505, 506, 507};
-    private static final int[] CW_HEX_8 = {656, 657, 658, 659, 660, 661};
-    private static final int[] CW_HEX_9 = {666, 667, 668, 669, 670, 671};
-    private static final int[] CW_HEX_10 = {676, 677, 678, 679, 680, 681};
-    private static final int[] CW_HEX_11 = {686, 686, 688, 689, 690, 691};
-    private static final int[] CW_HEX_12 = {840, 841, 842, 843, 844, 845};
-    private static final int[] CW_HEX_13 = {850, 851, 852, 853, 854, 855};
-    private static final int[] CW_HEX_14 = {860, 861, 862, 863, 864, 865};
-    private static final int[] CW_HEX_15 = {870, 871, 872, 873, 874, 875};
-    private static final int[] RS_HEX_0 = {1024, 1025, 1026, 1027, 1028, 1029};
-    private static final int[] RS_HEX_1 = {1034, 1035, 1036, 1037, 1038, 1039};
-    private static final int[] RS_HEX_2 = {1044, 1045, 1046, 1047, 1048, 1049};
-    private static final int[] RS_HEX_3 = {1054, 1055, 1056, 1057, 1058, 1059};
-    private static final int[] RS_HEX_4 = {1208, 1209, 1210, 1211, 1212, 1213};
-    private static final int[] RS_HEX_5 = {1218, 1219, 1220, 1221, 1222, 1223};
-    private static final int[] RS_HEX_6 = {1228, 1229, 1230, 1231, 1232, 1233};
-    private static final int[] RS_HEX_7 = {1238, 1239, 1240, 1241, 1242, 1243};
+    private static final IntField CW_HEX_0 = IntField.length6(288);
+    private static final IntField CW_HEX_1 = IntField.length6(298);
+    private static final IntField CW_HEX_2 = IntField.length6(308);
+    private static final IntField CW_HEX_3 = IntField.length6(318);
+    private static final IntField CW_HEX_4 = IntField.length6(472);
+    private static final IntField CW_HEX_5 = IntField.length6(482);
+    private static final IntField CW_HEX_6 = IntField.length6(492);
+    private static final IntField CW_HEX_7 = IntField.length6(502);
+    private static final IntField CW_HEX_8 = IntField.length6(656);
+    private static final IntField CW_HEX_9 = IntField.length6(666);
+    private static final IntField CW_HEX_10 = IntField.length6(676);
+    private static final IntField CW_HEX_11 = IntField.length6(686);
+    private static final IntField CW_HEX_12 = IntField.length6(840);
+    private static final IntField CW_HEX_13 = IntField.length6(850);
+    private static final IntField CW_HEX_14 = IntField.length6(860);
+    private static final IntField CW_HEX_15 = IntField.length6(870);
+    private static final IntField RS_HEX_0 = IntField.length6(1024);
+    private static final IntField RS_HEX_1 = IntField.length6(1034);
+    private static final IntField RS_HEX_2 = IntField.length6(1044);
+    private static final IntField RS_HEX_3 = IntField.length6(1054);
+    private static final IntField RS_HEX_4 = IntField.length6(1208);
+    private static final IntField RS_HEX_5 = IntField.length6(1218);
+    private static final IntField RS_HEX_6 = IntField.length6(1228);
+    private static final IntField RS_HEX_7 = IntField.length6(1238);
 
     //Reed-Solomon(24,16,9) code protects the encryption sync word.  Maximum correctable errors are floor(9/2) = 4
     private static final ReedSolomon_24_16_9_P25 REED_SOLOMON_24_16_9_P25 = new ReedSolomon_24_16_9_P25();

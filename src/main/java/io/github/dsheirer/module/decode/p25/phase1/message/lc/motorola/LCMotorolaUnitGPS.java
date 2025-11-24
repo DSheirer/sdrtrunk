@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,9 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.FragmentedIntField;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.identifier.P25Location;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
@@ -37,12 +38,9 @@ public class LCMotorolaUnitGPS extends LinkControlWord
     private static final double LONGITUDE_MULTIPLIER = 180.0 / 0x7FFFFF;
 
     private static final int LATITUDE_SIGN = 24;
-    private static final FragmentedIntField LATITUDE = FragmentedIntField.of(25, 26, 27, 28, 29, 30, 31, 32, 33,
-            34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47);
+    private static final IntField LATITUDE = IntField.range(25, 47);
     private static final int LONGITUDE_SIGN = 48;
-    private static final FragmentedIntField LONGITUDE = FragmentedIntField.of(49, 50, 51, 52, 53, 54, 55, 56,
-            57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71);
-
+    private static final IntField LONGITUDE = IntField.range(49, 71);
     private P25Location mLocation;
     private GeoPosition mGeoPosition;
     private List<Identifier> mIdentifiers;
@@ -61,6 +59,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
     {
         StringBuilder sb = new StringBuilder();
         sb.append("MOTOROLA UNIT GPS LOCATION: ").append(getLatitude()).append(" ").append(getLongitude());
+        sb.append(" MSG:").append(getMessage());
         return sb.toString();
     }
 
@@ -107,7 +106,7 @@ public class LCMotorolaUnitGPS extends LinkControlWord
      */
     public double getLongitude()
     {
-        return getInt(LONGITUDE) * LONGITUDE_MULTIPLIER * (getMessage().get(LONGITUDE_SIGN) ? -1 : 1);
+        return getInt(LONGITUDE) * LONGITUDE_MULTIPLIER + (getMessage().get(LONGITUDE_SIGN) ? -180 : 0);
     }
 
     /**
@@ -123,5 +122,17 @@ public class LCMotorolaUnitGPS extends LinkControlWord
         }
 
         return mIdentifiers;
+    }
+
+    static void main()
+    {
+        BinaryMessage mick = BinaryMessage.load("000001101001000000000000101100011010110101010011011000101001000001000010");
+        BinaryMessage newj = BinaryMessage.load("000001101001000000000000001110010000011010111110110010110011100011000010");
+
+        LCMotorolaUnitGPS motoMick = new LCMotorolaUnitGPS(new CorrectedBinaryMessage(mick));
+        LCMotorolaUnitGPS motoNewJ = new LCMotorolaUnitGPS(new CorrectedBinaryMessage(newj));
+
+        System.out.println("MICK: " + motoMick);
+        System.out.println("NEWJ: " + motoNewJ);
     }
 }

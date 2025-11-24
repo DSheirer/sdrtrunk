@@ -324,6 +324,13 @@ public abstract class BCH
             /* add a^(k*2^i)(z^(2^i) mod f) and compute (z^(2^i) mod f)^2 */
             for (j = z.mDegree; j >= 0; j--)
             {
+                if(2 * j >= z.mC.length)
+                {
+                    //Fail ... set degree to 0 to signal fail
+                    outTK.mDegree = 0;
+                    return outTK;
+                }
+
                 outTK.mC[j] ^= z.mC[j];
                 z.mC[2 * j] = gf_sqr(z.mC[j]);
                 z.mC[2 * j + 1] = 0;

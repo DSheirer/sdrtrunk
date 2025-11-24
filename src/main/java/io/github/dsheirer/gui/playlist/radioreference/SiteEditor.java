@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
+import io.github.dsheirer.module.decode.p25.phase1.Modulation;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -257,7 +257,7 @@ public class SiteEditor extends GridPane
                 {
                     if(p1config instanceof DecodeConfigP25Phase1)
                     {
-                        ((DecodeConfigP25Phase1)p1config).setModulation(P25P1Decoder.Modulation.CQPSK);
+                        ((DecodeConfigP25Phase1)p1config).setModulation(Modulation.CQPSK);
                     }
                 }
                 return p1config;

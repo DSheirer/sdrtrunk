@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,171 +16,402 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
+
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
+import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
+import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
-import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
-import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
-import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
-import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
-import io.github.dsheirer.dsp.psk.pll.CostasLoop;
-import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
-import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
-import io.github.dsheirer.dsp.window.WindowType;
+import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
+import io.github.dsheirer.dsp.squelch.PowerMonitor;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.FeedbackDecoder;
+import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.sample.complex.IComplexSamplesListener;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.wave.ComplexWaveSource;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class P25P1DecoderLSM extends P25P1Decoder
+/**
+ * APCO25 Phase 1 Linear Simulcast Modulation (LSM) decoder.  Decimates incoming sample buffers to as close as possible
+ * to 25 kHz for ~5 samples per symbol.  Employs baseband and pulse shaping filters.  Incorporates an demodulator to
+ * process complex baseband (I/Q) sample stream into soft symbols with soft sync detection and message framing. A
+ * registered message listener receives the detected and framed messages.
+ *
+ * As a child of the FeedbackDecoder, this decoder provides periodic PLL measurements to the tuner for automatic PPM
+ * correction.  It also provides a stream of demodulated soft symbols (in radians) for display to the user.
+ */
+public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvider, IComplexSamplesListener, ISourceEventListener,
+        ISourceEventProvider, Listener<ComplexSamples>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25P1DecoderLSM.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderLSM.class);
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
+    private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
+    private static final int SYMBOL_RATE = 4800;
 
-    protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
+    private final P25P1DemodulatorLSM mDemodulator;
+    private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
+    private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
+    private final PowerMonitor mPowerMonitor = new PowerMonitor();
+    private IRealDecimationFilter mDecimationFilterI;
+    private IRealDecimationFilter mDecimationFilterQ;
+    private IRealFilter mBasebandFilterI;
+    private IRealFilter mBasebandFilterQ;
+    private IRealFilter mPulseShapingFilterI;
+    private IRealFilter mPulseShapingFilterQ;
 
-    private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    protected IRealFilter mIBasebandFilter;
-    protected IRealFilter mQBasebandFilter;
-    protected IComplexGainControl mAGC = ComplexGainFactory.getComplexGainControl();
-    protected DQPSKGardnerDemodulator mQPSKDemodulator;
-    protected P25P1MessageFramer mMessageFramer;
-    protected CostasLoop mCostasLoop;
-    protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
-    protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
+    @Override
+    public DecoderType getDecoderType()
+    {
+        return DecoderType.P25_PHASE1;
+    }
 
-    /**
-     * P25 Phase 1 - linear simulcast modulation (LSM) decoder.  Uses Differential QPSK decoding with a Costas PLL and
-     * a gardner timing error detector.
-     */
     public P25P1DecoderLSM()
     {
-        super(4800.0);
-        setSampleRate(25000.0);
+        mMessageProcessor.setMessageListener(getMessageListener());
+        mDemodulator = new P25P1DemodulatorLSM(mMessageFramer, this);
+    }
+
+    @Override
+    public String getProtocolDescription()
+    {
+        return "P25 Phase 1 LSM";
+    }
+
+    /**
+     * Sets the sample rate and configures internal components.
+     * @param sampleRate of the channel to decode
+     */
+    public void setSampleRate(double sampleRate)
+    {
+        if(sampleRate <= SYMBOL_RATE * 2)
+        {
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " +
+                    SYMBOL_RATE + " symbol rate)");
+        }
+
+        mPowerMonitor.setSampleRate((int)sampleRate);
+
+        int decimation = 1;
+
+        //Identify decimation that gets as close to 4.0 Samples Per Symbol as possible (4800 x 4.0 = 19.2 kHz)
+        while((sampleRate / decimation) >= 38400)
+//        while((sampleRate / decimation) > 50000)
+        {
+            decimation *= 2;
+        }
+
+        try
+        {
+            mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
+            mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);
+        }
+        catch(Exception e)
+        {
+            LOGGER.error("Error getting decimation filter for sample rate [" + sampleRate + "] decimation [" + decimation + "]");
+        }
+
+        float decimatedSampleRate = (float)sampleRate / decimation;
+        int symbolLength = 16;
+        float rolloff = 0.2f;
+
+        float[] taps = FilterFactory.getRootRaisedCosine(decimatedSampleRate / 4800.0, symbolLength, rolloff);
+        mPulseShapingFilterI = new RealFIRFilter(taps);
+        mPulseShapingFilterQ = new RealFIRFilter(taps);
+        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
+        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
+        mDemodulator.setSamplesPerSymbol(decimatedSampleRate / (float)SYMBOL_RATE);
+        mMessageFramer.setListener(mMessageProcessor);
+    }
+
+    /**
+     * Primary method for processing incoming complex sample buffers
+     * @param samples containing channelized complex samples
+     */
+    @Override
+    public void receive(ComplexSamples samples)
+    {
+        //Update the message framer with the timestamp from the incoming sample buffer.
+        mMessageFramer.setTimestamp(samples.timestamp());
+
+        float[] i = samples.i();
+        float[] q = samples.q();
+
+        i = mDecimationFilterI.decimateReal(i);
+        q = mDecimationFilterQ.decimateReal(q);
+
+        //Process buffer for power measurements
+        mPowerMonitor.process(i, q);
+
+        i = mBasebandFilterI.filter(i);
+        q = mBasebandFilterQ.filter(q);
+
+        i = mPulseShapingFilterI.filter(i);
+        q = mPulseShapingFilterQ.filter(q);
+
+        //Demodulate samples into symbols with timing, sync detection, and message framing.
+        mDemodulator.process(i, q);
+    }
+
+    /**
+     * Constructs a baseband filter for this decoder using the current sample rate
+     */
+    private float[] getBasebandFilter(double sampleRate)
+    {
+        if(BASEBAND_FILTERS.containsKey(sampleRate))
+        {
+            return BASEBAND_FILTERS.get(sampleRate);
+        }
+
+        FIRFilterSpecification specification = FIRFilterSpecification
+                .lowPassBuilder()
+                .sampleRate(sampleRate)
+                .passBandCutoff(7250)
+                .passBandAmplitude(1.0).passBandRipple(0.01) //.01
+                .stopBandAmplitude(0.0).stopBandStart(8000) //6500
+                .stopBandRipple(0.01).build();
+
+        float[] coefficients = null;
+
+        try
+        {
+            coefficients = FilterFactory.getTaps(specification);
+            BASEBAND_FILTERS.put(sampleRate, coefficients);
+        }
+        catch(Exception fde) //FilterDesignException
+        {
+            System.out.println("Error");
+        }
+
+        if(coefficients == null)
+        {
+            throw new IllegalStateException("Unable to design low pass filter for sample rate [" + sampleRate + "]");
+        }
+
+        return coefficients;
+    }
+
+    /**
+     * Implements the IByteBufferProvider interface - delegates to the symbol processor
+     */
+    @Override
+    public void setBufferListener(Listener<ByteBuffer> listener)
+    {
+        mDemodulator.setBufferListener(listener);
+    }
+
+    /**
+     * Implements the IByteBufferProvider interface - delegates to the symbol processor
+     */
+    @Override
+    public void removeBufferListener(Listener<ByteBuffer> listener)
+    {
+        mDemodulator.setBufferListener(null);
+    }
+
+    /**
+     * Implements the IByteBufferProvider interface - delegates to the symbol processor
+     */
+    @Override
+    public boolean hasBufferListeners()
+    {
+        return mDemodulator.hasBufferListener();
+    }
+
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
+    {
+        return this::process;
+    }
+
+    /**
+     * Sets the source event listener to receive source events from this decoder.
+     */
+    @Override
+    public void setSourceEventListener(Listener<SourceEvent> listener)
+    {
+        super.setSourceEventListener(listener);
+        mPowerMonitor.setSourceEventListener(listener);
+    }
+
+    @Override
+    public void removeSourceEventListener()
+    {
+        mPowerMonitor.setSourceEventListener(null);
     }
 
     @Override
     public void start()
     {
         super.start();
-        mQPSKDemodulator.start();
+        mMessageFramer.start();
     }
 
     @Override
     public void stop()
     {
         super.stop();
-        mQPSKDemodulator.stop();
+        mMessageFramer.stop();
     }
 
     /**
-     * Sets or changes the channel sample rate
-     *
-     * @param sampleRate in hertz
+     * Process source events
      */
-    public void setSampleRate(double sampleRate)
-    {
-        super.setSampleRate(sampleRate);
-
-        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
-        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
-
-        mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_200);
-        mFrequencyCorrectionSyncMonitor = new FrequencyCorrectionSyncMonitor(mCostasLoop, this);
-
-        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
-
-        mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
-
-        //The Costas Loop receives symbol-inversion correction requests when detected.
-        //The PLL gain monitor receives sync detect/loss signals from the message framer
-        if(mMessageFramer != null)
-        {
-            getDibitBroadcaster().removeListener(mMessageFramer);
-        }
-
-        mMessageFramer = new P25P1MessageFramer(mCostasLoop, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        mMessageFramer.setSyncDetectListener(mFrequencyCorrectionSyncMonitor);
-        mMessageFramer.setListener(getMessageProcessor());
-        mMessageFramer.setSampleRate(sampleRate);
-        mQPSKDemodulator.setSymbolListener(getDibitBroadcaster());
-        getDibitBroadcaster().addListener(mMessageFramer);
-    }
-
-    /**
-     * Primary method for receiving incoming channel samples
-     */
-    @Override
-    public void receive(ComplexSamples samples)
-    {
-        mMessageFramer.setCurrentTime(samples.timestamp());
-
-        //The filter will decrement the user count when finished
-        float[] i = mIBasebandFilter.filter(samples.i());
-        float[] q = mQBasebandFilter.filter(samples.q());
-
-        //Process the buffer for power measurements
-        mPowerMonitor.process(i, q);
-
-        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
-        mQPSKDemodulator.receive(amplified);
-    }
-
-    /**
-     * Processes source events - updates buffer and decoder when sample rate is established/changed and resets the
-     * PLL after frequency changes/corrections
-     */
-    @Override
-    protected void process(SourceEvent sourceEvent)
+    private void process(SourceEvent sourceEvent)
     {
         switch(sourceEvent.getEvent())
         {
+            case NOTIFICATION_FREQUENCY_CHANGE:
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                mDemodulator.resetPLL();
+                break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
-                mCostasLoop.reset();
-                break;
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                //Reset the PLL if/when the tuner PPM changes so that we can re-lock
-                mCostasLoop.reset();
                 break;
         }
     }
 
-    /**
-     * Resets this decoder to prepare for processing a new channel
-     */
     @Override
-    public void reset()
+    public Listener<ComplexSamples> getComplexSamplesListener()
     {
-        mCostasLoop.reset();
-        mFrequencyCorrectionSyncMonitor.reset();
+        return this;
     }
 
-    public Modulation getModulation()
+    public static void main(String[] args)
     {
-        return Modulation.CQPSK;
-    }
+        LOGGER.info("Starting ...");
 
-    /**
-     * Constructs a baseband filter for this decoder using the current sample rate
-     */
-    private float[] getBasebandFilter()
-    {
-        //Attempt to reuse a cached (ie already-designed) filter if available
-        float[] filter = mBasebandFilters.get(getSampleRate());
+//        String directory = "D:\\DQPSK Equalizer Research - P25\\"; //Windows
+        String directory = "/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
 
-        if(filter == null)
+//        String file = directory + "P25-S2-LSM-20241225_040119_460500000_CNYICC_Onondaga_Onondaga_CC_0_baseband.wav";
+//        String file = directory + "P25-S4-LSM-TCH-Data-20250105_141051_453587500_CNYICC_Onondaga_T-Onondaga_CC_38_baseband.wav";
+//        String file = directory + "P25-S5-LSM-CCH-20250923_034304_460500000_CNYICC_Onondaga_Onondaga-CC_0_baseband.wav";
+        String file = directory + "P25-S6-LSM-CCH-20251025_071546_460500000_CNYICC_Onondaga_Onondaga-CC_0_baseband.wav";
+
+
+//        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
+
+
+        boolean autoReplay = false;
+
+        P25P1DecoderLSM decoder = new P25P1DecoderLSM();
+        decoder.start();
+
+        UserPreferences userPreferences = new UserPreferences();
+        P25P1AudioModule audio1 = new P25P1AudioModule(userPreferences, new AliasList(""));
+
+        decoder.setMessageListener(new Listener<>()
         {
-            filter = FilterFactory.getLowPass(getSampleRate(), 7250, 8000, 60,
-                WindowType.HANN, true);
+            private long mBitCounter = 1;
+            private int mBitErrorCounter;
+            private int mValidMessageCounter;
+            private int mTotalMessageCounter;
+            private int mMessageCounter = 1;
 
-            mBasebandFilters.put(getSampleRate(), filter);
+            @Override
+            public void receive(IMessage iMessage)
+            {
+                int errors = 0;
+
+                audio1.receive(iMessage);
+
+                if(iMessage instanceof P25P1Message message)
+                {
+                    mBitCounter += 288;
+
+                    if(message.getMessage() != null)
+                    {
+                        errors = message.getMessage().getCorrectedBitCount();
+                    }
+
+                    mTotalMessageCounter++;
+
+                    if(mTotalMessageCounter == 492)
+                    {
+                        int a = 0;
+                    }
+                    if(message.isValid())
+                    {
+                        mBitErrorCounter += Math.max(errors, 0);
+                        mValidMessageCounter++;
+                    }
+                }
+
+                double bitErrorRate = (double)mBitErrorCounter / (double)mBitCounter * 100.0;
+
+                boolean logEverything = true;
+                boolean logIdles = true;
+
+                if(logEverything)
+                {
+                    if(iMessage.toString().contains("PLACEHOLDER"))
+                    {
+                        int a = 0;
+                    }
+
+                    if(iMessage instanceof SyncLossMessage)
+                    {
+                        System.out.println(" >> MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
+                    }
+                    else
+                    {
+                        System.out.println(++mMessageCounter + " >> MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
+                    }
+                }
+                else
+                {
+                    if(logIdles && iMessage instanceof SyncLossMessage)
+                    {
+                        System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
+                    }
+                }
+            }
+        });
+
+        try(ComplexWaveSource source = new ComplexWaveSource(new File(file), autoReplay))
+        {
+            source.setListener(iNativeBuffer -> {
+                Iterator<ComplexSamples> it = iNativeBuffer.iterator();
+
+                while(it.hasNext())
+                {
+                    decoder.receive(it.next());
+                }
+            });
+            source.start();
+            decoder.setSampleRate(source.getSampleRate());
+
+            while(true)
+            {
+                source.next(2048, true);
+            }
+        }
+        catch(IOException ioe)
+        {
+            LOGGER.error("Error", ioe);
         }
 
-        return filter;
+        LOGGER.info("Finished");
     }
 }

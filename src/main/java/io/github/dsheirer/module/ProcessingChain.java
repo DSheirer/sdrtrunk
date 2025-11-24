@@ -177,9 +177,9 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         for(Module module : mModules)
         {
-            if(module instanceof PrimaryDecoder primaryDecoder)
+            if(module instanceof PrimaryDecoder decoder)
             {
-                return primaryDecoder;
+                return decoder;
             }
         }
 

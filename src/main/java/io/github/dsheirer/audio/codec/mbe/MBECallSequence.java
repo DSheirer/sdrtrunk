@@ -36,7 +36,7 @@ import java.util.List;
  * radio identifiers.
  */
 @JsonRootName("mbe_call")
-@JsonPropertyOrder({"protocol", "call_type", "from", "to", "encrypted", "frames"})
+@JsonPropertyOrder({"protocol", "version", "call_type", "from", "to", "encrypted", "system", "site", "frames"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MBECallSequence
 {
@@ -77,6 +77,15 @@ public class MBECallSequence
         mProtocol = protocol;
     }
 
+    /**
+     * Gets the version number for the mbe file structure.
+     * Should be incremented only on breaking structural changes, not minor additions.
+     */
+    @JsonProperty("version")
+    public Integer getVersion()
+    {
+        return 2;
+    }
 
     /**
      * Indicates if this sequences contains any audio frames

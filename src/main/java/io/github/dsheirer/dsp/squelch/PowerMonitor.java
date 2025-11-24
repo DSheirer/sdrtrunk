@@ -34,14 +34,14 @@ public class PowerMonitor
     private int mPowerLevelBroadcastCount = 0;
     private int mPowerLevelBroadcastThreshold;
     private Listener<SourceEvent> mSourceEventListener;
-    private SinglePoleIirFilter mPowerFilter = new SinglePoleIirFilter(0.1f);
+    private final SinglePoleIirFilter mPowerFilter = new SinglePoleIirFilter(0.1f);
 
     /**
      * Constructs an instance
      */
     public PowerMonitor()
     {
-        mPowerLevelBroadcastThreshold = 25000; //Based on a default sample rate of 50 kHz
+        mPowerLevelBroadcastThreshold = 12500; //Based on a default sample rate of 25 kHz
     }
 
     /**
@@ -55,35 +55,24 @@ public class PowerMonitor
     }
 
     /**
-     * Processes a complex IQ sample and changes squelch state when the signal power is above or below the
-     * threshold value.
-     * @param inphase complex sample component
-     * @param quadrature complex sample component
-     */
-    public void process(float inphase, float quadrature)
-    {
-        mPowerLevelBroadcastCount++;
-
-        if(mPowerLevelBroadcastCount > mPowerLevelBroadcastThreshold)
-        {
-            mPowerFilter.filter(inphase * inphase + quadrature * quadrature);
-        }
-
-        if(mPowerLevelBroadcastCount > (mPowerLevelBroadcastThreshold + 10))
-        {
-            mPowerLevelBroadcastCount = 0;
-            broadcast(SourceEvent.channelPowerLevel(null, 10.0 * Math.log10(mPowerFilter.getValue())));
-        }
-    }
-
-    /**
      * Processes I&Q complex baseband sample buffers.
      */
     public void process(float[] i, float[] q)
     {
-        for(int x = 0; x < i.length; x++)
+        mPowerLevelBroadcastCount += i.length;
+
+        if(mPowerLevelBroadcastCount > mPowerLevelBroadcastThreshold && i.length >= 10)
         {
-            process(i[x], q[x]);
+            double iSquared, qSquared;
+            for(int x = 0; x < 10; x++)
+            {
+                iSquared = Math.pow(i[x], 2.0f);
+                qSquared = Math.pow(q[x], 2.0f);
+                mPowerFilter.filter((float)(iSquared + qSquared));
+            }
+
+            mPowerLevelBroadcastCount -= mPowerLevelBroadcastThreshold;
+            broadcast(SourceEvent.channelPowerLevel(null, 10.0 * Math.log10(mPowerFilter.getValue())));
         }
     }
 

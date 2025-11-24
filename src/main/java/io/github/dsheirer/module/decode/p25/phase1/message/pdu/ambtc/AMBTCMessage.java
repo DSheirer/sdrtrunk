@@ -47,6 +47,10 @@ public abstract class AMBTCMessage extends P25P1Message implements IBitErrorProv
     {
         StringBuilder sb = new StringBuilder();
         sb.append(super.getMessageStub());
+        if(!getHeader().isValid())
+        {
+            sb.append(" **CRC-FAILED**");
+        }
         sb.append(" ").append(getHeader().getOpcode());
         P25Utils.pad(sb, 30);
 

@@ -20,6 +20,7 @@
 package io.github.dsheirer.dsp.filter.design;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.window.WindowType;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -61,7 +62,26 @@ public class FilterViewer extends Application
         int filterLength = 31;
         WindowType windowType = WindowType.BLACKMAN_HARRIS_7;
 
-        float[] taps = FilterFactory.getHighPass(8000, 3000, filterLength, windowType);
+        FIRFilterSpecification specification = FIRFilterSpecification
+                .lowPassBuilder()
+                .sampleRate(12500)
+                .passBandCutoff(5200)
+                .passBandAmplitude(1.0).passBandRipple(0.01) //.01
+                .stopBandAmplitude(0.0).stopBandStart(6500) //6500
+                .stopBandRipple(0.01).build();
+
+        float[] taps = null;
+
+        try
+        {
+            taps = FilterFactory.getTaps(specification);
+        }
+        catch(Exception fde) //FilterDesignException
+        {
+            System.out.println("Error");
+        }
+
+        //        float[] taps = FilterFactory.getHighPass(8000, 3000, filterLength, windowType);
 //        float[] taps = FilterFactory.getRootRaisedCosine(50000.0 / 4800.0, 20, 0.2f);
 
 //        taps = HilbertTransform.HALF_BAND_FILTER_47_TAP;

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,50 +18,83 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import java.util.EnumSet;
+
 /**
  * The Data Unit ID (DUID) is part of the Network ID (NID) field and indicates the type of message.
  */
 public enum P25P1DataUnitID
 {
-    HEADER_DATA_UNIT(0, 648 + 10, true, "HDU  "),
-    UNKNOWN_1(1, -1, false, "UNK01"),
-    UNKNOWN_2(2, -1, false, "UNK02"),
-    TERMINATOR_DATA_UNIT(3, 28, true, "TDU  "),
-    UNKNOWN_4(4, -1, false, "UNK04"),
-    LOGICAL_LINK_DATA_UNIT_1(5, 1568, true, "LDU1 "),
-    VSELP1(6, 64 + 1616, false, "VSEL1"),
-    UNKNOWN_8(8, -1, false, "UNK08"),
-    VSELP2(9, 1616 + 64, false, "VSEL2"),
-    LOGICAL_LINK_DATA_UNIT_2(10, 1568, true, "LDU2 "),
-    UNKNOWN_11(11, -1, false, "UNK11"),
-    PACKET_HEADER_DATA_UNIT(12, 196, false, "PDUH "),
-    PACKET_DATA_UNIT(-1, 196, false, "PDU  "),
-    UNKNOWN_13(13, -1, false, "UNK13"),
-    UNKNOWN_14(14, -1, false, "UNK14"),
-    TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 308, true, "TDULC"),
+    HEADER_DATA_UNIT(0, 648, 11, 10, "HDU  "),
+    TERMINATOR_DATA_UNIT(3, 0, 2,  28,"TDU  "),
+    LOGICAL_LINK_DATA_UNIT_1(5, 1568, 24, 0, "LDU1 "),
+    TRUNKING_SIGNALING_BLOCK_1(7, 196, 5, 42, "TSBK1"),
+    LOGICAL_LINK_DATA_UNIT_2(10, 1568, 24, 0,  "LDU2 "),
+    PACKET_DATA_UNIT(12, 196, 5, 42, "PDU"),
+    TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 288, 6, 20, "TDULC"),
+
+    //Set to 2x dibits longer than longest (ie LDU) message type so we can force a detect if it's followed by a sync.
+    PLACE_HOLDER(-1, 1572, 24, 0, "PLACEHOLDER"), //Originally: 1686
 
     //The following are not true data unit identifiers, rather they are used as identifiers
-    ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "AMBTC"),
-    IP_PACKET_DATA(-1, 0, false, "IPPKT"),
-    SUBNETWORK_DEPENDENT_CONVERGENCE_PROTOCOL(-1, 0, false, "SNDCP"),
-    TRUNKING_SIGNALING_BLOCK_1(7, 196, false, "TSBK1"),
-    TRUNKING_SIGNALING_BLOCK_2(7, 196, false, "TSBK2"),
-    TRUNKING_SIGNALING_BLOCK_3(7, 196, false, "TSBK3"),
-    UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "UMBTC"),
+    ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, 0, 0, "AMBTC"),
+    IP_PACKET_DATA(-1, 0, 0, 0, "IPPKT"),
+    PACKET_DATA_UNIT_BLOCK_1(-1, 196 * 2, 8, 56, "PDU"),
+    PACKET_DATA_UNIT_BLOCK_2(-1, 196 * 3, 10, 0, "PDU"),
+    PACKET_DATA_UNIT_BLOCK_3(-1, 196 * 4, 13, 14, "PDU"),
+    PACKET_DATA_UNIT_BLOCK_4(-1, 196 * 5, 16, 28, "PDU"),
+    PACKET_DATA_UNIT_BLOCK_5(-1, 196 * 6, 19, 42, "PDU"),
+    SUBNETWORK_DEPENDENT_CONVERGENCE_PROTOCOL(-1, 0, 0, 0, "SNDCP"),
+    TRUNKING_SIGNALING_BLOCK_2(7, 196 * 2, 8, 56, "TSBK2"),
+    TRUNKING_SIGNALING_BLOCK_3(7, 196 * 3, 10, 0,"TSBK3"),
+    UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, 0, 0, "UMBTC"),
 
-    UNKNOWN(-1, -1, false, "UNKN ");
+    UNKNOWN(-1, -1, 0, 0, "UNKNOWN");
 
-    private int mValue;
-    private int mMessageLength;
-    private boolean mTrailingStatusDibit;
-    private String mLabel;
+    private final int mValue;
+    private final int mMessageLength;
+    private final int mElapsedDibitLength;
+    private final String mLabel;
 
-    P25P1DataUnitID(int value, int length, boolean trailingStatusDibit, String label)
+    /**
+     * Constructs a Data Unit ID (DUID) entry
+     * @param value transmitted in the NID
+     * @param messageLength in bits
+     * @param statusDibits count
+     * @param nullBits trailing null bits used to pad the message length to the final status dibit
+     * @param label for the DUID
+     */
+    P25P1DataUnitID(int value, int messageLength, int statusDibits, int nullBits, String label)
     {
         mValue = value;
-        mMessageLength = length;
-        mTrailingStatusDibit = trailingStatusDibit;
+        mMessageLength = messageLength + nullBits;
+        //Elapsed dibit length starts with: sync(24) + nid(32) = 56 dibits
+        mElapsedDibitLength = 56 + (messageLength / 2) + statusDibits + (nullBits / 2);
         mLabel = label;
+    }
+
+    public static final EnumSet<P25P1DataUnitID> VALID_PRIMARY_DUIDS = EnumSet.of(HEADER_DATA_UNIT, TERMINATOR_DATA_UNIT,
+            LOGICAL_LINK_DATA_UNIT_1, LOGICAL_LINK_DATA_UNIT_2, PACKET_DATA_UNIT, PACKET_DATA_UNIT_BLOCK_1,
+            TRUNKING_SIGNALING_BLOCK_1, TERMINATOR_DATA_UNIT_LINK_CONTROL);
+
+    public static final EnumSet<P25P1DataUnitID> TSBK_DATA_UNITS = EnumSet.of(TRUNKING_SIGNALING_BLOCK_1,
+            TRUNKING_SIGNALING_BLOCK_2, TRUNKING_SIGNALING_BLOCK_3);
+
+    /**
+     * Indicates if this DUID is a primary DUID carried by the NID.
+     * @return true if a primary DUID.
+     */
+    public boolean isValidPrimaryDUID()
+    {
+        return VALID_PRIMARY_DUIDS.contains(this);
+    }
+
+    /**
+     * Indicates if this DUID is a TSBK 1, 2, or 3
+     */
+    public boolean isTSBK()
+    {
+        return TSBK_DATA_UNITS.contains(this);
     }
 
     /**
@@ -81,6 +114,15 @@ public enum P25P1DataUnitID
     }
 
     /**
+     * Elapsed dibit length from sync detection to next sync detection for this DUID
+     * @return elapsed dibit length.
+     */
+    public int getElapsedDibitLength()
+    {
+        return mElapsedDibitLength;
+    }
+
+    /**
      * Short display label
      */
     public String getLabel()
@@ -93,7 +135,7 @@ public enum P25P1DataUnitID
      */
     public boolean hasTrailingStatusDibit()
     {
-        return mTrailingStatusDibit;
+        return false;
     }
 
     /**
@@ -105,38 +147,20 @@ public enum P25P1DataUnitID
         {
             case 0:
                 return HEADER_DATA_UNIT;
-            case 1:
-                return UNKNOWN_1;
-            case 2:
-                return UNKNOWN_2;
             case 3:
                 return TERMINATOR_DATA_UNIT;
-            case 4:
-                return UNKNOWN_4;
             case 5:
                 return LOGICAL_LINK_DATA_UNIT_1;
-            case 6:
-                return VSELP1;
             case 7:
                 return TRUNKING_SIGNALING_BLOCK_1;
-            case 8:
-                return UNKNOWN_8;
-            case 9:
-                return VSELP2;
             case 10:
                 return LOGICAL_LINK_DATA_UNIT_2;
-            case 11:
-                return UNKNOWN_11;
             case 12:
-                return PACKET_HEADER_DATA_UNIT;
-            case 13:
-                return UNKNOWN_13;
-            case 14:
-                return UNKNOWN_14;
+                return PACKET_DATA_UNIT;
             case 15:
                 return TERMINATOR_DATA_UNIT_LINK_CONTROL;
             default:
-                throw new IllegalArgumentException("Data Unit ID must be in range 0 - 15");
+                return UNKNOWN;
         }
     }
 }

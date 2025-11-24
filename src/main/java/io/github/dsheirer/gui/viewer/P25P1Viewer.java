@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.SingleChannelState;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.message.IMessage;
@@ -164,10 +165,12 @@ public class P25P1Viewer extends VBox
 
             ThreadPool.CACHED.submit(() -> {
                 List<MessagePackage> messagePackages = new ArrayList<>();
-                P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, 9600);
+                P25P1MessageFramer messageFramer = new P25P1MessageFramer();
                 P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
+
                 Broadcaster<IMessage> messageBroadcaster = new Broadcaster<>();
                 messageFramer.setListener(messageBroadcaster);
+                messageFramer.start();
                 messageBroadcaster.addListener(messageProcessor);
 
                 Channel empty = new Channel("Empty");
@@ -229,7 +232,13 @@ public class P25P1Viewer extends VBox
                     while(reader.hasNext())
                     {
                         ByteBuffer buffer = reader.next();
-                        messageFramer.receive(buffer);
+                        for(byte value : buffer.array())
+                        {
+                            for(int x = 0; x <= 3; x++)
+                            {
+                                messageFramer.processWithHardSyncDetect(Dibit.parse(value, x));
+                            }
+                        }
                     }
                 }
                 catch(Exception ioe)

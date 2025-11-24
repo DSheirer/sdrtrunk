@@ -23,7 +23,9 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
 import io.github.dsheirer.gui.power.SignalPowerView;
 import io.github.dsheirer.gui.squelch.NoiseSquelchView;
+import io.github.dsheirer.gui.symbol.SymbolView;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
@@ -46,13 +48,14 @@ import java.awt.EventQueue;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.List;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +73,7 @@ import javax.swing.event.MouseInputAdapter;
  */
 public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingChain>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(ChannelSpectrumPanel.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChannelSpectrumPanel.class);
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private final PlaylistManager mPlaylistManager;
     private ProcessingChain mProcessingChain;
@@ -80,13 +83,14 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     private final FrequencyOverlayPanel mFrequencyOverlayPanel;
     private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
     private final SpinnerNumberModel mNoiseFloorSpinnerModel;
-    private final JLabel mEstimatedCarrierOffsetFrequencyLabel;
     private final JLabel mEstimatedCarrierOffsetFrequencyValueLabel;
     private boolean mPanelVisible = false;
     private boolean mDftProcessing = false;
     private final NoiseSquelchView mNoiseSquelchView;
     private final SignalPowerView mSignalPowerView;
+    private final SymbolView mSymbolView = new SymbolView();
     private final JFXPanel mNoiseSquelchPanel;
+    private final JFXPanel mSymbolPanel;
     private JSplitPane mSplitPane;
 
     /**
@@ -103,13 +107,10 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         fftPanel.setLayout(new MigLayout("insets 0", "[grow,fill]", "[][grow,fill]"));
 
         JPanel labelPanel = new JPanel();
-        labelPanel.setLayout(new MigLayout("insets 0", "[grow,fill][right][grow,fill][right][][]", ""));
-        labelPanel.add(new JLabel("Channel Spectrum"));
+        labelPanel.setLayout(new MigLayout("insets 2", "[grow,fill][grow,fill,left][right][][]", ""));
+        labelPanel.add(new JLabel("Channel Spectrum    "));
 
-        mEstimatedCarrierOffsetFrequencyLabel = new JLabel("Carrier Offset:");
-        mEstimatedCarrierOffsetFrequencyLabel.setEnabled(false);
-        labelPanel.add(mEstimatedCarrierOffsetFrequencyLabel);
-        mEstimatedCarrierOffsetFrequencyValueLabel = new JLabel("0 Hz");
+        mEstimatedCarrierOffsetFrequencyValueLabel = new JLabel(getPaddedCarrierOffsetLabel(0));
         mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
         labelPanel.add(mEstimatedCarrierOffsetFrequencyValueLabel);
 
@@ -120,7 +121,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         });
         JSpinner noiseFloorSpinner = new JSpinner(mNoiseFloorSpinnerModel);
         labelPanel.add(noiseFloorSpinner);
-        labelPanel.add(new JLabel("Spectral Display Noise Floor"));
+        labelPanel.add(new JLabel("Noise Floor"));
 
         JButton logIndexesButton = new JButton("Log Settings");
         logIndexesButton.addActionListener(e -> {
@@ -144,8 +145,8 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
                     sb.append(" Polyphase Indexes: ").append(indexes);
                     sb.append(" Tuner SR:").append(FREQUENCY_FORMAT.format(pcs.getTunerSampleRate() / 1E6d));
                     sb.append(" CF:").append(FREQUENCY_FORMAT.format(pcs.getTunerCenterFrequency() / 1E6d));
-                    mLog.info(sb.toString());
-                    mLog.info("Output Processor: " + pcs.getStateDescription());
+                    LOGGER.info(sb.toString());
+                    LOGGER.info("Output Processor: " + pcs.getStateDescription());
                 }
                 else if(source instanceof HalfBandTunerChannelSource<?> hbtcs)
                 {
@@ -153,11 +154,11 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
                     sb.append("Heterodyne Channel - CF:").append(FREQUENCY_FORMAT.format(hbtcs.getFrequency() / 1E6d));
                     sb.append(" SR:").append(FREQUENCY_FORMAT.format(hbtcs.getSampleRate() / 1E6d));
                     sb.append(" Mixer:").append(FREQUENCY_FORMAT.format(hbtcs.getMixerFrequency() / 1E6d));
-                    mLog.info(sb.toString());
+                    LOGGER.info(sb.toString());
                 }
                 else
                 {
-                    mLog.info("Unsupported channel type: " + (source != null ? source.getClass() : " null"));
+                    LOGGER.info("Unsupported channel type: " + (source != null ? source.getClass() : " null"));
                 }
             }
         });
@@ -194,24 +195,45 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         fftPanel.add(layeredPanel);
 
         mNoiseSquelchPanel = new JFXPanel();
+        mSymbolPanel = new JFXPanel();
 
         //Spin noise squelch panel construction off onto the JavafX UI thread.
         Platform.runLater(() -> {
             Scene scene = new Scene(mNoiseSquelchView);
             mNoiseSquelchPanel.setScene(scene);
+            Scene scene2 = new Scene(mSymbolView);
+            URL resource = getClass().getResource("/sdrtrunk_style.css");
+
+            if(resource != null)
+            {
+                scene2.getStylesheets().add(resource.toExternalForm());
+            }
+            else
+            {
+                LOGGER.warn("Can't find stylesheet resource for sdrtrunk");
+            }
+
+            mSymbolPanel.setScene(scene2);
         });
 
         mSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         mSplitPane.add(fftPanel, JSplitPane.LEFT);
         mSplitPane.add(mNoiseSquelchPanel, JSplitPane.RIGHT);
-        mSplitPane.setDividerLocation(0.5);
         add(mSplitPane);
+//        mSplitPane.setDividerLocation(0.5);
 
         mSampleStreamTapModule.setListener(mComplexDftProcessor);
         DFTResultsConverter DFTResultsConverter = new ComplexDecibelConverter();
         mComplexDftProcessor.addConverter(DFTResultsConverter);
         DFTResultsConverter.addListener(mSpectrumPanel);
         mSpectrumPanel.clearSpectrum();
+    }
+
+    private String getPaddedCarrierOffsetLabel(long value)
+    {
+        String paddedValue = StringUtils.leftPad(String.valueOf(value), 5);
+        String paddedText = StringUtils.rightPad(paddedValue + " Hz", 20);
+        return "Carrier Offset: " + paddedText;
     }
 
     /**
@@ -229,6 +251,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         mPanelVisible = visible;
         updateFFTProcessing();
         mNoiseSquelchView.setShowing(visible);
+        mSymbolView.setShowing(visible);
     }
 
     /**
@@ -283,10 +306,8 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         //Note: we flip the sign on the error measurement because the value represents the amount of offset the PLL
         //has to apply to move the signal to center/baseband
         EventQueue.invokeLater(() -> {
-            String formattedValue = NumberFormat.getInstance().format(carrierOffsetFrequency);
-            mEstimatedCarrierOffsetFrequencyValueLabel.setText(formattedValue + " Hz");
+            mEstimatedCarrierOffsetFrequencyValueLabel.setText(getPaddedCarrierOffsetLabel(carrierOffsetFrequency));
             mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(true);
-            mEstimatedCarrierOffsetFrequencyLabel.setEnabled(true);
         });
 
         mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(carrierOffsetFrequency);
@@ -306,8 +327,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
      */
     private void reset()
     {
-        mEstimatedCarrierOffsetFrequencyLabel.setEnabled(false);
-        mEstimatedCarrierOffsetFrequencyValueLabel.setText("0 Hz");
+        mEstimatedCarrierOffsetFrequencyValueLabel.setText(getPaddedCarrierOffsetLabel(0));
         mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
         mFrequencyOverlayPanel.process(SourceEvent.frequencyChange(null, 0));
         mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(0));
@@ -321,10 +341,13 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     @Override
     public void receive(ProcessingChain processingChain)
     {
-        //Disconnect the FFT panel
+        //Disconnect the previous processing chain.
         if(mProcessingChain != null)
         {
             mNoiseSquelchView.setController(null);
+            mSignalPowerView.setProcessingChain(null);
+            mSymbolView.removeSymbolProvider();
+            mSymbolView.setProtocol("");
             mProcessingChain.removeSourceEventListener(mSourceEventProcessor);
             mProcessingChain.removeModule(mSampleStreamTapModule);
         }
@@ -341,34 +364,19 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
             PrimaryDecoder primaryDecoder = mProcessingChain.getPrimaryDecoder();
             if(primaryDecoder instanceof NBFMDecoder nbfmDecoder)
             {
-                Component rightComponent = mSplitPane.getRightComponent();
-
-                if(rightComponent != mNoiseSquelchPanel)
-                {
-                    mSplitPane.remove(rightComponent);
-                    mSplitPane.setRightComponent(mNoiseSquelchPanel);
-                }
-
+                setRightComponent(mNoiseSquelchPanel);
                 mNoiseSquelchView.setController(nbfmDecoder);
-                mSignalPowerView.setProcessingChain(null);
             }
             else if(primaryDecoder instanceof AMDecoder)
             {
-                Component rightComponent = mSplitPane.getRightComponent();
-
-                if(rightComponent != mSignalPowerView)
-                {
-                    mSplitPane.remove(rightComponent);
-                    mSplitPane.setRightComponent(mSignalPowerView);
-                }
-
-                mNoiseSquelchView.setController(null);
+                setRightComponent(mSignalPowerView);
                 mSignalPowerView.setProcessingChain(mProcessingChain);
             }
-            else
+            else if(primaryDecoder instanceof FeedbackDecoder feedbackDecoder)
             {
-                mNoiseSquelchView.setController(null);
-                mSignalPowerView.setProcessingChain(null);
+                setRightComponent(mSymbolPanel);
+                mSymbolView.setSymbolProvider(feedbackDecoder);
+                mSymbolView.setProtocol(feedbackDecoder.getProtocolDescription());
             }
 
             mProcessingChain.addModule(mSampleStreamTapModule);
@@ -392,15 +400,25 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
                 }
             }
         }
-        else
-        {
-            mNoiseSquelchView.setController(null);
-            mSignalPowerView.setProcessingChain(null);
-        }
 
         updateFFTProcessing();
     }
 
+    /**
+     * Shows the component on the right side of the split pane.
+     * @param component to show.
+     */
+    private void setRightComponent(Component component)
+    {
+        Component rightComponent = mSplitPane.getRightComponent();
+
+        if(rightComponent != component)
+        {
+            mSplitPane.remove(rightComponent);
+            mSplitPane.setRightComponent(component);
+            mSplitPane.setDividerLocation(0.4);
+        }
+    }
 
     /**
      * Processor for source event stream to capture power level and squelch related source events.
@@ -410,7 +428,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         @Override
         public void receive(SourceEvent sourceEvent)
         {
-            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_CARRIER_OFFSET_FREQUENCY)
+            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED)
             {
                 updateEstimatedCarrierOffsetFrequency(sourceEvent.getValue().longValue());
             }

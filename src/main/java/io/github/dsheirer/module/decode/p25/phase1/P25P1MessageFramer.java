@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,550 +16,837 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
+
 package io.github.dsheirer.module.decode.p25.phase1;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import io.github.dsheirer.edac.bch.BCH_63_16_23_P25;
+import io.github.dsheirer.message.DroppedSamplesMessage;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.MessageProviderModule;
-import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
-import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
-import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
-import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
-import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUHeader;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1HardSyncDetector;
+import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetector;
+import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetectorFactory;
 import io.github.dsheirer.protocol.Protocol;
-import io.github.dsheirer.record.AudioRecordingManager;
-import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
- * and issue phase corrections.
+ * Provides message framing for the demodulated dibit stream.  This framer is notified by an external sync detection
+ * process using the two syncDetected() methods below to indicate if the NID that follows the sync was correctly error
+ * detected and corrected.  When the NID does not pass error correction, we use a PLACEHOLDER data unit ID to allow the
+ * uncertain message to assemble and then we'll inspect before and after data unit IDs and the quantity of captured
+ * dibits to make a best guess on what the assembled message represents.
  */
-public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetectListener
+public class P25P1MessageFramer
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25P1MessageFramer.class);
+    private static final int DIBIT_LENGTH_NID = 33; //32 dibits (64 bits) +1 status
+    private static final float SYNC_DETECTION_THRESHOLD = 60;
+    private final BCH_63_16_23_P25 mBCHDecoder = new BCH_63_16_23_P25();
+    private static final IntField NAC_FIELD = IntField.length12(0);
+    private static final IntField DUID_FIELD = IntField.length4(12);
+    private final NACTracker mNACTracker = new NACTracker();
+    private Dibit[] mNIDBuffer = new Dibit[DIBIT_LENGTH_NID];
+    private int mNIDPointer = 0;
+    private final P25P1SoftSyncDetector mSoftSyncDetector = P25P1SoftSyncDetectorFactory.getDetector();
+    private final P25P1HardSyncDetector mHardSyncDetector = new P25P1HardSyncDetector();
+    private boolean mSyncDetected = false;
 
-    private P25P1DataUnitDetector mDataUnitDetector;
-    private P25P1ChannelStatusProcessor mChannelStatusProcessor = new P25P1ChannelStatusProcessor();
+    private static final double MILLISECONDS_PER_SYMBOL = 1.0 / 4800.0 / 1000.0;
     private Listener<IMessage> mMessageListener;
-    private boolean mAssemblingMessage = false;
-    private CorrectedBinaryMessage mBinaryMessage;
-    private P25P1DataUnitID mDataUnitID;
+    private boolean mMessageAssemblyRequired = false;
+    private boolean mRunning = false;
+    private int mDibitCounter = 58; //Set to 1-greater than SYNC+NID to avoid triggering message assembly on startup
+    private int mDibitSinceTimestampCounter = 0;
+    private int mStatusSymbolDibitCounter = 36; //Set to 1-greater than the suppression trigger at 35 dibits
+    private long mReferenceTimestamp = 0;
+    private P25P1MessageAssembler mMessageAssembler;
+    private P25P1DataUnitID mPreviousDataUnitID = P25P1DataUnitID.PLACE_HOLDER;
+    private P25P1DataUnitID mDetectedDataUnitID = P25P1DataUnitID.PLACE_HOLDER;
+    private int mDetectedNAC = 0;
+    private int mDetectedSyncBitErrors = 0;
+    private final P25P1ChannelStatusProcessor mChannelStatusProcessor = new P25P1ChannelStatusProcessor();
     private PDUSequence mPDUSequence;
-    private int[] mCorrectedNID;
-    private int mNAC;
-    private int mStatusSymbolDibitCounter = 0;
-    private int mTrailingDibitsToSuppress = 0;
-    private double mBitRate;
-    private long mCurrentTime = System.currentTimeMillis();
-    private ISyncDetectListener mSyncDetectListener;
+    private int mDebugSymbolCount = 0;
 
-    public P25P1MessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
+    /**
+     * Constructs an instance
+     */
+    public P25P1MessageFramer()
     {
-        mDataUnitDetector = new P25P1DataUnitDetector(this, phaseLockedLoop);
-        mBitRate = bitRate;
-    }
-
-    public P25P1MessageFramer(int bitRate)
-    {
-        this(null, bitRate);
     }
 
     /**
-     * Sets the sample rate for the sync detector
+     * Process soft symbol and apply soft symbol sync pattern detection.
+     * @param softSymbol demodulated soft symbol
+     * @param symbol as decision from the soft symbol
+     * @return true if a sync pattern is detected and the following NID is decoded correctly.
      */
-    public void setSampleRate(double sampleRate)
+    public boolean processWithSoftSyncDetect(float softSymbol, Dibit symbol)
     {
-        mDataUnitDetector.setSampleRate(sampleRate);
-    }
+        boolean validNIDDetected = process(symbol);
 
-    /**
-     * Registers a sync detect listener to be notified each time a sync pattern and NID are detected.
-     */
-    public void setSyncDetectListener(ISyncDetectListener syncDetectListener)
-    {
-        mSyncDetectListener = syncDetectListener;
-    }
-
-    /**
-     * Current timestamp or timestamp of incoming message buffers that is continuously updated to as
-     * close as possible to the bits processed for the expected baud rate.
-     *
-     * @return
-     */
-    private long getTimestamp()
-    {
-        return mCurrentTime;
-    }
-
-    /**
-     * Sets the current time.  This should be invoked by an incoming message buffer stream.
-     *
-     * @param currentTime
-     */
-    public void setCurrentTime(long currentTime)
-    {
-        mCurrentTime = currentTime;
-    }
-
-    /**
-     * Updates the current timestamp based on the number of bits processed versus the bit rate per second
-     * in order to keep an accurate running timestamp to use for timestamped message creation.
-     *
-     * @param bitsProcessed thus far
-     */
-    private void updateBitsProcessed(int bitsProcessed)
-    {
-        if(bitsProcessed > 0)
+        if(mSoftSyncDetector.process(softSymbol) > SYNC_DETECTION_THRESHOLD)
         {
-            mCurrentTime += (long)((double)bitsProcessed / mBitRate * 1000.0);
+            syncDetected();
         }
+
+        return validNIDDetected;
     }
 
     /**
-     * Registers the listener for messages produced by this message framer
-     *
-     * @param messageListener to receive framed and decoded messages
+     * Process symbol decision and perform hard symbol sync detection.
+     * @param symbol decision
      */
-    public void setListener(Listener<IMessage> messageListener)
+    public boolean processWithHardSyncDetect(Dibit symbol)
     {
-        mMessageListener = messageListener;
-    }
+        boolean validNIDDetected = process(symbol);
 
-    public P25P1DataUnitDetector getDataUnitDetector()
-    {
-        return mDataUnitDetector;
-    }
-
-    /**
-     * Primary method for streaming decoded symbol dibits for message framing.
-     *
-     * @param dibit to process
-     */
-    @Override
-    public void receive(Dibit dibit)
-    {
-        if(mAssemblingMessage)
+        if(mHardSyncDetector.process(symbol))
         {
-            //Strip out the status symbol dibit after every 70 bits or 35 dibits
-            if(mStatusSymbolDibitCounter == 35)
-            {
-                if(mAssemblingMessage)
-                {
-                    //Send status dibit to channel status processor to identify ISP or OSP channel
-                    mChannelStatusProcessor.receive(dibit);
-                }
-                mStatusSymbolDibitCounter = 0;
+            syncDetected();
+        }
 
-                return;
+        return validNIDDetected;
+    }
+
+    /**
+     * Externally triggered sync detection.
+     */
+    public void syncDetected()
+    {
+        if(mDebugSymbolCount > 2204767)
+        {
+            int a = 0;
+        }
+
+        mSyncDetected = true;
+        mNIDPointer = 0;
+    }
+
+    /**
+     * Process hard symbol decision without sync detection.
+     * @param symbol that was demodulated.
+     */
+    public boolean process(Dibit symbol)
+    {
+        boolean validNIDDetected = false;
+
+        mDebugSymbolCount++;
+        mDibitSinceTimestampCounter++;
+
+        //Strip status symbol after every 35 dibits/70 bits.  This counter is reset to zero on sync detect and runs
+        //continuously even when we don't have a sync detect and not assembling a message.
+        mStatusSymbolDibitCounter++;
+
+        if(mSyncDetected)
+        {
+            mNIDBuffer[mNIDPointer++] = symbol;
+
+            if(mNIDPointer >= DIBIT_LENGTH_NID)
+            {
+                validNIDDetected = checkNID();
+                mSyncDetected = false;
+            }
+        }
+
+        if(mStatusSymbolDibitCounter == 36)
+        {
+            if(mMessageAssemblyRequired || mMessageAssembler != null)
+            {
+                //Send status dibit to channel status processor to identify ISP or OSP channel
+                mChannelStatusProcessor.receive(symbol);
             }
 
-            mStatusSymbolDibitCounter++;
+            mStatusSymbolDibitCounter = 0;
+            mDibitCounter++;
+            return false;
+        }
 
-            try
+        if(mMessageAssembler != null)
+        {
+            //Important sequencing - delay checking message complete until the next non-status dibit arrives
+            //so that we can fully consume any trailing status dibit first, before dispatching the message.
+            if(mMessageAssembler.isComplete())
             {
-                mBinaryMessage.add(dibit.getBit1());
-                mBinaryMessage.add(dibit.getBit2());
-                
-                if(mBinaryMessage.isFull())
-                {
-                    //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
-                    if(mDataUnitID.hasTrailingStatusDibit())
-                    {
-                        mTrailingDibitsToSuppress = 1;
-                    }
+                dispatchMessage();
 
-                    dispatchMessage();
+                //If we still have an assembler, feed it the current dibit (e.g. TSBK and PDU continuation block assembly)
+                if(mMessageAssembler != null)
+                {
+                    mMessageAssembler.receive(symbol);
                 }
             }
-            catch(BitSetFullException bsfe)
+            else
             {
-//                mLog.debug("Message full exception - unexpected");
-
-                //Reset so that we can start over again
-                reset(0);
+                mMessageAssembler.receive(symbol);
             }
         }
-        else
+        //Start a message assembler after ignoring 24x Sync, 32x NID, and 1x status dibits. Trigger assembler
+        // construction at dibit count 57 and feed the current dibit to the assembler.
+        else if(mDibitCounter == 57)
         {
-            //Suppress any trailing nulls or status dibits that follow certain DUID sequences
-            if(mTrailingDibitsToSuppress > 0)
+            if(mMessageAssemblyRequired)
             {
-                mTrailingDibitsToSuppress--;
-                updateBitsProcessed(2);
-                return;
+                mMessageAssembler = new P25P1MessageAssembler(mDetectedNAC, mDetectedDataUnitID);
+                mMessageAssemblyRequired = false;
             }
-
-            mDataUnitDetector.receive(dibit);
+            else if(mDetectedNAC > 0)
+            {
+                //Start a placeholder message assembly.  If it completes before another sync detect, throw it away
+                mDetectedDataUnitID = P25P1DataUnitID.PLACE_HOLDER;
+                mMessageAssembler = new P25P1MessageAssembler(mDetectedNAC, mDetectedDataUnitID);
+            }
         }
+        else if(mDibitCounter >= 4800) //4800x (1-sec).
+        {
+            mDibitCounter -= 4800;
+            broadcast(new SyncLossMessage(getTimestamp(), 9600, Protocol.APCO25));
+        }
+
+        mDibitCounter++;
+
+        return validNIDDetected;
     }
 
+    /**
+     * Indicates if there is a non-null message assembler and it is completed, but not yet dispatched.
+     * @return true if there is a complete message.
+     */
+    public boolean isComplete()
+    {
+        return mMessageAssembler != null && mMessageAssembler.isComplete() && mStatusSymbolDibitCounter == 35;
+    }
+
+    /**
+     * Dispatch the message currently in the message assembler.
+     */
     private void dispatchMessage()
     {
+        //Note: the message assembler should have a valid DUID on it via the forceCompletion() method.  Capture the
+        //current DUID as the previous, before the assembler is nullified.
+        mPreviousDataUnitID = mMessageAssembler.getDataUnitID();
+
         if(mMessageListener != null)
         {
-            switch(mDataUnitID)
+            switch(mMessageAssembler.getDataUnitID())
             {
-                case PACKET_HEADER_DATA_UNIT:
-                    mPDUSequence = PDUMessageFactory.createPacketSequence(mNAC, mCurrentTime, mBinaryMessage);
-
-                    if(mPDUSequence != null)
-                    {
-                        if(mPDUSequence.getHeader().isValid() &&
-                           mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
-                        {
-                            //Setup to catch the sequence of data blocks that follow the header
-                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT;
-                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT.getMessageLength());
-                            mAssemblingMessage = true;
-                        }
-                        else
-                        {
-                            //Process 44 bits/22 dibits of trailing nulls
-                            mTrailingDibitsToSuppress = 22;
-
-                            mMessageListener.receive(PDUMessageFactory.create(mPDUSequence, mNAC, getTimestamp()));
-                            reset(mPDUSequence.getBitsProcessedCount());
-                            mPDUSequence = null;
-                        }
-                    }
-                    break;
-                case PACKET_DATA_UNIT:
-                    if(mPDUSequence != null)
-                    {
-                        if(mPDUSequence.getHeader().isConfirmationRequired())
-                        {
-                            mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(mBinaryMessage));
-                        }
-                        else
-                        {
-                            mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(mBinaryMessage));
-                        }
-
-                        if(mPDUSequence.isComplete())
-                        {
-                            mMessageListener.receive(PDUMessageFactory.create(mPDUSequence, mNAC, getTimestamp()));
-
-                            switch(mPDUSequence.getHeader().getBlocksToFollowCount())
-                            {
-                                case 1:
-                                    mTrailingDibitsToSuppress = 29;
-                                    break;
-                                case 2:
-                                    //Process 2 bits or 1 dibit of trailing nulls
-                                    mTrailingDibitsToSuppress = 1;
-                                    break;
-                                case 3:
-                                    //Process 16 bits or 8 dibits of trailing nulls
-                                    mTrailingDibitsToSuppress = 8;
-                                    break;
-                                case 4:
-                                    //Process 30 bits or 15 dibits of trailing nulls
-                                    mTrailingDibitsToSuppress = 15;
-                                    break;
-                                case 5:
-                                    //Process 44 bits or 22 dibits of trailing nulls
-                                    mTrailingDibitsToSuppress = 22;
-                                    break;
-                                default:
-//                                    mLog.debug("*** MORE THAN 5 PDU BLOCKS DETECTED [" +
-//                                        mPDUSequence.getHeader().getBlocksToFollowCount() +
-//                                        "] - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
-                                    break;
-                            }
-
-                            reset(mPDUSequence.getBitsProcessedCount());
-                        }
-                        else
-                        {
-                            //Setup to catch the next data block
-                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT;
-                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT.getMessageLength());
-                            mAssemblingMessage = true;
-                        }
-                    }
-                    else
-                    {
-//                        mLog.error("Received PDU data block with out a preceeding data header");
-                        reset(mDataUnitID.getMessageLength());
-                    }
-                    break;
                 case TRUNKING_SIGNALING_BLOCK_1:
                 case TRUNKING_SIGNALING_BLOCK_2:
                 case TRUNKING_SIGNALING_BLOCK_3:
-                    TSBKMessage tsbkMessage = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
-                        mDataUnitID, mBinaryMessage, mNAC, getTimestamp());
-
-                    int messageLength = mDataUnitID.getMessageLength();
-
-                    mMessageListener.receive(tsbkMessage);
-
-                    if(tsbkMessage.isLastBlock())
-                    {
-                        reset(messageLength);
-                        mTrailingDibitsToSuppress = 1;
-                    }
-                    else
-                    {
-                        updateBitsProcessed(messageLength);
-                        mBinaryMessage = new CorrectedBinaryMessage(messageLength);
-                        if(mDataUnitID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
-                        {
-                            mDataUnitID = P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2;
-                        }
-                        else if(mDataUnitID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2)
-                        {
-                            mDataUnitID = P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3;
-                        }
-                    }
+                    dispatchTSBK();
+                    break;
+                case PACKET_DATA_UNIT:
+                case PACKET_DATA_UNIT_BLOCK_1:
+                case PACKET_DATA_UNIT_BLOCK_2:
+                case PACKET_DATA_UNIT_BLOCK_3:
+                case PACKET_DATA_UNIT_BLOCK_4:
+                case PACKET_DATA_UNIT_BLOCK_5:
+                    dispatchPDU();
+                    break;
+                case TERMINATOR_DATA_UNIT:
+                    dispatchTDU();
+                    break;
+                case TERMINATOR_DATA_UNIT_LINK_CONTROL:
+                    dispatchTDULC();
+                    break;
+                case PLACE_HOLDER:
+                    mMessageAssembler = null;
                     break;
                 default:
-                    P25P1Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
-                    mMessageListener.receive(message);
-                    reset(mDataUnitID.getMessageLength());
+                    dispatchOther();
                     break;
             }
         }
         else
         {
-            reset(0);
+            mMessageAssembler = null;
         }
     }
 
-    private void reset(int bitsProcessed)
+    /**
+     * Updates the dibit counter with the dibits collected on the current message before message assembler disposal.
+     */
+    private void adjustDibitCounterFromMessageAssembler()
     {
-        updateBitsProcessed(bitsProcessed);
+        if(mMessageAssembler != null)
+        {
+            mDibitCounter -= mMessageAssembler.getDataUnitID().getElapsedDibitLength(); //SYNC + NID + Message
+        }
+    }
+
+    private void dispatchTDU()
+    {
+        adjustDibitCounterFromMessageAssembler();
+
+        CorrectedBinaryMessage cbm = mMessageAssembler.getMessage();
+        P25P1Message message = P25MessageFactory.create(mMessageAssembler.getDataUnitID(), mMessageAssembler.getNAC(),
+                getTimestamp(), cbm);
+
+        if(message != null)
+        {
+            message.getMessage().incrementCorrectedBitCount(mDetectedSyncBitErrors);
+            broadcast(message);
+        }
+        else
+        {
+            broadcast(new SyncLossMessage(getTimestamp(), cbm.currentSize(), Protocol.APCO25));
+        }
+
+        mMessageAssembler = null;
+    }
+
+    private void dispatchTDULC()
+    {
+        CorrectedBinaryMessage cbm = mMessageAssembler.getMessage();
+        P25P1Message message = P25MessageFactory.create(mMessageAssembler.getDataUnitID(), mMessageAssembler.getNAC(),
+                getTimestamp(), cbm);
+
+        if(message != null)
+        {
+            broadcast(message);
+        }
+        else
+        {
+            broadcast(new SyncLossMessage(getTimestamp(), cbm.currentSize(), Protocol.APCO25));
+        }
+
+        adjustDibitCounterFromMessageAssembler();
+        mMessageAssembler = null;
+    }
+
+    /**
+     * Dispatches the message currently in the message assembler when the DUID is not PDU or TSBK.
+     */
+    private void dispatchOther()
+    {
+        adjustDibitCounterFromMessageAssembler();
+
+        CorrectedBinaryMessage cbm = mMessageAssembler.getMessage();
+        P25P1Message message = P25MessageFactory.create(mMessageAssembler.getDataUnitID(), mMessageAssembler.getNAC(),
+                getTimestamp(), cbm);
+
+        if(message != null)
+        {
+            broadcast(message);
+        }
+        else
+        {
+            broadcast(new SyncLossMessage(getTimestamp(), cbm.currentSize(), Protocol.APCO25));
+        }
+
+        mMessageAssembler = null;
+    }
+
+    /**
+     * Indicates if a message is being or about to be assembled and that message is not yet complete.
+     */
+    public boolean isAssembling()
+    {
+        return (mMessageAssembler != null && !mMessageAssembler.isComplete()) || mMessageAssemblyRequired || mDibitCounter < 2;
+    }
+
+    public P25P1DataUnitID getAssemblingDUID()
+    {
+        if(isAssembling())
+        {
+            return mMessageAssembler.getDataUnitID();
+        }
+
+        return null;
+    }
+
+    /**
+     * Dispatches the message currently in the message assembler when the DUID is TSBK1, TSBK2, or TSBK3.
+     */
+    private void dispatchTSBK()
+    {
+        switch(mMessageAssembler.getDataUnitID())
+        {
+            case TRUNKING_SIGNALING_BLOCK_1:
+                CorrectedBinaryMessage message1 = mMessageAssembler.getMessage().getSubMessage(0, 196);
+                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message1, mMessageAssembler.getNAC(), getTimestamp());
+
+                if(tsbk1 != null)
+                {
+                    //Add in the sync and nid detected bit error counts
+                    tsbk1.getMessage().incrementCorrectedBitCount(mDetectedSyncBitErrors);
+                    broadcast(tsbk1);
+
+                    if(mMessageAssembler.getMessage().currentSize() >= 391) //Detect forced completion
+                    {
+                        mMessageAssembler.setDataUnitID(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
+                        dispatchTSBK(); //Recursive call
+                    }
+                    else if(tsbk1.isValid() && tsbk1.isLastBlock())
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        mMessageAssembler = null;
+                    }
+                    else //Reconfigure the assembler to continue capturing TSBK2
+                    {
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            case TRUNKING_SIGNALING_BLOCK_2:
+                CorrectedBinaryMessage message2 = mMessageAssembler.getMessage().getSubMessage(196, 392);
+                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message2, mMessageAssembler.getNAC(), getTimestamp());
+
+                if(tsbk2 != null)
+                {
+                    broadcast(tsbk2);
+
+                    if(mMessageAssembler.getMessage().currentSize() >= 588) //Detect forced completion
+                    {
+                        mMessageAssembler.setDataUnitID(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
+                        dispatchTSBK(); //Recursive call
+                    }
+                    else if(tsbk2.isValid() && tsbk2.isLastBlock())
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        mMessageAssembler = null;
+                    }
+                    else //Reconfigure the assembler to continue capturing TSBK3
+                    {
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            case TRUNKING_SIGNALING_BLOCK_3:
+                CorrectedBinaryMessage message3 = mMessageAssembler.getMessage().getSubMessage(392, 588);
+                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message3, mMessageAssembler.getNAC(), getTimestamp());
+                broadcast(tsbk3);
+
+                adjustDibitCounterFromMessageAssembler();
+                mMessageAssembler = null;
+                break;
+            default:
+                System.out.println("Unexpected TSBK DUID: " +  mMessageAssembler.getDataUnitID());
+        }
+    }
+
+    /**
+     * Dispatches a sync loss message to account for lost bits.
+     * @param bitCount that was lost.
+     */
+    private void dispatchSyncLoss(int bitCount)
+    {
+        if(bitCount > 0)
+        {
+            broadcast(new SyncLossMessage(getTimestamp(), bitCount, Protocol.APCO25));
+        }
+    }
+
+    /**
+     * Dispatches a dropped samples/symbols message to account for (potentially) dropped samples when detected.
+     * @param bitCount representing the quantity of symbols that are missing
+     */
+    private void dispatchDroppedSamples(int bitCount)
+    {
+        if(bitCount > 0)
+        {
+            broadcast(new DroppedSamplesMessage(getTimestamp(), bitCount, Protocol.APCO25));
+        }
+    }
+
+
+    /**
+     * Dispatches the message currently in the message assembler when the DUID is PDU or PDU1
+     */
+    private void dispatchPDU()
+    {
+        switch(mMessageAssembler.getDataUnitID())
+        {
+            case PACKET_DATA_UNIT:
+                CorrectedBinaryMessage message = mMessageAssembler.getMessage().getSubMessage(0, 196);
+                PDUHeader header = PDUMessageFactory.createHeader(message);
+
+                if(header != null)
+                {
+                    mPDUSequence = new PDUSequence(header, getTimestamp(), mMessageAssembler.getNAC());
+
+                    if(mPDUSequence.getHeader().isValid() && mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
+                    {
+                        //Setup to catch the sequence of data blocks that follow the header
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1);
+                    }
+                    else
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        dispatchPDUSequence();
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                    mPDUSequence = null;
+                }
+                break;
+            case PACKET_DATA_UNIT_BLOCK_1:
+                if(mPDUSequence != null)
+                {
+                    CorrectedBinaryMessage messageB1 = mMessageAssembler.getMessage().getSubMessage(196, 392);
+
+                    if(mPDUSequence.getHeader().isConfirmationRequired())
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB1));
+                    }
+                    else
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB1));
+                    }
+
+                    if(mPDUSequence.isComplete())
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        dispatchPDUSequence();
+                    }
+                    else
+                    {
+                        //Setup to catch the next data block
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_2);
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            case PACKET_DATA_UNIT_BLOCK_2:
+                if(mPDUSequence != null)
+                {
+                    CorrectedBinaryMessage messageB2 = mMessageAssembler.getMessage().getSubMessage(392, 588);
+
+                    if(mPDUSequence.getHeader().isConfirmationRequired())
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB2));
+                    }
+                    else
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB2));
+                    }
+
+                    if(mPDUSequence.isComplete())
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        dispatchPDUSequence();
+                    }
+                    else
+                    {
+                        //Setup to catch the next data block
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_3);
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            case PACKET_DATA_UNIT_BLOCK_3:
+                if(mPDUSequence != null)
+                {
+                    CorrectedBinaryMessage messageB3 = mMessageAssembler.getMessage().getSubMessage(588, 784);
+
+                    if(mPDUSequence.getHeader().isConfirmationRequired())
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB3));
+                    }
+                    else
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB3));
+                    }
+
+                    if(mPDUSequence.isComplete())
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        dispatchPDUSequence();
+                    }
+                    else
+                    {
+                        //Setup to catch the next data block
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_4);
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            case PACKET_DATA_UNIT_BLOCK_4:
+                if(mPDUSequence != null)
+                {
+                    CorrectedBinaryMessage messageB4 = mMessageAssembler.getMessage().getSubMessage(784, 980);
+
+                    if(mPDUSequence.getHeader().isConfirmationRequired())
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB4));
+                    }
+                    else
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB4));
+                    }
+
+                    if(mPDUSequence.isComplete())
+                    {
+                        adjustDibitCounterFromMessageAssembler();
+                        dispatchPDUSequence();
+                    }
+                    else
+                    {
+                        //Setup to catch the last data block
+                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_5);
+                    }
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            case PACKET_DATA_UNIT_BLOCK_5:
+                if(mPDUSequence != null)
+                {
+                    CorrectedBinaryMessage messageB5 = mMessageAssembler.getMessage().getSubMessage(980, 1176);
+
+                    if(mPDUSequence.getHeader().isConfirmationRequired())
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB5));
+                    }
+                    else
+                    {
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB5));
+                    }
+
+                    adjustDibitCounterFromMessageAssembler();
+                    dispatchPDUSequence();
+                }
+                else
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
+                break;
+            default:
+                System.out.println("Unexpected PDU DUID: " + mMessageAssembler.getMessage());
+                mMessageAssembler = null;
+                mPDUSequence = null;
+        }
+    }
+
+    /**
+     * Dispatches a completed PDU sequence
+     */
+    private void dispatchPDUSequence()
+    {
+        P25P1Message pduMessage = PDUMessageFactory.create(mPDUSequence, mMessageAssembler.getNAC(), getTimestamp());
+        if(pduMessage != null)
+        {
+            if(pduMessage.getMessage() != null)
+            {
+                pduMessage.getMessage().incrementCorrectedBitCount(mDetectedSyncBitErrors);
+            }
+
+            broadcast(pduMessage);
+        }
+        mMessageAssembler = null;
         mPDUSequence = null;
-        mBinaryMessage = null;
-        mAssemblingMessage = false;
-        mDataUnitID = null;
-        mNAC = 0;
-        mDataUnitDetector.reset();
+    }
+
+    private void reset()
+    {
+        mPDUSequence = null;
         mStatusSymbolDibitCounter = 0;
     }
 
     /**
-     * Primary method for streaming decoded symbol byte arrays.
-     *
-     * @param buffer to process into a stream of dibits for processing.
+     * Broadcasts the assembled message to the registered listener.
+     * @param message to broadcast - ignored if there is no registered listener.
      */
-    public void receive(ByteBuffer buffer)
+    private void broadcast(IMessage message)
     {
-        for(byte value : buffer.array())
+//        System.out.println("Symbols: " + mDebugSymbolCount);
+        if(mRunning && message != null && mMessageListener != null)
         {
-            for(int x = 0; x <= 3; x++)
+            mMessageListener.receive(message);
+        }
+    }
+
+    /**
+     * Externally provided trigger that a sync pattern is detected and the next arriving dibit is the first symbol of
+     * that detected sync.  This method is triggered when sync is detected and either:
+     * a) a valid NID is decoded from the look-ahead sample buffer or,
+     * b) the sync optimization process produces a high-quality correlation score
+     *
+     * When the trigger is option b, the DUID will be the PLACEHOLDER.
+     *
+     * @param nac value decoded from the NID.
+     * @param dataUnitID decoded from the NID
+     * @param detectedBitErrors across the SYNc and NID
+     */
+    public void nidDetected(int nac, P25P1DataUnitID dataUnitID, int detectedBitErrors)
+    {
+        mDetectedDataUnitID = dataUnitID;
+
+        //If the DUID is UNKNOWN, use the PLACEHOLDER and don't overwrite the previously detected NAC
+        if(mDetectedDataUnitID == P25P1DataUnitID.UNKNOWN)
+        {
+            mDetectedDataUnitID = P25P1DataUnitID.PLACE_HOLDER;
+        }
+
+        if(mDetectedDataUnitID != P25P1DataUnitID.PLACE_HOLDER)
+        {
+            mDetectedNAC = nac;
+        }
+
+        mDetectedSyncBitErrors = detectedBitErrors;
+
+        //If there is a message assembler (still) active, force it to complete
+        if(mMessageAssembler != null)
+        {
+            if(mMessageAssembler.isComplete())
             {
-                receive(Dibit.parse(value, x));
-            }
-        }
-    }
-
-    @Override
-    public void dataUnitDetected(P25P1DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
-    {
-        if(discardedDibits > 0)
-        {
-            dispatchSyncLoss(discardedDibits * 2);
-        }
-
-        if(dataUnitID.getMessageLength() < 0)
-        {
-            dispatchSyncLoss(112); //Sync (48) and Nid (64)
-            return;
-        }
-
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncDetected(bitErrors);
-        }
-
-        mDataUnitID = dataUnitID;
-        mNAC = nac;
-        mCorrectedNID = correctedNid;
-        mBinaryMessage = new CorrectedBinaryMessage(dataUnitID.getMessageLength());
-        mBinaryMessage.incrementCorrectedBitCount(bitErrors);
-
-        mAssemblingMessage = true;
-        mStatusSymbolDibitCounter = 21;
-    }
-
-    @Override
-    public void syncLost(int bitsProcessed)
-    {
-        dispatchSyncLoss(bitsProcessed);
-
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncLost(bitsProcessed);
-        }
-    }
-
-    private void dispatchSyncLoss(int bitsProcessed)
-    {
-        //Updates current timestamp according to the number of bits procesed
-        updateBitsProcessed(bitsProcessed);
-
-        if(bitsProcessed > 0 && mMessageListener != null)
-        {
-            if(bitsProcessed < 64)
-            {
-                mMessageListener.receive(new StuffBitsMessage(getTimestamp(), bitsProcessed, Protocol.APCO25));
+                //If the message completed assembly as a place holder, that means a subsequent sync was not detected
+                //and we should throw away placeholder message assembly, likely at the end of the transmission.
+                if(mMessageAssembler.getDataUnitID() != P25P1DataUnitID.PLACE_HOLDER)
+                {
+                    dispatchMessage();
+                }
             }
             else
             {
-                mMessageListener.receive(new SyncLossMessage(getTimestamp(), bitsProcessed, Protocol.APCO25));
+                int droppedBitCount = mMessageAssembler.forceCompletion(mPreviousDataUnitID, mDetectedDataUnitID);
+                dispatchDroppedSamples(droppedBitCount);
+                dispatchMessage();
             }
+        }
+
+        mDibitCounter -= 57;
+
+        if(mDibitCounter > 0)
+        {
+            dispatchSyncLoss(mDibitCounter * 2);
+        }
+        else if(mDibitCounter < 0)
+        {
+            //Flip the sign on the dibit counter so we're sending a positive value
+            dispatchDroppedSamples(-mDibitCounter * 2);
+        }
+
+        //Set dibit counter to 0 -- we'll start a message assembler once we skip the SYNC and NID dibits at dibit count=57
+        mMessageAssemblyRequired = true;
+        mDibitCounter = 57;
+        mStatusSymbolDibitCounter = 21;
+    }
+
+    /**
+     * Starts this framer dispatching messages
+     */
+    public void start()
+    {
+        mRunning = true;
+    }
+
+    /**
+     * Stops this framer from dispatching messages
+     */
+    public void stop()
+    {
+        mRunning = false;
+    }
+
+    /**
+     * Sets the listener to receive framed DMR messages.
+     * @param listener for messages.
+     */
+    public void setListener(Listener<IMessage> listener)
+    {
+        mMessageListener = listener;
+    }
+
+    /**
+     * Sets or updates the current dibit stream time from an incoming sample buffer.
+     * @param time to use as a reference timestamp.
+     */
+    public void setTimestamp(long time)
+    {
+        mReferenceTimestamp = time;
+        mDibitSinceTimestampCounter = 0;
+    }
+
+    /**
+     * Calculates the timestamp accurate to the currently received dibit.
+     * @return timestamp in milliseconds.
+     */
+    private long getTimestamp()
+    {
+        if(mReferenceTimestamp > 0)
+        {
+            return mReferenceTimestamp + (long)(1000.0 * mDibitSinceTimestampCounter / 4800);
+        }
+        else
+        {
+            mDibitSinceTimestampCounter = 0;
+            return System.currentTimeMillis();
         }
     }
 
-    public static void main(String[] args)
+    private boolean checkNID()
     {
-        Path directory = Paths.get("/home/denny/Documents/TMR/APCO25/GPS/bkmzk007");
-//        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
+        CorrectedBinaryMessage nid = new CorrectedBinaryMessage((DIBIT_LENGTH_NID - 1) * 2);
 
-        UserPreferences userPreferences = new UserPreferences();
-        Channel channel = new Channel("Phase 1 Test");
-        channel.setDecodeConfiguration(new DecodeConfigP25Phase1());
-        AliasList aliasList = new AliasList("Test Alias List");
-        Alias alias = new Alias("TG Range 1-65535");
-        alias.addAliasID(new Record());
-        alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
-        aliasList.addAlias(alias);
-        AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
-        recordingManager.start();
-        ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
-        processingChain.addAudioSegmentListener(recordingManager);
-        processingChain.addModule(new P25P1DecoderState(channel));
-        processingChain.addModule(new P25P1AudioModule(userPreferences, aliasList));
-        MessageProviderModule messageProviderModule = new MessageProviderModule();
-        processingChain.addModule(messageProviderModule);
+        Dibit dibit;
 
-        mLog.info("Processing Directory: " + directory.toString());
-
-
-        try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
+        for(int i = 0; i < DIBIT_LENGTH_NID; i++)
         {
-            try
+            if(i != 11)
             {
-                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*.bits");
-
-                stream.forEach(new Consumer<Path>()
-                               {
-                                   @Override
-                                   public void accept(Path path)
-                                   {
-                                       mLog.debug("Processing:" + path.toString());
-                                       try
-                                       {
-                                           logOutput.write(("Processing:" + path.toString() + "\n").getBytes());
-                                       }
-                                       catch(IOException ioe)
-                                       {
-                                           mLog.error("Error", ioe);
-                                       }
-
-                                       P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-                                       P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
-                                       messageFramer.setListener(messageProcessor);
-                                       messageProcessor.setMessageListener(new Listener<IMessage>()
-                                       {
-                                           @Override
-                                           public void receive(IMessage message)
-                                           {
-                                               if(!(message instanceof StuffBitsMessage))
-                                               {
-                                                   messageProviderModule.receive(message);
-                                                   try
-                                                   {
-                                                       logOutput.write(message.toString().getBytes());
-                                                       logOutput.write("\n".getBytes());
-
-                                                       if(message instanceof PacketMessage packet)
-                                                       {
-                                                           if(packet.getPacket() instanceof IPV4Packet ipv4)
-                                                           {
-                                                               if(ipv4.getPayload() instanceof UDPPacket udp)
-                                                               {
-                                                                   if(udp.getPayload() instanceof LRRPPacket lrrp)
-                                                                   {
-                                                                       logOutput.write("\n".getBytes());
-                                                                       logOutput.write(lrrp.getMessage().toHexString().getBytes());
-                                                                       logOutput.write("\n\n".getBytes());
-                                                                   }
-                                                               }
-                                                           }
-                                                       }
-                                                   }
-                                                   catch(IOException ioe)
-                                                   {
-                                                       mLog.error("Error", ioe);
-                                                   }
-
-                                                   if(!(message instanceof SyncLossMessage))
-                                                   {
-                                                       mLog.debug(message.toString());
-                                                   }
-                                               }
-                                           }
-                                       });
-
-                                       try(BinaryReader reader = new BinaryReader(path, 200))
-                                       {
-                                           while(reader.hasNext())
-                                           {
-                                               ByteBuffer buffer = reader.next();
-                                               messageFramer.receive(buffer);
-                                           }
-                                       }
-                                       catch(Exception ioe)
-                                       {
-                                           ioe.printStackTrace();
-                                       }
-                                   }
-                               }
-                );
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error", ioe);
+                dibit = mNIDBuffer[i];
+                nid.add(dibit.getBit1(), dibit.getBit2());
             }
         }
-        catch(IOException ioe)
+
+
+        int trackedNAC = mNACTracker.getTrackedNAC();
+        mBCHDecoder.decode(nid, trackedNAC);
+
+        int nac = nid.getInt(NAC_FIELD);
+        P25P1DataUnitID duid = P25P1DataUnitID.fromValue(nid.getInt(DUID_FIELD));
+
+        //If error correction fails, return the original correction candidate
+        if(nid.getCorrectedBitCount() < 0)
         {
-            mLog.error("Error", ioe);
+            return false;
         }
 
-        mLog.info("Finished!");
+        //The BCH decoder can over-correct the NID and produce an invalid NAC.  Compare it against the tracked NAC to
+        //flag it as invalid NID when this happens.  The NAC tracker will give us a value of 0 until it has enough
+        //observations of a valid NID value.
+        mNACTracker.track(nac);
+//        System.out.println("\t\t" + mDebugSymbolCount + " VALID NID - NAC:" + nac + " DUID:" + duid);
+        nidDetected(nac, duid, nid.getCorrectedBitCount());
+        return true;
     }
 }

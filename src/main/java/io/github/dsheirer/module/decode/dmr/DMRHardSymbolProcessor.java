@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.symbol.DibitDelayLine;
 import io.github.dsheirer.module.decode.dmr.sync.DMRHardSyncDetector;
 import java.nio.ByteBuffer;
 

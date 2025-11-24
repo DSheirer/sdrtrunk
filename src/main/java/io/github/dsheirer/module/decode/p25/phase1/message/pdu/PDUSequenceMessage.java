@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu;
 
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
@@ -31,7 +32,7 @@ public class PDUSequenceMessage extends P25P1Message
 
     public PDUSequenceMessage(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(null, nac, timestamp);
+        super(new CorrectedBinaryMessage(0), nac, timestamp);
         mPDUSequence = PDUSequence;
     }
 
@@ -50,7 +51,7 @@ public class PDUSequenceMessage extends P25P1Message
     @Override
     public P25P1DataUnitID getDUID()
     {
-        return P25P1DataUnitID.PACKET_DATA_UNIT;
+        return P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1;
     }
 
     @Override

@@ -186,7 +186,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderState.class);
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LOGGER);
     private final Channel mChannel;
-    private final P25P1Decoder.Modulation mModulation;
+    private final Modulation mModulation;
     private final PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private final P25P1NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private final Listener<ChannelEvent> mChannelEventListener;
@@ -229,7 +229,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     /**
      * Modulation type for the decoder
      */
-    public P25P1Decoder.Modulation getModulation()
+    public Modulation getModulation()
     {
         return mModulation;
     }
@@ -294,7 +294,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 case LOGICAL_LINK_DATA_UNIT_2:
                     processLDU(message);
                     break;
-                case PACKET_DATA_UNIT:
+                case PACKET_DATA_UNIT_BLOCK_1:
                     processPDU(message);
                     break;
                 case SUBNETWORK_DEPENDENT_CONVERGENCE_PROTOCOL:

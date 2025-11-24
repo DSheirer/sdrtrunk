@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -135,12 +135,18 @@ public class TSBKMessageFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(TSBKMessageFactory.class);
     private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
+    public static final int CRC_FAIL = -1;
 
-    public static TSBKMessage create(Direction direction, P25P1DataUnitID dataUnitID,
-                                     CorrectedBinaryMessage correctedBinaryMessage, int nac, long timestamp)
+    /**
+     * Performs deinterleave, Viterbi decoding, and applies the CRC-CCITT error detection/correction.
+     * @param raw interleaved message
+     * @return null or the decoded message with CRC results set in the message where 0 or 1 bit errors is valid and
+     * 2 bit errors is invalid.
+     */
+    public static CorrectedBinaryMessage deinterleaveViterbiAndCrc(CorrectedBinaryMessage raw)
     {
         //Get deinterleaved header chunk
-        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, correctedBinaryMessage);
+        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, raw);
 
         //Decode 1/2 rate trellis encoded PDU header
         CorrectedBinaryMessage message = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
@@ -154,6 +160,25 @@ public class TSBKMessageFactory
         //invalid if the algorithm detects more than 1 correctable error.
         int errors = CRCP25.correctCCITT80(message, 0, 80);
 
+        if(errors > 1)
+        {
+            message.setCorrectedBitCount(CRC_FAIL);
+        }
+
+        return message;
+    }
+
+    public static TSBKMessage create(Direction direction, P25P1DataUnitID dataUnitID,
+                                     CorrectedBinaryMessage correctedBinaryMessage, int nac, long timestamp)
+    {
+        CorrectedBinaryMessage message = deinterleaveViterbiAndCrc(correctedBinaryMessage);
+
+        if(message == null)
+        {
+            return null;
+        }
+
+        int errors = message.getCorrectedBitCount();
         Vendor vendor = TSBKMessage.getVendor(message);
         Opcode opcode = TSBKMessage.getOpcode(message, direction, vendor);
 
@@ -469,12 +494,11 @@ public class TSBKMessageFactory
                 break;
         }
 
-        if(tsbk != null && errors > 1)
+        if(tsbk != null && errors < 0)
         {
             tsbk.setValid(false);
         }
 
         return tsbk;
     }
-
 }
