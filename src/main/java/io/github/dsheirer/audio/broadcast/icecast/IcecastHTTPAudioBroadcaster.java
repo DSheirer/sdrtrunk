@@ -62,6 +62,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
+	private AtomicBoolean mConnectionFailureLogged = new AtomicBoolean(false);
 
     /**
      * Creates an Icecast 2.4.x compatible broadcaster using HTTP 1.1 protocol.  This broadcaster is
@@ -172,7 +173,9 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                             connected = future.await(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS);
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
-                            mLog.debug("HTTP connect attempt interrupted");
+							if (mConnectionFailureLogged.compareAndSet(false, true)) {
+								mLog.debug("HTTP connect attempt interrupted");
+							}
                             setBroadcastState(BroadcastState.DISCONNECTED);
                             mLastConnectionAttempt = System.currentTimeMillis();
                             future.cancel();
@@ -183,10 +186,13 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                         if (connected && future.isConnected()) {
                             mStreamingSession = future.getSession();
                             mConnecting.set(false);
+							mConnectionFailureLogged.set(false);
                             return;
                         } else {
-                            mLog.debug("HTTP connect attempt timed out ({} ms) or not connected",
-                                       CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS);
+							if (mConnectionFailureLogged.compareAndSet(false, true)) {
+								mLog.debug("HTTP connect attempt timed out ({} ms) or not connected",
+										   CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS);
+							}
                             setBroadcastState(BroadcastState.DISCONNECTED);
                             mLastConnectionAttempt = System.currentTimeMillis();
                             future.cancel();
@@ -195,11 +201,13 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                     } catch (RuntimeIoException rie) {
                         Throwable throwableCause = rie.getCause();
                         setBroadcastState(BroadcastState.DISCONNECTED);
-                        if (throwableCause != null) {
-                            mLog.debug("Failed to connect", rie);
-                        } else {
-                            mLog.debug("Failed to connect - no exception is available");
-                        }
+						if (mConnectionFailureLogged.compareAndSet(false, true)) {
+							if (throwableCause != null) {
+								mLog.debug("Failed to connect", rie);
+							} else {
+								mLog.debug("Failed to connect - no exception is available");
+							}
+						}
                         mLastConnectionAttempt = System.currentTimeMillis();
                         disconnect();
                     } finally {
@@ -345,6 +353,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                     if(hexDump.startsWith(HTTP_1_0_OK_HEX_DUMP))
                     {
                         setBroadcastState(BroadcastState.CONNECTED);
+						mConnectionFailureLogged.set(false);
                     }
                     else
                     {
@@ -427,6 +436,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                     case SUCCESS_OK:
                         setBroadcastState(BroadcastState.CONNECTED);
                         mConnecting.set(false);
+						mConnectionFailureLogged.set(false);
                         break;
                     case CLIENT_ERROR_UNAUTHORIZED:
                         setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
