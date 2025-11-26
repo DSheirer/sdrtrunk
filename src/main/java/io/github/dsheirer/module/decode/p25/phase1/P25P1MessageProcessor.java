@@ -179,6 +179,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             }
             else if(message instanceof TDULCMessage tdulc)
             {
+                boolean motorolaTalkerAliasComplete = false;
                 LinkControlWord lcw = tdulc.getLinkControlWord();
 
                 if(lcw instanceof IExtendedSourceMessage esm)
@@ -195,16 +196,21 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                     }
                 }
 
-                //Motorola carries the talker alias in the TDULC
                 else if(mMotorolaTalkerAliasAssembler.add(lcw, message.getTimestamp()))
                 {
-                    dispatch(mMotorolaTalkerAliasAssembler.assemble());
+                    motorolaTalkerAliasComplete = true;
                 }
 
                 //Harris carries the talker alias in the LDU1 link control messages, so reset the assembler on TDULC.
                 mHarrisTalkerAliasAssembler.reset();
 
                 dispatch(tdulc);
+
+                // Dispatch the complete talker alias after the TDULC to ensure correct log sequencing.
+                if(motorolaTalkerAliasComplete)
+                {
+                    dispatch(mMotorolaTalkerAliasAssembler.assemble());
+                }
             }
             else if(message instanceof HDUMessage hdu && mHeldTDULCMessage != null)
             {
