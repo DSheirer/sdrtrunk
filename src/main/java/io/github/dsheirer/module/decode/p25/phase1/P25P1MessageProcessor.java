@@ -196,6 +196,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                     }
                 }
 
+                //Motorola carries the talker alias in the TDULC
                 else if(mMotorolaTalkerAliasAssembler.add(lcw, message.getTimestamp()))
                 {
                     motorolaTalkerAliasComplete = true;
