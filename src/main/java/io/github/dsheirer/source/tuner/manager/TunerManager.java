@@ -111,33 +111,64 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     public void start()
     {
         mLog.info("Discovering tuners ...");
-        int api = LibUsb.getApiVersion();
 
-        mLog.info("LibUsb API Version: " + ((api >> 24) & 0xFF) + "." + ((api >> 16) & 0xFF) + "." + (api & 0xFFFF));
-        mLog.info("LibUsb Version: " + LibUsb.getVersion());
+        boolean libUsbAvailable = false;
 
         try
         {
-            int status = LibUsb.init(mLibUsbApplicationContext);
-
-            if(status == LibUsb.SUCCESS)
-            {
-                mLibUsbInitialized = true;
-//            LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_DEBUG);
-                discoverUSBTuners();
-            }
+            int api = LibUsb.getApiVersion();
+            libUsbAvailable = true;
+            mLog.info("LibUsb API Version: " + ((api >> 24) & 0xFF) + "." + ((api >> 16) & 0xFF) + "." + (api & 0xFFFF));
+            mLog.info("LibUsb Version: " + LibUsb.getVersion());
         }
         catch(Exception e)
         {
-            mLog.error("Error initializing LibUsb and usb4java library", e);
+            final String os = System.getProperty("os.name").toLowerCase();
+            final String version = System.getProperty("os.version");
+
+            //Special handling for MacOS Tahoe version 26 issue with LibUsb.
+            if(os != null && os.startsWith("macos") && version != null && version.startsWith("26"))
+            {
+                mLog.warn("Unable to load libusb library for communication with USB tuner(s)");
+                mLog.warn("Mac OS Tahoe [" + os + "] version [" + version + "] detected.  There is an issue");
+                mLog.warn("with libusb for this OS version.  You might consider manually installing the latest");
+                mLog.warn("version of the libusb library.  In a terminal window type:");
+                mLog.warn("");
+                mLog.warn("\t\tbrew install libusb --HEAD");
+                mLog.warn("");
+            }
+            else
+            {
+                mLog.error("Error while loading libusb for os [" + os + "] version [" + version + "]", e);
+            }
         }
 
-        if(mLibUsbInitialized)
+        if(libUsbAvailable)
         {
-            mHotplugEventSupport.start();
+            try
+            {
+                int status = LibUsb.init(mLibUsbApplicationContext);
+
+                if(status == LibUsb.SUCCESS)
+                {
+                    mLibUsbInitialized = true;
+                    //            LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_DEBUG);
+                    discoverUSBTuners();
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error initializing LibUsb and usb4java library", e);
+            }
+
+            if(mLibUsbInitialized)
+            {
+                mHotplugEventSupport.start();
+            }
+
+            discoverSdrPlayTuners();
         }
 
-        discoverSdrPlayTuners();
         discoverRecordingTuners();
     }
 
