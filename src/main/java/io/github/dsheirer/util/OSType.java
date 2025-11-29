@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ public enum OSType
 
         if(os.contains("mac") || os.contains("darwin") || os.contains("osx"))
         {
-            if(arch.contains("amd64"))
+            if(arch.contains("amd64") || arch.contains("x86_64"))
             {
                 return OSType.OSX_X86_64;
             }
@@ -118,6 +118,8 @@ public enum OSType
                 return OSType.LINUX_ARM_32;
             }
         }
+
+
 
         return OSType.UNKNOWN;
     }
