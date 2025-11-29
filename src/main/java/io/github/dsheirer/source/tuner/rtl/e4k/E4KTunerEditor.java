@@ -215,6 +215,13 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         if(mBiasTButton == null)
         {
             mBiasTButton = new JToggleButton("Bias-T");
+            mBiasTButton.setOpaque(true);
+            mBiasTButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mBiasTButton.setBackground(new java.awt.Color(43, 43, 43));
+                mBiasTButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mBiasTButton.setEnabled(false);
             mBiasTButton.addActionListener(e -> {
                 if(!isLoading())
@@ -267,6 +274,13 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         if(mLNAGainCombo == null)
         {
             mLNAGainCombo = new JComboBox<>(E4KLNAGain.values());
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mLNAGainCombo.setBackground(new java.awt.Color(43, 43, 43));
+                mLNAGainCombo.setForeground(new java.awt.Color(187, 187, 187));
+                // Set a darker gray for disabled state that's more visible in dark mode
+                javax.swing.UIManager.put("ComboBox.disabledForeground", new java.awt.Color(120, 120, 120));
+            }
             mLNAGainCombo.addActionListener(arg0 ->
             {
                 if(!isLoading())
@@ -297,6 +311,13 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         if(mMixerGainCombo == null)
         {
             mMixerGainCombo = new JComboBox<>(E4KMixerGain.values());
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mMixerGainCombo.setBackground(new java.awt.Color(43, 43, 43));
+                mMixerGainCombo.setForeground(new java.awt.Color(187, 187, 187));
+                // Set a darker gray for disabled state that's more visible in dark mode
+                javax.swing.UIManager.put("ComboBox.disabledForeground", new java.awt.Color(120, 120, 120));
+            }
             mMixerGainCombo.addActionListener(arg0 ->
             {
                 if(!isLoading())
@@ -410,6 +431,13 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
         if(mTunerInfoButton == null)
         {
             mTunerInfoButton = new JButton("Tuner Info");
+            mTunerInfoButton.setOpaque(true);
+            mTunerInfoButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mTunerInfoButton.setBackground(new java.awt.Color(43, 43, 43));
+                mTunerInfoButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mTunerInfoButton.setEnabled(false);
             mTunerInfoButton.addActionListener(e -> JOptionPane.showMessageDialog(E4KTunerEditor.this,
                     getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));

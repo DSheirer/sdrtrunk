@@ -22,6 +22,7 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 
@@ -46,10 +47,12 @@ public class ChannelDetailPanel extends JPanel implements Listener<ProcessingCha
 
     private ChannelProcessingManager mChannelProcessingManager;
     private ProcessingChain mProcessingChain;
+    private UserPreferences mUserPreferences;
 
-    public ChannelDetailPanel(ChannelProcessingManager channelProcessingManager)
+    public ChannelDetailPanel(ChannelProcessingManager channelProcessingManager, UserPreferences userPreferences)
     {
         mChannelProcessingManager = channelProcessingManager;
+        mUserPreferences = userPreferences;
 
         init();
     }
@@ -74,6 +77,14 @@ public class ChannelDetailPanel extends JPanel implements Listener<ProcessingCha
         buttonPanel.add(mNameLabel);
 
         JButton refreshButton = new JButton("Refresh");
+        refreshButton.setOpaque(true);
+        refreshButton.setBorderPainted(true);
+        refreshButton.setContentAreaFilled(true);
+        if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+        {
+            refreshButton.setBackground(new java.awt.Color(43, 43, 43));
+            refreshButton.setForeground(new java.awt.Color(187, 187, 187));
+        }
         refreshButton.addActionListener(new ActionListener()
         {
             @Override
