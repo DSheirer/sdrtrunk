@@ -264,7 +264,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             }
             else if(message instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
             {
-                mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
+                mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),tac.getRadio(), tac.getAlias());
             }
         }
     }
@@ -1728,7 +1728,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
             if(from instanceof RadioIdentifier ri)
             {
-                mTrafficChannelManager.getTalkerAliasManager().update(ri, alias);
+                mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getName(),ri, alias);
             }
         }
     }
