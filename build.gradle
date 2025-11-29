@@ -106,7 +106,7 @@ dependencies {
     implementation 'eu.hansolo:charts:1.0.5'
     implementation 'io.github.dsheirer:radio-reference-api:18.0.0'
     implementation 'io.github.dsheirer:usb4java-native-libraries:1.3.3' //OSX & Windows aarch64 native libs
-    implementation 'io.github.dsheirer:usb4java:1.3.3' //Fork with Loader support for OSX Multi-Version
+    implementation 'io.github.dsheirer:usb4java:1.3.5' //Fork with Loader support for OSX Multi-Version
     implementation 'javax.usb:usb-api:1.0.2'
     implementation 'net.coderazzi:tablefilter-swing:5.5.4'
     implementation 'org.apache.commons:commons-compress:1.28.0'
