@@ -26,9 +26,9 @@ import io.github.dsheirer.dsp.symbol.DibitDelayLine;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.gui.viewer.sync.SyncResultsViewer;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetector;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetectorFactory;
 import io.github.dsheirer.module.decode.nxdn.sync.NXDNSyncDetector;
+import io.github.dsheirer.module.decode.nxdn.sync.NXDNSyncDetectorFactory;
+import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardSoftSyncDetector;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -42,19 +42,17 @@ public class NXDNDemodulator
 {
     private static final float EQUALIZER_LOOP_GAIN = 0.15f;
     private static final float EQUALIZER_MAXIMUM_PLL = (float)(Math.PI / 3.0); //+/- 800 Hz
-    private static final float EQUALIZER_MAXIMUM_GAIN = 1.6f;
+    private static final float EQUALIZER_MAXIMUM_GAIN = 1.35f;
     private static final float EQUALIZER_RECALIBRATE_THRESHOLD = (float)(Math.PI / 8.0);
     private static final float SOFT_SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
-    private static final float SYNC_THRESHOLD_DETECTION = 40;
+    private static final float SYNC_THRESHOLD_DETECTION = 35;
     private static final float SYNC_THRESHOLD_OPTIMIZED = 40;
     private static final float SYNC_THRESHOLD_EQUALIZED = 40;
     private static final float TWO_PI = (float)(Math.PI * 2.0);
-    private static final float[] SYNC_PATTERN_SYMBOLS = NXDNSyncDetector.syncPatternToSymbols();
     private static final int BUFFER_WORKSPACE_LENGTH = 1024;
     private static final int DIBIT_LENGTH_NID = 33; //32 dibits (64 bits) +1 status
     private static final int DIBIT_LENGTH_SYNC = 10;
     private static final Correction INVALID_SYNC_DETECTION = new Correction(0d, Double.MAX_VALUE, 0f, 0f, 0f, 0f, 0);
-    private static final Dibit[] SYNC_PATTERN_DIBITS = NXDNSyncDetector.syncPatternToDibits();
 
     private SyncResultsViewer mSyncResultsViewer;
     private final DibitDelayLine mSymbolDelayLine = new DibitDelayLine(DIBIT_LENGTH_SYNC);
@@ -62,8 +60,8 @@ public class NXDNDemodulator
     private final Equalizer mEqualizer = new Equalizer();
     private final FeedbackDecoder mFeedbackDecoder;
     private final NXDNMessageFramer mMessageFramer;
-    private final NXDNSoftSyncDetector mSyncDetector = NXDNSoftSyncDetectorFactory.getDetector();
-    private final NXDNSoftSyncDetector mSyncDetectorLagging = NXDNSoftSyncDetectorFactory.getDetector();
+    private final NXDNStandardSoftSyncDetector mSyncDetector = NXDNSyncDetectorFactory.getStandardDetector();
+    private final NXDNStandardSoftSyncDetector mSyncDetectorLagging = NXDNSyncDetectorFactory.getStandardDetector();
     private boolean mFineSync = false;
     private double mMaxFineSyncTimingAdjustment;
     private double mNoiseStandardDeviationThreshold;
@@ -160,15 +158,16 @@ public class NXDNDemodulator
                     symbolsSinceLastSync++;
                     softSymbol = mEqualizer.getEqualizedSymbol(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], samplePoint);
 
-                    //Debug utility for viewing demodulation process
-                    getSyncResultsViewer().symbol(softSymbol);
 
                     //Broadcast the decoded soft symbol to an optionally registered listener (ie Symbol view in channel panel).
                     mFeedbackDecoder.broadcast(softSymbol);
                     Dibit symbol = toSymbol(softSymbol);
                     samplePoint += mEqualizer.getAdjustment(softSymbol, symbol, bufferPointer);
 
-                    mMessageFramer.process(symbol, softSymbol);
+                    //Debug utility for viewing demodulation process
+                    getSyncResultsViewer().symbol(softSymbol);
+
+                    mMessageFramer.process(symbol);
 
                     //We delay sending the symbol to the dibit assembler so that we have a chance to fully correct
                     //detected sync patterns in the delay buffer before they are sent downstream for recording.  This
@@ -186,7 +185,7 @@ public class NXDNDemodulator
                     float softSymbolLag = mEqualizer.getEqualizedSymbol(mBuffer[lagIntegral], mBuffer[lagIntegral + 1], lag - lagIntegral);
                     float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
 
-                    boolean sync = (scorePrimary > 40) || (scoreLag > 40);
+                    boolean sync = (scorePrimary > SYNC_THRESHOLD_DETECTION) || (scoreLag > SYNC_THRESHOLD_DETECTION);
                     System.out.println(mDebugSymbolCounter +
                             "\tPRIMARY:" + scorePrimary +
                             "\tLAG:" + scoreLag +
@@ -194,11 +193,13 @@ public class NXDNDemodulator
 
                     if(scorePrimary > 40)
                     {
-                        correctionCandidate = mEqualizer.optimize(0, scorePrimary, bufferPointer + samplePoint);
+                        correctionCandidate = mEqualizer.optimize(mSyncDetector, 0, scorePrimary,
+                                bufferPointer + samplePoint);
                     }
                     else if(scoreLag > 40)
                     {
-                        correctionCandidate = mEqualizer.optimize(-mLaggingSyncOffset, scorePrimary, bufferPointer + samplePoint);
+                        correctionCandidate = mEqualizer.optimize(mSyncDetectorLagging, -mLaggingSyncOffset,
+                                scorePrimary, bufferPointer + samplePoint);
                     }
 
                     if(correctionCandidate.isValid())
@@ -209,6 +210,7 @@ public class NXDNDemodulator
 
                     if(sync)
                     {
+                        mMessageFramer.syncDetected();
                         symbolsSinceLastSync = 0;
                         visualizeSyncDetect(scorePrimary, true, "test", bufferPointer, samplePoint);
                     }
@@ -382,7 +384,7 @@ public class NXDNDemodulator
         }
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        getSyncResultsViewer().receive(symbols, SYNC_PATTERN_SYMBOLS, samples, syncIntervals, mEqualizer.mPll, mEqualizer.mGain,
+        getSyncResultsViewer().receive(symbols, mSyncDetector.getSyncSymbols(), samples, syncIntervals, mEqualizer.mPll, mEqualizer.mGain,
                 "Score: " + score + (primary ? " PRIMARY " : " SECONDARY ") + (mFineSync ? "FINE " : "COARSE ") +
                         " EQ-B:" + mEqualizer.mPll + " EQ-G:" + mEqualizer.mGain + " " + tag, countDownLatch);
 
@@ -678,7 +680,7 @@ public class NXDNDemodulator
          * offset for the lagging sync detector.
          * @return optimized timing adjustment or NO_OPTIMIZATION sentinel value.
          */
-        public Correction optimize(double additionalOffset, float detectionScore, double bufferOffset)
+        public Correction optimize(NXDNSyncDetector syncDetector, double additionalOffset, float detectionScore, double bufferOffset)
         {
             //Offset points to the final symbol/sample in the buffer for the detected sync pattern.
             double offset = bufferOffset + additionalOffset;
@@ -702,13 +704,13 @@ public class NXDNDemodulator
             double adjustmentMax = fineSync ? samplesPerSymbol : (samplesPerSymbol / 2.0);
             double candidate = offset;
 
-            float scoreCenter = score(candidate, samplesPerSymbol);
+            float scoreCenter = score(syncDetector, candidate, samplesPerSymbol);
 
             candidate = offset - stepSize;
-            float scoreLeft = score(candidate, samplesPerSymbol);
+            float scoreLeft = score(syncDetector, candidate, samplesPerSymbol);
 
             candidate = offset + stepSize;
-            float scoreRight = score(candidate, samplesPerSymbol);
+            float scoreRight = score(syncDetector, candidate, samplesPerSymbol);
 
             while(stepSize > stepSizeMin && Math.abs(adjustment) <= adjustmentMax)
             {
@@ -719,7 +721,7 @@ public class NXDNDemodulator
                     scoreCenter = scoreLeft;
 
                     candidate = offset + adjustment - stepSize;
-                    scoreLeft = score(candidate, samplesPerSymbol);
+                    scoreLeft = score(syncDetector, candidate, samplesPerSymbol);
                 }
                 else if(scoreRight > scoreLeft && scoreRight > scoreCenter)
                 {
@@ -728,7 +730,7 @@ public class NXDNDemodulator
                     scoreCenter = scoreRight;
 
                     candidate = offset + adjustment + stepSize;
-                    scoreRight = score(candidate, samplesPerSymbol);
+                    scoreRight = score(syncDetector, candidate, samplesPerSymbol);
                 }
                 else
                 {
@@ -737,10 +739,10 @@ public class NXDNDemodulator
                     if(stepSize > stepSizeMin)
                     {
                         candidate = offset + adjustment - stepSize;
-                        scoreLeft = score(candidate, samplesPerSymbol);
+                        scoreLeft = score(syncDetector, candidate, samplesPerSymbol);
 
                         candidate = offset + adjustment + stepSize;
-                        scoreRight = score(candidate, samplesPerSymbol);
+                        scoreRight = score(syncDetector, candidate, samplesPerSymbol);
                     }
                 }
             }
@@ -751,7 +753,7 @@ public class NXDNDemodulator
                 return INVALID_SYNC_DETECTION;
             }
 
-            return getCorrection(additionalOffset, adjustment, detectionScore, scoreCenter, bufferOffset);
+            return getCorrection(syncDetector, additionalOffset, adjustment, detectionScore, scoreCenter, bufferOffset);
         }
 
         /**
@@ -861,9 +863,9 @@ public class NXDNDemodulator
          * @param samplesPerSymbol spacing to test for.
          * @return correlation score.
          */
-        public float score(double offset, double samplesPerSymbol)
+        public float score(NXDNSyncDetector syncDetector, double offset, double samplesPerSymbol)
         {
-            return score(offset, samplesPerSymbol, mPll, mGain);
+            return score(syncDetector, offset, samplesPerSymbol, mPll, mGain);
         }
 
         /**
@@ -872,18 +874,18 @@ public class NXDNDemodulator
          * @param samplesPerSymbol spacing to test for.
          * @return correlation score.
          */
-        public float score(double offset, double samplesPerSymbol, float balance, float gain)
+        public float score(NXDNSyncDetector syncDetector, double offset, double samplesPerSymbol, float balance, float gain)
         {
             int maxPointer = mBuffer.length - 1;
             float softSymbol;
 
-            double pointer = offset - (samplesPerSymbol * 9.0);
+            double pointer = offset - (samplesPerSymbol * (syncDetector.getSyncPatternDibitLength() - 1));
             int bufferPointer = (int)Math.floor(pointer);
             double fractional = pointer - bufferPointer;
 
             float score = 0;
 
-            for(int x = 0; x < 10; x++)
+            for(int x = 0; x < syncDetector.getSyncPatternDibitLength(); x++)
             {
                 if(bufferPointer < maxPointer)
                 {
@@ -895,7 +897,7 @@ public class NXDNDemodulator
                     softSymbol = 0.0f;
                 }
 
-                score += softSymbol * SYNC_PATTERN_SYMBOLS[x];
+                score += softSymbol * syncDetector.getSyncSymbols()[x];
                 pointer += samplesPerSymbol;
                 bufferPointer = (int)Math.floor(pointer);
                 fractional = pointer - bufferPointer;
@@ -958,65 +960,48 @@ public class NXDNDemodulator
          * sync detection, the equalizer settings are applied to the samples in the buffer allowing the symbols to be
          * resampled during coarse sync acquisition.
          */
-        public Correction getCorrection(double additionalOffset, double timingCorrection, float detectionScore,
-                                        float optimizationScore, double offset)
+        public Correction getCorrection(NXDNSyncDetector syncDetector, double additionalOffset, double timingCorrection,
+                                        float detectionScore, float optimizationScore, double offset)
         {
-            double resampleStart = offset + additionalOffset + timingCorrection;
+            double resampleStart = offset + additionalOffset + timingCorrection - (mSamplesPerSymbol * syncDetector.getSyncPatternDibitLength());
             int resampleStartIntegral = (int)Math.floor(resampleStart);
-            float symbol = SYNC_PATTERN_SYMBOLS[9];
-            float resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
-                    mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
-            resampledSoftSymbol = (resampledSoftSymbol + mPll) * mGain;
+            float symbol, balanceAccumulator = 0, gainAccumulator = 0, resampledSoftSymbol;
+            Dibit resampledDibit;
+            int bitErrorCount = 0;
 
-            float balancePlusSymbols = resampledSoftSymbol - symbol;
-            float balanceMinusSymbols = 0;
-            float gainAccumulator = Math.abs(symbol) - Math.abs(resampledSoftSymbol);
-            Dibit resampledDibit = toSymbol(resampledSoftSymbol);
-            int bitErrorCount = SYNC_PATTERN_DIBITS[9].getBitErrorFrom(resampledDibit);
-
-            resampleStart -= (9 * mSamplesPerSymbol);
-            resampleStartIntegral = (int)Math.floor(resampleStart);
-
-            for(int x = 0; x < 9; x++)
+            for(int x = 0; x < syncDetector.getSyncPatternDibitLength(); x++)
             {
                 if(resampleStartIntegral >= 0)
                 {
-                    symbol = SYNC_PATTERN_SYMBOLS[x];
+                    symbol = syncDetector.getSyncSymbols()[x];
                     resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
                             mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
                     resampledSoftSymbol = (resampledSoftSymbol + mPll) * mGain;
                     resampledDibit = toSymbol(resampledSoftSymbol);
-                    bitErrorCount += SYNC_PATTERN_DIBITS[x].getBitErrorFrom(resampledDibit);
-
-                    if(symbol > 0)
-                    {
-                        balancePlusSymbols += (resampledSoftSymbol - symbol);
-                    }
-                    else
-                    {
-                        balanceMinusSymbols += (resampledSoftSymbol - symbol);
-                    }
-
+                    bitErrorCount += syncDetector.getSyncDibits()[x].getBitErrorFrom(resampledDibit);
+                    balanceAccumulator += (resampledSoftSymbol - symbol);
                     gainAccumulator += Math.abs(symbol) - Math.abs(resampledSoftSymbol);
+                }
+                else
+                {
+                    System.out.println("** WARNING - score calc index is negative");
                 }
 
                 resampleStart += mSamplesPerSymbol;
                 resampleStartIntegral = (int)Math.floor(resampleStart);
             }
 
-            balancePlusSymbols /= -5.0f; //There are 5x Plus and 5x Minus symbols in the sync pattern.
-            balanceMinusSymbols /= -5.0f;
-            float balanceCorrection = (balancePlusSymbols + balanceMinusSymbols) / 2f;
+            float balanceCorrection = balanceAccumulator / syncDetector.getSyncPatternDibitLength();
             balanceCorrection = Math.min(balanceCorrection, SOFT_SYMBOL_QUADRANT_BOUNDARY);
             balanceCorrection = Math.max(balanceCorrection, -SOFT_SYMBOL_QUADRANT_BOUNDARY);
 
             //            System.out.println("Balance [" + balanceAverage + "] Plus3 [" + balancePlus3Symbols + "] Minus3 [" + balanceMinus3Symbols + "]");
-            gainAccumulator /= 10.0f;
+            gainAccumulator /= syncDetector.getSyncPatternDibitLength();
 
             //Recalculate the optimization score using the adjusted equalizer settings
             if(!isInitialized())
             {
-                optimizationScore = score(offset + timingCorrection, mSamplesPerSymbol,
+                optimizationScore = score(syncDetector, offset + timingCorrection, mSamplesPerSymbol,
                         mPll + balanceCorrection, mGain + gainAccumulator);
             }
 

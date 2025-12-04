@@ -17,22 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.sync;
+package io.github.dsheirer.module.decode.nxdn.sync.control;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
 
 /**
- * NXDN sync detector that processes hard symbol (ie dibit) decisions.
+ * NXDN standard sync pattern detector that processes hard symbol (ie dibit) decisions.
  */
-public class NXDNHardSyncDetector extends NXDNSyncDetector
+public class NXDNControlHardSyncDetector extends NXDNControlSyncDetector
 {
-    private static final int MAXIMUM_BIT_ERROR = 2;
+    private static final int MAXIMUM_BIT_ERROR = 4;
     private long mValue;
 
     /**
      * Constructs an instance
      */
-    public NXDNHardSyncDetector()
+    public NXDNControlHardSyncDetector()
     {
     }
 
@@ -44,7 +44,7 @@ public class NXDNHardSyncDetector extends NXDNSyncDetector
      */
     public boolean process(Dibit dibit)
     {
-        mValue = (Long.rotateLeft(mValue, 2) & SYNC_MASK) + dibit.getValue();
-        return Long.bitCount(mValue ^ SYNC_PATTERN) <= MAXIMUM_BIT_ERROR;
+        mValue = (Long.rotateLeft(mValue, 2) & CONTROL_SYNC_MASK) + dibit.getValue();
+        return Long.bitCount(mValue ^ CONTROL_SYNC_PATTERN) <= MAXIMUM_BIT_ERROR;
     }
 }

@@ -19,12 +19,12 @@
 
 package io.github.dsheirer.vector.calibrate.sync;
 
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetector;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetectorScalar;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetectorVector128;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetectorVector256;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetectorVector512;
-import io.github.dsheirer.module.decode.nxdn.sync.NXDNSoftSyncDetectorVector64;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetector;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorScalar;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector128;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector256;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector512;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector64;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
@@ -40,11 +40,11 @@ public class NXDNSoftSyncCalibration extends Calibration
     private static final int ITERATION_DURATION_MS = 1000;
     private static final int WARMUP_ITERATIONS = 5;
     private static final int TEST_ITERATIONS = 5;
-    private final NXDNSoftSyncDetector mScalarDetector = new NXDNSoftSyncDetectorScalar();
-    private final NXDNSoftSyncDetector mVectorDetector64 = new NXDNSoftSyncDetectorVector64();
-    private final NXDNSoftSyncDetector mVectorDetector128 = new NXDNSoftSyncDetectorVector128();
-    private final NXDNSoftSyncDetector mVectorDetector256 = new NXDNSoftSyncDetectorVector256();
-    private final NXDNSoftSyncDetector mVectorDetector512 = new NXDNSoftSyncDetectorVector512();
+    private final NXDNControlSoftSyncDetector mScalarDetector = new NXDNControlSoftSyncDetectorScalar();
+    private final NXDNControlSoftSyncDetector mVectorDetector64 = new NXDNControlSoftSyncDetectorVector64();
+    private final NXDNControlSoftSyncDetector mVectorDetector128 = new NXDNControlSoftSyncDetectorVector128();
+    private final NXDNControlSoftSyncDetector mVectorDetector256 = new NXDNControlSoftSyncDetectorVector256();
+    private final NXDNControlSoftSyncDetector mVectorDetector512 = new NXDNControlSoftSyncDetectorVector512();
 
     /**
      * Constructs an instance

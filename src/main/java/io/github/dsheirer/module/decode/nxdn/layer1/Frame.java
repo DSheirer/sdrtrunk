@@ -37,9 +37,19 @@ import java.util.List;
 public class Frame extends NXDNMessage
 {
     private static final FragmentedIntField LICH_FIELD = FragmentedIntField.of(0, 2, 4, 6, 8, 10, 12);
+    private static final BinaryMessage SCRAMBLE_SEQUENCE_LICH = Scrambler.generate(16);
     private static final BinaryMessage SCRAMBLE_SEQUENCE_FULL = Scrambler.generate(348);
     private static final BinaryMessage SCRAMBLE_SEQUENCE_CONTROL_INBOUND = Scrambler.generate(268);
     private static final BinaryMessage SCRAMBLE_SEQUENCE_CONTROL_OUTBOUND = Scrambler.generate(340);
+
+    static
+    {
+        //Clear the LICH bits in the complete scramble sequences so that we don't double-scramble the bits.
+        SCRAMBLE_SEQUENCE_FULL.xor(SCRAMBLE_SEQUENCE_LICH);
+        SCRAMBLE_SEQUENCE_CONTROL_INBOUND.xor(SCRAMBLE_SEQUENCE_LICH);
+        SCRAMBLE_SEQUENCE_CONTROL_OUTBOUND.xor(SCRAMBLE_SEQUENCE_LICH);
+    }
+
     private final LICH mLICH;
 
     /**
@@ -53,6 +63,7 @@ public class Frame extends NXDNMessage
     public Frame(CorrectedBinaryMessage message, long timestamp, RFChannel channel, Direction direction)
     {
         super(message, timestamp);
+        message.xor(SCRAMBLE_SEQUENCE_LICH);
         mLICH = LICH.fromValue(getMessage().getInt(LICH_FIELD), channel, direction);
 
         //Descramble the message according to the RF Channel Type and repeater direction.  Control channel uses the
@@ -66,6 +77,10 @@ public class Frame extends NXDNMessage
         {
             message.xor(SCRAMBLE_SEQUENCE_FULL);
         }
+
+        //TODO:
+        // 1. Extract the correct message
+        // 2. If the LICH option is unknown, attempt all variations for the channel and direction to determine the likely combo
     }
 
     /**

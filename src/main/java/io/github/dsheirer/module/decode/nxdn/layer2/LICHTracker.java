@@ -81,12 +81,16 @@ public class LICHTracker
         mBufferPointer %= 3;
 
         //Best 2 out of 3 - if either of the two previous channel types match this LICH, set that as the tracked channel.
-        if(mRFChannelBuffer[mBufferPointer] == lich.getRFChannel() || mRFChannelBuffer[(mBufferPointer + 1) % 3] == lich.getRFChannel())
+        if(mTrackedChannel != lich.getRFChannel() &&
+                (mRFChannelBuffer[mBufferPointer] == lich.getRFChannel() ||
+                 mRFChannelBuffer[(mBufferPointer + 1) % 3] == lich.getRFChannel()))
         {
             mTrackedChannel = lich.getRFChannel();
         }
 
-        if(mDirectionBuffer[mBufferPointer] == lich.getDirection() || mDirectionBuffer[(mBufferPointer + 1) % 3] == lich.getDirection())
+        if(mTrackedDirection != lich.getDirection() &&
+                (mDirectionBuffer[mBufferPointer] == lich.getDirection() ||
+                 mDirectionBuffer[(mBufferPointer + 1) % 3] == lich.getDirection()))
         {
             mTrackedDirection = lich.getDirection();
         }

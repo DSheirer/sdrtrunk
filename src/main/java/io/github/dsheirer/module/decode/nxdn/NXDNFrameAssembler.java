@@ -51,7 +51,7 @@ public class NXDNFrameAssembler implements Listener<Dibit>
      */
     public NXDNFrameAssembler()
     {
-        mMessage = new CorrectedBinaryMessage(368);
+        mMessage = new CorrectedBinaryMessage(364);
     }
 
     /**
@@ -71,8 +71,8 @@ public class NXDNFrameAssembler implements Listener<Dibit>
     {
         if(mMessage.isFull())
         {
-            LOGGING_SUPPRESSOR.error("P25P1-Full", 3, "P25 Phase 1 message under assembly is " +
-                    "full - can't add additional dibits.");
+            LOGGING_SUPPRESSOR.error("NXDN-Full", 3, "NXDN frame under assembly is full - can't " +
+                    "add additional dibits.");
         }
         else
         {

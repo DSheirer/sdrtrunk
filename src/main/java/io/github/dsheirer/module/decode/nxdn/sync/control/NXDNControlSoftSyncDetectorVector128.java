@@ -17,25 +17,25 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.sync;
+package io.github.dsheirer.module.decode.nxdn.sync.control;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * SIMD Vector 128 implementation of NXDN Soft Sync Detector.
+ * Vector implementation of long control soft sync detector.
  */
-public class NXDNSoftSyncDetectorVector128 extends NXDNSoftSyncDetector
+public class NXDNControlSoftSyncDetectorVector128 extends NXDNControlSoftSyncDetector
 {
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_128;
     private static final float[] SYNC_EXTENDED = new float[4];
 
-    public NXDNSoftSyncDetectorVector128()
+    public NXDNControlSoftSyncDetectorVector128()
     {
         //Create an array of 4x elements containing the final 2x symbols for SIMD loading.
-        SYNC_EXTENDED[0] = SYNC_PATTERN_SYMBOLS[8];
-        SYNC_EXTENDED[1] = SYNC_PATTERN_SYMBOLS[9];
+        SYNC_EXTENDED[2] = SYMBOLS[20];
+        SYNC_EXTENDED[3] = SYMBOLS[21];
     }
 
     /**
@@ -47,12 +47,18 @@ public class NXDNSoftSyncDetectorVector128 extends NXDNSoftSyncDetector
     public float calculate()
     {
         FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYNC_PATTERN_SYMBOLS, 0)
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 0)
                 .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer), accumulator);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYNC_PATTERN_SYMBOLS, 4)
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 4)
                 .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 4), accumulator);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYNC_EXTENDED, 0)
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 8)
                 .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 8), accumulator);
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 12)
+                .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 12), accumulator);
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 16)
+                .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 16), accumulator);
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYNC_EXTENDED, 0)
+                .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 18), accumulator);
         return accumulator.reduceLanes(VectorOperators.ADD);
     }
 }

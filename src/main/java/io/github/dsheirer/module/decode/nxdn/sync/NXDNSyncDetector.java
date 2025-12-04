@@ -26,42 +26,40 @@ import io.github.dsheirer.dsp.symbol.Dibit;
  */
 public abstract class NXDNSyncDetector
 {
-    public static final int SYNC_MASK = 0xFFFFF;
-    public static final int SYNC_PATTERN = 0xCDF59;
+    /**
+     * Sync pattern length in dibits.
+     */
+    public abstract int getSyncPatternDibitLength();
 
     /**
-     * Converts the sync pattern to a float array of ideal phase values for each Dibit to use for correlation
-     * against a stream of transmitted symbol phases.
-     * @return symbols array representing the sync pattern.
+     * Dibits array for the sync pattern
+     * @return dibits array.
      */
-    public static float[] syncPatternToSymbols()
-    {
-        float[] symbols = new float[10];
-        Dibit[] dibits = syncPatternToDibits();
-
-        for(int x = 0; x < 10; x++)
-        {
-            symbols[x] = dibits[x].getIdealPhase();
-        }
-
-        return symbols;
-    }
+    public abstract Dibit[] getSyncDibits();
 
     /**
-     * Converts the sync pattern to an array of dibit symbols.
-     * @return dibit symbols array representing the sync pattern.
+     * Symbols array for the sync pattern.
+     * @return array of (ideal) soft symbol values.
      */
-    public static Dibit[] syncPatternToDibits()
+    public abstract float[] getSyncSymbols();
+
+    /**
+     * Converts the sync pattern to dibits.
+     * @param pattern to convert
+     * @param dibitLength in dibits
+     * @return array of dibits for the sync pattern.
+     */
+    protected static Dibit[] toDibits(long pattern, int dibitLength)
     {
-        Dibit[] dibits = new Dibit[10];
-        int mask = 3;
+        Dibit[] dibits = new Dibit[dibitLength];
+        long mask = 3;
         int dibitValue;
 
-        for(int x = 0; x < 10; x++)
+        for(int x = 0; x < dibitLength; x++)
         {
-            dibitValue = (SYNC_PATTERN & mask) >> (2 * x);
+            dibitValue = (int)((pattern & mask) >> (2 * x));
 
-            dibits[9 - x] = switch(dibitValue)
+            dibits[dibitLength - x - 1] = switch(dibitValue)
             {
                 case 0 -> Dibit.D00_PLUS_1;
                 case 1 -> Dibit.D01_PLUS_3;
@@ -73,5 +71,22 @@ public abstract class NXDNSyncDetector
         }
 
         return dibits;
+    }
+
+    /**
+     * Utility method to convert a dibit array into an array of ideal soft symbol values.
+     * @param dibits for the sync pattern
+     * @return ideal soft symbol array.
+     */
+    protected static float[] toSymbols(Dibit[] dibits)
+    {
+        float[] symbols = new float[dibits.length];
+
+        for(int x = 0; x < dibits.length; x++)
+        {
+            symbols[x] = dibits[x].getIdealPhase();
+        }
+
+        return symbols;
     }
 }

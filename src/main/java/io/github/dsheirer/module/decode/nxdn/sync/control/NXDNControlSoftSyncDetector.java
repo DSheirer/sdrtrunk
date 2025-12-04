@@ -17,25 +17,18 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.sync;
+package io.github.dsheirer.module.decode.nxdn.sync.control;
 
-import io.github.dsheirer.dsp.symbol.Dibit;
 import java.util.Arrays;
 
 /**
- * NXDN Sync Detector.  Uses soft demodulated symbols to detect sync patterns in the demodulated symbol stream.
+ * NXDN soft sync detector for the extended sync pattern on the outbound control channel.  Uses soft demodulated
+ * symbols to detect sync patterns in the demodulated symbol stream.
  */
-public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
+public abstract class NXDNControlSoftSyncDetector extends NXDNControlSyncDetector
 {
-    protected static final float MAX_POSITIVE = Dibit.D01_PLUS_3.getIdealPhase();
-    protected static final float MAX_NEGATIVE = Dibit.D11_MINUS_3.getIdealPhase();
-    protected static final float[] SYNC_PATTERN_SYMBOLS = syncPatternToSymbols();
-    protected float[] mSymbols = new float[25]; //2x longer than 10-dibit sync pattern and extended to support SIMD chunk sizes
+    protected float[] mSymbols = new float[CONTROL_SYNC_DIBIT_LENGTH * 2];
     protected int mSymbolPointer = 0;
-
-    public NXDNSoftSyncDetector()
-    {
-    }
 
     /**
      * Resets this sync detector and flushes any stored soft symbols from the buffer.
@@ -51,7 +44,7 @@ public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
      *
      * @return sync correlation score.
      */
-    protected abstract float calculate();
+    public abstract float calculate();
 
     /**
      * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft
@@ -63,9 +56,9 @@ public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
     public float process(float dibitSymbol)
     {
         mSymbols[mSymbolPointer] = dibitSymbol;
-        mSymbols[mSymbolPointer + 10] = dibitSymbol;
+        mSymbols[mSymbolPointer + CONTROL_SYNC_DIBIT_LENGTH] = dibitSymbol;
         mSymbolPointer++;
-        mSymbolPointer %= 10;
+        mSymbolPointer %= CONTROL_SYNC_DIBIT_LENGTH;
         return calculate();
     }
 }

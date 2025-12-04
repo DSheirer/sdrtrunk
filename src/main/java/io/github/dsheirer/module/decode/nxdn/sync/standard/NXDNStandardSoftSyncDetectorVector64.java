@@ -17,21 +17,18 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.sync;
+package io.github.dsheirer.module.decode.nxdn.sync.standard;
 
-import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * SIMD Vector 512 implementation of NXDN Soft Sync Detector.
+ * SIMD Vector 64 implementation of NXDN Soft Sync Detector.
  */
-public class NXDNSoftSyncDetectorVector512 extends NXDNSoftSyncDetector
+public class NXDNStandardSoftSyncDetectorVector64 extends NXDNStandardSoftSyncDetector
 {
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_512;
-    //Extend the symbols out to 16x using zero padding after the 10th symbol
-    private static final float[] SYNC_EXTENDED = Arrays.copyOf(SYNC_PATTERN_SYMBOLS, 16);
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_64;
 
     /**
      * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft
@@ -41,8 +38,14 @@ public class NXDNSoftSyncDetectorVector512 extends NXDNSoftSyncDetector
      */
     public float calculate()
     {
-        return FloatVector.fromArray(VECTOR_SPECIES, SYNC_EXTENDED, 0)
-                .mul(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer))
-                .reduceLanes(VectorOperators.ADD);
+        FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
+
+        for(int x = 0; x < STANDARD_SYNC_DIBIT_LENGTH; x += VECTOR_SPECIES.length())
+        {
+            accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, x)
+                    .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + x), accumulator);
+        }
+
+        return accumulator.reduceLanes(VectorOperators.ADD);
     }
 }

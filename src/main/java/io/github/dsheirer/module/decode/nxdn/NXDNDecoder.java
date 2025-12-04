@@ -116,6 +116,12 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
             decimation *= 2;
         }
 
+        //Decimate a further 2x for 4800 BPS modulation
+//        if(mConfig.getTransmissionMode() == TransmissionMode.M4800)
+//        {
+//            decimation *= 2;
+//        }
+
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
@@ -147,7 +153,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     public void receive(ComplexSamples samples)
     {
         //Update the message framer with the timestamp from the incoming sample buffer.
-//        mMessageFramer.setTimestamp(samples.timestamp());
+        mMessageFramer.setTimestamp(samples.timestamp());
 
         float[] i = mDecimationFilterI.decimateReal(samples.i());
         float[] q = mDecimationFilterQ.decimateReal(samples.q());
