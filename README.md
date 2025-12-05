@@ -5,13 +5,18 @@
 Changes to USB support in Tahoe version 26.x cause sdrtrunk to fail to launch.  Do the following to install the latest libusb and create a symbolic link and then use the nightly build which includes an updated usb4java native library for Tahoe with ARM processor.  There may still be issue(s) with MacOS accessing your USB SDR tuners.
 
 ```
-brew install libusb
+brew install libusb --HEAD
 cd /opt
 sudo mkdir local
 cd local
 sudo mkdir lib
-cd lib
-sudo ln -s /opt/homebrew/Cellar/libusb/1.0.29/lib/libusb-1.0.0.dylib /opt/local/lib/libusb-1.0.0.dylib
+```
+Next, find where brew installed the libusb library, for example: ```/opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib```    Note: the folder "HEAD-9ceaa52" is the version stamp for HEAD when you installed from it.
+
+Finally, create a symbolic link from the installed library to the place where usb4java is expecting to find libusb (/opt/local/lib/libusb-1.0.0.dylib)
+
+```
+sudo ln -s /opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib /opt/local/lib/libusb-1.0.0.dylib
 ```
 
 # sdrtrunk
