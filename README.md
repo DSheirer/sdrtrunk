@@ -1,6 +1,19 @@
 ![Gradle Build](https://github.com/dsheirer/sdrtrunk/actions/workflows/gradle.yml/badge.svg)
 ![Nightly Release](https://github.com/dsheirer/sdrtrunk/actions/workflows/nightly.yml/badge.svg)
 
+# MacOS Tahoe 26.1 Users - Attention:
+Changes to the libusb library for Tahoe version 26.x cause sdrtrunk to fail to launch.  Do the following to install the latest libusb and create a symbolic link and then use the nightly build which includes an updated usb4java native library for Tahoe with ARM processor.
+
+```
+brew install libusb
+cd /opt
+sudo mkdir local
+cd local
+sudo mkdir lib
+cd lib
+sudo ln -s /opt/homebrew/Cellar/libusb/1.0.29/lib/libusb-1.0.0.dylib /opt/local/lib/libusb-1.0.0.dylib
+```
+
 # sdrtrunk
 A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
 
