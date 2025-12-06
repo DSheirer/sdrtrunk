@@ -150,7 +150,7 @@ public class NXDNMessageFactory
     private NXDNMessage decodeCAC(Frame frame)
     {
         CorrectedBinaryMessage cbm = deinterleave(frame.getMessage(), 16, 12, 25);
-        CorrectedBinaryMessage expanded = new CorrectedBinaryMessage(350);
+        CorrectedBinaryMessage depunctured = new CorrectedBinaryMessage(350);
 
         int pointer = 0;
 
@@ -159,7 +159,7 @@ public class NXDNMessageFactory
         {
             if(cbm.get(x))
             {
-                expanded.set(pointer);
+                depunctured.set(pointer);
             }
 
             pointer++;

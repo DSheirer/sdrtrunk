@@ -104,7 +104,7 @@ public class NXDNMessageFramer
             }
 
             CorrectedBinaryMessage lichField = cbm.getSubMessage(0, 16);
-            System.out.println("\tFIELD:" + lichField + " LICH: " + lich);
+            System.out.println("\tDISPATCHING FIELD:" + lichField + " LICH: " + lich);
 
             //TODO: do something with the frame
         }

@@ -161,11 +161,11 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         //Process buffer for channel power measurements
         mPowerMonitor.process(i, q);
 
-        i = mBasebandFilterI.filter(i);
-        q = mBasebandFilterQ.filter(q);
-
         i = mPulseShapingFilterI.filter(i);
         q = mPulseShapingFilterQ.filter(q);
+
+        i = mBasebandFilterI.filter(i);
+        q = mBasebandFilterQ.filter(q);
 
         // PI/4 DQPSK differential demodulation
         float[] demodulated = mDemodulator.demodulate(i, q);

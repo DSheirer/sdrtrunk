@@ -19,12 +19,12 @@
 
 package io.github.dsheirer.module.decode.nxdn.sync;
 
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorScalar;
 import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector128;
 import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector256;
 import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector512;
 import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetectorVector64;
-import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardSoftSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardSoftSyncDetectorScalar;
 import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardSoftSyncDetectorVector128;
@@ -72,7 +72,7 @@ public class NXDNSyncDetectorFactory
      * Creates the implementation using calibration data to select the optimal implementation from scalar and vector options.
      * @return demodulator instance
      */
-    public static NXDNControlSyncDetector getControlDetector()
+    public static NXDNControlSoftSyncDetector getControlDetector()
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.NXDN_SOFT_SYNC_DETECTOR);
 

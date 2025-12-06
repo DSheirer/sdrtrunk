@@ -28,6 +28,7 @@ import io.github.dsheirer.gui.viewer.sync.SyncResultsViewer;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.nxdn.sync.NXDNSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.sync.NXDNSyncDetectorFactory;
+import io.github.dsheirer.module.decode.nxdn.sync.control.NXDNControlSoftSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardSoftSyncDetector;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
@@ -62,6 +63,7 @@ public class NXDNDemodulator
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNStandardSoftSyncDetector mSyncDetector = NXDNSyncDetectorFactory.getStandardDetector();
     private final NXDNStandardSoftSyncDetector mSyncDetectorLagging = NXDNSyncDetectorFactory.getStandardDetector();
+    private final NXDNControlSoftSyncDetector mControlSoftSyncDetector = NXDNSyncDetectorFactory.getControlDetector();
     private boolean mFineSync = false;
     private double mMaxFineSyncTimingAdjustment;
     private double mNoiseStandardDeviationThreshold;
@@ -111,7 +113,7 @@ public class NXDNDemodulator
         int symbolsSinceLastSync = mSymbolsSinceLastSync;
 
         int samplesPointer = 0;
-        float softSymbol, scorePrimary;
+        float softSymbol, scorePrimary, scoreControl;
         Dibit delayedSymbol;
         Correction correctionCandidate;
 
@@ -177,6 +179,7 @@ public class NXDNDemodulator
                     mDibitAssembler.receive(delayedSymbol);
 
                     scorePrimary = mSyncDetector.process(softSymbol);
+                    scoreControl = mControlSoftSyncDetector.process(softSymbol);
                     correctionCandidate = INVALID_SYNC_DETECTION;
 
                     //Check for lagging sync pattern
@@ -189,6 +192,7 @@ public class NXDNDemodulator
                     System.out.println(mDebugSymbolCounter +
                             "\tPRIMARY:" + scorePrimary +
                             "\tLAG:" + scoreLag +
+                            "\tCONTROL:" + scoreControl +
                             (sync ? " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< sync detected: " + symbolsSinceLastSync : ""));
 
                     if(scorePrimary > 40)
@@ -924,6 +928,7 @@ public class NXDNDemodulator
          */
         public void apply(Correction correction)
         {
+            System.out.println("Applying " + correction);
             //Re-initialize the equalizer any time the balance correction value exceeds the threshold.
             if(mInitialized && Math.abs(correction.getPllAdjustment()) > EQUALIZER_RECALIBRATE_THRESHOLD)
             {
@@ -963,7 +968,7 @@ public class NXDNDemodulator
         public Correction getCorrection(NXDNSyncDetector syncDetector, double additionalOffset, double timingCorrection,
                                         float detectionScore, float optimizationScore, double offset)
         {
-            double resampleStart = offset + additionalOffset + timingCorrection - (mSamplesPerSymbol * syncDetector.getSyncPatternDibitLength());
+            double resampleStart = offset + additionalOffset + timingCorrection - (mSamplesPerSymbol * (syncDetector.getSyncPatternDibitLength() - 1));
             int resampleStartIntegral = (int)Math.floor(resampleStart);
             float symbol, balanceAccumulator = 0, gainAccumulator = 0, resampledSoftSymbol;
             Dibit resampledDibit;
@@ -979,7 +984,9 @@ public class NXDNDemodulator
                     resampledSoftSymbol = (resampledSoftSymbol + mPll) * mGain;
                     resampledDibit = toSymbol(resampledSoftSymbol);
                     bitErrorCount += syncDetector.getSyncDibits()[x].getBitErrorFrom(resampledDibit);
+                    float delta = resampledSoftSymbol - symbol;
                     balanceAccumulator += (resampledSoftSymbol - symbol);
+                    System.out.println("\tSymbol " + x + " Soft:" + resampledSoftSymbol + " Hard:" + symbol + " Delta: " + delta + " Accumulator: " + balanceAccumulator);
                     gainAccumulator += Math.abs(symbol) - Math.abs(resampledSoftSymbol);
                 }
                 else
