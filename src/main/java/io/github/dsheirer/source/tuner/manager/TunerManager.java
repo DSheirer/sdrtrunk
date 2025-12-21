@@ -334,6 +334,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     private void startAndConfigureTuner(DiscoveredTuner discoveredTuner)
     {
+        mLog.info("startAndConfigureTuner() - begin for " + discoveredTuner);
         discoveredTuner.addTunerStatusListener(this);
 
         //Set the tuner to disabled if the user has previously blacklisted the tuner
@@ -347,9 +348,12 @@ public class TunerManager implements IDiscoveredTunerStatusListener
             mLog.info("Tuner: " + discoveredTuner + " - Added / Starting ...");
             //Attempt to start the discovered tuner and determine the tuner type
             tunerStatusUpdated(discoveredTuner, TunerStatus.DISABLED, TunerStatus.ENABLED);
+            mLog.info("startAndConfigureTuner() - tunerStatusUpdated returned");
         }
 
+        mLog.info("startAndConfigureTuner() - adding to model");
         mDiscoveredTunerModel.addDiscoveredTuner(discoveredTuner);
+        mLog.info("startAndConfigureTuner() - complete");
     }
 
     /**

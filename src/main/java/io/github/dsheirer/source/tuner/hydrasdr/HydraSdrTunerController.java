@@ -113,6 +113,7 @@ public class HydraSdrTunerController extends USBTunerController
     @Override
     protected void deviceStart() throws SourceException
     {
+        mLog.info("HydraSDR deviceStart() - begin");
         try
         {
             setSamplePacking(false);
@@ -122,6 +123,7 @@ public class HydraSdrTunerController extends USBTunerController
             mLog.info("Sample packing is not supported by HydraSDR firmware");
         }
 
+        mLog.info("HydraSDR deviceStart() - setReceiverMode");
         try
         {
             setReceiverMode(true);
@@ -131,8 +133,10 @@ public class HydraSdrTunerController extends USBTunerController
             mLog.error("Couldn't enable HydraSDR receiver mode", e);
         }
 
+        mLog.info("HydraSDR deviceStart() - setFrequency");
         setFrequency(FREQUENCY_DEFAULT);
 
+        mLog.info("HydraSDR deviceStart() - determineAvailableSampleRates");
         try
         {
             determineAvailableSampleRates();
@@ -142,6 +146,7 @@ public class HydraSdrTunerController extends USBTunerController
             mLog.error("Error identifying available samples rates", e);
         }
 
+        mLog.info("HydraSDR deviceStart() - setSampleRate");
         try
         {
             setSampleRate(mSampleRates.get(0));
@@ -150,6 +155,7 @@ public class HydraSdrTunerController extends USBTunerController
         {
             mLog.error("Setting sample rate is not supported by firmware", e);
         }
+        mLog.info("HydraSDR deviceStart() - complete");
     }
 
     @Override
@@ -498,17 +504,13 @@ public class HydraSdrTunerController extends USBTunerController
      * Enables/disables the Bias-T (RF bias tee) power output for active antennas
      *
      * @param enabled true to enable Bias-T, false to disable
-     * @throws LibUsbException on unsuccessful read operation
+     * @throws LibUsbException on unsuccessful write operation
      * @throws UsbException on USB error
      */
     public synchronized void setBiasT(boolean enabled) throws LibUsbException, UsbException
     {
-        int result = readByte(Command.SET_RF_BIAS_COMMAND, 0, (enabled ? 1 : 0), true);
-
-        if(result != LibUsb.SUCCESS)
-        {
-            throw new UsbException("Couldn't set Bias-T enabled: " + enabled);
-        }
+        ByteBuffer buffer = ByteBuffer.allocateDirect(0);
+        write(Command.SET_RF_BIAS_COMMAND, 0, (enabled ? 1 : 0), buffer);
     }
 
     /**
