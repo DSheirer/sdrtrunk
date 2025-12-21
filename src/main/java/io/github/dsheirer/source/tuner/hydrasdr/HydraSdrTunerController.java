@@ -866,7 +866,8 @@ public class HydraSdrTunerController extends USBTunerController
      */
     public enum BoardID
     {
-        HYDRASDR_RFONE(0, "HydraSDR RF-One"),
+        HYDRASDR_PROTO(0, "HydraSDR Proto"),
+        HYDRASDR_RFONE(1, "HydraSDR RF-One"),
         UNKNOWN(-1, "Unknown");
 
         private int mValue;
@@ -891,6 +892,10 @@ public class HydraSdrTunerController extends USBTunerController
         public static BoardID fromValue(int value)
         {
             if(value == 0)
+            {
+                return HYDRASDR_PROTO;
+            }
+            else if(value == 1)
             {
                 return HYDRASDR_RFONE;
             }
