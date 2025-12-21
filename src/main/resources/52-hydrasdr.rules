@@ -1,0 +1,11 @@
+# HydraSDR RFOne udev rules - Universal cross-distribution compatibility
+# Works on: Ubuntu, Debian, Fedora, AlmaLinux, openSUSE, Arch Linux, and more
+# Supports: systemd (modern) and legacy systems
+# Note: Due to rule ordering, the fallback GROUP="users" overrides the primary GROUP="plugdev" even on distros where plugdev exists.
+# This doesn't break functionality thanks to uaccess tags, but for stricter security, consider revising to a single rule per device with GROUP="root", MODE="0660", and TAG+="uaccess" to rely solely on ACLs.
+
+# HydraSDR RFOne main device (idVendor=38af VERNOUX BENJAMIN, idProduct=0001 HydraSDR RFOne Normal operation mode)
+# Primary rule for distributions with plugdev group (Debian/Ubuntu family)
+SUBSYSTEM=="usb", ATTR{idVendor}=="38af", ATTR{idProduct}=="0001", SYMLINK+="hydrasdr_rfone-%k", MODE="0660", GROUP="plugdev", TAG+="uaccess", TAG+="udev-acl"
+# Fallback rule for distributions without plugdev group (Red Hat/SUSE/Arch family)
+SUBSYSTEM=="usb", ATTR{idVendor}=="38af", ATTR{idProduct}=="0001", SYMLINK+="hydrasdr_rfone-%k", MODE="0664", GROUP="users", TAG+="uaccess"

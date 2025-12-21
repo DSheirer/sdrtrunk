@@ -44,6 +44,10 @@ import io.github.dsheirer.source.tuner.hackrf.HackRFTuner;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerEditor;
+import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTuner;
+import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerConfiguration;
+import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController;
+import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerEditor;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
@@ -375,6 +379,8 @@ public class TunerFactory
                 throw new SourceException("Unable to find matching tuner sound card mixer");
             case HACKRF:
                 return new HackRFTuner(new HackRFTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            case HYDRASDR:
+                return new HydraSdrTuner(new HydraSdrTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case RTL2832:
                 return new RTL2832Tuner(new RTL2832TunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             default:
@@ -424,6 +430,8 @@ public class TunerFactory
             case HACKRF_ONE:
             case HACKRF_RAD1O:
                 return new HackRFTunerConfiguration(uniqueID);
+            case HYDRASDR_R828D:
+                return new HydraSdrTunerConfiguration(uniqueID);
             case RAFAELMICRO_R820T:
                 return new R820TTunerConfiguration(uniqueID);
             case RAFAELMICRO_R828D:
@@ -467,6 +475,8 @@ public class TunerFactory
                 return new FCD2TunerEditor(userPreferences, tunerManager, discoveredTuner);
             case HACKRF:
                 return new HackRFTunerEditor(userPreferences, tunerManager, discoveredTuner);
+            case HYDRASDR:
+                return new HydraSdrTunerEditor(userPreferences, tunerManager, discoveredTuner);
             case RSP:
                 if(discoveredTuner instanceof DiscoveredRspTuner discoveredRspTuner)
                 {
