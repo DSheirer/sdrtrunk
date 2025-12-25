@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.source.tuner.airspy;
+package io.github.dsheirer.source.tuner.hydrasdr;
 
 import io.github.dsheirer.buffer.INativeBufferFactory;
 import io.github.dsheirer.buffer.sample.SampleNativeBufferFactory;
@@ -41,11 +41,11 @@ import org.usb4java.LibUsbException;
 import javax.usb.UsbException;
 
 /**
- * Airspy tuner controller
+ * HydraSDR tuner controller
  */
-public class AirspyTunerController extends USBTunerController
+public class HydraSdrTunerController extends USBTunerController
 {
-    private final static Logger mLog = LoggerFactory.getLogger(AirspyTunerController.class);
+    private final static Logger mLog = LoggerFactory.getLogger(HydraSdrTunerController.class);
     public static final Gain LINEARITY_GAIN_DEFAULT = Gain.LINEARITY_14;
     public static final Gain SENSITIVITY_GAIN_DEFAULT = Gain.SENSITIVITY_10;
     public static final int GAIN_MIN = 1;
@@ -68,10 +68,10 @@ public class AirspyTunerController extends USBTunerController
     private static final byte USB_REQUEST_IN = (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     private static final byte USB_REQUEST_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     public static final DecimalFormat MHZ_FORMATTER = new DecimalFormat("#.00 MHz");
-    public static final AirspySampleRate DEFAULT_SAMPLE_RATE = new AirspySampleRate(0, 10000000, "10.00 MHz");
+    public static final HydraSdrSampleRate DEFAULT_SAMPLE_RATE = new HydraSdrSampleRate(0, 10000000, "10.00 MHz");
     private SampleNativeBufferFactory mNativeBufferFactory = new SampleNativeBufferFactory();
-    private AirspyDeviceInformation mDeviceInfo;
-    private List<AirspySampleRate> mSampleRates = new ArrayList<>();
+    private HydraSdrDeviceInformation mDeviceInfo;
+    private List<HydraSdrSampleRate> mSampleRates = new ArrayList<>();
     private int mSampleRate = 0;
 
     /**
@@ -80,7 +80,7 @@ public class AirspyTunerController extends USBTunerController
      * @param portAddress usb
      * @param tunerErrorListener to receive error notifications from this controller
      */
-    public AirspyTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
+    public HydraSdrTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
         super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, 0, USABLE_BANDWIDTH_PERCENT, tunerErrorListener);
     }
@@ -88,7 +88,7 @@ public class AirspyTunerController extends USBTunerController
     @Override
     public TunerType getTunerType()
     {
-        return TunerType.AIRSPY_R820T;
+        return TunerType.HYDRASDR_R828D;
     }
 
     @Override
@@ -106,7 +106,7 @@ public class AirspyTunerController extends USBTunerController
     @Override
     public int getBufferSampleCount()
     {
-        //Each airspy complex sample is 4 bytes, so sample count is buffer size / 4
+        //Each HydraSDR complex sample is 4 bytes, so sample count is buffer size / 4
         return USB_TRANSFER_BUFFER_SIZE / 4;
     }
 
@@ -119,7 +119,7 @@ public class AirspyTunerController extends USBTunerController
         }
         catch(LibUsbException | UsbException | UnsupportedOperationException e)
         {
-            mLog.info("Sample packing is not supported by airspy firmware");
+            mLog.info("Sample packing is not supported by HydraSDR firmware");
         }
 
         try
@@ -128,7 +128,7 @@ public class AirspyTunerController extends USBTunerController
         }
         catch(Exception e)
         {
-            mLog.error("Couldn't enable airspy receiver mode", e);
+            mLog.error("Couldn't enable HydraSDR receiver mode", e);
         }
 
         setFrequency(FREQUENCY_DEFAULT);
@@ -161,7 +161,7 @@ public class AirspyTunerController extends USBTunerController
         }
         catch(Exception e)
         {
-            mLog.error("Couldn't enable airspy receiver mode", e);
+            mLog.error("Couldn't enable HydraSDR receiver mode", e);
         }
     }
 
@@ -171,10 +171,10 @@ public class AirspyTunerController extends USBTunerController
         //Invoke super for frequency, frequency correction and autoPPM
         super.apply(tunerConfiguration);
 
-        if(tunerConfiguration instanceof AirspyTunerConfiguration config)
+        if(tunerConfiguration instanceof HydraSdrTunerConfiguration config)
         {
             int sampleRate = config.getSampleRate();
-            AirspySampleRate rate = getSampleRate(sampleRate);
+            HydraSdrSampleRate rate = getSampleRate(sampleRate);
 
             if(rate == null)
             {
@@ -207,6 +207,7 @@ public class AirspyTunerController extends USBTunerController
                 setLNAGain(config.getLNAGain());
                 setMixerAGC(config.isMixerAGC());
                 setLNAAGC(config.isLNAAGC());
+                setBiasT(config.isBiasT());
 
                 //Set the gain mode last, so custom values are already set, and linearity and sensitivity modes will
                 //automatically override the custom values.
@@ -214,7 +215,7 @@ public class AirspyTunerController extends USBTunerController
             }
             catch(Exception e)
             {
-                throw new SourceException("Couldn't apply gain settings from airspy config", e);
+                throw new SourceException("Couldn't apply settings from HydraSDR config", e);
             }
         }
         else
@@ -269,7 +270,7 @@ public class AirspyTunerController extends USBTunerController
      * @throws LibUsbException          if there was a read error or if this operation is not supported by the current firmware
      * @throws UsbException             if there was a USB error
      */
-    public void setSampleRate(AirspySampleRate rate) throws LibUsbException, UsbException, SourceException
+    public void setSampleRate(HydraSdrSampleRate rate) throws LibUsbException, UsbException, SourceException
     {
         getNativeBufferFactory().setSamplesPerMillisecond((float)rate.getRate() / 1000.0f);
         if(rate.getRate() != mSampleRate)
@@ -286,7 +287,6 @@ public class AirspyTunerController extends USBTunerController
                 mFrequencyController.setSampleRate(mSampleRate);
 
                 // Update the Usable Bandwidth Percentage, as the usable range varies with the sample rate.
-                // Values below are from https://github.com/DSheirer/sdrtrunk/issues/815#issuecomment-699859590
                 switch(mSampleRate)
                 {
                     default:
@@ -310,27 +310,27 @@ public class AirspyTunerController extends USBTunerController
     /**
      * Returns a list of sample rates supported by the firmware version
      */
-    public List<AirspySampleRate> getSampleRates()
+    public List<HydraSdrSampleRate> getSampleRates()
     {
         return mSampleRates;
     }
 
     /**
-     * Airspy sample rate object that matches the current sample rate setting.
+     * HydraSDR sample rate object that matches the current sample rate setting.
      */
-    public AirspySampleRate getAirspySampleRate()
+    public HydraSdrSampleRate getHydraSdrSampleRate()
     {
         return getSampleRate(mSampleRate);
     }
 
     /**
-     * Airspy sample rate object that matches the specified rate in hertz, or
+     * HydraSDR sample rate object that matches the specified rate in hertz, or
      * null if there are no available sample rates for the tuner that match the
      * argument value.
      */
-    public AirspySampleRate getSampleRate(int rate)
+    public HydraSdrSampleRate getSampleRate(int rate)
     {
-        for(AirspySampleRate sampleRate : mSampleRates)
+        for(HydraSdrSampleRate sampleRate : mSampleRates)
         {
             if(sampleRate.getRate() == rate)
             {
@@ -495,6 +495,19 @@ public class AirspyTunerController extends USBTunerController
     }
 
     /**
+     * Enables/disables the Bias-T (RF bias tee) power output for active antennas
+     *
+     * @param enabled true to enable Bias-T, false to disable
+     * @throws LibUsbException on unsuccessful write operation
+     * @throws UsbException on USB error
+     */
+    public synchronized void setBiasT(boolean enabled) throws LibUsbException, UsbException
+    {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(0);
+        write(Command.SET_RF_BIAS_COMMAND, 0, (enabled ? 1 : 0), buffer);
+    }
+
+    /**
      * Queries the device for available sample rates.  Will always provide at
      * least the default 10 MHz sample rate.
      */
@@ -519,7 +532,7 @@ public class AirspyTunerController extends USBTunerController
                 for(int x = 0; x < count; x++)
                 {
                     int rate = EndianUtils.readSwappedInteger(rawRates, (x * 4));
-                    mSampleRates.add(new AirspySampleRate(x, rate, formatSampleRate(rate)));
+                    mSampleRates.add(new HydraSdrSampleRate(x, rate, formatSampleRate(rate)));
                 }
             }
         }
@@ -545,7 +558,7 @@ public class AirspyTunerController extends USBTunerController
     /**
      * Device information
      */
-    public AirspyDeviceInformation getDeviceInfo()
+    public HydraSdrDeviceInformation getDeviceInfo()
     {
         //Lazy initialization
         if(mDeviceInfo == null)
@@ -563,7 +576,7 @@ public class AirspyTunerController extends USBTunerController
     {
         if(mDeviceInfo == null)
         {
-            mDeviceInfo = new AirspyDeviceInformation();
+            mDeviceInfo = new HydraSdrDeviceInformation();
         }
 
         /* Board ID */
@@ -574,20 +587,18 @@ public class AirspyTunerController extends USBTunerController
         }
         catch(LibUsbException | UsbException e)
         {
-            mLog.error("Error reading airspy board ID", e);
+            mLog.error("Error reading HydraSDR board ID", e);
         }
 
         /* Version String */
         try
         {
-            //NOTE: libairspy is internally reading 127 bytes, however airspy_info script is telling it to read
-            //255 bytes ... things that make you go hmmmm
             byte[] version = readArray(Command.VERSION_STRING_READ, 0, 0, 127);
             mDeviceInfo.setVersion(version);
         }
         catch(LibUsbException | UsbException e)
         {
-            mLog.error("Error reading airspy version string", e);
+            mLog.error("Error reading HydraSDR version string", e);
         }
 
         /* Part ID and Serial Number */
@@ -599,14 +610,14 @@ public class AirspyTunerController extends USBTunerController
         }
         catch(LibUsbException | UsbException e)
         {
-            mLog.error("Error reading airspy version string", e);
+            mLog.error("Error reading HydraSDR version string", e);
         }
     }
 
     /**
      * Reads a single byte value from the device.
      *
-     * @param command - airspy command
+     * @param command - HydraSDR command
      * @param value - value field for usb setup packet
      * @param index - index field for usb setup packet
      * @return - byte value as an integer
@@ -645,7 +656,7 @@ public class AirspyTunerController extends USBTunerController
     /**
      * Reads a multi-byte value from the device
      *
-     * @param command - airspy command
+     * @param command - HydraSDR command
      * @param value - usb packet value
      * @param index - usb packet index
      * @param length - number of bytes to read
@@ -678,7 +689,7 @@ public class AirspyTunerController extends USBTunerController
     /**
      * Writes the buffer contents to the device
      *
-     * @param command - airspy command
+     * @param command - HydraSDR command
      * @param value - usb packet value
      * @param index - usb packet index
      * @param buffer - data to write to the device
@@ -847,11 +858,12 @@ public class AirspyTunerController extends USBTunerController
     }
 
     /**
-     * Airspy Board Identifier
+     * HydraSDR Board Identifier
      */
     public enum BoardID
     {
-        AIRSPY(0, "Airspy"),
+        HYDRASDR_PROTO(0, "HydraSDR Proto"),
+        HYDRASDR_RFONE(1, "HydraSDR RF-One"),
         UNKNOWN(-1, "Unknown");
 
         private int mValue;
@@ -877,7 +889,11 @@ public class AirspyTunerController extends USBTunerController
         {
             if(value == 0)
             {
-                return AIRSPY;
+                return HYDRASDR_PROTO;
+            }
+            else if(value == 1)
+            {
+                return HYDRASDR_RFONE;
             }
 
             return UNKNOWN;
@@ -885,7 +901,7 @@ public class AirspyTunerController extends USBTunerController
     }
 
     /**
-     * Airspy Commands
+     * HydraSDR Commands
      */
     public enum Command
     {
@@ -893,8 +909,8 @@ public class AirspyTunerController extends USBTunerController
         RECEIVER_MODE(1),
         SI5351C_WRITE(2),
         SI5351C_READ(3),
-        R820T_WRITE(4),
-        R820T_READ(5),
+        R828D_WRITE(4),
+        R828D_READ(5),
         SPIFLASH_ERASE(6),
         SPIFLASH_WRITE(7),
         SPIFLASH_READ(8),
@@ -959,7 +975,7 @@ public class AirspyTunerController extends USBTunerController
     }
 
     /**
-     * General Purpose Input/Output Ports (accessible on the airspy board)
+     * General Purpose Input/Output Ports (accessible on the HydraSDR board)
      */
     public enum GPIOPort
     {
@@ -986,7 +1002,7 @@ public class AirspyTunerController extends USBTunerController
     }
 
     /**
-     * General Purpose Input/Output Pins (accessible on the airspy board)
+     * General Purpose Input/Output Pins (accessible on the HydraSDR board)
      */
     public enum GPIOPin
     {

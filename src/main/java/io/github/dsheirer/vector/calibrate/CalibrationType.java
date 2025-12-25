@@ -32,9 +32,6 @@ public enum CalibrationType
     OSCILLATOR_COMPLEX("Complex Oscillator", 1),
     GAIN_COMPLEX("Complex Gain", 1),
 
-    AIRSPY_SAMPLE_CONVERTER("Airspy Sample Converter", 1),
-    AIRSPY_UNPACKED_INTERLEAVED_ITERATOR("Airspy Unpacked Interleaved Iterator", 1),
-    AIRSPY_UNPACKED_ITERATOR("Airspy Unpacked Iterator", 1),
     AM_DEMODULATOR("AM Demodulator", 1),
     DC_REMOVAL_REAL("Real DC Removal Filter", 1),
     DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 1),
@@ -53,6 +50,9 @@ public enum CalibrationType
     MIXER_COMPLEX("Complex Mixer", 1),
     OSCILLATOR_REAL("Real Oscillator", 1),
     P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 1),
+    SAMPLE_PACKED_CONVERTER("Packed Sample Converter", 1),
+    SAMPLE_UNPACKED_INTERLEAVED_ITERATOR("Unpacked Interleaved Sample Iterator", 1),
+    SAMPLE_UNPACKED_ITERATOR("Unpacked Sample Iterator", 1),
     SQUELCHING_FM_DEMODULATOR("Squelching FM Demodulator", 1),
     WINDOW("Window", 1);
 
