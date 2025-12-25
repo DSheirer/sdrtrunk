@@ -17,17 +17,17 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
 import io.github.dsheirer.dsp.filter.hilbert.HilbertTransform;
 import java.util.Iterator;
 
 /**
- * Base complex samples iterator for raw Airspy sample buffers.  Incorporates a Hilbert transform filter
+ * Base complex samples iterator for raw sample buffers.  Incorporates a Hilbert transform filter
  * for converting the real sample array to complex samples.
  * @param <T> either ComplexSamples or InterleavedComplexSamples
  */
-public abstract class AirspyBufferIterator<T> implements Iterator<T>
+public abstract class SampleBufferIterator<T> implements Iterator<T>
 {
     protected static final float SCALE_SIGNED_12_BIT_TO_FLOAT = 1.0f / 2048.0f;
     protected static final int FRAGMENT_SIZE = 4096;
@@ -47,14 +47,14 @@ public abstract class AirspyBufferIterator<T> implements Iterator<T>
 
     /**
      * Constructs an instance
-     * @param samples from the airspy.
+     * @param samples from the tuner.
      * @param residualI samples from previous buffer
      * @param residualQ samples from previous buffer
      * @param averageDc as measured
      * @param timestamp of the buffer
      * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
-    public AirspyBufferIterator(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp,
+    public SampleBufferIterator(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp,
                                 float samplesPerMillisecond)
     {
         if(residualI.length != I_OVERLAP || residualQ.length != Q_OVERLAP)

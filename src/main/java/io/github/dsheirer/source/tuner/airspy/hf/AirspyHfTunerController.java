@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner.airspy.hf;
 
 import io.github.dsheirer.buffer.INativeBufferFactory;
-import io.github.dsheirer.buffer.airspy.hf.AirspyHfNativeBufferFactory;
+import io.github.dsheirer.buffer.airspy.AirspyHfNativeBufferFactory;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;

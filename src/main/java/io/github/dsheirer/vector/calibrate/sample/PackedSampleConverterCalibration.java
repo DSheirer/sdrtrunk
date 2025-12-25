@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,18 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.vector.calibrate.hydrasdr;
+package io.github.dsheirer.vector.calibrate.sample;
 
-import io.github.dsheirer.buffer.hydrasdr.ScalarUnpackedSampleConverter;
-import io.github.dsheirer.buffer.hydrasdr.VectorUnpackedSampleConverter;
+import io.github.dsheirer.buffer.sample.ScalarUnpackedSampleConverter;
+import io.github.dsheirer.buffer.sample.VectorUnpackedSampleConverter;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
+import java.nio.ByteBuffer;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
-import java.nio.ByteBuffer;
-
-public class HydraSdrSampleConverterCalibration extends Calibration
+public class PackedSampleConverterCalibration extends Calibration
 {
     private static final int BUFFER_SIZE = 262144;
     private static final int ITERATION_DURATION_MS = 1000;
@@ -39,9 +38,9 @@ public class HydraSdrSampleConverterCalibration extends Calibration
     /**
      * Constructs an instance
      */
-    public HydraSdrSampleConverterCalibration()
+    public PackedSampleConverterCalibration()
     {
-        super(CalibrationType.HYDRASDR_SAMPLE_CONVERTER);
+        super(CalibrationType.SAMPLE_PACKED_CONVERTER);
     }
 
     @Override
@@ -59,7 +58,7 @@ public class HydraSdrSampleConverterCalibration extends Calibration
             scalarMean.increment(score);
         }
 
-        mLog.info("HYDRASDR CONVERTER WARMUP - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
+        mLog.info("PACKED SAMPLE CONVERTER WARMUP - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
 
         for(int vectorTest = 0; vectorTest < WARM_UP_ITERATIONS; vectorTest++)
         {
@@ -67,7 +66,7 @@ public class HydraSdrSampleConverterCalibration extends Calibration
             vectorMean.increment(score);
         }
 
-        mLog.info("HYDRASDR CONVERTER WARMUP - VECTOR: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+        mLog.info("PACKED SAMPLE CONVERTER WARMUP - VECTOR: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
 
         scalarMean.clear();
         vectorMean.clear();
@@ -78,7 +77,7 @@ public class HydraSdrSampleConverterCalibration extends Calibration
             scalarMean.increment(score);
         }
 
-        mLog.info("HYDRASDR CONVERTER - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
+        mLog.info("PACKED SAMPLE CONVERTER - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
 
         for(int vectorTest = 0; vectorTest < TEST_ITERATIONS; vectorTest++)
         {
@@ -86,7 +85,7 @@ public class HydraSdrSampleConverterCalibration extends Calibration
             vectorMean.increment(score);
         }
 
-        mLog.info("HYDRASDR CONVERTER - VECTOR: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+        mLog.info("PACKED SAMPLE CONVERTER - VECTOR: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
 
         if(scalarMean.getResult() > vectorMean.getResult())
         {
@@ -97,7 +96,7 @@ public class HydraSdrSampleConverterCalibration extends Calibration
             setImplementation(Implementation.VECTOR_SIMD_PREFERRED);
         }
 
-        mLog.info("HYDRASDR CONVERTER - SETTING OPTIMAL IMPLEMENTATION TO: " + getImplementation());
+        mLog.info("PACKED SAMPLE CONVERTER - SETTING OPTIMAL IMPLEMENTATION TO: " + getImplementation());
     }
 
     private long testScalar(ByteBuffer buffer)

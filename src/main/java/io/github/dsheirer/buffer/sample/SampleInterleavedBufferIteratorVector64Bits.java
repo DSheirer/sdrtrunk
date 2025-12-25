@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import jdk.incubator.vector.FloatVector;
@@ -25,31 +25,26 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * Vector SIMD implementation for non-packed Airspy native buffers
+ * Vector SIMD implementation for non-packed native buffers
  */
-public class AirspyInterleavedBufferIteratorVector512Bits extends AirspyBufferIterator<InterleavedComplexSamples>
+public class SampleInterleavedBufferIteratorVector64Bits extends SampleBufferIterator<InterleavedComplexSamples>
 {
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_512;
-    private float[] mFilterPart2;
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_64;
 
     /**
      * Constructs an instance
      *
-     * @param samples from the airspy, either packed or unpacked.
+     * @param samples from the device, either packed or unpacked.
      * @param residualI samples from last buffer
      * @param residualQ samples from last buffer
      * @param averageDc measured
      * @param timestamp of the buffer
      * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
-    public AirspyInterleavedBufferIteratorVector512Bits(short[] samples, short[] residualI, short[] residualQ, float averageDc,
-                                                        long timestamp, float samplesPerMillisecond)
+    public SampleInterleavedBufferIteratorVector64Bits(short[] samples, short[] residualI, short[] residualQ, float averageDc,
+                                                       long timestamp, float samplesPerMillisecond)
     {
         super(samples, residualI, residualQ, averageDc, timestamp, samplesPerMillisecond);
-
-        //Arrange the last 8 taps of the filter into the higher indices of an array to align for SIMD
-        mFilterPart2 = new float[16];
-        System.arraycopy(COEFFICIENTS, 16, mFilterPart2, 8, 8);
     }
 
     @Override
@@ -92,13 +87,33 @@ public class AirspyInterleavedBufferIteratorVector512Bits extends AirspyBufferIt
         float[] samples = new float[FRAGMENT_SIZE * 2];
         FloatVector accumulator;
         FloatVector f1 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 0);
-        FloatVector f2 = FloatVector.fromArray(VECTOR_SPECIES, mFilterPart2, 0);
+        FloatVector f2 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 2);
+        FloatVector f3 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 4);
+        FloatVector f4 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 6);
+        FloatVector f5 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 8);
+        FloatVector f6 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 10);
+        FloatVector f7 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 12);
+        FloatVector f8 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 14);
+        FloatVector f9 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 16);
+        FloatVector f10 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 18);
+        FloatVector f11 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 20);
+        FloatVector f12 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 22);
 
         for(int x = 0; x < FRAGMENT_SIZE; x++)
         {
             accumulator = FloatVector.zero(VECTOR_SPECIES);
             accumulator = f1.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x), accumulator);
-            accumulator = f2.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 8), accumulator);
+            accumulator = f2.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 2), accumulator);
+            accumulator = f3.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 4), accumulator);
+            accumulator = f4.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 6), accumulator);
+            accumulator = f5.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 8), accumulator);
+            accumulator = f6.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 10), accumulator);
+            accumulator = f7.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 12), accumulator);
+            accumulator = f8.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 14), accumulator);
+            accumulator = f9.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 16), accumulator);
+            accumulator = f10.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 18), accumulator);
+            accumulator = f11.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 20), accumulator);
+            accumulator = f12.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 22), accumulator);
 
             //Perform FS/2 frequency translation on final filtered values ... multiply sequence by 1, -1, etc.
             if(x % 2 == 0)

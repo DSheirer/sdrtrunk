@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy.hf;
+package io.github.dsheirer.buffer.airspy;
 
 import io.github.dsheirer.buffer.AbstractNativeBuffer;
 import io.github.dsheirer.sample.complex.ComplexSamples;

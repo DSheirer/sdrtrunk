@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
 import io.github.dsheirer.buffer.DcCorrectionManager;
 import java.nio.ByteBuffer;
@@ -26,9 +26,9 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * Scalar implementation of airspy sample converter for un-packed samples.
+ * Scalar implementation of sample converter for un-packed samples.
  */
-public class VectorUnpackedSampleConverter implements IAirspySampleConverter
+public class VectorUnpackedSampleConverter implements ISampleConverter
 {
     private static final VectorSpecies<Short> VECTOR_SPECIES = ShortVector.SPECIES_PREFERRED;
 
@@ -88,7 +88,7 @@ public class VectorUnpackedSampleConverter implements IAirspySampleConverter
             }
 
             float averageDcNow = ((float)dcAccumulator / (float)samples.length) - 2048.0f;
-            averageDcNow *= AirspyBufferIterator.SCALE_SIGNED_12_BIT_TO_FLOAT;
+            averageDcNow *= SampleBufferIterator.SCALE_SIGNED_12_BIT_TO_FLOAT;
             mDcCalculationManager.adjust(averageDcNow);
         }
         else

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,18 +17,18 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
 import java.nio.ByteBuffer;
 
 /**
- * Interface to convert airspy samples from a byte buffer to an array of shorts.
+ * Interface to convert samples from a byte buffer to an array of shorts.
  */
-public interface IAirspySampleConverter
+public interface ISampleConverter
 {
     /**
-     * Converts the airspy byte samples contained in the byte buffer to their short-valued representation
-     * @param buffer of airspy samples
+     * Converts the byte samples contained in the byte buffer to their short-valued representation
+     * @param buffer of samples
      * @return converted samples
      */
     short[] convert(ByteBuffer buffer);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.hydrasdr;
+package io.github.dsheirer.buffer.sample;
 
 import io.github.dsheirer.buffer.AbstractNativeBuffer;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -26,9 +26,9 @@ import io.github.dsheirer.vector.calibrate.Implementation;
 import java.util.Iterator;
 
 /**
- * Native buffer scalar implementation for HydraSDR non-packed samples.
+ * Native buffer scalar implementation for non-packed samples.
  */
-public class HydraSdrNativeBuffer extends AbstractNativeBuffer
+public class SampleNativeBuffer extends AbstractNativeBuffer
 {
     private short[] mSamples;
     private short[] mResidualI;
@@ -39,7 +39,7 @@ public class HydraSdrNativeBuffer extends AbstractNativeBuffer
 
     /**
      * Constructs an instance
-     * @param samples (non-packed) from the HydraSDR device
+     * @param samples (non-packed) from the device
      * @param residualI samples from previous buffer
      * @param residualQ samples from previous buffer
      * @param averageDc measured
@@ -48,17 +48,17 @@ public class HydraSdrNativeBuffer extends AbstractNativeBuffer
      * @param nonInterleavedImplementation optimal, scalar vs vector SIMD
      * @param samplesPerMillisecond used to calculate sub-buffer fragment timestamp offsets from the start of this buffer.
      */
-    public HydraSdrNativeBuffer(short[] samples, short[] residualI, short[] residualQ, float averageDc,
+    public SampleNativeBuffer(short[] samples, short[] residualI, short[] residualQ, float averageDc,
                               long timestamp, Implementation interleavedImplementation,
                               Implementation nonInterleavedImplementation, float samplesPerMillisecond)
     {
         super(timestamp, samplesPerMillisecond);
 
         //Ensure we're an even multiple of the fragment size.  Typically, this will be 64k or 128k
-        if(samples.length % HydraSdrBufferIterator.FRAGMENT_SIZE != 0)
+        if(samples.length % SampleBufferIterator.FRAGMENT_SIZE != 0)
         {
             throw new IllegalArgumentException("Samples short[] length [" + samples.length +
-                    "] must be an even multiple of " + HydraSdrBufferIterator.FRAGMENT_SIZE);
+                    "] must be an even multiple of " + SampleBufferIterator.FRAGMENT_SIZE);
         }
 
         mSamples = samples;
@@ -80,11 +80,11 @@ public class HydraSdrNativeBuffer extends AbstractNativeBuffer
     {
         return switch(mInterleavedImplementation)
         {
-            case VECTOR_SIMD_512 -> new HydraSdrBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            case VECTOR_SIMD_256-> new HydraSdrBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            case VECTOR_SIMD_128-> new HydraSdrBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            case VECTOR_SIMD_64 ->new HydraSdrBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            default -> new HydraSdrBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_512 -> new SampleBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_256-> new SampleBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_128-> new SampleBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_64 ->new SampleBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            default -> new SampleBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
         };
     }
 
@@ -93,11 +93,11 @@ public class HydraSdrNativeBuffer extends AbstractNativeBuffer
     {
         return switch(mInterleavedImplementation)
         {
-            case VECTOR_SIMD_512 -> new HydraSdrInterleavedBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            case VECTOR_SIMD_256-> new HydraSdrInterleavedBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            case VECTOR_SIMD_128-> new HydraSdrInterleavedBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            case VECTOR_SIMD_64 ->new HydraSdrInterleavedBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
-            default -> new HydraSdrInterleavedBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_512 -> new SampleInterleavedBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_256-> new SampleInterleavedBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_128-> new SampleInterleavedBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_64 ->new SampleInterleavedBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            default -> new SampleInterleavedBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
         };
     }
 }

@@ -22,13 +22,7 @@ package io.github.dsheirer.vector.calibrate;
 import io.github.dsheirer.dsp.am.AmDemodulatorCalibration;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
-import io.github.dsheirer.vector.calibrate.airspy.AirspySampleConverterCalibration;
-import io.github.dsheirer.vector.calibrate.airspy.AirspyUnpackedCalibration;
-import io.github.dsheirer.vector.calibrate.airspy.AirspyUnpackedInterleavedCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.DifferentialDemodulatorCalibration;
-import io.github.dsheirer.vector.calibrate.hydrasdr.HydraSdrSampleConverterCalibration;
-import io.github.dsheirer.vector.calibrate.hydrasdr.HydraSdrUnpackedCalibration;
-import io.github.dsheirer.vector.calibrate.hydrasdr.HydraSdrUnpackedInterleavedCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.filter.FirFilterCalibration;
 import io.github.dsheirer.vector.calibrate.filter.RealDcRemovalCalibration;
@@ -44,6 +38,9 @@ import io.github.dsheirer.vector.calibrate.magnitude.MagnitudeCalibration;
 import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.RealOscillatorCalibration;
+import io.github.dsheirer.vector.calibrate.sample.PackedSampleConverterCalibration;
+import io.github.dsheirer.vector.calibrate.sample.UnpackedInterleavedSampleConverterCalibration;
+import io.github.dsheirer.vector.calibrate.sample.UnpackedSampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
@@ -103,9 +100,9 @@ public class CalibrationManager
 
             sInstance = new CalibrationManager();
 
-            sInstance.add(new AirspySampleConverterCalibration());
-            sInstance.add(new AirspyUnpackedCalibration());
-            sInstance.add(new AirspyUnpackedInterleavedCalibration());
+            sInstance.add(new PackedSampleConverterCalibration());
+            sInstance.add(new UnpackedSampleConverterCalibration());
+            sInstance.add(new UnpackedInterleavedSampleConverterCalibration());
             sInstance.add(new AmDemodulatorCalibration());
             sInstance.add(new ComplexGainCalibration());
             sInstance.add(new ComplexGainControlCalibration());
@@ -115,9 +112,6 @@ public class CalibrationManager
             sInstance.add(new DifferentialDemodulatorCalibration());
             sInstance.add(new FirFilterCalibration());
             sInstance.add(new FmDemodulatorCalibration());
-            sInstance.add(new HydraSdrSampleConverterCalibration());
-            sInstance.add(new HydraSdrUnpackedCalibration());
-            sInstance.add(new HydraSdrUnpackedInterleavedCalibration());
             sInstance.add(new InterpolatorCalibration());
             sInstance.add(new MagnitudeCalibration());
             sInstance.add(new P25P1SoftSyncCalibration());

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,27 +17,27 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import java.util.Arrays;
 
 /**
- * Scalar implementation for non-packed Airspy native buffers
+ * Scalar implementation for non-packed native buffers
  */
-public class AirspyBufferIteratorScalar extends AirspyBufferIterator<ComplexSamples>
+public class SampleBufferIteratorScalar extends SampleBufferIterator<ComplexSamples>
 {
     /**
      * Constructs an instance
      *
-     * @param samples from the airspy, either packed or unpacked.
+     * @param samples from the device, either packed or unpacked.
      * @param residualI samples from last buffer
      * @param residualQ samples from last buffer
      * @param averageDc measured
      * @param timestamp of the buffer
      * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
-    public AirspyBufferIteratorScalar(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp, float samplesPerMillisecond)
+    public SampleBufferIteratorScalar(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp, float samplesPerMillisecond)
     {
         super(samples, residualI, residualQ, averageDc, timestamp, samplesPerMillisecond);
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
 import io.github.dsheirer.buffer.AbstractNativeBufferFactory;
 import io.github.dsheirer.buffer.INativeBuffer;
@@ -30,26 +30,26 @@ import java.util.Arrays;
 /**
  * Implements a factory for creating SignedByteNativeBuffer instances
  */
-public class AirspyNativeBufferFactory extends AbstractNativeBufferFactory
+public class SampleNativeBufferFactory extends AbstractNativeBufferFactory
 {
     private boolean mSamplePacking = false;
-    private short[] mResidualI = new short[AirspyBufferIterator.I_OVERLAP];
-    private short[] mResidualQ = new short[AirspyBufferIterator.Q_OVERLAP];
-    private IAirspySampleConverter mConverter;
+    private short[] mResidualI = new short[SampleBufferIterator.I_OVERLAP];
+    private short[] mResidualQ = new short[SampleBufferIterator.Q_OVERLAP];
+    private ISampleConverter mConverter;
     private Implementation mInterleavedIteratorImplementation;
     private Implementation mNonInterleavedIteratorImplementation;
 
     /**
      * Constructs an instance
      */
-    public AirspyNativeBufferFactory()
+    public SampleNativeBufferFactory()
     {
         updateConverter();
 
         mInterleavedIteratorImplementation = CalibrationManager.getInstance()
-                .getImplementation(CalibrationType.AIRSPY_UNPACKED_INTERLEAVED_ITERATOR);
+                .getImplementation(CalibrationType.SAMPLE_UNPACKED_INTERLEAVED_ITERATOR);
         mNonInterleavedIteratorImplementation = CalibrationManager.getInstance()
-                .getImplementation(CalibrationType.AIRSPY_UNPACKED_ITERATOR);
+                .getImplementation(CalibrationType.SAMPLE_UNPACKED_ITERATOR);
     }
 
     /**
@@ -78,7 +78,7 @@ public class AirspyNativeBufferFactory extends AbstractNativeBufferFactory
         }
         else
         {
-            Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.AIRSPY_SAMPLE_CONVERTER);
+            Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.SAMPLE_PACKED_CONVERTER);
 
             if(implementation == Implementation.VECTOR_SIMD_PREFERRED)
             {
@@ -102,7 +102,7 @@ public class AirspyNativeBufferFactory extends AbstractNativeBufferFactory
     {
         short[] samples = mConverter.convert(buffer);
 
-        INativeBuffer nativeBuffer = new AirspyNativeBuffer(samples,
+        INativeBuffer nativeBuffer = new SampleNativeBuffer(samples,
                 Arrays.copyOf(mResidualI, mResidualI.length),
                 Arrays.copyOf(mResidualQ, mResidualQ.length), mConverter.getAverageDc(), timestamp,
                 mInterleavedIteratorImplementation, mNonInterleavedIteratorImplementation, getSamplesPerMillisecond());
@@ -118,16 +118,16 @@ public class AirspyNativeBufferFactory extends AbstractNativeBufferFactory
      */
     private void extractResidual(short[] samples)
     {
-        int offset = samples.length - (AirspyBufferIterator.I_OVERLAP * 2);
+        int offset = samples.length - (SampleBufferIterator.I_OVERLAP * 2);
 
-        for(int i = 0; i < AirspyBufferIterator.I_OVERLAP; i++)
+        for(int i = 0; i < SampleBufferIterator.I_OVERLAP; i++)
         {
             mResidualI[i] = samples[offset + (2 * i)];
         }
 
-        offset = samples.length - (AirspyBufferIterator.Q_OVERLAP * 2) + 1;
+        offset = samples.length - (SampleBufferIterator.Q_OVERLAP * 2) + 1;
 
-        for(int q = 0; q < AirspyBufferIterator.Q_OVERLAP; q++)
+        for(int q = 0; q < SampleBufferIterator.Q_OVERLAP; q++)
         {
             mResidualQ[q] = samples[offset + (2 * q)];
         }

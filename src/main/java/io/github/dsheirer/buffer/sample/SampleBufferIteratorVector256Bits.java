@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,38 +17,39 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.buffer.airspy;
+package io.github.dsheirer.buffer.sample;
 
-import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
+import io.github.dsheirer.sample.complex.ComplexSamples;
+import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 /**
- * Vector SIMD implementation for non-packed Airspy native buffers
+ * Vector SIMD implementation for non-packed native buffers
  */
-public class AirspyInterleavedBufferIteratorVector128Bits extends AirspyBufferIterator<InterleavedComplexSamples>
+public class SampleBufferIteratorVector256Bits extends SampleBufferIterator<ComplexSamples>
 {
-    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_128;
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_256;
 
     /**
      * Constructs an instance
      *
-     * @param samples from the airspy, either packed or unpacked.
+     * @param samples from the device, either packed or unpacked.
      * @param residualI samples from last buffer
      * @param residualQ samples from last buffer
      * @param averageDc measured
      * @param timestamp of the buffer
      * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
-    public AirspyInterleavedBufferIteratorVector128Bits(short[] samples, short[] residualI, short[] residualQ, float averageDc,
-                                                        long timestamp, float samplesPerMillisecond)
+    public SampleBufferIteratorVector256Bits(short[] samples, short[] residualI, short[] residualQ, float averageDc,
+                                             long timestamp, float samplesPerMillisecond)
     {
         super(samples, residualI, residualQ, averageDc, timestamp, samplesPerMillisecond);
     }
 
     @Override
-    public InterleavedComplexSamples next()
+    public ComplexSamples next()
     {
         if(mSamplesPointer >= mSamples.length)
         {
@@ -84,35 +85,31 @@ public class AirspyInterleavedBufferIteratorVector128Bits extends AirspyBufferIt
 
         mSamplesPointer = offset;
 
-        float[] samples = new float[FRAGMENT_SIZE * 2];
+        //The i line is a simple delay line, so we'll just copy those as a new array here.
+        float[] i = Arrays.copyOf(mIBuffer, FRAGMENT_SIZE);
+        float[] q = new float[FRAGMENT_SIZE];
+
         FloatVector accumulator;
         FloatVector f1 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 0);
-        FloatVector f2 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 4);
-        FloatVector f3 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 8);
-        FloatVector f4 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 12);
-        FloatVector f5 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 16);
-        FloatVector f6 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 20);
+        FloatVector f2 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 8);
+        FloatVector f3 = FloatVector.fromArray(VECTOR_SPECIES, COEFFICIENTS, 16);
 
         for(int x = 0; x < FRAGMENT_SIZE; x++)
         {
             accumulator = FloatVector.zero(VECTOR_SPECIES);
             accumulator = f1.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x), accumulator);
-            accumulator = f2.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 4), accumulator);
-            accumulator = f3.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 8), accumulator);
-            accumulator = f4.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 12), accumulator);
-            accumulator = f5.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 16), accumulator);
-            accumulator = f6.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 20), accumulator);
+            accumulator = f2.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 8), accumulator);
+            accumulator = f3.fma(FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, x + 16), accumulator);
 
             //Perform FS/2 frequency translation on final filtered values ... multiply sequence by 1, -1, etc.
             if(x % 2 == 0)
             {
-                samples[2 * x] = mIBuffer[x];
-                samples[2 * x + 1] = accumulator.reduceLanes(VectorOperators.ADD);
+                q[x] = accumulator.reduceLanes(VectorOperators.ADD);
             }
             else
             {
-                samples[2 * x] = -mIBuffer[x];
-                samples[2 * x + 1] = -accumulator.reduceLanes(VectorOperators.ADD);
+                i[x] = -i[x];
+                q[x] = -accumulator.reduceLanes(VectorOperators.ADD);
             }
         }
 
@@ -120,6 +117,6 @@ public class AirspyInterleavedBufferIteratorVector128Bits extends AirspyBufferIt
         System.arraycopy(mIBuffer, FRAGMENT_SIZE, mIBuffer, 0, I_OVERLAP);
         System.arraycopy(mQBuffer, FRAGMENT_SIZE, mQBuffer, 0, Q_OVERLAP);
 
-        return new InterleavedComplexSamples(samples, timestamp);
+        return new ComplexSamples(i, q, timestamp);
     }
 }

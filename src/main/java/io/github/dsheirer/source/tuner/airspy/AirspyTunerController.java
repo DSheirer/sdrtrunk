@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner.airspy;
 
 import io.github.dsheirer.buffer.INativeBufferFactory;
-import io.github.dsheirer.buffer.airspy.AirspyNativeBufferFactory;
+import io.github.dsheirer.buffer.sample.SampleNativeBufferFactory;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -69,7 +69,7 @@ public class AirspyTunerController extends USBTunerController
     private static final byte USB_REQUEST_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     public static final DecimalFormat MHZ_FORMATTER = new DecimalFormat("#.00 MHz");
     public static final AirspySampleRate DEFAULT_SAMPLE_RATE = new AirspySampleRate(0, 10000000, "10.00 MHz");
-    private AirspyNativeBufferFactory mNativeBufferFactory = new AirspyNativeBufferFactory();
+    private SampleNativeBufferFactory mNativeBufferFactory = new SampleNativeBufferFactory();
     private AirspyDeviceInformation mDeviceInfo;
     private List<AirspySampleRate> mSampleRates = new ArrayList<>();
     private int mSampleRate = 0;

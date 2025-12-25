@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner.hydrasdr;
 
 import io.github.dsheirer.buffer.INativeBufferFactory;
-import io.github.dsheirer.buffer.hydrasdr.HydraSdrNativeBufferFactory;
+import io.github.dsheirer.buffer.sample.SampleNativeBufferFactory;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -69,7 +69,7 @@ public class HydraSdrTunerController extends USBTunerController
     private static final byte USB_REQUEST_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     public static final DecimalFormat MHZ_FORMATTER = new DecimalFormat("#.00 MHz");
     public static final HydraSdrSampleRate DEFAULT_SAMPLE_RATE = new HydraSdrSampleRate(0, 10000000, "10.00 MHz");
-    private HydraSdrNativeBufferFactory mNativeBufferFactory = new HydraSdrNativeBufferFactory();
+    private SampleNativeBufferFactory mNativeBufferFactory = new SampleNativeBufferFactory();
     private HydraSdrDeviceInformation mDeviceInfo;
     private List<HydraSdrSampleRate> mSampleRates = new ArrayList<>();
     private int mSampleRate = 0;
@@ -113,7 +113,6 @@ public class HydraSdrTunerController extends USBTunerController
     @Override
     protected void deviceStart() throws SourceException
     {
-        mLog.info("HydraSDR deviceStart() - begin");
         try
         {
             setSamplePacking(false);
@@ -123,7 +122,6 @@ public class HydraSdrTunerController extends USBTunerController
             mLog.info("Sample packing is not supported by HydraSDR firmware");
         }
 
-        mLog.info("HydraSDR deviceStart() - setReceiverMode");
         try
         {
             setReceiverMode(true);
@@ -133,10 +131,8 @@ public class HydraSdrTunerController extends USBTunerController
             mLog.error("Couldn't enable HydraSDR receiver mode", e);
         }
 
-        mLog.info("HydraSDR deviceStart() - setFrequency");
         setFrequency(FREQUENCY_DEFAULT);
 
-        mLog.info("HydraSDR deviceStart() - determineAvailableSampleRates");
         try
         {
             determineAvailableSampleRates();
@@ -146,7 +142,6 @@ public class HydraSdrTunerController extends USBTunerController
             mLog.error("Error identifying available samples rates", e);
         }
 
-        mLog.info("HydraSDR deviceStart() - setSampleRate");
         try
         {
             setSampleRate(mSampleRates.get(0));
@@ -155,7 +150,6 @@ public class HydraSdrTunerController extends USBTunerController
         {
             mLog.error("Setting sample rate is not supported by firmware", e);
         }
-        mLog.info("HydraSDR deviceStart() - complete");
     }
 
     @Override

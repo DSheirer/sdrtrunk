@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,14 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.vector.calibrate.airspy;
+package io.github.dsheirer.vector.calibrate.sample;
 
-import io.github.dsheirer.buffer.airspy.AirspyBufferIterator;
-import io.github.dsheirer.buffer.airspy.AirspyInterleavedBufferIteratorScalar;
-import io.github.dsheirer.buffer.airspy.AirspyInterleavedBufferIteratorVector128Bits;
-import io.github.dsheirer.buffer.airspy.AirspyInterleavedBufferIteratorVector256Bits;
-import io.github.dsheirer.buffer.airspy.AirspyInterleavedBufferIteratorVector512Bits;
-import io.github.dsheirer.buffer.airspy.AirspyInterleavedBufferIteratorVector64Bits;
+import io.github.dsheirer.buffer.sample.SampleBufferIterator;
+import io.github.dsheirer.buffer.sample.SampleInterleavedBufferIteratorScalar;
+import io.github.dsheirer.buffer.sample.SampleInterleavedBufferIteratorVector128Bits;
+import io.github.dsheirer.buffer.sample.SampleInterleavedBufferIteratorVector256Bits;
+import io.github.dsheirer.buffer.sample.SampleInterleavedBufferIteratorVector512Bits;
+import io.github.dsheirer.buffer.sample.SampleInterleavedBufferIteratorVector64Bits;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
@@ -33,9 +33,9 @@ import jdk.incubator.vector.FloatVector;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 /**
- * Calculates optimal implementation (SCALAR vs VECTOR) for interleaved airspy native buffers.
+ * Calculates optimal implementation (SCALAR vs VECTOR) for interleaved sample native buffers.
  */
-public class AirspyUnpackedInterleavedCalibration extends Calibration
+public class UnpackedInterleavedSampleConverterCalibration extends Calibration
 {
     private static final int BUFFER_SIZE = 131072;
     private static final int ITERATION_DURATION_MS = 1000;
@@ -45,20 +45,20 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
     /**
      * Constructs an instance
      */
-    public AirspyUnpackedInterleavedCalibration()
+    public UnpackedInterleavedSampleConverterCalibration()
     {
-        super(CalibrationType.AIRSPY_UNPACKED_INTERLEAVED_ITERATOR);
+        super(CalibrationType.SAMPLE_UNPACKED_INTERLEAVED_ITERATOR);
     }
 
     @Override
     public void calibrate() throws CalibrationException
     {
         short[] samples = getShortSamples(BUFFER_SIZE);
-        short[] residualI = getShortSamples(AirspyBufferIterator.I_OVERLAP);
-        short[] residualQ = getShortSamples(AirspyBufferIterator.Q_OVERLAP);
+        short[] residualI = getShortSamples(SampleBufferIterator.I_OVERLAP);
+        short[] residualQ = getShortSamples(SampleBufferIterator.Q_OVERLAP);
 
         //Warm-Up Phase ....
-        mLog.info("AIRSPY UNPACKED INTERLEAVED - VECTOR SIMD LANES PREFERRED: " + FloatVector.SPECIES_PREFERRED.length());
+        mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - VECTOR SIMD LANES PREFERRED: " + FloatVector.SPECIES_PREFERRED.length());
 
         Mean scalarMean = new Mean();
 
@@ -68,7 +68,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             scalarMean.increment(score);
         }
 
-        mLog.info("AIRSPY UNPACKED INTERLEAVED WARMUP - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
+        mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER WARMUP - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
 
         switch(FloatVector.SPECIES_PREFERRED.length())
         {
@@ -84,7 +84,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                     vectorMean.increment(score);
                 }
 
-                mLog.info("AIRSPY UNPACKED INTERLEAVED WARMUP - VECTOR 512: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER WARMUP - VECTOR 512: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
             }
             case 8:
             {
@@ -96,7 +96,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                     vectorMean.increment(score);
                 }
 
-                mLog.info("AIRSPY UNPACKED INTERLEAVED WARMUP - VECTOR 256: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER WARMUP - VECTOR 256: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
             }
             case 4:
             {
@@ -108,7 +108,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                     vectorMean.increment(score);
                 }
 
-                mLog.info("AIRSPY UNPACKED INTERLEAVED WARMUP - VECTOR 128: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER WARMUP - VECTOR 128: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
             }
             case 2:
             {
@@ -120,7 +120,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                     vectorMean.increment(score);
                 }
 
-                mLog.info("AIRSPY UNPACKED INTERLEAVED WARMUP - VECTOR 64: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER WARMUP - VECTOR 64: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
             }
 
             //Test Phase ....
@@ -134,7 +134,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             double bestScore = scalarMean.getResult();
             setImplementation(Implementation.SCALAR);
 
-            mLog.info("AIRSPY UNPACKED INTERLEAVED - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
+            mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - SCALAR: " + DECIMAL_FORMAT.format(scalarMean.getResult()));
 
             switch(FloatVector.SPECIES_PREFERRED.length())
             {
@@ -156,7 +156,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                         setImplementation(Implementation.VECTOR_SIMD_512);
                     }
 
-                    mLog.info("AIRSPY UNPACKED INTERLEAVED - VECTOR 512: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                    mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - VECTOR 512: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
                 }
                 case 8:
                 {
@@ -174,7 +174,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                         setImplementation(Implementation.VECTOR_SIMD_256);
                     }
 
-                    mLog.info("AIRSPY UNPACKED INTERLEAVED - VECTOR 256: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                    mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - VECTOR 256: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
                 }
                 case 4:
                 {
@@ -192,7 +192,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                         setImplementation(Implementation.VECTOR_SIMD_128);
                     }
 
-                    mLog.info("AIRSPY UNPACKED INTERLEAVED - VECTOR 128: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                    mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - VECTOR 128: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
                 }
                 case 2:
                 {
@@ -209,12 +209,12 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
                         setImplementation(Implementation.VECTOR_SIMD_64);
                     }
 
-                    mLog.info("AIRSPY UNPACKED INTERLEAVED - VECTOR 64: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
+                    mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - VECTOR 64: " + DECIMAL_FORMAT.format(vectorMean.getResult()));
                 }
             }
         }
 
-        mLog.info("AIRSPY UNPACKED INTERLEAVED - SET OPTIMAL IMPLEMENTATION TO: " + getImplementation());
+        mLog.info("UNPACKED INTERLEAVED SAMPLE CONVERTER - SET OPTIMAL IMPLEMENTATION TO: " + getImplementation());
     }
 
     private long calibrateScalar(short[] samples, short[] residualI, short[] residualQ)
@@ -224,7 +224,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
         long count = 0;
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            AirspyInterleavedBufferIteratorScalar iterator = new AirspyInterleavedBufferIteratorScalar(samples, residualI,
+            SampleInterleavedBufferIteratorScalar iterator = new SampleInterleavedBufferIteratorScalar(samples, residualI,
                     residualQ, 0.0f, System.currentTimeMillis(), 0.0f);
 
             while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
@@ -245,7 +245,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            AirspyInterleavedBufferIteratorVector64Bits iterator = new AirspyInterleavedBufferIteratorVector64Bits(samples, residualI,
+            SampleInterleavedBufferIteratorVector64Bits iterator = new SampleInterleavedBufferIteratorVector64Bits(samples, residualI,
                     residualQ, 0.0f, System.currentTimeMillis(), 0.0f);
 
             while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
@@ -266,7 +266,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
 
         for(int x = 0; x < ITERATION_DURATION_MS; x++)
         {
-            AirspyInterleavedBufferIteratorVector128Bits iterator = new AirspyInterleavedBufferIteratorVector128Bits(samples, residualI,
+            SampleInterleavedBufferIteratorVector128Bits iterator = new SampleInterleavedBufferIteratorVector128Bits(samples, residualI,
                     residualQ, 0.0f, System.currentTimeMillis(), 0.0f);
 
             while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
@@ -287,8 +287,8 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            AirspyInterleavedBufferIteratorVector256Bits iterator =
-                    new AirspyInterleavedBufferIteratorVector256Bits(samples, residualI, residualQ, 0.0f, System.currentTimeMillis(), 0.0f);
+            SampleInterleavedBufferIteratorVector256Bits iterator =
+                    new SampleInterleavedBufferIteratorVector256Bits(samples, residualI, residualQ, 0.0f, System.currentTimeMillis(), 0.0f);
 
             while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
             {
@@ -308,8 +308,8 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            AirspyInterleavedBufferIteratorVector512Bits iterator =
-                    new AirspyInterleavedBufferIteratorVector512Bits(samples, residualI, residualQ, 0.0f,
+            SampleInterleavedBufferIteratorVector512Bits iterator =
+                    new SampleInterleavedBufferIteratorVector512Bits(samples, residualI, residualQ, 0.0f,
                             System.currentTimeMillis(), 0.0f);
 
             while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
