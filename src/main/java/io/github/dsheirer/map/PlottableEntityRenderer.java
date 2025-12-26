@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,9 +80,9 @@ public class PlottableEntityRenderer
      */
     public void paintPlottableEntity(Graphics2D g, JXMapViewer viewer, PlottableEntityHistory entity, boolean antiAliasing)
     {
-        List<TimestampedGeoPosition> locationHistory = entity.getLocationHistory();
+        List<TimestampedGeoPosition> locationHistory = entity.getTrackHistoryModel().getTrackHistory();
 
-        if(!locationHistory.isEmpty() && locationHistory.get(locationHistory.size() - 1).isValid())
+        if(!locationHistory.isEmpty() && locationHistory.getLast().isValid())
         {
             Graphics2D graphics = (Graphics2D)g.create();
 
@@ -171,7 +171,7 @@ public class PlottableEntityRenderer
      */
     private void paintRoute(Graphics2D graphics, JXMapViewer viewer, PlottableEntityHistory entity, Color color)
     {
-        List<TimestampedGeoPosition> locations = entity.getLocationHistory();
+        List<TimestampedGeoPosition> locations = entity.getTrackHistoryModel().getTrackHistory();
 
         if(!locations.isEmpty())
         {

@@ -51,7 +51,6 @@ import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.TableModelEvent;
 
 /**
  * Swing map panel.
@@ -85,9 +84,9 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
     private JComboBox<Integer> mTrackHistoryLengthComboBox;
     private JSpinner mMapZoomSpinner;
     private SpinnerNumberModel mMapZoomSpinnerModel;
-    private TrackHistoryModel mTrackHistoryModel = new TrackHistoryModel();
     private JTable mTrackHistoryTable;
     private JLabel mSelectedTrackSystemLabel;
+    private final TrackHistoryModel EMPTY_HISTORY = new TrackHistoryModel();
 
     /**
      * Constructs an instance
@@ -138,6 +137,7 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
 
         cp.add(new JScrollPane(getTrackHistoryTable()), "span 3,wrap");
 
+//Uncomment this line to add a debug track generator button to the display
 //        cp.add(getTrackGeneratorToggle(), "span 3,wrap");
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -149,10 +149,10 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
 
     private void setSelected(PlottableEntityHistory selected)
     {
-        mTrackHistoryModel.load(selected);
-
         if(selected != null)
         {
+            getTrackHistoryTable().setModel(selected.getTrackHistoryModel());
+
             Identifier system = selected.getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
 
             if(system != null)
@@ -171,6 +171,7 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         }
         else
         {
+            getTrackHistoryTable().setModel(EMPTY_HISTORY);
             getSelectedTrackSystemLabel().setText(SELECT_A_TRACK);
         }
 
@@ -217,13 +218,13 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
     {
         if(mTrackHistoryTable == null)
         {
-            mTrackHistoryTable = new JTable(mTrackHistoryModel);
+            mTrackHistoryTable = new JTable(EMPTY_HISTORY);
             mTrackHistoryTable.getSelectionModel().addListSelectionListener(e ->
             {
                 if(getCenterOnSelectedCheckBox().isSelected())
                 {
                     int modelIndex = getTrackHistoryTable().convertRowIndexToModel(getTrackHistoryTable().getSelectedRow());
-                    TimestampedGeoPosition geo = mTrackHistoryModel.get(modelIndex);
+                    TimestampedGeoPosition geo = ((TrackHistoryModel)(getTrackHistoryTable().getModel())).get(modelIndex);
 
                     if(geo != null)
                     {
@@ -469,64 +470,6 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         {
             mPlottedTracksTable = new JTable(mMapService.getPlottableEntityModel());
             mPlottedTracksTable.setAutoCreateRowSorter(true);
-            mMapService.getPlottableEntityModel().addTableModelListener(e ->
-            {
-                //Update the followed entity for DELETE/UPDATE operations
-                if(mFollowedTrack != null)
-                {
-                    if(e.getType() == TableModelEvent.DELETE)
-                    {
-                        for(int x = e.getFirstRow(); x <= e.getLastRow(); x++)
-                        {
-                            if(mMapService.getPlottableEntityModel().get(x).equals(mFollowedTrack))
-                            {
-                                follow(null);
-                                return;
-                            }
-                        }
-                    }
-                    else if(e.getType() == TableModelEvent.UPDATE)
-                    {
-                        if(e.getFirstRow() == 0 && e.getLastRow() == Integer.MAX_VALUE)
-                        {
-                            return;
-                        }
-
-                        for(int x = e.getFirstRow(); x <= e.getLastRow(); x++)
-                        {
-                            PlottableEntityHistory entity = mMapService.getPlottableEntityModel().get(x);
-
-                            if(entity.equals(getSelected()))
-                            {
-                                mTrackHistoryModel.update();
-                            }
-
-                            if(entity != null && entity.equals(mFollowedTrack))
-                            {
-                                centerOn(mMapService.getPlottableEntityModel().get(x));
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                if(e.getType() == TableModelEvent.UPDATE && !(e.getFirstRow() == 0 && e.getLastRow() == Integer.MAX_VALUE))
-                {
-                    for(int x = e.getFirstRow(); x <= e.getLastRow(); x++)
-                    {
-                        PlottableEntityHistory entity = mMapService.getPlottableEntityModel().get(x);
-
-                        if(entity != null && entity.equals(getSelected()))
-                        {
-                            mTrackHistoryModel.update();
-                        }
-                    }
-                }
-                else if(e.getType() == TableModelEvent.DELETE && getSelected() == null)
-                {
-                    mTrackHistoryModel.load(null);
-                }
-            });
 
             //Register selection listener to update button/label states
             mPlottedTracksTable.getSelectionModel().addListSelectionListener(e ->

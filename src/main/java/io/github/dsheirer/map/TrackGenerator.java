@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
@@ -44,13 +45,9 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
  */
 public class TrackGenerator
 {
-    private static GeoPosition DEFAULT_START_POSITION = new GeoPosition(43.048, -76.147);
-    private static final String ALIAS_LIST_NAME = "DMR Test Alias List";
-    private MapService mMapService;
-    private List<TrackElementGenerator> mTrackElementGenerators = new ArrayList<>();
-    private double mBaseSpeedKPH = 40.0;
-    private int mTrackCount = 25;
-    private ScheduledFuture<?> mGeneratorFuture;
+    private static final GeoPosition DEFAULT_START_POSITION = new GeoPosition(43.048, -76.147);
+    private final MapService mMapService;
+    private final List<TrackElementGenerator> mTrackElementGenerators = new ArrayList<>();
 
     /**
      * Constructs an instance to publish tracks to the specified map service
@@ -60,19 +57,27 @@ public class TrackGenerator
     {
         mMapService = mapService;
 
-        MutableIdentifierCollection base = new MutableIdentifierCollection();
-        base.update(SystemConfigurationIdentifier.create("Test System"));
-        base.update(SiteConfigurationIdentifier.create("Test Site"));
-        base.update(FrequencyConfigurationIdentifier.create(155000000l));
-        base.update(AliasListConfigurationIdentifier.create(ALIAS_LIST_NAME));
-
         Random random = new Random();
 
-        for(int x = 0; x < mTrackCount; x++)
+        int trackCount = 25;
+        for(int x = 0; x < trackCount; x++)
         {
-            MutableIdentifierCollection mic = new MutableIdentifierCollection(base.getIdentifiers());
-            mic.update(DMRRadio.createFrom(x + 1));
-            double speedKPH = mBaseSpeedKPH + (random.nextDouble() * 15);
+            MutableIdentifierCollection mic = new MutableIdentifierCollection();
+            mic.update(SystemConfigurationIdentifier.create("Test System"));
+            mic.update(SiteConfigurationIdentifier.create("Test Site"));
+            mic.update(FrequencyConfigurationIdentifier.create(155000000l));
+            if(x % 2 == 1)
+            {
+                mic.update(AliasListConfigurationIdentifier.create("DMR " + x + " LIST"));
+                mic.update(DMRRadio.createFrom(x + 1));
+            }
+            else
+            {
+                mic.update(AliasListConfigurationIdentifier.create("P25 " + x + " LIST"));
+                mic.update(APCO25RadioIdentifier.createFrom(x + 1));
+            }
+            double baseSpeedKPH = 20.0;
+            double speedKPH = baseSpeedKPH + random.nextDouble(15);
             mTrackElementGenerators.add(new TrackElementGenerator(speedKPH, mic));
         }
     }
@@ -82,9 +87,9 @@ public class TrackGenerator
      */
     public void start()
     {
-        if(mGeneratorFuture == null)
+        for(TrackElementGenerator generator: mTrackElementGenerators)
         {
-            mGeneratorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> update(), 0, 1, TimeUnit.SECONDS);
+            generator.start();
         }
     }
 
@@ -93,59 +98,81 @@ public class TrackGenerator
      */
     public void stop()
     {
-        if(mGeneratorFuture != null)
+        for(TrackElementGenerator generator: mTrackElementGenerators)
         {
-            mGeneratorFuture.cancel(true);
-            mGeneratorFuture = null;
-        }
-    }
-
-    /**
-     * Updates each of the track generates causing them to dispatch a new decode event to the map service.
-     *
-     * Invoke this method once per second.
-     */
-    private void update()
-    {
-        for(TrackElementGenerator tg: mTrackElementGenerators)
-        {
-            mMapService.receive(tg.update());
+            generator.stop();
         }
     }
 
     /**
      * Test track element generator
      */
-    public static class TrackElementGenerator
+    public class TrackElementGenerator
     {
         public static double EARTH_RADIUS_KM = 6378.137;
         public static double ONE_SECOND = 1.0 / 60.0 / 60.0; //1 hour divided by 60 minutes divided by 60 seconds.
         private IdentifierCollection mIdentifierCollection;
         private double mSpeedKPH;
-        private GeoPosition mPosition = new GeoPosition(DEFAULT_START_POSITION.getLatitude(), DEFAULT_START_POSITION.getLongitude());
+        private GeoPosition mPosition;
         private Random mRandom = new Random();
         private double mHeading = 360.0 * mRandom.nextDouble();
+        private ScheduledFuture<?> mGeneratorFuture;
 
         /**
          * Constructs an instance
-         * @param trackId for the track
          * @param speedKPH speed in KPH
+         * @param identifierCollection for the track
          */
         public TrackElementGenerator(double speedKPH, IdentifierCollection identifierCollection)
         {
             mSpeedKPH = speedKPH;
             mIdentifierCollection = identifierCollection;
+            double latOffset = (1.0 - (mRandom.nextFloat() * 2)) / 800;
+            double lonOffset = (1.0 - (mRandom.nextFloat() * 2)) / 800;
+            mPosition = new GeoPosition(DEFAULT_START_POSITION.getLatitude() + latOffset,
+                    DEFAULT_START_POSITION.getLongitude() + lonOffset);
         }
 
         /**
-         *
-         * @param heading 0-360 degrees
+         * Starts this track generator
          */
-        public PlottableDecodeEvent update()
+        public void start()
         {
-            mHeading = mHeading + (15.0 - (mRandom.nextDouble() * 30.0));
-            mHeading = Math.max(mHeading, 0);
-            mHeading = Math.min(mHeading, 360.0);
+            if(mGeneratorFuture == null)
+            {
+                long intervalMS = 500 + (mRandom.nextLong(1000));
+                mSpeedKPH /= (intervalMS / 1000.0);
+                System.out.println("Speed: " + mSpeedKPH);
+                mGeneratorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::update, 0, intervalMS, TimeUnit.MILLISECONDS);
+            }
+        }
+
+        /**
+         * Stops this track generator
+         */
+        public void stop()
+        {
+            if(mGeneratorFuture != null)
+            {
+                mGeneratorFuture.cancel(true);
+                mGeneratorFuture = null;
+            }
+        }
+
+        /**
+         * Pushes a new update to the map service.
+         */
+        public void update()
+        {
+            mHeading = mHeading + (30.0 - (mRandom.nextDouble(60)));
+            if(mHeading < 0)
+            {
+                mHeading += 360;
+            }
+            else if(mHeading >= 360)
+            {
+                mHeading -= 360;
+            }
             double distanceKM = mSpeedKPH * ONE_SECOND;
             double headingRadians = Math.toRadians(mHeading);
 
@@ -168,7 +195,7 @@ public class TrackGenerator
                             .protocol(Protocol.DMR)
                             .identifiers(mIdentifierCollection)
                             .build();
-            return event;
+            mMapService.receive(event);
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +22,15 @@ package io.github.dsheirer.map;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
-import java.util.ArrayList;
-import java.util.List;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 /**
  * Plottable entity history with location history.
  */
 public class PlottableEntityHistory
 {
-    public static final int MAX_LOCATION_HISTORY = 10;
-    private List<TimestampedGeoPosition> mLocationHistory = new ArrayList<>();
+    private final TrackHistoryModel mTrackHistoryModel = new TrackHistoryModel();
     private PlottableDecodeEvent mCurrentEvent;
-    private Identifier mIdentifier;
+    private final Identifier mIdentifier;
 
     /**
      * Constructs a plottable entity history
@@ -42,28 +38,24 @@ public class PlottableEntityHistory
     public PlottableEntityHistory(Identifier identifier, PlottableDecodeEvent event)
     {
         mIdentifier = identifier;
+        mCurrentEvent = event;
         add(event);
     }
 
     /**
      * Location history for this entity
      */
-    public List<TimestampedGeoPosition> getLocationHistory()
+    public TrackHistoryModel getTrackHistoryModel()
     {
-        return new ArrayList<>(mLocationHistory);
+        return mTrackHistoryModel;
     }
 
     /**
-     * Latest position for this entity.
+     * Latest position for this history
      */
     public TimestampedGeoPosition getLatestPosition()
     {
-        if(mLocationHistory.size() > 0)
-        {
-            return mLocationHistory.get(0);
-        }
-
-        return null;
+        return mTrackHistoryModel.get(0);
     }
 
     /**
@@ -89,43 +81,9 @@ public class PlottableEntityHistory
     {
         if(event.isValidLocation())
         {
-            TimestampedGeoPosition mostRecentPosition = getLatestPosition();
-            TimestampedGeoPosition latest = new TimestampedGeoPosition(event.getLocation(), event.getTimeStart());
-
-            if(isUnique(latest, mostRecentPosition))
-            {
-                mCurrentEvent = event;
-                mLocationHistory.add(0, latest);
-
-                while(mLocationHistory.size() > MAX_LOCATION_HISTORY)
-                {
-                    mLocationHistory.remove(mLocationHistory.size() - 1);
-                }
-            }
-        }
-    }
-
-    /**
-     * Indicates if the latest time and position is at least 30 seconds newer than the previous position and either the
-     * latitude or longitude differs by at least 0.00001 degrees.
-     * @param latest location
-     * @param previous location
-     * @return indication of uniqueness.
-     */
-    private boolean isUnique(TimestampedGeoPosition latest, TimestampedGeoPosition previous)
-    {
-        if(latest != null && previous == null)
-        {
-            return true;
+            mTrackHistoryModel.add(new TimestampedGeoPosition(event.getLocation(), event.getTimeStart()));
         }
 
-        if(latest != null && previous != null)
-        {
-            return latest.getTimestamp() > (previous.getTimestamp() + 30_000) ||
-                   Math.abs(latest.getLatitude() - previous.getLatitude()) > 0.00001 ||
-                   Math.abs(latest.getLongitude() - previous.getLongitude()) > 0.00001;
-        }
-
-        return false;
+        mCurrentEvent = event;
     }
 }
