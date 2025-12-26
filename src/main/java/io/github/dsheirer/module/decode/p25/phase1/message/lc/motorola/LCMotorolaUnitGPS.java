@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
@@ -122,17 +121,5 @@ public class LCMotorolaUnitGPS extends LinkControlWord
         }
 
         return mIdentifiers;
-    }
-
-    static void main()
-    {
-        BinaryMessage mick = BinaryMessage.load("000001101001000000000000101100011010110101010011011000101001000001000010");
-        BinaryMessage newj = BinaryMessage.load("000001101001000000000000001110010000011010111110110010110011100011000010");
-
-        LCMotorolaUnitGPS motoMick = new LCMotorolaUnitGPS(new CorrectedBinaryMessage(mick));
-        LCMotorolaUnitGPS motoNewJ = new LCMotorolaUnitGPS(new CorrectedBinaryMessage(newj));
-
-        System.out.println("MICK: " + motoMick);
-        System.out.println("NEWJ: " + motoNewJ);
     }
 }

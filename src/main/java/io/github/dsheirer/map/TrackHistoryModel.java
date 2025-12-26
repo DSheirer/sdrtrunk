@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,15 +28,15 @@ import java.util.List;
 import javax.swing.table.AbstractTableModel;
 
 /**
- * Table model for track history.
+ * Track history table model.
  */
 public class TrackHistoryModel extends AbstractTableModel
 {
+    public static final int MAX_LOCATION_HISTORY = 10;
     private static final String[] COLUMNS = new String[]{"Time", "Latitude", "Longitude"};
-    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private DecimalFormat mDegreeFormat = new DecimalFormat("0.00000");
-    private List<TimestampedGeoPosition> mTimestampedGeoPositions = new ArrayList<>();
-    private PlottableEntityHistory mPlottableEntityHistory;
+    private final SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final DecimalFormat mDegreeFormat = new DecimalFormat("0.00000");
+    private final List<TimestampedGeoPosition> mTimestampedGeoPositions = new ArrayList<>();
 
     /**
      * Constructs an instance
@@ -46,65 +46,77 @@ public class TrackHistoryModel extends AbstractTableModel
     }
 
     /**
+     * Complete history for this entity.
+     */
+    public List<TimestampedGeoPosition> getTrackHistory()
+    {
+        return Collections.unmodifiableList(mTimestampedGeoPositions);
+    }
+
+    /**
+     * Adds the position to the history if it is unique and trims the history to MAX_LOCATION_HISTORY size.
+     * @param latest position to add.
+     */
+    public void add(TimestampedGeoPosition latest)
+    {
+        TimestampedGeoPosition mostRecentPosition = null;
+
+        if(!mTimestampedGeoPositions.isEmpty())
+        {
+            mostRecentPosition = mTimestampedGeoPositions.getFirst();
+        }
+
+        if(isUnique(latest, mostRecentPosition))
+        {
+            mTimestampedGeoPositions.addFirst(latest);
+            fireTableRowsInserted(0, 0);
+
+            while(mTimestampedGeoPositions.size() > MAX_LOCATION_HISTORY)
+            {
+                int index = mTimestampedGeoPositions.size() - 1;
+                mTimestampedGeoPositions.removeLast();
+                fireTableRowsDeleted(index, index);
+            }
+        }
+    }
+
+    /**
+     * Indicates if the latest time and position is at least 30 seconds newer than the previous position and either the
+     * latitude or longitude differs by at least 0.00001 degrees.
+     * @param latest location
+     * @param previous location
+     * @return indication of uniqueness.
+     */
+    private boolean isUnique(TimestampedGeoPosition latest, TimestampedGeoPosition previous)
+    {
+        if(latest != null && previous == null)
+        {
+            return true;
+        }
+
+        if(latest != null)
+        {
+            return latest.getTimestamp() > (previous.getTimestamp() + 2_000) ||
+                    Math.abs(latest.getLatitude() - previous.getLatitude()) > 0.00001 ||
+                    Math.abs(latest.getLongitude() - previous.getLongitude()) > 0.00001;
+        }
+
+        return false;
+    }
+
+    /**
      * Get the geo position at the specified index
      * @param index to retrieve
      * @return geo or null.
      */
     public TimestampedGeoPosition get(int index)
     {
-        if(index < mTimestampedGeoPositions.size())
+        if(index >= 0 && index < mTimestampedGeoPositions.size())
         {
             return mTimestampedGeoPositions.get(index);
         }
 
         return null;
-    }
-
-    /**
-     * Loads the plottable entity history into this model
-     * @param plottableEntityHistory to load
-     */
-    public void load(PlottableEntityHistory plottableEntityHistory)
-    {
-        mPlottableEntityHistory = plottableEntityHistory;
-
-        if(mTimestampedGeoPositions.size() > 0)
-        {
-            int lastRow = mTimestampedGeoPositions.size() - 1;
-            mTimestampedGeoPositions.clear();
-            fireTableRowsDeleted(0, lastRow);
-        }
-
-        if(mPlottableEntityHistory != null)
-        {
-            mTimestampedGeoPositions.addAll(mPlottableEntityHistory.getLocationHistory());
-
-            if(mTimestampedGeoPositions.size() > 0)
-            {
-                fireTableRowsInserted(0, mTimestampedGeoPositions.size() - 1);
-            }
-        }
-    }
-
-    /**
-     * Updates or refreshes the track history from the current plottable entity.
-     */
-    public void update()
-    {
-        if(mPlottableEntityHistory != null)
-        {
-            List<TimestampedGeoPosition> geos = mPlottableEntityHistory.getLocationHistory();
-            Collections.reverse(geos);
-
-            for(TimestampedGeoPosition geo: geos)
-            {
-                if(!mTimestampedGeoPositions.contains(geo))
-                {
-                    mTimestampedGeoPositions.add(0, geo);
-                    fireTableRowsInserted(0, 0);
-                }
-            }
-        }
     }
 
     @Override
