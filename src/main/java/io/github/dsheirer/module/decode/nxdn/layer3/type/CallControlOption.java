@@ -70,7 +70,7 @@ public record CallControlOption(int value)
     /**
      * Indicates if this is the first of multiple messages for Voice Call Request or Voice Call Reception Request
      */
-    public boolean isFirstOfMultiMessage()
+    public boolean isFirstMessage()
     {
         return getMaskSupplementaryProceduresValue() == 1;
     }
@@ -78,7 +78,7 @@ public record CallControlOption(int value)
     /**
      * Indicates if this is the second/final of multiple messages for Voice Call Request or Voice Call Reception Request
      */
-    public boolean isSecondOfMultiMessage()
+    public boolean isSecondMessage()
     {
         return getMaskSupplementaryProceduresValue() == 2;
     }

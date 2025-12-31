@@ -53,8 +53,11 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.StatusResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionReleaseExtension;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallInitializationVector;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.coding.CACPunctureProvider;
@@ -329,6 +332,13 @@ public class NXDNMessageFactory
             case CONTROL_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
             case TRAFFIC_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
                 return new VoiceCallReceptionRequest(message, timestamp, type);
+            case CONTROL_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
+            case TRAFFIC_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
+                return new VoiceCallReceptionResponse(message, timestamp, type);
+            case CONTROL_IN_03_VOICE_CALL_CONNECTION_REQUEST:
+                return new VoiceCallConnectionRequest(message, timestamp, type);
+            case CONTROL_OUT_03_VOICE_CALL_CONNECTION_RESPONSE:
+                return new VoiceCallConnectionResponse(message, timestamp, type);
             case TRAFFIC_IN_03_VOICE_CALL_INITIALIZATION_VECTOR:
             case TRAFFIC_OUT_03_VOICE_CALL_INITIALIZATION_VECTOR:
                 return new VoiceCallInitializationVector(message, timestamp, type);

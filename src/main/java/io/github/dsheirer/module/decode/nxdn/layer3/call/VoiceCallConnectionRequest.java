@@ -12,9 +12,9 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationIDOption;
 
 /**
- * Voice call reception request.
+ * Voice call connection request.
  */
-public class VoiceCallReceptionRequest extends VoiceCall
+public class VoiceCallConnectionRequest extends VoiceCall
 {
     private static final IntField LOCATION_ID_OPTION = IntField.length5(OCTET_7);
     private static final int LOCATION_ID = OCTET_7 + 5;
@@ -27,7 +27,7 @@ public class VoiceCallReceptionRequest extends VoiceCall
      * @param timestamp for the message
      * @param type      of message
      */
-    public VoiceCallReceptionRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public VoiceCallConnectionRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
         super(message, timestamp, type);
     }
@@ -47,86 +47,13 @@ public class VoiceCallReceptionRequest extends VoiceCall
             sb.append("PRIORITY PAGING ");
         }
 
-        sb.append(getCallType()).append(" VOICE CALL RECEPTION REQUEST");
-
-        if(getCallType() == CallType.INDIVIDUAL)
-        {
-            sb.append(" FROM:").append(getSource());
-            sb.append(" TO:").append(getDestination());
-        }
-        else if(getCallType() == CallType.INTERCONNECT)
-        {
-            if(isContinuationMessage())
-            {
-                sb.append(" FROM CONTINUATION PSTN DIGITS:").append(getDialedDigits());
-            }
-            else
-            {
-                sb.append(" FROM PSTN:").append(getDialedDigits());
-                sb.append(" TO:").append(getDestination());
-            }
-        }
-
+        sb.append(getCallType()).append(" VOICE CALL CONNECTION REQUEST");
+        sb.append(" FROM:").append(getSource());
+        sb.append(" TO:").append(getDestination());
         sb.append(" ").append(getEncryptionKeyIdentifier());
         sb.append(getCallOption());
 
         return sb.toString();
-    }
-
-    public boolean isContinuationMessage()
-    {
-        return getCallControlOption().isSecondMessage();
-    }
-
-    /**
-     * Dialed digits when call type is INTERCONNECT.
-     */
-    public String getDialedDigits()
-    {
-        if(getCallType() == CallType.INTERCONNECT)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            int offset, length;
-
-            if(getCallControlOption().isSecondMessage())
-            {
-                offset = OCTET_2;
-                length = 32;
-            }
-            else if(getCallControlOption().hasLocationId())
-            {
-                offset = OCTET_10;
-                length = 12;
-            }
-            else
-            {
-                offset = OCTET_7;
-                length = 18;
-            }
-
-            Digit digit;
-
-            for(int x = 0; x < length; x++)
-            {
-                digit = Digit.fromValue(getMessage().getInt(offset, offset + 3));
-
-                if(digit == Digit.FILLER)
-                {
-                    break;
-                }
-                else
-                {
-                    sb.append(digit);
-                }
-
-                offset += 4;
-            }
-
-            return sb.toString();
-        }
-
-        return "";
     }
 
     /**

@@ -43,8 +43,6 @@ public class VoiceCallRequest extends VoiceCall
     private static final IntField LOCATION_ID_OPTION = IntField.length5(OCTET_7);
     private static final int LOCATION_ID = OCTET_7 + 5;
     private static final int LOCATION_ID_DIALING_CALL = OCTET_8 + 5;
-    private static final int DIGITS_WITHOUT_LOCATION = OCTET_7;
-    private static final int DIGITS_WITH_LOCATION = OCTET_10;
     private static final IntField SPEED_DIAL = IntField.length8(OCTET_7);
     private LocationID mLocationID;
 
@@ -82,7 +80,14 @@ public class VoiceCallRequest extends VoiceCall
         switch(getCallType())
         {
             case INTERCONNECT:
-                sb.append(" PSTN:").append(getDialedDigits());
+                if(getCallControlOption().isSecondMessage())
+                {
+                    sb.append(" CONTINUATION PSTN DIGITS:").append(getDialedDigits());
+                }
+                else
+                {
+                    sb.append(" PSTN:").append(getDialedDigits());
+                }
                 break;
             case SPEED_DIAL:
                 sb.append(" SPEED DIAL:").append(getSpeedDialNumber());
@@ -144,8 +149,23 @@ public class VoiceCallRequest extends VoiceCall
         {
             StringBuilder sb = new StringBuilder();
 
-            int offset = hasLocationID() ? DIGITS_WITH_LOCATION : DIGITS_WITHOUT_LOCATION;
-            int length = hasLocationID() ? 12 : 18;
+            int offset, length;
+
+            if(getCallControlOption().isSecondMessage())
+            {
+                offset = OCTET_2;
+                length = 32;
+            }
+            else if(getCallControlOption().hasLocationId())
+            {
+                offset = OCTET_10;
+                length = 12;
+            }
+            else
+            {
+                offset = OCTET_7;
+                length = 18;
+            }
 
             Digit digit;
 
