@@ -100,7 +100,7 @@ public abstract class GroupRegistration extends NXDNLayer3Message
     {
         if(mGroupIdentifier == null)
         {
-            mGroupIdentifier = NXDNTalkgroupIdentifier.to(getMessage().getInt(GROUP_ID));
+            mGroupIdentifier = NXDNTalkgroupIdentifier.createTo(getMessage().getInt(GROUP_ID));
         }
 
         return mGroupIdentifier;

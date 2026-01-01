@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ public abstract class CallControl extends NXDNLayer3Message
         {
             mDestinationIdentifier = switch (getCallType())
             {
-                case GROUP_BROADCAST, GROUP_CONFERENCE -> NXDNTalkgroupIdentifier.to(getMessage().getInt(IDENTIFIER_OCTET_5));
+                case GROUP_BROADCAST, GROUP_CONFERENCE -> NXDNTalkgroupIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
                 default -> NXDNRadioIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
             };
         }

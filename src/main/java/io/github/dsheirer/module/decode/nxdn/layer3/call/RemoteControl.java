@@ -84,7 +84,7 @@ public abstract class RemoteControl extends CallControl
         {
             if(isTalkgroupDestination())
             {
-                mDestinationIdentifier = NXDNTalkgroupIdentifier.to(getMessage().getInt(IDENTIFIER_OCTET_5));
+                mDestinationIdentifier = NXDNTalkgroupIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
             }
             else if(getCallControlOption().hasLocationId() && getLocationIDOption().isDestination())
             {
