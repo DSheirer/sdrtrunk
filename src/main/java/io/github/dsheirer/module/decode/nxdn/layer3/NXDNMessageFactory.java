@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,9 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.StatusResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionReleaseExtension;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignment;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignmentDuplicateControl;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignmentDuplicateTraffic;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallInitializationVector;
@@ -342,6 +345,13 @@ public class NXDNMessageFactory
             case TRAFFIC_IN_03_VOICE_CALL_INITIALIZATION_VECTOR:
             case TRAFFIC_OUT_03_VOICE_CALL_INITIALIZATION_VECTOR:
                 return new VoiceCallInitializationVector(message, timestamp, type);
+            case CONTROL_OUT_04_VOICE_CALL_ASSIGNMENT:
+            case TRAFFIC_OUT_04_VOICE_CALL_ASSIGNMENT:
+                return new VoiceCallAssignment(message, timestamp, type);
+            case CONTROL_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
+                return new VoiceCallAssignmentDuplicateControl(message, timestamp, type);
+            case TRAFFIC_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
+                return new VoiceCallAssignmentDuplicateTraffic(message, timestamp, type);
             case TRAFFIC_OUT_07_TRANSMISSION_RELEASE_EXTENSION:
                 return new TransmissionReleaseExtension(message, timestamp, type);
             case TRAFFIC_IN_08_TRANSMISSION_RELEASE:

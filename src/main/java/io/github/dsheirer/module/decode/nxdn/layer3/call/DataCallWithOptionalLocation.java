@@ -20,16 +20,15 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import java.util.List;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.DataCallOption;
 
 /**
- * Radio status inquiry
+ * Data call with optional location ID
  */
-public class StatusInquiryRequest extends StatusCall
+public abstract class DataCallWithOptionalLocation extends CallWithOptionalLocation
 {
-    private static final int LOCATION_ID_OFFSET = OCTET_7;
+    private DataCallOption mDataCallOption;
 
     /**
      * Constructs an instance
@@ -38,43 +37,21 @@ public class StatusInquiryRequest extends StatusCall
      * @param timestamp for the message
      * @param type of message
      */
-    public StatusInquiryRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public DataCallWithOptionalLocation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
         super(message, timestamp, type);
     }
 
-    @Override
-    protected int getLocationOffset()
+    /**
+     * Data call options
+     */
+    public DataCallOption getCallOption()
     {
-        return LOCATION_ID_OFFSET;
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        if(getCallControlOption().isEmergency())
+        if(mDataCallOption == null)
         {
-            sb.append("EMERGENCY ");
+            mDataCallOption = new DataCallOption(getMessage().getInt(CALL_OPTION));
         }
 
-        if(getCallControlOption().isPriorityPaging())
-        {
-            sb.append("PRIORITY PAGING ");
-        }
-
-        sb.append(getCallType()).append(" STATUS INQUIRY");
-        sb.append(" FROM:").append(getSource());
-        sb.append(" TO:").append(getDestination());
-        sb.append(getCallOption());
-
-        return sb.toString();
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return List.of(getSource(), getDestination());
+        return mDataCallOption;
     }
 }

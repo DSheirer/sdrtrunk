@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * Adjacent (ie neighbor) site information
  */
-public class AdjacentSiteInformation extends NXDNLayer3Message implements IChannelAccessInfoReceiver
+public class AdjacentSiteInformation extends NXDNLayer3Message implements IChannelInformationReceiver
 {
     private static final int LOCATION_ID_1 = OCTET_1;
     private static final IntField NEIGHBOR_ID_1 = IntField.length4(OCTET_4 + 2);

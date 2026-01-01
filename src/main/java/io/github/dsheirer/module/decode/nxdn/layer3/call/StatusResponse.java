@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,24 +22,17 @@ package io.github.dsheirer.module.decode.nxdn.layer3.call;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNFullyQualifiedRadioIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.CauseSS;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationIDOption;
 import java.util.List;
 
 /**
  * Acknowledge response to SU radio status request
  */
-public class StatusResponse extends CallControl
+public class StatusResponse extends StatusCall
 {
     private static final IntField CAUSE = IntField.length8(OCTET_7);
-    private static final IntField LOCATION_ID_OPTION = IntField.length5(OCTET_7);
-    private static final int OFFSET_LOCATION_ID = OCTET_7 + 5;
-    private LocationID mLocationID;
+    private static final int LOCATION_ID_OFFSET = OCTET_7;
 
     /**
      * Constructs an instance
@@ -51,6 +44,12 @@ public class StatusResponse extends CallControl
     public StatusResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
         super(message, timestamp, type);
+    }
+
+    @Override
+    protected int getLocationOffset()
+    {
+        return LOCATION_ID_OFFSET;
     }
 
     @Override
@@ -74,57 +73,12 @@ public class StatusResponse extends CallControl
         return sb.toString();
     }
 
-    @Override
-    public NXDNRadioIdentifier getSource()
-    {
-        if(mSourceIdentifier == null && getCallControlOption().hasLocationId() && getLocationIDOption().isSource())
-        {
-            mSourceIdentifier = NXDNFullyQualifiedRadioIdentifier.createFrom(getLocationID().getSystem().getValue(),
-                    getMessage().getInt(IDENTIFIER_OCTET_3));
-        }
-
-        return super.getSource();
-    }
-
-    @Override
-    public IntegerIdentifier getDestination()
-    {
-        if(mDestinationIdentifier == null && getCallControlOption().hasLocationId() && getLocationIDOption().isDestination())
-        {
-            mDestinationIdentifier = NXDNFullyQualifiedRadioIdentifier.createTo(getLocationID().getSystem().getValue(),
-                    getMessage().getInt(IDENTIFIER_OCTET_5));
-        }
-
-        return super.getDestination();
-    }
-
     /**
      * Cause
      */
     public CauseSS getCause()
     {
         return CauseSS.fromValue(getMessage().getInt(CAUSE));
-    }
-
-    /**
-     * Location ID option
-     */
-    public LocationIDOption getLocationIDOption()
-    {
-        return LocationIDOption.fromValue(getMessage().getInt(LOCATION_ID_OPTION));
-    }
-
-    /**
-     * Location ID with network category and system code.
-     */
-    public LocationID getLocationID()
-    {
-        if(mLocationID == null)
-        {
-            mLocationID = new LocationID(getMessage(), OFFSET_LOCATION_ID, true);
-        }
-
-        return mLocationID;
     }
 
     @Override

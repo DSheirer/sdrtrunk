@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,16 +17,25 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
+package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
-import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 
 /**
- * Interface for messages that require a channel access information structure when calculating channel frequency values.
- *
- * Note: the channel access information object is from the SiteInformation broadcast message.
+ * Voice call assignment duplicate - control channel version.
  */
-public interface IChannelAccessInfoReceiver
+public class VoiceCallAssignmentDuplicateControl extends VoiceCallAssignment
 {
-    void receive(ChannelAccessInformation channelAccessInformation);
+    /**
+     * Constructs an instance
+     *
+     * @param message with binary data
+     * @param timestamp for the message
+     * @param type of message
+     */
+    public VoiceCallAssignmentDuplicateControl(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    {
+        super(message, timestamp, type);
+    }
 }

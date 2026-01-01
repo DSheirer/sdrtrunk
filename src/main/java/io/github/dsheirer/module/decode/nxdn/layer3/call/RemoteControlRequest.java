@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,33 +22,18 @@ package io.github.dsheirer.module.decode.nxdn.layer3.call;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNFullyQualifiedRadioIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.ControlCommand;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ControlParameter;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.Delivery;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationIDOption;
-import jfx.incubator.scene.control.richtext.SelectionSegment;
-
 import java.util.List;
 
 /**
  * Request for remote control of an SU radio
  */
-public class RemoteControlRequest extends CallControl
+public class RemoteControlRequest extends RemoteControl
 {
-    private static final int FLAG_DESTINATION_IS_TALKGROUP = OCTET_2;
-    private static final int FLAG_DELIVERY = OCTET_2 + 2;
-    private static final IntField CONTROL_COMMAND = IntField.length5(OCTET_2 + 3);
     private static final IntField CONTROL_PARAMETER = IntField.length16(OCTET_7);
-    private static final IntField LOCATION_ID_OPTION = IntField.length5(OCTET_9);
-    private static final int OFFSET_LOCATION_ID = OCTET_9 + 5;
+    private static final int LOCATION_ID_OFFSET = OCTET_9;
     private ControlParameter mControlParameter;
-    private LocationID mLocationID;
 
     /**
      * Constructs an instance
@@ -60,6 +45,12 @@ public class RemoteControlRequest extends CallControl
     public RemoteControlRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
         super(message, timestamp, type);
+    }
+
+    @Override
+    protected int getLocationOffset()
+    {
+        return LOCATION_ID_OFFSET;
     }
 
     @Override
@@ -77,50 +68,13 @@ public class RemoteControlRequest extends CallControl
             sb.append("PRIORITY PAGING ");
         }
 
-        sb.append(getCallType()).append(" REQUEST REMOTE CONTROL ").append(getControlParameters().interpret(getControlCommand()));
+        sb.append(getCallType()).append(" REQUEST REMOTE CONTROL ")
+                .append(getControlParameters().interpret(getControlCommand()));
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
         sb.append(" ").append(getDelivery()).append(" DELIVERY");
 
         return sb.toString();
-    }
-
-    @Override
-    public NXDNRadioIdentifier getSource()
-    {
-        if(mSourceIdentifier == null && getCallControlOption().hasLocationId() && getLocationIdOption().isSource())
-        {
-            mSourceIdentifier = NXDNFullyQualifiedRadioIdentifier.createFrom(getLocationId().getSystem().getValue(),
-                    getMessage().getInt(IDENTIFIER_OCTET_3));
-        }
-
-        return super.getSource();
-    }
-
-
-
-    /**
-     * Indicates if the destination field is a talkgroup or unit ID.
-     */
-    public boolean isTalkgroupDestination()
-    {
-        return getMessage().get(FLAG_DESTINATION_IS_TALKGROUP);
-    }
-
-    /**
-     * Delivery method, confirmed or unconfirmed.
-     */
-    public Delivery getDelivery()
-    {
-        return getMessage().get(FLAG_DELIVERY) ? Delivery.CONFIRMED : Delivery.UNCONFIRMED;
-    }
-
-    /**
-     * Commands used for remote control
-     */
-    public ControlCommand getControlCommand()
-    {
-        return ControlCommand.fromValue(getMessage().getInt(CONTROL_COMMAND));
     }
 
     /**
@@ -134,55 +88,6 @@ public class RemoteControlRequest extends CallControl
         }
 
         return mControlParameter;
-    }
-
-    /**
-     * Location ID option
-     */
-    public LocationIDOption getLocationIdOption()
-    {
-        return LocationIDOption.fromValue(getMessage().getInt(LOCATION_ID_OPTION));
-    }
-
-    /**
-     * Optional location ID
-     */
-    public LocationID getLocationId()
-    {
-        if(mLocationID == null)
-        {
-            mLocationID = new LocationID(getMessage(), OFFSET_LOCATION_ID, true);
-        }
-
-        return mLocationID;
-    }
-
-    /**
-     * Destination identifier, either talkgroup or radio.
-     *
-     * @return destination identifier
-     */
-    @Override
-    public IntegerIdentifier getDestination()
-    {
-        if(mDestinationIdentifier == null)
-        {
-            if(isTalkgroupDestination())
-            {
-                mDestinationIdentifier = NXDNTalkgroupIdentifier.to(getMessage().getInt(IDENTIFIER_OCTET_5));
-            }
-            else if(getCallControlOption().hasLocationId() && getLocationIdOption().isDestination())
-            {
-                mDestinationIdentifier = NXDNFullyQualifiedRadioIdentifier.createTo(
-                        getLocationId().getSystem().getValue(), getMessage().getInt(IDENTIFIER_OCTET_5));
-            }
-            else
-            {
-                mDestinationIdentifier = NXDNRadioIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
-            }
-        }
-
-        return mDestinationIdentifier;
     }
 
     @Override

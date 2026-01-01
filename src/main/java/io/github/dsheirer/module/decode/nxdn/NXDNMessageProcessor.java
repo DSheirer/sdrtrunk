@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelAccessInfoReceiver;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 import io.github.dsheirer.sample.Listener;
@@ -65,7 +65,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
             }
 
             //Enrich messages that carry channel information with the channel access info.
-            if(mChannelAccessInformation != null && message instanceof IChannelAccessInfoReceiver receiver)
+            if(mChannelAccessInformation != null && message instanceof IChannelInformationReceiver receiver)
             {
                 receiver.receive(mChannelAccessInformation);
             }

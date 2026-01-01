@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * Control Channel information for a site
  */
-public class ControlChannelInformation extends NXDNLayer3Message implements IChannelAccessInfoReceiver
+public class ControlChannelInformation extends NXDNLayer3Message implements IChannelInformationReceiver
 {
     private static final int LOCATION_ID = OCTET_1;
     private LocationID mLocationID;
