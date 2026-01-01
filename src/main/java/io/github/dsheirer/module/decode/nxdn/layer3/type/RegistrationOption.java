@@ -20,38 +20,36 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
 /**
- * Call options field base class.
+ * Registration option
  */
-public abstract class CallOption extends Option
+public class RegistrationOption extends Option
 {
-    private static int MASK_DUPLEX = 0x10;
-    private static int MASK_TRANSMISSION_MODE = 0x02;
+    private static final int MASK_EMERGENCY = 0x10;
+    private static final int MASK_PRIORITY_STATION = 0x04;
 
     /**
      * Constructs an instance
+     *
      * @param value for the field
      */
-    public CallOption(int value)
+    public RegistrationOption(int value)
     {
         super(value);
     }
 
     /**
-     * Indicates the duplex mode for the call.
-     * @return duplex mode.
+     * Indicates if the emergency flag is set
      */
-    public Duplex getDuplex()
+    public boolean isEmergency()
     {
-        return (mValue & MASK_DUPLEX) == MASK_DUPLEX ? Duplex.DUPLEX : Duplex.HALF_DUPLEX;
+        return (mValue & MASK_EMERGENCY) == MASK_EMERGENCY;
     }
 
     /**
-     * Transmission mode for the call.
-     * @return mode
+     * Indicates if the registrant is a priority station
      */
-    public TransmissionMode getTransmissionMode()
+    public boolean isPriorityStation()
     {
-        return (mValue & MASK_TRANSMISSION_MODE) == MASK_TRANSMISSION_MODE ?
-                TransmissionMode.M9600 : TransmissionMode.M4800;
+        return (mValue & MASK_PRIORITY_STATION) == MASK_PRIORITY_STATION;
     }
 }

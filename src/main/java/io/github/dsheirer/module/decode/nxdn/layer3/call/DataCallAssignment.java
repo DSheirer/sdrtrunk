@@ -33,9 +33,9 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformatio
 import java.util.List;
 
 /**
- * Voice call assignment
+ * Data call assignment
  */
-public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implements IChannelInformationReceiver
+public class DataCallAssignment extends DataCallWithOptionalLocation implements IChannelInformationReceiver
 {
     private static final IntField CALL_TIMER = IntField.length6(OCTET_7);
     private static final IntField CHANNEL_NUMBER = IntField.length10(OCTET_7 + 6);
@@ -52,7 +52,7 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
      * @param timestamp for the message
      * @param type of message
      */
-    public VoiceCallAssignment(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public DataCallAssignment(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
         super(message, timestamp, type);
     }
@@ -78,7 +78,7 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
             sb.append("PRIORITY PAGING ");
         }
 
-        sb.append(getCallType()).append(" VOICE CALL ASSIGNMENT");
+        sb.append(getCallType()).append(" DATA CALL ASSIGNMENT");
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
         sb.append(" ").append(getEncryptionKeyIdentifier());

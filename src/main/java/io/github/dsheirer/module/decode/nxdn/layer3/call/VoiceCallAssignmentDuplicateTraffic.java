@@ -40,7 +40,6 @@ public class VoiceCallAssignmentDuplicateTraffic extends VoiceCall implements IC
     private static final IntField BANDWIDTH = IntField.length2(OCTET_7 + 6);
     private static final IntField OFN = IntField.length16(OCTET_8);
     private static final IntField IFN = IntField.length16(OCTET_10);
-    private ChannelAccessInformation mChannelAccessInformation;
     private NXDNChannel mChannel;
 
     /**
@@ -86,9 +85,7 @@ public class VoiceCallAssignmentDuplicateTraffic extends VoiceCall implements IC
     @Override
     public void receive(ChannelAccessInformation channelAccessInformation)
     {
-        mChannelAccessInformation = channelAccessInformation;
-
-        if(mChannelAccessInformation.isChannel())
+        if(channelAccessInformation.isChannel())
         {
             mChannel = new NXDNChannelLookup(getMessage().getInt(CHANNEL_NUMBER));
         }
@@ -104,7 +101,7 @@ public class VoiceCallAssignmentDuplicateTraffic extends VoiceCall implements IC
      */
     public boolean hasChannel()
     {
-        return mChannelAccessInformation != null && getChannel() != null;
+        return getChannel() != null;
     }
 
     /**

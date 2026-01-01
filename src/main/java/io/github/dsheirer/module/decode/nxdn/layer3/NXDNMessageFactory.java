@@ -31,12 +31,22 @@ import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInform
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.DigitalStationIDInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.FailureStatusInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.Idle;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ServiceInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAcknowledge;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignment;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignmentDuplicateControl;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignmentDuplicateTraffic;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallBlock;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallReceptionRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallReceptionResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DisconnectRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.HeaderDelay;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.RemoteControlRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.RemoteControlRequestWithESN;
@@ -66,6 +76,17 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.coding.CACPunctureProvider;
 import io.github.dsheirer.module.decode.nxdn.layer3.coding.Convolution;
 import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProvider;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest2;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryResponse2;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationClearRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationClearResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationCommand;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.ProprietaryForm;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
 import java.util.ArrayList;
@@ -357,31 +378,85 @@ public class NXDNMessageFactory
             case TRAFFIC_IN_08_TRANSMISSION_RELEASE:
             case TRAFFIC_OUT_08_TRANSMISSION_RELEASE:
                 return new TransmissionRelease(message, timestamp, type);
+            case CONTROL_IN_09_DATA_CALL_REQUEST:
+                return new DataCallRequest(message, timestamp, type);
+            case CONTROL_OUT_09_DATA_CALL_RESPONSE:
+                return new DataCallResponse(message, timestamp, type);
             case TRAFFIC_IN_09_DATA_CALL_HEADER:
             case TRAFFIC_OUT_09_DATA_CALL_HEADER:
                 return new DataCallHeader(message, timestamp, type);
+            case CONTROL_OUT_10_DATA_CALL_RECEPTION_REQUEST:
+            case TRAFFIC_OUT_10_DATA_CALL_RECEPTION_REQUEST:
+                return new DataCallReceptionRequest(message, timestamp, type);
+            case CONTROL_IN_10_DATA_CALL_RECEPTION_RESPONSE:
+                return new DataCallReceptionResponse(message, timestamp, type);
             case TRAFFIC_IN_11_DATA_CALL_BLOCK:
             case TRAFFIC_OUT_11_DATA_CALL_BLOCK:
                 return new DataCallBlock(message, timestamp, type);
             case TRAFFIC_IN_12_DATA_CALL_ACKNOWLEDGE:
             case TRAFFIC_OUT_12_DATA_CALL_ACKNOWLEDGE:
                 return new DataCallAcknowledge(message, timestamp, type);
+            case CONTROL_OUT_13_DATA_CALL_ASSIGNMENT_DUPLICATE:
+                return new DataCallAssignmentDuplicateControl(message, timestamp, type);
+            case TRAFFIC_OUT_13_DATA_CALL_ASSIGNMENT_DUPLICATE:
+                return new DataCallAssignmentDuplicateTraffic(message, timestamp, type);
+            case CONTROL_OUT_14_DATA_CALL_ASSIGNMENT:
+            case TRAFFIC_OUT_14_DATA_CALL_ASSIGNMENT:
+                return new DataCallAssignment(message, timestamp, type);
             case TRAFFIC_OUT_15_HEADER_DELAY:
             case TRAFFIC_IN_15_HEADER_DELAY:
                 return new HeaderDelay(message, timestamp, type);
+            case CONTROL_OUT_16_IDLE:
+            case TRAFFIC_OUT_16_IDLE:
+                return new Idle(message, timestamp, type);
+            case CONTROL_OUT_17_DISCONNECT:
+            case TRAFFIC_OUT_17_DISCONNECT:
+                return new Disconnect(message, timestamp, type);
+            case CONTROL_IN_17_DISCONNECT_REQUEST:
+            case TRAFFIC_IN_17_DISCONNECT_REQUEST:
+                return new DisconnectRequest(message, timestamp, type);
 
-            case BROADCAST_23_DIGITAL_STATION_ID_INFORMATION:
+            //Broadcast Messages
+            case CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION:
                 return new DigitalStationIDInformation(message, timestamp);
-            case BROADCAST_24_SITE_INFORMATION:
+            case CONTROL_OUT_24_SITE_INFORMATION:
                 return new SiteInformation(message, timestamp);
-            case BROADCAST_25_SERVICE_INFORMATION:
+            case CONTROL_OUT_25_SERVICE_INFORMATION:
                 return new ServiceInformation(message, timestamp);
-            case BROADCAST_26_CONTROL_CHANNEL_INFORMATION:
+            case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
                 return new ControlChannelInformation(message, timestamp);
-            case BROADCAST_27_ADJACENT_SITE_INFORMATION:
+            case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
                 return new AdjacentSiteInformation(message, timestamp);
-            case BROADCAST_28_FAILURE_STATUS_INFORMATION:
+            case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
                 return new FailureStatusInformation(message, timestamp);
+
+            //Mobility Management Messages
+            case CONTROL_IN_32_REGISTRATION_REQUEST:
+                return new RegistrationRequest(message, timestamp, type);
+            case CONTROL_OUT_32_REGISTRATION_RESPONSE:
+                return new RegistrationResponse(message, timestamp, type);
+            case CONTROL_IN_34_REGISTRATION_CLEAR_REQUEST:
+                return new RegistrationClearRequest(message, timestamp, type);
+            case CONTROL_OUT_34_REGISTRATION_CLEAR_RESPONSE:
+                return new RegistrationClearResponse(message, timestamp, type);
+            case CONTROL_OUT_35_REGISTRATION_COMMAND:
+                return new RegistrationCommand(message, timestamp, type);
+            case CONTROL_IN_36_GROUP_REGISTRATION_REQUEST:
+                return new GroupRegistrationRequest(message, timestamp, type);
+            case CONTROL_OUT_36_GROUP_REGISTRATION_RESPONSE:
+                return new GroupRegistrationResponse(message, timestamp, type);
+            case CONTROL_OUT_40_AUTHENTICATION_INQUIRY_REQUEST:
+                return new AuthenticationInquiryRequest(message, timestamp, type);
+            case CONTROL_IN_41_AUTHENTICATION_INQUIRY_RESPONSE:
+                return new AuthenticationInquiryResponse(message, timestamp, type);
+            case CONTROL_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_2:
+            case TRAFFIC_IN_42_AUTHENTICATION_INQUIRY_REQUEST_2:
+            case TRAFFIC_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_2:
+                return new AuthenticationInquiryRequest2(message, timestamp, type);
+            case CONTROL_IN_43_AUTHENTICATION_INQUIRY_RESPONSE_2:
+            case TRAFFIC_IN_43_AUTHORIZATION_INQUIRY_RESPONSE_2:
+            case TRAFFIC_OUT_43_AUTHORIZATION_INQUIRY_RESPONSE_2:
+                return new AuthenticationInquiryResponse2(message, timestamp, type);
 
             case CONTROL_IN_48_STATUS_INQUIRY_REQUEST:
             case CONTROL_OUT_48_STATUS_INQUIRY_REQUEST:

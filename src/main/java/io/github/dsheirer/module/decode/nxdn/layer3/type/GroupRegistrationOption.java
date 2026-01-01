@@ -20,38 +20,44 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
 /**
- * Call options field base class.
+ * Group registration option
  */
-public abstract class CallOption extends Option
+public class GroupRegistrationOption extends Option
 {
-    private static int MASK_DUPLEX = 0x10;
-    private static int MASK_TRANSMISSION_MODE = 0x02;
+    private static final int MASK_EMERGENCY = 0x80;
+    private static final int MASK_VISITOR = 0x40;
 
     /**
      * Constructs an instance
+     *
      * @param value for the field
      */
-    public CallOption(int value)
+    public GroupRegistrationOption(int value)
     {
         super(value);
     }
 
     /**
-     * Indicates the duplex mode for the call.
-     * @return duplex mode.
+     * Indicates if the emergency flag is set
      */
-    public Duplex getDuplex()
+    public boolean isEmergency()
     {
-        return (mValue & MASK_DUPLEX) == MASK_DUPLEX ? Duplex.DUPLEX : Duplex.HALF_DUPLEX;
+        return (mValue & MASK_EMERGENCY) == MASK_EMERGENCY;
     }
 
     /**
-     * Transmission mode for the call.
-     * @return mode
+     * Indicates if the registrant is a priority station
      */
-    public TransmissionMode getTransmissionMode()
+    public boolean isVisitor()
     {
-        return (mValue & MASK_TRANSMISSION_MODE) == MASK_TRANSMISSION_MODE ?
-                TransmissionMode.M9600 : TransmissionMode.M4800;
+        return (mValue & MASK_VISITOR) == MASK_VISITOR;
+    }
+
+    /**
+     * Indicates if this registration includes the visitor's home location ID
+     */
+    public boolean hasLocationID()
+    {
+        return isVisitor();
     }
 }

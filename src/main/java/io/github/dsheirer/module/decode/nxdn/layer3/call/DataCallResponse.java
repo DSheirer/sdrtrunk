@@ -17,70 +17,75 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
+package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.CallTimer;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import java.util.Collections;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CauseVD;
 import java.util.List;
 
 /**
- * Site failure status information
+ * Data call response
  */
-public class FailureStatusInformation extends NXDNLayer3Message
+public class DataCallResponse extends DataCallWithOptionalLocation
 {
-    private static final int LOCATION_ID = OCTET_1;
-    private static final IntField CALL_TIMER = IntField.length6(OCTET_5);
-    private LocationID mLocationID;
+    private static final IntField CAUSE_VD = IntField.length8(OCTET_7);
+    private static final int LOCATION_ID_OFFSET = OCTET_8;
 
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
      */
-    public FailureStatusInformation(CorrectedBinaryMessage message, long timestamp)
+    public DataCallResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_28_FAILURE_STATUS_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FAIL-SOFT MODE ").append(getLocationID()).append(" CALL TIMER:").append(getCallTimer());
+
+        if(getCallControlOption().isEmergency())
+        {
+            sb.append("EMERGENCY ");
+        }
+
+        if(getCallControlOption().isPriorityPaging())
+        {
+            sb.append("PRIORITY PAGING ");
+        }
+
+        sb.append(getCallType()).append(" DATA CALL RESPONSE:").append(getCause());
+        sb.append(" FROM:").append(getSource());
+        sb.append(" TO:").append(getDestination());
+        sb.append(" ").append(getEncryptionKeyIdentifier());
+        sb.append(getCallOption());
         return sb.toString();
     }
 
     /**
-     * Location that is in failsoft
+     * Cause of the response
      */
-    public LocationID getLocationID()
+    public CauseVD getCause()
     {
-        if(mLocationID == null)
-        {
-            mLocationID = new LocationID(getMessage(), LOCATION_ID);
-        }
-
-        return mLocationID;
+        return CauseVD.fromValue(getMessage().getInt(CAUSE_VD));
     }
 
-    /**
-     * Call timer.
-     */
-    public CallTimer getCallTimer()
+    @Override
+    protected int getLocationOffset()
     {
-        return CallTimer.fromValue(getMessage().getInt(CALL_TIMER));
+        return LOCATION_ID_OFFSET;
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.emptyList();
+        return List.of(getSource(), getDestination(), getEncryptionKeyIdentifier());
     }
 }

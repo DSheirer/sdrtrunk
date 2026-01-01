@@ -17,70 +17,66 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.CallTimer;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import java.util.Collections;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CauseMM;
 import java.util.List;
 
 /**
- * Site failure status information
+ * Group registration request
  */
-public class FailureStatusInformation extends NXDNLayer3Message
+public class GroupRegistrationResponse extends GroupRegistration
 {
-    private static final int LOCATION_ID = OCTET_1;
-    private static final IntField CALL_TIMER = IntField.length6(OCTET_5);
-    private LocationID mLocationID;
+    private static final IntField CAUSE = IntField.length8(OCTET_6);
 
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
      */
-    public FailureStatusInformation(CorrectedBinaryMessage message, long timestamp)
+    public GroupRegistrationResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_28_FAILURE_STATUS_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FAIL-SOFT MODE ").append(getLocationID()).append(" CALL TIMER:").append(getCallTimer());
+        if(getGroupRegistrationOption().isEmergency())
+        {
+            sb.append("EMERGENCY ");
+        }
+        sb.append("GROUP REGISTRATION RESPONSE:").append(getCause());
+        sb.append(" RADIO:").append(getRadio());
+        sb.append(" TALKGROUP:").append(getGroup());
         return sb.toString();
     }
 
-    /**
-     * Location that is in failsoft
-     */
-    public LocationID getLocationID()
-    {
-        if(mLocationID == null)
-        {
-            mLocationID = new LocationID(getMessage(), LOCATION_ID);
-        }
 
-        return mLocationID;
+    @Override
+    protected int getLocationIdOffset()
+    {
+        return OCTET_7 + 5;
     }
 
     /**
-     * Call timer.
+     * Response cause for the request
      */
-    public CallTimer getCallTimer()
+    public CauseMM getCause()
     {
-        return CallTimer.fromValue(getMessage().getInt(CALL_TIMER));
+        return CauseMM.fromValue(getMessage().getInt(CAUSE));
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.emptyList();
+        return List.of(getRadio(), getGroup());
     }
 }

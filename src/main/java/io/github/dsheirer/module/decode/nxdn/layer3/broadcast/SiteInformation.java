@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ public class SiteInformation extends NXDNLayer3Message
      */
     public SiteInformation(CorrectedBinaryMessage message, long timestamp)
     {
-        super(message, timestamp, NXDNMessageType.BROADCAST_24_SITE_INFORMATION);
+        super(message, timestamp, NXDNMessageType.CONTROL_OUT_24_SITE_INFORMATION);
     }
 
     @Override

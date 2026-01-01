@@ -17,70 +17,49 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.CallTimer;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Site failure status information
+ * Registration clear request
  */
-public class FailureStatusInformation extends NXDNLayer3Message
+public class RegistrationClearRequest extends Registration
 {
-    private static final int LOCATION_ID = OCTET_1;
-    private static final IntField CALL_TIMER = IntField.length6(OCTET_5);
-    private LocationID mLocationID;
-
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type
      */
-    public FailureStatusInformation(CorrectedBinaryMessage message, long timestamp)
+    public RegistrationClearRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_28_FAILURE_STATUS_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FAIL-SOFT MODE ").append(getLocationID()).append(" CALL TIMER:").append(getCallTimer());
-        return sb.toString();
-    }
-
-    /**
-     * Location that is in failsoft
-     */
-    public LocationID getLocationID()
-    {
-        if(mLocationID == null)
+        if(getRegistrationOption().isEmergency())
         {
-            mLocationID = new LocationID(getMessage(), LOCATION_ID);
+            sb.append("EMERGENCY ");
         }
-
-        return mLocationID;
-    }
-
-    /**
-     * Call timer.
-     */
-    public CallTimer getCallTimer()
-    {
-        return CallTimer.fromValue(getMessage().getInt(CALL_TIMER));
+        sb.append("REGISTRATION CLEAR REQUEST FROM RADIO:").append(getRadio());
+        if(getRegistrationOption().isPriorityStation())
+        {
+            sb.append(" PRIORITY STATION");
+        }
+        return sb.toString();
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.emptyList();
+        return List.of(getRadio());
     }
 }

@@ -88,7 +88,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      */
     public AdjacentSiteInformation(CorrectedBinaryMessage message, long timestamp)
     {
-        super(message, timestamp, NXDNMessageType.BROADCAST_24_SITE_INFORMATION);
+        super(message, timestamp, NXDNMessageType.CONTROL_OUT_24_SITE_INFORMATION);
     }
 
     @Override

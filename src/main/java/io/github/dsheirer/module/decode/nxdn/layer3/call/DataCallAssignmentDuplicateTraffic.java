@@ -33,16 +33,15 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformatio
 import java.util.List;
 
 /**
- * Voice call assignment
+ * Voice call assignment duplicate, traffic channel version
  */
-public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implements IChannelInformationReceiver
+public class DataCallAssignmentDuplicateTraffic extends DataCall implements IChannelInformationReceiver
 {
     private static final IntField CALL_TIMER = IntField.length6(OCTET_7);
     private static final IntField CHANNEL_NUMBER = IntField.length10(OCTET_7 + 6);
     private static final IntField BANDWIDTH = IntField.length2(OCTET_7 + 6);
     private static final IntField OFN = IntField.length16(OCTET_8);
     private static final IntField IFN = IntField.length16(OCTET_10);
-    private static final int LOCATION_ID_OFFSET = OCTET_12;
     private NXDNChannel mChannel;
 
     /**
@@ -52,15 +51,9 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
      * @param timestamp for the message
      * @param type of message
      */
-    public VoiceCallAssignment(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public DataCallAssignmentDuplicateTraffic(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
         super(message, timestamp, type);
-    }
-
-    @Override
-    protected int getLocationOffset()
-    {
-        return LOCATION_ID_OFFSET;
     }
 
     @Override
@@ -86,10 +79,6 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
         if(hasChannel())
         {
             sb.append(" CHANNEL:").append(getChannel());
-        }
-        else
-        {
-            sb.append(" CHANNEL: NOT CONFIGURED");
         }
         sb.append(" TIMER:").append(getCallTimer());
         return sb.toString();
@@ -136,6 +125,6 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of();
+        return List.of(getSource(), getDestination());
     }
 }

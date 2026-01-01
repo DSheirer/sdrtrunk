@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ public class DigitalStationIDInformation extends NXDNLayer3Message
      */
     public DigitalStationIDInformation(CorrectedBinaryMessage message, long timestamp)
     {
-        super(message, timestamp, NXDNMessageType.BROADCAST_23_DIGITAL_STATION_ID_INFORMATION);
+        super(message, timestamp, NXDNMessageType.CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION);
     }
 
     @Override

@@ -17,70 +17,80 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.CallTimer;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import java.util.Collections;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.SubscriberType;
 import java.util.List;
 
 /**
- * Site failure status information
+ * Registration request
  */
-public class FailureStatusInformation extends NXDNLayer3Message
+public class RegistrationRequest extends Registration
 {
-    private static final int LOCATION_ID = OCTET_1;
-    private static final IntField CALL_TIMER = IntField.length6(OCTET_5);
-    private LocationID mLocationID;
+    private static final IntField SUBSCRIBER_TYPE = IntField.length16(OCTET_8);
+    private static final IntField VERSION = IntField.length8(OCTET_10);
+    private SubscriberType mSubscriberType;
 
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type
      */
-    public FailureStatusInformation(CorrectedBinaryMessage message, long timestamp)
+    public RegistrationRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_28_FAILURE_STATUS_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FAIL-SOFT MODE ").append(getLocationID()).append(" CALL TIMER:").append(getCallTimer());
+        if(getRegistrationOption().isEmergency())
+        {
+            sb.append("EMERGENCY ");
+        }
+        sb.append("REGISTRATION REQUEST FROM RADIO:").append(getRadio());
+        sb.append(" TALKGROUP:").append(getGroup());
+        if(getRegistrationOption().isPriorityStation())
+        {
+            sb.append(" PRIORITY STATION");
+        }
+
+        sb.append(" ").append(getSubscriberType());
+        sb.append(" NXDN VERSION:").append(getVersion());
         return sb.toString();
     }
 
     /**
-     * Location that is in failsoft
+     * Subscriber type
      */
-    public LocationID getLocationID()
+    public SubscriberType getSubscriberType()
     {
-        if(mLocationID == null)
+        if(mSubscriberType == null)
         {
-            mLocationID = new LocationID(getMessage(), LOCATION_ID);
+            mSubscriberType = new SubscriberType(getMessage().getInt(SUBSCRIBER_TYPE));
         }
 
-        return mLocationID;
+        return mSubscriberType;
     }
 
     /**
-     * Call timer.
+     * NXDN protocol version
      */
-    public CallTimer getCallTimer()
+    public int getVersion()
     {
-        return CallTimer.fromValue(getMessage().getInt(CALL_TIMER));
+        return getMessage().getInt(VERSION);
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.emptyList();
+        return List.of(getRadio(), getGroup());
     }
 }

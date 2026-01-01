@@ -68,7 +68,7 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
      */
     public ControlChannelInformation(CorrectedBinaryMessage message, long timestamp)
     {
-        super(message, timestamp, NXDNMessageType.BROADCAST_25_SERVICE_INFORMATION);
+        super(message, timestamp, NXDNMessageType.CONTROL_OUT_25_SERVICE_INFORMATION);
     }
 
     @Override
