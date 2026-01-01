@@ -449,13 +449,13 @@ public class NXDNMessageFactory
                 return new AuthenticationInquiryRequest(message, timestamp, type);
             case CONTROL_IN_41_AUTHENTICATION_INQUIRY_RESPONSE:
                 return new AuthenticationInquiryResponse(message, timestamp, type);
-            case CONTROL_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_2:
-            case TRAFFIC_IN_42_AUTHENTICATION_INQUIRY_REQUEST_2:
-            case TRAFFIC_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_2:
+            case CONTROL_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case TRAFFIC_IN_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case TRAFFIC_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
                 return new AuthenticationInquiryRequest2(message, timestamp, type);
-            case CONTROL_IN_43_AUTHENTICATION_INQUIRY_RESPONSE_2:
-            case TRAFFIC_IN_43_AUTHORIZATION_INQUIRY_RESPONSE_2:
-            case TRAFFIC_OUT_43_AUTHORIZATION_INQUIRY_RESPONSE_2:
+            case CONTROL_IN_43_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case TRAFFIC_IN_43_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case TRAFFIC_OUT_43_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
                 return new AuthenticationInquiryResponse2(message, timestamp, type);
 
             case CONTROL_IN_48_STATUS_INQUIRY_REQUEST:
