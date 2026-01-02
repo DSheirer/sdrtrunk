@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,6 @@ public class NXDNCategory extends StringIdentifier
      */
     public static NXDNCategory create(LocationCategory category)
     {
-        return new NXDNCategory(category.name(), IdentifierClass.NETWORK, Form.CATEGORY, Role.BROADCAST);
+        return new NXDNCategory(category.toString(), IdentifierClass.NETWORK, Form.CATEGORY, Role.BROADCAST);
     }
 }

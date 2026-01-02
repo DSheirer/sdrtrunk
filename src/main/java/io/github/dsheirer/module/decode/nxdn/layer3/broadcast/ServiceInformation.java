@@ -45,17 +45,17 @@ public class ServiceInformation extends NXDNLayer3Message
      * Constructs an instance
      * @param message content
      * @param timestamp of the message
+     * @param type of message
      */
-    public ServiceInformation(CorrectedBinaryMessage message, long timestamp)
+    public ServiceInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_25_SERVICE_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("SERVICE INFO ");
         sb.append(getLocationID());
         sb.append(" ").append(getServiceInformation());
         sb.append(" ").append(getRestrictionInformation());

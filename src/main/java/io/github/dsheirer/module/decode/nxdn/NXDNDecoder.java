@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
 import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
@@ -64,7 +65,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
 
     private final NXDNDemodulator mSymbolProcessor;
-    private final NXDNMessageFramer mMessageFramer = new NXDNMessageFramer();
+    private final NXDNMessageFramer mMessageFramer;
     private final NXDNMessageProcessor mMessageProcessor = new NXDNMessageProcessor();
     private final PowerMonitor mPowerMonitor = new PowerMonitor();
     private DifferentialDemodulatorFloat mDemodulator;
@@ -90,6 +91,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         mConfig = config;
         mSymbolRate = config.getTransmissionMode().getSymbolRate();
         mMessageProcessor.setMessageListener(getMessageListener());
+        mMessageFramer = new NXDNMessageFramer(mMessageProcessor);
         mSymbolProcessor = new NXDNDemodulator(mMessageFramer, this);
     }
 
@@ -318,9 +320,18 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 
         NXDNDecoder decoder = new NXDNDecoder(config);
         decoder.start();
+        NXDNMessageProcessor processor = new NXDNMessageProcessor();
+        decoder.setMessageListener(processor);
+        processor.setMessageListener(new Listener<IMessage>()
+        {
+            @Override
+            public void receive(IMessage iMessage)
+            {
+                System.out.println("L3:" + iMessage);
+            }
+        });
 
         UserPreferences userPreferences = new UserPreferences();
-        decoder.setMessageListener(iMessage -> System.out.println("Message: " + iMessage));
 
         try(ComplexWaveSource source = new ComplexWaveSource(new File(file), autoReplay))
         {

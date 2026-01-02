@@ -52,12 +52,9 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
     private static final IntField BANDWIDTH_1 = IntField.length2(OCTET_4 + 6);
     private static final IntField CONTROL_CHANNEL_1_OFN = IntField.length16(OCTET_5);
     private static final IntField CONTROL_CHANNEL_1_IFN = IntField.length16(OCTET_7);
-
     private static final IntField BANDWIDTH_2 = IntField.length2(OCTET_9 + 6);
     private static final IntField CONTROL_CHANNEL_2_OFN = IntField.length16(OCTET_10);
     private static final IntField CONTROL_CHANNEL_2_IFN = IntField.length16(OCTET_12);
-
-    private ChannelAccessInformation mChannelAccessInformation;
     private NXDNChannel mChannel1;
     private NXDNChannel mChannel2;
 
@@ -65,32 +62,32 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
      * Constructs an instance
      * @param message content
      * @param timestamp of the message
+     * @param type of message
      */
-    public ControlChannelInformation(CorrectedBinaryMessage message, long timestamp)
+    public ControlChannelInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_25_SERVICE_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("CONTROL CHANNEL INFO ");
         sb.append(getLocationID());
-        sb.append(" ").append(getFlags());
-
-        if(mChannelAccessInformation != null)
-        {
-            sb.append(mChannelAccessInformation.isChannel() ? " CHANNEL MODE" : " DFA MODE");
-        }
+        sb.append(" ").append(getFlags()).append(" CONTROL");
 
         if(hasChannel1())
         {
-            sb.append(" 1:").append(hasChannel1());
+            sb.append(" 1 ").append(getChannel1());
         }
+        else
+        {
+            sb.append(" 1:NOT YET CONFIGURED");
+        }
+
         if(hasChannel2())
         {
-            sb.append(" 2:").append(hasChannel2());
+            sb.append(" 2 ").append(getChannel2());
         }
 
         return sb.toString();
@@ -101,7 +98,7 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
      */
     public boolean hasChannel1()
     {
-        return mChannelAccessInformation != null && mChannel1 != null;
+        return mChannel1 != null;
     }
 
     /**
@@ -109,7 +106,7 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
      */
     public boolean hasChannel2()
     {
-        return mChannelAccessInformation != null && mChannel2 != null;
+        return mChannel2 != null;
     }
 
     /**
@@ -143,18 +140,16 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
     @Override
     public void receive(ChannelAccessInformation channelAccessInformation)
     {
-        mChannelAccessInformation = channelAccessInformation;
-
-        if(mChannelAccessInformation != null)
+        if(channelAccessInformation != null)
         {
-            if(mChannelAccessInformation.isDFA())
+            if(channelAccessInformation.isDFA())
             {
                 if(getMessage().get(HAS_CHANNEL_1))
                 {
                     int ofn = getMessage().getInt(CONTROL_CHANNEL_1_OFN);
                     int ifn = getMessage().getInt(CONTROL_CHANNEL_1_IFN);
                     Bandwidth bandwidth = Bandwidth.fromValue(getMessage().getInt(BANDWIDTH_1));
-                    mChannel1 = new NXDNChannelDFA(ofn, ifn, bandwidth);
+                    mChannel1 = new NXDNChannelDFA(channelAccessInformation, ofn, ifn, bandwidth);
                 }
 
                 if(getMessage().get(HAS_CHANNEL_2))
@@ -162,7 +157,7 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
                     int ofn = getMessage().getInt(CONTROL_CHANNEL_2_OFN);
                     int ifn = getMessage().getInt(CONTROL_CHANNEL_2_IFN);
                     Bandwidth bandwidth = Bandwidth.fromValue(getMessage().getInt(BANDWIDTH_2));
-                    mChannel2 = new NXDNChannelDFA(ofn, ifn, bandwidth);
+                    mChannel2 = new NXDNChannelDFA(channelAccessInformation, ofn, ifn, bandwidth);
                 }
             }
             else //Channel mode

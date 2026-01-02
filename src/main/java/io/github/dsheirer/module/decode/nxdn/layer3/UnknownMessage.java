@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,21 +34,15 @@ public class UnknownMessage extends NXDNLayer3Message
      * @param message with binary data
      * @param timestamp for the message
      */
-    public UnknownMessage(CorrectedBinaryMessage message, long timestamp)
+    public UnknownMessage(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp);
-    }
-
-    @Override
-    public NXDNMessageType getType()
-    {
-        return NXDNMessageType.UNKNOWN;
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
-        return "UNKNOWN MESSAGE TYPE - MSG:" + getMessage().toHexString();
+        return "UNKNOWN/UNRECOGNIZED MESSAGE TYPE " + getMessageType() + " MSG:" + getMessage().toHexString();
     }
 
     @Override

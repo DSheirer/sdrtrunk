@@ -42,10 +42,11 @@ public class DigitalStationIDInformation extends NXDNLayer3Message
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
      */
-    public DigitalStationIDInformation(CorrectedBinaryMessage message, long timestamp)
+    public DigitalStationIDInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override

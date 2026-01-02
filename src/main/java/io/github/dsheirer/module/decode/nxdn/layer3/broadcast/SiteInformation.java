@@ -53,28 +53,26 @@ public class SiteInformation extends NXDNLayer3Message
     private ServiceInfo mServiceInfo;
     private RestrictionInformation mRestrictionInformation;
     private ChannelAccessInformation mChannelAccessInformation;
-    private NXDNChannel mControlChannel1;
-    private NXDNChannel mControlChannel2;
+    private NXDNChannel mChannel1;
+    private NXDNChannel mChannel2;
 
     /**
      * Constructs an instance
      * @param message content
      * @param timestamp of the message
+     * @param type of message
      */
-    public SiteInformation(CorrectedBinaryMessage message, long timestamp)
+    public SiteInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_24_SITE_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("SITE INFO ");
         sb.append(getLocationID());
-        sb.append(" ADJACENT SITES:").append(getAdjacentSiteAllocation());
-        sb.append(" NXDN VERSION:").append(getVersionNumber());
-        if(hasChannel1())
+        if(getChannelAccessInformation().isChannel() && hasChannel1())
         {
             sb.append(" CONTROL CHANNEL1:").append(getChannel1());
 
@@ -85,8 +83,10 @@ public class SiteInformation extends NXDNLayer3Message
         }
         else
         {
-            sb.append(" CHANNELS:DFA");
+            sb.append(" USING DFA CHANNELS");
         }
+        sb.append(" ADJACENT SITES:").append(getAdjacentSiteAllocation());
+        sb.append(" NXDN VER:").append(getVersionNumber());
         sb.append(" ").append(getServiceInformation());
         sb.append(" ").append(getRestrictionInformation());
         return sb.toString();
@@ -98,12 +98,12 @@ public class SiteInformation extends NXDNLayer3Message
      */
     public NXDNChannel getChannel1()
     {
-        if(mControlChannel1 == null && getChannelAccessInformation().isChannel())
+        if(mChannel1 == null && getChannelAccessInformation().isChannel())
         {
-            mControlChannel1 = new NXDNChannelLookup(getMessage().getInt(CONTROL_CHANNEL_1));
+            mChannel1 = new NXDNChannelLookup(getMessage().getInt(CONTROL_CHANNEL_1));
         }
 
-        return mControlChannel1;
+        return mChannel1;
     }
 
     /**
@@ -120,12 +120,12 @@ public class SiteInformation extends NXDNLayer3Message
      */
     public NXDNChannel getChannel2()
     {
-        if(mControlChannel2 == null && getChannelAccessInformation().isChannel())
+        if(mChannel2 == null && getChannelAccessInformation().isChannel())
         {
-            mControlChannel2 = new NXDNChannelLookup(getMessage().getInt(CONTROL_CHANNEL_2));
+            mChannel2 = new NXDNChannelLookup(getMessage().getInt(CONTROL_CHANNEL_2));
         }
 
-        return mControlChannel2;
+        return mChannel2;
     }
 
     /**

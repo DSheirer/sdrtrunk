@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.nxdn.channel;
 
-import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.protocol.Protocol;
 
@@ -29,7 +28,6 @@ import io.github.dsheirer.protocol.Protocol;
 public abstract class NXDNChannel implements INXDNChannelDescriptor
 {
     private final TransmissionMode mTransmissionMode;
-    protected ChannelAccessInformation mChannelAccessInformation;
 
     /**
      * Constructs an instance
@@ -38,14 +36,6 @@ public abstract class NXDNChannel implements INXDNChannelDescriptor
     public NXDNChannel(TransmissionMode transmissionMode)
     {
         mTransmissionMode = transmissionMode;
-    }
-
-    /**
-     * Indicates if the channel expression is DFA or Channel mode.
-     */
-    public boolean isDFA()
-    {
-        return mChannelAccessInformation != null && mChannelAccessInformation.isDFA();
     }
 
     @Override
@@ -74,12 +64,20 @@ public abstract class NXDNChannel implements INXDNChannelDescriptor
         return mTransmissionMode;
     }
 
-    /**
-     * Sets the channel access information used in calculating the inbound and outbound channel frequencies.
-     * @param channelAccessInformation to set
-     */
-    public void setChannelAccessInformation(ChannelAccessInformation channelAccessInformation)
+    @Override
+    public String toString()
     {
-        mChannelAccessInformation = channelAccessInformation;
+        StringBuilder sb = new StringBuilder();
+        sb.append("DN:").append(getDownlinkFrequency() / 1E6D);
+
+        long up = getUplinkFrequency();
+
+        if(up > 0)
+        {
+            sb.append(" UP:").append(up / 1E6D);
+        }
+
+        sb.append(" MHZ");
+        return sb.toString();
     }
 }

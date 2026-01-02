@@ -418,17 +418,17 @@ public class NXDNMessageFactory
 
             //Broadcast Messages
             case CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION:
-                return new DigitalStationIDInformation(message, timestamp);
+                return new DigitalStationIDInformation(message, timestamp, type);
             case CONTROL_OUT_24_SITE_INFORMATION:
-                return new SiteInformation(message, timestamp);
+                return new SiteInformation(message, timestamp, type);
             case CONTROL_OUT_25_SERVICE_INFORMATION:
-                return new ServiceInformation(message, timestamp);
+                return new ServiceInformation(message, timestamp, type);
             case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
-                return new ControlChannelInformation(message, timestamp);
+                return new ControlChannelInformation(message, timestamp, type);
             case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
-                return new AdjacentSiteInformation(message, timestamp);
+                return new AdjacentSiteInformation(message, timestamp, type);
             case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
-                return new FailureStatusInformation(message, timestamp);
+                return new FailureStatusInformation(message, timestamp, type);
 
             //Mobility Management Messages
             case CONTROL_IN_32_REGISTRATION_REQUEST:
@@ -506,10 +506,10 @@ public class NXDNMessageFactory
                 return new ShortDataCallResponse(message, timestamp, type);
 
             case PROPRIETARY_FORM:
-                return new ProprietaryForm(message, timestamp);
+                return new ProprietaryForm(message, timestamp, type);
         }
 
-        return new UnknownMessage(message, timestamp);
+        return new UnknownMessage(message, timestamp, type);
     }
 
     static void main()

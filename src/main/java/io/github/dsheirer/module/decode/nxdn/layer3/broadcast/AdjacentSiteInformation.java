@@ -64,8 +64,6 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
     private static final IntField DFA_BANDWIDTH_3 = IntField.length2(OCTET_16 + 6);
     private static final IntField DFA_CHANNEL_3 = IntField.length16(OCTET_17);
 
-    private ChannelAccessInformation mChannelAccessInformation;
-
     private LocationID mLocationID1;
     private LocationID mLocationID2;
     private LocationID mLocationID3;
@@ -85,35 +83,35 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
      */
-    public AdjacentSiteInformation(CorrectedBinaryMessage message, long timestamp)
+    public AdjacentSiteInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_24_SITE_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ADJACENT SITE ").append(getNeighborId1()).append(": ").append(getLocation1());
+        sb.append("ADJACENT SITE-").append(getNeighborId1()).append(": ").append(getLocation1());
         if(hasChannel1())
         {
-            sb.append(mChannelAccessInformation.isDFA() ? " DFA" : "");
             sb.append(" CHAN:").append(getChannel1());
 
             if(hasChannel2())
             {
-                sb.append(" ").append(getNeighborId2()).append(":").append(getLocation2());
+                sb.append(" SITE-").append(getNeighborId2()).append(":").append(getLocation2());
                 sb.append(" CHAN:").append(getChannel2());
 
                 if(hasChannel3())
                 {
-                    sb.append(" ").append(getNeighborId3()).append(":").append(getLocation3());
+                    sb.append(" SITE-").append(getNeighborId3()).append(":").append(getLocation3());
                     sb.append(" CHAN:").append(getChannel3());
 
                     if(hasChannel4())
                     {
-                        sb.append(" ").append(getNeighborId4()).append(":").append(getLocation4());
+                        sb.append(" SITE-").append(getNeighborId4()).append(":").append(getLocation4());
                         sb.append(" CHAN:").append(getChannel4());
                     }
                 }
@@ -128,9 +126,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
     {
         if(channelAccessInformation != null)
         {
-            mChannelAccessInformation = channelAccessInformation;
-
-            if(mChannelAccessInformation.isChannel()) //Channel Mode
+            if(channelAccessInformation.isChannel()) //Channel Mode
             {
                 mChannel1 = new NXDNChannelLookup(getMessage().getInt(CHANNEL_1));
 
@@ -160,7 +156,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
             }
             else //DFA Mode
             {
-                mChannel1 = new NXDNChannelDFA(getMessage().getInt(DFA_CHANNEL_1), 0,
+                mChannel1 = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(DFA_CHANNEL_1), 0,
                         Bandwidth.fromValue(getMessage().getInt(DFA_BANDWIDTH_1)));
 
                 mNeighborId2 = getMessage().getInt(DFA_NEIGHBOR_ID_2);
@@ -168,7 +164,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
                 if(mNeighborId2 > 0)
                 {
                     mLocationID2 = new LocationID(getMessage(), DFA_LOCATION_ID_2);
-                    mChannel2 = new NXDNChannelDFA(getMessage().getInt(DFA_CHANNEL_2), 0,
+                    mChannel2 = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(DFA_CHANNEL_2), 0,
                             Bandwidth.fromValue(getMessage().getInt(DFA_BANDWIDTH_2)));
 
                     mNeighborId3 = getMessage().getInt(DFA_NEIGHBOR_ID_3);
@@ -176,7 +172,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
                     if(mNeighborId3 > 0)
                     {
                         mLocationID3 = new LocationID(getMessage(), DFA_LOCATION_ID_3);
-                        mChannel3 = new NXDNChannelDFA(getMessage().getInt(DFA_CHANNEL_3), 0,
+                        mChannel3 = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(DFA_CHANNEL_3), 0,
                                 Bandwidth.fromValue(getMessage().getInt(DFA_BANDWIDTH_3)));
                     }
                 }
@@ -262,7 +258,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      */
     public boolean hasChannel1()
     {
-        return mChannelAccessInformation != null && mChannel1 != null;
+        return mChannel1 != null;
     }
 
     /**
@@ -306,7 +302,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      */
     public boolean hasChannel2()
     {
-        return mChannelAccessInformation != null && mChannel2 != null;
+        return mChannel2 != null;
     }
 
     /**
@@ -314,7 +310,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      */
     public boolean hasChannel3()
     {
-        return mChannelAccessInformation != null && mChannel3 != null;
+        return mChannel3 != null;
     }
 
     /**
@@ -322,7 +318,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      */
     public boolean hasChannel4()
     {
-        return mChannelAccessInformation != null && mChannel4 != null;
+        return mChannel4 != null;
     }
 
     @Override

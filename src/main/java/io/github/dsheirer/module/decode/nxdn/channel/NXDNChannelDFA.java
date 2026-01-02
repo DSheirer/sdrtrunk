@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,14 @@
 package io.github.dsheirer.module.decode.nxdn.channel;
 
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 
 /**
  * NXDN channel that uses Direct Frequency Assignment.
  */
 public class NXDNChannelDFA extends NXDNChannel
 {
+    private final ChannelAccessInformation mChannelAccessInformation;
     private final int mOutboundChannelNumber;
     private final int mInboundChannelNumber;
 
@@ -35,9 +37,11 @@ public class NXDNChannelDFA extends NXDNChannel
      * @param inboundChannelNumber from message
      * @param bandwidth from message
      */
-    public NXDNChannelDFA(int outboundChannelNumber, int inboundChannelNumber, Bandwidth bandwidth)
+    public NXDNChannelDFA(ChannelAccessInformation channelAccessInformation, int outboundChannelNumber,
+                          int inboundChannelNumber, Bandwidth bandwidth)
     {
         super(bandwidth.getTransmissionMode());
+        mChannelAccessInformation = channelAccessInformation;
         mOutboundChannelNumber = outboundChannelNumber;
         mInboundChannelNumber = inboundChannelNumber;
     }

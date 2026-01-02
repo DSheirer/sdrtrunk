@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,16 +26,16 @@ public enum Service
 {
     MULTI_SITE("MULTI-SITE", 0x8000),
     MULTI_SYSTEM("MULTI-SYSTEM", 0x4000),
-    LOCATION_REGISTRATION("LOCATION REGISTRATION", 0x2000),
-    GROUP_REGISTRATION("GROUP REGISTRATION", 0x1000),
-    AUTHENTICATION("AUTHENTICATION", 0x0800),
-    COMPOSITE_CONTROL_CHANNEL("COMPOSITE CONTROL CHANNEL", 0x0400),
-    VOICE_CALL("VOICE CALL", 0x0200),
-    DATA_CALL("DATA CALL", 0x0100),
-    SHORT_DATA_CALL("SHORT_DATA_CALL", 0x0080),
-    STATUS_CALL_AND_REMOTE_CONTROL("STATUS CALL & REMOTE CONTROL", 0x0040),
-    PSTN_NETWORK("PSTN NETWORK", 0x0020),
-    IP_NETWORK("IP NETWORK", 0x0010);
+    LOCATION_REGISTRATION("LOCATION REG", 0x2000),
+    GROUP_REGISTRATION("GROUP REG", 0x1000),
+    AUTHENTICATION("AUTH", 0x0800),
+    COMPOSITE_CONTROL_CHANNEL("COMPOSITE CONTROL", 0x0400),
+    VOICE_CALL("VOICE", 0x0200),
+    DATA_CALL("DATA", 0x0100),
+    SHORT_DATA_CALL("SHORT DATA", 0x0080),
+    STATUS_CALL_AND_REMOTE_CONTROL("STATUS & REMOTE CON", 0x0040),
+    PSTN_NETWORK("PSTN", 0x0020),
+    IP_NETWORK("IP", 0x0010);
 
     private final String mLabel;
     private final int mValue;

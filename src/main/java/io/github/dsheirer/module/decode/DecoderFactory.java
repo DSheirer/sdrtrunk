@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,6 +81,8 @@ import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderState;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.NXDNDecoder;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
@@ -171,9 +173,6 @@ public class DecoderFactory
                 processDMR(channel, userPreferences, modules, aliasList, (DecodeConfigDMR)decodeConfig,
                     trafficChannelManager, channelDescriptor);
                 break;
-            case NBFM:
-                processNBFM(channel, modules, aliasList, decodeConfig);
-                break;
             case LTR:
                 processLTRStandard(channel, modules, aliasList, (DecodeConfigLTRStandard) decodeConfig);
                 break;
@@ -183,6 +182,12 @@ public class DecoderFactory
             case MPT1327:
                 processMPT1327(channelMapModel, channel, modules, aliasList, channelType,
                         (DecodeConfigMPT1327) decodeConfig, userPreferences);
+                break;
+            case NBFM:
+                processNBFM(channel, modules, aliasList, decodeConfig);
+                break;
+            case NXDN:
+                processNXDN(channel, modules, aliasList, decodeConfig);
                 break;
             case PASSPORT:
                 processPassport(channel, modules, aliasList, decodeConfig);
@@ -459,6 +464,27 @@ public class DecoderFactory
         {
             throw new IllegalArgumentException("Can't create AM decoder - unrecognized decode config type: " +
                     (decodeConfig != null ? decodeConfig.getClass() : "null/empty"));
+        }
+    }
+
+    /**
+     * Creates decoder modules for the NXDN decoder.
+     * @param channel configuration with center frequency
+     * @param modules to receive the decoder modules
+     * @param aliasList for aliases.
+     * @param decodeConfig with details
+     */
+    private static void processNXDN(Channel channel, List<Module> modules, AliasList aliasList,
+                                    DecodeConfiguration decodeConfig)
+    {
+        if(decodeConfig instanceof DecodeConfigNXDN configNXDN)
+        {
+            modules.add(new NXDNDecoder(configNXDN));
+
+        }
+        else
+        {
+            throw new IllegalArgumentException("Can't create NXDN decoder - unrecognized config: " + decodeConfig);
         }
     }
 

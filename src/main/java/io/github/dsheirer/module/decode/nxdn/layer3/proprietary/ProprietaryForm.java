@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,10 +38,11 @@ public class ProprietaryForm extends NXDNLayer3Message
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
      */
-    public ProprietaryForm(CorrectedBinaryMessage message, long timestamp)
+    public ProprietaryForm(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp);
+        super(message, timestamp, type);
     }
 
     @Override
@@ -58,12 +59,6 @@ public class ProprietaryForm extends NXDNLayer3Message
     public int getVendorID()
     {
         return getMessage().getInt(VENDOR);
-    }
-
-    @Override
-    public NXDNMessageType getType()
-    {
-        return NXDNMessageType.PROPRIETARY_FORM;
     }
 
     @Override

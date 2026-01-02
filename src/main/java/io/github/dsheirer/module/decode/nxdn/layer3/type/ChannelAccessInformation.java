@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,13 +49,14 @@ public class ChannelAccessInformation
     {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("CHANNEL ACCESS: ");
         if(isChannel())
         {
-            sb.append("CHANNEL MODE");
+            sb.append("CHANNEL-MODE");
         }
         else
         {
-            sb.append("DFA MODE BASE:").append(getBaseFrequency()).append("HZ STEP SIZE:").append(getStepSize());
+            sb.append("DFA-MODE BASE:").append(getBaseFrequency()).append("HZ STEP SIZE:").append(getStepSize());
         }
 
         return sb.toString();
@@ -105,7 +106,7 @@ public class ChannelAccessInformation
      */
     public long getStepSize()
     {
-        if(isChannel())
+        if(isDFA())
         {
             int step = mMessage.getInt(STEP, mOffset);
 

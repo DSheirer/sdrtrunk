@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,7 +113,7 @@ public class LocationID
     @Override
     public String toString()
     {
-        return getCategory() + " SYSTEM:" + getSystem() + (mPartial ? "" : " SITE:" + getSite());
+        return getCategory() + " SYS:" + getSystem() + (mPartial ? "" : " SITE:" + getSite());
     }
 
     /**

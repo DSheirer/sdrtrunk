@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,23 +24,26 @@ package io.github.dsheirer.module.decode.nxdn.layer3.type;
  */
 public enum LocationCategory
 {
-    GLOBAL(10, 12),
-    REGIONAL(14, 8),
-    LOCAL(17, 5),
-    RESERVED(1, 1);
+    GLOBAL(10, 12, "GLOB"),
+    REGIONAL(14, 8, "REG"),
+    LOCAL(17, 5, "LOC"),
+    RESERVED(1, 1, "RES");
 
     private final int mSystemFieldLength;
     private final int mSiteFieldLength;
+    private final String mLabel;
 
     /**
      * Constructs an instance
      * @param systemFieldLength in bits
      * @param siteFieldLength in bits
+     * @param mLabel to display
      */
-    LocationCategory(int systemFieldLength, int siteFieldLength)
+    LocationCategory(int systemFieldLength, int siteFieldLength, String label)
     {
         mSystemFieldLength = systemFieldLength;
         mSiteFieldLength = siteFieldLength;
+        mLabel = label;
     }
 
     /**
@@ -73,5 +76,11 @@ public enum LocationCategory
             case 2 -> REGIONAL;
             default -> RESERVED;
         };
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
     }
 }

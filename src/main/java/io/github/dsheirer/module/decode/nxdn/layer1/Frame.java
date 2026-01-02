@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
 import io.github.dsheirer.module.decode.nxdn.layer2.Scrambler;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageFactory;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.coding.CRCNXDN;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Structure;
 import java.util.ArrayList;
@@ -89,22 +90,36 @@ public class Frame extends NXDNMessage
 
                 boolean passesCRC = CRCNXDN.checkCAC(payload);
 
+                mStructure = Structure.fromControlValue(payload.getInt(CAC_STRUCTURE));
+                mRAN = NXDNRadioAccessNumber.create(getMessage().getInt(CAC_RADIO_ACCESS_NUMBER));
+                CorrectedBinaryMessage cac = payload.getSubMessage(8, 155);
+
                 if(passesCRC)
                 {
-                    mStructure = Structure.fromControlValue(payload.getInt(CAC_STRUCTURE));
-                    mRAN = NXDNRadioAccessNumber.create(getMessage().getInt(CAC_RADIO_ACCESS_NUMBER));
-                    NXDNLayer3Message layer3 = NXDNMessageFactory.getControlOutbound(payload.getSubMessage(8, 155), timestamp);
+                    int typeValue = NXDNLayer3Message.getTypeValue(cac);
+                    NXDNMessageType type = NXDNMessageType.getControlOutbound(typeValue);
+                    NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, cac, timestamp);
                     mLayer3Messages.add(layer3);
                 }
                 else
                 {
-                    //TODO: Use the unknown message with an invalid CRC here
+                    NXDNLayer3Message layer3 = NXDNMessageFactory.get(NXDNMessageType.UNKNOWN, cac, timestamp);
+                    layer3.setValid(false);
+                    mLayer3Messages.add(layer3);
                 }
                 break;
             default:
                 message.xor(SCRAMBLE_SEQUENCE_FULL);
                 break;
         }
+    }
+
+    /**
+     * Layer 3 Message(s( from this frame.
+     */
+    public List<NXDNLayer3Message> getLayer3Messages()
+    {
+        return mLayer3Messages;
     }
 
     /**
@@ -124,8 +139,6 @@ public class Frame extends NXDNMessage
     {
         return mRAN != null;
     }
-
-
 
     /**
      * Link information channel (LICH)

@@ -91,7 +91,7 @@ public class VoiceCallAssignmentDuplicateTraffic extends VoiceCall implements IC
         }
         else
         {
-            mChannel = new NXDNChannelDFA(getMessage().getInt(OFN), getMessage().getInt(IFN),
+            mChannel = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(OFN), getMessage().getInt(IFN),
                     Bandwidth.fromValue(getMessage().getInt(BANDWIDTH)));
         }
     }

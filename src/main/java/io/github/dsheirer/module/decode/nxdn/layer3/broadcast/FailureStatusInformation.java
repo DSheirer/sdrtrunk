@@ -43,10 +43,11 @@ public class FailureStatusInformation extends NXDNLayer3Message
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
      */
-    public FailureStatusInformation(CorrectedBinaryMessage message, long timestamp)
+    public FailureStatusInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
     {
-        super(message, timestamp, NXDNMessageType.CONTROL_OUT_28_FAILURE_STATUS_INFORMATION);
+        super(message, timestamp, type);
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import io.github.dsheirer.module.decode.nxdn.layer1.sync.standard.NXDNStandardSo
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICHTracker;
 import io.github.dsheirer.module.decode.nxdn.layer2.Option;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -56,9 +57,11 @@ public class NXDNMessageFramer
 
     /**
      * Constructs an instance
+     * @param messageListener to receive framed messages
      */
-    public NXDNMessageFramer()
+    public NXDNMessageFramer(Listener<IMessage> messageListener)
     {
+        mMessageListener = messageListener;
     }
 
     /**
@@ -104,12 +107,27 @@ public class NXDNMessageFramer
             }
 
             CorrectedBinaryMessage lichField = cbm.getSubMessage(0, 16);
-            System.out.println("\tDISPATCHING FIELD:" + lichField + " LICH: " + lich);
+//            System.out.println("\tDISPATCHING FIELD:" + lichField + " LICH: " + lich);
 
-            //TODO: do something with the frame
+            for(NXDNLayer3Message message: frame.getLayer3Messages())
+            {
+                dispatch(message);
+            }
         }
 
         mMessageAssembler = null;
+    }
+
+    /**
+     * Dispatches the message to an optional listener
+     * @param message to dispatch
+     */
+    private void dispatch(IMessage message)
+    {
+        if(mMessageListener != null)
+        {
+            mMessageListener.receive(message);
+        }
     }
 
     public void syncDetected()
