@@ -25,6 +25,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelDFA;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
@@ -51,10 +52,12 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public VoiceCallAssignment(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public VoiceCallAssignment(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
@@ -66,7 +69,7 @@ public class VoiceCallAssignment extends VoiceCallWithOptionalLocation implement
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = getMessageBuilder();
 
         if(getCallControlOption().isEmergency())
         {

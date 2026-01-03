@@ -27,8 +27,6 @@ import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
 import io.github.dsheirer.dsp.fm.IDemodulator;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -68,7 +66,6 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNMessageProcessor mMessageProcessor = new NXDNMessageProcessor();
     private final PowerMonitor mPowerMonitor = new PowerMonitor();
-    private DifferentialDemodulatorFloat mDemodulator;
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
@@ -77,8 +74,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private IRealFilter mPulseShapingFilterQ;
     private final int mSymbolRate;
     private DecodeConfigNXDN mConfig;
-
-    private IDemodulator mFMDemodulator;
+    private IDemodulator mDemodulator;
 
     @Override
     public DecoderType getDecoderType()
@@ -86,6 +82,10 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         return DecoderType.P25_PHASE1;
     }
 
+    /**
+     * Constructs an instance
+     * @param config for the decoder
+     */
     public NXDNDecoder(DecodeConfigNXDN config)
     {
         mConfig = config;
@@ -98,7 +98,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     @Override
     public String getProtocolDescription()
     {
-        return "P25 Phase 1 C4FM";
+        return "NXDN " + mConfig.getTransmissionMode();
     }
 
     /**
@@ -123,10 +123,10 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         }
 
         //Decimate a further 2x for 4800 BPS modulation
-//        if(mConfig.getTransmissionMode() == TransmissionMode.M4800)
-//        {
-//            decimation *= 2;
-//        }
+        if(mConfig.getTransmissionMode() == TransmissionMode.M4800)
+        {
+            decimation *= 2;
+        }
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);
@@ -145,11 +145,10 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 
         mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
         mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
-        mDemodulator = DifferentialDemodulatorFactory.getFloatDemodulator(decimatedSampleRate, mSymbolRate);
+        mDemodulator = FmDemodulatorFactory.getFmDemodulator();
 
-        mFMDemodulator = FmDemodulatorFactory.getFmDemodulator();
-        mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
-//        mMessageFramer.setListener(mMessageProcessor);
+        float samplesPerSymbol = decimatedSampleRate / mConfig.getTransmissionMode().getSymbolRate();
+        mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
         mMessageProcessor.setMessageListener(getMessageListener());
     }
 
@@ -175,9 +174,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         i = mBasebandFilterI.filter(i);
         q = mBasebandFilterQ.filter(q);
 
-        // PI/4 DQPSK differential demodulation
-//        float[] demodulated = mDemodulator.demodulate(i, q);
-        float[] demodulated = mFMDemodulator.demodulate(i, q);
+        float[] demodulated = mDemodulator.demodulate(i, q);
 
         //Process demodulated samples into symbols and apply message sync detection and framing.
         mSymbolProcessor.process(demodulated);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNEncryptionKey;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.CallOption;
 import io.github.dsheirer.protocol.Protocol;
@@ -45,10 +46,12 @@ public abstract class Call extends CallControl
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public Call(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public Call(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     /**

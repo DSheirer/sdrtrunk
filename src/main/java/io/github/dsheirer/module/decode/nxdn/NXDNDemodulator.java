@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -168,7 +168,7 @@ public class NXDNDemodulator
                     samplePoint += mEqualizer.getAdjustment(softSymbol, symbol, bufferPointer);
 
                     //Debug utility for viewing demodulation process
-                    getSyncResultsViewer().symbol(softSymbol);
+//                    getSyncResultsViewer().symbol(softSymbol);
 
                     mMessageFramer.process(symbol);
 
@@ -355,6 +355,11 @@ public class NXDNDemodulator
      */
     public void visualizeSyncDetect(float score, boolean primary, String tag, int bufferPointer, double samplePoint)
     {
+        if(true)
+        {
+            return;
+        }
+
         int offset = 3;
         int length = (int)Math.ceil(mSamplesPerSymbol * 9) + (2 * offset);
         int end = bufferPointer + offset;

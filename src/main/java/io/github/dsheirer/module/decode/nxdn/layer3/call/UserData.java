@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.Collections;
@@ -43,10 +44,12 @@ public abstract class UserData extends NXDNLayer3Message
      * @param message   with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public UserData(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public UserData(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     /**

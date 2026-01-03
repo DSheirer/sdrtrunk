@@ -113,7 +113,7 @@ public class LocationID
     @Override
     public String toString()
     {
-        return getCategory() + " SYS:" + getSystem() + (mPartial ? "" : " SITE:" + getSite());
+        return getCategory() + " SYSTEM:" + getSystem() + (mPartial ? "" : " SITE:" + getSite());
     }
 
     /**

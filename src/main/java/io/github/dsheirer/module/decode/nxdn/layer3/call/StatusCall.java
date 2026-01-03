@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.StatusCallOption;
 
@@ -36,10 +37,12 @@ public abstract class StatusCall extends CallWithOptionalLocation
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public StatusCall(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public StatusCall(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override

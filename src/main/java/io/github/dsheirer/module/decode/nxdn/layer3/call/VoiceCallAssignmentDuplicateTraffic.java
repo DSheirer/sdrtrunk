@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelDFA;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
@@ -48,16 +49,18 @@ public class VoiceCallAssignmentDuplicateTraffic extends VoiceCall implements IC
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public VoiceCallAssignmentDuplicateTraffic(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public VoiceCallAssignmentDuplicateTraffic(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = getMessageBuilder();
 
         if(getCallControlOption().isEmergency())
         {

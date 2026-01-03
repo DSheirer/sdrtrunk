@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,14 +38,35 @@ public class MessagePackage
     private List<DecodeEventSnapshot> mDecodeEvents = new ArrayList<>();
     private ChannelStartProcessingRequest mChannelStartProcessingRequest;
     private AudioSegment mAudioSegment;
+    private int mBitCounter;
+    private int mElapsed;
 
     /**
      * Constructs an instance
      * @param message for this instance
+     * @param bitCounter at the time this instance was created
      */
-    public MessagePackage(IMessage message)
+    public MessagePackage(IMessage message, int bitCounter, int elapsed)
     {
         mMessage = message;
+        mBitCounter = bitCounter;
+        mElapsed = elapsed;
+    }
+
+    /**
+     * Bit counter value for this package
+     */
+    public int getBitCounter()
+    {
+        return mBitCounter;
+    }
+
+    /**
+     * Elapsed bit count from last package
+     */
+    public int getElapsed()
+    {
+        return mElapsed;
     }
 
     /**

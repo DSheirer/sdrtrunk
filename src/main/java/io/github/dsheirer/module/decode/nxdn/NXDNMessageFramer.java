@@ -29,6 +29,7 @@ import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICHTracker;
 import io.github.dsheirer.module.decode.nxdn.layer2.Option;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
+import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardHardSyncDetector;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -42,7 +43,7 @@ public class NXDNMessageFramer
 {
     private static final float SYNC_DETECTION_THRESHOLD = 60;
     private final NXDNStandardSoftSyncDetector mSoftSyncDetector = NXDNSyncDetectorFactory.getStandardDetector();
-//    private final NXDNHardSyncDetector mHardSyncDetector = new NXDNHardSyncDetector();
+    private final NXDNStandardHardSyncDetector mHardSyncDetector = new NXDNStandardHardSyncDetector();
     private boolean mSyncDetected = false;
 
     private static final double MILLISECONDS_PER_SYMBOL = 1.0 / 4800.0 / 1000.0;
@@ -156,6 +157,20 @@ public class NXDNMessageFramer
             {
                 dispatchMessage();
             }
+        }
+    }
+
+    /**
+     * Process symbol decision with (hard) sync detection
+     * @param symbol to process
+     */
+    public void processWithHardSyncDetection(Dibit symbol)
+    {
+        process(symbol);
+
+        if(mHardSyncDetector.process(symbol))
+        {
+            syncDetected();
         }
     }
 

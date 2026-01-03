@@ -25,6 +25,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelDFA;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
@@ -84,16 +85,18 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public AdjacentSiteInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public AdjacentSiteInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = getMessageBuilder();
         sb.append("ADJACENT SITE-").append(getNeighborId1()).append(": ").append(getLocation1());
         if(hasChannel1())
         {

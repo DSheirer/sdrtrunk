@@ -340,176 +340,178 @@ public class NXDNMessageFactory
      * Creates an NXDN message parser for a message on the outbound control channel (CC)
      * @param message content
      * @param timestamp of the message
+     * @param ran value
+     * @param lich info
      * @return message parser
      */
-    public static NXDNLayer3Message get(NXDNMessageType type, CorrectedBinaryMessage message, long timestamp)
+    public static NXDNLayer3Message get(NXDNMessageType type, CorrectedBinaryMessage message, long timestamp, int ran, LICH lich)
     {
         switch (type)
         {
             case CONTROL_IN_01_VOICE_CALL_REQUEST:
-                return new VoiceCallRequest(message, timestamp, type);
+                return new VoiceCallRequest(message, timestamp, type, ran, lich);
             case CONTROL_OUT_01_VOICE_CALL_RESPONSE:
-                return new VoiceCallResponse(message, timestamp, type);
+                return new VoiceCallResponse(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_01_VOICE_CALL:
             case TRAFFIC_OUT_01_VOICE_CALL:
-                return new VoiceCall(message, timestamp, type);
+                return new VoiceCall(message, timestamp, type, ran, lich);
             case CONTROL_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
             case TRAFFIC_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
-                return new VoiceCallReceptionRequest(message, timestamp, type);
+                return new VoiceCallReceptionRequest(message, timestamp, type, ran, lich);
             case CONTROL_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
             case TRAFFIC_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
-                return new VoiceCallReceptionResponse(message, timestamp, type);
+                return new VoiceCallReceptionResponse(message, timestamp, type, ran, lich);
             case CONTROL_IN_03_VOICE_CALL_CONNECTION_REQUEST:
-                return new VoiceCallConnectionRequest(message, timestamp, type);
+                return new VoiceCallConnectionRequest(message, timestamp, type, ran, lich);
             case CONTROL_OUT_03_VOICE_CALL_CONNECTION_RESPONSE:
-                return new VoiceCallConnectionResponse(message, timestamp, type);
+                return new VoiceCallConnectionResponse(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_03_VOICE_CALL_INITIALIZATION_VECTOR:
             case TRAFFIC_OUT_03_VOICE_CALL_INITIALIZATION_VECTOR:
-                return new VoiceCallInitializationVector(message, timestamp, type);
+                return new VoiceCallInitializationVector(message, timestamp, type, ran, lich);
             case CONTROL_OUT_04_VOICE_CALL_ASSIGNMENT:
             case TRAFFIC_OUT_04_VOICE_CALL_ASSIGNMENT:
-                return new VoiceCallAssignment(message, timestamp, type);
+                return new VoiceCallAssignment(message, timestamp, type, ran, lich);
             case CONTROL_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
-                return new VoiceCallAssignmentDuplicateControl(message, timestamp, type);
+                return new VoiceCallAssignmentDuplicateControl(message, timestamp, type, ran, lich);
             case TRAFFIC_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
-                return new VoiceCallAssignmentDuplicateTraffic(message, timestamp, type);
+                return new VoiceCallAssignmentDuplicateTraffic(message, timestamp, type, ran, lich);
             case TRAFFIC_OUT_07_TRANSMISSION_RELEASE_EXTENSION:
-                return new TransmissionReleaseExtension(message, timestamp, type);
+                return new TransmissionReleaseExtension(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_08_TRANSMISSION_RELEASE:
             case TRAFFIC_OUT_08_TRANSMISSION_RELEASE:
-                return new TransmissionRelease(message, timestamp, type);
+                return new TransmissionRelease(message, timestamp, type, ran, lich);
             case CONTROL_IN_09_DATA_CALL_REQUEST:
-                return new DataCallRequest(message, timestamp, type);
+                return new DataCallRequest(message, timestamp, type, ran, lich);
             case CONTROL_OUT_09_DATA_CALL_RESPONSE:
-                return new DataCallResponse(message, timestamp, type);
+                return new DataCallResponse(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_09_DATA_CALL_HEADER:
             case TRAFFIC_OUT_09_DATA_CALL_HEADER:
-                return new DataCallHeader(message, timestamp, type);
+                return new DataCallHeader(message, timestamp, type, ran, lich);
             case CONTROL_OUT_10_DATA_CALL_RECEPTION_REQUEST:
             case TRAFFIC_OUT_10_DATA_CALL_RECEPTION_REQUEST:
-                return new DataCallReceptionRequest(message, timestamp, type);
+                return new DataCallReceptionRequest(message, timestamp, type, ran, lich);
             case CONTROL_IN_10_DATA_CALL_RECEPTION_RESPONSE:
-                return new DataCallReceptionResponse(message, timestamp, type);
+                return new DataCallReceptionResponse(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_11_DATA_CALL_BLOCK:
             case TRAFFIC_OUT_11_DATA_CALL_BLOCK:
-                return new DataCallBlock(message, timestamp, type);
+                return new DataCallBlock(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_12_DATA_CALL_ACKNOWLEDGE:
             case TRAFFIC_OUT_12_DATA_CALL_ACKNOWLEDGE:
-                return new DataCallAcknowledge(message, timestamp, type);
+                return new DataCallAcknowledge(message, timestamp, type, ran, lich);
             case CONTROL_OUT_13_DATA_CALL_ASSIGNMENT_DUPLICATE:
-                return new DataCallAssignmentDuplicateControl(message, timestamp, type);
+                return new DataCallAssignmentDuplicateControl(message, timestamp, type, ran, lich);
             case TRAFFIC_OUT_13_DATA_CALL_ASSIGNMENT_DUPLICATE:
-                return new DataCallAssignmentDuplicateTraffic(message, timestamp, type);
+                return new DataCallAssignmentDuplicateTraffic(message, timestamp, type, ran, lich);
             case CONTROL_OUT_14_DATA_CALL_ASSIGNMENT:
             case TRAFFIC_OUT_14_DATA_CALL_ASSIGNMENT:
-                return new DataCallAssignment(message, timestamp, type);
+                return new DataCallAssignment(message, timestamp, type, ran, lich);
             case TRAFFIC_OUT_15_HEADER_DELAY:
             case TRAFFIC_IN_15_HEADER_DELAY:
-                return new HeaderDelay(message, timestamp, type);
+                return new HeaderDelay(message, timestamp, type, ran, lich);
             case CONTROL_OUT_16_IDLE:
             case TRAFFIC_OUT_16_IDLE:
-                return new Idle(message, timestamp, type);
+                return new Idle(message, timestamp, type, ran, lich);
             case CONTROL_OUT_17_DISCONNECT:
             case TRAFFIC_OUT_17_DISCONNECT:
-                return new Disconnect(message, timestamp, type);
+                return new Disconnect(message, timestamp, type, ran, lich);
             case CONTROL_IN_17_DISCONNECT_REQUEST:
             case TRAFFIC_IN_17_DISCONNECT_REQUEST:
-                return new DisconnectRequest(message, timestamp, type);
+                return new DisconnectRequest(message, timestamp, type, ran, lich);
 
             //Broadcast Messages
             case CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION:
-                return new DigitalStationIDInformation(message, timestamp, type);
+                return new DigitalStationIDInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_24_SITE_INFORMATION:
-                return new SiteInformation(message, timestamp, type);
+                return new SiteInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_25_SERVICE_INFORMATION:
-                return new ServiceInformation(message, timestamp, type);
+                return new ServiceInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
-                return new ControlChannelInformation(message, timestamp, type);
+                return new ControlChannelInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
-                return new AdjacentSiteInformation(message, timestamp, type);
+                return new AdjacentSiteInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
-                return new FailureStatusInformation(message, timestamp, type);
+                return new FailureStatusInformation(message, timestamp, type, ran, lich);
 
             //Mobility Management Messages
             case CONTROL_IN_32_REGISTRATION_REQUEST:
-                return new RegistrationRequest(message, timestamp, type);
+                return new RegistrationRequest(message, timestamp, type, ran, lich);
             case CONTROL_OUT_32_REGISTRATION_RESPONSE:
-                return new RegistrationResponse(message, timestamp, type);
+                return new RegistrationResponse(message, timestamp, type, ran, lich);
             case CONTROL_IN_34_REGISTRATION_CLEAR_REQUEST:
-                return new RegistrationClearRequest(message, timestamp, type);
+                return new RegistrationClearRequest(message, timestamp, type, ran, lich);
             case CONTROL_OUT_34_REGISTRATION_CLEAR_RESPONSE:
-                return new RegistrationClearResponse(message, timestamp, type);
+                return new RegistrationClearResponse(message, timestamp, type, ran, lich);
             case CONTROL_OUT_35_REGISTRATION_COMMAND:
-                return new RegistrationCommand(message, timestamp, type);
+                return new RegistrationCommand(message, timestamp, type, ran, lich);
             case CONTROL_IN_36_GROUP_REGISTRATION_REQUEST:
-                return new GroupRegistrationRequest(message, timestamp, type);
+                return new GroupRegistrationRequest(message, timestamp, type, ran, lich);
             case CONTROL_OUT_36_GROUP_REGISTRATION_RESPONSE:
-                return new GroupRegistrationResponse(message, timestamp, type);
+                return new GroupRegistrationResponse(message, timestamp, type, ran, lich);
             case CONTROL_OUT_40_AUTHENTICATION_INQUIRY_REQUEST:
-                return new AuthenticationInquiryRequest(message, timestamp, type);
+                return new AuthenticationInquiryRequest(message, timestamp, type, ran, lich);
             case CONTROL_IN_41_AUTHENTICATION_INQUIRY_RESPONSE:
-                return new AuthenticationInquiryResponse(message, timestamp, type);
+                return new AuthenticationInquiryResponse(message, timestamp, type, ran, lich);
             case CONTROL_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
             case TRAFFIC_IN_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
             case TRAFFIC_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
-                return new AuthenticationInquiryRequest2(message, timestamp, type);
+                return new AuthenticationInquiryRequest2(message, timestamp, type, ran, lich);
             case CONTROL_IN_43_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
             case TRAFFIC_IN_43_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
             case TRAFFIC_OUT_43_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
-                return new AuthenticationInquiryResponse2(message, timestamp, type);
+                return new AuthenticationInquiryResponse2(message, timestamp, type, ran, lich);
 
             case CONTROL_IN_48_STATUS_INQUIRY_REQUEST:
             case CONTROL_OUT_48_STATUS_INQUIRY_REQUEST:
             case TRAFFIC_IN_48_STATUS_INQUIRY_REQUEST:
             case TRAFFIC_OUT_48_STATUS_INQUIRY_REQUEST:
-                return new StatusInquiryRequest(message, timestamp, type);
+                return new StatusInquiryRequest(message, timestamp, type, ran, lich);
             case CONTROL_IN_49_STATUS_INQUIRY_RESPONSE:
             case CONTROL_OUT_49_STATUS_INQUIRY_RESPONSE:
             case TRAFFIC_IN_49_STATUS_INQUIRY_RESPONSE:
             case TRAFFIC_OUT_49_STATUS_INQUIRY_RESPONSE:
-                return new StatusInquiryResponse(message, timestamp, type);
+                return new StatusInquiryResponse(message, timestamp, type, ran, lich);
             case CONTROL_IN_50_STATUS_REQUEST:
             case CONTROL_OUT_50_STATUS_REQUEST:
             case TRAFFIC_IN_50_STATUS_REQUEST:
             case TRAFFIC_OUT_50_STATUS_REQUEST:
-                return new StatusRequest(message, timestamp, type);
+                return new StatusRequest(message, timestamp, type, ran, lich);
             case CONTROL_IN_51_STATUS_RESPONSE:
             case CONTROL_OUT_51_STATUS_RESPONSE:
             case TRAFFIC_IN_51_STATUS_RESPONSE:
             case TRAFFIC_OUT_51_STATUS_RESPONSE:
-                return new StatusResponse(message, timestamp, type);
+                return new StatusResponse(message, timestamp, type, ran, lich);
             case CONTROL_IN_52_REMOTE_CONTROL_REQUEST:
             case CONTROL_OUT_52_REMOTE_CONTROL_REQUEST:
             case TRAFFIC_IN_52_REMOTE_CONTROL_REQUEST:
             case TRAFFIC_OUT_52_REMOTE_CONTROL_REQUEST:
-                return new RemoteControlRequest(message, timestamp, type);
+                return new RemoteControlRequest(message, timestamp, type, ran, lich);
             case CONTROL_IN_53_REMOTE_CONTROL_RESPONSE:
             case CONTROL_OUT_53_REMOTE_CONTROL_RESPONSE:
             case TRAFFIC_IN_53_REMOTE_CONTROL_RESPONSE:
             case TRAFFIC_OUT_53_REMOTE_CONTROL_RESPONSE:
-                return new RemoteControlResponse(message, timestamp, type);
+                return new RemoteControlResponse(message, timestamp, type, ran, lich);
             case CONTROL_OUT_54_REMOTE_CONTROL_REQUEST_WITH_ESN:
-                return new RemoteControlRequestWithESN(message, timestamp, type);
+                return new RemoteControlRequestWithESN(message, timestamp, type, ran, lich);
             case CONTROL_IN_55_REMOTE_CONTROL_RESPONSE_WITH_ESN:
-                return new RemoteControlResponseWithESN(message, timestamp, type);
+                return new RemoteControlResponseWithESN(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_56_SHORT_DATA_CALL_REQUEST_HEADER:
             case TRAFFIC_OUT_56_SHORT_DATA_CALL_REQUEST_HEADER:
-                return  new ShortDataCallRequestHeader(message, timestamp, type);
+                return  new ShortDataCallRequestHeader(message, timestamp, type, ran, lich);
             case TRAFFIC_IN_57_SHORT_DATA_CALL_BLOCK:
             case TRAFFIC_OUT_57_SHORT_DATA_CALL_BLOCK:
-                return new ShortDataCallBlock(message, timestamp, type);
+                return new ShortDataCallBlock(message, timestamp, type, ran, lich);
             case TRAFFIC_OUT_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
             case TRAFFIC_IN_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
-                return new ShortDataInitializationVector(message, timestamp, type);
+                return new ShortDataInitializationVector(message, timestamp, type, ran, lich);
             case TRAFFIC_OUT_59_SHORT_DATA_CALL_RESPONSE:
             case TRAFFIC_IN_59_SHORT_DATA_CALL_RESPONSE:
-                return new ShortDataCallResponse(message, timestamp, type);
+                return new ShortDataCallResponse(message, timestamp, type, ran, lich);
 
             case PROPRIETARY_FORM:
-                return new ProprietaryForm(message, timestamp, type);
+                return new ProprietaryForm(message, timestamp, type, ran, lich);
         }
 
-        return new UnknownMessage(message, timestamp, type);
+        return new UnknownMessage(message, timestamp, type, ran, lich);
     }
 
     static void main()

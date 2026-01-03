@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNFullyQualifiedRadioIdentifier;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
@@ -47,10 +48,12 @@ public abstract class Registration extends NXDNLayer3Message
      * @param message with binary data
      * @param timestamp for the message
      * @param type
+     * @param ran value
+     * @param lich info
      */
-    public Registration(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public Registration(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     public RegistrationOption getRegistrationOption()

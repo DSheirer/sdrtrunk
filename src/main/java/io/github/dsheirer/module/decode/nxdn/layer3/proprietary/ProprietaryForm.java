@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.proprietary;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
@@ -39,16 +40,18 @@ public class ProprietaryForm extends NXDNLayer3Message
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public ProprietaryForm(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public ProprietaryForm(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = getMessageBuilder();
         sb.append("PROPRIETARY FORM - VENDOR:").append(getVendorID()).append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }

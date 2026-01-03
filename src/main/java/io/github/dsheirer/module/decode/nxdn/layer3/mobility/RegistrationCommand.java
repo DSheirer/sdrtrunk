@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
@@ -35,16 +36,18 @@ public class RegistrationCommand extends Registration
      * @param message with binary data
      * @param timestamp for the message
      * @param type
+     * @param ran value
+     * @param lich info
      */
-    public RegistrationCommand(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public RegistrationCommand(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = getMessageBuilder();
         if(getRegistrationOption().isEmergency())
         {
             sb.append("EMERGENCY ");

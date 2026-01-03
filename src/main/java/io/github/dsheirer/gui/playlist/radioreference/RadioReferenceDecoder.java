@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -430,6 +430,7 @@ public class RadioReferenceDecoder
                 }
                 break;
             case "NXDN":
+                return Protocol.NXDN;
             case "EDACS":
             case "TETRA":
             case "Midland CMS":
@@ -503,6 +504,7 @@ public class RadioReferenceDecoder
                     }
                     break;
                 case "NXDN":
+                    return DecoderType.NXDN;
 
                 case "EDACS":
                 case "TETRA":

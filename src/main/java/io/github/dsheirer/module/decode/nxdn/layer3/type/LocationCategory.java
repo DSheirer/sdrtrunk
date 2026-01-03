@@ -24,10 +24,10 @@ package io.github.dsheirer.module.decode.nxdn.layer3.type;
  */
 public enum LocationCategory
 {
-    GLOBAL(10, 12, "GLOB"),
-    REGIONAL(14, 8, "REG"),
-    LOCAL(17, 5, "LOC"),
-    RESERVED(1, 1, "RES");
+    GLOBAL(10, 12, "GLOBAL"),
+    REGIONAL(14, 8, "REGIONAL"),
+    LOCAL(17, 5, "LOCAL"),
+    RESERVED(1, 1, "RESERVED");
 
     private final int mSystemFieldLength;
     private final int mSiteFieldLength;

@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNFullyQualifiedRadioIdentifier;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationIDOption;
@@ -39,10 +40,12 @@ public abstract class CallWithOptionalLocation extends Call
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public CallWithOptionalLocation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public CallWithOptionalLocation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     /**

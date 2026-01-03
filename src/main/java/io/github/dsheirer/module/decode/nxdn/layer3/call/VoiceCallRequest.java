@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.call;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.CallType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Digit;
@@ -42,10 +43,12 @@ public class VoiceCallRequest extends VoiceCallWithOptionalLocation
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public VoiceCallRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public VoiceCallRequest(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
@@ -57,7 +60,7 @@ public class VoiceCallRequest extends VoiceCallWithOptionalLocation
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = getMessageBuilder();
 
         if(getCallControlOption().isEmergency())
         {

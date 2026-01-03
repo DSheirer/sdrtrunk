@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import java.util.List;
 
 /**
@@ -33,16 +34,21 @@ public class UnknownMessage extends NXDNLayer3Message
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param ran value
+     * @param lich info
      */
-    public UnknownMessage(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public UnknownMessage(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        return "UNKNOWN/UNRECOGNIZED MESSAGE TYPE " + getMessageType() + " MSG:" + getMessage().toHexString();
+        StringBuilder sb = getMessageBuilder();
+        sb.append(" UNKNOWN/UNRECOGNIZED MESSAGE TYPE ").append(getMessageType());
+        sb.append(" MSG:").append(getMessage().toHexString());
+        return sb.toString();
     }
 
     @Override

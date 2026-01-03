@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 
 /**
  * Base NXDN layer 3 message implementation
@@ -34,6 +35,8 @@ public abstract class NXDNLayer3Message extends NXDNMessage
     protected static final IntField IDENTIFIER_OCTET_3 = IntField.length16(OCTET_3);
     protected static final IntField IDENTIFIER_OCTET_5 = IntField.length16(OCTET_5);
     private final NXDNMessageType mType;
+    private final int mRAN;
+    private final LICH mLICH;
 
     /**
      * Constructs an instance
@@ -41,10 +44,27 @@ public abstract class NXDNLayer3Message extends NXDNMessage
      * @param message with binary data
      * @param timestamp for the message
      */
-    public NXDNLayer3Message(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public NXDNLayer3Message(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp);
         mType = type;
+        mRAN = ran;
+        mLICH = lich;
+    }
+
+    /**
+     * Formatted message prefix indicating CRC status, RAN and RF Channel.
+     */
+    public StringBuilder getMessageBuilder()
+    {
+        StringBuilder sb = new StringBuilder();
+        if(!isValid())
+        {
+            sb.append("[CRC-ERROR] ");
+        }
+        sb.append(mLICH.getRFChannel().name());
+        sb.append(" RAN:").append(mRAN).append(" ");
+        return sb;
     }
 
     /**
@@ -66,5 +86,21 @@ public abstract class NXDNLayer3Message extends NXDNMessage
     public NXDNMessageType getMessageType()
     {
         return mType;
+    }
+
+    /**
+     * Radio access network (RAN) from the frame carrier
+     */
+    public int getRAN()
+    {
+        return mRAN;
+    }
+
+    /**
+     * Link Information Channel (LICH) from the frame carrier
+     */
+    public LICH getLICH()
+    {
+        return mLICH;
     }
 }

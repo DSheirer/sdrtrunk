@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
@@ -36,16 +37,18 @@ public class Idle extends NXDNLayer3Message
      * @param message with binary data
      * @param timestamp for the message
      * @param type
+     * @param ran value
+     * @param lich info
      */
-    public Idle(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public Idle(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        return "IDLE";
+        return getMessageBuilder().append("IDLE").toString();
     }
 
     @Override

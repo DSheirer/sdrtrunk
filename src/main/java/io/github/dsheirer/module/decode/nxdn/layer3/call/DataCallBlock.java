@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 
 public class DataCallBlock extends UserData
@@ -30,15 +31,20 @@ public class DataCallBlock extends UserData
      * @param message   with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public DataCallBlock(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public DataCallBlock(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     @Override
     public String toString()
     {
-        return getMessageType() + " PACKET FRAME:" + getPacketFrameNumber() + " BLOCK_NUMBER:" + getBlockNumber();
+        StringBuilder sb = getMessageBuilder();
+        sb.append(getMessageType());
+        sb.append(" PACKET FRAME:").append(getPacketFrameNumber()).append(" BLOCK_NUMBER:").append(getBlockNumber());
+        return sb.toString();
     }
 }

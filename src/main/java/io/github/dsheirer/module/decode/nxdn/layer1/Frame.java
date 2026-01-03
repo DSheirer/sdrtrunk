@@ -25,7 +25,6 @@ import io.github.dsheirer.bits.FragmentedIntField;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioAccessNumber;
 import io.github.dsheirer.module.decode.nxdn.layer2.Direction;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
@@ -62,7 +61,7 @@ public class Frame extends NXDNMessage
 
     private final LICH mLICH;
     private List<NXDNLayer3Message> mLayer3Messages = new ArrayList<>();
-    private NXDNRadioAccessNumber mRAN;
+    private int mRAN;
     private Structure mStructure;
 
     /**
@@ -91,24 +90,17 @@ public class Frame extends NXDNMessage
                 boolean passesCRC = CRCNXDN.checkCAC(payload);
 
                 mStructure = Structure.fromControlValue(payload.getInt(CAC_STRUCTURE));
-                mRAN = NXDNRadioAccessNumber.create(getMessage().getInt(CAC_RADIO_ACCESS_NUMBER));
+                mRAN = getMessage().getInt(CAC_RADIO_ACCESS_NUMBER);
                 CorrectedBinaryMessage cac = payload.getSubMessage(8, 155);
 
-                if(passesCRC)
-                {
-                    int typeValue = NXDNLayer3Message.getTypeValue(cac);
-                    NXDNMessageType type = NXDNMessageType.getControlOutbound(typeValue);
-                    NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, cac, timestamp);
-                    mLayer3Messages.add(layer3);
-                }
-                else
-                {
-                    NXDNLayer3Message layer3 = NXDNMessageFactory.get(NXDNMessageType.UNKNOWN, cac, timestamp);
-                    layer3.setValid(false);
-                    mLayer3Messages.add(layer3);
-                }
+                int typeValue = NXDNLayer3Message.getTypeValue(cac);
+                NXDNMessageType type = NXDNMessageType.getControlOutbound(typeValue);
+                NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, cac, timestamp, mRAN, mLICH);
+                layer3.setValid(passesCRC);
+                mLayer3Messages.add(layer3);
                 break;
             default:
+                System.out.println("Unrecognized RF Channel: " + mLICH.getRFChannel());
                 message.xor(SCRAMBLE_SEQUENCE_FULL);
                 break;
         }
@@ -126,7 +118,7 @@ public class Frame extends NXDNMessage
      * Radio Access Number (RAN)
      * @return RAN
      */
-    public NXDNRadioAccessNumber getRadioAccessNumber()
+    public int getRadioAccessNumber()
     {
         return mRAN;
     }
@@ -137,7 +129,7 @@ public class Frame extends NXDNMessage
      */
     public boolean hasRAN()
     {
-        return mRAN != null;
+        return mRAN > 0;
     }
 
     /**

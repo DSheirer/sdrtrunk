@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.CallControlOption;
@@ -46,10 +47,12 @@ public abstract class CallControl extends NXDNLayer3Message
      * @param message   with binary data
      * @param timestamp for the message
      * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public CallControl(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type)
+    public CallControl(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp, type);
+        super(message, timestamp, type, ran, lich);
     }
 
     /**

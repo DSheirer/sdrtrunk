@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,8 +33,15 @@ public class DecodeConfigNXDN extends DecodeConfiguration
 {
     private static final ChannelSpecification CHANNEL_4800 = new ChannelSpecification(12500.0, 6250, 3000.0, 3125.0);
     private static final ChannelSpecification CHANNEL_9600 = new ChannelSpecification(25000.0, 12500, 5750.0, 6250.0);
-
     private TransmissionMode mTransmissionMode;
+
+    /**
+     * Default constructor for Jackson.
+     */
+    public DecodeConfigNXDN()
+    {
+        this(TransmissionMode.M9600);
+    }
 
     /**
      * Constructs an instance
