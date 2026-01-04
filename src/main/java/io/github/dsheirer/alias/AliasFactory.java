@@ -24,6 +24,7 @@ import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.legacy.mobileID.Min;
@@ -58,6 +59,11 @@ public class AliasFactory
                 BroadcastChannel copyBroadcast = new BroadcastChannel();
                 copyBroadcast.setChannelName(originalBroadcast.getChannelName());
                 return copyBroadcast;
+            case CTCSS:
+                Ctcss originalCtcss = (Ctcss)id;
+                Ctcss copyCtcss = new Ctcss();
+                copyCtcss.setCTCSSCode(originalCtcss.getCTCSSCode());
+                return copyCtcss;
             case DCS:
                 Dcs originalDcs = (Dcs)id;
                 Dcs copyDcs = new Dcs();

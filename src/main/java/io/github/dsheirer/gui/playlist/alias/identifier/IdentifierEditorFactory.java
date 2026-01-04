@@ -35,6 +35,8 @@ public class IdentifierEditorFactory
     {
         switch(type)
         {
+            case CTCSS:
+                return new CtcssEditor();
             case DCS:
                 return new DcsEditor();
             case ESN:
