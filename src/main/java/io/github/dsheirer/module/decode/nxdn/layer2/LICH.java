@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ public enum LICH
     /**
      * Indicates if this frame contains a FACCH1 message in the first half of the frame
      */
-    public boolean hasFACCH1First()
+    public boolean isFACCH1First()
     {
         return getOption() == Option.FACCH1_FIRST || getOption() == Option.FACCH1_BOTH;
     }
@@ -135,15 +135,23 @@ public enum LICH
     /**
      * Indicates if this frame contains a FACCH1 message in the second half of the frame
      */
-    public boolean hasFACCH1Second()
+    public boolean isFACCH1Second()
     {
         return getOption() == Option.FACCH1_SECOND || getOption() == Option.FACCH1_BOTH;
     }
 
     /**
+     * Indicates if the frame has audio frames in either or both of the payloads.
+     */
+    public boolean hasAudio()
+    {
+        return getOption().hasAudio();
+    }
+
+    /**
      * Indicates if this frame has voice data in the first half of the frame.
      */
-    public boolean hasVoiceFirst()
+    public boolean isVoiceFirst()
     {
         return getOption() == Option.VOICE_ONLY || getOption() == Option.FACCH1_SECOND;
     }
@@ -151,9 +159,25 @@ public enum LICH
     /**
      * Indicates if this frame has voice data in the second half of the frame.
      */
-    public boolean hasVoiceSecond()
+    public boolean isVoiceSecond()
     {
         return getOption() == Option.VOICE_ONLY || getOption() == Option.FACCH1_FIRST;
+    }
+
+    /**
+     * Indicates if the RDCH or RTCH frame has a SACCH field.
+     */
+    public boolean hasSACCH()
+    {
+        return getOption() != Option.UDCH && getOption() != Option.FACCH2;
+    }
+
+    /**
+     * Indicates if this is a SACCH super frame (true) or standalone (false).
+     */
+    public boolean isSACCHSuperFrame()
+    {
+        return getFunctionalChannel() == FunctionalChannel.SACCH_SUPER_FRAME;
     }
 
     /**
@@ -226,5 +250,23 @@ public enum LICH
     public Direction getDirection()
     {
         return mDirection;
+    }
+
+    /**
+     * Indicates if the channel direction is outbound (true) or inbound (false).
+     * @return true if outbound
+     */
+    public boolean isOutbound()
+    {
+        return getDirection().equals(Direction.OUTBOUND);
+    }
+
+    /**
+     * Indicates if the channel is carrying a long CAC (true) or short CAC (false)
+     * @return true if long CAC
+     */
+    public boolean isLongCAC()
+    {
+        return getFunctionalChannel().equals(FunctionalChannel.CAC_LONG);
     }
 }

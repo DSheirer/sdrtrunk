@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@ import io.github.dsheirer.bits.IntField;
 public class CRCNXDN
 {
     private static final IntField CHECKSUM_CAC = IntField.length16(155);
+    private static final IntField CHECKSUM_LONG_CAC = IntField.length16(136);
+    private static final IntField CHECKSUM_SHORT_CAC = IntField.length16(106);
     private static final int CRC_16_FEEDBACK_MASK = 0x8000;
     private static final int CRC_16_REGISTER_MASK = 0xFFFF;
     private static final int CRC_16_TAPS = 0x1021; //Taps: S12, S5 and S0
@@ -55,6 +57,26 @@ public class CRCNXDN
     public static boolean checkCAC(CorrectedBinaryMessage message)
     {
         return checkCRC(message, 155, CRC_16_REGISTER_MASK, CRC_16_FEEDBACK_MASK, CRC_16_TAPS, CHECKSUM_CAC);
+    }
+
+    /**
+     * Performs CRC 16 check against the decoded long CAC message.
+     * @param message to check
+     * @return true if the message passes the CRC check.
+     */
+    public static boolean checkLongCAC(CorrectedBinaryMessage message)
+    {
+        return checkCRC(message, 136, CRC_16_REGISTER_MASK, CRC_16_FEEDBACK_MASK, CRC_16_TAPS, CHECKSUM_LONG_CAC);
+    }
+
+    /**
+     * Performs CRC 16 check against the decoded short CAC message.
+     * @param message to check
+     * @return true if the message passes the CRC check.
+     */
+    public static boolean checkShortCAC(CorrectedBinaryMessage message)
+    {
+        return checkCRC(message, 136, CRC_16_REGISTER_MASK, CRC_16_FEEDBACK_MASK, CRC_16_TAPS, CHECKSUM_SHORT_CAC);
     }
 
     /**

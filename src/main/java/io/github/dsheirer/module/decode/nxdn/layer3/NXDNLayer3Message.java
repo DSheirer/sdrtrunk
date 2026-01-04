@@ -35,8 +35,6 @@ public abstract class NXDNLayer3Message extends NXDNMessage
     protected static final IntField IDENTIFIER_OCTET_3 = IntField.length16(OCTET_3);
     protected static final IntField IDENTIFIER_OCTET_5 = IntField.length16(OCTET_5);
     private final NXDNMessageType mType;
-    private final int mRAN;
-    private final LICH mLICH;
 
     /**
      * Constructs an instance
@@ -46,25 +44,8 @@ public abstract class NXDNLayer3Message extends NXDNMessage
      */
     public NXDNLayer3Message(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
-        super(message, timestamp);
+        super(message, timestamp, ran, lich);
         mType = type;
-        mRAN = ran;
-        mLICH = lich;
-    }
-
-    /**
-     * Formatted message prefix indicating CRC status, RAN and RF Channel.
-     */
-    public StringBuilder getMessageBuilder()
-    {
-        StringBuilder sb = new StringBuilder();
-        if(!isValid())
-        {
-            sb.append("[CRC-ERROR] ");
-        }
-        sb.append(mLICH.getRFChannel().name());
-        sb.append(" RAN:").append(mRAN).append(" ");
-        return sb;
     }
 
     /**
@@ -88,19 +69,4 @@ public abstract class NXDNLayer3Message extends NXDNMessage
         return mType;
     }
 
-    /**
-     * Radio access network (RAN) from the frame carrier
-     */
-    public int getRAN()
-    {
-        return mRAN;
-    }
-
-    /**
-     * Link Information Channel (LICH) from the frame carrier
-     */
-    public LICH getLICH()
-    {
-        return mLICH;
-    }
 }

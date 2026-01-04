@@ -23,28 +23,46 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.FragmentedIntField;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.Direction;
+import io.github.dsheirer.module.decode.nxdn.layer2.Interleaver;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
+import io.github.dsheirer.module.decode.nxdn.layer2.SACCHFragment;
 import io.github.dsheirer.module.decode.nxdn.layer2.Scrambler;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageFactory;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.coding.CRCNXDN;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.Structure;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.Convolution;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProvider;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProviderCACAndFACCH2;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProviderFACCH1;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProviderLongCAC;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProviderNone;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.PunctureProviderSACCH;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * NXDN layer 1 frame.
  */
-public class Frame extends NXDNMessage
+public class Frame
 {
-    private static final IntField CAC_STRUCTURE = IntField.length2(0);
-    private static final IntField CAC_RADIO_ACCESS_NUMBER = IntField.length6(2);
+    private static final PunctureProvider PUNCTURE_PROVIDER_CAC_FACCH2 = new PunctureProviderCACAndFACCH2();
+    private static final PunctureProvider PUNCTURE_PROVIDER_FACCH1 = new PunctureProviderFACCH1();
+    private static final PunctureProvider PUNCTURE_PROVIDER_LONG_CAC = new PunctureProviderLongCAC();
+    private static final PunctureProvider PUNCTURE_PROVIDER_NONE = new PunctureProviderNone();
+    private static final PunctureProvider PUNCTURE_PROVIDER_SACCH = new PunctureProviderSACCH();
+    private static final Interleaver INTERLEAVER_FACCH1 = new Interleaver(16, 9);
+    private static final Interleaver INTERLEAVER_FACCH2 = new Interleaver(12, 29);
+    private static final Interleaver INTERLEAVER_OUTBOUND_CAC = new Interleaver(12, 25);
+    private static final Interleaver INTERLEAVER_INBOUND_CAC = new Interleaver(12, 21);
+    private static final Interleaver INTERLEAVER_SACCH = new Interleaver(12, 5);
+    private static final IntField STRUCTURE = IntField.length2(0);
+    private static final IntField RADIO_ACCESS_NUMBER = IntField.length6(2);
     private static final FragmentedIntField LICH_FIELD = FragmentedIntField.of(0, 2, 4, 6, 8, 10, 12);
     private static final BinaryMessage SCRAMBLE_SEQUENCE_LICH = Scrambler.generate(16);
     private static final BinaryMessage SCRAMBLE_SEQUENCE_FULL = Scrambler.generate(348);
@@ -60,9 +78,7 @@ public class Frame extends NXDNMessage
     }
 
     private final LICH mLICH;
-    private List<NXDNLayer3Message> mLayer3Messages = new ArrayList<>();
-    private int mRAN;
-    private Structure mStructure;
+    private List<NXDNMessage> mMessages = new ArrayList<>();
 
     /**
      * Constructs a frame.  Note: channel and direction are used as fallback values when we can't exactly match the
@@ -74,62 +90,210 @@ public class Frame extends NXDNMessage
      */
     public Frame(CorrectedBinaryMessage message, long timestamp, RFChannel channel, Direction direction)
     {
-        super(message, timestamp);
         message.xor(SCRAMBLE_SEQUENCE_LICH);
-        mLICH = LICH.fromValue(getMessage().getInt(LICH_FIELD), channel, direction);
+        mLICH = LICH.fromValue(message.getInt(LICH_FIELD), channel, direction);
+
+        AudioCodec codec = AudioCodec.HALF_RATE; //TODO: figure out how to properly determine which codec?
 
         //Descramble the message according to the RF Channel Type and repeater direction.  Control channel uses the
         // full scramble sequence truncated based on repeater direction.  All others use a full scramble sequence.
         switch(mLICH.getRFChannel())
         {
             case RCCH:
-                message.xor(mLICH.getDirection() == Direction.OUTBOUND ? SCRAMBLE_SEQUENCE_CONTROL_OUTBOUND :
-                        SCRAMBLE_SEQUENCE_CONTROL_INBOUND);
-                CorrectedBinaryMessage payload = NXDNMessageFactory.decodeCAC(message);
-
-                boolean passesCRC = CRCNXDN.checkCAC(payload);
-
-                mStructure = Structure.fromControlValue(payload.getInt(CAC_STRUCTURE));
-                mRAN = getMessage().getInt(CAC_RADIO_ACCESS_NUMBER);
-                CorrectedBinaryMessage cac = payload.getSubMessage(8, 155);
-
-                int typeValue = NXDNLayer3Message.getTypeValue(cac);
-                NXDNMessageType type = NXDNMessageType.getControlOutbound(typeValue);
-                NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, cac, timestamp, mRAN, mLICH);
-                layer3.setValid(passesCRC);
-                mLayer3Messages.add(layer3);
+                if(mLICH.isOutbound())
+                {
+                    message.xor(SCRAMBLE_SEQUENCE_CONTROL_OUTBOUND);
+                    CorrectedBinaryMessage payload = decodeCAC(message);
+                    int ran = payload.getInt(RADIO_ACCESS_NUMBER);
+                    CorrectedBinaryMessage cac = payload.getSubMessage(8, 152);
+                    int typeValue = NXDNLayer3Message.getTypeValue(cac);
+                    NXDNMessageType type = NXDNMessageType.getControlOutbound(typeValue);
+                    NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, cac, timestamp, ran, mLICH);
+                    layer3.setValid(CRCNXDN.checkCAC(payload));
+                    mMessages.add(layer3);
+                }
+                else
+                {
+                    message.xor(SCRAMBLE_SEQUENCE_CONTROL_INBOUND);
+                    CorrectedBinaryMessage payload = mLICH.isLongCAC() ? decodeLongCAC(message) :
+                            decodeShortCAC(message);
+//TODO: do I need this?    Structure structure = Structure.fromControlValue(payload.getInt(CAC_STRUCTURE));
+                    int ran = payload.getInt(RADIO_ACCESS_NUMBER);
+                    CorrectedBinaryMessage cac = mLICH.isLongCAC() ? payload.getSubMessage(8, 136) : payload.getSubMessage(8, 104);
+                    int typeValue = NXDNLayer3Message.getTypeValue(cac);
+                    NXDNMessageType type = NXDNMessageType.getControlInbound(typeValue);
+                    NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, cac, timestamp, ran, mLICH);
+                    layer3.setValid(mLICH.isLongCAC() ? CRCNXDN.checkLongCAC(payload) : CRCNXDN.checkShortCAC(payload));
+                    mMessages.add(layer3);
+                }
                 break;
-            default:
-                System.out.println("Unrecognized RF Channel: " + mLICH.getRFChannel());
+            default: //RTCH and RDCH
                 message.xor(SCRAMBLE_SEQUENCE_FULL);
+
+                if(mLICH.hasSACCH()) //SACCH + Voice/FACCH frames
+                {
+                    CorrectedBinaryMessage sacch = decodeSACCH(message);
+                    //TODO: check crc
+                    SACCHFragment sacchFragment = new SACCHFragment(sacch, timestamp, mLICH);
+                    sacchFragment.setValid(CRCNXDN.checkSACCH(sacch));
+                    mMessages.add(sacchFragment);
+
+                    if(mLICH.hasAudio())
+                    {
+                        List<byte[]> frames = new ArrayList<>();
+
+                        if(mLICH.isVoiceFirst())
+                        {
+                            if(codec == AudioCodec.HALF_RATE)
+                            {
+                                frames.add(message.getSubMessage(76, 148).toByteArray());
+                                frames.add(message.getSubMessage(148, 220).toByteArray());
+                            }
+                            else
+                            {
+                                frames.add(message.getSubMessage(76, 220).toByteArray());
+                            }
+                        }
+
+                        if(mLICH.isVoiceSecond())
+                        {
+                            if(codec == AudioCodec.HALF_RATE)
+                            {
+                                frames.add(message.getSubMessage(220, 292).toByteArray());
+                                frames.add(message.getSubMessage(292, 364).toByteArray());
+                            }
+                            else
+                            {
+                                frames.add(message.getSubMessage(220, 364).toByteArray());
+                            }
+                        }
+
+                        mMessages.add(new Audio(codec, frames, timestamp, sacchFragment.getRAN(), sacchFragment.getLICH()));
+                    }
+
+                    if(mLICH.isFACCH1First())
+                    {
+                        CorrectedBinaryMessage payload = decodeFACCH1First(message);
+                        int ran = payload.getInt(RADIO_ACCESS_NUMBER);
+                        int typeValue = NXDNLayer3Message.getTypeValue(payload);
+                        NXDNMessageType type = mLICH.isOutbound() ? NXDNMessageType.getTrafficOutbound(typeValue) :
+                                NXDNMessageType.getTrafficInbound(typeValue);
+                        NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, payload, timestamp, ran, mLICH);
+                        layer3.setValid(CRCNXDN.checkCAC(payload));
+                        mMessages.add(layer3);
+                    }
+
+                    if(mLICH.isFACCH1Second())
+                    {
+                        CorrectedBinaryMessage payload = decodeUDCHAndFACCH2(message);
+                        int ran = payload.getInt(RADIO_ACCESS_NUMBER);
+                        int typeValue = NXDNLayer3Message.getTypeValue(payload);
+                        NXDNMessageType type = mLICH.isOutbound() ? NXDNMessageType.getTrafficOutbound(typeValue) :
+                                NXDNMessageType.getTrafficInbound(typeValue);
+                        NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, payload, timestamp, ran, mLICH);
+                        layer3.setValid(CRCNXDN.checkCAC(payload));
+                        mMessages.add(layer3);
+                    }
+                }
+                else //UDCH or FACCH2 frames
+                {
+                    //TODO: process as UDCH/FACCH2
+                }
+
                 break;
         }
     }
 
     /**
-     * Layer 3 Message(s( from this frame.
+     * Decodes the frame payload
+     * @param message from the frame
+     * @param offset to the start of the payload
+     * @param interleaver for the payload type
+     * @param punctureProvider for the payload type
+     * @return decoded message
      */
-    public List<NXDNLayer3Message> getLayer3Messages()
+    private static CorrectedBinaryMessage decode(CorrectedBinaryMessage message, int offset, Interleaver interleaver, PunctureProvider punctureProvider)
     {
-        return mLayer3Messages;
+        CorrectedBinaryMessage deinterleaved = interleaver.deinterleave(message, offset);
+        return Convolution.decode(punctureProvider.depuncture(deinterleaved), punctureProvider);
     }
 
     /**
-     * Radio Access Number (RAN)
-     * @return RAN
+     * Decodes the first FACCH1 frame
+     * @param message to decode
+     * @return decoded message
      */
-    public int getRadioAccessNumber()
+    public static CorrectedBinaryMessage decodeFACCH1First(CorrectedBinaryMessage message)
     {
-        return mRAN;
+        return decode(message, 76, INTERLEAVER_FACCH1, PUNCTURE_PROVIDER_FACCH1);
     }
 
     /**
-     * Indicates if this frame is carrying a Radio Access Number (RAN)
-     * @return true if there is a RAN
+     * Decodes the second FACCH1 frame
+     * @param message to decode
+     * @return decoded message
      */
-    public boolean hasRAN()
+    public static CorrectedBinaryMessage decodeFACCH1Second(CorrectedBinaryMessage message)
     {
-        return mRAN > 0;
+        return decode(message, 220, INTERLEAVER_FACCH1, PUNCTURE_PROVIDER_FACCH1);
+    }
+
+    /**
+     * Decodes the FACCH2 frame
+     * @param message to decode
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeUDCHAndFACCH2(CorrectedBinaryMessage message)
+    {
+        return decode(message, 16, INTERLEAVER_FACCH2, PUNCTURE_PROVIDER_CAC_FACCH2);
+    }
+
+    /**
+     * Decodes the SACCH frame
+     * @param message to decode
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeSACCH(CorrectedBinaryMessage message)
+    {
+        return decode(message, 16, INTERLEAVER_SACCH, PUNCTURE_PROVIDER_SACCH);
+    }
+
+    /**
+     * Decodes the outbound control frame
+     * @param message to decode
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeCAC(CorrectedBinaryMessage message)
+    {
+        return decode(message, 16, INTERLEAVER_OUTBOUND_CAC, PUNCTURE_PROVIDER_CAC_FACCH2);
+    }
+
+    /**
+     * Decodes the inbound long control frame
+     * @param message to decode
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeLongCAC(CorrectedBinaryMessage message)
+    {
+        return decode(message, 16, INTERLEAVER_INBOUND_CAC, PUNCTURE_PROVIDER_LONG_CAC);
+    }
+
+    /**
+     * Decodes the inbound short control frame
+     * @param message to decode
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeShortCAC(CorrectedBinaryMessage message)
+    {
+        return decode(message, 16, INTERLEAVER_INBOUND_CAC, PUNCTURE_PROVIDER_NONE);
+    }
+
+    /**
+     * Message(s( from this frame.
+     */
+    public List<NXDNMessage> getMessages()
+    {
+        return mMessages;
     }
 
     /**
@@ -139,11 +303,5 @@ public class Frame extends NXDNMessage
     public LICH getLICH()
     {
         return mLICH;
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.emptyList();
     }
 }

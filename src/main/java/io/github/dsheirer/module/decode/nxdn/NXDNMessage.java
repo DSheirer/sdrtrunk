@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
@@ -49,6 +50,8 @@ public abstract class NXDNMessage implements IMessage
     protected static int OCTET_18 = 144;
     protected static int OCTET_19 = 152;
     protected static int OCTET_20 = 160;
+    protected final int mRAN;
+    protected final LICH mLICH;
 
     private CorrectedBinaryMessage mMessage;
     private long mTimestamp;
@@ -60,10 +63,12 @@ public abstract class NXDNMessage implements IMessage
      * @param message with binary data
      * @param timestamp for the message
      */
-    public NXDNMessage(CorrectedBinaryMessage message, long timestamp)
+    public NXDNMessage(CorrectedBinaryMessage message, long timestamp, int ran, LICH lich)
     {
         mMessage = message;
         mTimestamp = timestamp;
+        mRAN = ran;
+        mLICH = lich;
     }
 
     @Override
@@ -106,5 +111,36 @@ public abstract class NXDNMessage implements IMessage
     public int getTimeslot()
     {
         return 0;
+    }
+
+    /**
+     * Formatted message prefix indicating CRC status, RAN and RF Channel.
+     */
+    public StringBuilder getMessageBuilder()
+    {
+        StringBuilder sb = new StringBuilder();
+        if(!isValid())
+        {
+            sb.append("[CRC-ERROR] ");
+        }
+        sb.append(getLICH().getRFChannel().name());
+        sb.append(" RAN:").append(getRAN()).append(" ");
+        return sb;
+    }
+
+    /**
+     * Radio access network (RAN) from the frame carrier
+     */
+    public int getRAN()
+    {
+        return mRAN;
+    }
+
+    /**
+     * Link Information Channel (LICH) from the frame carrier
+     */
+    public LICH getLICH()
+    {
+        return mLICH;
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,7 +154,7 @@ public class Convolution
         //Test of decoding and encoding of CAC bits.
         String encodedCAC = "00000011100011101001100010000000011110101100000000000000111000000010100010001110100110101101011000010001011100011110001000101001001010001000111000001000010010011100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001001011000100000001001101011001110101000";
         CorrectedBinaryMessage cbm = CorrectedBinaryMessage.load(encodedCAC);
-        PunctureProvider puncture = new CACPunctureProvider();
+        PunctureProvider puncture = new PunctureProviderCACAndFACCH2();
         CorrectedBinaryMessage decoded = Convolution.decode(cbm, puncture);
         System.out.println("    DECODED: " + decoded);
         System.out.println(" BIT ERRORS: " + decoded.getCorrectedBitCount());

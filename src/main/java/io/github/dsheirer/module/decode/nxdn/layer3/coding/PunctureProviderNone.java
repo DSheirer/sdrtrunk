@@ -17,31 +17,44 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer2;
+package io.github.dsheirer.module.decode.nxdn.layer3.coding;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LICH option field enumeration with values for DATA or STEAL
+ * No puncturing provider
  */
-public enum Option
+public class PunctureProviderNone extends PunctureProvider
 {
-    DATA_NORMAL,
-    DATA_IDLE,
-    DATA_COMMON,
-
-    VOICE_ONLY,
-    FACCH1_FIRST,
-    FACCH1_SECOND,
-    FACCH1_BOTH,
-    FACCH2,
-    UDCH,
-
-    UNKNOWN;
-
     /**
-     * Indicates if the frame contains audio frames
+     * Constructs an instance
      */
-    public boolean hasAudio()
+    public PunctureProviderNone()
     {
-        return this.equals(VOICE_ONLY) || this.equals(FACCH1_FIRST) || this.equals(FACCH1_SECOND);
+        super(0, 0);
+    }
+
+    @Override
+    public CorrectedBinaryMessage puncture(CorrectedBinaryMessage original)
+    {
+        return original;
+    }
+
+    @Override
+    public CorrectedBinaryMessage depuncture(CorrectedBinaryMessage punctured)
+    {
+        return punctured;
+    }
+
+    @Override
+    public boolean isPreserved(int index)
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isPunctured(int index)
+    {
+        return false;
     }
 }

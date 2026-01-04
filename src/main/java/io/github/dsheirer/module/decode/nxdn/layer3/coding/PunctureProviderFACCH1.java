@@ -17,31 +17,35 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer2;
+package io.github.dsheirer.module.decode.nxdn.layer3.coding;
 
 /**
- * LICH option field enumeration with values for DATA or STEAL
+ * Puncture provider for FACCH1 messages
  */
-public enum Option
+public class PunctureProviderFACCH1 extends PunctureProvider
 {
-    DATA_NORMAL,
-    DATA_IDLE,
-    DATA_COMMON,
-
-    VOICE_ONLY,
-    FACCH1_FIRST,
-    FACCH1_SECOND,
-    FACCH1_BOTH,
-    FACCH2,
-    UDCH,
-
-    UNKNOWN;
+    private static final int BLOCK_SIZE = 4;
+    private static final int PUNCTURE_BIT = 1;
 
     /**
-     * Indicates if the frame contains audio frames
+     * Constructs an instance
      */
-    public boolean hasAudio()
+    public PunctureProviderFACCH1()
     {
-        return this.equals(VOICE_ONLY) || this.equals(FACCH1_FIRST) || this.equals(FACCH1_SECOND);
+        super(BLOCK_SIZE, 1);
+    }
+
+    @Override
+    public boolean isPreserved(int index)
+    {
+        int mod = index % BLOCK_SIZE;
+        return (mod != PUNCTURE_BIT);
+    }
+
+    @Override
+    public boolean isPunctured(int index)
+    {
+        int mod = index % BLOCK_SIZE;
+        return (mod == PUNCTURE_BIT);
     }
 }

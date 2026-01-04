@@ -17,66 +17,70 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer2;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
-import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
-import java.util.Collections;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.Structure;
 import java.util.List;
 
 /**
- * NXDN audio frame data
+ * SACCH message fragment
  */
-public class Audio extends NXDNMessage
+public class SACCHFragment extends NXDNMessage
 {
-    private final AudioCodec mAudioCodec;
-    private final List<byte[]> mAudioFrames;
+    private static final IntField STRUCTURE = IntField.length2(0);
+    private static final IntField RADIO_ACCESS_NUMBER = IntField.length6(2);
 
     /**
      * Constructs an instance
      *
-     * @param audio code used for the channel
-     * @param frames of raw AMBE audio
+     * @param message with binary data
      * @param timestamp for the message
-     * @param ran from the SR field
-     * @param lich from the SR field
      */
-    public Audio(AudioCodec audioCodec, List<byte[]> frames, long timestamp, int ran, LICH lich)
+    public SACCHFragment(CorrectedBinaryMessage message, long timestamp, LICH lich)
     {
-        super(new CorrectedBinaryMessage(0), timestamp, ran, lich);
-        mAudioCodec = audioCodec;
-        mAudioFrames = frames;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getMessageBuilder().append(" AUDIO FRAMES").toString();
+        super(message, timestamp, message.getInt(RADIO_ACCESS_NUMBER), lich);
     }
 
     /**
-     * Audio frame data
+     * SACCH message fragment
      */
-    public List<byte[]> getAudioFrames()
+    public CorrectedBinaryMessage getFragment()
     {
-        return mAudioFrames;
+        return getMessage().getSubMessage(8, 26);
     }
 
     /**
-     * AMBE+ audio codec format
-     * @return full or half rate
+     * Indicates if the SACCH is standalone (false) or a superframe fragment (true).
      */
-    public AudioCodec getAudioCodec()
+    public boolean isSuperFrame()
     {
-        return mAudioCodec;
+        return getLICH().isSACCHSuperFrame();
+    }
+
+    /**
+     * Structure of the SACCH message
+     * @return
+     */
+    public Structure getStructure()
+    {
+        return Structure.fromTrafficValue(getMessage().getInt(STRUCTURE));
+    }
+
+    /**
+     * Radio Access Network (RAN) code
+     */
+    public int getRAN()
+    {
+        return getMessage().getInt(RADIO_ACCESS_NUMBER);
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.emptyList();
+        return List.of();
     }
 }

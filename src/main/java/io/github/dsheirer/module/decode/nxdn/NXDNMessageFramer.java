@@ -25,10 +25,8 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.nxdn.layer1.Frame;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.standard.NXDNStandardSoftSyncDetector;
-import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICHTracker;
 import io.github.dsheirer.module.decode.nxdn.layer2.Option;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardHardSyncDetector;
 import io.github.dsheirer.sample.Listener;
 
@@ -100,17 +98,12 @@ public class NXDNMessageFramer
             CorrectedBinaryMessage cbm = mMessageAssembler.getMessage();
 
             Frame frame = new Frame(cbm, getTimestamp(), mLICHTracker.getChannel(), mLICHTracker.getDirection());
-            LICH lich = frame.getLICH();
-
-            if(lich.getOption() != Option.UNKNOWN)
+            if(frame.getLICH().getOption() != Option.UNKNOWN)
             {
-                mLICHTracker.track(lich);
+                mLICHTracker.track(frame.getLICH());
             }
 
-            CorrectedBinaryMessage lichField = cbm.getSubMessage(0, 16);
-//            System.out.println("\tDISPATCHING FIELD:" + lichField + " LICH: " + lich);
-
-            for(NXDNLayer3Message message: frame.getLayer3Messages())
+            for(NXDNMessage message: frame.getMessages())
             {
                 dispatch(message);
             }
