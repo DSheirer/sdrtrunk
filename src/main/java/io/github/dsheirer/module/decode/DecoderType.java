@@ -38,6 +38,7 @@ public enum DecoderType
     P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),
 
     //Auxiliary Decoders
+    CTCSS("CTCSS", "CTCSS", Protocol.CTCSS),
     DCS("Digital Coded Squelch (DCS)", "DCS", Protocol.DCS),
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
     LJ_1200("LJ1200 173.075", "LJ1200", Protocol.LOJACK),
@@ -73,7 +74,8 @@ public enum DecoderType
      * Auxiliary decoders that operate on in-band signalling in the decoded audio channel
      */
     public static final EnumSet<DecoderType> AUX_DECODERS =
-        EnumSet.of(DecoderType.DCS,
+        EnumSet.of(DecoderType.CTCSS,
+        DecoderType.DCS,
         DecoderType.FLEETSYNC2,
         DecoderType.LJ_1200,
         DecoderType.MDC1200,

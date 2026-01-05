@@ -41,6 +41,8 @@ import io.github.dsheirer.module.decode.am.AMDecoderState;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.ctcss.CTCSSDecoder;
+import io.github.dsheirer.module.decode.ctcss.CTCSSDecoderState;
 import io.github.dsheirer.module.decode.dcs.DCSDecoder;
 import io.github.dsheirer.module.decode.dcs.DCSDecoderState;
 import io.github.dsheirer.module.decode.dcs.DCSMessageFilter;
@@ -583,6 +585,10 @@ public class DecoderFactory
             {
                 switch(auxDecoder)
                 {
+                    case CTCSS:
+                        modules.add(new CTCSSDecoder());
+                        modules.add(new CTCSSDecoderState());
+                        break;
                     case DCS:
                         modules.add(new DCSDecoder());
                         modules.add(new DCSDecoderState());
