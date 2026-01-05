@@ -90,6 +90,14 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
     private CTCSSCode mPendingCode = null;
     private static final int MIN_CONSECUTIVE_DETECTIONS = 2;
 
+    // === NEW: Tone loss threshold - require consecutive misses before clearing ===
+    private int mToneLostCount = 0;
+    private static final int TONE_LOST_THRESHOLD = 2;
+    
+    // === NEW: Periodic rebroadcast for late-starting audio segments ===
+    private long mLastBroadcastTime = 0;
+    private static final long REBROADCAST_INTERVAL_MS = 1000; // Re-broadcast every 1 second
+
     static
     {
         FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
@@ -220,7 +228,7 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
         }
     }
 
-    /**
+ /**
      * Calculate power at each frequency and detect tone
      */
     private void calculatePowerAndDetect()
@@ -258,6 +266,9 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
         // Debouncing - require consecutive detections
         if(detectedCode != null)
         {
+            // === NEW: Reset lost counter when tone detected ===
+            mToneLostCount = 0;
+            
             if(detectedCode.equals(mPendingCode))
             {
                 mConsecutiveDetections++;
@@ -268,22 +279,35 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
                 mConsecutiveDetections = 1;
             }
 
-            if(mConsecutiveDetections >= MIN_CONSECUTIVE_DETECTIONS && !detectedCode.equals(mCurrentCode))
+            if(mConsecutiveDetections >= MIN_CONSECUTIVE_DETECTIONS)
             {
-                mCurrentCode = detectedCode;
-                getMessageListener().receive(new CTCSSMessage(mCurrentCode, System.currentTimeMillis()));
+                // === NEW: Periodic rebroadcast logic ===
+                long now = System.currentTimeMillis();
+                
+                // Broadcast if: new tone detected OR enough time has passed since last broadcast
+                if(!detectedCode.equals(mCurrentCode) || (now - mLastBroadcastTime) >= REBROADCAST_INTERVAL_MS)
+                {
+                    mCurrentCode = detectedCode;
+                    mLastBroadcastTime = now;
+                    getMessageListener().receive(new CTCSSMessage(mCurrentCode, System.currentTimeMillis()));
+                }
+                // === END NEW ===
             }
         }
         else
         {
             mPendingCode = null;
             mConsecutiveDetections = 0;
+            
+            // === NEW: Tone loss threshold - don't clear immediately ===
+            mToneLostCount++;
 
-            if(mCurrentCode != null)
+            if(mToneLostCount >= TONE_LOST_THRESHOLD && mCurrentCode != null)
             {
                 mCurrentCode = null;
-                // Optionally send a "tone lost" message here
+                mLastBroadcastTime = 0; // Reset so next detection broadcasts immediately
             }
+            // === END NEW ===
         }
     }
 
