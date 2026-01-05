@@ -24,6 +24,7 @@ import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
+import io.github.dsheirer.alias.id.nac.Nac;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
@@ -50,6 +51,7 @@ import io.github.dsheirer.identifier.tone.ToneIdentifier;
 import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -77,6 +79,7 @@ public class AliasList
     private Map<Protocol,RadioAliasList> mRadioProtocolMap = new EnumMap<>(Protocol.class);
     private Map<CTCSSCode,Alias> mCTCSSCodeAliasMap = new EnumMap<>(CTCSSCode.class);
     private Map<DCSCode,Alias> mDCSCodeAliasMap = new EnumMap<>(DCSCode.class);
+    private Map<Integer,Alias> mNacAliasMap = new HashMap<>();
     private Map<String,Alias> mESNMap = new HashMap<>();
     private Map<Integer,Alias> mUnitStatusMap = new HashMap<>();
     private Map<Integer,Alias> mUserStatusMap = new HashMap<>();
@@ -226,6 +229,12 @@ public class AliasList
                             mDCSCodeAliasMap.put(dcs.getDCSCode(), alias);
                         }
                         break;
+                    case NAC:
+                        if(id instanceof Nac nac)
+                        {
+                            mNacAliasMap.put(nac.getNac(), alias);
+                        }
+                        break;
                     case ESN:
                         String esn = ((Esn)id).getEsn();
 
@@ -320,6 +329,7 @@ public class AliasList
 
         Collection<Alias> collection = Collections.singleton(alias);
         mESNMap.values().removeAll(collection);
+        mNacAliasMap.values().removeAll(collection);
         mUnitStatusMap.values().removeAll(collection);
         mUserStatusMap.values().removeAll(collection);
         mToneSequenceMap.values().removeAll(collection);
@@ -540,6 +550,13 @@ public class AliasList
                         }
                     }
                     break;
+                case NETWORK_ACCESS_CODE:
+                    if(identifier instanceof APCO25Nac apco25Nac)
+                    {
+                        int nacValue = apco25Nac.getValue();
+                        return toList(mNacAliasMap.get(nacValue));
+                    }
+                break;
             }
         }
 

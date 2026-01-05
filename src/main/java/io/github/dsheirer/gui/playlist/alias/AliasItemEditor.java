@@ -38,6 +38,7 @@ import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.nac.Nac;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioFormatter;
@@ -726,6 +727,7 @@ public class AliasItemEditor extends Editor<Alias>
             amMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.AM));
 
             Menu p25Menu = new ProtocolMenu(Protocol.APCO25);
+            p25Menu.getItems().add(new AddNacItem());
             p25Menu.getItems().add(new AddTalkgroupItem(Protocol.APCO25));
             p25Menu.getItems().add(new AddTalkgroupRangeItem(Protocol.APCO25));
             p25Menu.getItems().add(new AddP25FullyQualifiedTalkgroupItem());
@@ -1381,6 +1383,24 @@ public class AliasItemEditor extends Editor<Alias>
                 getIdentifiersList().getItems().add(dcs);
                 getIdentifiersList().getSelectionModel().select(dcs);
                 getIdentifiersList().scrollTo(dcs);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
+     * Menu item to add a P25 NAC identifier
+     */
+    public class AddNacItem extends MenuItem
+    {
+        public AddNacItem()
+        {
+            super("NAC");
+            setOnAction(event -> {
+                Nac nac = new Nac();
+                getIdentifiersList().getItems().add(nac);
+                getIdentifiersList().getSelectionModel().select(nac);
+                getIdentifiersList().scrollTo(nac);
                 modifiedProperty().set(true);
             });
         }
