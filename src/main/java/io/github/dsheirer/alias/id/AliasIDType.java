@@ -29,6 +29,7 @@ public enum AliasIDType
     LOJACK("LoJack"),
     LTR_NET_UID("LTR-Net UID"),
     MIN("Passport MIN"),
+    NAC("P25 NAC"),
     P25_FULLY_QUALIFIED_RADIO_ID("P25 Fully Qualified Radio ID"),
     P25_FULLY_QUALIFIED_TALKGROUP("P25 Fully Qualified Talkgroup"),
     PRIORITY("Audio Priority"),

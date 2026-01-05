@@ -434,45 +434,48 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
      * Creates a formatted string with the TO identifiers or uses a default of zero (0)
      * 
      */
-    private String getTo(AudioRecording audioRecording)
+private String getTo(AudioRecording audioRecording)
+{
+    Identifier identifier = audioRecording.getIdentifierCollection().getToIdentifier();
+    AliasList aliasList = mAliasModel.getAliasList(audioRecording.getIdentifierCollection());
+
+    // First, check ALL identifiers for any alias with StreamAsTalkgroup set
+    if(aliasList != null)
     {
-        Identifier identifier = audioRecording.getIdentifierCollection().getToIdentifier();
-
-        if(identifier != null)
+        for(Identifier id : audioRecording.getIdentifierCollection().getIdentifiers())
         {
-            AliasList aliasList = mAliasModel.getAliasList(audioRecording.getIdentifierCollection());
-
-            if(aliasList != null)
+            List<Alias> aliases = aliasList.getAliases(id);
+            Optional<Alias> streamAs = aliases.stream()
+                .filter(alias -> alias.getStreamTalkgroupAlias() != null)
+                .findFirst();
+            
+            if(streamAs.isPresent())
             {
-                List<Alias> aliases = aliasList.getAliases(identifier);
-
-                //Check for 'Stream As Talkgroup' alias and use this instead of the decoded TO value.
-                Optional<Alias> streamAs = aliases.stream().filter(alias -> alias.getStreamTalkgroupAlias() != null).findFirst();
-
-                if(streamAs.isPresent())
-                {
-                    return String.valueOf(streamAs.get().getStreamTalkgroupAlias().getValue());
-                }
-            }
-
-            if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
-            {
-                return patchGroupIdentifier.getValue().getPatchGroup().getValue().toString();
-            }
-            else if(identifier instanceof TalkgroupIdentifier talkgroupIdentifier)
-            {
-                return String.valueOf(RadioReferenceDecoder.convertToRadioReferenceTalkgroup(talkgroupIdentifier.getValue(),
-                        talkgroupIdentifier.getProtocol()));
-            }
-            else if(identifier instanceof RadioIdentifier radioIdentifier)
-            {
-                return radioIdentifier.getValue().toString();
+                return String.valueOf(streamAs.get().getStreamTalkgroupAlias().getValue());
             }
         }
-
-        return "0";
     }
 
+    // Fall back to original behavior if no StreamAsTalkgroup found
+    if(identifier != null)
+    {
+        if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
+        {
+            return patchGroupIdentifier.getValue().getPatchGroup().getValue().toString();
+        }
+        else if(identifier instanceof TalkgroupIdentifier talkgroupIdentifier)
+        {
+            return String.valueOf(RadioReferenceDecoder.convertToRadioReferenceTalkgroup(talkgroupIdentifier.getValue(),
+                    talkgroupIdentifier.getProtocol()));
+        }
+        else if(identifier instanceof RadioIdentifier radioIdentifier)
+        {
+            return radioIdentifier.getValue().toString();
+        }
+    }
+
+    return "0";
+}
     /**
      * Creates a formatted string with the Talkgroup Label from the Audio Recording Alias
      * If this is a PatchGroup we return only the first label as the primary talkgroup label.
