@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelDFA;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
@@ -32,6 +33,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Adjacent (ie neighbor) site information
@@ -125,13 +127,14 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
     }
 
     @Override
-    public void receive(ChannelAccessInformation channelAccessInformation)
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap)
     {
         if(channelAccessInformation != null)
         {
             if(channelAccessInformation.isChannel()) //Channel Mode
             {
                 mChannel1 = new NXDNChannelLookup(getMessage().getInt(CHANNEL_1));
+                mChannel1.receive(channelAccessInformation, channelFrequencyMap);
 
                 mNeighborId2 = getMessage().getInt(NEIGHBOR_ID_2);
 
@@ -139,6 +142,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
                 {
                     mLocationID2 = new LocationID(getMessage(), LOCATION_ID_2);
                     mChannel2 = new NXDNChannelLookup(getMessage().getInt(CHANNEL_2));
+                    mChannel2.receive(channelAccessInformation, channelFrequencyMap);
 
                     mNeighborId3 = getMessage().getInt(NEIGHBOR_ID_3);
 
@@ -146,6 +150,7 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
                     {
                         mLocationID3 = new LocationID(getMessage(), LOCATION_ID_3);
                         mChannel3 = new NXDNChannelLookup(getMessage().getInt(CHANNEL_3));
+                        mChannel3.receive(channelAccessInformation, channelFrequencyMap);
 
                         mNeighborId4 = getMessage().getInt(NEIGHBOR_ID_4);
 
@@ -153,30 +158,34 @@ public class AdjacentSiteInformation extends NXDNLayer3Message implements IChann
                         {
                             mLocationID4 = new LocationID(getMessage(), LOCATION_ID_4);
                             mChannel4 = new NXDNChannelLookup(getMessage().getInt(CHANNEL_4));
+                            mChannel4.receive(channelAccessInformation, channelFrequencyMap);
                         }
                     }
                 }
             }
             else //DFA Mode
             {
-                mChannel1 = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(DFA_CHANNEL_1), 0,
+                mChannel1 = new NXDNChannelDFA(getMessage().getInt(DFA_CHANNEL_1), 0,
                         Bandwidth.fromValue(getMessage().getInt(DFA_BANDWIDTH_1)));
+                mChannel1.receive(channelAccessInformation, channelFrequencyMap);
 
                 mNeighborId2 = getMessage().getInt(DFA_NEIGHBOR_ID_2);
 
                 if(mNeighborId2 > 0)
                 {
                     mLocationID2 = new LocationID(getMessage(), DFA_LOCATION_ID_2);
-                    mChannel2 = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(DFA_CHANNEL_2), 0,
+                    mChannel2 = new NXDNChannelDFA(getMessage().getInt(DFA_CHANNEL_2), 0,
                             Bandwidth.fromValue(getMessage().getInt(DFA_BANDWIDTH_2)));
+                    mChannel2.receive(channelAccessInformation, channelFrequencyMap);
 
                     mNeighborId3 = getMessage().getInt(DFA_NEIGHBOR_ID_3);
 
                     if(mNeighborId3 > 0)
                     {
                         mLocationID3 = new LocationID(getMessage(), DFA_LOCATION_ID_3);
-                        mChannel3 = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(DFA_CHANNEL_3), 0,
+                        mChannel3 = new NXDNChannelDFA(getMessage().getInt(DFA_CHANNEL_3), 0,
                                 Bandwidth.fromValue(getMessage().getInt(DFA_BANDWIDTH_3)));
+                        mChannel3.receive(channelAccessInformation, channelFrequencyMap);
                     }
                 }
             }

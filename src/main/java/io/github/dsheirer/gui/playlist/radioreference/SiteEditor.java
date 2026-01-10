@@ -30,6 +30,7 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.Modulation;
@@ -254,19 +255,21 @@ public class SiteEditor extends GridPane
             case NXDN:
                 Flavor flavor = mRadioReferenceDecoder.getFlavor(systemInformation);
 
-                DecodeConfigNXDN decodeConfig = null;
+                DecodeConfigNXDN nxdn = null;
 
                 if(flavor.getName().contains("4800"))
                 {
-                    decodeConfig = new DecodeConfigNXDN(TransmissionMode.M4800);
+                    nxdn = new DecodeConfigNXDN(TransmissionMode.M4800);
                 }
 
-                if(decodeConfig == null)
+                if(nxdn == null)
                 {
-                    decodeConfig = new DecodeConfigNXDN(TransmissionMode.M9600);
+                    nxdn = new DecodeConfigNXDN(TransmissionMode.M9600);
                 }
 
-                return decodeConfig;
+                List<ChannelFrequency> channelMap = mRadioReferenceDecoder.getChannelMap(systemInformation, site);
+                nxdn.setChannelMap(channelMap);
+                return nxdn;
             case P25_PHASE1:
                 DecodeConfiguration p1config = DecoderFactory.getDecodeConfiguration(decoderType);
 

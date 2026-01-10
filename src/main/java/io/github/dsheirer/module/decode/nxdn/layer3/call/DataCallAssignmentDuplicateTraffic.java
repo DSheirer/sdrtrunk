@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.call;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelDFA;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
@@ -32,6 +33,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.CallTimer;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Voice call assignment duplicate, traffic channel version
@@ -88,17 +90,22 @@ public class DataCallAssignmentDuplicateTraffic extends DataCall implements ICha
     }
 
     @Override
-    public void receive(ChannelAccessInformation channelAccessInformation)
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer,ChannelFrequency> channelFrequencyMap)
     {
-        if(channelAccessInformation.isChannel())
+        if(mChannel == null)
         {
-            mChannel = new NXDNChannelLookup(getMessage().getInt(CHANNEL_NUMBER));
+            if(channelAccessInformation.isChannel())
+            {
+                mChannel = new NXDNChannelLookup(getMessage().getInt(CHANNEL_NUMBER));
+            }
+            else
+            {
+                mChannel = new NXDNChannelDFA(getMessage().getInt(OFN), getMessage().getInt(IFN),
+                        Bandwidth.fromValue(getMessage().getInt(BANDWIDTH)));
+            }
         }
-        else
-        {
-            mChannel = new NXDNChannelDFA(channelAccessInformation, getMessage().getInt(OFN), getMessage().getInt(IFN),
-                    Bandwidth.fromValue(getMessage().getInt(BANDWIDTH)));
-        }
+
+        mChannel.receive(channelAccessInformation, channelFrequencyMap);
     }
 
     /**

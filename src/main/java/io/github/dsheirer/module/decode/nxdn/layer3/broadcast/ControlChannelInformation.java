@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelDFA;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
@@ -33,6 +34,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformatio
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelNotification;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Control Channel information for a site
@@ -141,7 +143,7 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
     }
 
     @Override
-    public void receive(ChannelAccessInformation channelAccessInformation)
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap)
     {
         if(channelAccessInformation != null)
         {
@@ -152,7 +154,8 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
                     int ofn = getMessage().getInt(CONTROL_CHANNEL_1_OFN);
                     int ifn = getMessage().getInt(CONTROL_CHANNEL_1_IFN);
                     Bandwidth bandwidth = Bandwidth.fromValue(getMessage().getInt(BANDWIDTH_1));
-                    mChannel1 = new NXDNChannelDFA(channelAccessInformation, ofn, ifn, bandwidth);
+                    mChannel1 = new NXDNChannelDFA(ofn, ifn, bandwidth);
+                    mChannel1.receive(channelAccessInformation, channelFrequencyMap);
                 }
 
                 if(getMessage().get(HAS_CHANNEL_2))
@@ -160,18 +163,21 @@ public class ControlChannelInformation extends NXDNLayer3Message implements ICha
                     int ofn = getMessage().getInt(CONTROL_CHANNEL_2_OFN);
                     int ifn = getMessage().getInt(CONTROL_CHANNEL_2_IFN);
                     Bandwidth bandwidth = Bandwidth.fromValue(getMessage().getInt(BANDWIDTH_2));
-                    mChannel2 = new NXDNChannelDFA(channelAccessInformation, ofn, ifn, bandwidth);
+                    mChannel2 = new NXDNChannelDFA(ofn, ifn, bandwidth);
+                    mChannel2.receive(channelAccessInformation, channelFrequencyMap);
                 }
             }
             else //Channel mode
             {
                 int channel1 = getMessage().getInt(CONTROL_CHANNEL_1);
                 mChannel1 = new NXDNChannelLookup(channel1);
+                mChannel1.receive(channelAccessInformation, channelFrequencyMap);
                 int channel2 = getMessage().getInt(CONTROL_CHANNEL_2);
 
                 if(channel2 > 0)
                 {
                     mChannel2 = new NXDNChannelLookup(channel2);
+                    mChannel2.receive(channelAccessInformation, channelFrequencyMap);
                 }
             }
         }

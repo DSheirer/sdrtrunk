@@ -19,10 +19,13 @@
 package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 import io.github.dsheirer.sample.Listener;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(NXDNMessageProcessor.class);
     private ChannelAccessInformation mChannelAccessInformation;
+    private final Map<Integer, ChannelFrequency> mChannelFrequencyMap = new HashMap<>();
 
     /**
      * Downstream message listener
@@ -67,7 +71,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
             //Enrich messages that carry channel information with the channel access info.
             if(mChannelAccessInformation != null && message instanceof IChannelInformationReceiver receiver)
             {
-                receiver.receive(mChannelAccessInformation);
+                receiver.receive(mChannelAccessInformation, mChannelFrequencyMap);
             }
         }
 

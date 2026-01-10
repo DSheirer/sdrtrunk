@@ -19,23 +19,20 @@
 
 package io.github.dsheirer.module.decode.nxdn.channel;
 
-import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
+import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Base NXDN channel
  */
-public abstract class NXDNChannel implements INXDNChannelDescriptor
+public abstract class NXDNChannel implements IChannelDescriptor, IChannelInformationReceiver
 {
-    private final TransmissionMode mTransmissionMode;
-
     /**
      * Constructs an instance
-     * @param transmissionMode for the channel
      */
-    public NXDNChannel(TransmissionMode transmissionMode)
+    public NXDNChannel()
     {
-        mTransmissionMode = transmissionMode;
     }
 
     @Override
@@ -54,14 +51,6 @@ public abstract class NXDNChannel implements INXDNChannelDescriptor
     public boolean isTDMAChannel()
     {
         return false;
-    }
-
-    /**
-     * Indicates the transmission mode: 4800 or 9600 BPS (2400/4800 baud)
-     */
-    public TransmissionMode getTransmissionMode()
-    {
-        return mTransmissionMode;
     }
 
     @Override

@@ -162,7 +162,7 @@ public class Convolution
         System.out.println("TRANSMITTED: " + encodedCAC);
         System.out.println(" RE-ENCODED: " + encode(decoded));
         System.out.println(" DECODED LENGTH: " + decoded.size());
-        boolean passes = CRCNXDN.checkCAC(decoded);
+        boolean passes = NXDNCRC.checkCAC(decoded);
         System.out.println("Passes: " + passes);
     }
 }

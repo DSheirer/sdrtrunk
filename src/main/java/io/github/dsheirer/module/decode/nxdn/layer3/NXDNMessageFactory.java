@@ -171,16 +171,22 @@ public class NXDNMessageFactory
 
             //Broadcast Messages
             case CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION:
+            case TRAFFIC_OUT_23_DIGITAL_STATION_ID_INFORMATION:
                 return new DigitalStationIDInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_24_SITE_INFORMATION:
+            case TRAFFIC_OUT_24_SITE_INFORMATION:
                 return new SiteInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_25_SERVICE_INFORMATION:
+            case TRAFFIC_OUT_25_SERVICE_INFORMATION:
                 return new ServiceInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
+            case TRAFFIC_OUT_26_CONTROL_CHANNEL_INFORMATION:
                 return new ControlChannelInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
+            case TRAFFIC_OUT_27_ADJACENT_SITE_INFORMATION:
                 return new AdjacentSiteInformation(message, timestamp, type, ran, lich);
             case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
+            case TRAFFIC_OUT_28_FAILURE_STATUS_INFORMATION:
                 return new FailureStatusInformation(message, timestamp, type, ran, lich);
 
             //Mobility Management Messages

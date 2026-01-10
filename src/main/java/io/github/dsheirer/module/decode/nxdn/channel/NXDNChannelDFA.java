@@ -21,13 +21,14 @@ package io.github.dsheirer.module.decode.nxdn.channel;
 
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Bandwidth;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
+import java.util.Map;
 
 /**
  * NXDN channel that uses Direct Frequency Assignment.
  */
 public class NXDNChannelDFA extends NXDNChannel
 {
-    private final ChannelAccessInformation mChannelAccessInformation;
+    private ChannelAccessInformation mChannelAccessInformation;
     private final int mOutboundChannelNumber;
     private final int mInboundChannelNumber;
 
@@ -37,13 +38,16 @@ public class NXDNChannelDFA extends NXDNChannel
      * @param inboundChannelNumber from message
      * @param bandwidth from message
      */
-    public NXDNChannelDFA(ChannelAccessInformation channelAccessInformation, int outboundChannelNumber,
-                          int inboundChannelNumber, Bandwidth bandwidth)
+    public NXDNChannelDFA(int outboundChannelNumber, int inboundChannelNumber, Bandwidth bandwidth)
     {
-        super(bandwidth.getTransmissionMode());
-        mChannelAccessInformation = channelAccessInformation;
         mOutboundChannelNumber = outboundChannelNumber;
         mInboundChannelNumber = inboundChannelNumber;
+    }
+
+    @Override
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap)
+    {
+        mChannelAccessInformation = channelAccessInformation;
     }
 
     @Override

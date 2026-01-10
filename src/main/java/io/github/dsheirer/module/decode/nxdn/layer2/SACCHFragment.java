@@ -45,6 +45,15 @@ public class SACCHFragment extends NXDNMessage
         super(message, timestamp, message.getInt(RADIO_ACCESS_NUMBER), lich);
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = getMessageBuilder();
+        sb.append("SACCH FRAGMENT MSG:").append(getMessage().toHexString());
+        sb.append(" LICH:").append(getLICH());
+        return sb.toString();
+    }
+
     /**
      * SACCH message fragment
      */

@@ -25,7 +25,7 @@ import io.github.dsheirer.bits.IntField;
 /**
  * NXDN CRC check methods.
  */
-public class CRCNXDN
+public class NXDNCRC
 {
     private static final IntField CHECKSUM_CAC = IntField.length16(155);
     private static final IntField CHECKSUM_LONG_CAC = IntField.length16(136);
@@ -48,6 +48,10 @@ public class CRCNXDN
     private static final int CRC_6_FEEDBACK_MASK = 0x20;
     private static final int CRC_6_REGISTER_MASK = 0x3F;
     private static final int CRC_6_TAPS = 0x27; //Taps: S5, S2, S1 and S0
+
+    private static final int CRC_MESSAGE_FEEDBACK_MASK = 0x80000000;
+    private static final int CRC_MESSAGE_REGISTER_MASK = 0xFFFFFFFF;
+    private static final int CRC_MESSAGE_TAPS = 0x4C11DB7; //Taps: S26, S23, S22, S16, S12, S11, S10, S8, S7, S5, S4, S2, S1, S0
 
     /**
      * Performs CRC 16 check against the decoded CAC message.
@@ -110,7 +114,19 @@ public class CRCNXDN
     }
 
     /**
-     * Calculates an checksum and compares it to the transmitted CRC value for the message.
+     * Message CRC check used on the Digital Station ID, Short Data, User Data, etc.
+     * @param message with octets including the 4-byte checksum at the end
+     * @param length of the message that also serves as the first bit of the 32-bit checksum.
+     * @return true if the message passes the CRC check
+     */
+    public static boolean checkMessage(CorrectedBinaryMessage message, int length)
+    {
+        IntField checksum = IntField.length32(length);
+        return checkCRC(message, length, CRC_MESSAGE_REGISTER_MASK, CRC_MESSAGE_FEEDBACK_MASK, CRC_MESSAGE_TAPS, checksum);
+    }
+
+    /**
+     * Calculates an checksum and compares it to the transmitted CRC value for the message using the specified initial fill value
      * @param message to check
      * @param length of the message to check (bit positions: 0 to length - 1)
      * @param registerMask for initial fill and masking the return calculated checksum
@@ -128,7 +144,7 @@ public class CRCNXDN
     }
 
     /**
-     * Calculates the CRC checksum for the message.
+     * Calculates the CRC checksum for the message using the specified initial fill value.
      * @param message to check
      * @param length of the message to check (bit positions: 0 to length - 1)
      * @param registerMask for initial fill and masking the return calculated checksum
@@ -138,7 +154,7 @@ public class CRCNXDN
      */
     public static int getChecksum(CorrectedBinaryMessage message, int length, int registerMask, int feedbackMask, int taps)
     {
-        int registers = registerMask; //Default fill is all ones.
+        int registers = registerMask; //Uses an all-ones initial fill value.
         boolean feedback;
 
         for(int x = 0; x < length; x++)
@@ -154,7 +170,7 @@ public class CRCNXDN
             }
         }
 
-        //Trim the high-order left shift leftovers before returning
+        //Mask any high-order left shift leftovers before returning
         return registers & registerMask;
     }
 }

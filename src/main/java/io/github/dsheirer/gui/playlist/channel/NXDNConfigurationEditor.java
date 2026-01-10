@@ -31,6 +31,8 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
+import io.github.dsheirer.module.decode.nxdn.channel.ObservableChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -47,8 +49,7 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -59,12 +60,15 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
+import org.controlsfx.control.SegmentedButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,13 +86,13 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
-    private TableView<TimeslotFrequency> mTimeslotFrequencyTable;
-    private IntegerTextField mLogicalChannelNumberField;
+    private TableView<ObservableChannelFrequency> mChannelMapTable;
+    private IntegerTextField mChannelField;
     private FrequencyField mDownlinkFrequencyField;
-//    private FrequencyField mUplinkFrequencyField;
     private Button mAddTimeslotFrequencyButton;
-    private Button mDeleteTimeslotFrequencyButton;
+    private Button mDeleteButton;
     private Spinner<Integer> mChannelRotationDelaySpinner;
+    private SegmentedButton mTransmissionModeButton;
 
     /**
      * Constructs an instance
@@ -138,26 +142,34 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
 
             int row = 0;
 
+            Label mode = new Label("Mode:");
+            GridPane.setHalignment(mode, HPos.RIGHT);
+            GridPane.setConstraints(mode, 0, row);
+            gridPane.getChildren().add(mode);
+
+            GridPane.setConstraints(getTransmissionModeButton(), 1, row);
+            gridPane.getChildren().add(getTransmissionModeButton());
+
             Label poolSizeLabel = new Label("Max Traffic Channels");
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
-            GridPane.setConstraints(poolSizeLabel, 0, row);
+            GridPane.setConstraints(poolSizeLabel, 2, row);
             gridPane.getChildren().add(poolSizeLabel);
 
-            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 1, row);
+            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 3, row);
             gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
 
-            Label timeslotTableLabel = new Label("Logical Channel Number (LCN) to Frequency Map. Required for: Connect Plus and Tier-III systems that don't use absolute frequencies.  LSN = Logical Slot Number");
-            GridPane.setHalignment(timeslotTableLabel, HPos.LEFT);
-            GridPane.setConstraints(timeslotTableLabel, 0, ++row, 6, 1);
-            gridPane.getChildren().add(timeslotTableLabel);
+            Label channelMapTableLabel = new Label("Optional Channel Number (LCN) to Frequency Map that is only required for Channel-Mode systems");
+            GridPane.setHalignment(channelMapTableLabel, HPos.LEFT);
+            GridPane.setConstraints(channelMapTableLabel, 0, ++row, 6, 1);
+            gridPane.getChildren().add(channelMapTableLabel);
 
-            GridPane.setConstraints(getTimeslotTable(), 0, ++row, 6, 3);
-            gridPane.getChildren().add(getTimeslotTable());
+            GridPane.setConstraints(getChannelMapTable(), 0, ++row, 6, 3);
+            gridPane.getChildren().add(getChannelMapTable());
 
             VBox buttonsBox = new VBox();
             buttonsBox.setAlignment(Pos.CENTER);
             buttonsBox.setSpacing(10);
-            buttonsBox.getChildren().addAll(getAddTimeslotFrequencyButton(), getDeleteTimeslotFrequencyButton());
+            buttonsBox.getChildren().addAll(getAddTimeslotFrequencyButton(), getDeleteButton());
 
             GridPane.setConstraints(buttonsBox, 6, row, 1, 3);
             gridPane.getChildren().addAll(buttonsBox);
@@ -168,10 +180,10 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             editorBox.setAlignment(Pos.CENTER_LEFT);
             editorBox.setSpacing(5);
 
-            Label lcnLabel = new Label("LCN");
-            editorBox.getChildren().addAll(lcnLabel, getLogicalChannelNumberField());
+            Label lcnLabel = new Label("Channel Number");
+            editorBox.getChildren().addAll(lcnLabel, getChannelField());
 
-            Label downlinkLabel = new Label("Frequency (MHz)");
+            Label downlinkLabel = new Label("Downlink Frequency (MHz)");
             downlinkLabel.setPadding(new Insets(0,0,0,5));
             editorBox.getChildren().addAll(downlinkLabel,getDownlinkFrequencyField());
 
@@ -250,61 +262,101 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         return mEventLogConfigurationEditor;
     }
 
-    private TableView<TimeslotFrequency> getTimeslotTable()
+    private TableView<ObservableChannelFrequency> getChannelMapTable()
     {
-        if(mTimeslotFrequencyTable == null)
+        if(mChannelMapTable == null)
         {
-            mTimeslotFrequencyTable = new TableView<>(FXCollections.observableArrayList(TimeslotFrequency.extractor()));
-            mTimeslotFrequencyTable.setPrefHeight(100.0);
+            mChannelMapTable = new TableView<>(FXCollections.observableArrayList(ObservableChannelFrequency.extractor()));
+            mChannelMapTable.setPrefHeight(100.0);
 
-            TableColumn<TimeslotFrequency,Number> numberColumn = new TableColumn("LCN");
-            numberColumn.setPrefWidth(75);
-            numberColumn.setCellValueFactory(cellData -> cellData.getValue().getNumberProperty());
-            mTimeslotFrequencyTable.getColumns().addAll(numberColumn);
-            mTimeslotFrequencyTable.getSortOrder().add(numberColumn);
+            TableColumn<ObservableChannelFrequency,Number> channelColumn = new TableColumn("Channel");
+            channelColumn.setPrefWidth(100);
+            channelColumn.setCellValueFactory(cellData -> cellData.getValue().channelProperty());
+            mChannelMapTable.getColumns().add(channelColumn);
+            mChannelMapTable.getSortOrder().add(channelColumn);
 
-            TableColumn<TimeslotFrequency,Number> downlinkColumn = new TableColumn("Frequency (MHz)");
-            downlinkColumn.setCellValueFactory(cellData -> cellData.getValue().getDownlinkMHz());
-            downlinkColumn.setPrefWidth(150);
-            mTimeslotFrequencyTable.getColumns().addAll(downlinkColumn);
+            TableColumn<ObservableChannelFrequency,Number> downlinkColumn = new TableColumn("Downlink Frequency (MHz)");
+            downlinkColumn.setCellValueFactory(cellData -> cellData.getValue().downlinkProperty());
+            downlinkColumn.setPrefWidth(200);
+            mChannelMapTable.getColumns().add(downlinkColumn);
 
-            TableColumn<TimeslotFrequency,String> lsnColumn = new TableColumn("IDs (TS1/TS2)");
-            lsnColumn.setPrefWidth(225);
-            lsnColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
-            mTimeslotFrequencyTable.getColumns().addAll(lsnColumn);
-
-
-            mTimeslotFrequencyTable.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> setTimeslot(newValue));
+            mChannelMapTable.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> setChannelFrequency(newValue));
         }
 
-        return mTimeslotFrequencyTable;
+        return mChannelMapTable;
     }
+
+    private SegmentedButton getTransmissionModeButton()
+    {
+        if(mTransmissionModeButton == null)
+        {
+            mTransmissionModeButton = new SegmentedButton();
+            mTransmissionModeButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
+            mTransmissionModeButton.setDisable(true);
+
+            ToggleButton tb4800 = new ToggleButton(TransmissionMode.M4800.getLabel());
+            tb4800.setUserData(TransmissionMode.M4800);
+            mTransmissionModeButton.getButtons().add(tb4800);
+
+            ToggleButton tb9600 = new ToggleButton(TransmissionMode.M9600.getLabel());
+            tb9600.setUserData(TransmissionMode.M9600);
+            mTransmissionModeButton.getButtons().add(tb9600);
+
+            mTransmissionModeButton.getToggleGroup().selectedToggleProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+
+            //Note: there is a weird timing bug with the segmented button where the toggles are not added to
+            //the toggle group until well after the control is rendered.  We attempt to setItem() on the
+            //decode configuration and we're unable to correctly set the bandwidth setting.  As a work
+            //around, we'll listen for the toggles to be added and update them here.  This normally only
+            //happens when we first instantiate the editor and load an item for editing the first time.
+            mTransmissionModeButton.getToggleGroup().getToggles().addListener((ListChangeListener<Toggle>) c ->
+            {
+                //This change event happens when the toggles are added -- we don't need to inspect the change event
+                if(getItem() != null && getItem().getDecodeConfiguration() instanceof DecodeConfigNXDN config)
+                {
+                    //Capture current modified state so that we can reapply after adjusting control states
+                    boolean modified = modifiedProperty().get();
+
+                    TransmissionMode transmissionMode = config.getTransmissionMode();
+
+                    for(Toggle toggle: getTransmissionModeButton().getToggleGroup().getToggles())
+                    {
+                        toggle.setSelected(toggle.getUserData() == transmissionMode);
+                    }
+
+                    modifiedProperty().set(modified);
+                }
+            });
+        }
+
+        return mTransmissionModeButton;
+    }
+
+
 
     /**
      * Sets the specified timeslot frequency into the editor
      */
-    private void setTimeslot(TimeslotFrequency timeslot)
+    private void setChannelFrequency(ObservableChannelFrequency channelFrequency)
     {
         //Preserve the current modified flag state since setting values in the editor will change it.
         boolean modified = modifiedProperty().get();
 
-        getLogicalChannelNumberField().setDisable(timeslot == null);
-        getDownlinkFrequencyField().setDisable(timeslot == null);
-//        getUplinkFrequencyField().setDisable(timeslot == null);
-        getDeleteTimeslotFrequencyButton().setDisable(timeslot == null);
+        getChannelField().setDisable(channelFrequency == null);
+        getDownlinkFrequencyField().setDisable(channelFrequency == null);
+        getDeleteButton().setDisable(channelFrequency == null);
 
-        if(timeslot != null)
+        if(channelFrequency != null)
         {
-            getLogicalChannelNumberField().set(timeslot.getNumber());
-            getDownlinkFrequencyField().set(timeslot.getDownlinkFrequency());
-//            getUplinkFrequencyField().set(timeslot.getUplinkFrequency());
+            getChannelField().set(channelFrequency.channelProperty().get());
+            getDownlinkFrequencyField().set(channelFrequency.downlinkProperty().get());
         }
         else
         {
-            getLogicalChannelNumberField().set(0);
+            getChannelField().set(0);
             getDownlinkFrequencyField().set(0);
-//            getUplinkFrequencyField().set(0);
         }
 
         modifiedProperty().set(modified);
@@ -316,91 +368,62 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         {
             mAddTimeslotFrequencyButton = new Button("Add");
             mAddTimeslotFrequencyButton.setMaxWidth(Double.MAX_VALUE);
-            mAddTimeslotFrequencyButton.setOnAction(event -> addTimeslot());
+            mAddTimeslotFrequencyButton.setOnAction(event -> addChannelFrequency());
         }
 
         return mAddTimeslotFrequencyButton;
     }
 
     /**
-     * Adds a new timeslot frequency value and makes a best guess of the next sequential LSN number
+     * Adds a new channel frequency entry
      */
-    private void addTimeslot()
+    private void addChannelFrequency()
     {
-        int lsn = 1;
-
-        while(hasLSN(lsn) && lsn <= 64) //64 is an arbitrary value to keep it from going too high
-        {
-            lsn++;
-        }
-
-        TimeslotFrequency timeslotFrequency = new TimeslotFrequency();
-        timeslotFrequency.setNumber(lsn);
-        getTimeslotTable().getItems().add(timeslotFrequency);
-        getTimeslotTable().scrollTo(timeslotFrequency);
-        getTimeslotTable().getSelectionModel().select(timeslotFrequency);
+        ObservableChannelFrequency ocf = new ObservableChannelFrequency();
+        getChannelMapTable().getItems().add(ocf);
+        getChannelMapTable().scrollTo(ocf);
+        getChannelMapTable().getSelectionModel().select(ocf);
         modifiedProperty().set(true);
     }
 
-    /**
-     * Searches the current timeslot frequency list to determine if the specified lsn is already listed
-     */
-    private boolean hasLSN(int lsn)
+    private Button getDeleteButton()
     {
-        for(TimeslotFrequency timeslotFrequency: getTimeslotTable().getItems())
+        if(mDeleteButton == null)
         {
-            if(timeslotFrequency.getNumber() == lsn)
-            {
-                return true;
-            }
-        }
+            mDeleteButton = new Button("Delete");
+            mDeleteButton.setDisable(true);
+            mDeleteButton.setMaxWidth(Double.MAX_VALUE);
+            mDeleteButton.setOnAction(event -> {
+                ObservableChannelFrequency selected = getChannelMapTable().getSelectionModel().getSelectedItem();
 
-        return false;
-    }
-
-    private Button getDeleteTimeslotFrequencyButton()
-    {
-        if(mDeleteTimeslotFrequencyButton == null)
-        {
-            mDeleteTimeslotFrequencyButton = new Button("Delete");
-            mDeleteTimeslotFrequencyButton.setDisable(true);
-            mDeleteTimeslotFrequencyButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteTimeslotFrequencyButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+                if(selected != null)
                 {
-                    TimeslotFrequency selected = getTimeslotTable().getSelectionModel().getSelectedItem();
-
-                    if(selected != null)
-                    {
-                        getTimeslotTable().getItems().remove(selected);
-                        modifiedProperty().set(true);
-                    }
+                    getChannelMapTable().getItems().remove(selected);
+                    modifiedProperty().set(true);
                 }
             });
         }
 
-        return mDeleteTimeslotFrequencyButton;
+        return mDeleteButton;
     }
 
-    private IntegerTextField getLogicalChannelNumberField()
+    private IntegerTextField getChannelField()
     {
-        if(mLogicalChannelNumberField == null)
+        if(mChannelField == null)
         {
-            mLogicalChannelNumberField = new IntegerTextField();
-            mLogicalChannelNumberField.setDisable(true);
-            mLogicalChannelNumberField.setPrefWidth(65);
-            mLogicalChannelNumberField.textProperty().addListener((observable, oldValue, newValue) -> {
-                TimeslotFrequency selected = getTimeslotTable().getSelectionModel().getSelectedItem();
+            mChannelField = new IntegerTextField();
+            mChannelField.setDisable(true);
+            mChannelField.setPrefWidth(65);
+            mChannelField.textProperty().addListener((observable, oldValue, newValue) -> {
+                ObservableChannelFrequency selected = getChannelMapTable().getSelectionModel().getSelectedItem();
 
                 if(selected != null)
                 {
-                    Integer value = mLogicalChannelNumberField.get();
+                    Integer value = mChannelField.get();
 
                     if(value != null)
                     {
-                        selected.setNumber(value);
+                        selected.channelProperty().set(value);
                     }
                 }
 
@@ -408,7 +431,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             });
         }
 
-        return mLogicalChannelNumberField;
+        return mChannelField;
     }
 
     private FrequencyField getDownlinkFrequencyField()
@@ -422,11 +445,11 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
                 @Override
                 public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue)
                 {
-                    TimeslotFrequency selected = getTimeslotTable().getSelectionModel().getSelectedItem();
+                    ObservableChannelFrequency selected = getChannelMapTable().getSelectionModel().getSelectedItem();
 
                     if(selected != null)
                     {
-                        selected.setDownlinkFrequency(mDownlinkFrequencyField.get());
+                        selected.downlinkProperty().set(mDownlinkFrequencyField.get());
                     }
 
                     modifiedProperty().set(true);
@@ -436,35 +459,6 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
 
         return mDownlinkFrequencyField;
     }
-
-//    private FrequencyField getUplinkFrequencyField()
-//    {
-//        if(mUplinkFrequencyField == null)
-//        {
-//            mUplinkFrequencyField = new FrequencyField();
-//            mUplinkFrequencyField.setDisable(true);
-//            mUplinkFrequencyField.textProperty().addListener(new ChangeListener<String>()
-//            {
-//                @Override
-//                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue)
-//                {
-//                    TimeslotFrequency selected = getTimeslotTable().getSelectionModel().getSelectedItem();
-//
-//                    if(selected != null)
-//                    {
-//                        selected.setUplinkFrequency(mUplinkFrequencyField.get());
-//                        int lsn = selected.getNumber();
-//                        selected.setNumber(-1);
-//                        selected.setNumber(lsn);
-//                    }
-//
-//                    modifiedProperty().set(true);
-//                }
-//            });
-//        }
-//
-//        return mUplinkFrequencyField;
-//    }
 
     private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
     {
@@ -530,27 +524,34 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
+        getTransmissionModeButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
-        getTimeslotTable().getItems().clear();
-        getTimeslotTable().setDisable(config == null);
+        getChannelMapTable().getItems().clear();
+        getChannelMapTable().setDisable(config == null);
         getAddTimeslotFrequencyButton().setDisable(config == null);
-        getDeleteTimeslotFrequencyButton().setDisable(true);
-        getLogicalChannelNumberField().set(0);
-        getLogicalChannelNumberField().setDisable(true);
+        getDeleteButton().setDisable(true);
+        getChannelField().set(0);
+        getChannelField().setDisable(true);
         getDownlinkFrequencyField().set(0);
         getDownlinkFrequencyField().setDisable(true);
-//        getUplinkFrequencyField().set(0);
-//        getUplinkFrequencyField().setDisable(true);
         getChannelRotationDelaySpinner().setDisable(config == null);
 
         if(config instanceof DecodeConfigNXDN configNXDN)
         {
-//            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(configNXDN.getTrafficChannelPoolSize());
-//
-//            for(TimeslotFrequency timeslotFrequency: configNXDN.getTimeslotMap())
-//            {
-//                getTimeslotTable().getItems().add(timeslotFrequency.copy());
-//            }
+            for(ToggleButton toggle: getTransmissionModeButton().getButtons())
+            {
+                if(toggle.getUserData() == configNXDN.getTransmissionMode())
+                {
+                    toggle.setSelected(true);
+                }
+            }
+
+            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(configNXDN.getTrafficChannelPoolSize());
+
+            for(ChannelFrequency channelFrequency: configNXDN.getChannelMap())
+            {
+                getChannelMapTable().getItems().add(new ObservableChannelFrequency(channelFrequency));
+            }
         }
         else
         {
@@ -573,8 +574,19 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             config = new DecodeConfigNXDN(TransmissionMode.M9600);
         }
 
-//        config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
-//        config.setTimeslotMap(new ArrayList<>(getTimeslotTable().getItems()));
+        TransmissionMode selected = (TransmissionMode)getTransmissionModeButton().getToggleGroup().selectedToggleProperty().get().getUserData();
+        config.setTransmissionMode(selected);
+
+        config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
+        
+        List<ChannelFrequency> channelFrequencies = new ArrayList<>();
+        
+        for(ObservableChannelFrequency ocf: getChannelMapTable().getItems())
+        {
+            channelFrequencies.add(ocf.getChannel());
+        }
+        
+        config.setChannelMap(channelFrequencies);
         getItem().setDecodeConfiguration(config);
     }
 

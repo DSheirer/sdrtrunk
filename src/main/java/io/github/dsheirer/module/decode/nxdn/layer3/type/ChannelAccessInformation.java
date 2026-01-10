@@ -135,7 +135,7 @@ public class ChannelAccessInformation
             case 1 -> 100_000_000;
             case 2 -> 330_000_000;
             case 3 -> 400_000_000;
-            default -> 450_000_000; //TODO: how do you access the system defined value?
+            default -> 450_000_000;
         };
     }
 }

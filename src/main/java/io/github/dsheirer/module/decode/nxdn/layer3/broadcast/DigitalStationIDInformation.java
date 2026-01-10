@@ -25,6 +25,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
+import io.github.dsheirer.module.decode.nxdn.layer3.coding.NXDNCRC;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.StationIDOption;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,7 @@ public class DigitalStationIDInformation extends NXDNLayer3Message
     private static final IntField OPTION = IntField.length8(OCTET_1);
     private StationIDOption mStationIDOption;
     private String mCharacters;
+    private Boolean mCharacterCRC;
 
     /**
      * Constructs an instance
@@ -56,18 +58,30 @@ public class DigitalStationIDInformation extends NXDNLayer3Message
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("DIGITAL STATION ID ");
-        sb.append(getStationIDOption());
+        sb.append("DIGITAL STATION ID");
         if(getStationIDOption().isComplete())
         {
-            sb.append(" ID:").append(getCharacters());
+            sb.append(":").append(getCharacters());
+            sb.append(" CRC:").append(isValidCharacterCRC() ? "PASS" : "FAIL");
         }
         else
         {
-            sb.append(" FRAGMENT:").append(getCharacters());
+            sb.append(" PARTIAL:").append(getCharacters());
         }
 
-        return super.toString();
+        sb.append(" ").append(getStationIDOption());
+        sb.append(" MSG:").append(getMessage().toHexString());
+        return sb.toString();
+    }
+
+    public boolean isValidCharacterCRC()
+    {
+        if(mCharacterCRC == null)
+        {
+            mCharacterCRC = NXDNCRC.checkMessage(getMessage().getSubMessage(OCTET_2, getMessage().size()), getStationIDOption().getValue() * 8);
+        }
+
+        return mCharacterCRC;
     }
 
     /**
@@ -93,8 +107,10 @@ public class DigitalStationIDInformation extends NXDNLayer3Message
             StringBuilder sb = new StringBuilder();
 
             int pointer = OCTET_2;
+            int length = OCTET_2 + (8 * getStationIDOption().getValue());
+            length = Math.min(length, getMessage().size());
 
-            while(pointer < getMessage().size())
+            while(pointer < length)
             {
                 IntField field = IntField.length8(pointer);
                 sb.append((char)(0xFF & getMessage().getInt(field)));

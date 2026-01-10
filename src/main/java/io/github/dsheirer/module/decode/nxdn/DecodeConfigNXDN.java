@@ -23,24 +23,32 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * NXDN decoder configuration
  */
 public class DecodeConfigNXDN extends DecodeConfiguration
 {
-    private static final ChannelSpecification CHANNEL_4800 = new ChannelSpecification(12500.0, 6250, 3000.0, 3125.0);
-    private static final ChannelSpecification CHANNEL_9600 = new ChannelSpecification(25000.0, 12500, 5750.0, 6250.0);
-    private TransmissionMode mTransmissionMode;
+    public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
+    public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
+    public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
+    private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
+
+    private static final ChannelSpecification CHANNEL_4800 = new ChannelSpecification(9600.0, 6250, 2600.0, 3125.0);
+    private static final ChannelSpecification CHANNEL_9600 = new ChannelSpecification(19200.0, 12500, 5200.0, 6250.0);
+    private TransmissionMode mTransmissionMode = TransmissionMode.M9600;
+    private List<ChannelFrequency> mChannelMap = new ArrayList<>();
 
     /**
      * Default constructor for Jackson.
      */
     public DecodeConfigNXDN()
     {
-        this(TransmissionMode.M9600);
     }
 
     /**
@@ -50,6 +58,48 @@ public class DecodeConfigNXDN extends DecodeConfiguration
     public DecodeConfigNXDN(TransmissionMode transmissionMode)
     {
         mTransmissionMode = transmissionMode;
+    }
+
+    /**
+     * Optional user-provided channel to frequency mapping
+     * @return map
+     */
+    @JacksonXmlProperty(localName = "channelMap")
+    public List<ChannelFrequency> getChannelMap()
+    {
+        return mChannelMap;
+    }
+
+    /**
+     * Sets the optional user-provided channel to frequency mapping
+     * @param channelMap with entries to configure channels
+     */
+    public void setChannelMap(List<ChannelFrequency> channelMap)
+    {
+        mChannelMap = channelMap;
+    }
+
+    /**
+     * Traffic channel pool size.
+     * @return
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "traffic_channel_pool_size")
+    public int getTrafficChannelPoolSize()
+    {
+        return mTrafficChannelPoolSize;
+    }
+
+    /**
+     * Sets the traffic channel pool size which is the maximum number of
+     * simultaneous traffic channels that can be allocated.
+     *
+     * This limits the maximum calls so that busy systems won't cause more
+     * traffic channels to be allocated than the decoder/software/host computer
+     * can support.
+     */
+    public void setTrafficChannelPoolSize(int size)
+    {
+        mTrafficChannelPoolSize = size;
     }
 
     /**

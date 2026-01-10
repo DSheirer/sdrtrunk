@@ -46,8 +46,9 @@ public class UnknownMessage extends NXDNLayer3Message
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append(" UNKNOWN/UNRECOGNIZED MESSAGE TYPE ").append(getMessageType());
+        sb.append("UNKNOWN TYPE ").append(getMessageType());
         sb.append(" MSG:").append(getMessage().toHexString());
+        sb.append(" LICH:").append(getLICH());
         return sb.toString();
     }
 

@@ -24,6 +24,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
+import io.github.dsheirer.util.ByteUtil;
 import java.util.Collections;
 import java.util.List;
 
@@ -54,7 +55,14 @@ public class Audio extends NXDNMessage
     @Override
     public String toString()
     {
-        return getMessageBuilder().append(" AUDIO FRAMES").toString();
+        StringBuilder sb = getMessageBuilder().append("AUDIO FRAMES");
+
+        for(byte[] frame: mAudioFrames)
+        {
+            sb.append(" ").append(ByteUtil.toHexString(frame));
+        }
+
+        return sb.toString();
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ public class StationIDOption
     {
         if(isStart())
         {
-            return "MESSAGE 1 CHARACTER COUNT:" + getValue();
+            return "MESSAGE #1 CHARACTER COUNT:" + getValue();
         }
         else if(isEnd())
         {

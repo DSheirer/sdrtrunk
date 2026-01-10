@@ -19,7 +19,9 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
 
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
+import java.util.Map;
 
 /**
  * Interface for messages that require a channel access information structure when calculating channel frequency values.
@@ -28,5 +30,10 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformatio
  */
 public interface IChannelInformationReceiver
 {
-    void receive(ChannelAccessInformation channelAccessInformation);
+    /**
+     * Provides the latest channel access information and any optional channel:frequency mapping entries.
+     * @param channelAccessInformation from the control channel
+     * @param channelFrequencyMap provided by the user that maps each channel number to a frequency.
+     */
+    void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap);
 }

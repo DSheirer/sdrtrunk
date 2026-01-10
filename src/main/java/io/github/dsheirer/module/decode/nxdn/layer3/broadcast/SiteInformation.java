@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
@@ -33,11 +33,12 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.RestrictionInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ServiceInfo;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Site information
  */
-public class SiteInformation extends NXDNLayer3Message
+public class SiteInformation extends NXDNLayer3Message implements IChannelInformationReceiver
 {
     private static final int LOCATION_ID = OCTET_1;
     private static final int CHANNEL_STRUCTURE = OCTET_4;
@@ -54,8 +55,8 @@ public class SiteInformation extends NXDNLayer3Message
     private ServiceInfo mServiceInfo;
     private RestrictionInformation mRestrictionInformation;
     private ChannelAccessInformation mChannelAccessInformation;
-    private NXDNChannel mChannel1;
-    private NXDNChannel mChannel2;
+    private NXDNChannelLookup mChannel1;
+    private NXDNChannelLookup mChannel2;
 
     /**
      * Constructs an instance
@@ -75,18 +76,18 @@ public class SiteInformation extends NXDNLayer3Message
     {
         StringBuilder sb = getMessageBuilder();
         sb.append(getLocationID());
-        if(getChannelAccessInformation().isChannel() && hasChannel1())
+        if(hasChannel1())
         {
-            sb.append(" CONTROL CHANNEL1:").append(getChannel1());
+            sb.append(" CONTROL CHANNEL 1:").append(getChannel1());
 
             if(hasChannel2())
             {
-                sb.append(" CONTROL CHANNEL2:").append(getChannel2());
+                sb.append(" CONTROL CHANNEL 2:").append(getChannel2());
             }
         }
         else
         {
-            sb.append(" USING DFA CHANNELS");
+            sb.append(" SITE USES DIRECT FREQUENCY ALLOCATION (DFA) CHANNELS");
         }
         sb.append(" ADJACENT SITES:").append(getAdjacentSiteAllocation());
         sb.append(" NXDN VER:").append(getVersionNumber());
@@ -99,7 +100,7 @@ public class SiteInformation extends NXDNLayer3Message
      * Control channel 1
      * @return channel instance or null if the site is configured for DFA
      */
-    public NXDNChannel getChannel1()
+    public NXDNChannelLookup getChannel1()
     {
         if(mChannel1 == null && getChannelAccessInformation().isChannel())
         {
@@ -121,11 +122,16 @@ public class SiteInformation extends NXDNLayer3Message
      * Control channel 2
      * @return channel instance or null if the site is configured for DFA
      */
-    public NXDNChannel getChannel2()
+    public NXDNChannelLookup getChannel2()
     {
         if(mChannel2 == null && getChannelAccessInformation().isChannel())
         {
-            mChannel2 = new NXDNChannelLookup(getMessage().getInt(CONTROL_CHANNEL_2));
+            int channelNumber = getMessage().getInt(CONTROL_CHANNEL_2);
+
+            if(channelNumber > 0)
+            {
+                mChannel2 = new NXDNChannelLookup(channelNumber);
+            }
         }
 
         return mChannel2;
@@ -136,7 +142,7 @@ public class SiteInformation extends NXDNLayer3Message
      */
     public boolean hasChannel2()
     {
-        return getChannel1() != null;
+        return getChannel2() != null;
     }
 
     /**
@@ -224,5 +230,23 @@ public class SiteInformation extends NXDNLayer3Message
     public List<Identifier> getIdentifiers()
     {
         return getLocationID().getIdentifiers();
+    }
+
+    /**
+     * Provides the latest channel access information and any optional channel:frequency mapping entries.
+     * @param channelAccessInformation from the control channel
+     * @param channelFrequencyMap provided by the user that maps each channel number to a frequency.
+     */
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap)
+    {
+        if(hasChannel1())
+        {
+            getChannel1().receive(channelAccessInformation, channelFrequencyMap);
+        }
+
+        if(hasChannel2())
+        {
+            getChannel2().receive(channelAccessInformation, channelFrequencyMap);
+        }
     }
 }

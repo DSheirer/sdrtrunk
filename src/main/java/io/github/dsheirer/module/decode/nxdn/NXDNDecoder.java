@@ -62,7 +62,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
 
-    private final NXDNDemodulator mSymbolProcessor;
+    private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNMessageProcessor mMessageProcessor = new NXDNMessageProcessor();
     private final PowerMonitor mPowerMonitor = new PowerMonitor();
@@ -92,7 +92,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         mSymbolRate = config.getTransmissionMode().getSymbolRate();
         mMessageProcessor.setMessageListener(getMessageListener());
         mMessageFramer = new NXDNMessageFramer(mMessageProcessor);
-        mSymbolProcessor = new NXDNDemodulator(mMessageFramer, this);
+        mSymbolProcessor = new NXDNSymbolProcessor(mMessageFramer, this);
     }
 
     @Override
@@ -107,9 +107,11 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
      */
     public void setSampleRate(double sampleRate)
     {
-        if(sampleRate <= mSymbolRate * 2)
+        float samplesPerSymbol = (float)sampleRate / mConfig.getTransmissionMode().getSymbolRate();
+
+        if(samplesPerSymbol <= 4.0f)
         {
-            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " + mSymbolRate + " symbol rate)");
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be at least " + (mConfig.getTransmissionMode().getSymbolRate() * 4) + " Hz");
         }
 
         mPowerMonitor.setSampleRate((int)sampleRate);
@@ -117,15 +119,10 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         int decimation = 1;
 
         //Identify decimation that gets us as close to 4.0 Samples Per Symbol as possible (19.2 kHz)
-        while((sampleRate / decimation) >= 38400)
+        while(samplesPerSymbol > 8.0)
         {
             decimation *= 2;
-        }
-
-        //Decimate a further 2x for 4800 BPS modulation
-        if(mConfig.getTransmissionMode() == TransmissionMode.M4800)
-        {
-            decimation *= 2;
+            samplesPerSymbol /= 2;
         }
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
@@ -147,7 +144,6 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
         mDemodulator = FmDemodulatorFactory.getFmDemodulator();
 
-        float samplesPerSymbol = decimatedSampleRate / mConfig.getTransmissionMode().getSymbolRate();
         mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
         mMessageProcessor.setMessageListener(getMessageListener());
     }
@@ -308,11 +304,19 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         DecodeConfigNXDN config = null;
 //        String directory = "D:\\Recordings\\NXDN\\"; //Windows
         String directory = "/media/denny/T9/Recordings/NXDN/"; //Linux
-//        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
-//        config = new DecodeConfigNXDN(TransmissionMode.M9600);
-        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
-        config = new DecodeConfigNXDN(TransmissionMode.M4800);
 
+        //NXDN 9600 Channels
+        config = new DecodeConfigNXDN(TransmissionMode.M9600);
+        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
+
+        //NXDN 4800 Channels
+//        config = new DecodeConfigNXDN(TransmissionMode.M4800);
+//        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
+        //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
+//        String file = directory + "20260104_065056_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
+//        String file = directory + "20260104_065240_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
+
+        System.out.println("Processing File: " + file);
         boolean autoReplay = false;
 
         NXDNDecoder decoder = new NXDNDecoder(config);
@@ -342,6 +346,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
             });
             source.start();
             decoder.setSampleRate(source.getSampleRate());
+            System.out.println("Recording File Sample Rate: " + source.getSampleRate());
 
             while(true)
             {

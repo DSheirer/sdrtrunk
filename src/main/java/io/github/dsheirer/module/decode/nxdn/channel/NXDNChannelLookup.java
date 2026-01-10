@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,15 @@
 
 package io.github.dsheirer.module.decode.nxdn.channel;
 
-import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
+import java.util.Map;
 
 /**
  * NXDN channel that uses a lookup table for the frequency values.
  */
 public class NXDNChannelLookup extends NXDNChannel
 {
-    private ChannelLookup mChannelLookup;
+    private ChannelFrequency mChannelFrequency;
     private final int mChannelNumber;
 
     /**
@@ -35,28 +36,13 @@ public class NXDNChannelLookup extends NXDNChannel
      */
     public NXDNChannelLookup(int channelNumber)
     {
-        super(TransmissionMode.M9600); //As a default until the channel lookup is assigned.
         mChannelNumber = channelNumber;
     }
 
     @Override
-    public TransmissionMode getTransmissionMode()
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap)
     {
-        if(mChannelLookup != null)
-        {
-            return mChannelLookup.getTransmissionMode();
-        }
-
-        return super.getTransmissionMode();
-    }
-
-    /**
-     * Sets the channel lookup from a lookup table.
-     * @param channelLookup to assign
-     */
-    public void setChannelLookup(ChannelLookup channelLookup)
-    {
-        mChannelLookup = channelLookup;
+        mChannelFrequency = channelFrequencyMap.get(mChannelNumber);
     }
 
     /**
@@ -70,9 +56,9 @@ public class NXDNChannelLookup extends NXDNChannel
     @Override
     public long getDownlinkFrequency()
     {
-        if(mChannelLookup != null)
+        if(mChannelFrequency != null)
         {
-            return mChannelLookup.getDownlinkFrequency();
+            return mChannelFrequency.getDownlink();
         }
 
         return 0;
@@ -81,11 +67,37 @@ public class NXDNChannelLookup extends NXDNChannel
     @Override
     public long getUplinkFrequency()
     {
-        if(mChannelLookup != null)
+        if(mChannelFrequency != null)
         {
-            return mChannelLookup.getUplinkFrequency();
+            return mChannelFrequency.getUplink();
         }
 
         return 0;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if(mChannelFrequency != null)
+        {
+            sb.append("DN:").append(getDownlinkFrequency() / 1E6D);
+
+            long up = getUplinkFrequency();
+
+            if(up > 0)
+            {
+                sb.append(" UP:").append(up / 1E6D);
+            }
+
+            sb.append(" MHZ");
+        }
+        else
+        {
+            sb.append("CHANNEL-MODE [" + mChannelNumber + "] IS MISSING CHANNEL:FREQUENCY MAPPING");
+        }
+
+        return sb.toString();
     }
 }

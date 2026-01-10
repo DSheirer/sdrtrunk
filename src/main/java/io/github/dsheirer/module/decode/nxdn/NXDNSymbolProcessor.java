@@ -38,14 +38,10 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 /**
- * NXDN Demodulator.
+ * NXDN symbol processor provides symbol timing recovery and sync detection.
  */
-public class NXDNDemodulator
+public class NXDNSymbolProcessor
 {
-    private static final float EQUALIZER_LOOP_GAIN = 0.15f;
-    private static final float EQUALIZER_MAXIMUM_PLL = (float)(Math.PI / 3.0); //+/- 800 Hz
-    private static final float EQUALIZER_MAXIMUM_GAIN = 13f;
-    private static final float EQUALIZER_RECALIBRATE_THRESHOLD = (float)(Math.PI / 8.0);
     private static final float SOFT_SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
     private static final float SYNC_THRESHOLD_DETECTION = 35;
     private static final float SYNC_THRESHOLD_OPTIMIZED = 40;
@@ -80,12 +76,16 @@ public class NXDNDemodulator
     private int mBufferReloadThreshold;
     private int mSymbolsSinceLastSync = 0;
     private int mDebugSymbolCounter = 0;
+    private int mDebugSampleCounter = 0;
+
+    private int mDebugStart = 1_096_400; //NXDN4800 traffic channel sample 1
+//    private int mDebugStart = 0;
 
     /**
      * Constructs an instance
      * @param messageFramer to receive symbol decisions (dibits) and sync notifications.
      */
-    public NXDNDemodulator(NXDNMessageFramer messageFramer, FeedbackDecoder feedbackDecoder)
+    public NXDNSymbolProcessor(NXDNMessageFramer messageFramer, FeedbackDecoder feedbackDecoder)
     {
         mMessageFramer = messageFramer;
         mFeedbackDecoder = feedbackDecoder;
@@ -148,7 +148,12 @@ public class NXDNDemodulator
             {
                 bufferPointer++;
                 samplePoint--;
+                mDebugSampleCounter++;
 
+                if(mDebugSampleCounter % 20_000 == 0)
+                {
+                    System.out.println("SAMPLE COUNTER: " + mDebugSampleCounter);
+                }
                 if(samplePoint < 1)
                 {
                     mDebugSymbolCounter++;
@@ -168,7 +173,7 @@ public class NXDNDemodulator
                     samplePoint += mEqualizer.getAdjustment(softSymbol, symbol, bufferPointer);
 
                     //Debug utility for viewing demodulation process
-//                    getSyncResultsViewer().symbol(softSymbol);
+                    getSyncResultsViewer().symbol(softSymbol);
 
                     mMessageFramer.process(symbol);
 
@@ -190,11 +195,16 @@ public class NXDNDemodulator
                     float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
 
                     boolean sync = (scorePrimary > SYNC_THRESHOLD_DETECTION) || (scoreLag > SYNC_THRESHOLD_DETECTION);
-//                    System.out.println(mDebugSymbolCounter +
-//                            "\tPRIMARY:" + scorePrimary +
-//                            "\tLAG:" + scoreLag +
-//                            "\tCONTROL:" + scoreControl +
-//                            (sync ? " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< sync detected: " + symbolsSinceLastSync : ""));
+
+//                    if(scorePrimary > 30 || scoreLag > 30)
+//                    {
+//                        System.out.println(mDebugSymbolCounter +
+//                                "\tPRIMARY:" + scorePrimary +
+//                                "\tLAG:" + scoreLag +
+//                                "\tCONTROL:" + scoreControl +
+//                                (sync ? " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< sync detected: " + symbolsSinceLastSync : ""));
+//                    }
+
 
                     if(scorePrimary > 40)
                     {
@@ -211,10 +221,7 @@ public class NXDNDemodulator
                     {
                         mEqualizer.apply(correctionCandidate);
                         mSamplePoint += correctionCandidate.getTimingCorrection();
-                    }
 
-                    if(sync)
-                    {
                         mMessageFramer.syncDetected();
                         symbolsSinceLastSync = 0;
                         visualizeSyncDetect(scorePrimary, true, "test", bufferPointer, samplePoint);
@@ -258,7 +265,7 @@ public class NXDNDemodulator
     {
         mSamplesPerSymbol = samplesPerSymbol;
         mMaxFineSyncTimingAdjustment = samplesPerSymbol * .2; // 1/5th of a symbol period
-        mNoiseStandardDeviationThreshold = Dibit.D01_PLUS_3.getIdealPhase() * 2 / mSamplesPerSymbol * 1.2; //120% of optimal
+        mNoiseStandardDeviationThreshold = .2;
         mSamplePoint = samplesPerSymbol;
         mSamplePointAdjustmentMax = samplesPerSymbol / 2;
         mSamplePointAdjustmentIncrement = samplesPerSymbol / 100.0;
@@ -268,6 +275,9 @@ public class NXDNDemodulator
         mBuffer = new float[bufferLength];
         mBufferReloadThreshold = mBuffer.length - (int)Math.ceil(samplesPerSymbol * (DIBIT_LENGTH_NID + 1));
         mBufferPointer = mBufferReloadThreshold;
+
+        //Gain for 5.208 SPS is approximately 6.0
+
     }
 
     /**
@@ -355,7 +365,7 @@ public class NXDNDemodulator
      */
     public void visualizeSyncDetect(float score, boolean primary, String tag, int bufferPointer, double samplePoint)
     {
-        if(true)
+        if(mDebugSampleCounter < mDebugStart)
         {
             return;
         }
@@ -396,7 +406,7 @@ public class NXDNDemodulator
         CountDownLatch countDownLatch = new CountDownLatch(1);
         getSyncResultsViewer().receive(symbols, mSyncDetector.getSyncSymbols(), samples, syncIntervals, mEqualizer.mPll, mEqualizer.mGain,
                 "Score: " + score + (primary ? " PRIMARY " : " SECONDARY ") + (mFineSync ? "FINE " : "COARSE ") +
-                        " EQ-B:" + mEqualizer.mPll + " EQ-G:" + mEqualizer.mGain + " " + tag, countDownLatch);
+                        " EQ-B:" + mEqualizer.mPll + " EQ-G:" + mEqualizer.mGain + " " + tag + " SAMPLES:" + mDebugSampleCounter, countDownLatch);
 
         try
         {
@@ -413,7 +423,7 @@ public class NXDNDemodulator
      */
     public void visualizeSymbols(int bufferPointer, double samplePoint)
     {
-        if(true)
+        if(mDebugSampleCounter < mDebugStart)
         {
             return;
         }
@@ -454,7 +464,7 @@ public class NXDNDemodulator
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         getSyncResultsViewer().receive(symbols, decisions, samples, syncIntervals, mEqualizer.mPll, mEqualizer.mGain,
-                "PLL:" + mEqualizer.mPll + " Gain:" + mEqualizer.mGain, countDownLatch);
+                "PLL:" + mEqualizer.mPll + " Gain:" + mEqualizer.mGain + " SAMPLES:" + mDebugSampleCounter, countDownLatch);
 
         try
         {
@@ -484,6 +494,11 @@ public class NXDNDemodulator
         {
             standardDeviation.increment(mBuffer[i] - mBuffer[i + 1]);
         }
+
+//        if(mDebugSampleCounter > mDebugStart)
+//        {
+//            System.out.println("Samples: " + mDebugSampleCounter + " Detection Standard Deviation: " + standardDeviation.getResult() + " Threshold: " + mNoiseStandardDeviationThreshold);
+//        }
 
         return standardDeviation.getResult() > mNoiseStandardDeviationThreshold;
     }
@@ -672,9 +687,29 @@ public class NXDNDemodulator
      */
     class Equalizer
     {
+        private static final float EQUALIZER_LOOP_GAIN = 0.15f;
+        private static final float EQUALIZER_MAXIMUM_PLL = (float)(Math.PI / 3.0); //+/- 800 Hz
+        private static final float EQUALIZER_RECALIBRATE_THRESHOLD = (float)(Math.PI / 8.0);
         private boolean mInitialized = false;
         private float mPll = 0.0f;
-        private float mGain = 12.0f;
+        private float mGain = 6.0f;
+        private float mGainInitial = 6.0f;
+        private float mGainMax = 7.0f;
+        private float mGainMin = 5.0f;
+
+        /**
+         * Updates the initial, min and max gain values from the samples per symbol
+         * @param samplesPerSymbol for the incoming stream
+         */
+        public void configure(double samplesPerSymbol)
+        {
+            float ratio = (float)samplesPerSymbol / 5.208f;
+            float gain = 6.0f * ratio;
+            mGainInitial = gain;
+            mGain = gain;
+            mGainMax = gain + 1;
+            mGainMin = gain - 1;
+        }
 
         /**
          * Reset after center frequency change or PPM change.
@@ -683,6 +718,7 @@ public class NXDNDemodulator
         {
             mInitialized = false;
             mPll = 0.0f;
+            mGain = mGainInitial;
         }
 
         /**
@@ -777,7 +813,7 @@ public class NXDNDemodulator
          */
         public float equalize(float symbol)
         {
-            return (symbol + mPll) * mGain;
+            return symbol * mGain + mPll;
         }
 
         /**
@@ -949,12 +985,12 @@ public class NXDNDemodulator
             //apply as new settings on initial sync detect or any time an excess balance correction is supplied.
             if(mInitialized)
             {
-//                mPll += (correction.getPllAdjustment() * EQUALIZER_LOOP_GAIN);
+                mPll += (correction.getPllAdjustment() * EQUALIZER_LOOP_GAIN);
                 mGain += (correction.getGainAdjustment() * EQUALIZER_LOOP_GAIN);
             }
             else
             {
-//                mPll += correction.getPllAdjustment();
+                mPll += correction.getPllAdjustment();
                 mGain += correction.getGainAdjustment();
             }
 
@@ -963,8 +999,8 @@ public class NXDNDemodulator
             mPll = Math.max(mPll, -EQUALIZER_MAXIMUM_PLL);
 
             //Constrain gain between 1.0f and 1.25f
-            mGain = Math.min(mGain, EQUALIZER_MAXIMUM_GAIN);
-            mGain = Math.max(mGain, 1.0f);
+            mGain = Math.min(mGain, mGainMax);
+            mGain = Math.max(mGain, mGainMin);
             mInitialized = true;
         }
 
@@ -984,6 +1020,8 @@ public class NXDNDemodulator
             Dibit resampledDibit;
             int bitErrorCount = 0;
 
+            boolean incompleteSampleSet = false;
+
             for(int x = 0; x < syncDetector.getSyncPatternDibitLength(); x++)
             {
                 if(resampleStartIntegral >= 0)
@@ -991,24 +1029,30 @@ public class NXDNDemodulator
                     symbol = syncDetector.getSyncSymbols()[x];
                     resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
                             mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
-                    resampledSoftSymbol = (resampledSoftSymbol + mPll) * mGain;
+                    resampledSoftSymbol = (resampledSoftSymbol * mGain) + mPll;
                     resampledDibit = toSymbol(resampledSoftSymbol);
                     bitErrorCount += syncDetector.getSyncDibits()[x].getBitErrorFrom(resampledDibit);
-                    float delta = resampledSoftSymbol - symbol;
-                    balanceAccumulator += (resampledSoftSymbol - symbol);
-//                    System.out.println("\tSymbol " + x + " Soft:" + resampledSoftSymbol + " Hard:" + symbol + " Delta: " + delta + " Accumulator: " + balanceAccumulator);
+
+                    balanceAccumulator += resampledSoftSymbol;
                     gainAccumulator += Math.abs(symbol) - Math.abs(resampledSoftSymbol);
                 }
                 else
                 {
-                    System.out.println("** WARNING - score calc index is negative");
+                    //Set flag if we don't have complete set of samples for balance calculation
+                    incompleteSampleSet = true;
                 }
 
                 resampleStart += mSamplesPerSymbol;
                 resampleStartIntegral = (int)Math.floor(resampleStart);
             }
 
-            float balanceCorrection = balanceAccumulator / syncDetector.getSyncPatternDibitLength();
+            //Clear the balance accumulator if we didn't capture all of the symbol samples
+            if(incompleteSampleSet)
+            {
+                balanceAccumulator = 0;
+            }
+
+            float balanceCorrection = balanceAccumulator / syncDetector.getSyncPatternDibitLength() * -1;
             balanceCorrection = Math.min(balanceCorrection, SOFT_SYMBOL_QUADRANT_BOUNDARY);
             balanceCorrection = Math.max(balanceCorrection, -SOFT_SYMBOL_QUADRANT_BOUNDARY);
 
