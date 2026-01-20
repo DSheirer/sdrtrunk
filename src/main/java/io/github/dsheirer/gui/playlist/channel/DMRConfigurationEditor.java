@@ -267,6 +267,10 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             types.add(EventLogType.DECODED_MESSAGE);
             types.add(EventLogType.TRAFFIC_CALL_EVENT);
             types.add(EventLogType.TRAFFIC_DECODED_MESSAGE);
+            types.add(EventLogType.ENCRYPTED_CALL_EVENT);
+            types.add(EventLogType.TRAFFIC_ENCRYPTED_CALL_EVENT);
+            types.add(EventLogType.DATABASE_EVENT);
+            types.add(EventLogType.TRAFFIC_DATABASE_EVENT);
 
             mEventLogConfigurationEditor = new EventLogConfigurationEditor(types);
             mEventLogConfigurationEditor.setPadding(new Insets(5,5,5,5));

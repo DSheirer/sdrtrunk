@@ -29,7 +29,11 @@ public enum EventLogType
     DECODED_MESSAGE( "Decoded Messages", "_decoded_messages" ),
     TRAFFIC_DECODED_MESSAGE( "Traffic Channel Decoded Messages", "_decoded_messages" ),
     CALL_EVENT( "Call Events", "_call_events" ),
-    TRAFFIC_CALL_EVENT( "Traffic Channel Call Events", "_call_events" );
+    TRAFFIC_CALL_EVENT( "Traffic Channel Call Events", "_call_events" ),
+    ENCRYPTED_CALL_EVENT( "Encrypted Call Events", "_encrypted_calls" ),
+    TRAFFIC_ENCRYPTED_CALL_EVENT( "Traffic Channel Encrypted Call Events", "_encrypted_calls" ),
+    DATABASE_EVENT( "Enable Database Logging", "_database" ),
+    TRAFFIC_DATABASE_EVENT( "Enable Traffic Channel Database Logging", "_database" );
 
     private String mDisplayString;
     private String mFileSuffix;

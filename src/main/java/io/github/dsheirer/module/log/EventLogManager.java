@@ -65,6 +65,7 @@ public class EventLogManager
             {
                 case CALL_EVENT:
                 case DECODED_MESSAGE:
+                case ENCRYPTED_CALL_EVENT:
                     if(channel.getChannelType() == Channel.ChannelType.STANDARD)
                     {
                         loggers.add(getLogger(type, prefix, frequency));
@@ -75,6 +76,22 @@ public class EventLogManager
                     if(channel.getChannelType() == Channel.ChannelType.TRAFFIC)
                     {
                         loggers.add(getLogger(type, prefix, frequency));
+                    }
+                    break;
+                case TRAFFIC_ENCRYPTED_CALL_EVENT:
+                    // Skip - traffic channel encrypted logs are always empty
+                    // All encrypted call metadata is captured on the control channel
+                    break;
+                case DATABASE_EVENT:
+                    if(channel.getChannelType() == Channel.ChannelType.STANDARD)
+                    {
+                        loggers.add(getDatabaseLogger(prefix));
+                    }
+                    break;
+                case TRAFFIC_DATABASE_EVENT:
+                    if(channel.getChannelType() == Channel.ChannelType.TRAFFIC)
+                    {
+                        loggers.add(getDatabaseLogger(prefix));
                     }
                     break;
             }
@@ -89,7 +106,12 @@ public class EventLogManager
 
         sb.append(prefix);
         sb.append(eventLogType.getFileSuffix());
-        sb.append(".log");
+
+        // Use .csv extension for CSV-formatted outputs, .log for others
+        boolean isCsvFormat = (eventLogType == EventLogType.ENCRYPTED_CALL_EVENT ||
+                               eventLogType == EventLogType.CALL_EVENT ||
+                               eventLogType == EventLogType.TRAFFIC_CALL_EVENT);
+        sb.append(isCsvFormat ? ".csv" : ".log");
 
         Path eventLogDirectory = mUserPreferences.getDirectoryPreference().getDirectoryEventLog();
 
@@ -103,8 +125,22 @@ public class EventLogManager
                 return new DecodeEventLogger(mAliasModel, eventLogDirectory, sb.toString(), frequency);
             case TRAFFIC_DECODED_MESSAGE:
                 return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
+            case ENCRYPTED_CALL_EVENT:
+                return new EncryptedCallLogger(mAliasModel, eventLogDirectory, sb.toString(), frequency);
             default:
                 return null;
         }
+    }
+
+    /**
+     * Creates a DatabaseEventLogger for storing events in SQLite
+     * @param prefix the channel name prefix
+     * @return DatabaseEventLogger module
+     */
+    public DatabaseEventLogger getDatabaseLogger(String prefix)
+    {
+        Path eventLogDirectory = mUserPreferences.getDirectoryPreference().getDirectoryEventLog();
+        Path databasePath = eventLogDirectory.resolve(prefix + "_events.db");
+        return new DatabaseEventLogger(mAliasModel, databasePath, prefix);
     }
 }

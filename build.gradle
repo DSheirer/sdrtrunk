@@ -121,6 +121,9 @@ dependencies {
     implementation 'org.usb4java:libusb4java:1.3.0'
     implementation 'org.usb4java:usb4java-javax:1.3.0'
     implementation 'pl.edu.icm:JLargeArrays:1.6'
+
+    //SQLite JDBC driver for database logging
+    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
 }
 
 def os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem
