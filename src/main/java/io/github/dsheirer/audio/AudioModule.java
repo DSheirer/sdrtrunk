@@ -45,6 +45,7 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     private static float[] sHighPassFilterCoefficients;
     private final boolean mAudioFilterEnable;
     private final boolean mRequireAliasMatch;
+    private boolean mHadAliasMatch = false;
 
     static
     {
@@ -133,9 +134,23 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
         if(mSquelchState == SquelchState.UNSQUELCH)
         {
             // If requireAliasMatch is enabled, only capture audio when an alias matches
-            if(mRequireAliasMatch && !getAliasList().hasAliasMatch(getIdentifierCollection()))
+            if(mRequireAliasMatch)
             {
-                return;
+                boolean hasMatch = getAliasList().hasAliasMatch(getIdentifierCollection());
+                
+                if(!hasMatch)
+                {
+                    // No match - if we previously had a match, close the segment
+                    if(mHadAliasMatch)
+                    {
+                        mHadAliasMatch = false;
+                        closeAudioSegment();
+                    }
+                    return;
+                }
+                
+                // We have a match
+                mHadAliasMatch = true;
             }
 
             if(mAudioFilterEnable)
@@ -170,6 +185,7 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
 
                 if(mSquelchState == SquelchState.SQUELCH)
                 {
+                    mHadAliasMatch = false;
                     closeAudioSegment();
                 }
             }
