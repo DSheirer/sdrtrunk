@@ -213,6 +213,8 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
      */
     public class SquelchStateListener implements Listener<SquelchStateEvent>
     {
+        private long mSquelchClosedTimestamp = 0;
+
         @Override
         public void receive(SquelchStateEvent event)
         {
@@ -224,6 +226,9 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
 
                 if(mSquelchState == SquelchState.SQUELCH)
                 {
+                    // Record when squelch closed
+                    mSquelchClosedTimestamp = System.currentTimeMillis();
+
                     // If delay is configured, schedule the close; otherwise close immediately
                     if(mSquelchDelayTimeMs > 0 && mDelayExecutor != null)
                     {
@@ -238,11 +243,6 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
                             // Only close if still squelched
                             if(mSquelchState == SquelchState.SQUELCH)
                             {
-                                // If not removing silence, add silence for the delay period
-                                if(!mSquelchDelayRemoveSilence)
-                                {
-                                    addSilence(mSquelchDelayTimeMs);
-                                }
                                 closeAudioSegment();
                             }
                         }, mSquelchDelayTimeMs, TimeUnit.MILLISECONDS);
@@ -258,7 +258,18 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
                     if(mPendingClose != null && !mPendingClose.isDone())
                     {
                         mPendingClose.cancel(false);
+
+                        // If not removing silence, add silence for the time squelch was closed
+                        if(!mSquelchDelayRemoveSilence && mSquelchClosedTimestamp > 0)
+                        {
+                            long silenceDuration = System.currentTimeMillis() - mSquelchClosedTimestamp;
+                            if(silenceDuration > 0 && silenceDuration <= mSquelchDelayTimeMs)
+                            {
+                                addSilence((int) silenceDuration);
+                            }
+                        }
                     }
+                    mSquelchClosedTimestamp = 0;
                 }
             }
         }
