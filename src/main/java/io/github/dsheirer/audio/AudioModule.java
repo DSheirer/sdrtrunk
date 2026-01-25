@@ -181,10 +181,24 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
      */
     private void addSilence(int durationMs)
     {
-        // Calculate number of samples needed for the duration at 8kHz sample rate
-        int samples = (AUDIO_SAMPLE_RATE * durationMs) / 1000;
-        float[] silence = new float[samples];
-        addAudio(silence);
+        // Add silence in 100ms chunks at 8kHz sample rate (800 samples per chunk)
+        int chunkSize = 800; // 100ms at 8kHz
+        float[] silenceChunk = new float[chunkSize];
+        
+        int remainingMs = durationMs;
+        while(remainingMs >= 100)
+        {
+            addAudio(silenceChunk);
+            remainingMs -= 100;
+        }
+        
+        // Add any remaining partial chunk
+        if(remainingMs > 0)
+        {
+            int remainingSamples = (AUDIO_SAMPLE_RATE * remainingMs) / 1000;
+            float[] partialChunk = new float[remainingSamples];
+            addAudio(partialChunk);
+        }
     }
 
     @Override
