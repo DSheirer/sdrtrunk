@@ -29,6 +29,10 @@ import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IRealBufferListener;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +48,11 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     private static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
     private static float[] sHighPassFilterCoefficients;
     private final boolean mAudioFilterEnable;
+    private final int mSquelchDelayTimeMs;
+    private final boolean mSquelchDelayRemoveSilence;
+    private ScheduledExecutorService mDelayExecutor;
+    private ScheduledFuture<?> mPendingClose;
+    private boolean mInDelayPeriod = false;
 
     static
     {
@@ -82,11 +91,20 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
      * @param timeslot for this audio module
      * @param maxAudioSegmentLength in milliseconds
      * @param audioFilterEnable to enable or disable high-pass audio filter
+     * @param squelchDelayTimeMs delay time before closing audio segment after squelch closes
+     * @param squelchDelayRemoveSilence true to remove silence during delay, false to preserve it
      */
-    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength, boolean audioFilterEnable)
+    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength, boolean audioFilterEnable, int squelchDelayTimeMs, boolean squelchDelayRemoveSilence)
     {
         super(aliasList, timeslot, maxAudioSegmentLength);
         mAudioFilterEnable = audioFilterEnable;
+        mSquelchDelayTimeMs = squelchDelayTimeMs;
+        mSquelchDelayRemoveSilence = squelchDelayRemoveSilence;
+
+        if(mSquelchDelayTimeMs > 0)
+        {
+            mDelayExecutor = Executors.newSingleThreadScheduledExecutor();
+        }
     }
 
     /**
@@ -98,6 +116,8 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     {
         super(aliasList);
         mAudioFilterEnable = audioFilterEnable;
+        mSquelchDelayTimeMs = 0;
+        mSquelchDelayRemoveSilence = true;
     }
 
     @Override
@@ -118,6 +138,24 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     }
 
     @Override
+    public void stop()
+    {
+        // Cancel any pending close
+        if(mPendingClose != null && !mPendingClose.isDone())
+        {
+            mPendingClose.cancel(false);
+        }
+
+        // Shutdown the executor
+        if(mDelayExecutor != null)
+        {
+            mDelayExecutor.shutdownNow();
+        }
+
+        super.stop();
+    }
+
+    @Override
     public Listener<SquelchStateEvent> getSquelchStateListener()
     {
         return mSquelchStateListener;
@@ -134,6 +172,12 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
             }
 
             addAudio(audioBuffer);
+        }
+        else if(mInDelayPeriod && !mSquelchDelayRemoveSilence)
+        {
+            // During delay period, add silence to preserve timing (if not removing silence)
+            float[] silence = new float[audioBuffer.length];
+            addAudio(silence);
         }
     }
 
@@ -160,7 +204,40 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
 
                 if(mSquelchState == SquelchState.SQUELCH)
                 {
-                    closeAudioSegment();
+                    // If delay is configured, schedule the close; otherwise close immediately
+                    if(mSquelchDelayTimeMs > 0 && mDelayExecutor != null)
+                    {
+                        mInDelayPeriod = true;
+
+                        // Cancel any existing pending close
+                        if(mPendingClose != null && !mPendingClose.isDone())
+                        {
+                            mPendingClose.cancel(false);
+                        }
+
+                        // Schedule delayed close
+                        mPendingClose = mDelayExecutor.schedule(() -> {
+                            // Only close if still squelched
+                            if(mSquelchState == SquelchState.SQUELCH)
+                            {
+                                mInDelayPeriod = false;
+                                closeAudioSegment();
+                            }
+                        }, mSquelchDelayTimeMs, TimeUnit.MILLISECONDS);
+                    }
+                    else
+                    {
+                        closeAudioSegment();
+                    }
+                }
+                else
+                {
+                    // Squelch opened - cancel any pending close
+                    mInDelayPeriod = false;
+                    if(mPendingClose != null && !mPendingClose.isDone())
+                    {
+                        mPendingClose.cancel(false);
+                    }
                 }
             }
         }
