@@ -262,10 +262,12 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
                         // If not removing silence, add silence for the time squelch was closed
                         if(!mSquelchDelayRemoveSilence && mSquelchClosedTimestamp > 0)
                         {
-                            long silenceDuration = System.currentTimeMillis() - mSquelchClosedTimestamp;
+                            long elapsedMs = System.currentTimeMillis() - mSquelchClosedTimestamp;
+                            // Round up to nearest 100ms to match delay increments
+                            int silenceDuration = (int)(((elapsedMs + 99) / 100) * 100);
                             if(silenceDuration > 0 && silenceDuration <= mSquelchDelayTimeMs)
                             {
-                                addSilence((int) silenceDuration);
+                                addSilence(silenceDuration);
                             }
                         }
                     }
