@@ -618,6 +618,26 @@ public class AliasList
 
         return false;
     }
+    /**
+     * Indicates if any of the identifiers match any alias in this list.
+     * Used for tone squelch feature to gate audio capture.
+     * @param identifierCollection to inspect
+     * @return true if any identifier matches an alias.
+     */
+    public boolean hasAliasMatch(IdentifierCollection identifierCollection)
+    {
+        for(Identifier identifier: identifierCollection.getIdentifiers())
+        {
+            List<Alias> aliases = getAliases(identifier);
+
+            if(!aliases.isEmpty())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /**
      * Indicates if any of the aliases in this list have an associated alias action
