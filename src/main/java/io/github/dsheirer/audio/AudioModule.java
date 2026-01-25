@@ -46,13 +46,13 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     Listener<float[]>
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
+    private static final int AUDIO_SAMPLE_RATE = 8000;
     private static float[] sHighPassFilterCoefficients;
     private final boolean mAudioFilterEnable;
     private final int mSquelchDelayTimeMs;
     private final boolean mSquelchDelayRemoveSilence;
     private ScheduledExecutorService mDelayExecutor;
     private ScheduledFuture<?> mPendingClose;
-    private boolean mInDelayPeriod = false;
 
     static
     {
@@ -173,12 +173,18 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
 
             addAudio(audioBuffer);
         }
-        else if(mInDelayPeriod && !mSquelchDelayRemoveSilence)
-        {
-            // During delay period, add silence to preserve timing (if not removing silence)
-            float[] silence = new float[audioBuffer.length];
-            addAudio(silence);
-        }
+    }
+
+    /**
+     * Adds silence to the audio segment for the specified duration in milliseconds.
+     * @param durationMs duration of silence in milliseconds
+     */
+    private void addSilence(int durationMs)
+    {
+        // Calculate number of samples needed for the duration at 8kHz sample rate
+        int samples = (AUDIO_SAMPLE_RATE * durationMs) / 1000;
+        float[] silence = new float[samples];
+        addAudio(silence);
     }
 
     @Override
@@ -207,8 +213,6 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
                     // If delay is configured, schedule the close; otherwise close immediately
                     if(mSquelchDelayTimeMs > 0 && mDelayExecutor != null)
                     {
-                        mInDelayPeriod = true;
-
                         // Cancel any existing pending close
                         if(mPendingClose != null && !mPendingClose.isDone())
                         {
@@ -220,7 +224,11 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
                             // Only close if still squelched
                             if(mSquelchState == SquelchState.SQUELCH)
                             {
-                                mInDelayPeriod = false;
+                                // If not removing silence, add silence for the delay period
+                                if(!mSquelchDelayRemoveSilence)
+                                {
+                                    addSilence(mSquelchDelayTimeMs);
+                                }
                                 closeAudioSegment();
                             }
                         }, mSquelchDelayTimeMs, TimeUnit.MILLISECONDS);
@@ -233,7 +241,6 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
                 else
                 {
                     // Squelch opened - cancel any pending close
-                    mInDelayPeriod = false;
                     if(mPendingClose != null && !mPendingClose.isDone())
                     {
                         mPendingClose.cancel(false);
