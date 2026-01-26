@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.ctcss;
 
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import java.util.HashMap;
@@ -51,18 +52,25 @@ public class CTCSSDecoderState extends DecoderState
     {
         if(message instanceof CTCSSMessage ctcssMessage)
         {
-            mCurrentCode = ctcssMessage.getCTCSSCode();
-
-            if(!mCtcssCodeCountsMap.containsKey(mCurrentCode))
+            if(ctcssMessage.isToneLost())
             {
-                mCtcssCodeCountsMap.put(mCurrentCode, 1);
+                // Tone was lost - clear the identifier
+                getIdentifierCollection().remove(Form.TONE);
+                mCurrentCode = CTCSSCode.UNKNOWN;
             }
             else
             {
-                mCtcssCodeCountsMap.put(mCurrentCode, mCtcssCodeCountsMap.get(mCurrentCode) + 1);
+                mCurrentCode = ctcssMessage.getCTCSSCode();
+                if(!mCtcssCodeCountsMap.containsKey(mCurrentCode))
+                {
+                    mCtcssCodeCountsMap.put(mCurrentCode, 1);
+                }
+                else
+                {
+                    mCtcssCodeCountsMap.put(mCurrentCode, mCtcssCodeCountsMap.get(mCurrentCode) + 1);
+                }
+                getIdentifierCollection().update(ctcssMessage.getIdentifiers());
             }
-
-            getIdentifierCollection().update(ctcssMessage.getIdentifiers());
         }
     }
 
@@ -85,7 +93,6 @@ public class CTCSSDecoderState extends DecoderState
         StringBuilder sb = new StringBuilder();
         sb.append("=============================\n");
         sb.append("Decoder:\tContinuous Tone-Coded Squelch System (CTCSS)\n\n");
-
         if(mCtcssCodeCountsMap.isEmpty())
         {
             sb.append("   Detected Tones: (none)\n");
@@ -105,7 +112,6 @@ public class CTCSSDecoderState extends DecoderState
                 }
             }
         }
-
         return sb.toString();
     }
 

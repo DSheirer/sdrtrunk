@@ -16,13 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.module.decode.ctcss;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.protocol.Protocol;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -33,17 +31,30 @@ public class CTCSSMessage extends Message
 {
     private final CTCSSCode mCTCSSCode;
     private final CTCSSIdentifier mIdentifier;
+    private final boolean mToneLost;
 
     /**
-     * Constructs a CTCSS message
+     * Constructs a CTCSS message for tone detection
      * @param code detected CTCSS code
      * @param timestamp of detection
      */
     public CTCSSMessage(CTCSSCode code, long timestamp)
     {
+        this(code, timestamp, false);
+    }
+
+    /**
+     * Constructs a CTCSS message
+     * @param code CTCSS code
+     * @param timestamp of event
+     * @param toneLost true if this message indicates tone was lost
+     */
+    public CTCSSMessage(CTCSSCode code, long timestamp, boolean toneLost)
+    {
         super(timestamp);
         mCTCSSCode = code;
-        mIdentifier = new CTCSSIdentifier(code);
+        mIdentifier = code != null ? new CTCSSIdentifier(code) : null;
+        mToneLost = toneLost;
     }
 
     /**
@@ -52,6 +63,14 @@ public class CTCSSMessage extends Message
     public CTCSSCode getCTCSSCode()
     {
         return mCTCSSCode;
+    }
+
+    /**
+     * @return true if this message indicates tone was lost
+     */
+    public boolean isToneLost()
+    {
+        return mToneLost;
     }
 
     @Override
@@ -69,12 +88,20 @@ public class CTCSSMessage extends Message
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.singletonList(mIdentifier);
+        if(mIdentifier != null)
+        {
+            return Collections.singletonList(mIdentifier);
+        }
+        return Collections.emptyList();
     }
 
     @Override
     public String toString()
     {
+        if(mToneLost)
+        {
+            return "CTCSS: Tone Lost";
+        }
         return "CTCSS: " + mCTCSSCode.getDisplayString();
     }
 }

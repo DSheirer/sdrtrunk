@@ -304,6 +304,8 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
 
             if(mToneLostCount >= TONE_LOST_THRESHOLD && mCurrentCode != null)
             {
+                // Send tone lost message before clearing
+                getMessageListener().receive(new CTCSSMessage(mCurrentCode, System.currentTimeMillis(), true));
                 mCurrentCode = null;
                 mLastBroadcastTime = 0; // Reset so next detection broadcasts immediately
             }
