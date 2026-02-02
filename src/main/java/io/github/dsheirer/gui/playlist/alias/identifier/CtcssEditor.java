@@ -16,13 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.gui.playlist.alias.identifier;
 
 import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +57,17 @@ public class CtcssEditor extends IdentifierEditor<Ctcss>
     public void setItem(Ctcss item)
     {
         super.setItem(item);
+
         if(item.isValid())
         {
             getCTCSSCodeComboBox().getSelectionModel().select(item.getCTCSSCode());
         }
+        else
+        {
+            // Clear selection for new/invalid items - shows placeholder
+            getCTCSSCodeComboBox().getSelectionModel().clearSelection();
+        }
+
         modifiedProperty().set(false);
     }
 
@@ -86,9 +93,34 @@ public class CtcssEditor extends IdentifierEditor<Ctcss>
         {
             mCTCSSCodeComboBox = new ComboBox<>();
             mCTCSSCodeComboBox.getItems().addAll(CTCSSCode.STANDARD_CODES);
+            
+            // Set prompt text shown when nothing is selected
+            mCTCSSCodeComboBox.setPromptText("Select Tone...");
+            
+            // Custom cell factory to handle display
+            mCTCSSCodeComboBox.setButtonCell(new ListCell<CTCSSCode>()
+            {
+                @Override
+                protected void updateItem(CTCSSCode item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+                    if(empty || item == null)
+                    {
+                        setText("Select Tone...");
+                    }
+                    else
+                    {
+                        setText(item.toString());
+                    }
+                }
+            });
+
             mCTCSSCodeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-                getItem().setCTCSSCode(getCTCSSCodeComboBox().getSelectionModel().getSelectedItem());
-                modifiedProperty().set(true);
+                if(newValue != null)
+                {
+                    getItem().setCTCSSCode(newValue);
+                    modifiedProperty().set(true);
+                }
             });
         }
 
