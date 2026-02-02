@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,11 +27,11 @@ import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.playback.PlayTestAudioRequest;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.source.mixer.MixerChannel;
-import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -51,23 +51,16 @@ import org.slf4j.LoggerFactory;
 public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioController
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioPlaybackManager.class);
-
-    public static final AudioEvent CONFIGURATION_CHANGE_STARTED =
-        new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null);
-    public static final AudioEvent CONFIGURATION_CHANGE_COMPLETE =
-        new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_COMPLETE, null);
-    private Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
+    private final AudioSegmentPrioritySorter mAudioSegmentPrioritySorter = new AudioSegmentPrioritySorter();
+    private final Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
+    private final List<AudioSegment> mAudioSegments = new ArrayList<>();
+    private final List<AudioSegment> mPendingAudioSegments = new ArrayList<>();
+    private final LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
+    private final ReentrantLock mAudioChannelsLock = new ReentrantLock();
+    private final UserPreferences mUserPreferences;
+    private AudioPlaybackDeviceDescriptor mAudioPlaybackDevice;
+    private AudioOutput mAudioOutput;
     private ScheduledFuture<?> mProcessingTask;
-    private UserPreferences mUserPreferences;
-    private MixerChannelConfiguration mMixerChannelConfiguration;
-    private List<AudioOutput> mAudioOutputs = new ArrayList<>();
-    private List<AudioSegment> mAudioSegments = new ArrayList<>();
-    private List<AudioSegment> mPendingAudioSegments = new ArrayList<>();
-    private LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
-    private ScheduledExecutorService mScheduledExecutorService =
-            Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory("sdrtrunk audio manager"));
-    private AudioSegmentPrioritySorter mAudioSegmentPrioritySorter = new AudioSegmentPrioritySorter();
-    private ReentrantLock mAudioOutputLock = new ReentrantLock();
 
     /**
      * Constructs an instance.
@@ -78,20 +71,18 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     {
         mUserPreferences = userPreferences;
         MyEventBus.getGlobalEventBus().register(this);
+        AudioPlaybackDeviceDescriptor device = mUserPreferences.getPlaybackPreference().getAudioPlaybackDevice();
 
-        MixerChannelConfiguration configuration = mUserPreferences.getPlaybackPreference().getMixerChannelConfiguration();
-
-        if(configuration != null)
+        if(device != null)
         {
             try
             {
-                setMixerChannelConfiguration(configuration);
+                setAudioPlaybackDevice(device);
             }
             catch(AudioException ae)
             {
-                mLog.error("Error during setup of audio playback configuration.  Attempted to use audio mixer [" +
-                    (configuration != null ? configuration.getMixer().toString() : "null") + "] and channel [" +
-                    (configuration != null ? configuration.getMixerChannel().name() : "null") + "]", ae);
+                mLog.error("Error during setup of audio playback configuration.  Attempted to use device [" +
+                        device + "]", ae);
             }
         }
         else
@@ -99,13 +90,16 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             mLog.warn("No audio output devices available");
         }
 
-        mProcessingTask = mScheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
+        //Even if we don't have an audio device, setup the queue processor to always process the audio segment queue
+        ScheduledExecutorService scheduledExecutorService =
+                Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory("sdrtrunk audio manager"));
+        mProcessingTask = scheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
                 0, 100, TimeUnit.MILLISECONDS);
     }
 
     /**
      * Receives audio segments from channel audio modules.
-     * @param audioSegment
+     * @param audioSegment to receive and process
      */
     @Override
     public void receive(AudioSegment audioSegment)
@@ -195,11 +189,11 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
                 else if(audioSegment.isLinked())
                 {
-                    mAudioOutputLock.lock();
+                    mAudioChannelsLock.lock();
 
                     try
                     {
-                        for(AudioOutput audioOutput: mAudioOutputs)
+                        for(AudioChannel audioOutput: mAudioOutput.getAudioProvider().getAudioChannels())
                         {
                             if(audioOutput.isLinkedTo(audioSegment))
                             {
@@ -210,7 +204,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     }
                     finally
                     {
-                        mAudioOutputLock.unlock();
+                        mAudioChannelsLock.unlock();
                     }
                 }
             }
@@ -219,18 +213,16 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             if(!mAudioSegments.isEmpty())
             {
                 mAudioSegments.sort(mAudioSegmentPrioritySorter);
-
-                mAudioOutputLock.lock();
+                mAudioChannelsLock.lock();
 
                 try
                 {
                     //Assign empty audio outputs first
-                    for(AudioOutput audioOutput: mAudioOutputs)
+                    for(AudioChannel audioChannel: mAudioOutput.getAudioProvider().getAudioChannels())
                     {
-                        if(audioOutput.isEmpty())
+                        if(audioChannel.isEmpty())
                         {
-                            audioOutput.play(mAudioSegments.remove(0));
-
+                            audioChannel.play(mAudioSegments.removeFirst());
                             if(mAudioSegments.isEmpty())
                             {
                                 return;
@@ -240,7 +232,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
                 finally
                 {
-                    mAudioOutputLock.unlock();
+                    mAudioChannelsLock.unlock();
                 }
             }
 
@@ -274,6 +266,19 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     }
 
     /**
+     * Receives a request from the global event bus to playback a test audio sequence via the specified audio channel
+     * @param request with test audio and channel number
+     */
+    @Subscribe
+    public void playTestAudio(PlayTestAudioRequest request)
+    {
+        if(mAudioOutput != null)
+        {
+            mAudioOutput.playTestAudio(request);
+        }
+    }
+
+    /**
      * Receive user preference update notifications so that we can detect when the user changes the audio output
      * device in the user preferences editor.
      */
@@ -282,100 +287,112 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     {
         if(preferenceType == PreferenceType.PLAYBACK)
         {
-            MixerChannelConfiguration configuration = mUserPreferences.getPlaybackPreference().getMixerChannelConfiguration();
+            AudioPlaybackDeviceDescriptor device = mUserPreferences.getPlaybackPreference().getAudioPlaybackDevice();
 
-            if(configuration != null && !configuration.equals(mMixerChannelConfiguration))
+            if(device != null && !device.equals(getAudioPlaybackDevice()))
             {
                 try
                 {
-                    setMixerChannelConfiguration(configuration);
+                    setAudioPlaybackDevice(device);
                 }
                 catch(AudioException ae)
                 {
-                    mLog.error("Error changing audio output to [" + configuration + "]", ae);
+                    mLog.error("Error changing audio output to [" + device + "]", ae);
                 }
             }
         }
     }
 
     /**
-     * Configures audio playback to use the configuration specified in the entry argument.
+     * Configures audio playback to use the audio device argument.
      *
-     * @param entry to use in configuring the audio playback setup.
+     * @param audioDevice to use in configuring the audio playback setup.
      * @throws AudioException if there is an error
      */
     @Override
-    public void setMixerChannelConfiguration(MixerChannelConfiguration entry) throws AudioException
+    public void setAudioPlaybackDevice(AudioPlaybackDeviceDescriptor audioDevice) throws AudioException
     {
-        if(entry != null)
+        if(audioDevice != null)
         {
-            mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_STARTED);
+            mControllerBroadcaster.broadcast(new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_STARTED,
+                    audioDevice.getMixerInfo().getName()));
 
-            mAudioOutputLock.lock();
+            mAudioChannelsLock.lock();
 
             try
             {
-                for(AudioOutput audioOutput: mAudioOutputs)
+                if(mAudioOutput != null)
                 {
-                    audioOutput.dispose();
+                    mAudioOutput.dispose();
                 }
 
-                mAudioOutputs.clear();
+                int channelCount = audioDevice.getAudioFormat().getChannels();
 
-                switch(entry.getMixerChannel())
+                switch(channelCount)
                 {
-                    case MONO:
-                        AudioOutput mono = new MonoAudioOutput(entry.getMixer(), mUserPreferences);
-                        mAudioOutputs.add(mono);
+                    case 1:
+                        mAudioOutput = new AudioOutput(audioDevice, new AudioProviderMono(mUserPreferences));
                         break;
-                    case STEREO:
-                        AudioOutput left = new StereoAudioOutput(entry.getMixer(), MixerChannel.LEFT, mUserPreferences);
-                        mAudioOutputs.add(left);
-
-                        AudioOutput right = new StereoAudioOutput(entry.getMixer(), MixerChannel.RIGHT, mUserPreferences);
-                        mAudioOutputs.add(right);
+                    case 2:
+                        mAudioOutput = new AudioOutput(audioDevice, new AudioProviderStereo(mUserPreferences));
                         break;
                     default:
-                        throw new AudioException("Unsupported mixer channel configuration: " + entry.getMixerChannel());
+//                        mAudioOutput = new AudioOutput(audioDevice, new AudioProviderMultiChannel(mUserPreferences,
+//                                audioDevice.getAudioFormat()));
+                        throw new AudioException("Unsupported mixer channel configuration channel count: " + channelCount);
                 }
+
+                //Note: audio output can use an alternate device if the requested device can't be used, so we assign
+                //the descriptor that was actually used by the audio output
+                mAudioPlaybackDevice = mAudioOutput.getAudioPlaybackDeviceDescriptor();
             }
             finally
             {
-                mAudioOutputLock.unlock();
+                mAudioChannelsLock.unlock();
             }
 
-            mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
-            mMixerChannelConfiguration = entry;
+            mControllerBroadcaster.broadcast(new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_COMPLETE,
+                    mAudioPlaybackDevice.getMixerInfo().getName()));
         }
+    }
+
+    /**
+     * Audio output device.  Note: this can be null depending on when it is accessed.
+     * @return audio output or null.
+     */
+    public AudioOutput getAudioOutput()
+    {
+        return mAudioOutput;
     }
 
     /**
      * Current audio playback mixer channel configuration setting.
      */
     @Override
-    public MixerChannelConfiguration getMixerChannelConfiguration()
+    public AudioPlaybackDeviceDescriptor getAudioPlaybackDevice()
     {
-        return mMixerChannelConfiguration;
+        return mAudioPlaybackDevice;
     }
 
     /**
      * List of sorted audio outputs available for the current mixer channel configuration
      */
     @Override
-    public List<AudioOutput> getAudioOutputs()
+    public List<AudioChannel> getAudioChannels()
     {
-        List<AudioOutput> outputs = new ArrayList<>(mAudioOutputs);
+        if(mAudioOutput != null)
+        {
+            return mAudioOutput.getAudioProvider().getAudioChannels();
+        }
 
-        outputs.sort(Comparator.comparing(AudioOutput::getChannelName));
-
-        return outputs;
+        return Collections.emptyList();
     }
 
     /**
      * Adds an audio event listener to receive audio event notifications.
      */
     @Override
-    public void addControllerListener(Listener<AudioEvent> listener)
+    public void addAudioEventListener(Listener<AudioEvent> listener)
     {
         mControllerBroadcaster.addListener(listener);
     }
@@ -384,7 +401,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      * Removes an audio event listener from receiving audio event notifications.
      */
     @Override
-    public void removeControllerListener(Listener<AudioEvent> listener)
+    public void removeAudioEventListener(Listener<AudioEvent> listener)
     {
         mControllerBroadcaster.removeListener(listener);
     }
@@ -394,7 +411,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      */
     public class AudioSegmentProcessor implements Runnable
     {
-        private AtomicBoolean mProcessing = new AtomicBoolean();
+        private final AtomicBoolean mProcessing = new AtomicBoolean();
 
         @Override
         public void run()
@@ -418,7 +435,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     /**
      * Audio segment comparator for sorting audio segments by: 1)Playback priority and 2)Segment start time
      */
-    public class AudioSegmentPrioritySorter implements Comparator<AudioSegment>
+    public static class AudioSegmentPrioritySorter implements Comparator<AudioSegment>
     {
         @Override
         public int compare(AudioSegment segment1, AudioSegment segment2)

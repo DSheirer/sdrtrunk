@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  *
  * Producers will add audio buffers and update identifiers throughout the life-cycle of an audio segment.  The producer
  * will signal the completion of an audio segment by setting the complete property to true.  This allows consumers the
- * option to process the audio buffers throughout the life-cycle of the segment, or to process all of the buffers once
+ * option to process the audio buffers throughout the life-cycle of the segment, or to process all the buffers once
  * the segment is complete.
  */
 public class AudioSegment implements Listener<IdentifierUpdateNotification>

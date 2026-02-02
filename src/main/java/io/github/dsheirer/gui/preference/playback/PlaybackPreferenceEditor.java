@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,12 @@
 
 package io.github.dsheirer.gui.preference.playback;
 
-import io.github.dsheirer.audio.AudioFormats;
+import io.github.dsheirer.audio.playback.AudioPlaybackDeviceDescriptor;
+import io.github.dsheirer.audio.playback.AudioPlaybackDeviceManager;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.playback.PlayTestAudioRequest;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
-import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
-import io.github.dsheirer.source.mixer.MixerManager;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -45,10 +43,6 @@ import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
-
 
 /**
  * Preference settings for audio playback
@@ -58,8 +52,8 @@ public class PlaybackPreferenceEditor extends HBox
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackPreferenceEditor.class);
     private final PlaybackPreference mPlaybackPreference;
     private GridPane mEditorPane;
-    private ComboBox<MixerChannelConfiguration> mMixerComboBox;
-    private Button mMixerTestButton;
+    private ComboBox<AudioPlaybackDeviceDescriptor> mAudioPlaybackDevicesCombo;
+    private Button mPlaybackDeviceTestButton;
     private ToggleSwitch mUseAudioSegmentStartToneSwitch;
     private Button mTestStartToneButton;
     private ToggleSwitch mUseAudioSegmentDropToneSwitch;
@@ -86,11 +80,11 @@ public class PlaybackPreferenceEditor extends HBox
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
             mEditorPane.setHgap(10);
             mEditorPane.setVgap(10);
-            Label outputLabel = new Label("Audio Output Device");
+            Label outputLabel = new Label("Audio Playback Device");
             GridPane.setHalignment(outputLabel, HPos.RIGHT);
             mEditorPane.add(outputLabel, 0, row, 2, 1);
-            mEditorPane.add(getMixerComboBox(), 2, row, 3, 1);
-            mEditorPane.add(getMixerTestButton(), 5, row);
+            mEditorPane.add(getAudioPlaybackDevicesCombo(), 2, row, 3, 1);
+            mEditorPane.add(getPlaybackDeviceTestButton(), 5, row);
             mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, ++row, 6, 1);
             mEditorPane.add(new Label("Audio Playback Insert Tones"), 0, ++row, 2, 1);
 
@@ -122,32 +116,34 @@ public class PlaybackPreferenceEditor extends HBox
         return mEditorPane;
     }
 
-    private ComboBox<MixerChannelConfiguration> getMixerComboBox()
+    private ComboBox<AudioPlaybackDeviceDescriptor> getAudioPlaybackDevicesCombo()
     {
-        if(mMixerComboBox == null)
+        if(mAudioPlaybackDevicesCombo == null)
         {
-            mMixerComboBox = new ComboBox<>();
-            mMixerComboBox.getItems().addAll(MixerManager.getOutputMixers());
-            mMixerComboBox.getSelectionModel().select(mPlaybackPreference.getMixerChannelConfiguration());
-            mMixerComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> mPlaybackPreference.setMixerChannelConfiguration(newValue));
+            mAudioPlaybackDevicesCombo = new ComboBox<>();
+            mAudioPlaybackDevicesCombo.getItems().addAll(AudioPlaybackDeviceManager.getAudioPlaybackDevices());
+            mAudioPlaybackDevicesCombo.getSelectionModel().select(mPlaybackPreference.getAudioPlaybackDevice());
+            mAudioPlaybackDevicesCombo.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue,
+                              newValue) -> mPlaybackPreference.setAudioPlaybackDevice(newValue));
         }
 
-        return mMixerComboBox;
+        return mAudioPlaybackDevicesCombo;
     }
 
-    public Button getMixerTestButton()
+    public Button getPlaybackDeviceTestButton()
     {
-        if(mMixerTestButton == null)
+        if(mPlaybackDeviceTestButton == null)
         {
-            mMixerTestButton = new Button("Test");
+            mPlaybackDeviceTestButton = new Button("Test");
             IconNode iconNode = new IconNode(FontAwesome.PLAY);
             iconNode.setFill(Color.CORNFLOWERBLUE);
-            mMixerTestButton.setGraphic(iconNode);
-            mMixerTestButton.setOnAction(event -> play(mPlaybackPreference.getMixerTestTone()));
+            mPlaybackDeviceTestButton.setGraphic(iconNode);
+            mPlaybackDeviceTestButton.setOnAction(event ->
+                        play(mPlaybackPreference.getAudioPlaybackTestTone(), PlayTestAudioRequest.ALL_CHANNELS));
         }
 
-        return mMixerTestButton;
+        return mPlaybackDeviceTestButton;
     }
 
     private ToggleSwitch getUseAudioSegmentStartToneSwitch()
@@ -185,8 +181,9 @@ public class PlaybackPreferenceEditor extends HBox
             IconNode iconNode = new IconNode(FontAwesome.PLAY);
             iconNode.setFill(Color.CORNFLOWERBLUE);
             mTestStartToneButton.setGraphic(iconNode);
-            mTestStartToneButton.setOnAction(event -> play(mPlaybackPreference.getStartTone()));
-
+            mTestStartToneButton.setOnAction(_ ->
+                play(mPlaybackPreference.getStartTone(PlaybackPreference.TONE_LENGTH_SAMPLES * 3),
+                        PlayTestAudioRequest.ALL_CHANNELS));
             mTestStartToneButton.disableProperty().bind(getUseAudioSegmentStartToneSwitch().selectedProperty().not());
         }
 
@@ -201,8 +198,9 @@ public class PlaybackPreferenceEditor extends HBox
             IconNode iconNode = new IconNode(FontAwesome.PLAY);
             iconNode.setFill(Color.CORNFLOWERBLUE);
             mTestDropToneButton.setGraphic(iconNode);
-            mTestDropToneButton.setOnAction(event -> play(mPlaybackPreference.getDropTone()));
-
+            mTestDropToneButton.setOnAction(_ ->
+                    play(mPlaybackPreference.getDropTone(PlaybackPreference.TONE_LENGTH_SAMPLES * 3),
+                            PlayTestAudioRequest.ALL_CHANNELS));
             mTestDropToneButton.disableProperty().bind(getUseAudioSegmentDropToneSwitch().selectedProperty().not());
         }
 
@@ -270,43 +268,12 @@ public class PlaybackPreferenceEditor extends HBox
     }
 
     /**
-     * Plays the audio buffer over the default mono playback device
+     * Sends a request to play the audio samples over the specified audio playback channel
      * @param audioSamples with 8 kHz mono PCM samples
+     * @param channel number (0=mono/left, 1=right, etc.)
      */
-    private void play(float[] audioSamples)
+    private void play(float[] audioSamples, int channel)
     {
-        if(audioSamples != null)
-        {
-            /* Little-endian byte buffer */
-            ByteBuffer buffer = ByteBuffer.allocate(audioSamples.length * 2).order(ByteOrder.LITTLE_ENDIAN);
-
-            ShortBuffer shortBuffer = buffer.asShortBuffer();
-
-            for(float sample : audioSamples)
-            {
-                shortBuffer.put((short) (sample * Short.MAX_VALUE));
-            }
-
-            byte[] bytes = buffer.array();
-
-            DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
-
-            if(!AudioSystem.isLineSupported(info))
-            {
-                mLog.error("Audio clip playback is not supported on this system");
-                return;
-            }
-
-            try
-            {
-                Clip clip = (Clip)AudioSystem.getLine(info);
-                clip.open(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, bytes, 0, bytes.length);
-                clip.start();
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error attempting to play audio test tone", e);
-            }
-        }
+        MyEventBus.getGlobalEventBus().post(new PlayTestAudioRequest(audioSamples, channel));
     }
 }

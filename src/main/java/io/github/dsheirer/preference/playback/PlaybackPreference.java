@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,14 @@
 
 package io.github.dsheirer.preference.playback;
 
+import io.github.dsheirer.audio.playback.AudioPlaybackDeviceDescriptor;
+import io.github.dsheirer.audio.playback.AudioPlaybackDeviceManager;
 import io.github.dsheirer.gui.preference.playback.ToneFrequency;
 import io.github.dsheirer.gui.preference.playback.ToneUtil;
 import io.github.dsheirer.gui.preference.playback.ToneVolume;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
-import io.github.dsheirer.source.mixer.MixerManager;
 import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +44,9 @@ public class PlaybackPreference extends Preference
     private static final String PREFERENCE_KEY_START_TONE_FREQUENCY = "audio.playback.segment.start.frequency";
     private static final String PREFERENCE_KEY_START_TONE_VOLUME = "audio.playback.segment.start.volume";
 
-    private static final String PREFERENCE_KEY_MIXER_CHANNEL_CONFIG = "audio.playback.mixer.channel.configuration";
-    private static final int TONE_LENGTH_SAMPLES = 180;
+    private static final String PREFERENCE_KEY_AUDIO_DEVICE_NAME = "audio.playback.device.name";
+    private static final String PREFERENCE_KEY_AUDIO_CHANNEL_COUNT = "audio.playback.channel.count";
+    public static final int TONE_LENGTH_SAMPLES = 160;
 
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(PlaybackPreference.class);
@@ -55,7 +56,7 @@ public class PlaybackPreference extends Preference
     private ToneVolume mStartToneVolume;
     private ToneFrequency mDropToneFrequency;
     private ToneVolume mDropToneVolume;
-    private MixerChannelConfiguration mMixerChannelConfiguration;
+    private AudioPlaybackDeviceDescriptor mAudioPlaybackDeviceDescriptor;
 
     /**
      * Constructs this preference with an update listener
@@ -221,10 +222,15 @@ public class PlaybackPreference extends Preference
     {
         if(getUseAudioSegmentStartTone())
         {
-            return ToneUtil.getTone(getStartToneFrequency(), getStartToneVolume(), TONE_LENGTH_SAMPLES);
+            return getStartTone(TONE_LENGTH_SAMPLES);
         }
 
         return null;
+    }
+
+    public float[] getStartTone(int length)
+    {
+        return ToneUtil.getTone(getStartToneFrequency(), getStartToneVolume(), length);
     }
 
     /**
@@ -234,62 +240,60 @@ public class PlaybackPreference extends Preference
     {
         if(getUseAudioSegmentDropTone())
         {
-            return ToneUtil.getTone(getDropToneFrequency(), getDropToneVolume(), TONE_LENGTH_SAMPLES);
+            return getDropTone(TONE_LENGTH_SAMPLES);
         }
 
         return null;
     }
 
+    public float[] getDropTone(int length)
+    {
+        return ToneUtil.getTone(getDropToneFrequency(), getDropToneVolume(), length);
+    }
+
     /**
      * Test tone to use for testing the currently selected mixer output
      */
-    public float[] getMixerTestTone()
+    public float[] getAudioPlaybackTestTone()
     {
-        return ToneUtil.getTone(ToneFrequency.F1200, ToneVolume.V10, 800);
+        return ToneUtil.getTone(ToneFrequency.F1200, ToneVolume.V10, TONE_LENGTH_SAMPLES * 4);
     }
 
     /**
-     * Gets the preferred output mixer to use
+     * Preferred audio playback device
      */
-    public MixerChannelConfiguration getMixerChannelConfiguration()
+    public AudioPlaybackDeviceDescriptor getAudioPlaybackDevice()
     {
-        if(mMixerChannelConfiguration == null)
+        if(mAudioPlaybackDeviceDescriptor == null)
         {
-            MixerChannelConfiguration defaultConfig = MixerManager.getDefaultOutputMixer();
+            AudioPlaybackDeviceDescriptor descriptor = AudioPlaybackDeviceManager.getDefaultAudioPLaybackDevice();
 
-            if(defaultConfig != null)
+            if(descriptor != null)
             {
-                String configName = mPreferences.get(PREFERENCE_KEY_MIXER_CHANNEL_CONFIG, defaultConfig.toString());
-
-                for(MixerChannelConfiguration config: MixerManager.getOutputMixers())
-                {
-                    if(config.toString().contentEquals(configName))
-                    {
-                        mMixerChannelConfiguration = config;
-                    }
-                }
-
-                if(mMixerChannelConfiguration == null)
-                {
-                    mMixerChannelConfiguration = defaultConfig;
-                }
+                String name = mPreferences.get(PREFERENCE_KEY_AUDIO_DEVICE_NAME, descriptor.getMixerInfo().getName());
+                int channelCount = mPreferences.getInt(PREFERENCE_KEY_AUDIO_CHANNEL_COUNT, descriptor.getAudioFormat().getChannels());
+                mAudioPlaybackDeviceDescriptor = AudioPlaybackDeviceManager.getAudioPlaybackDevice(name, channelCount);
             }
             else
             {
-                mLog.error("Error - no system audio devices available");
+                mLog.error("Error - no audio playback devices available");
             }
         }
 
-        return mMixerChannelConfiguration;
+        return mAudioPlaybackDeviceDescriptor;
     }
 
     /**
-     * Sets the preferred output mixer to use
+     * Sets the preferred audio playback device
      */
-    public void setMixerChannelConfiguration(MixerChannelConfiguration configuration)
+    public void setAudioPlaybackDevice(AudioPlaybackDeviceDescriptor descriptor)
     {
-        mMixerChannelConfiguration = configuration;
-        mPreferences.put(PREFERENCE_KEY_MIXER_CHANNEL_CONFIG, configuration.toString());
-        notifyPreferenceUpdated();
+        if(descriptor != null)
+        {
+            mAudioPlaybackDeviceDescriptor = descriptor;
+            mPreferences.put(PREFERENCE_KEY_AUDIO_DEVICE_NAME, descriptor.getMixerInfo().getName());
+            mPreferences.putInt(PREFERENCE_KEY_AUDIO_CHANNEL_COUNT, descriptor.getAudioFormat().getChannels());
+            notifyPreferenceUpdated();
+        }
     }
 }
