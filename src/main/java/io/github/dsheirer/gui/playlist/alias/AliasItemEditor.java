@@ -136,6 +136,7 @@ public class AliasItemEditor extends Editor<Alias>
     private Button mResetButton;
     private VBox mButtonBox;
     private ToggleSwitch mMonitorAudioToggleSwitch;
+    private ToggleSwitch mMatchAllIdentifiersToggleSwitch;
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private ToggleSwitch mRecordAudioToggleSwitch;
     private ColorPicker mColorPicker;
@@ -235,6 +236,7 @@ public class AliasItemEditor extends Editor<Alias>
         getGroupField().setDisable(disable);
         getNameField().setDisable(disable);
         getRecordAudioToggleSwitch().setDisable(disable);
+        getMatchAllIdentifiersToggleSwitch().setDisable(disable);
         getColorPicker().setDisable(disable);
         getMonitorAudioToggleSwitch().setDisable(disable);
         getIconNodeComboBox().setDisable(disable);
@@ -254,6 +256,7 @@ public class AliasItemEditor extends Editor<Alias>
             getGroupField().setText(alias.getGroup());
             getNameField().setText(alias.getName());
             getRecordAudioToggleSwitch().setSelected(alias.isRecordable());
+            getMatchAllIdentifiersToggleSwitch().setSelected(alias.isMatchAllIdentifiers());
 
             Icon icon = null;
             String iconName = alias.getIconName();
@@ -320,6 +323,7 @@ public class AliasItemEditor extends Editor<Alias>
             getGroupField().setText(null);
             getNameField().setText(null);
             getRecordAudioToggleSwitch().setSelected(false);
+            getMatchAllIdentifiersToggleSwitch().setSelected(false);
             getColorPicker().setValue(Color.BLACK);
             getMonitorPriorityComboBox().getSelectionModel().select(null);
             getMonitorAudioToggleSwitch().setSelected(false);
@@ -338,6 +342,7 @@ public class AliasItemEditor extends Editor<Alias>
             if(alias != null)
             {
                 alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
+                alias.setMatchAllIdentifiers(getMatchAllIdentifiersToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
 
                 Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
@@ -479,10 +484,20 @@ public class AliasItemEditor extends Editor<Alias>
             buttonsBox.getChildren().addAll(getAddIdentifierButton(), getDeleteIdentifierButton(),
                 getShowOverlapButton());
 
+            HBox matchAllBox = new HBox();
+            matchAllBox.setSpacing(5);
+            matchAllBox.setAlignment(Pos.CENTER_LEFT);
+            Label matchAllLabel = new Label("Match All");
+            matchAllBox.getChildren().addAll(getMatchAllIdentifiersToggleSwitch(), matchAllLabel);
+
+            VBox identifierControlsBox = new VBox();
+            identifierControlsBox.setSpacing(10);
+            identifierControlsBox.getChildren().addAll(buttonsBox, matchAllBox);
+
             HBox identifiersAndButtonsBox = new HBox();
             identifiersAndButtonsBox.setSpacing(10);
             HBox.setHgrow(getIdentifierEditorBox(), Priority.ALWAYS);
-            identifiersAndButtonsBox.getChildren().addAll(getIdentifierEditorBox(), buttonsBox);
+            identifiersAndButtonsBox.getChildren().addAll(getIdentifierEditorBox(), identifierControlsBox);
 
             mIdentifierPane = new TitledPane("Identifiers", identifiersAndButtonsBox);
         }
@@ -1100,6 +1115,19 @@ public class AliasItemEditor extends Editor<Alias>
         }
 
         return mMonitorAudioToggleSwitch;
+    }
+    private ToggleSwitch getMatchAllIdentifiersToggleSwitch()
+    {
+        if(mMatchAllIdentifiersToggleSwitch == null)
+        {
+            mMatchAllIdentifiersToggleSwitch = new ToggleSwitch();
+            mMatchAllIdentifiersToggleSwitch.setDisable(true);
+            mMatchAllIdentifiersToggleSwitch.setTooltip(new Tooltip("When enabled, ALL identifiers must match for this alias to be selected"));
+            mMatchAllIdentifiersToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mMatchAllIdentifiersToggleSwitch;
     }
 
     private ComboBox<Integer> getMonitorPriorityComboBox()

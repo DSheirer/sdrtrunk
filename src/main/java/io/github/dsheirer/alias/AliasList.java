@@ -574,6 +574,196 @@ public class AliasList
     }
 
     /**
+     * Returns aliases that match the identifier collection, respecting the matchAllIdentifiers flag.
+     * For aliases with matchAllIdentifiers=true, ALL non-audio identifiers in the alias must be 
+     * present in the identifier collection for the alias to be returned.
+     * For aliases with matchAllIdentifiers=false (default), any single identifier match returns the alias.
+     * 
+     * @param identifierCollection to match against
+     * @return list of matching aliases
+     */
+    public List<Alias> getAliases(IdentifierCollection identifierCollection)
+    {
+        List<Alias> matchingAliases = new ArrayList<>();
+        
+        if(identifierCollection == null)
+        {
+            return matchingAliases;
+        }
+
+        // First, collect all aliases that match at least one identifier (OR logic)
+        Set<Alias> candidateAliases = new HashSet<>();
+        for(Identifier identifier : identifierCollection.getIdentifiers())
+        {
+            List<Alias> aliases = getAliases(identifier);
+            candidateAliases.addAll(aliases);
+        }
+
+        // Now filter based on matchAllIdentifiers flag
+        for(Alias alias : candidateAliases)
+        {
+            if(alias.isMatchAllIdentifiers())
+            {
+                // Check if ALL non-audio identifiers in the alias are present in the collection
+                if(allIdentifiersMatch(alias, identifierCollection))
+                {
+                    matchingAliases.add(alias);
+                }
+            }
+            else
+            {
+                // Default OR behavior - already matched at least one identifier
+                matchingAliases.add(alias);
+            }
+        }
+
+        return matchingAliases;
+    }
+
+    /**
+     * Checks if all non-audio identifiers in the alias are present in the identifier collection.
+     * 
+     * @param alias to check
+     * @param identifierCollection to match against
+     * @return true if all non-audio identifiers in the alias are found in the collection
+     */
+    private boolean allIdentifiersMatch(Alias alias, IdentifierCollection identifierCollection)
+    {
+        List<AliasID> nonAudioIds = alias.getNonAudioIdentifiers();
+        
+        if(nonAudioIds.isEmpty())
+        {
+            return false; // No identifiers to match
+        }
+
+        for(AliasID aliasID : nonAudioIds)
+        {
+            if(!identifierMatchesCollection(aliasID, identifierCollection))
+            {
+                return false; // At least one identifier doesn't match
+            }
+        }
+
+        return true; // All identifiers matched
+    }
+
+    /**
+     * Checks if a specific alias identifier matches any identifier in the collection.
+     * 
+     * @param aliasID to find
+     * @param identifierCollection to search
+     * @return true if the alias identifier matches an identifier in the collection
+     */
+    private boolean identifierMatchesCollection(AliasID aliasID, IdentifierCollection identifierCollection)
+    {
+        if(!aliasID.isValid())
+        {
+            return false;
+        }
+
+        switch(aliasID.getType())
+        {
+            case TALKGROUP:
+                Talkgroup talkgroup = (Talkgroup)aliasID;
+                for(Identifier id : identifierCollection.getIdentifiers())
+                {
+                    if(id instanceof TalkgroupIdentifier tgi)
+                    {
+                        if(id.getProtocol() == talkgroup.getProtocol() && tgi.getValue() == talkgroup.getValue())
+                        {
+                            return true;
+                        }
+                    }
+                }
+                break;
+            case TALKGROUP_RANGE:
+                TalkgroupRange talkgroupRange = (TalkgroupRange)aliasID;
+                for(Identifier id : identifierCollection.getIdentifiers())
+                {
+                    if(id instanceof TalkgroupIdentifier tgi)
+                    {
+                        if(id.getProtocol() == talkgroupRange.getProtocol() && talkgroupRange.contains(tgi.getValue()))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                break;
+            case RADIO_ID:
+                Radio radio = (Radio)aliasID;
+                for(Identifier id : identifierCollection.getIdentifiers())
+                {
+                    if(id instanceof RadioIdentifier ri)
+                    {
+                        if(id.getProtocol() == radio.getProtocol() && ri.getValue() == radio.getValue())
+                        {
+                            return true;
+                        }
+                    }
+                }
+                break;
+            case RADIO_ID_RANGE:
+                RadioRange radioRange = (RadioRange)aliasID;
+                for(Identifier id : identifierCollection.getIdentifiers())
+                {
+                    if(id instanceof RadioIdentifier ri)
+                    {
+                        if(id.getProtocol() == radioRange.getProtocol() && radioRange.contains(ri.getValue()))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                break;
+            case DCS:
+                Dcs dcs = (Dcs)aliasID;
+                for(Identifier id : identifierCollection.getIdentifiers())
+                {
+                    if(id instanceof DCSIdentifier dcsId)
+                    {
+                        if(dcsId.getValue() == dcs.getDCSCode())
+                        {
+                            return true;
+                        }
+                    }
+                }
+                break;
+            case TONES:
+                TonesID tonesID = (TonesID)aliasID;
+                ToneSequence toneSequence = tonesID.getToneSequence();
+                if(toneSequence != null)
+                {
+                    for(Identifier id : identifierCollection.getIdentifiers())
+                    {
+                        if(id instanceof ToneIdentifier toneId)
+                        {
+                            if(toneSequence.isContainedIn(toneId.getValue()))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
+            case ESN:
+                Esn esn = (Esn)aliasID;
+                for(Identifier id : identifierCollection.getIdentifiers())
+                {
+                    if(id instanceof ESNIdentifier esnId)
+                    {
+                        if(esn.getEsn() != null && esn.getEsn().equalsIgnoreCase(esnId.getValue()))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                break;
+        }
+
+        return false;
+    }
+
+    /**
      * Indicates if any of the identifiers contain a broadcast channel for streaming of audio.
      * @param identifierCollection to inspect
      * @return true if the identifier collection is designated for streaming to one or more channels.
