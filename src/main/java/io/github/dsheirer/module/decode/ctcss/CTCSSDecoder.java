@@ -45,8 +45,8 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
     // Sample rate for input audio
     private static final int SAMPLE_RATE = 8000;
 
-    // Block size for Goertzel algorithm (200ms at 8kHz)
-    private static final int BLOCK_SIZE = 1600;
+    // Block size for Goertzel algorithm (500ms at 8kHz)
+    private static final int BLOCK_SIZE = 4000;
 
     // Detection threshold - tone power must exceed other powers by this factor
     private static final double THRESHOLD_MULTIPLIER = 2.0;
