@@ -715,6 +715,21 @@ public class AliasList
                     }
                 }
                 break;
+            case CTCSS:
+                if(aliasID instanceof io.github.dsheirer.alias.id.ctcss.Ctcss ctcss)
+                {
+                    for(Identifier id : identifierCollection.getIdentifiers())
+                    {
+                        if(id instanceof io.github.dsheirer.module.decode.ctcss.CTCSSIdentifier ctcssId)
+                        {
+                            if(ctcssId.getValue() == ctcss.getCTCSSCode())
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                break;
             case DCS:
                 Dcs dcs = (Dcs)aliasID;
                 for(Identifier id : identifierCollection.getIdentifiers())
