@@ -64,6 +64,7 @@ public class Alias
     private BooleanProperty mRecordable = new SimpleBooleanProperty();
     private BooleanProperty mStreamable = new SimpleBooleanProperty();
     private BooleanProperty mOverlap = new SimpleBooleanProperty();
+    private BooleanProperty mMatchAllIdentifiers = new SimpleBooleanProperty(false);
     private IntegerProperty mColor = new SimpleIntegerProperty();
     private IntegerProperty mPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private IntegerProperty mNonAudioIdentifierCount = new SimpleIntegerProperty();
@@ -184,6 +185,53 @@ public class Alias
     public ObjectProperty streamTalkgroupAliasProperty()
     {
         return mStreamTalkgroupAlias;
+    }
+
+    /**
+     * Match all identifiers property - when true, all non-audio identifiers must match for this alias to be selected
+     */
+    @JsonIgnore
+    public BooleanProperty matchAllIdentifiersProperty()
+    {
+        return mMatchAllIdentifiers;
+    }
+
+    /**
+     * Indicates if all non-audio identifiers must match for this alias to be selected.
+     * When false (default), any single identifier match will select this alias.
+     * When true, all non-audio identifiers in this alias must be present in the identifier collection.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "matchAllIdentifiers")
+    public boolean isMatchAllIdentifiers()
+    {
+        return mMatchAllIdentifiers.get();
+    }
+
+    /**
+     * Sets whether all non-audio identifiers must match for this alias to be selected.
+     * @param matchAll true to require all identifiers to match, false for any single match (default)
+     */
+    public void setMatchAllIdentifiers(boolean matchAll)
+    {
+        mMatchAllIdentifiers.set(matchAll);
+    }
+
+    /**
+     * Returns a list of non-audio alias identifiers for this alias.
+     * These are the identifiers used for matching (talkgroup, radio, CTCSS, DCS, etc.)
+     */
+    @JsonIgnore
+    public List<AliasID> getNonAudioIdentifiers()
+    {
+        List<AliasID> nonAudioIds = new ArrayList<>();
+        for(AliasID aliasID : mAliasIDs)
+        {
+            if(!aliasID.isAudioIdentifier())
+            {
+                nonAudioIds.add(aliasID);
+            }
+        }
+        return nonAudioIds;
     }
 
     /**
@@ -735,6 +783,6 @@ public class Alias
         return (Alias a) -> new Observable[] {a.recordableProperty(), a.streamableProperty(), a.colorProperty(),
             a.aliasListNameProperty(), a.groupProperty(), a.iconNameProperty(), a.nameProperty(), a.aliasIds(),
             a.aliasActions(), a.nonAudioIdentifierCountProperty(), a.overlapProperty(), a.priorityProperty(),
-                a.streamTalkgroupAliasProperty()};
+                a.streamTalkgroupAliasProperty(), a.matchAllIdentifiersProperty()};
     }
 }
