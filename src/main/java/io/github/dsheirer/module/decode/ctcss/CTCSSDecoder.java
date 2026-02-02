@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
  *
  * This decoder uses the Goertzel algorithm to efficiently detect sub-audible tones in the 67-254 Hz range.
  * CTCSS tones are used to allow multiple user groups to share a single radio frequency.
+ * 
+ * Uses overlapping analysis windows (50% overlap) for faster response while maintaining detection reliability.
  */
 public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
@@ -47,6 +49,9 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
 
     // Block size for Goertzel algorithm (500ms at 8kHz)
     private static final int BLOCK_SIZE = 4000;
+    
+    // Overlap size (50% overlap = analyze every 250ms)
+    private static final int OVERLAP_SIZE = BLOCK_SIZE / 4;
 
     // Detection threshold - tone power must exceed other powers by this factor
     private static final double THRESHOLD_MULTIPLIER = 2.0;
@@ -69,15 +74,18 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
     // Goertzel coefficients for each tone
     private final double[] mCoefficients;
 
-    // Goertzel state variables
+    // Goertzel state variables for current window
     private final double[] mQ1;
     private final double[] mQ2;
 
     // Power values for each tone
     private final double[] mPower;
 
-    // Sample counter
-    private int mSampleCount = 0;
+    // Circular buffer to hold samples for overlapping analysis
+    private final float[] mSampleBuffer;
+    private int mBufferIndex = 0;
+    private int mSamplesInBuffer = 0;
+    private int mSamplesSinceLastAnalysis = 0;
 
     // Currently detected tone
     private CTCSSCode mCurrentCode = null;
@@ -90,13 +98,13 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
     private CTCSSCode mPendingCode = null;
     private static final int MIN_CONSECUTIVE_DETECTIONS = 2;
 
-    // === NEW: Tone loss threshold - require consecutive misses before clearing ===
+    // Tone loss threshold - require consecutive misses before clearing
     private int mToneLostCount = 0;
     private static final int TONE_LOST_THRESHOLD = 2;
-    
-    // === NEW: Periodic rebroadcast for late-starting audio segments ===
+
+    // Periodic rebroadcast for late-starting audio segments
     private long mLastBroadcastTime = 0;
-    private static final long REBROADCAST_INTERVAL_MS = 1000; // Re-broadcast every 1 second
+    private static final long REBROADCAST_INTERVAL_MS = 1000;
 
     static
     {
@@ -137,6 +145,7 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
         mQ1 = new double[numTones];
         mQ2 = new double[numTones];
         mPower = new double[numTones];
+        mSampleBuffer = new float[BLOCK_SIZE];
 
         // Calculate Goertzel coefficients for each tone
         for(int i = 0; i < numTones; i++)
@@ -148,22 +157,6 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
         if(sLowPassFilterCoefficients != null)
         {
             mLowPassFilter = FilterFactory.getRealFilter(sLowPassFilterCoefficients);
-        }
-
-        resetGoertzel();
-    }
-
-    /**
-     * Resets the Goertzel state variables
-     */
-    private void resetGoertzel()
-    {
-        mSampleCount = 0;
-        for(int i = 0; i < CTCSS_TONES.length; i++)
-        {
-            mQ1[i] = 0.0;
-            mQ2[i] = 0.0;
-            mPower[i] = 0.0;
         }
     }
 
@@ -209,6 +202,45 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
 
         for(float sample : filtered)
         {
+            // Add sample to circular buffer
+            mSampleBuffer[mBufferIndex] = sample;
+            mBufferIndex = (mBufferIndex + 1) % BLOCK_SIZE;
+            
+            if(mSamplesInBuffer < BLOCK_SIZE)
+            {
+                mSamplesInBuffer++;
+            }
+            
+            mSamplesSinceLastAnalysis++;
+
+            // Check if we should analyze (every OVERLAP_SIZE samples, once buffer is full)
+            if(mSamplesInBuffer >= BLOCK_SIZE && mSamplesSinceLastAnalysis >= OVERLAP_SIZE)
+            {
+                analyzeBuffer();
+                mSamplesSinceLastAnalysis = 0;
+            }
+        }
+    }
+
+    /**
+     * Analyze the current buffer using Goertzel algorithm
+     */
+    private void analyzeBuffer()
+    {
+        // Reset Goertzel state
+        for(int i = 0; i < CTCSS_TONES.length; i++)
+        {
+            mQ1[i] = 0.0;
+            mQ2[i] = 0.0;
+        }
+
+        // Process all samples in buffer (starting from oldest)
+        int readIndex = mBufferIndex; // This points to the oldest sample
+        for(int s = 0; s < BLOCK_SIZE; s++)
+        {
+            float sample = mSampleBuffer[readIndex];
+            readIndex = (readIndex + 1) % BLOCK_SIZE;
+
             // Goertzel feedback stage for each tone
             for(int i = 0; i < CTCSS_TONES.length; i++)
             {
@@ -216,19 +248,12 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
                 mQ2[i] = mQ1[i];
                 mQ1[i] = q0;
             }
-
-            mSampleCount++;
-
-            // Check if block is complete
-            if(mSampleCount >= BLOCK_SIZE)
-            {
-                calculatePowerAndDetect();
-                resetState();
-            }
         }
+
+        calculatePowerAndDetect();
     }
 
- /**
+    /**
      * Calculate power at each frequency and detect tone
      */
     private void calculatePowerAndDetect()
@@ -266,9 +291,9 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
         // Debouncing - require consecutive detections
         if(detectedCode != null)
         {
-            // === NEW: Reset lost counter when tone detected ===
+            // Reset lost counter when tone detected
             mToneLostCount = 0;
-            
+
             if(detectedCode.equals(mPendingCode))
             {
                 mConsecutiveDetections++;
@@ -281,9 +306,9 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
 
             if(mConsecutiveDetections >= MIN_CONSECUTIVE_DETECTIONS)
             {
-                // === NEW: Periodic rebroadcast logic ===
+                // Periodic rebroadcast logic
                 long now = System.currentTimeMillis();
-                
+
                 // Broadcast if: new tone detected OR enough time has passed since last broadcast
                 if(!detectedCode.equals(mCurrentCode) || (now - mLastBroadcastTime) >= REBROADCAST_INTERVAL_MS)
                 {
@@ -291,15 +316,14 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
                     mLastBroadcastTime = now;
                     getMessageListener().receive(new CTCSSMessage(mCurrentCode, System.currentTimeMillis()));
                 }
-                // === END NEW ===
             }
         }
         else
         {
             mPendingCode = null;
             mConsecutiveDetections = 0;
-            
-            // === NEW: Tone loss threshold - don't clear immediately ===
+
+            // Tone loss threshold - don't clear immediately
             mToneLostCount++;
 
             if(mToneLostCount >= TONE_LOST_THRESHOLD && mCurrentCode != null)
@@ -307,22 +331,8 @@ public class CTCSSDecoder extends Decoder implements IRealBufferListener, Listen
                 // Send tone lost message before clearing
                 getMessageListener().receive(new CTCSSMessage(mCurrentCode, System.currentTimeMillis(), true));
                 mCurrentCode = null;
-                mLastBroadcastTime = 0; // Reset so next detection broadcasts immediately
+                mLastBroadcastTime = 0;
             }
-            // === END NEW ===
-        }
-    }
-
-    /**
-     * Reset state variables for next block
-     */
-    private void resetState()
-    {
-        mSampleCount = 0;
-        for(int i = 0; i < CTCSS_TONES.length; i++)
-        {
-            mQ1[i] = 0.0;
-            mQ2[i] = 0.0;
         }
     }
 }
