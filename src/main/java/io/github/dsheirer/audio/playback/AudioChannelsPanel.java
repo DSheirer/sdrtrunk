@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.playback;
 
@@ -24,18 +23,26 @@ import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
+import java.awt.Color;
+import java.awt.Component;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
-import java.awt.Color;
-import java.awt.Component;
-import java.util.List;
 
+/**
+ * Displays one or more audio channel panels.
+ */
 public class AudioChannelsPanel extends JPanel
 {
-    private static final long serialVersionUID = 1L;
-
+    /**
+     * Constructs an instance
+     * @param iconModel for icon access
+     * @param userPreferences to monitor for audio playback changes
+     * @param settingsManager for tone insertion settings
+     * @param controller for the audio channels
+     * @param aliasModel for accessing aliases
+     */
     public AudioChannelsPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
                               IAudioController controller, AliasModel aliasModel)
     {
@@ -44,15 +51,13 @@ public class AudioChannelsPanel extends JPanel
 
         setBackground(Color.BLACK);
 
-        List<AudioOutput> outputs = controller.getAudioOutputs();
-
         addSeparator();
 
-        for(int x = 0; x < outputs.size(); x++)
+        for(int x = 0; x < controller.getAudioChannels().size(); x++)
         {
-            add(new AudioChannelPanel(iconModel, userPreferences, settingsManager, outputs.get(x), aliasModel));
+            add(new AudioChannelPanel(controller.getAudioChannels().get(x), aliasModel, iconModel, settingsManager, userPreferences));
 
-            if(x < outputs.size() - 1)
+            if(x < controller.getAudioChannels().size() - 1)
             {
                 addSeparator();
             }
@@ -60,10 +65,10 @@ public class AudioChannelsPanel extends JPanel
 
 		/* Add an empty channel panel so that the panel is sized appropriately
          * for either a single channel or two channels */
-        if(outputs.size() == 1)
+        if(controller.getAudioChannels().size() == 1)
         {
             addSeparator();
-            add(new AudioChannelPanel(iconModel, userPreferences, settingsManager, null, aliasModel), "growx");
+            add(new AudioChannelPanel(null, aliasModel, iconModel, settingsManager, userPreferences), "growx");
         }
     }
 
@@ -81,6 +86,9 @@ public class AudioChannelsPanel extends JPanel
         }
     }
 
+    /**
+     * Adds a separator to this panel.
+     */
     private void addSeparator()
     {
         JSeparator separator = new JSeparator(JSeparator.VERTICAL);

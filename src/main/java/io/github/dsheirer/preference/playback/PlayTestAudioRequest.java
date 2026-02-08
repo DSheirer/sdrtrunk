@@ -17,35 +17,20 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.preference;
+package io.github.dsheirer.preference.playback;
 
 /**
- * Preference editor tree node enumeration.
+ * Request to play a test tone over the currently employed audio playback device.
+ *
+ * @param audio to play (160 samples in length = 20 milliseconds)
+ * @param channel number for the audio channel (0 = mono/left, 1 = right, etc.)
  */
-public enum PreferenceEditorType
+public record PlayTestAudioRequest(float[] audio, int channel)
 {
-    APPLICATION("Application"),
-    CHANNEL_EVENT("Channel Events"),
-    DIRECTORY("Directories"),
-    JMBE_LIBRARY("JMBE Audio Library"),
-    AUDIO_MP3("MP3"),
-    AUDIO_RECORD("Record"),
-    AUDIO_OUTPUT("Playback/Tones"),
-    AUDIO_CALL_MANAGEMENT("Call Management"),
-    SOURCE_TUNERS("Tuners"),
-    TALKGROUP_FORMAT("Talkgroup & Radio ID"),
-    VECTOR_CALIBRATION("Vector Calibration"),
-    DEFAULT("Default");
+    public static final int ALL_CHANNELS = -1;
 
-    private String mLabel;
-
-    PreferenceEditorType(String label)
+    public boolean isAllChannels()
     {
-        mLabel = label;
+        return channel == ALL_CHANNELS;
     }
-
-    public String toString()
-    {
-        return mLabel;
-    }
-}
+};
