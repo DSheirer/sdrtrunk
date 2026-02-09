@@ -134,7 +134,6 @@ public class P25P1MessageFramer
     {
         boolean validNIDDetected = false;
 
-        mDebugSymbolCount++;
         mDibitSinceTimestampCounter++;
 
         //Strip status symbol after every 35 dibits/70 bits.  This counter is reset to zero on sync detect and runs
