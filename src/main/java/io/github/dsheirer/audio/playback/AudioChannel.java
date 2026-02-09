@@ -170,7 +170,16 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     {
         if(mAudioBuffer.isFull())
         {
-            return mAudioBuffer.get();
+            float[] audio = mAudioBuffer.get();
+
+            if(isMuted())
+            {
+                return new float[SAMPLES_PER_INTERVAL];
+            }
+            else
+            {
+                return audio;
+            }
         }
 
         if(mCurrentAudioSegment == null)
