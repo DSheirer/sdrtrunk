@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2026 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,6 +75,7 @@ public class P25P1MessageFramer
     private int mDetectedSyncBitErrors = 0;
     private final P25P1ChannelStatusProcessor mChannelStatusProcessor = new P25P1ChannelStatusProcessor();
     private PDUSequence mPDUSequence;
+    private int mDebugSymbolCount = 0;
 
     /**
      * Constructs an instance
@@ -122,6 +123,11 @@ public class P25P1MessageFramer
      */
     public void syncDetected()
     {
+        if(mDebugSymbolCount > 2204767)
+        {
+            int a = 0;
+        }
+
         mSyncDetected = true;
         mNIDPointer = 0;
     }
@@ -681,6 +687,7 @@ public class P25P1MessageFramer
      */
     private void broadcast(IMessage message)
     {
+//        System.out.println("Symbols: " + mDebugSymbolCount);
         if(mRunning && message != null && mMessageListener != null)
         {
             mMessageListener.receive(message);
@@ -838,6 +845,7 @@ public class P25P1MessageFramer
         //flag it as invalid NID when this happens.  The NAC tracker will give us a value of 0 until it has enough
         //observations of a valid NID value.
         mNACTracker.track(nac);
+//        System.out.println("\t\t" + mDebugSymbolCount + " VALID NID - NAC:" + nac + " DUID:" + duid);
         nidDetected(nac, duid, nid.getCorrectedBitCount());
         return true;
     }
