@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -112,7 +112,6 @@ public class P25P1DemodulatorLSM
         double maxTimingAdjustment = samplesPerSymbol / 25;
         double pointer, residual, timingAdjustment;
         float magnitude, phaseError = 0, requiredGain, softSymbol, pllI, pllQ, pllTemp;
-//        float previousSymbol = 0;
         float iMiddle, qMiddle, iCurrent, qCurrent, iMiddleDemodulated, qMiddleDemodulated, iSymbol, qSymbol;
         int offset;
         Dibit hardSymbol;
