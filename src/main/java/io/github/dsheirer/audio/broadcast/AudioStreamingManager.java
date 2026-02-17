@@ -24,6 +24,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
@@ -62,6 +63,12 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     private UserPreferences mUserPreferences;
     private ScheduledFuture<?> mAudioSegmentProcessorFuture;
     private int mNextRecordingNumber = 1;
+    private BroadcastModel mBroadcastModel;
+
+    // Real-time streaming state: maps audio segment to its active real-time broadcasters
+    private java.util.Map<AudioSegment, List<IRealTimeAudioBroadcaster>> mRealTimeStreams =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private java.util.Map<AudioSegment, Integer> mLastBufferIndex = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Constructs an instance
@@ -74,6 +81,22 @@ public class AudioStreamingManager implements Listener<AudioSegment>
         mAudioRecordingListener = listener;
         mBroadcastFormat = broadcastFormat;
         mUserPreferences = userPreferences;
+
+        // If the listener is a BroadcastModel, store it for real-time broadcaster lookups
+        if(listener instanceof BroadcastModel bm)
+        {
+            mBroadcastModel = bm;
+        }
+    }
+
+    /**
+     * Sets the broadcast model to enable real-time audio routing to Zello and other
+     * real-time broadcasters.
+     * @param broadcastModel the broadcast model
+     */
+    public void setBroadcastModel(BroadcastModel broadcastModel)
+    {
+        mBroadcastModel = broadcastModel;
     }
 
     /**
@@ -117,10 +140,13 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
         for(AudioSegment audioSegment: mAudioSegments)
         {
+            stopRealTimeStreams(audioSegment);
             audioSegment.decrementConsumerCount();
         }
 
         mAudioSegments.clear();
+        mRealTimeStreams.clear();
+        mLastBufferIndex.clear();
     }
 
     /**
@@ -139,11 +165,17 @@ public class AudioStreamingManager implements Listener<AudioSegment>
             if(audioSegment.isDuplicate() && mUserPreferences.getCallManagementPreference().isDuplicateStreamingSuppressionEnabled())
             {
                 it.remove();
+                stopRealTimeStreams(audioSegment);
                 audioSegment.decrementConsumerCount();
             }
-            else if(audioSegment.completeProperty().get())
+            else
             {
-                it.remove();
+                // Forward new audio buffers to any active real-time broadcasters
+                forwardRealTimeAudio(audioSegment);
+
+                if(audioSegment.completeProperty().get())
+                {
+                    it.remove();
 
                 if(mAudioRecordingListener != null && audioSegment.hasBroadcastChannels())
                 {
@@ -204,7 +236,94 @@ public class AudioStreamingManager implements Listener<AudioSegment>
                     }
                 }
 
-                audioSegment.decrementConsumerCount();
+                    audioSegment.decrementConsumerCount();
+                    stopRealTimeStreams(audioSegment);
+                }
+            }
+        }
+    }
+
+    /**
+     * Starts or continues real-time audio forwarding for an audio segment.
+     * Finds real-time broadcasters (like Zello) that match the segment's broadcast channels
+     * and forwards new audio buffers to them incrementally.
+     */
+    private void forwardRealTimeAudio(AudioSegment audioSegment)
+    {
+        if(mBroadcastModel == null || !audioSegment.hasBroadcastChannels())
+        {
+            return;
+        }
+
+        // Start real-time streams for newly arrived segments
+        if(!mRealTimeStreams.containsKey(audioSegment))
+        {
+            List<IRealTimeAudioBroadcaster> rtBroadcasters = new ArrayList<>();
+
+            for(BroadcastChannel broadcastChannel : audioSegment.getBroadcastChannels())
+            {
+                AbstractAudioBroadcaster<?> broadcaster = mBroadcastModel.getBroadcaster(broadcastChannel.getChannelName());
+                if(broadcaster instanceof IRealTimeAudioBroadcaster rtb && rtb.isRealTimeReady())
+                {
+                    IdentifierCollection identifiers = audioSegment.getIdentifierCollection() != null
+                            ? new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers())
+                            : null;
+                    rtb.startRealTimeStream(identifiers);
+                    rtBroadcasters.add(rtb);
+                }
+            }
+
+            if(!rtBroadcasters.isEmpty())
+            {
+                mRealTimeStreams.put(audioSegment, rtBroadcasters);
+                mLastBufferIndex.put(audioSegment, 0);
+            }
+        }
+
+        // Forward any new audio buffers
+        List<IRealTimeAudioBroadcaster> rtBroadcasters = mRealTimeStreams.get(audioSegment);
+        if(rtBroadcasters != null && !rtBroadcasters.isEmpty())
+        {
+            int lastIndex = mLastBufferIndex.getOrDefault(audioSegment, 0);
+            List<float[]> buffers = audioSegment.getAudioBuffers();
+            int currentSize = buffers.size();
+
+            for(int i = lastIndex; i < currentSize; i++)
+            {
+                float[] buffer = audioSegment.getAudioBuffer(i);
+                if(buffer != null)
+                {
+                    for(IRealTimeAudioBroadcaster rtb : rtBroadcasters)
+                    {
+                        rtb.receiveRealTimeAudio(buffer);
+                    }
+                }
+            }
+
+            mLastBufferIndex.put(audioSegment, currentSize);
+        }
+    }
+
+    /**
+     * Stops any active real-time streams for the given audio segment.
+     */
+    private void stopRealTimeStreams(AudioSegment audioSegment)
+    {
+        List<IRealTimeAudioBroadcaster> rtBroadcasters = mRealTimeStreams.remove(audioSegment);
+        mLastBufferIndex.remove(audioSegment);
+
+        if(rtBroadcasters != null)
+        {
+            for(IRealTimeAudioBroadcaster rtb : rtBroadcasters)
+            {
+                try
+                {
+                    rtb.stopRealTimeStream();
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error stopping real-time stream", e);
+                }
             }
         }
     }

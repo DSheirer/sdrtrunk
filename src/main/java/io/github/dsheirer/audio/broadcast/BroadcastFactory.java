@@ -36,6 +36,10 @@ import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcast
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
+import io.github.dsheirer.audio.broadcast.zello.ZelloBroadcaster;
+import io.github.dsheirer.audio.broadcast.zello.ZelloConfiguration;
+import io.github.dsheirer.audio.broadcast.zello.ZelloConsumerBroadcaster;
+import io.github.dsheirer.audio.broadcast.zello.ZelloConsumerConfiguration;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
@@ -88,6 +92,12 @@ public class BroadcastFactory
                 case SHOUTCAST_V2:
                     return new ShoutcastV2AudioStreamingBroadcaster((ShoutcastV2Configuration) configuration,
                             inputAudioFormat, mp3Setting, aliasModel);
+                case ZELLO_WORK:
+                    return new ZelloBroadcaster((ZelloConfiguration) configuration,
+                            inputAudioFormat, mp3Setting, aliasModel);
+                case ZELLO:
+                    return new ZelloConsumerBroadcaster((ZelloConsumerConfiguration) configuration,
+                            inputAudioFormat, mp3Setting, aliasModel);
                 case UNKNOWN:
                 default:
                     mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
@@ -125,6 +135,10 @@ public class BroadcastFactory
                 return new ShoutcastV1Configuration(format);
             case SHOUTCAST_V2:
                 return new ShoutcastV2Configuration(format);
+            case ZELLO_WORK:
+                return new ZelloConfiguration(format);
+            case ZELLO:
+                return new ZelloConsumerConfiguration(format);
             case UNKNOWN:
             default:
                 mLog.info("Unrecognized broadcastAudio server type: " + serverType.name());
