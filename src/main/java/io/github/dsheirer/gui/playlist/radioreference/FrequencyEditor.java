@@ -24,9 +24,14 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.config.ChannelToneFilter;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.Modulation;
+import io.github.dsheirer.module.decode.dcs.DCSCode;
+import java.util.ArrayList;
+import java.util.List;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Category;
@@ -414,13 +419,30 @@ public class FrequencyEditor extends VBox
             channel.setSourceConfiguration(sourceConfigTuner);
             DecodeConfiguration decodeConfiguration = DecoderFactory.getDecodeConfiguration(modeDecoderType.getDecoderType());
 
-            if(decodeConfiguration instanceof DecodeConfigNBFM && modeDecoderType == ModeDecoderType.FM)
+            if(decodeConfiguration instanceof DecodeConfigNBFM nbfmConfig)
             {
-                ((DecodeConfigNBFM)decodeConfiguration).setBandwidth(DecodeConfigNBFM.Bandwidth.BW_25_0);
+                if(modeDecoderType == ModeDecoderType.FM)
+                {
+                    nbfmConfig.setBandwidth(DecodeConfigNBFM.Bandwidth.BW_25_0);
+                }
+
+                // === NEW: Auto-configure CTCSS/DCS from Radio Reference tone field ===
+                String tone = getToneTextField().getText();
+                if(tone != null && !tone.trim().isEmpty())
+                {
+                    configureToneFilter(nbfmConfig, tone.trim());
+                }
             }
-            else if(decodeConfiguration instanceof DecodeConfigP25Phase1)
+            else if(decodeConfiguration instanceof DecodeConfigP25Phase1 p25Config)
             {
-                ((DecodeConfigP25Phase1)decodeConfiguration).setModulation(Modulation.C4FM);
+                p25Config.setModulation(Modulation.C4FM);
+
+                // === NEW: Auto-configure NAC from Radio Reference tone field ===
+                String tone = getToneTextField().getText();
+                if(tone != null && !tone.trim().isEmpty())
+                {
+                    configureNacFilter(p25Config, tone.trim());
+                }
             }
             channel.setDecodeConfiguration(decodeConfiguration);
             return channel;
@@ -479,5 +501,157 @@ public class FrequencyEditor extends VBox
         }
 
         return mDecoderTextField;
+    }
+
+    /**
+     * Parses Radio Reference tone string and configures CTCSS or DCS filter on NBFM channel.
+     *
+     * Tone formats from Radio Reference:
+     *   "100.0 PL" or "100.0" → CTCSS tone at 100.0 Hz
+     *   "D023N" or "D023I" → DCS code 023 Normal/Inverted
+     *   "CSQ" → Carrier squelch (no filter)
+     *   "117 NAC" → NAC (handled separately for P25)
+     *
+     * @param config the NBFM decode configuration to modify
+     * @param tone the tone string from Radio Reference
+     */
+    private void configureToneFilter(DecodeConfigNBFM config, String tone)
+    {
+        // Skip carrier squelch
+        if(tone.equalsIgnoreCase("CSQ") || tone.isEmpty())
+        {
+            return;
+        }
+
+        // Skip NAC entries (these are for P25, not NBFM)
+        if(tone.toUpperCase().contains("NAC"))
+        {
+            return;
+        }
+
+        mLog.info("Radio Reference tone field: [{}]", tone);
+
+        String upperTone = tone.toUpperCase().trim();
+
+        // Check for DCS/DPL code in various Radio Reference formats:
+        //   "D023N" or "D023I" → already in DCSCode enum format
+        //   "125 DPL" or "125DPL" → numeric DPL code, needs "D" prefix and "N" suffix
+        if(upperTone.contains("DPL") || upperTone.contains("DCS"))
+        {
+            // Extract the numeric code: "125 DPL" → "125", "D023N DPL" → "D023N"
+            String codeStr = upperTone.replace("DPL", "").replace("DCS", "").trim();
+
+            // If it's just a number like "074", convert to DCSCode format "N074" (normal polarity)
+            if(codeStr.matches("\\d+"))
+            {
+                codeStr = "N" + String.format("%03d", Integer.parseInt(codeStr));
+            }
+
+            try
+            {
+                DCSCode dcsCode = DCSCode.valueOf(codeStr);
+                if(dcsCode != DCSCode.UNKNOWN)
+                {
+                    config.setToneFilterEnabled(true);
+                    config.addToneFilter(new ChannelToneFilter(
+                            ChannelToneFilter.ToneType.DCS, dcsCode.name(), dcsCode.toString()));
+                    mLog.info("Auto-configured DCS filter from Radio Reference: {}", dcsCode);
+                    return;
+                }
+            }
+            catch(IllegalArgumentException e)
+            {
+                mLog.debug("DCS code not recognized: {}", codeStr);
+            }
+        }
+        // Also check for "N023" or "I023" format without DPL/DCS suffix
+        else if((upperTone.startsWith("N") || upperTone.startsWith("I")) && upperTone.length() >= 4)
+        {
+            String dcsStr = upperTone.split("\\s+")[0];
+            try
+            {
+                DCSCode dcsCode = DCSCode.valueOf(dcsStr);
+                if(dcsCode != DCSCode.UNKNOWN)
+                {
+                    config.setToneFilterEnabled(true);
+                    config.addToneFilter(new ChannelToneFilter(
+                            ChannelToneFilter.ToneType.DCS, dcsCode.name(), dcsCode.toString()));
+                    mLog.info("Auto-configured DCS filter from Radio Reference: {}", dcsCode);
+                    return;
+                }
+            }
+            catch(IllegalArgumentException e)
+            {
+                // Not a valid DCS code — fall through to CTCSS
+            }
+        }
+
+        // Check for CTCSS tone: "173.8 PL", "100.0", "156.7 Hz", etc.
+        String freqStr = upperTone.replace("PL", "").replace("HZ", "").trim();
+        // Take the first token in case of "173.8 PL"
+        freqStr = freqStr.split("\\s+")[0];
+        try
+        {
+            float freq = Float.parseFloat(freqStr);
+            if(freq >= 67.0f && freq <= 254.1f)
+            {
+                config.setToneFilterEnabled(true);
+                config.addToneFilter(new ChannelToneFilter(
+                        ChannelToneFilter.ToneType.CTCSS, String.valueOf(freq), freq + " Hz"));
+                mLog.info("Auto-configured CTCSS filter from Radio Reference: {} Hz", freq);
+            }
+        }
+        catch(NumberFormatException e)
+        {
+            mLog.debug("Unable to parse tone value from Radio Reference: {}", tone);
+        }
+    }
+
+    /**
+     * Parses Radio Reference tone string and configures NAC filter on P25 channel.
+     *
+     * Tone formats:
+     *   "117 NAC" or "117" → NAC 0x117
+     *
+     * @param config the P25 Phase 1 decode configuration to modify
+     * @param tone the tone string from Radio Reference
+     */
+    private void configureNacFilter(DecodeConfigP25Phase1 config, String tone)
+    {
+        String upperTone = tone.toUpperCase().trim();
+
+        // Only process NAC entries
+        if(!upperTone.contains("NAC"))
+        {
+            return;
+        }
+
+        // Extract the NAC value: "117 NAC" → "117"
+        String nacStr = upperTone.replace("NAC", "").trim();
+        if(nacStr.isEmpty())
+        {
+            return;
+        }
+
+        try
+        {
+            // Radio Reference lists NAC in hex
+            int nac = Integer.parseInt(nacStr, 16);
+            if(nac >= 0 && nac <= 4095)
+            {
+                // DecodeConfigP25Phase1 extends DecodeConfigP25 which has the NAC filter
+                if(config instanceof DecodeConfigP25 p25Config)
+                {
+                    p25Config.setNacFilterEnabled(true);
+                    p25Config.addAllowedNAC(nac);
+                    mLog.info("Auto-configured NAC filter from Radio Reference: x{} ({})",
+                            String.format("%03X", nac), nac);
+                }
+            }
+        }
+        catch(NumberFormatException e)
+        {
+            mLog.debug("Unable to parse NAC value from Radio Reference: {}", tone);
+        }
     }
 }
