@@ -435,8 +435,11 @@ public class DecoderFactory
         }
 
         DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
-        modules.add(new NBFMDecoder(decodeConfigNBFM));
-        modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
+        NBFMDecoderState decoderState = new NBFMDecoderState(channel.getName(), decodeConfigNBFM);
+        NBFMDecoder decoder = new NBFMDecoder(decodeConfigNBFM);
+        decoder.setDecoderState(decoderState);
+        modules.add(decoder);
+        modules.add(decoderState);
         modules.add(new AudioModule(aliasList, 0, 60000, decodeConfigNBFM.isAudioFilter()));
     }
 
