@@ -27,17 +27,22 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.EventQueue;
 import javax.swing.JTable;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.TableColumnModel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Monitors a JTable column model and persists column width changes to the user preferences.  Restores
- * previous column width preferred sizes on application restart.
+ * Monitors a JTable column model and persists column width, order, and sort changes to the user preferences.
+ * Restores previous column layout on application restart.
  */
 public class JTableColumnWidthMonitor
 {
@@ -45,7 +50,7 @@ public class JTableColumnWidthMonitor
     private UserPreferences mUserPreferences;
     private JTable mTable;
     private String mKey;
-    private ColumnResizeListener mColumnResizeListener = new ColumnResizeListener();
+    private ColumnModelListener mColumnModelListener = new ColumnModelListener();
     private AtomicBoolean mSaveInProgress = new AtomicBoolean();
 
     /**
@@ -63,11 +68,26 @@ public class JTableColumnWidthMonitor
 
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 
-        // Wait until the UI is realized to set preferred column widths
-        EventQueue.invokeLater(this::restoreColumnWidths);
+        // Wait until the UI is realized to restore column layout
+        EventQueue.invokeLater(() -> {
+            restoreColumnOrder();
+            restoreColumnWidths();
+            restoreSortOrder();
+        });
 
-        // Keep listening for drag-resizes so you can re-save new widths
-        mTable.getColumnModel().addColumnModelListener(mColumnResizeListener);
+        // Listen for column resize, reorder, and sort changes
+        mTable.getColumnModel().addColumnModelListener(mColumnModelListener);
+
+        // Listen for sort order changes if a row sorter is present
+        if(mTable.getRowSorter() != null)
+        {
+            mTable.getRowSorter().addRowSorterListener(e -> {
+                if(mSaveInProgress.compareAndSet(false, true))
+                {
+                    ThreadPool.SCHEDULED.schedule(new ColumnLayoutSaveTask(), 2, TimeUnit.SECONDS);
+                }
+            });
+        }
     }
 
     /**
@@ -75,9 +95,9 @@ public class JTableColumnWidthMonitor
      */
     public void dispose()
     {
-        if(mTable != null && mColumnResizeListener != null)
+        if(mTable != null && mColumnModelListener != null)
         {
-            mTable.getColumnModel().removeColumnModelListener(mColumnResizeListener);
+            mTable.getColumnModel().removeColumnModelListener(mColumnModelListener);
         }
 
         mTable = null;
@@ -90,6 +110,7 @@ public class JTableColumnWidthMonitor
     private void restoreColumnWidths()
     {
         TableColumnModel model = mTable.getColumnModel();
+        boolean hasWidths = false;
 
         for(int x = 0; x < model.getColumnCount(); x++)
         {
@@ -98,7 +119,16 @@ public class JTableColumnWidthMonitor
             if(width != Integer.MAX_VALUE)
             {
                 model.getColumn(x).setPreferredWidth(width);
+                model.getColumn(x).setWidth(width);
+                hasWidths = true;
             }
+        }
+
+        // Temporarily disable auto-resize to let saved widths take effect, then re-enable
+        if(hasWidths)
+        {
+            mTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            EventQueue.invokeLater(() -> mTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS));
         }
     }
 
@@ -116,6 +146,134 @@ public class JTableColumnWidthMonitor
     }
 
     /**
+     * Stores the current column order to user preferences.
+     * Saves the model index of each view column position.
+     */
+    private void storeColumnOrder()
+    {
+        TableColumnModel model = mTable.getColumnModel();
+
+        for(int viewIndex = 0; viewIndex < model.getColumnCount(); viewIndex++)
+        {
+            mUserPreferences.getSwingPreference().setInt(
+                mKey + ".column.order." + viewIndex, model.getColumn(viewIndex).getModelIndex());
+        }
+
+        mUserPreferences.getSwingPreference().setInt(mKey + ".column.order.count", model.getColumnCount());
+    }
+
+    /**
+     * Restores column order from user preferences.
+     */
+    private void restoreColumnOrder()
+    {
+        TableColumnModel model = mTable.getColumnModel();
+        int savedCount = mUserPreferences.getSwingPreference().getInt(mKey + ".column.order.count", 0);
+
+        if(savedCount != model.getColumnCount())
+        {
+            return; // Column count changed or no saved order
+        }
+
+        try
+        {
+            int[] modelIndices = new int[savedCount];
+            for(int i = 0; i < savedCount; i++)
+            {
+                modelIndices[i] = mUserPreferences.getSwingPreference().getInt(mKey + ".column.order." + i, i);
+            }
+
+            // Move columns to match saved order
+            for(int targetView = 0; targetView < modelIndices.length; targetView++)
+            {
+                int desiredModel = modelIndices[targetView];
+
+                for(int currentView = targetView; currentView < model.getColumnCount(); currentView++)
+                {
+                    if(model.getColumn(currentView).getModelIndex() == desiredModel)
+                    {
+                        if(currentView != targetView)
+                        {
+                            model.moveColumn(currentView, targetView);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error restoring column order", e);
+        }
+    }
+
+    /**
+     * Stores the current sort order to user preferences.
+     * Saves sort column index and sort direction (0=unsorted, 1=ascending, 2=descending).
+     */
+    private void storeSortOrder()
+    {
+        if(mTable.getRowSorter() == null)
+        {
+            return;
+        }
+
+        List<? extends RowSorter.SortKey> sortKeys = mTable.getRowSorter().getSortKeys();
+
+        mUserPreferences.getSwingPreference().setInt(mKey + ".sort.count", sortKeys.size());
+
+        for(int i = 0; i < sortKeys.size(); i++)
+        {
+            mUserPreferences.getSwingPreference().setInt(mKey + ".sort." + i + ".column", sortKeys.get(i).getColumn());
+            mUserPreferences.getSwingPreference().setInt(mKey + ".sort." + i + ".direction", sortKeys.get(i).getSortOrder().ordinal());
+        }
+    }
+
+    /**
+     * Restores sort order from user preferences.
+     */
+    private void restoreSortOrder()
+    {
+        if(mTable.getRowSorter() == null)
+        {
+            return;
+        }
+
+        int sortCount = mUserPreferences.getSwingPreference().getInt(mKey + ".sort.count", 0);
+
+        if(sortCount <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            List<RowSorter.SortKey> sortKeys = new ArrayList<>();
+
+            for(int i = 0; i < sortCount; i++)
+            {
+                int column = mUserPreferences.getSwingPreference().getInt(mKey + ".sort." + i + ".column", -1);
+                int direction = mUserPreferences.getSwingPreference().getInt(mKey + ".sort." + i + ".direction", 0);
+
+                if(column >= 0 && column < mTable.getColumnCount())
+                {
+                    SortOrder sortOrder = SortOrder.values()[Math.min(direction, SortOrder.values().length - 1)];
+                    sortKeys.add(new RowSorter.SortKey(column, sortOrder));
+                }
+            }
+
+            if(!sortKeys.isEmpty())
+            {
+                mTable.getRowSorter().setSortKeys(sortKeys);
+            }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error restoring sort order", e);
+        }
+    }
+
+    /**
      * Constructs a preference key for the column number
      */
     private String getColumnKey(int column)
@@ -124,16 +282,22 @@ public class JTableColumnWidthMonitor
     }
 
     /**
-     * Table column model listener.
+     * Table column model listener that saves width, order, and sort changes.
      */
-    class ColumnResizeListener implements TableColumnModelListener
+    class ColumnModelListener implements TableColumnModelListener
     {
         @Override
         public void columnMarginChanged(ChangeEvent e)
         {
-            if(mSaveInProgress.compareAndSet(false, true))
+            scheduleSave();
+        }
+
+        @Override
+        public void columnMoved(TableColumnModelEvent e)
+        {
+            if(e.getFromIndex() != e.getToIndex())
             {
-                ThreadPool.SCHEDULED.schedule(new ColumnWidthSaveTask(), 2, TimeUnit.SECONDS);
+                scheduleSave();
             }
         }
 
@@ -142,18 +306,25 @@ public class JTableColumnWidthMonitor
         @Override
         public void columnRemoved(TableColumnModelEvent e){}
         @Override
-        public void columnMoved(TableColumnModelEvent e){}
-        @Override
         public void columnSelectionChanged(ListSelectionEvent e){}
+
+        private void scheduleSave()
+        {
+            if(mSaveInProgress.compareAndSet(false, true))
+            {
+                ThreadPool.SCHEDULED.schedule(new ColumnLayoutSaveTask(), 2, TimeUnit.SECONDS);
+            }
+        }
     }
 
-    public class ColumnWidthSaveTask implements Runnable
+    public class ColumnLayoutSaveTask implements Runnable
     {
-
         @Override
         public void run()
         {
             storeColumnWidths();
+            storeColumnOrder();
+            storeSortOrder();
             mSaveInProgress.set(false);
         }
     }

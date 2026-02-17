@@ -79,6 +79,8 @@ public class AliasModel
                 mAliasListNames.add(aliasListName);
             }
         }
+
+        FXCollections.sort(mAliasListNames);
     }
 
     /**
@@ -124,6 +126,8 @@ public class AliasModel
                 mAliasListNames.add(aliasListName);
             }
         }
+
+        FXCollections.sort(mAliasListNames);
     }
 
     /**
@@ -275,6 +279,7 @@ public class AliasModel
             if(!mAliasListNames.contains(aliasListName))
             {
                 mAliasListNames.add(aliasListName);
+                FXCollections.sort(mAliasListNames);
             }
         }
         else if(!mAliasListNames.contains(NO_ALIAS_LIST))

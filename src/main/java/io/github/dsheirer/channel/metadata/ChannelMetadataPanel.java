@@ -60,6 +60,9 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+import java.util.Comparator;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
@@ -118,7 +121,21 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_CONFIGURATION_FREQUENCY)
             .setCellRenderer(new FrequencyCellRenderer());
 
-        //Add a table column width monitor to store/restore column widths
+        //Enable column sorting via click on column headers
+        TableRowSorter<TableModel> sorter = new TableRowSorter<>(mTable.getModel());
+        Comparator<Object> toStringComparator = (o1, o2) -> {
+            String s1 = o1 != null ? o1.toString() : "";
+            String s2 = o2 != null ? o2.toString() : "";
+            return s1.compareToIgnoreCase(s2);
+        };
+        for(int i = 0; i < mTable.getColumnCount(); i++)
+        {
+            sorter.setComparator(i, toStringComparator);
+        }
+        mTable.setRowSorter(sorter);
+
+        //Add column layout monitor AFTER sorter is set, so it can attach sort listener
+        //and so sorter setup doesn't trigger save of default widths
         mTableColumnMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
 
         JScrollPane scrollPane = new JScrollPane(mTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
