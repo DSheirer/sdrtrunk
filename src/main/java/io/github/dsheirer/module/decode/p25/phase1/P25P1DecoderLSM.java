@@ -72,6 +72,15 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     private final P25P1DemodulatorLSM mDemodulator;
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
+
+    /**
+     * Sets the allowed NACs for filtering at the message framer level.
+     * @param allowedNACs set of allowed NAC values, or null to accept all
+     */
+    public void setAllowedNACs(java.util.Set<Integer> allowedNACs)
+    {
+        mMessageFramer.setAllowedNACs(allowedNACs);
+    }
     private final PowerMonitor mPowerMonitor = new PowerMonitor();
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;

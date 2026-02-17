@@ -54,6 +54,7 @@ public class P25P1MessageFramer
     private static final IntField NAC_FIELD = IntField.length12(0);
     private static final IntField DUID_FIELD = IntField.length4(12);
     private final NACTracker mNACTracker = new NACTracker();
+    private java.util.Set<Integer> mAllowedNACs = null;
     private Dibit[] mNIDBuffer = new Dibit[DIBIT_LENGTH_NID];
     private int mNIDPointer = 0;
     private final P25P1SoftSyncDetector mSoftSyncDetector = P25P1SoftSyncDetectorFactory.getDetector();
@@ -82,6 +83,16 @@ public class P25P1MessageFramer
      */
     public P25P1MessageFramer()
     {
+    }
+
+    /**
+     * Sets the allowed NACs for filtering. When non-null and non-empty, only frames with a
+     * matching NAC will be processed. Null means accept all NACs (default).
+     * @param allowedNACs set of allowed NAC values, or null to accept all
+     */
+    public void setAllowedNACs(java.util.Set<Integer> allowedNACs)
+    {
+        mAllowedNACs = allowedNACs;
     }
 
     /**
@@ -844,6 +855,14 @@ public class P25P1MessageFramer
         //flag it as invalid NID when this happens.  The NAC tracker will give us a value of 0 until it has enough
         //observations of a valid NID value.
         mNACTracker.track(nac);
+
+        //NAC filtering: reject frames with non-matching NAC
+        if(mAllowedNACs != null && !mAllowedNACs.isEmpty() && !mAllowedNACs.contains(nac))
+        {
+            dispatchSyncLoss(112);
+            return false;
+        }
+
 //        System.out.println("\t\t" + mDebugSymbolCount + " VALID NID - NAC:" + nac + " DUID:" + duid);
         nidDetected(nac, duid, nid.getCorrectedBitCount());
         return true;

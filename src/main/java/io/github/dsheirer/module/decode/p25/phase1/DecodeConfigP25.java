@@ -19,11 +19,17 @@
 package io.github.dsheirer.module.decode.p25.phase1;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
@@ -34,6 +40,9 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
 {
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
+    private List<Integer> mAllowedNACs = new ArrayList<>();
+    private boolean mNacFilterEnabled = false;
+    private int mTalkgroup = 0;
 
     public DecodeConfigP25()
     {
@@ -68,5 +77,84 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
     public void setTrafficChannelPoolSize(int size)
     {
         mTrafficChannelPoolSize = size;
+    }
+
+    /**
+     * List of allowed Network Access Codes (NACs) for this channel.
+     * When NAC filtering is enabled, only messages with a matching NAC will be processed.
+     */
+    @JacksonXmlElementWrapper(localName = "allowedNACs")
+    @JacksonXmlProperty(localName = "nac")
+    public List<Integer> getAllowedNACs()
+    {
+        return mAllowedNACs;
+    }
+
+    public void setAllowedNACs(List<Integer> nacs)
+    {
+        mAllowedNACs = nacs != null ? nacs : new ArrayList<>();
+    }
+
+    /**
+     * Adds an allowed NAC value
+     * @param nac in range 0-4095
+     */
+    public void addAllowedNAC(int nac)
+    {
+        if(nac >= 0 && nac <= 4095 && !mAllowedNACs.contains(nac))
+        {
+            mAllowedNACs.add(nac);
+        }
+    }
+
+    /**
+     * Indicates if NAC filtering is enabled
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "nacFilterEnabled")
+    public boolean isNacFilterEnabled()
+    {
+        return mNacFilterEnabled;
+    }
+
+    public void setNacFilterEnabled(boolean enabled)
+    {
+        mNacFilterEnabled = enabled;
+    }
+
+    /**
+     * Returns the set of allowed NACs for fast lookup, or null if filtering is disabled.
+     */
+    @JsonIgnore
+    public Set<Integer> getAllowedNACSet()
+    {
+        if(mNacFilterEnabled && !mAllowedNACs.isEmpty())
+        {
+            return new HashSet<>(mAllowedNACs);
+        }
+        return null;
+    }
+
+    /**
+     * Talkgroup to assign for conventional (non-trunked) P25 operation.
+     * Value of 0 means no override (default).
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "talkgroup")
+    public int getTalkgroup()
+    {
+        return mTalkgroup;
+    }
+
+    public void setTalkgroup(int talkgroup)
+    {
+        mTalkgroup = Math.max(0, Math.min(talkgroup, 65535));
+    }
+
+    /**
+     * Indicates if a talkgroup override is configured
+     */
+    @JsonIgnore
+    public boolean hasTalkgroupOverride()
+    {
+        return mTalkgroup > 0;
     }
 }

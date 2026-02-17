@@ -48,6 +48,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -70,6 +71,9 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private ToggleSwitch mIgnoreDataCallsButton;
+    private ToggleSwitch mNacFilterButton;
+    private javafx.scene.control.TextField mNacTextField;
+    private Spinner<Integer> mTalkgroupSpinner;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private SegmentedButton mModulationSegmentedButton;
     private ToggleButton mC4FMToggleButton;
@@ -148,6 +152,37 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             Label modulationHelpLabel = new Label("C4FM: repeaters and non-simulcast trunked systems.  LSM: simulcast trunked systems.");
             GridPane.setConstraints(modulationHelpLabel, 0, 1, 6, 1);
             gridPane.getChildren().add(modulationHelpLabel);
+
+            //NAC Filter row
+            GridPane.setConstraints(getNacFilterButton(), 0, 2);
+            gridPane.getChildren().add(getNacFilterButton());
+
+            Label nacLabel = new Label("NAC Filter");
+            GridPane.setHalignment(nacLabel, HPos.LEFT);
+            GridPane.setConstraints(nacLabel, 1, 2);
+            gridPane.getChildren().add(nacLabel);
+
+            Label nacValueLabel = new Label("Allowed NACs (hex/dec, comma separated):");
+            GridPane.setHalignment(nacValueLabel, HPos.RIGHT);
+            GridPane.setConstraints(nacValueLabel, 2, 2);
+            gridPane.getChildren().add(nacValueLabel);
+
+            GridPane.setConstraints(getNacTextField(), 3, 2, 3, 1);
+            gridPane.getChildren().add(getNacTextField());
+
+            //Talkgroup Override row
+            Label tgLabel = new Label("Talkgroup Override");
+            GridPane.setHalignment(tgLabel, HPos.RIGHT);
+            GridPane.setConstraints(tgLabel, 0, 3, 2, 1);
+            gridPane.getChildren().add(tgLabel);
+
+            GridPane.setConstraints(getTalkgroupSpinner(), 2, 3);
+            gridPane.getChildren().add(getTalkgroupSpinner());
+
+            Label tgHelpLabel = new Label("0 = auto (use decoded talkgroup)");
+            GridPane.setHalignment(tgHelpLabel, HPos.LEFT);
+            GridPane.setConstraints(tgHelpLabel, 3, 3, 3, 1);
+            gridPane.getChildren().add(tgHelpLabel);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -326,12 +361,27 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     {
         getIgnoreDataCallsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
+        getNacFilterButton().setDisable(config == null);
+        getNacTextField().setDisable(config == null);
+        getTalkgroupSpinner().setDisable(config == null);
 
         if(config instanceof DecodeConfigP25Phase1)
         {
             DecodeConfigP25Phase1 decodeConfig = (DecodeConfigP25Phase1)config;
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
+            getNacFilterButton().setSelected(decodeConfig.isNacFilterEnabled());
+            getTalkgroupSpinner().getValueFactory().setValue(decodeConfig.getTalkgroup());
+
+            //Format NAC list for display
+            StringBuilder sb = new StringBuilder();
+            for(Integer nac : decodeConfig.getAllowedNACs())
+            {
+                if(sb.length() > 0) sb.append(", ");
+                sb.append("x").append(String.format("%03X", nac));
+            }
+            getNacTextField().setText(sb.toString());
+
             if(decodeConfig.getModulation() == Modulation.C4FM)
             {
                 getC4FMToggleButton().setSelected(true);
@@ -347,7 +397,52 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         {
             getIgnoreDataCallsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
+            getNacFilterButton().setSelected(false);
+            getNacTextField().setText("");
+            getTalkgroupSpinner().getValueFactory().setValue(0);
         }
+    }
+
+    private ToggleSwitch getNacFilterButton()
+    {
+        if(mNacFilterButton == null)
+        {
+            mNacFilterButton = new ToggleSwitch();
+            mNacFilterButton.setDisable(true);
+            mNacFilterButton.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+        return mNacFilterButton;
+    }
+
+    private javafx.scene.control.TextField getNacTextField()
+    {
+        if(mNacTextField == null)
+        {
+            mNacTextField = new javafx.scene.control.TextField();
+            mNacTextField.setDisable(true);
+            mNacTextField.setPromptText("e.g. x293, 0xD12, 3346");
+            mNacTextField.setTooltip(new Tooltip("Enter NAC values in hex (x293, 0x293) or decimal (659), separated by commas"));
+            mNacTextField.textProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+        return mNacTextField;
+    }
+
+    private Spinner<Integer> getTalkgroupSpinner()
+    {
+        if(mTalkgroupSpinner == null)
+        {
+            mTalkgroupSpinner = new Spinner<>();
+            mTalkgroupSpinner.setDisable(true);
+            mTalkgroupSpinner.setTooltip(new Tooltip("Talkgroup override for conventional channels (0 = auto)"));
+            mTalkgroupSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
+            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 65535, 0);
+            mTalkgroupSpinner.setValueFactory(svf);
+            mTalkgroupSpinner.getValueFactory().valueProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+        return mTalkgroupSpinner;
     }
 
     @Override
@@ -367,6 +462,41 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setModulation(getC4FMToggleButton().isSelected() ? Modulation.C4FM : Modulation.CQPSK);
+        config.setNacFilterEnabled(getNacFilterButton().isSelected());
+        config.setTalkgroup(getTalkgroupSpinner().getValue());
+
+        //Parse NAC text field
+        config.getAllowedNACs().clear();
+        String nacText = getNacTextField().getText();
+        if(nacText != null && !nacText.trim().isEmpty())
+        {
+            for(String token : nacText.split(","))
+            {
+                token = token.trim();
+                try
+                {
+                    int nac;
+                    if(token.startsWith("0x") || token.startsWith("0X"))
+                    {
+                        nac = Integer.parseInt(token.substring(2), 16);
+                    }
+                    else if(token.startsWith("x") || token.startsWith("X"))
+                    {
+                        nac = Integer.parseInt(token.substring(1), 16);
+                    }
+                    else
+                    {
+                        nac = Integer.parseInt(token);
+                    }
+                    config.addAllowedNAC(nac);
+                }
+                catch(NumberFormatException e)
+                {
+                    //Skip invalid entries
+                }
+            }
+        }
+
         getItem().setDecodeConfiguration(config);
     }
 
