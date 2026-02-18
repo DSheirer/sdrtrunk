@@ -74,7 +74,7 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
     private static final int ZELLO_CHANNELS = 1;
     private static final int ZELLO_FRAME_SIZE_MS = 60;
     private static final int ZELLO_FRAME_SIZE_SAMPLES = ZELLO_SAMPLE_RATE * ZELLO_FRAME_SIZE_MS / 1000; // 960
-    private static final int OPUS_BITRATE = 16000;
+    private static final int OPUS_BITRATE = 28000;
 
     // codec_header: {sample_rate_hz(16LE), frames_per_packet(8), frame_size_ms(8)}
     private static final byte[] CODEC_HEADER = {(byte)0x80, (byte)0x3E, 0x01, 0x3C};
@@ -102,6 +102,7 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
     private int mResampleBufferPos = 0;
     private byte[] mOpusOutputBuffer = new byte[1275];
     private int mStreamedCount = 0;
+    private short mPreviousSample = 0;
 
     public ZelloBroadcaster(ZelloConfiguration configuration, InputAudioFormat inputAudioFormat,
                             MP3Setting mp3Setting, AliasModel aliasModel)
@@ -178,6 +179,7 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
         mStreamActive.set(true);
         mCurrentStreamId.set(-1);
         mResampleBufferPos = 0;
+        mPreviousSample = 0;
         mAudioQueue.clear();
 
         sendStartStream();
@@ -241,27 +243,32 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
         }
     }
 
-    /** Convert float 8kHz -> short 16kHz (2x upsample), accumulate, encode when frame full */
+    /** Convert float 8kHz -> short 16kHz (2x upsample with linear interpolation), accumulate, encode when frame full */
     private void processAudioBuffer(float[] audio8k)
     {
         for(int i = 0; i < audio8k.length; i++)
         {
-            short sample = (short)(audio8k[i] * 32767.0f);
+            short currentSample = (short)(audio8k[i] * 32767.0f);
 
-            // 2x upsample: duplicate each sample
-            mResampleBuffer[mResampleBufferPos++] = sample;
+            // 2x upsample with linear interpolation:
+            // Insert midpoint between previous and current sample, then current sample
+            short midpoint = (short)((mPreviousSample + currentSample) / 2);
+
+            mResampleBuffer[mResampleBufferPos++] = midpoint;
             if(mResampleBufferPos >= ZELLO_FRAME_SIZE_SAMPLES)
             {
                 encodeAndSendFrame();
                 mResampleBufferPos = 0;
             }
 
-            mResampleBuffer[mResampleBufferPos++] = sample;
+            mResampleBuffer[mResampleBufferPos++] = currentSample;
             if(mResampleBufferPos >= ZELLO_FRAME_SIZE_SAMPLES)
             {
                 encodeAndSendFrame();
                 mResampleBufferPos = 0;
             }
+
+            mPreviousSample = currentSample;
         }
     }
 
@@ -301,7 +308,7 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
         mOpusEncoder = new OpusEncoder(ZELLO_SAMPLE_RATE, ZELLO_CHANNELS, OpusApplication.OPUS_APPLICATION_VOIP);
         mOpusEncoder.setBitrate(OPUS_BITRATE);
         mOpusEncoder.setSignalType(OpusSignal.OPUS_SIGNAL_VOICE);
-        mOpusEncoder.setComplexity(5);
+        mOpusEncoder.setComplexity(8);
         mLog.info("Opus encoder initialized: {}Hz, {}ch, {}kbps, {}ms frames",
             ZELLO_SAMPLE_RATE, ZELLO_CHANNELS, OPUS_BITRATE / 1000, ZELLO_FRAME_SIZE_MS);
     }
