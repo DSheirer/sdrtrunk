@@ -73,7 +73,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private ToggleSwitch mIgnoreDataCallsButton;
     private ToggleSwitch mNacFilterButton;
     private javafx.scene.control.TextField mNacTextField;
-    private Spinner<Integer> mTalkgroupSpinner;
+    private javafx.scene.control.TextField mTalkgroupTextField;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private SegmentedButton mModulationSegmentedButton;
     private ToggleButton mC4FMToggleButton;
@@ -157,32 +157,20 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getNacFilterButton(), 0, 2);
             gridPane.getChildren().add(getNacFilterButton());
 
-            Label nacLabel = new Label("NAC Filter");
-            GridPane.setHalignment(nacLabel, HPos.LEFT);
-            GridPane.setConstraints(nacLabel, 1, 2);
-            gridPane.getChildren().add(nacLabel);
+            Label nacLabel = new Label("NAC Filter (hex):");
+            javafx.scene.layout.HBox nacBox = new javafx.scene.layout.HBox(5, nacLabel, getNacTextField());
+            nacBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            GridPane.setConstraints(nacBox, 1, 2);
+            gridPane.getChildren().add(nacBox);
 
-            Label nacValueLabel = new Label("Allowed NACs (hex/dec, comma separated):");
-            GridPane.setHalignment(nacValueLabel, HPos.RIGHT);
-            GridPane.setConstraints(nacValueLabel, 2, 2);
-            gridPane.getChildren().add(nacValueLabel);
-
-            GridPane.setConstraints(getNacTextField(), 3, 2, 3, 1);
-            gridPane.getChildren().add(getNacTextField());
-
-            //Talkgroup Override row
-            Label tgLabel = new Label("Talkgroup Override");
+            //Talkgroup Override - same row as NAC
+            Label tgLabel = new Label("Talkgroup To Assign:");
             GridPane.setHalignment(tgLabel, HPos.RIGHT);
-            GridPane.setConstraints(tgLabel, 0, 3, 2, 1);
+            GridPane.setConstraints(tgLabel, 2, 2);
             gridPane.getChildren().add(tgLabel);
 
-            GridPane.setConstraints(getTalkgroupSpinner(), 2, 3);
-            gridPane.getChildren().add(getTalkgroupSpinner());
-
-            Label tgHelpLabel = new Label("0 = auto (use decoded talkgroup)");
-            GridPane.setHalignment(tgHelpLabel, HPos.LEFT);
-            GridPane.setConstraints(tgHelpLabel, 3, 3, 3, 1);
-            gridPane.getChildren().add(tgHelpLabel);
+            GridPane.setConstraints(getTalkgroupTextField(), 3, 2);
+            gridPane.getChildren().add(getTalkgroupTextField());
 
             mDecoderPane.setContent(gridPane);
         }
@@ -363,7 +351,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
         getNacFilterButton().setDisable(config == null);
         getNacTextField().setDisable(config == null);
-        getTalkgroupSpinner().setDisable(config == null);
+        getTalkgroupTextField().setDisable(config == null);
 
         if(config instanceof DecodeConfigP25Phase1)
         {
@@ -371,14 +359,15 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             getNacFilterButton().setSelected(decodeConfig.isNacFilterEnabled());
-            getTalkgroupSpinner().getValueFactory().setValue(decodeConfig.getTalkgroup());
+            int tg = decodeConfig.getTalkgroup();
+            getTalkgroupTextField().setText(tg > 0 ? String.valueOf(tg) : "");
 
             //Format NAC list for display
             StringBuilder sb = new StringBuilder();
             for(Integer nac : decodeConfig.getAllowedNACs())
             {
                 if(sb.length() > 0) sb.append(", ");
-                sb.append("x").append(String.format("%03X", nac));
+                sb.append(String.format("%X", nac));
             }
             getNacTextField().setText(sb.toString());
 
@@ -399,7 +388,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getNacFilterButton().setSelected(false);
             getNacTextField().setText("");
-            getTalkgroupSpinner().getValueFactory().setValue(0);
+            getTalkgroupTextField().setText("");
         }
     }
 
@@ -421,28 +410,28 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         {
             mNacTextField = new javafx.scene.control.TextField();
             mNacTextField.setDisable(true);
-            mNacTextField.setPromptText("e.g. x293, 0xD12, 3346");
-            mNacTextField.setTooltip(new Tooltip("Enter NAC values in hex (x293, 0x293) or decimal (659), separated by commas"));
+            mNacTextField.setPrefWidth(120);
+            mNacTextField.setPromptText("e.g. 263, D12");
+            mNacTextField.setTooltip(new Tooltip("Enter NAC values in hex (as shown on Radio Reference), separated by commas"));
             mNacTextField.textProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
         return mNacTextField;
     }
 
-    private Spinner<Integer> getTalkgroupSpinner()
+    private javafx.scene.control.TextField getTalkgroupTextField()
     {
-        if(mTalkgroupSpinner == null)
+        if(mTalkgroupTextField == null)
         {
-            mTalkgroupSpinner = new Spinner<>();
-            mTalkgroupSpinner.setDisable(true);
-            mTalkgroupSpinner.setTooltip(new Tooltip("Talkgroup override for conventional channels (0 = auto)"));
-            mTalkgroupSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
-            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 65535, 0);
-            mTalkgroupSpinner.setValueFactory(svf);
-            mTalkgroupSpinner.getValueFactory().valueProperty()
+            mTalkgroupTextField = new javafx.scene.control.TextField();
+            mTalkgroupTextField.setDisable(true);
+            mTalkgroupTextField.setPrefWidth(80);
+            mTalkgroupTextField.setPromptText("e.g. 1001");
+            mTalkgroupTextField.setTooltip(new Tooltip("Talkgroup ID override (1-65535, blank = use decoded)"));
+            mTalkgroupTextField.textProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
-        return mTalkgroupSpinner;
+        return mTalkgroupTextField;
     }
 
     @Override
@@ -463,7 +452,32 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setModulation(getC4FMToggleButton().isSelected() ? Modulation.C4FM : Modulation.CQPSK);
         config.setNacFilterEnabled(getNacFilterButton().isSelected());
-        config.setTalkgroup(getTalkgroupSpinner().getValue());
+
+        //Parse talkgroup text field
+        String tgText = getTalkgroupTextField().getText();
+        if(tgText != null && !tgText.trim().isEmpty())
+        {
+            try
+            {
+                int tg = Integer.parseInt(tgText.trim());
+                if(tg >= 1 && tg <= 65535)
+                {
+                    config.setTalkgroup(tg);
+                }
+                else
+                {
+                    config.setTalkgroup(0);
+                }
+            }
+            catch(NumberFormatException e)
+            {
+                config.setTalkgroup(0);
+            }
+        }
+        else
+        {
+            config.setTalkgroup(0);
+        }
 
         //Parse NAC text field
         config.getAllowedNACs().clear();
@@ -486,7 +500,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
                     }
                     else
                     {
-                        nac = Integer.parseInt(token);
+                        nac = Integer.parseInt(token, 16);
                     }
                     config.addAllowedNAC(nac);
                 }
