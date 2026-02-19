@@ -50,6 +50,7 @@ public class P25P1DemodulatorLSM
     private static final int SYMBOL_RATE = 4800;
     private static final int CARRIER_ESTIMATE_SAMPLES = 5000;
 
+    private static final int CARRIER_RE_ESTIMATE_SYMBOLS = 2 * SYMBOL_RATE; //Re-estimate after 2 sec sync loss
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     private final FeedbackDecoder mFeedbackDecoder;
     private final P25P1MessageFramer mMessageFramer;
@@ -73,6 +74,7 @@ public class P25P1DemodulatorLSM
     private float[] mCarrierEstQ;
     private int mCarrierEstCount = 0;
 
+    private int mSymbolsSinceSync = 0;
     /**
      * Constructs an instance
      * @param messageFramer for receiving demodulated symbol stream and providing sync detection events.
@@ -98,6 +100,7 @@ public class P25P1DemodulatorLSM
         mCarrierPhase = 0f;
         mCarrierEstI = new float[CARRIER_ESTIMATE_SAMPLES];
         mCarrierEstQ = new float[CARRIER_ESTIMATE_SAMPLES];
+        mSymbolsSinceSync = 0;
     }
 
     /**
@@ -337,6 +340,21 @@ public class P25P1DemodulatorLSM
                 if(mMessageFramer.processWithSoftSyncDetect(softSymbol, hardSymbol))
                 {
                     mFeedbackDecoder.processPLLError(pll, SYMBOL_RATE);
+                    mSymbolsSinceSync = 0;
+                }
+                else
+                {
+                    mSymbolsSinceSync++;
+                }
+
+                //Reset NCO after extended sync loss (conventional channel dead air)
+                if(mSymbolsSinceSync == CARRIER_RE_ESTIMATE_SYMBOLS)
+                {
+                    mCarrierPhaseIncrement = 0f;
+                    mCarrierPhase = 0f;
+                    mPLL = 0f;
+                    pll = 0f;
+                    mLog.info("Carrier re-estimation triggered after {} seconds of sync loss", CARRIER_RE_ESTIMATE_SYMBOLS / SYMBOL_RATE);
                 }
 
                 mDibitAssembler.receive(hardSymbol);
