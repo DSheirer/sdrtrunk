@@ -50,9 +50,25 @@ public class AudioPlaybackDeviceDescriptor implements Comparable<AudioPlaybackDe
                 getChannelDescription(getAudioFormat());
     }
 
+    /**
+     * Cleans the mixer description to reformat/reword certain mixer descriptions
+     * @param mixerInfo containing a description
+     * @return cleaned description
+     */
     private static String getCleanDescription(Mixer.Info mixerInfo)
     {
-        return mixerInfo.getDescription().replace("Direct Audio Device: ", "");
+        if(mixerInfo.getDescription().contains("Direct Audio Device: "))
+        {
+            return mixerInfo.getDescription().replace("Direct Audio Device: ", "");
+        }
+        else if(mixerInfo.getDescription().contains("alsa_playback.java"))
+        {
+            return "Default (Java/ALSA)";
+        }
+        else
+        {
+            return mixerInfo.getDescription();
+        }
     }
 
     /**
