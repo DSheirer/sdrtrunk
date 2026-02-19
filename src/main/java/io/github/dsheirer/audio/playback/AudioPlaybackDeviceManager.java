@@ -88,25 +88,66 @@ public class AudioPlaybackDeviceManager
                     {
                         for(AudioFormat audioFormat : dataLineInfo.getFormats())
                         {
-                            if(!audioFormat.isBigEndian() &&
-                                audioFormat.getSampleSizeInBits() == 16 &&
-                               !discoveredFormats.contains(audioFormat) &&
-                                audioFormat.getChannels() <= 2) //TODO: remove the 2 channels max restriction once supported
+                            if(!audioFormat.isBigEndian() && audioFormat.getSampleSizeInBits() == 16 &&
+                               !discoveredFormats.contains(audioFormat))
                             {
-                                if(audioFormat.getSampleRate() == AudioSystem.NOT_SPECIFIED)
+                                if(audioFormat.getChannels() == 1)
                                 {
-                                    discoveredFormats.add(audioFormat);
-                                    //Modify the format for 8 kHz sample rate
-                                    AudioFormat updatedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                                8000, 16, audioFormat.getChannels(), audioFormat.getFrameSize(),
-                                            8000, false);
-                                    devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, updatedFormat));
+                                    if(audioFormat.getSampleRate() == AudioSystem.NOT_SPECIFIED)
+                                    {
+                                        discoveredFormats.add(audioFormat);
+                                        //Modify the format for 8 kHz sample rate
+                                        AudioFormat updatedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                                                8000, 16, audioFormat.getChannels(), audioFormat.getFrameSize(),
+                                                8000, false);
+                                        devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, updatedFormat));
+                                    }
+                                    else if(audioFormat.getSampleRate() == 8000)
+                                    {
+                                        discoveredFormats.add(audioFormat);
+                                        devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, audioFormat));
+                                    }
                                 }
-                                else if(audioFormat.getSampleRate() == 8000)
+                                //Stereo and 64-channel formats
+                                else if(audioFormat.getChannels() == 2 || audioFormat.getChannels() > 8)
                                 {
-                                    discoveredFormats.add(audioFormat);
-                                    devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, audioFormat));
+                                    if(audioFormat.getSampleRate() == AudioSystem.NOT_SPECIFIED)
+                                    {
+                                        discoveredFormats.add(audioFormat);
+                                        //Modify the format for 8 kHz sample rate, 2 channels, 4 bytes per frame
+                                        AudioFormat updatedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                                                8000, 16, 2, 4,
+                                                8000, false);
+                                        devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, updatedFormat));
+                                    }
+                                    else if(audioFormat.getSampleRate() == 8000)
+                                    {
+                                        discoveredFormats.add(audioFormat);
+                                        //Modify the format for 8 kHz sample rate, 2 channels, 4 bytes per frame
+                                        AudioFormat updatedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                                                audioFormat.getSampleRate(), 16, 2, 4,
+                                                audioFormat.getFrameRate(), false);
+                                        devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, updatedFormat));
+                                    }
                                 }
+                                //TODO: remove the 2 channels max restriction once supported
+//                                else if(audioFormat.getChannels() > 2 && audioFormat.getChannels() <= 8)
+//                                {
+//                                    if(audioFormat.getSampleRate() == AudioSystem.NOT_SPECIFIED)
+//                                    {
+//                                        discoveredFormats.add(audioFormat);
+//                                        //Modify the format for 8 kHz sample rate
+//                                        AudioFormat updatedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+//                                                8000, 16, audioFormat.getChannels(), audioFormat.getFrameSize(),
+//                                                8000, false);
+//                                        devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, updatedFormat));
+//                                    }
+//                                    else if(audioFormat.getSampleRate() == 8000)
+//                                    {
+//                                        discoveredFormats.add(audioFormat);
+//                                        devices.add(new AudioPlaybackDeviceDescriptor(mixerInfo, audioFormat));
+//                                    }
+//                                }
                             }
                         }
                     }
