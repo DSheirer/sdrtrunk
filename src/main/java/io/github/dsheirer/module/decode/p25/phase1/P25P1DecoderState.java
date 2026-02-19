@@ -57,6 +57,9 @@ import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
+import java.util.ArrayList;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
@@ -192,6 +195,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final Listener<ChannelEvent> mChannelEventListener;
     private final P25TrafficChannelManager mTrafficChannelManager;
     private ServiceOptions mCurrentServiceOptions;
+    private final List<Integer> mAllowedNACs;
+    private final boolean mNacFilterEnabled;
+    private final int mTalkgroupOverride;
 
     /**
      * Constructs an APCO-25 decoder state with an optional traffic channel manager.
@@ -202,6 +208,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         mChannel = channel;
         mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
+        DecodeConfigP25 baseConfig = (DecodeConfigP25)channel.getDecodeConfiguration();
+        mNacFilterEnabled = baseConfig.isNacFilterEnabled();
+        mAllowedNACs = new ArrayList<>(baseConfig.getAllowedNACs());
+        mTalkgroupOverride = baseConfig.getTalkgroup();
         mNetworkConfigurationMonitor = new P25P1NetworkConfigurationMonitor(mModulation);
 
         if(trafficChannelManager != null)
@@ -269,15 +279,49 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         }
     }
 
+
+
+
+    // talkgroup override helper below
     /**
-     * Primary message processing method.
+     * Applies talkgroup override if configured. Replaces any TO-role talkgroup identifier
+     * with the configured override value. Returns the original list if no override (0).
      */
+    private List<Identifier> applyTalkgroupOverride(List<Identifier> identifiers)
+    {
+        if(mTalkgroupOverride > 0 && identifiers != null)
+        {
+            for(int i = 0; i < identifiers.size(); i++)
+            {
+                Identifier id = identifiers.get(i);
+                if(id instanceof APCO25Talkgroup && id.getRole() == Role.TO)
+                {
+                    identifiers.set(i, APCO25Talkgroup.create(mTalkgroupOverride));
+                }
+            }
+        }
+        return identifiers;
+    }
+
     @Override
-    public void receive(IMessage iMessage)
+        public void receive(IMessage iMessage)
     {
         if(iMessage instanceof P25P1Message message)
         {
             getIdentifierCollection().update(message.getNAC());
+
+            // NAC filtering: if enabled and NAC does not match allowed list, skip this message
+            if(mNacFilterEnabled && !mAllowedNACs.isEmpty())
+            {
+                Identifier nacId = message.getNAC();
+                if(nacId instanceof APCO25Nac apco25Nac)
+                {
+                    if(!mAllowedNACs.contains(apco25Nac.getValue()))
+                    {
+                        return;
+                    }
+                }
+            }
 
             switch(message.getDUID())
             {
@@ -412,7 +456,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processLCChannelUser(LinkControlWord lcw, long timestamp)
     {
-        getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
+        getIdentifierCollection().update(applyTalkgroupOverride(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp)));
         DecodeEventType decodeEventType = getLCDecodeEventType(lcw);
 
         ServiceOptions serviceOptions = null;
@@ -1868,7 +1912,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                 if(isTerminator)
                 {
-                    getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
+                    getIdentifierCollection().update(applyTalkgroupOverride(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp)));
                 }
                 else
                 {
