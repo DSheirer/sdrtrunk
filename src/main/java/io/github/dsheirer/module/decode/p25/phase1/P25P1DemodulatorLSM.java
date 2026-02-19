@@ -27,18 +27,30 @@ import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Demodulates filtered LSM I/Q samples to feed message framer for sync detection and framing.
+ *
+ * Includes carrier frequency pre-correction to compensate for frequency offset introduced by the
+ * polyphase channelizer.  The channelizer output typically has a carrier offset of several hundred
+ * Hz which exceeds the PLL's tracking range (MAX_PLL = +/- 60 degrees), causing the PLL and Gardner
+ * timing error detector to converge to an incorrect operating point.  The carrier pre-correction
+ * estimates the offset from the first 5000 I/Q samples and applies a numerically controlled oscillator
+ * (NCO) to remove the offset before demodulation.
  */
 public class P25P1DemodulatorLSM
 {
+    private static final Logger mLog = LoggerFactory.getLogger(P25P1DemodulatorLSM.class);
     private static final float HALF_PI = (float)(Math.PI / 2.0);
     private static final float TWO_PI = (float)(Math.PI * 2.0);
     private static final float MAX_PLL = (float)(Math.PI / 3.0); //+/- 800 Hz
     private static final float OBJECTIVE_MAGNITUDE = 1.0f;
     private static final int SYMBOL_RATE = 4800;
+    private static final int CARRIER_ESTIMATE_SAMPLES = 5000;
 
+    private static final int CARRIER_RE_ESTIMATE_SYMBOLS = 2 * SYMBOL_RATE; //Re-estimate after 2 sec sync loss
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     private final FeedbackDecoder mFeedbackDecoder;
     private final P25P1MessageFramer mMessageFramer;
@@ -54,6 +66,15 @@ public class P25P1DemodulatorLSM
     private int mBufferPointer;
     private int mBufferReserve;
 
+    //Carrier frequency pre-correction NCO state
+    private float mCarrierPhaseIncrement = 0f;
+    private float mCarrierPhase = 0f;
+    private boolean mCarrierEstimated = false;
+    private float[] mCarrierEstI;
+    private float[] mCarrierEstQ;
+    private int mCarrierEstCount = 0;
+
+    private int mSymbolsSinceSync = 0;
     /**
      * Constructs an instance
      * @param messageFramer for receiving demodulated symbol stream and providing sync detection events.
@@ -63,6 +84,8 @@ public class P25P1DemodulatorLSM
     {
         mMessageFramer = messageFramer;
         mFeedbackDecoder = feedbackDecoder;
+        mCarrierEstI = new float[CARRIER_ESTIMATE_SAMPLES];
+        mCarrierEstQ = new float[CARRIER_ESTIMATE_SAMPLES];
     }
 
     /**
@@ -71,6 +94,13 @@ public class P25P1DemodulatorLSM
     public void resetPLL()
     {
         mPLL = 0f;
+        mCarrierEstimated = false;
+        mCarrierEstCount = 0;
+        mCarrierPhaseIncrement = 0f;
+        mCarrierPhase = 0f;
+        mCarrierEstI = new float[CARRIER_ESTIMATE_SAMPLES];
+        mCarrierEstQ = new float[CARRIER_ESTIMATE_SAMPLES];
+        mSymbolsSinceSync = 0;
     }
 
     /**
@@ -87,11 +117,98 @@ public class P25P1DemodulatorLSM
     }
 
     /**
+     * Estimates the carrier frequency offset from collected I/Q samples and configures the NCO
+     * to pre-correct subsequent samples.  Uses the average instantaneous frequency measured from
+     * the argument of consecutive sample products: freq = mean(angle(z[n] * conj(z[n-1]))).
+     */
+    private void estimateCarrier()
+    {
+        double sumAngle = 0;
+
+        for(int n = 1; n < mCarrierEstCount; n++)
+        {
+            //Compute z[n] * conj(z[n-1])
+            float prodI = mCarrierEstI[n] * mCarrierEstI[n - 1] + mCarrierEstQ[n] * mCarrierEstQ[n - 1];
+            float prodQ = mCarrierEstQ[n] * mCarrierEstI[n - 1] - mCarrierEstI[n] * mCarrierEstQ[n - 1];
+            sumAngle += Math.atan2(prodQ, prodI);
+        }
+
+        mCarrierPhaseIncrement = (float)(sumAngle / (mCarrierEstCount - 1));
+        mCarrierPhase = 0f;
+        mCarrierEstimated = true;
+
+        double sampleRate = SYMBOL_RATE * mSamplesPerSymbol;
+        double carrierHz = mCarrierPhaseIncrement * sampleRate / (2.0 * Math.PI);
+        mLog.info("Carrier offset estimate: {} Hz ({} rad/sample at {} Hz sample rate)",
+            String.format("%.1f", carrierHz), String.format("%.6f", mCarrierPhaseIncrement),
+            String.format("%.0f", sampleRate));
+
+        //Release estimation buffers
+        mCarrierEstI = null;
+        mCarrierEstQ = null;
+    }
+
+    /**
      * Primary input method for receiving a stream of filtered, pulse-shaped samples to process into symbols.
+     * Collects initial samples for carrier offset estimation, then applies NCO pre-correction before demodulation.
      * @param i inphase samples to process
      * @param q quadrature samples to process
      */
     public void process(float[] i, float[] q)
+    {
+        //Collect samples for carrier estimation during startup
+        if(!mCarrierEstimated)
+        {
+            int toCopy = Math.min(i.length, CARRIER_ESTIMATE_SAMPLES - mCarrierEstCount);
+
+            if(toCopy > 0)
+            {
+                System.arraycopy(i, 0, mCarrierEstI, mCarrierEstCount, toCopy);
+                System.arraycopy(q, 0, mCarrierEstQ, mCarrierEstCount, toCopy);
+                mCarrierEstCount += toCopy;
+            }
+
+            if(mCarrierEstCount >= CARRIER_ESTIMATE_SAMPLES)
+            {
+                estimateCarrier();
+            }
+            else
+            {
+                return; //Not enough samples yet for carrier estimation
+            }
+        }
+
+        //Apply carrier frequency pre-correction via NCO rotation
+        float[] iCorrected = new float[i.length];
+        float[] qCorrected = new float[q.length];
+
+        for(int n = 0; n < i.length; n++)
+        {
+            float cosPhase = (float)Math.cos(mCarrierPhase);
+            float sinPhase = (float)Math.sin(mCarrierPhase);
+            iCorrected[n] = i[n] * cosPhase + q[n] * sinPhase;
+            qCorrected[n] = q[n] * cosPhase - i[n] * sinPhase;
+            mCarrierPhase += mCarrierPhaseIncrement;
+
+            //Keep phase in [-PI, PI] range
+            if(mCarrierPhase > (float)Math.PI)
+            {
+                mCarrierPhase -= TWO_PI;
+            }
+            else if(mCarrierPhase < -(float)Math.PI)
+            {
+                mCarrierPhase += TWO_PI;
+            }
+        }
+
+        //Continue with carrier-corrected samples
+        processDemodulation(iCorrected, qCorrected);
+    }
+
+    /**
+     * Performs the actual demodulation of carrier-corrected I/Q samples.
+     */
+    private void processDemodulation(float[] i, float[] q)
     {
         //Shadow copy heap member variables onto the stack
         double samplePoint = mSamplePoint;
@@ -179,6 +296,7 @@ public class P25P1DemodulatorLSM
                 iMiddleDemodulated = (previousMiddleI * iMiddle) - (-previousMiddleQ * qMiddle);
                 qMiddleDemodulated = (previousMiddleI * qMiddle) + (-previousMiddleQ * iMiddle);
 
+
                 //Rotate middle sample by the PLL offset
                 pllTemp = (iMiddleDemodulated * pllI) - (qMiddleDemodulated * pllQ);
                 qMiddleDemodulated = (qMiddleDemodulated * pllI) + (iMiddleDemodulated * pllQ);
@@ -187,6 +305,7 @@ public class P25P1DemodulatorLSM
                 //Differential demodulation of symbol
                 iSymbol = (previousCurrentI * iCurrent) - (-previousCurrentQ * qCurrent);
                 qSymbol = (previousCurrentI * qCurrent) + (-previousCurrentQ * iCurrent);
+
 
                 //Rotate symbol by the PLL offset
                 pllTemp = (iSymbol * pllI) - (qSymbol * pllQ);
@@ -221,39 +340,25 @@ public class P25P1DemodulatorLSM
                 if(mMessageFramer.processWithSoftSyncDetect(softSymbol, hardSymbol))
                 {
                     mFeedbackDecoder.processPLLError(pll, SYMBOL_RATE);
+                    mSymbolsSinceSync = 0;
+                }
+                else
+                {
+                    mSymbolsSinceSync++;
+                }
+
+                //Reset NCO after extended sync loss (conventional channel dead air)
+                if(mSymbolsSinceSync == CARRIER_RE_ESTIMATE_SYMBOLS)
+                {
+                    mCarrierPhaseIncrement = 0f;
+                    mCarrierPhase = 0f;
+                    mPLL = 0f;
+                    pll = 0f;
+                    mLog.info("Carrier re-estimation triggered after {} seconds of sync loss", CARRIER_RE_ESTIMATE_SYMBOLS / SYMBOL_RATE);
                 }
 
                 mDibitAssembler.receive(hardSymbol);
                 mFeedbackDecoder.broadcast(softSymbol);
-
-//                if(bufferPointer >= 15)
-//                {
-//                    SymbolViewerFX viewer = getDebugSymbolViewer();
-//                    CountDownLatch latch = new CountDownLatch(1);
-//                    float[] rawI = Arrays.copyOfRange(mBufferI, bufferPointer - 15, bufferPointer + 15);
-//                    float[] rawQ = Arrays.copyOfRange(mBufferQ, bufferPointer - 15, bufferPointer + 15);
-//                    double middle = 15 + samplePoint;// - timingAdjustment;
-//                    double previous = middle - samplesPerHalfSymbol;
-//                    double current = middle + samplesPerHalfSymbol;
-//                    double[] points = {previous, middle, current, //Timing
-//                            previousCurrentI, iMiddle, iCurrent, //RawI
-//                            previousCurrentQ, qMiddle, qCurrent, //RawQ
-//                            previousSymbolI, iMiddleDemodulated, iSymbol,  //DemodI
-//                            previousSymbolQ, qMiddleDemodulated, qSymbol}; //DemodQ
-//                    float middleSymbol = normalize((float)Math.atan2(qMiddleDemodulated, iMiddleDemodulated) + pll);
-//                    float[] symbols = {previousSymbol, middleSymbol, softSymbol};
-//                    float adjustedPLL = pll + (phaseError * pllGain);
-//                    viewer.receive(samplesPerSymbol, rawI, rawQ, sampleGain, adjustedPLL, points, symbols, latch);
-//                    try
-//                    {
-//                        latch.await();
-//                    }
-//                    catch(InterruptedException e)
-//                    {
-//                        throw new RuntimeException(e);
-//                    }
-//                    previousSymbol = softSymbol;
-//                }
 
                 //Shuffle the values
                 previousSymbolI = iSymbol;
