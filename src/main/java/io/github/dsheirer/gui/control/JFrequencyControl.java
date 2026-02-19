@@ -122,6 +122,15 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
     }
 
     /**
+     * Sets the highlight color for the frequency digits when selected.
+     * @param color the color to use for highlighting selected digits
+     */
+    public void setHighlightColor(Color color)
+    {
+        mHighlightColor = color;
+    }
+
+    /**
      * Receives a frequency change event invoked by another control.  We don't
      * rebroadcast this event, just set the control to indicate the new frequency.
      */

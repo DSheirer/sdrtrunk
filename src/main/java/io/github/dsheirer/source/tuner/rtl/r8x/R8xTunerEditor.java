@@ -223,6 +223,13 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
         if(mBiasTButton == null)
         {
             mBiasTButton = new JToggleButton("Bias-T");
+            mBiasTButton.setOpaque(true);
+            mBiasTButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mBiasTButton.setBackground(new java.awt.Color(43, 43, 43));
+                mBiasTButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mBiasTButton.setEnabled(false);
             mBiasTButton.addActionListener(e -> {
                 if(!isLoading())
@@ -244,6 +251,13 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
         if(mTunerInfoButton == null)
         {
             mTunerInfoButton = new JButton("Info");
+            mTunerInfoButton.setOpaque(true);
+            mTunerInfoButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mTunerInfoButton.setBackground(new java.awt.Color(43, 43, 43));
+                mTunerInfoButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mTunerInfoButton.setEnabled(false);
             mTunerInfoButton.addActionListener(e -> JOptionPane.showMessageDialog(R8xTunerEditor.this,
                     getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));
@@ -257,6 +271,13 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
         if(mVGAGainCombo == null)
         {
             mVGAGainCombo = new JComboBox<>(R8xEmbeddedTuner.VGAGain.values());
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mVGAGainCombo.setBackground(new java.awt.Color(43, 43, 43));
+                mVGAGainCombo.setForeground(new java.awt.Color(187, 187, 187));
+                // Set a darker gray for disabled state that's more visible in dark mode
+                javax.swing.UIManager.put("ComboBox.disabledForeground", new java.awt.Color(120, 120, 120));
+            }
             mVGAGainCombo.setEnabled(false);
             mVGAGainCombo.addActionListener(arg0 ->
             {
@@ -294,6 +315,13 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
         if(mLNAGainCombo == null)
         {
             mLNAGainCombo = new JComboBox<>(R8xEmbeddedTuner.LNAGain.values());
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mLNAGainCombo.setBackground(new java.awt.Color(43, 43, 43));
+                mLNAGainCombo.setForeground(new java.awt.Color(187, 187, 187));
+                // Set a darker gray for disabled state that's more visible in dark mode
+                javax.swing.UIManager.put("ComboBox.disabledForeground", new java.awt.Color(120, 120, 120));
+            }
             mLNAGainCombo.setEnabled(false);
             mLNAGainCombo.addActionListener(arg0 ->
             {
@@ -366,6 +394,13 @@ public class R8xTunerEditor extends TunerEditor<RTL2832Tuner, R8xTunerConfigurat
         if(mMixerGainCombo == null)
         {
             mMixerGainCombo = new JComboBox<>(R8xEmbeddedTuner.MixerGain.values());
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mMixerGainCombo.setBackground(new java.awt.Color(43, 43, 43));
+                mMixerGainCombo.setForeground(new java.awt.Color(187, 187, 187));
+                // Set a darker gray for disabled state that's more visible in dark mode
+                javax.swing.UIManager.put("ComboBox.disabledForeground", new java.awt.Color(120, 120, 120));
+            }
             mMixerGainCombo.setEnabled(false);
             mMixerGainCombo.addActionListener(arg0 ->
             {

@@ -269,6 +269,12 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         if(mBiasTCheckBox == null)
         {
             mBiasTCheckBox = new JCheckBox("ANT B Bias-T Power");
+            mBiasTCheckBox.setOpaque(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mBiasTCheckBox.setBackground(new java.awt.Color(43, 43, 43));
+                mBiasTCheckBox.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mBiasTCheckBox.setEnabled(false);
             mBiasTCheckBox.addActionListener(e -> {
                 if(hasTuner() && !isLoading())

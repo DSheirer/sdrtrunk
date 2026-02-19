@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.preference;
 import io.github.dsheirer.gui.preference.application.ApplicationPreferenceEditor;
 import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
 import io.github.dsheirer.gui.preference.call.CallManagementPreferenceEditor;
+import io.github.dsheirer.gui.preference.colortheme.ColorThemePreferenceEditor;
 import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.mp3.MP3PreferenceEditor;
@@ -52,6 +53,8 @@ public class PreferenceEditorFactory
                 return new RecordPreferenceEditor(userPreferences);
             case CHANNEL_EVENT:
                 return new DecodeEventViewPreferenceEditor(userPreferences);
+            case COLOR_THEME:
+                return new ColorThemePreferenceEditor(userPreferences);
             case DIRECTORY:
                 return new DirectoryPreferenceEditor(userPreferences);
             case JMBE_LIBRARY:

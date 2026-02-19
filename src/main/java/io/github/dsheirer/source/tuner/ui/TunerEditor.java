@@ -72,7 +72,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     private static final String BUTTON_STATUS_ENABLE = "Enable";
     private static final String BUTTON_STATUS_DISABLE = "Disable";
     private static final long serialVersionUID = 1L;
-    private UserPreferences mUserPreferences;
+    protected UserPreferences mUserPreferences;
     private TunerManager mTunerManager;
     private DiscoveredTuner mDiscoveredTuner;
     private C mTunerConfiguration;
@@ -237,6 +237,12 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mAutoPPMCheckBox == null)
         {
             mAutoPPMCheckBox = new JCheckBox("Enable decoder(s) to auto-adjust PPM");
+            mAutoPPMCheckBox.setOpaque(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mAutoPPMCheckBox.setBackground(new java.awt.Color(43, 43, 43));
+                mAutoPPMCheckBox.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mAutoPPMCheckBox.setToolTipText("Allow decoders to measure channel frequency error and correct tuner PPM");
             mAutoPPMCheckBox.addActionListener(e ->
             {
@@ -314,6 +320,12 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mFrequencyControl == null)
         {
             mFrequencyControl = new JFrequencyControl();
+            
+            // Set highlight color based on dark mode preference
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mFrequencyControl.setHighlightColor(new java.awt.Color(75, 110, 175)); // Light blue for dark mode
+            }
         }
 
         return mFrequencyControl;
@@ -539,6 +551,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mResetFrequenciesButton == null)
         {
             mResetFrequenciesButton = new JButton("Reset");
+            mResetFrequenciesButton.setOpaque(true);
+            mResetFrequenciesButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mResetFrequenciesButton.setBackground(new java.awt.Color(43, 43, 43));
+                mResetFrequenciesButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mResetFrequenciesButton.addActionListener(e -> {
 
                 long min = getMinimumTunableFrequency();
@@ -561,6 +580,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mNewSpectrumButton == null)
         {
             mNewSpectrumButton = new JButton("New Spectrum Display");
+            mNewSpectrumButton.setOpaque(true);
+            mNewSpectrumButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mNewSpectrumButton.setBackground(new java.awt.Color(43, 43, 43));
+                mNewSpectrumButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mNewSpectrumButton.setToolTipText("Show this tuner in a new (separate) spectral display window");
             mNewSpectrumButton.addActionListener(e ->
             {
@@ -585,6 +611,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mViewSpectrumButton == null)
         {
             mViewSpectrumButton = new JButton("View Spectrum");
+            mViewSpectrumButton.setOpaque(true);
+            mViewSpectrumButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mViewSpectrumButton.setBackground(new java.awt.Color(43, 43, 43));
+                mViewSpectrumButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mViewSpectrumButton.setToolTipText("Show this tuner in the spectral display");
             mViewSpectrumButton.addActionListener(e ->
             {
@@ -611,6 +644,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mEnabledButton == null)
         {
             mEnabledButton = new JButton(BUTTON_STATUS_ENABLE);
+            mEnabledButton.setOpaque(true);
+            mEnabledButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mEnabledButton.setBackground(new java.awt.Color(43, 43, 43));
+                mEnabledButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mEnabledButton.setToolTipText("Enable or disable the tuner for use by sdrtrunk");
             mEnabledButton.addActionListener(e ->
             {
@@ -638,6 +678,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mRestartTunerButton == null)
         {
             mRestartTunerButton = new JButton("Restart Tuner");
+            mRestartTunerButton.setOpaque(true);
+            mRestartTunerButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mRestartTunerButton.setBackground(new java.awt.Color(43, 43, 43));
+                mRestartTunerButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mRestartTunerButton.setVisible(false);
             mRestartTunerButton.setToolTipText("Attempt to restart this tuner to recover from error condition");
             mRestartTunerButton.addActionListener(e ->
@@ -672,6 +719,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mRecordButton == null)
         {
             mRecordButton = new JToggleButton("Record");
+            mRecordButton.setOpaque(true);
+            mRecordButton.setContentAreaFilled(true);
+            if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mRecordButton.setBackground(new java.awt.Color(43, 43, 43));
+                mRecordButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mRecordButton.setToolTipText("Create a baseband recording for this tuner");
             mRecordButton.setEnabled(false);
             mRecordButton.addActionListener(e ->

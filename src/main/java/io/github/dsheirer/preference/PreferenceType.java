@@ -26,6 +26,7 @@ public enum PreferenceType
 {
     APPLICATION,
     CALIBRATION,
+    COLOR_THEME,
     DECODE_EVENT,
     DIRECTORY,
     DUPLICATE_CALL_DETECTION,

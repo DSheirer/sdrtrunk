@@ -243,6 +243,12 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
         if(mLNASlider == null)
         {
             mLNASlider = new LnaSlider();
+            mLNASlider.setOpaque(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mLNASlider.setBackground(new java.awt.Color(43, 43, 43));
+                mLNASlider.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mLNASlider.setEnabled(true);
             mLNASlider.setMajorTickSpacing(1);
             mLNASlider.setPaintTicks(true);
@@ -305,6 +311,12 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
         if(mIfGainSlider == null)
         {
             mIfGainSlider = new IfGainSlider();
+            mIfGainSlider.setOpaque(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mIfGainSlider.setBackground(new java.awt.Color(43, 43, 43));
+                mIfGainSlider.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mIfGainSlider.setEnabled(true);
             mIfGainSlider.setMajorTickSpacing(1);
             mIfGainSlider.setPaintTicks(true);
