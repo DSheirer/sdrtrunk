@@ -70,6 +70,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TitledPane mSourcePane;
     private TextField mTalkgroupField;
     private ToggleSwitch mAudioFilterEnable;
+    private ToggleSwitch mRequireAliasMatchSwitch;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
@@ -146,6 +147,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
             gridPane.getChildren().add(getAudioFilterEnable());
+
+            GridPane.setConstraints(getRequireAliasMatchSwitch(), 2, 2);
+            gridPane.getChildren().add(getRequireAliasMatchSwitch());
 
             mDecoderPane.setContent(gridPane);
 
@@ -268,6 +272,21 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mAudioFilterEnable;
+    }
+    /**
+     * Toggle switch for enable/disable requiring alias match for audio capture (tone squelch).
+     * @return toggle switch.
+     */
+    private ToggleSwitch getRequireAliasMatchSwitch()
+    {
+        if(mRequireAliasMatchSwitch == null)
+        {
+            mRequireAliasMatchSwitch = new ToggleSwitch("Require Alias Match");
+            mRequireAliasMatchSwitch.setTooltip(new Tooltip("Only capture audio when detected tone/code matches a configured alias"));
+            mRequireAliasMatchSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mRequireAliasMatchSwitch;
     }
 
     private SegmentedButton getBandwidthButton()
@@ -412,6 +431,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             updateTextFormatter(decodeConfigNBFM.getTalkgroup());
             getAudioFilterEnable().setDisable(false);
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
+            getRequireAliasMatchSwitch().setDisable(false);
+            getRequireAliasMatchSwitch().setSelected(decodeConfigNBFM.isRequireAliasMatch());
         }
         else
         {
@@ -461,6 +482,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setTalkgroup(talkgroup);
         config.setAudioFilter(getAudioFilterEnable().isSelected());
+        config.setRequireAliasMatch(getRequireAliasMatchSwitch().isSelected());
         getItem().setDecodeConfiguration(config);
     }
 

@@ -34,9 +34,11 @@ import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.nac.Nac;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioFormatter;
@@ -134,6 +136,7 @@ public class AliasItemEditor extends Editor<Alias>
     private Button mResetButton;
     private VBox mButtonBox;
     private ToggleSwitch mMonitorAudioToggleSwitch;
+    private ToggleSwitch mMatchAllIdentifiersToggleSwitch;
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private ToggleSwitch mRecordAudioToggleSwitch;
     private ColorPicker mColorPicker;
@@ -233,6 +236,7 @@ public class AliasItemEditor extends Editor<Alias>
         getGroupField().setDisable(disable);
         getNameField().setDisable(disable);
         getRecordAudioToggleSwitch().setDisable(disable);
+        getMatchAllIdentifiersToggleSwitch().setDisable(disable);
         getColorPicker().setDisable(disable);
         getMonitorAudioToggleSwitch().setDisable(disable);
         getIconNodeComboBox().setDisable(disable);
@@ -252,6 +256,7 @@ public class AliasItemEditor extends Editor<Alias>
             getGroupField().setText(alias.getGroup());
             getNameField().setText(alias.getName());
             getRecordAudioToggleSwitch().setSelected(alias.isRecordable());
+            getMatchAllIdentifiersToggleSwitch().setSelected(alias.isMatchAllIdentifiers());
 
             Icon icon = null;
             String iconName = alias.getIconName();
@@ -318,6 +323,7 @@ public class AliasItemEditor extends Editor<Alias>
             getGroupField().setText(null);
             getNameField().setText(null);
             getRecordAudioToggleSwitch().setSelected(false);
+            getMatchAllIdentifiersToggleSwitch().setSelected(false);
             getColorPicker().setValue(Color.BLACK);
             getMonitorPriorityComboBox().getSelectionModel().select(null);
             getMonitorAudioToggleSwitch().setSelected(false);
@@ -336,6 +342,7 @@ public class AliasItemEditor extends Editor<Alias>
             if(alias != null)
             {
                 alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
+                alias.setMatchAllIdentifiers(getMatchAllIdentifiersToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
 
                 Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
@@ -477,10 +484,20 @@ public class AliasItemEditor extends Editor<Alias>
             buttonsBox.getChildren().addAll(getAddIdentifierButton(), getDeleteIdentifierButton(),
                 getShowOverlapButton());
 
+            HBox matchAllBox = new HBox();
+            matchAllBox.setSpacing(5);
+            matchAllBox.setAlignment(Pos.CENTER_LEFT);
+            Label matchAllLabel = new Label("Match All");
+            matchAllBox.getChildren().addAll(getMatchAllIdentifiersToggleSwitch(), matchAllLabel);
+
+            VBox identifierControlsBox = new VBox();
+            identifierControlsBox.setSpacing(10);
+            identifierControlsBox.getChildren().addAll(buttonsBox, matchAllBox);
+
             HBox identifiersAndButtonsBox = new HBox();
             identifiersAndButtonsBox.setSpacing(10);
             HBox.setHgrow(getIdentifierEditorBox(), Priority.ALWAYS);
-            identifiersAndButtonsBox.getChildren().addAll(getIdentifierEditorBox(), buttonsBox);
+            identifiersAndButtonsBox.getChildren().addAll(getIdentifierEditorBox(), identifierControlsBox);
 
             mIdentifierPane = new TitledPane("Identifiers", identifiersAndButtonsBox);
         }
@@ -725,6 +742,7 @@ public class AliasItemEditor extends Editor<Alias>
             amMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.AM));
 
             Menu p25Menu = new ProtocolMenu(Protocol.APCO25);
+            p25Menu.getItems().add(new AddNacItem());
             p25Menu.getItems().add(new AddTalkgroupItem(Protocol.APCO25));
             p25Menu.getItems().add(new AddTalkgroupRangeItem(Protocol.APCO25));
             p25Menu.getItems().add(new AddP25FullyQualifiedTalkgroupItem());
@@ -764,6 +782,7 @@ public class AliasItemEditor extends Editor<Alias>
             Menu nbfmMenu = new ProtocolMenu(Protocol.NBFM);
             nbfmMenu.getItems().add(new AddTalkgroupItem(Protocol.NBFM));
             nbfmMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.NBFM));
+            nbfmMenu.getItems().add(new AddCtcssItem());
             nbfmMenu.getItems().add(new AddDcsItem());
 
             Menu passportMenu = new ProtocolMenu(Protocol.PASSPORT);
@@ -1097,6 +1116,19 @@ public class AliasItemEditor extends Editor<Alias>
 
         return mMonitorAudioToggleSwitch;
     }
+    private ToggleSwitch getMatchAllIdentifiersToggleSwitch()
+    {
+        if(mMatchAllIdentifiersToggleSwitch == null)
+        {
+            mMatchAllIdentifiersToggleSwitch = new ToggleSwitch();
+            mMatchAllIdentifiersToggleSwitch.setDisable(true);
+            mMatchAllIdentifiersToggleSwitch.setTooltip(new Tooltip("When enabled, ALL identifiers must match for this alias to be selected"));
+            mMatchAllIdentifiersToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mMatchAllIdentifiersToggleSwitch;
+    }
 
     private ComboBox<Integer> getMonitorPriorityComboBox()
     {
@@ -1349,6 +1381,22 @@ public class AliasItemEditor extends Editor<Alias>
             });
         }
     }
+    /**
+     * Add Continuous Tone-Coded Squelch System (CTCSS) alias identifier menu item
+     */
+    public class AddCtcssItem extends MenuItem
+    {
+        public AddCtcssItem()
+        {
+            super("Continuous Tone-Coded Squelch (CTCSS)");
+            setOnAction(event -> {
+                Ctcss ctcss = new Ctcss();
+                getIdentifiersList().getItems().add(ctcss);
+                getIdentifiersList().getSelectionModel().select(ctcss);
+                getIdentifiersList().scrollTo(ctcss);
+            });
+        }
+    }
 
     /**
      * Add Digital Coded Squelch (DCS) alias identifier menu item
@@ -1363,6 +1411,24 @@ public class AliasItemEditor extends Editor<Alias>
                 getIdentifiersList().getItems().add(dcs);
                 getIdentifiersList().getSelectionModel().select(dcs);
                 getIdentifiersList().scrollTo(dcs);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
+     * Menu item to add a P25 NAC identifier
+     */
+    public class AddNacItem extends MenuItem
+    {
+        public AddNacItem()
+        {
+            super("NAC");
+            setOnAction(event -> {
+                Nac nac = new Nac();
+                getIdentifiersList().getItems().add(nac);
+                getIdentifiersList().getSelectionModel().select(nac);
+                getIdentifiersList().scrollTo(nac);
                 modifiedProperty().set(true);
             });
         }

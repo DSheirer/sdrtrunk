@@ -181,6 +181,14 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     }
 
     /**
+     * Alias list for this audio module
+     * @return alias list
+     */
+    protected AliasList getAliasList()
+    {
+        return mAliasList;
+    }
+    /**
      * Receive updated identifiers from decoder state(s).
      */
     @Override
