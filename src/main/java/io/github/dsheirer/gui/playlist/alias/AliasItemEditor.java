@@ -34,6 +34,7 @@ import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
@@ -764,6 +765,7 @@ public class AliasItemEditor extends Editor<Alias>
             Menu nbfmMenu = new ProtocolMenu(Protocol.NBFM);
             nbfmMenu.getItems().add(new AddTalkgroupItem(Protocol.NBFM));
             nbfmMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.NBFM));
+            nbfmMenu.getItems().add(new AddCtcssItem());
             nbfmMenu.getItems().add(new AddDcsItem());
 
             Menu passportMenu = new ProtocolMenu(Protocol.PASSPORT);
@@ -1346,6 +1348,22 @@ public class AliasItemEditor extends Editor<Alias>
                 getIdentifiersList().getSelectionModel().select(tonesId);
                 getIdentifiersList().scrollTo(tonesId);
                 modifiedProperty().set(true);
+            });
+        }
+    }
+    /**
+     * Add Continuous Tone-Coded Squelch System (CTCSS) alias identifier menu item
+     */
+    public class AddCtcssItem extends MenuItem
+    {
+        public AddCtcssItem()
+        {
+            super("Continuous Tone-Coded Squelch (CTCSS)");
+            setOnAction(event -> {
+                Ctcss ctcss = new Ctcss();
+                getIdentifiersList().getItems().add(ctcss);
+                getIdentifiersList().getSelectionModel().select(ctcss);
+                getIdentifiersList().scrollTo(ctcss);
             });
         }
     }
