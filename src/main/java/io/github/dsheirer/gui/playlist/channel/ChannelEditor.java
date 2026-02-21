@@ -215,7 +215,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
                     if(editor == null)
                     {
                         editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager,
-                            mTunerManager, mUserPreferences, this);
+                                mTunerManager, mUserPreferences, this);
 
                         if(editor != null)
                         {
@@ -250,21 +250,21 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
         if(mViewSegmentedButton == null)
         {
             mViewSegmentedButton = new SegmentedButton(getAllToggleButton(), getPlayingToggleButton(),
-                getAutoStartToggleButton());
+                    getAutoStartToggleButton());
             mViewSegmentedButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             getAllToggleButton().setSelected(true);
             mViewSegmentedButton.getToggleGroup().selectedToggleProperty()
-                .addListener((observable, oldValue, newValue) -> {
-                //Don't allow toggles to be de-selected
-                if(newValue == null)
-                {
-                    oldValue.setSelected(true);
-                }
-                else
-                {
-                    updateChannelListFilter();
-                }
-            });
+                    .addListener((observable, oldValue, newValue) -> {
+                        //Don't allow toggles to be de-selected
+                        if(newValue == null)
+                        {
+                            oldValue.setSelected(true);
+                        }
+                        else
+                        {
+                            updateChannelListFilter();
+                        }
+                    });
         }
 
         return mViewSegmentedButton;
@@ -440,7 +440,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             TableColumn<Channel,Boolean> autoStartColumn = new TableColumn<>("Auto-Start");
             autoStartColumn.setCellValueFactory(new PropertyValueFactory<>("autoStart"));
-            autoStartColumn.setPrefWidth(95);
+            autoStartColumn.setPrefWidth(85);
             autoStartColumn.setCellFactory(param -> {
                 TableCell<Channel,Boolean> tableCell = new TableCell<>()
                 {
@@ -476,7 +476,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             TableColumn nameColumn = new TableColumn("Name");
             nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-            nameColumn.setPrefWidth(200);
+            nameColumn.setPrefWidth(175);
 
             TableColumn frequencyColumn = new TableColumn("Frequency");
             frequencyColumn.setCellValueFactory(new FrequencyCellValueFactory());
@@ -486,8 +486,12 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
             protocolColumn.setCellValueFactory(new ProtocolCellValueFactory());
             protocolColumn.setPrefWidth(100);
 
+            TableColumn aliaslistColumn = new TableColumn("Alias List");
+            aliaslistColumn.setCellValueFactory(new AliasListCellValueFactory());
+            aliaslistColumn.setPrefWidth(150);
+
             mChannelTableView.getColumns().addAll(systemColumn, siteColumn, nameColumn, frequencyColumn, protocolColumn,
-                playingColumn, autoStartColumn);
+                    playingColumn, autoStartColumn, aliaslistColumn);
             mChannelTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
@@ -496,7 +500,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
             sortedList.comparatorProperty().bind(mChannelTableView.comparatorProperty());
             mChannelTableView.setItems(sortedList);
             mChannelTableView.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> setChannel(newValue));
+                    .addListener((observable, oldValue, newValue) -> setChannel(newValue));
             mChannelTableView.setOnMouseClicked(event -> {
                 if(event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
                 {
@@ -571,7 +575,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
                 if(selected != null)
                 {
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                        "Do you want to delete the selected channel?", ButtonType.NO, ButtonType.YES);
+                            "Do you want to delete the selected channel?", ButtonType.NO, ButtonType.YES);
                     alert.setTitle("Delete Channel");
                     alert.setHeaderText("Are you sure?");
                     alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
@@ -657,7 +661,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
     }
 
     public class ProtocolCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
-        ObservableValue<String>>
+            ObservableValue<String>>
     {
         private SimpleStringProperty mProtocol = new SimpleStringProperty();
 
@@ -684,7 +688,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
      * Channel tuner channel source frequencies value factory
      */
     public class FrequencyCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
-        ObservableValue<String>>
+            ObservableValue<String>>
     {
         private SimpleStringProperty mFrequency = new SimpleStringProperty();
 
@@ -710,6 +714,33 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             return mFrequency;
         }
+    }
+    /**
+     * Alias List value factory                     @@@@@@@@@@@@@@@@@@@@@@@   My Add Alias List
+     */
+    public class AliasListCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
+            ObservableValue<String>>
+    {
+
+        private SimpleStringProperty mAliasList = new SimpleStringProperty();
+
+        @Override
+        public ObservableValue<String> call(TableColumn.CellDataFeatures<Channel, String> param)
+        {
+            Channel alist = param.getValue();
+
+            if(alist != null)
+            {
+                mAliasList.set(alist.getAliasListName().toString());
+            }
+            else
+            {
+                mAliasList.set(null);
+            }
+
+            return mAliasList;
+        }
+
     }
 
     /**
