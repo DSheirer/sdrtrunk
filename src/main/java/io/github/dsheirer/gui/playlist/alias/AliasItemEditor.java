@@ -861,6 +861,12 @@ public class AliasItemEditor extends Editor<Alias>
     private void updateStreamViews()
     {
         Platform.runLater(() -> {
+            // === FIX: Skip refresh if user has unsaved modifications to prevent reverting changes ===
+            if(modifiedProperty().get())
+            {
+                return;
+            }
+
             getAvailableStreamsView().getItems().clear();
             getSelectedStreamsView().getItems().clear();
             getAvailableStreamsView().setDisable(getItem() == null);
