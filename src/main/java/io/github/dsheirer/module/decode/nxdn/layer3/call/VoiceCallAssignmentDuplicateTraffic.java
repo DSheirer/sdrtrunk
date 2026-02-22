@@ -78,11 +78,15 @@ public class VoiceCallAssignmentDuplicateTraffic extends VoiceCall implements IC
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
         sb.append(" ").append(getEncryptionKeyIdentifier());
-        sb.append(" ").append(getCallOption());
         if(hasChannel())
         {
             sb.append(" CHANNEL:").append(getChannel());
         }
+        else
+        {
+            sb.append(" CHANNEL: NOT CONFIGURED");
+        }
+        sb.append(" ").append(getCallOption());
         sb.append(" TIMER:").append(getCallTimer());
         return sb.toString();
     }

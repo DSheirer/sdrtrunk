@@ -23,8 +23,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.nxdn.layer1.Frame;
-import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
-import io.github.dsheirer.module.decode.nxdn.layer1.sync.standard.NXDNStandardSoftSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICHTracker;
 import io.github.dsheirer.module.decode.nxdn.layer2.Option;
 import io.github.dsheirer.module.decode.nxdn.sync.standard.NXDNStandardHardSyncDetector;
@@ -40,7 +38,6 @@ import io.github.dsheirer.sample.Listener;
 public class NXDNMessageFramer
 {
     private static final float SYNC_DETECTION_THRESHOLD = 60;
-    private final NXDNStandardSoftSyncDetector mSoftSyncDetector = NXDNSyncDetectorFactory.getStandardDetector();
     private final NXDNStandardHardSyncDetector mHardSyncDetector = new NXDNStandardHardSyncDetector();
     private boolean mSyncDetected = false;
 

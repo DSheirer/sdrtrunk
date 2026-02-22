@@ -19,62 +19,52 @@
 
 package io.github.dsheirer.module.decode.nxdn.channel;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
+import java.util.Map;
 
 /**
- * Base NXDN channel
+ * Fake channel that uses a talkgroup value for tracking call detection events by frequency, where the talkgroup value
+ * represents the tracked frequency.
  */
-public abstract class NXDNChannel implements IChannelDescriptor, IChannelInformationReceiver
+public class NXDNChannelFake extends NXDNChannel
 {
-    /**
-     * Constructs an instance
-     */
-    public NXDNChannel()
+    private int mTalkgroup;
+
+    public NXDNChannelFake(int talkgroup)
     {
+        mTalkgroup = talkgroup;
     }
 
     /**
-     * Indicates if this channel has a non-zero downlink frequency.
+     * Always return false to indicate this a a non-value, fake channel.
      */
+    @Override
     public boolean isValid()
-    {
-        return getDownlinkFrequency() > 0;
-    }
-
-    @Override
-    public Protocol getProtocol()
-    {
-        return Protocol.NXDN;
-    }
-
-    @Override
-    public int getTimeslotCount()
-    {
-        return 1;
-    }
-
-    @Override
-    public boolean isTDMAChannel()
     {
         return false;
     }
 
     @Override
+    public long getDownlinkFrequency()
+    {
+        return mTalkgroup;
+    }
+
+    @Override
+    public long getUplinkFrequency()
+    {
+        return 0;
+    }
+
+    @Override
+    public void receive(ChannelAccessInformation channelAccessInformation, Map<Integer, ChannelFrequency> channelFrequencyMap)
+    {
+        //No-op.
+    }
+
+    @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("DN:").append(getDownlinkFrequency() / 1E6D);
-
-        long up = getUplinkFrequency();
-
-        if(up > 0)
-        {
-            sb.append(" UP:").append(up / 1E6D);
-        }
-
-        sb.append(" MHZ");
-        return sb.toString();
+        return "UNKNOWN";
     }
 }

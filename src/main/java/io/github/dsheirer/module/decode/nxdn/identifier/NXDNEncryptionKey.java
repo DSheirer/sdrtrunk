@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ public class NXDNEncryptionKey extends EncryptionKey
 
         if(isEncrypted())
         {
-            sb.append("ENCRYPTION:").append(getCipherType());
+            sb.append(getCipherType());
             sb.append(" KEY:").append(getKey());
         }
         else

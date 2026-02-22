@@ -123,7 +123,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
             samplesPerSymbol /= 2;
         }
 
-        System.out.println("Decimated Sample Rate: " + (sampleRate / decimation));
+//        System.out.println("Decimated Sample Rate: " + (sampleRate / decimation));
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);

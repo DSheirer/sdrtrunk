@@ -85,6 +85,7 @@ import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.NXDNDecoder;
 import io.github.dsheirer.module.decode.nxdn.NXDNDecoderState;
 import io.github.dsheirer.module.decode.nxdn.NXDNTrafficChannelManager;
+import io.github.dsheirer.module.decode.nxdn.audio.NXDNAudioModule;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
@@ -492,6 +493,7 @@ public class DecoderFactory
             }
 
             modules.add(new NXDNDecoder(configNXDN));
+            modules.add(new NXDNAudioModule(userPreferences, aliasList));
 
             if(channel.getChannelType() == ChannelType.STANDARD)
             {

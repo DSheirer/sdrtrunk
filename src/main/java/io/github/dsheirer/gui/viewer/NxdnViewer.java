@@ -85,7 +85,8 @@ public class NxdnViewer extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(NxdnViewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
-    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.p25p1";
+    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.nxdn";
+    private static final String LAST_SELECTED_FILE = "last.selected.file.nxdn";
     private static final String FILE_FREQUENCY_REGEX = ".*\\d{8}_\\d{6}_(\\d{9}).*";
     private Preferences mPreferences = Preferences.userNodeForPackage(NxdnViewer.class);
     private Button mSelectFileButton;
@@ -205,6 +206,10 @@ public class NxdnViewer extends VBox
 
                 messageProcessor.setMessageListener(message -> {
                     //Add the initial message to the packager so that it can be combined with any decoder state events.
+                    if(message.toString().contains("FROM:166"))
+                    {
+                        int a = 0;
+                    }
                     messagePackager.add(message);
                     decoderState.receive(message);
 
@@ -508,7 +513,11 @@ public class NxdnViewer extends VBox
             mSelectFileButton = new Button("Select ...");
             mSelectFileButton.onActionProperty().set(event -> {
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Select P25 Phase 1 .bits Recording");
+                fileChooser.setTitle("Select NXDN .bits Recording");
+                FileChooser.ExtensionFilter f1 = new FileChooser.ExtensionFilter("Demodulated Bitstream Recording (*.bits)", "*.bits");
+                FileChooser.ExtensionFilter f2 = new FileChooser.ExtensionFilter("All Files *.*", "*.*");
+                fileChooser.getExtensionFilters().addAll(f1, f2);
+                fileChooser.setSelectedExtensionFilter(f1);
                 String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
                 if(lastDirectory != null)
                 {
@@ -516,14 +525,22 @@ public class NxdnViewer extends VBox
                     if(file.exists() && file.isDirectory())
                     {
                         fileChooser.setInitialDirectory(file);
+
+                        String lastFile = mPreferences.get(LAST_SELECTED_FILE, null);
+
+                        if(lastFile != null)
+                        {
+                            fileChooser.initialFileNameProperty().set(lastFile);
+//                            fileChooser.setInitialFileName(lastFile);
+                        }
                     }
                 }
-                fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("sdrtrunk bits recording", "*.bits"));
                 final File selected = fileChooser.showOpenDialog(getScene().getWindow());
 
                 if(selected != null)
                 {
                     mPreferences.put(LAST_SELECTED_DIRECTORY, selected.getParent());
+                    mPreferences.put(LAST_SELECTED_FILE, selected.getName());
                     load(selected);
                 }
             });

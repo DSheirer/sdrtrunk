@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@ public enum CipherType
 {
     UNENCRYPTED("UNENCRYPTED"),
     SCRAMBLE("SCRAMBLE"),
-    DES("DES ENCRYPTION"),
-    AES("AES ENCRYPTION");
+    DES("DES"),
+    AES("AES");
 
     private String mLabel;
 

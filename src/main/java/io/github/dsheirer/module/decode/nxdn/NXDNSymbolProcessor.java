@@ -729,7 +729,7 @@ public class NXDNSymbolProcessor
          */
         public void configure(double samplesPerSymbol)
         {
-            System.out.println("Equalizer is configuring for: " + samplesPerSymbol);
+//            System.out.println("Equalizer is configuring for: " + samplesPerSymbol);
             float ratio = (float)samplesPerSymbol / 5.208f;
             float gain = 5.7f * ratio;
             mGainInitial = gain;

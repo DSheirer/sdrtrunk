@@ -81,8 +81,6 @@ public class NXDNAudioModule extends AmbeAudioModule
     {
         if(hasAudioCodec())
         {
-            //TODO: each Audio message includes the audio codec being used for the call ...
-
             if(message instanceof Audio audio)
             {
                 if(mEncryptedCallStateEstablished)

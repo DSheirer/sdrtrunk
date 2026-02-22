@@ -23,9 +23,12 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
@@ -58,7 +61,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationRe
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationClearResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationCommand;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponse;
-
+import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAliasComplete;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,6 +73,8 @@ public class NXDNDecoderState extends DecoderState
     private final Channel mChannelConfiguration;
     private final NXDNNetworkConfigurationMonitor mNetworkConfigurationMonitor = new NXDNNetworkConfigurationMonitor();
     private final NXDNTrafficChannelManager mTrafficChannelManager;
+    private boolean mEncryptedCallStateDetermined = false;
+    private boolean mEncryptedCall = false;
 
     /**
      * Constructs an instance
@@ -110,6 +115,7 @@ public class NXDNDecoderState extends DecoderState
             sb.append("Transmission Mode: ").append(configNXDN.getTransmissionMode()).append("\n");
         }
         sb.append(mNetworkConfigurationMonitor.getSummary()).append("\n");
+        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary()).append("\n");
         return sb.toString();
     }
 
@@ -429,7 +435,8 @@ public class NXDNDecoderState extends DecoderState
      */
     private void processTrafficLayer3(NXDNLayer3Message layer3)
     {
-        broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.ACTIVE));
+        State state = State.ACTIVE;
+        DecoderStateEvent.Event event = DecoderStateEvent.Event.DECODE;
 
         if(layer3.getMessageType().isBroadcast())
         {
@@ -441,6 +448,12 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_OUT_01_VOICE_CALL:
                 if(layer3 instanceof VoiceCall vc)
                 {
+                    getIdentifierCollection().update(vc.getIdentifiers());
+                    mEncryptedCallStateDetermined = true;
+                    mEncryptedCall = vc.getEncryptionKeyIdentifier().isEncrypted();
+                    state = mEncryptedCall ? State.ENCRYPTED : State.CALL;
+                    event = DecoderStateEvent.Event.START;
+                    mTrafficChannelManager.processVoiceCall(vc, getCurrentChannel());
                 }
                 break;
             case TRAFFIC_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
@@ -454,12 +467,12 @@ public class NXDNDecoderState extends DecoderState
                 }
                 break;
             case TRAFFIC_OUT_03_VOICE_CALL_INITIALIZATION_VECTOR:
+                state = State.CALL;
+                event = DecoderStateEvent.Event.CONTINUATION;
                 break;
             case TRAFFIC_OUT_04_VOICE_CALL_ASSIGNMENT:
                 if(layer3 instanceof VoiceCallAssignment vca)
                 {
-                    getIdentifierCollection().update(vca.getIdentifiers());
-
                     //ICD says this is only on the control channel, but the messages table shows traffic channel also
                     //Decode event is created by the traffic channel manager
                     mTrafficChannelManager.processVoiceCallAssignment(vca);
@@ -468,22 +481,26 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
                 if(layer3 instanceof VoiceCallAssignmentDuplicateTraffic vcadt)
                 {
-                    getIdentifierCollection().update(vcadt.getIdentifiers());
-
                     //This informs when there are 2-calls ongoing where a radio can participate in either call
                     mTrafficChannelManager.processVoiceCallAssignment(vcadt);
                 }
                 break;
             case TRAFFIC_OUT_07_TRANSMISSION_RELEASE_EXTENSION:
             case TRAFFIC_OUT_08_TRANSMISSION_RELEASE:
+                mEncryptedCallStateDetermined = false;
+                mEncryptedCall = false;
                 getIdentifierCollection().remove(IdentifierClass.USER);
-                broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.ACTIVE));
+                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 break;
             case TRAFFIC_OUT_09_DATA_CALL_HEADER:
+                //TODO: handle
+                state = State.DATA;
                 break;
             case TRAFFIC_OUT_10_DATA_CALL_RECEPTION_REQUEST:
                 break;
             case TRAFFIC_OUT_11_DATA_CALL_BLOCK:
+                //TODO: handle
+                state = State.DATA;
                 break;
             case TRAFFIC_OUT_12_DATA_CALL_ACKNOWLEDGE:
                 break;
@@ -494,10 +511,16 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_OUT_15_HEADER_DELAY:
                 break;
             case TRAFFIC_OUT_16_IDLE:
+                mEncryptedCallStateDetermined = false;
+                mEncryptedCall = false;
                 break;
             case TRAFFIC_OUT_17_DISCONNECT:
+                mEncryptedCallStateDetermined = false;
+                mEncryptedCall = false;
+                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 getIdentifierCollection().remove(IdentifierClass.USER);
-                 broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.END, State.FADE));
+                event = DecoderStateEvent.Event.END;
+                state = State.FADE;
                 break;
             case TRAFFIC_OUT_24_SITE_INFORMATION:
                 if(layer3 instanceof SiteInformation si)
@@ -539,19 +562,38 @@ public class NXDNDecoderState extends DecoderState
             case PROPRIETARY_FORM:
                 break;
             case TALKER_ALIAS:
+                state = State.CALL;
+                event = DecoderStateEvent.Event.CONTINUATION;
                 break;
 
             case TALKER_ALIAS_COMPLETE:
-                //TODO: create a talker alias manager that caches the values and shares them with the channel details panel
+                if(layer3 instanceof TalkerAliasComplete tac)
+                {
+                    state = State.CALL;
+                    event = DecoderStateEvent.Event.CONTINUATION;
+                    var radio = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
+
+                    if(radio instanceof RadioIdentifier ri)
+                    {
+                        System.out.println("Adding talker alias: " + tac.getTalkerAlias());
+                        mTrafficChannelManager.processTalkerAlias(getCurrentChannel(), tac.getTalkerAlias(), ri, tac.getTimestamp());
+                    }
+                }
                 break;
-
-
             case TRAFFIC_IN_01_VOICE_CALL:
+                state = State.CALL;
+                break;
             case TRAFFIC_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
             case TRAFFIC_IN_03_VOICE_CALL_INITIALIZATION_VECTOR:
+                state = State.CALL;
+                break;
             case TRAFFIC_IN_08_TRANSMISSION_RELEASE:
             case TRAFFIC_IN_09_DATA_CALL_HEADER:
+                state = State.DATA;
+                break;
             case TRAFFIC_IN_11_DATA_CALL_BLOCK:
+                state = State.DATA;
+                break;
             case TRAFFIC_IN_12_DATA_CALL_ACKNOWLEDGE:
             case TRAFFIC_IN_15_HEADER_DELAY:
             case TRAFFIC_IN_16_IDLE:
@@ -566,13 +608,19 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_IN_53_REMOTE_CONTROL_RESPONSE:
             case TRAFFIC_IN_56_SHORT_DATA_CALL_REQUEST_HEADER:
             case TRAFFIC_IN_57_SHORT_DATA_CALL_BLOCK:
+                state = State.DATA;
+                break;
             case TRAFFIC_IN_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+                state = State.DATA;
+                break;
             case TRAFFIC_IN_59_SHORT_DATA_CALL_RESPONSE:
                 break;
             case UNKNOWN:
                 break;
 
         }
+
+        broadcast(new DecoderStateEvent(this, event, state));
     }
 
     /**
@@ -581,6 +629,15 @@ public class NXDNDecoderState extends DecoderState
      */
     private void processAudio(Audio audio)
     {
-        broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.CALL));
+        State state = State.CALL;
+
+        if(mEncryptedCallStateDetermined && mEncryptedCall)
+        {
+            state = State.ENCRYPTED;
+        }
+
+        mTrafficChannelManager.processCallProgressUpdate(getCurrentChannel(), audio.getTimestamp());
+
+        broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.CONTINUATION, state));
     }
 }
