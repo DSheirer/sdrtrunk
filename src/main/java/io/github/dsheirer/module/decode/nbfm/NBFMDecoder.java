@@ -35,6 +35,10 @@ import io.github.dsheirer.dsp.squelch.INoiseSquelchController;
 import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
 import io.github.dsheirer.dsp.window.WindowType;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.IMessageListener;
+import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.ctcss.CTCSSMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.sample.Listener;
@@ -52,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * and block high-noise audio.  Audio is filtered and resampled to 8 kHz for downstream consumers.
  */
 public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventListener, IComplexSamplesListener,
-        Listener<ComplexSamples>, IRealBufferProvider, IDecoderStateEventProvider, INoiseSquelchController
+        Listener<ComplexSamples>, IRealBufferProvider, IDecoderStateEventProvider, INoiseSquelchController, IMessageListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(NBFMDecoder.class);
     private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
@@ -67,6 +71,9 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private Listener<DecoderStateEvent> mDecoderStateEventListener;
     private RealResampler mResampler;
     private final double mChannelBandwidth;
+    private CTCSSCode mConfiguredCtcssTone;
+    private CTCSSCode mDetectedCtcssTone;
+    private boolean mToneSquelchEnabled = false;
 
     /**
      * Constructs an instance
@@ -79,13 +86,18 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         //Save channel bandwidth to setup channel baseband filter.
         mChannelBandwidth = config.getBandwidth().getValue();
+        mConfiguredCtcssTone = config.getCtcssTone();
+        mToneSquelchEnabled = (mConfiguredCtcssTone != null);
         mNoiseSquelch = new NoiseSquelch(config.getSquelchNoiseOpenThreshold(), config.getSquelchNoiseCloseThreshold(),
                 config.getSquelchHysteresisOpenThreshold(), config.getSquelchHysteresisCloseThreshold());
 
         //Send squelch controlled audio to the resampler and notify the decoder state that the call continues.
         mNoiseSquelch.setAudioListener(audio -> {
-            mResampler.resample(audio);
-            notifyCallContinuation();
+            if(isToneSquelchSatisfied())
+            {
+                mResampler.resample(audio);
+                notifyCallContinuation();
+            }
         });
 
         //Notify the decoder state of call starts and ends
@@ -398,6 +410,46 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
             {
                 setSampleRate(sourceEvent.getValue().doubleValue());
+            }
+        }
+    }
+
+    /**
+     * Checks if tone squelch requirements are satisfied.
+     * @return true if no tone configured, or if detected tone matches configured tone
+     */
+    private boolean isToneSquelchSatisfied()
+    {
+        if(!mToneSquelchEnabled)
+        {
+            return true;
+        }
+        return mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone;
+    }
+
+    /**
+     * Implements IMessageListener to receive messages from the processing chain
+     */
+    @Override
+    public Listener<IMessage> getMessageListener()
+    {
+        return this::processMessage;
+    }
+
+    /**
+     * Process incoming messages, looking for CTCSS tone updates
+     */
+    private void processMessage(IMessage message)
+    {
+        if(message instanceof CTCSSMessage ctcssMessage)
+        {
+            if(ctcssMessage.isToneLost())
+            {
+                mDetectedCtcssTone = null;
+            }
+            else
+            {
+                mDetectedCtcssTone = ctcssMessage.getCTCSSCode();
             }
         }
     }

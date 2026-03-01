@@ -23,6 +23,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog;
+import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.dcs.DCSCode;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 /**
@@ -36,6 +38,8 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     private int mSquelchHysteresisOpenThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD;
     private int mSquelchHysteresisCloseThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_CLOSE_THRESHOLD;
     private boolean mRequireAliasMatch = false;
+    private CTCSSCode mCtcssTone = null;
+    private DCSCode mDcsTone = null;
 
     /**
      * Constructs an instance
@@ -208,5 +212,61 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     public void setRequireAliasMatch(boolean requireAliasMatch)
     {
         mRequireAliasMatch = requireAliasMatch;
+    }
+/**
+     * Gets the required CTCSS tone for this channel.
+     * @return CTCSS code or null if no tone squelch is configured
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "ctcssTone")
+    public CTCSSCode getCtcssTone()
+    {
+        return mCtcssTone;
+    }
+
+    /**
+     * Sets the required CTCSS tone for this channel.
+     * @param ctcssTone the tone to require, or null to disable tone squelch
+     */
+    public void setCtcssTone(CTCSSCode ctcssTone)
+    {
+        mCtcssTone = ctcssTone;
+    }
+
+    /**
+     * Indicates if CTCSS tone squelch is enabled for this channel.
+     * @return true if a CTCSS tone is configured
+     */
+    @JsonIgnore
+    public boolean hasCtcssTone()
+    {
+        return mCtcssTone != null;
+    }
+    /**
+     * Gets the required DCS code for this channel.
+     * @return DCS code or null if no DCS squelch is configured
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "dcsTone")
+    public DCSCode getDcsTone()
+    {
+        return mDcsTone;
+    }
+
+    /**
+     * Sets the required DCS code for this channel.
+     * @param dcsTone the code to require, or null to disable DCS squelch
+     */
+    public void setDcsTone(DCSCode dcsTone)
+    {
+        mDcsTone = dcsTone;
+    }
+
+    /**
+     * Indicates if DCS squelch is enabled for this channel.
+     * @return true if a DCS code is configured
+     */
+    @JsonIgnore
+    public boolean hasDcsTone()
+    {
+        return mDcsTone != null;
     }
 }

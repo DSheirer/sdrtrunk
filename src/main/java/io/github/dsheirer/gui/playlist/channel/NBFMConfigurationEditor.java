@@ -29,6 +29,9 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
+import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.dcs.DCSCode;
+import javafx.scene.control.ComboBox;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -74,6 +77,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
+    private ComboBox<SquelchMode> mSquelchModeComboBox;
+    private ComboBox<Object> mToneCodeComboBox;
+    private Label mToneCodeLabel;
 
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private AuxDecoderConfigurationEditor mAuxDecoderConfigurationEditor;
@@ -150,6 +156,21 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(getRequireAliasMatchSwitch(), 2, 2);
             gridPane.getChildren().add(getRequireAliasMatchSwitch());
+
+            Label squelchModeLabel = new Label("Squelch Mode");
+            GridPane.setHalignment(squelchModeLabel, HPos.RIGHT);
+            GridPane.setConstraints(squelchModeLabel, 0, 3);
+            gridPane.getChildren().add(squelchModeLabel);
+
+            GridPane.setConstraints(getSquelchModeComboBox(), 1, 3);
+            gridPane.getChildren().add(getSquelchModeComboBox());
+
+            GridPane.setHalignment(getToneCodeLabel(), HPos.RIGHT);
+            GridPane.setConstraints(getToneCodeLabel(), 0, 4);
+            gridPane.getChildren().add(getToneCodeLabel());
+
+            GridPane.setConstraints(getToneCodeComboBox(), 1, 4);
+            gridPane.getChildren().add(getToneCodeComboBox());
 
             mDecoderPane.setContent(gridPane);
 
@@ -287,6 +308,103 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mRequireAliasMatchSwitch;
+    }
+
+    /**
+     * ComboBox for selecting squelch mode
+     */
+    private ComboBox<SquelchMode> getSquelchModeComboBox()
+    {
+        if(mSquelchModeComboBox == null)
+        {
+            mSquelchModeComboBox = new ComboBox<>();
+            mSquelchModeComboBox.getItems().addAll(SquelchMode.values());
+            mSquelchModeComboBox.setValue(SquelchMode.CSQ);
+            mSquelchModeComboBox.setTooltip(new Tooltip("Select squelch mode"));
+            mSquelchModeComboBox.setDisable(true);
+            mSquelchModeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+                modifiedProperty().set(true);
+                updateToneCodeComboBox(newValue);
+            });
+        }
+        return mSquelchModeComboBox;
+    }
+
+    /**
+     * ComboBox for selecting tone or code based on squelch mode
+     */
+    private ComboBox<Object> getToneCodeComboBox()
+    {
+        if(mToneCodeComboBox == null)
+        {
+            mToneCodeComboBox = new ComboBox<>();
+            mToneCodeComboBox.setTooltip(new Tooltip("Select tone or code"));
+            mToneCodeComboBox.setDisable(true);
+            mToneCodeComboBox.setVisible(false);
+            mToneCodeComboBox.setPromptText("Select Tone...");
+            mToneCodeComboBox.setButtonCell(new PromptButtonCell<>("Select Tone..."));
+            mToneCodeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+        return mToneCodeComboBox;
+    }
+
+    /**
+     * Label for tone/code combo box
+     */
+    private Label getToneCodeLabel()
+    {
+        if(mToneCodeLabel == null)
+        {
+            mToneCodeLabel = new Label("Tone/Code");
+            mToneCodeLabel.setVisible(false);
+        }
+        return mToneCodeLabel;
+    }
+
+    /**
+     * Updates the tone/code combo box based on selected squelch mode
+     */
+   private void updateToneCodeComboBox(SquelchMode mode)
+    {
+        getToneCodeComboBox().getItems().clear();
+        getToneCodeComboBox().setValue(null);
+        
+        if(mode == SquelchMode.CTCSS)
+        {
+            getToneCodeComboBox().getItems().addAll(CTCSSCode.STANDARD_CODES);
+            getToneCodeLabel().setText("CTCSS Tone");
+            getToneCodeLabel().setVisible(true);
+            getToneCodeComboBox().setPromptText("Select Tone...");
+            getToneCodeComboBox().setButtonCell(new PromptButtonCell<>("Select Tone..."));
+            getToneCodeComboBox().setVisible(true);
+            getToneCodeComboBox().setDisable(false);
+        }
+        else if(mode == SquelchMode.DCS)
+        {
+            getToneCodeComboBox().getItems().addAll(DCSCode.STANDARD_CODES);
+            getToneCodeLabel().setText("DCS Code");
+            getToneCodeLabel().setVisible(true);
+            getToneCodeComboBox().setPromptText("Select Code...");
+            getToneCodeComboBox().setButtonCell(new PromptButtonCell<>("Select Code..."));
+            getToneCodeComboBox().setVisible(true);
+            getToneCodeComboBox().setDisable(false);
+        }
+        else if(mode == SquelchMode.DCS_INVERTED)
+        {
+            getToneCodeComboBox().getItems().addAll(DCSCode.INVERTED_CODES);
+            getToneCodeLabel().setText("DCS Code (Inv)");
+            getToneCodeLabel().setVisible(true);
+            getToneCodeComboBox().setPromptText("Select Code...");
+            getToneCodeComboBox().setButtonCell(new PromptButtonCell<>("Select Code..."));
+            getToneCodeComboBox().setVisible(true);
+            getToneCodeComboBox().setDisable(false);
+        }
+        else
+        {
+            getToneCodeLabel().setVisible(false);
+            getToneCodeComboBox().setVisible(false);
+            getToneCodeComboBox().setDisable(true);
+        }
     }
 
     private SegmentedButton getBandwidthButton()
@@ -433,6 +551,33 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
             getRequireAliasMatchSwitch().setDisable(false);
             getRequireAliasMatchSwitch().setSelected(decodeConfigNBFM.isRequireAliasMatch());
+            getSquelchModeComboBox().setDisable(false);
+            if(decodeConfigNBFM.hasCtcssTone())
+            {
+                getSquelchModeComboBox().setValue(SquelchMode.CTCSS);
+                updateToneCodeComboBox(SquelchMode.CTCSS);
+                getToneCodeComboBox().setValue(decodeConfigNBFM.getCtcssTone());
+            }
+            else if(decodeConfigNBFM.hasDcsTone())
+            {
+                DCSCode dcsCode = decodeConfigNBFM.getDcsTone();
+                if(dcsCode.isInverted())
+                {
+                    getSquelchModeComboBox().setValue(SquelchMode.DCS_INVERTED);
+                    updateToneCodeComboBox(SquelchMode.DCS_INVERTED);
+                }
+                else
+                {
+                    getSquelchModeComboBox().setValue(SquelchMode.DCS);
+                    updateToneCodeComboBox(SquelchMode.DCS);
+                }
+                getToneCodeComboBox().setValue(dcsCode);
+            }
+            else
+            {
+                getSquelchModeComboBox().setValue(SquelchMode.CSQ);
+                updateToneCodeComboBox(SquelchMode.CSQ);
+            }
         }
         else
         {
@@ -447,6 +592,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getTalkgroupField().setDisable(true);
             getAudioFilterEnable().setDisable(true);
             getAudioFilterEnable().setSelected(false);
+            getSquelchModeComboBox().setDisable(true);
+            getSquelchModeComboBox().setValue(SquelchMode.CSQ);
+            updateToneCodeComboBox(SquelchMode.CSQ);
         }
     }
 
@@ -484,6 +632,22 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         config.setAudioFilter(getAudioFilterEnable().isSelected());
         config.setRequireAliasMatch(getRequireAliasMatchSwitch().isSelected());
         getItem().setDecodeConfiguration(config);
+        SquelchMode mode = getSquelchModeComboBox().getValue();
+        if(mode == SquelchMode.CTCSS && getToneCodeComboBox().getValue() instanceof CTCSSCode)
+        {
+            config.setCtcssTone((CTCSSCode)getToneCodeComboBox().getValue());
+            config.setDcsTone(null);
+        }
+        else if((mode == SquelchMode.DCS || mode == SquelchMode.DCS_INVERTED) && getToneCodeComboBox().getValue() instanceof DCSCode)
+        {
+            config.setCtcssTone(null);
+            config.setDcsTone((DCSCode)getToneCodeComboBox().getValue());
+        }
+        else
+        {
+            config.setCtcssTone(null);
+            config.setDcsTone(null);
+        }
     }
 
     @Override
@@ -568,5 +732,54 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         getSourceConfigurationEditor().save();
         SourceConfiguration sourceConfiguration = getSourceConfigurationEditor().getSourceConfiguration();
         getItem().setSourceConfiguration(sourceConfiguration);
+    }
+    /**
+     * Squelch mode options
+     */
+    public enum SquelchMode
+    {
+        CSQ("Carrier Squelch"),
+        CTCSS("CTCSS Tone"),
+        DCS("DCS Code"),
+        DCS_INVERTED("DCS Code (Inverted)");
+
+        private final String mLabel;
+
+        SquelchMode(String label)
+        {
+            mLabel = label;
+        }
+
+        @Override
+        public String toString()
+        {
+            return mLabel;
+        }
+    }
+    /**
+     * Custom button cell that shows prompt text when no value is selected
+     */
+    private static class PromptButtonCell<T> extends javafx.scene.control.ListCell<T>
+    {
+        private final String mPromptText;
+
+        public PromptButtonCell(String promptText)
+        {
+            mPromptText = promptText;
+        }
+
+        @Override
+        protected void updateItem(T item, boolean empty)
+        {
+            super.updateItem(item, empty);
+            if(empty || item == null)
+            {
+                setText(mPromptText);
+            }
+            else
+            {
+                setText(item.toString());
+            }
+        }
     }
 }
