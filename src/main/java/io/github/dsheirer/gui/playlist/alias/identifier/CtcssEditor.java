@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
  */
 package io.github.dsheirer.gui.playlist.alias.identifier;
 
-import io.github.dsheirer.alias.id.dcs.Dcs;
-import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.alias.id.ctcss.Ctcss;
+import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -28,44 +28,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Editor for Digital Coded Squelch (DCS) alias identifiers
+ * Editor for Continuous Tone-Coded Squelch System (CTCSS) alias identifiers
  */
-public class DcsEditor extends IdentifierEditor<Dcs>
+public class CtcssEditor extends IdentifierEditor<Ctcss>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(DcsEditor.class);
-    private ComboBox<DCSCode> mDCSCodeComboBox;
+    private static final Logger mLog = LoggerFactory.getLogger(CtcssEditor.class);
+    private ComboBox<CTCSSCode> mCTCSSCodeComboBox;
 
     /**
      * Constructs an instance
      */
-    public DcsEditor()
+    public CtcssEditor()
     {
         GridPane gridPane = new GridPane();
         gridPane.setHgap(5);
 
-        Label typeLabel = new Label("DCS Code");
+        Label typeLabel = new Label("CTCSS Tone");
         GridPane.setConstraints(typeLabel, 0, 0);
         gridPane.getChildren().add(typeLabel);
 
-        GridPane.setConstraints(getDCSCodeComboBox(), 1, 0);
-        gridPane.getChildren().add(getDCSCodeComboBox());
+        GridPane.setConstraints(getCTCSSCodeComboBox(), 1, 0);
+        gridPane.getChildren().add(getCTCSSCodeComboBox());
 
         getChildren().add(gridPane);
     }
 
     @Override
-    public void setItem(Dcs item)
+    public void setItem(Ctcss item)
     {
         super.setItem(item);
 
         if(item.isValid())
         {
-            getDCSCodeComboBox().getSelectionModel().select(item.getDCSCode());
+            getCTCSSCodeComboBox().getSelectionModel().select(item.getCTCSSCode());
         }
         else
         {
             // Clear selection for new/invalid items - shows placeholder
-            getDCSCodeComboBox().getSelectionModel().clearSelection();
+            getCTCSSCodeComboBox().getSelectionModel().clearSelection();
         }
 
         modifiedProperty().set(false);
@@ -84,30 +84,29 @@ public class DcsEditor extends IdentifierEditor<Dcs>
     }
 
     /**
-     * Combo-box loaded with DCS codes
+     * Combo-box loaded with CTCSS codes
      * @return combo box
      */
-    private ComboBox<DCSCode> getDCSCodeComboBox()
+    private ComboBox<CTCSSCode> getCTCSSCodeComboBox()
     {
-        if(mDCSCodeComboBox == null)
+        if(mCTCSSCodeComboBox == null)
         {
-            mDCSCodeComboBox = new ComboBox<>();
-            mDCSCodeComboBox.getItems().addAll(DCSCode.STANDARD_CODES);
-            mDCSCodeComboBox.getItems().addAll(DCSCode.INVERTED_CODES);
-
+            mCTCSSCodeComboBox = new ComboBox<>();
+            mCTCSSCodeComboBox.getItems().addAll(CTCSSCode.STANDARD_CODES);
+            
             // Set prompt text shown when nothing is selected
-            mDCSCodeComboBox.setPromptText("Select Code...");
-
+            mCTCSSCodeComboBox.setPromptText("Select Tone...");
+            
             // Custom cell factory to handle display
-            mDCSCodeComboBox.setButtonCell(new ListCell<DCSCode>()
+            mCTCSSCodeComboBox.setButtonCell(new ListCell<CTCSSCode>()
             {
                 @Override
-                protected void updateItem(DCSCode item, boolean empty)
+                protected void updateItem(CTCSSCode item, boolean empty)
                 {
                     super.updateItem(item, empty);
                     if(empty || item == null)
                     {
-                        setText("Select Code...");
+                        setText("Select Tone...");
                     }
                     else
                     {
@@ -116,15 +115,15 @@ public class DcsEditor extends IdentifierEditor<Dcs>
                 }
             });
 
-            mDCSCodeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            mCTCSSCodeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
                 if(newValue != null)
                 {
-                    getItem().setDCSCode(newValue);
+                    getItem().setCTCSSCode(newValue);
                     modifiedProperty().set(true);
                 }
             });
         }
 
-        return mDCSCodeComboBox;
+        return mCTCSSCodeComboBox;
     }
 }

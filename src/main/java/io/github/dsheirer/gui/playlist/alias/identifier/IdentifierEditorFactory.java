@@ -23,6 +23,7 @@ import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.github.dsheirer.alias.id.nac.Nac;
 
 /**
  * Factory for creating JavaFX editors for alias identifiers
@@ -35,12 +36,16 @@ public class IdentifierEditorFactory
     {
         switch(type)
         {
+            case CTCSS:
+                return new CtcssEditor();
             case DCS:
                 return new DcsEditor();
             case ESN:
                 return new EsnEditor();
             case LOJACK:
                 return new LojackEditor();
+            case NAC:
+                return new NacEditor();
             case P25_FULLY_QUALIFIED_RADIO_ID:
                 return new P25FullyQualifiedRadioIdEditor(userPreferences);
             case P25_FULLY_QUALIFIED_TALKGROUP:

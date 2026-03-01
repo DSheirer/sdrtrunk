@@ -35,6 +35,7 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     private float mSquelchNoiseCloseThreshold = NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD;
     private int mSquelchHysteresisOpenThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD;
     private int mSquelchHysteresisCloseThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_CLOSE_THRESHOLD;
+    private boolean mRequireAliasMatch = false;
 
     /**
      * Constructs an instance
@@ -188,5 +189,24 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         }
 
         mSquelchHysteresisCloseThreshold = close;
+    }
+  /**
+     * Indicates if audio capture requires an alias match (tone squelch).
+     * When enabled, audio is only captured when a detected tone/code matches a configured alias.
+     * @return true if alias match is required
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "requireAliasMatch")
+    public boolean isRequireAliasMatch()
+    {
+        return mRequireAliasMatch;
+    }
+
+    /**
+     * Sets whether audio capture requires an alias match (tone squelch).
+     * @param requireAliasMatch true to enable tone squelch
+     */
+    public void setRequireAliasMatch(boolean requireAliasMatch)
+    {
+        mRequireAliasMatch = requireAliasMatch;
     }
 }
