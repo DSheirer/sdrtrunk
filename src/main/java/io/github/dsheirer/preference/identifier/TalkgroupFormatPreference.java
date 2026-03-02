@@ -394,6 +394,9 @@ public class TalkgroupFormatPreference extends Preference
             case DMR:
                 return DMRTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.DMR),
                     isTalkgroupFixedWidth(Protocol.DMR));
+            case NXDN:
+                return NXDNTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.NXDN),
+                        isTalkgroupFixedWidth(Protocol.NXDN));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));
