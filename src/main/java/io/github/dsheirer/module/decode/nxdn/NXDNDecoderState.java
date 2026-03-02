@@ -285,6 +285,7 @@ public class NXDNDecoderState extends DecoderState
             case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
             case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
                 mNetworkConfigurationMonitor.process(layer3);
+                getIdentifierCollection().remove(IdentifierClass.USER);
                 break;
             case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
                 mNetworkConfigurationMonitor.process(layer3);
@@ -485,10 +486,10 @@ public class NXDNDecoderState extends DecoderState
                 break;
             case TRAFFIC_OUT_07_TRANSMISSION_RELEASE_EXTENSION:
             case TRAFFIC_OUT_08_TRANSMISSION_RELEASE:
+                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
                 getIdentifierCollection().remove(IdentifierClass.USER);
-                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 break;
             case TRAFFIC_OUT_09_DATA_CALL_HEADER:
                 //TODO: handle
@@ -513,9 +514,9 @@ public class NXDNDecoderState extends DecoderState
                 mEncryptedCall = false;
                 break;
             case TRAFFIC_OUT_17_DISCONNECT:
+                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
-                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 event = DecoderStateEvent.Event.END;
                 state = State.FADE;

@@ -105,7 +105,6 @@ public class NXDNSymbolProcessor
         mDibitAssembler.flush();
     }
 
-
     /**
      * Resets the balance
      */

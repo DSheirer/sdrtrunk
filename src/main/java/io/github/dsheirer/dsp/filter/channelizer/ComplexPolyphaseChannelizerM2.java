@@ -61,7 +61,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
-    private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 12500;
+    private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 25000;
 
     /**
      * Determines how many processed channel results to dispatch for threaded IFFT processing per batch

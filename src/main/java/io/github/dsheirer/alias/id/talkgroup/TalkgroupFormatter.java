@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupForm
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MDC1200TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.UnknownTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
@@ -59,6 +60,7 @@ public class TalkgroupFormatter
         mFormatterMap.put(Protocol.LTR_NET, ltr);
         mFormatterMap.put(Protocol.MDC1200, new MDC1200TalkgroupFormatter());
         mFormatterMap.put(Protocol.MPT1327, new MPT1327TalkgroupFormatter());
+        mFormatterMap.put(Protocol.NXDN, new NXDNTalkgroupFormatter());
         mFormatterMap.put(Protocol.PASSPORT, new PassportTalkgroupFormatter());
         mFormatterMap.put(Protocol.UNKNOWN, new UnknownTalkgroupFormatter());
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -262,6 +262,10 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),
                 "Format: 1 - 65535"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
+                "Format: 1 - FFFF"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),
+                "Format: 1 - 65,535"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
                 "Format: 1 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
                 "Format: 0 - 65535"));
