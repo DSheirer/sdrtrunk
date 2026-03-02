@@ -67,6 +67,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private Listener<DecoderStateEvent> mDecoderStateEventListener;
     private RealResampler mResampler;
     private final double mChannelBandwidth;
+    private final int mSquelchTailMs;
 
     /**
      * Constructs an instance
@@ -79,6 +80,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         //Save channel bandwidth to setup channel baseband filter.
         mChannelBandwidth = config.getBandwidth().getValue();
+        mSquelchTailMs = config.getSquelchTailMs();
         mNoiseSquelch = new NoiseSquelch(config.getSquelchNoiseOpenThreshold(), config.getSquelchNoiseCloseThreshold(),
                 config.getSquelchHysteresisOpenThreshold(), config.getSquelchHysteresisCloseThreshold());
 
@@ -356,6 +358,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         }
 
         mNoiseSquelch.setSampleRate(decimatedSampleRate);
+        mNoiseSquelch.setSquelchTail(mSquelchTailMs, decimatedSampleRate);
 
         int passBandStop = (int) (mChannelBandwidth * .8);
         int stopBandStart = (int) mChannelBandwidth;

@@ -61,6 +61,8 @@ public class NoiseSquelch implements INoiseSquelchController
     private int mHysteresisCount = 0;
     private int mSquelchStateBroadcastCounter = 0;
     private int mSquelchOpenIndex = 0;
+    private int mSquelchTailSamples = 0;
+    private int mSquelchTailCounter = 0;
     private int mAudioBufferFilterDelay;
     private IRealFilter mHighPassFilter;
     private Listener<float[]> mAudioListener;
@@ -102,6 +104,24 @@ public class NoiseSquelch implements INoiseSquelchController
         {
             broadcast(SquelchState.UNSQUELCH);
         }
+    }
+
+    /**
+     * Sets the squelch tail duration in milliseconds.
+     * @param tailMs duration in milliseconds (0 to disable)
+     * @param sampleRate current sample rate to calculate samples
+     */
+    public void setSquelchTail(int tailMs, double sampleRate)
+    {
+        if(tailMs > 0 && sampleRate > 0)
+        {
+            mSquelchTailSamples = (int)(sampleRate * tailMs / 1000.0);
+        }
+        else
+        {
+            mSquelchTailSamples = 0;
+        }
+        mSquelchTailCounter = 0;
     }
 
     /**
@@ -304,6 +324,13 @@ public class NoiseSquelch implements INoiseSquelchController
                 {
                     mSquelch = true;
                     mHysteresisCount = 0;
+
+                    // Start squelch tail counter if enabled
+                    if(mSquelchTailSamples > 0)
+                    {
+                        mSquelchTailCounter = mSquelchTailSamples;
+                    }
+
                     squelchCloseIndex = findTransition(x);
 
                     //Broadcast the partial audio segment ending at the transition point.
@@ -315,12 +342,16 @@ public class NoiseSquelch implements INoiseSquelchController
                             broadcast(mSquelchOpenIndex, squelchCloseIndex);
                         }
 
-                        broadcast(SquelchState.SQUELCH);
+                        // Only broadcast squelch if no tail, otherwise tail handler will do it
+                        if(mSquelchTailSamples <= 0)
+                        {
+                            broadcast(SquelchState.SQUELCH);
+                        }
                     }
 
                     mSquelchOpenIndex = 0;
                 }
-                else if(mSquelch && !mSquelchOverride)
+                else if(mSquelch && !mSquelchOverride && mSquelchTailCounter <= 0)
                 {
                     int start = x - (mVarianceWindowSize * mHysteresisOpenThreshold) + 1;
                     int end = start + mVarianceWindowSize;
@@ -352,6 +383,21 @@ public class NoiseSquelch implements INoiseSquelchController
             //Dispatch audio after processing the audio buffer if we end in an un-squelch state.
             broadcast(mSquelchOpenIndex, samples.length);
             mSquelchOpenIndex = 0;
+        }
+        else if(mSquelchTailCounter > 0)
+        {
+            // Squelch tail - continue broadcasting audio briefly after squelch closes
+            // Broadcast from the end of the audio buffer where the newest samples are
+            int bufferEnd = mAudioBuffer.length;
+            int bufferStart = bufferEnd - samples.length;
+            broadcast(bufferStart, bufferEnd);
+            mSquelchTailCounter -= samples.length;
+
+            if(mSquelchTailCounter <= 0)
+            {
+                mSquelchTailCounter = 0;
+                broadcast(SquelchState.SQUELCH);
+            }
         }
     }
 
