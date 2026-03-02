@@ -437,14 +437,17 @@ public class DecoderFactory
         }
 
         DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
-        modules.add(new NBFMDecoder(decodeConfigNBFM));
+        NBFMDecoder nbfmDecoder = new NBFMDecoder(decodeConfigNBFM);
+        modules.add(nbfmDecoder);
         modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
         modules.add(new AudioModule(aliasList, 0, 60000, decodeConfigNBFM.isAudioFilter(), decodeConfigNBFM.isRequireAliasMatch()));
 
         // Add CTCSS decoder if a CTCSS tone is configured
         if(decodeConfigNBFM.hasCtcssTone())
         {
-            modules.add(new CTCSSDecoder());
+            CTCSSDecoder ctcssDecoder = new CTCSSDecoder();
+            nbfmDecoder.setDemodulatedAudioListener(ctcssDecoder);
+            modules.add(ctcssDecoder);
             modules.add(new CTCSSDecoderState());
         }
 

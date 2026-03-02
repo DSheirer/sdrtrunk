@@ -47,6 +47,8 @@ import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.sample.real.IRealBufferProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,12 +70,17 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
     private Listener<float[]> mResampledBufferListener;
+    private Listener<float[]> mDemodulatedAudioListener;
     private Listener<DecoderStateEvent> mDecoderStateEventListener;
     private RealResampler mResampler;
     private final double mChannelBandwidth;
     private CTCSSCode mConfiguredCtcssTone;
     private CTCSSCode mDetectedCtcssTone;
     private boolean mToneSquelchEnabled = false;
+    private long mSquelchOpenedTimestamp = 0;
+    private static final long TONE_DETECTION_GRACE_PERIOD_MS = 350; // Allow time for tone detection
+    private List<float[]> mAudioBuffer = new ArrayList<>();
+    private boolean mToneConfirmed = false;
 
     /**
      * Constructs an instance
@@ -91,23 +98,30 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         mNoiseSquelch = new NoiseSquelch(config.getSquelchNoiseOpenThreshold(), config.getSquelchNoiseCloseThreshold(),
                 config.getSquelchHysteresisOpenThreshold(), config.getSquelchHysteresisCloseThreshold());
 
-        //Send squelch controlled audio to the resampler and notify the decoder state that the call continues.
+        //Send squelch controlled audio to the resampler
         mNoiseSquelch.setAudioListener(audio -> {
-            if(isToneSquelchSatisfied())
-            {
-                mResampler.resample(audio);
-                notifyCallContinuation();
-            }
+            mResampler.resample(audio);
         });
 
         //Notify the decoder state of call starts and ends
         mNoiseSquelch.setSquelchStateListener(squelchState -> {
             if(squelchState == SquelchState.SQUELCH)
             {
+                // If we were buffering and never confirmed tone, discard
+                if(mToneSquelchEnabled && !mToneConfirmed)
+                {
+                    mAudioBuffer.clear();
+                }
+                mSquelchOpenedTimestamp = 0;
+                mDetectedCtcssTone = null;
+                mToneConfirmed = false;
                 notifyCallEnd();
             }
             else
             {
+                mSquelchOpenedTimestamp = System.currentTimeMillis();
+                mAudioBuffer.clear();
+                mToneConfirmed = false;
                 notifyCallStart();
             }
         });
@@ -216,6 +230,73 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     }
 
     /**
+     * Handles resampled 8kHz audio - sends to CTCSS decoder and manages buffering/output
+     */
+    private void handleResampledAudio(float[] audio)
+    {
+        // Always send to CTCSS decoder for tone detection
+        if(mDemodulatedAudioListener != null)
+        {
+            mDemodulatedAudioListener.receive(audio);
+        }
+
+        // Handle output based on tone squelch state
+        if(!mToneSquelchEnabled)
+        {
+            // No tone squelch - pass audio directly
+            broadcast(audio);
+            notifyCallContinuation();
+        }
+        else if(mToneConfirmed)
+        {
+            // Tone was confirmed - verify it's still present
+            if(mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone)
+            {
+                broadcast(audio);
+                notifyCallContinuation();
+            }
+            else
+            {
+                // Tone lost - stop passing audio, start buffering again in case it returns
+                mLog.debug("Tone lost after confirmation - rebuffering");
+                mToneConfirmed = false;
+                mSquelchOpenedTimestamp = System.currentTimeMillis();
+                mAudioBuffer.clear();
+                mAudioBuffer.add(audio.clone());
+            }
+        }
+        else if(isWithinGracePeriod())
+        {
+            // Within grace period - buffer audio
+            mLog.debug("Buffering audio, buffer size: " + mAudioBuffer.size());
+            mAudioBuffer.add(audio.clone());
+        }
+        else
+        {
+            // Grace period expired - check if tone matches
+            if(mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone)
+            {
+                // Tone matches - flush buffer and continue
+                mLog.debug("Grace period expired but tone matches - flushing buffer");
+                mToneConfirmed = true;
+                for(float[] buffered : mAudioBuffer)
+                {
+                    broadcast(buffered);
+                }
+                mAudioBuffer.clear();
+                broadcast(audio);
+                notifyCallContinuation();
+            }
+            else
+            {
+                // Tone doesn't match - discard buffer and this audio
+                mLog.debug("Grace period expired, no tone match. Detected: " + mDetectedCtcssTone + " | Configured: " + mConfiguredCtcssTone + " | Discarding " + mAudioBuffer.size() + " buffered packets");
+                mAudioBuffer.clear();
+            }
+        }
+    }
+
+    /**
      * Implements the IRealBufferProvider interface to register a listener for demodulated audio samples.
      *
      * @param listener to receive demodulated, resampled audio sample buffers.
@@ -233,6 +314,23 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     public void removeBufferListener()
     {
         mResampledBufferListener = null;
+    }
+
+    /**
+     * Sets a listener to receive demodulated audio for auxiliary decoders like CTCSS/DCS.
+     * @param listener to receive 8kHz resampled audio
+     */
+    public void setDemodulatedAudioListener(Listener<float[]> listener)
+    {
+        mDemodulatedAudioListener = listener;
+    }
+
+    /**
+     * Removes the demodulated audio listener.
+     */
+    public void removeDemodulatedAudioListener()
+    {
+        mDemodulatedAudioListener = null;
     }
 
     /**
@@ -388,7 +486,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         if(coefficients == null)
         {
-            mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate + "] pass band stop [" + passBandStop + "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
+            mLog.debug("Unable to use remez filter designer for sample rate [" + decimatedSampleRate + "] pass band stop [" + passBandStop + "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
             coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60, WindowType.HAMMING, true);
         }
 
@@ -396,7 +494,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
 
         mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
-        mResampler.setListener(NBFMDecoder.this::broadcast);
+        mResampler.setListener(this::handleResampledAudio);
     }
 
     /**
@@ -415,16 +513,17 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     }
 
     /**
-     * Checks if tone squelch requirements are satisfied.
-     * @return true if no tone configured, or if detected tone matches configured tone
+     * Checks if we are within the grace period after squelch opened.
+     * @return true if within grace period
      */
-    private boolean isToneSquelchSatisfied()
+    private boolean isWithinGracePeriod()
     {
-        if(!mToneSquelchEnabled)
+        if(mSquelchOpenedTimestamp > 0)
         {
-            return true;
+            long elapsed = System.currentTimeMillis() - mSquelchOpenedTimestamp;
+            return elapsed < TONE_DETECTION_GRACE_PERIOD_MS;
         }
-        return mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone;
+        return false;
     }
 
     /**
@@ -450,6 +549,17 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             else
             {
                 mDetectedCtcssTone = ctcssMessage.getCTCSSCode();
+                
+                if(mToneSquelchEnabled && !mToneConfirmed && 
+                   mDetectedCtcssTone == mConfiguredCtcssTone && !mAudioBuffer.isEmpty())
+                {
+                    mToneConfirmed = true;
+                    for(float[] buffered : mAudioBuffer)
+                    {
+                        broadcast(buffered);
+                    }
+                    mAudioBuffer.clear();
+                }
             }
         }
     }
