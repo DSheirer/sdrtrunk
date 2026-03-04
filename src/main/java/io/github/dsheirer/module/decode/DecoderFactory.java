@@ -86,6 +86,7 @@ import io.github.dsheirer.module.decode.nxdn.NXDNDecoder;
 import io.github.dsheirer.module.decode.nxdn.NXDNDecoderState;
 import io.github.dsheirer.module.decode.nxdn.NXDNTrafficChannelManager;
 import io.github.dsheirer.module.decode.nxdn.audio.NXDNAudioModule;
+import io.github.dsheirer.module.decode.nxdn.layer3.filter.NXDNMessageFilterSet;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
@@ -679,9 +680,9 @@ public class DecoderFactory
 
         for(Module module : modules)
         {
-            if(module instanceof Decoder)
+            if(module instanceof Decoder decoder)
             {
-                filterSet.addFilters(getMessageFilter(((Decoder)module).getDecoderType()));
+                filterSet.addFilters(getMessageFilter(decoder.getDecoderType()));
             }
         }
 
@@ -724,6 +725,9 @@ public class DecoderFactory
                 break;
             case MPT1327:
                 filters.add(new MPT1327MessageFilter());
+                break;
+            case NXDN:
+                filters.add(new NXDNMessageFilterSet());
                 break;
             case P25_PHASE1:
                 filters.add(new P25P1MessageFilterSet());

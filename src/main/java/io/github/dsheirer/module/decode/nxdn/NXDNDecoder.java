@@ -77,7 +77,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     @Override
     public DecoderType getDecoderType()
     {
-        return DecoderType.P25_PHASE1;
+        return DecoderType.NXDN;
     }
 
     /**

@@ -118,12 +118,6 @@ public class SymbolEqualizerC4FM
     public void reset()
     {
         Arrays.fill(mTrackedError, 0f);
-    }
-
-    static void main()
-    {
-        SymbolEqualizerC4FM equalizer = new SymbolEqualizerC4FM();
-
-        int a = 0;
+        disable();
     }
 }

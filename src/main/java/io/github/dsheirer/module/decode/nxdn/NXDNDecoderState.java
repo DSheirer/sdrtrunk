@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.nxdn;
 
+import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
@@ -90,6 +91,18 @@ public class NXDNDecoderState extends DecoderState
     @Override
     public void init()
     {
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+
+        //Change the default (45-second) traffic channel timeout to 1 second
+        if(mChannelConfiguration.isTrafficChannel())
+        {
+            broadcast(new ChangeChannelTimeoutEvent(this, Channel.ChannelType.TRAFFIC, 1000));
+        }
     }
 
     @Override
@@ -204,7 +217,7 @@ public class NXDNDecoderState extends DecoderState
 
         switch(layer3.getMessageType())
         {
-            case CONTROL_OUT_01_VOICE_CALL_RESPONSE:
+            case CONTROL_OUT_01_CC_VOICE_CALL_RESPONSE:
                 if(layer3 instanceof VoiceCallResponse vcr)
                 {
                     //Controller responds to a voice call request with either a channel grant, or this message if
@@ -213,14 +226,14 @@ public class NXDNDecoderState extends DecoderState
                             "VOICE CALL REQUEST - RESPONSE:" + vcr.getCause().toString());
                 }
                 break;
-            case CONTROL_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
+            case CONTROL_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST:
                 if(layer3 instanceof VoiceCallReceptionRequest vcrr)
                 {
                     broadcastEvent(vcrr.getIdentifiers(), vcrr.getTimestamp(), DecodeEventType.PAGE,
                             "VOICE CALL RECEPTION REQUEST");
                 }
                 break;
-            case CONTROL_OUT_03_VOICE_CALL_CONNECTION_RESPONSE:
+            case CONTROL_OUT_03_CC_VOICE_CALL_CONNECTION_RESPONSE:
                 if(layer3 instanceof VoiceCallConnectionResponse vccr)
                 {
                     //Controller responds to a voice call connection request for the called party with either a channel
@@ -229,21 +242,21 @@ public class NXDNDecoderState extends DecoderState
                             "CALL CONNECTION REQUEST - RESPONSE:" + vccr.getCause().toString());
                 }
                 break;
-            case CONTROL_OUT_04_VOICE_CALL_ASSIGNMENT:
+            case CONTROL_OUT_04_CC_VOICE_CALL_ASSIGNMENT:
                 if(layer3 instanceof VoiceCallAssignment vca)
                 {
                     //Decode event is created by the traffic channel manager
                     mTrafficChannelManager.processVoiceCallAssignment(vca, "CONTROL-04");
                 }
                 break;
-            case CONTROL_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
+            case CONTROL_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE:
                 if(layer3 instanceof VoiceCallAssignmentDuplicateControl vcadc)
                 {
                     //This informs when there are 2-calls ongoing where a radio can participate in either call
                     mTrafficChannelManager.processVoiceCallAssignment(vcadc, "CONTROL-05");
                 }
                 break;
-            case CONTROL_OUT_09_DATA_CALL_RESPONSE:
+            case CONTROL_OUT_09_CC_DATA_CALL_RESPONSE:
                 if(layer3 instanceof DataCallResponse dcr)
                 {
                     //Controller responds to a data call request with either a channel grant, or this message if
@@ -252,42 +265,42 @@ public class NXDNDecoderState extends DecoderState
                             "DATA CALL REQUEST - RESPONSE:" + dcr.getCause().toString());
                 }
                 break;
-            case CONTROL_OUT_10_DATA_CALL_RECEPTION_REQUEST:
+            case CONTROL_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST:
                 if(layer3 instanceof DataCallReceptionRequest dcrr)
                 {
                     broadcastEvent(dcrr.getIdentifiers(), dcrr.getTimestamp(), DecodeEventType.PAGE,
                             "DATA CALL RECEPTION REQUEST");
                 }
                 break;
-            case CONTROL_OUT_13_DATA_CALL_ASSIGNMENT_DUPLICATE:
+            case CONTROL_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE:
                 if(layer3 instanceof DataCallAssignmentDuplicateControl dcadc)
                 {
                     mTrafficChannelManager.processDataCallAssignment(dcadc);
                 }
                 break;
-            case CONTROL_OUT_14_DATA_CALL_ASSIGNMENT:
+            case CONTROL_OUT_14_CC_DATA_CALL_ASSIGNMENT:
                 if(layer3 instanceof DataCallAssignment dca)
                 {
                     mTrafficChannelManager.processDataCallAssignment(dca);
                 }
                 break;
-            case CONTROL_OUT_16_IDLE:
+            case CONTROL_OUT_16_CC_IDLE:
                 break;
-            case CONTROL_OUT_17_DISCONNECT:
+            case CONTROL_OUT_17_CC_DISCONNECT:
                 //Ignore.  If this happens on the current/active control channel, in a multi-channel configuration,
                 //the frequency rotation manager will simply move to the next channel.
                 break;
 
             //Broadcast messages
-            case CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION:
-            case CONTROL_OUT_24_SITE_INFORMATION:
-            case CONTROL_OUT_25_SERVICE_INFORMATION:
-            case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
-            case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
+            case CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
+            case CONTROL_OUT_24_BC_SITE_INFORMATION:
+            case CONTROL_OUT_25_BC_SERVICE_INFORMATION:
+            case CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+            case CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION:
                 mNetworkConfigurationMonitor.process(layer3);
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 break;
-            case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
+            case CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
                 mNetworkConfigurationMonitor.process(layer3);
 
                 if(layer3 instanceof ControlChannelInformation cci)
@@ -295,133 +308,133 @@ public class NXDNDecoderState extends DecoderState
                     setCurrentChannel(cci.getChannel1());
                 }
                 break;
-            case CONTROL_OUT_32_REGISTRATION_RESPONSE:
+            case CONTROL_OUT_32_MM_REGISTRATION_RESPONSE:
                 if(layer3 instanceof RegistrationResponse rr)
                 {
                     broadcastEvent(rr.getIdentifiers(), rr.getTimestamp(), DecodeEventType.REGISTER, rr.getCause().toString());
                 }
                 break;
-            case CONTROL_OUT_34_REGISTRATION_CLEAR_RESPONSE:
+            case CONTROL_OUT_34_MM_REGISTRATION_CLEAR_RESPONSE:
                 if(layer3 instanceof RegistrationClearResponse rcr)
                 {
                     broadcastEvent(rcr.getIdentifiers(), rcr.getTimestamp(), DecodeEventType.RESPONSE,
                             "CLEAR REGISTRATION REQUEST - RESPONSE:" + rcr.getCause());
                 }
                 break;
-            case CONTROL_OUT_35_REGISTRATION_COMMAND:
+            case CONTROL_OUT_35_MM_REGISTRATION_COMMAND:
                 if(layer3 instanceof RegistrationCommand rc)
                 {
                     broadcastEvent(rc.getIdentifiers(), rc.getTimestamp(), DecodeEventType.REGISTER,
                             rc.getRegistrationOption().isPriorityStation() ? "PRIORITY STATION" : "");
                 }
                 break;
-            case CONTROL_OUT_36_GROUP_REGISTRATION_RESPONSE:
+            case CONTROL_OUT_36_MM_GROUP_REGISTRATION_RESPONSE:
                 if(layer3 instanceof GroupRegistrationResponse grr)
                 {
                     broadcastEvent(grr.getIdentifiers(), grr.getTimestamp(), DecodeEventType.RESPONSE,
                             "GROUP REGISTRATION REQUEST - RESPONSE:" + grr.getCause());
                 }
                 break;
-            case CONTROL_OUT_40_AUTHENTICATION_INQUIRY_REQUEST:
+            case CONTROL_OUT_40_MM_AUTHENTICATION_INQUIRY_REQUEST:
                 if(layer3 instanceof AuthenticationInquiryRequest air)
                 {
                     broadcastEvent(air.getIdentifiers(), air.getTimestamp(), DecodeEventType.REQUEST,
                             "AUTHENTICATE:" + air.getAuthenticationParameter());
                 }
                 break;
-            case CONTROL_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case CONTROL_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
                 if(layer3 instanceof AuthenticationInquiryRequest2 air)
                 {
                     broadcastEvent(air.getIdentifiers(), air.getTimestamp(), DecodeEventType.REQUEST,
                             "AUTHENTICATE (MULTI-SYSTEM):" + air.getAuthenticationParameter());
                 }
                 break;
-            case CONTROL_OUT_48_STATUS_INQUIRY_REQUEST:
+            case CONTROL_OUT_48_CC_STATUS_INQUIRY_REQUEST:
                 if(layer3 instanceof StatusInquiryRequest sir)
                 {
                     broadcastEvent(sir.getIdentifiers(), sir.getTimestamp(), DecodeEventType.REQUEST,
                             "STATUS INQUIRY");
                 }
                 break;
-            case CONTROL_OUT_49_STATUS_INQUIRY_RESPONSE:
+            case CONTROL_OUT_49_CC_STATUS_INQUIRY_RESPONSE:
                 if(layer3 instanceof StatusInquiryResponse sir)
                 {
                     broadcastEvent(sir.getIdentifiers(), sir.getTimestamp(), DecodeEventType.STATUS,
                             "STATUS:" + sir.getStatus() + " CAUSE:" + sir.getCause());
                 }
                 break;
-            case CONTROL_OUT_50_STATUS_REQUEST:
+            case CONTROL_OUT_50_CC_STATUS_REQUEST:
                 if(layer3 instanceof StatusRequest sr)
                 {
                     broadcastEvent(sr.getIdentifiers(), sr.getTimestamp(), DecodeEventType.REQUEST,
                             "STATUS REQUEST:" + sr.getStatus());
                 }
                 break;
-            case CONTROL_OUT_51_STATUS_RESPONSE:
+            case CONTROL_OUT_51_CC_STATUS_RESPONSE:
                 if(layer3 instanceof StatusResponse sr)
                 {
                     broadcastEvent(sr.getIdentifiers(), sr.getTimestamp(), DecodeEventType.REQUEST,
                             "STATUS RESPONSE:" + sr.getCause());
                 }
                 break;
-            case CONTROL_OUT_52_REMOTE_CONTROL_REQUEST:
+            case CONTROL_OUT_52_CC_REMOTE_CONTROL_REQUEST:
                 if(layer3 instanceof RemoteControlRequest rcr)
                 {
                     broadcastEvent(rcr.getIdentifiers(), rcr.getTimestamp(), DecodeEventType.REQUEST,
                             "REMOTE CONTROL REQUEST - PARAMETERS:" + rcr.getControlParameters());
                 }
                 break;
-            case CONTROL_OUT_53_REMOTE_CONTROL_RESPONSE:
+            case CONTROL_OUT_53_CC_REMOTE_CONTROL_RESPONSE:
                 if(layer3 instanceof RemoteControlResponse rcr)
                 {
                     broadcastEvent(rcr.getIdentifiers(), rcr.getTimestamp(), DecodeEventType.REQUEST,
                             "REMOTE CONTROL RESPONSE:" + rcr.getCause());
                 }
                 break;
-            case CONTROL_OUT_54_REMOTE_CONTROL_REQUEST_WITH_ESN:
+            case CONTROL_OUT_54_CC_REMOTE_CONTROL_REQUEST_WITH_ESN:
                 if(layer3 instanceof RemoteControlRequestWithESN rcrwe)
                 {
                     broadcastEvent(rcrwe.getIdentifiers(), rcrwe.getTimestamp(), DecodeEventType.REQUEST,
                             "REMOTE CONTROL REQUEST WITH ESN - PARAMETERS:" + rcrwe.getAuthenticationParameter());
                 }
                 break;
-            case CONTROL_OUT_56_SHORT_DATA_CALL_REQUEST_HEADER:
+            case CONTROL_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
                 //TODO: implement a short data packet assembler
                 break;
-            case CONTROL_OUT_57_SHORT_DATA_CALL_REQUEST_USER_DATA:
+            case CONTROL_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
                 //TODO: implement a short data packet assembler
                 break;
-            case CONTROL_OUT_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case CONTROL_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
                 //TODO: implement a short data packet assembler
                 break;
-            case CONTROL_OUT_59_SHORT_DATA_CALL_RESPONSE:
+            case CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
                 break;
 
             case PROPRIETARY_FORM:
                 break;
 
-            case CONTROL_IN_01_VOICE_CALL_REQUEST:
-            case CONTROL_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
-            case CONTROL_IN_03_VOICE_CALL_CONNECTION_REQUEST:
-            case CONTROL_IN_09_DATA_CALL_REQUEST:
-            case CONTROL_IN_10_DATA_CALL_RECEPTION_RESPONSE:
-            case CONTROL_IN_17_DISCONNECT_REQUEST:
-            case CONTROL_IN_32_REGISTRATION_REQUEST:
-            case CONTROL_IN_34_REGISTRATION_CLEAR_REQUEST:
-            case CONTROL_IN_36_GROUP_REGISTRATION_REQUEST:
-            case CONTROL_IN_41_AUTHENTICATION_INQUIRY_RESPONSE:
-            case CONTROL_IN_43_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
-            case CONTROL_IN_48_STATUS_INQUIRY_REQUEST:
-            case CONTROL_IN_49_STATUS_INQUIRY_RESPONSE:
-            case CONTROL_IN_50_STATUS_REQUEST:
-            case CONTROL_IN_51_STATUS_RESPONSE:
-            case CONTROL_IN_52_REMOTE_CONTROL_REQUEST:
-            case CONTROL_IN_53_REMOTE_CONTROL_RESPONSE:
-            case CONTROL_IN_55_REMOTE_CONTROL_RESPONSE_WITH_ESN:
-            case CONTROL_IN_56_SHORT_DATA_CALL_REQUEST_HEADER:
-            case CONTROL_IN_57_SHORT_DATA_CALL_REQUEST_USER_DATA:
-            case CONTROL_IN_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
-            case CONTROL_IN_59_SHORT_DATA_CALL_RESPONSE:
+            case CONTROL_IN_01_CC_VOICE_CALL_REQUEST:
+            case CONTROL_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE:
+            case CONTROL_IN_03_CC_VOICE_CALL_CONNECTION_REQUEST:
+            case CONTROL_IN_09_CC_DATA_CALL_REQUEST:
+            case CONTROL_IN_10_CC_DATA_CALL_RECEPTION_RESPONSE:
+            case CONTROL_IN_17_CC_DISCONNECT_REQUEST:
+            case CONTROL_IN_32_MM_REGISTRATION_REQUEST:
+            case CONTROL_IN_34_MM_REGISTRATION_CLEAR_REQUEST:
+            case CONTROL_IN_36_MM_GROUP_REGISTRATION_REQUEST:
+            case CONTROL_IN_41_MM_AUTHENTICATION_INQUIRY_RESPONSE:
+            case CONTROL_IN_43_MM_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case CONTROL_IN_48_CC_STATUS_INQUIRY_REQUEST:
+            case CONTROL_IN_49_CC_STATUS_INQUIRY_RESPONSE:
+            case CONTROL_IN_50_CC_STATUS_REQUEST:
+            case CONTROL_IN_51_CC_STATUS_RESPONSE:
+            case CONTROL_IN_52_CC_REMOTE_CONTROL_REQUEST:
+            case CONTROL_IN_53_CC_REMOTE_CONTROL_RESPONSE:
+            case CONTROL_IN_55_CC_REMOTE_CONTROL_RESPONSE_WITH_ESN:
+            case CONTROL_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case CONTROL_IN_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
+            case CONTROL_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case CONTROL_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
                 break;
             case UNKNOWN:
                 break;
@@ -444,7 +457,7 @@ public class NXDNDecoderState extends DecoderState
 
         switch(layer3.getMessageType())
         {
-            case TRAFFIC_OUT_01_VOICE_CALL:
+            case TRAFFIC_OUT_01_CC_VOICE_CALL:
                 if(layer3 instanceof VoiceCall vc)
                 {
                     getIdentifierCollection().update(vc.getIdentifiers());
@@ -455,7 +468,7 @@ public class NXDNDecoderState extends DecoderState
                     mTrafficChannelManager.processVoiceCall(vc, getCurrentChannel(), "TRAFFIC-01");
                 }
                 break;
-            case TRAFFIC_OUT_02_VOICE_CALL_RECEPTION_REQUEST:
+            case TRAFFIC_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST:
                 if(layer3 instanceof VoiceCallReceptionRequest vcrr)
                 {
                     broadcast(NXDNDecodeEvent.builder(DecodeEventType.PAGE, layer3.getTimestamp())
@@ -465,11 +478,11 @@ public class NXDNDecoderState extends DecoderState
                             .build());
                 }
                 break;
-            case TRAFFIC_OUT_03_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
                 state = State.CALL;
                 event = DecoderStateEvent.Event.CONTINUATION;
                 break;
-            case TRAFFIC_OUT_04_VOICE_CALL_ASSIGNMENT:
+            case TRAFFIC_OUT_04_CC_VOICE_CALL_ASSIGNMENT:
                 if(layer3 instanceof VoiceCallAssignment vca)
                 {
                     //ICD says this is only on the control channel, but the messages table shows traffic channel also
@@ -477,86 +490,89 @@ public class NXDNDecoderState extends DecoderState
                     mTrafficChannelManager.processVoiceCallAssignment(vca, "TRAFFIC-04");
                 }
                 break;
-            case TRAFFIC_OUT_05_VOICE_CALL_ASSIGNMENT_DUPLICATE:
+            case TRAFFIC_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE:
                 if(layer3 instanceof VoiceCallAssignmentDuplicateTraffic vcadt)
                 {
                     //This informs when there are 2-calls ongoing where a radio can participate in either call
                     mTrafficChannelManager.processVoiceCallAssignment(vcadt, "TRAFFIC-05");
                 }
                 break;
-            case TRAFFIC_OUT_07_TRANSMISSION_RELEASE_EXTENSION:
-            case TRAFFIC_OUT_08_TRANSMISSION_RELEASE:
+            case TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:
+            case TRAFFIC_OUT_08_CC_TRANSMISSION_RELEASE:
+                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
+                mEncryptedCallStateDetermined = false;
+                mEncryptedCall = false;
+                //Only remove the FROM identifier, anticipating a continuation call for the same talkgroup
+                getIdentifierCollection().remove(Role.FROM);
+                break;
+            case TRAFFIC_OUT_09_CC_DATA_CALL_HEADER:
+                //TODO: handle
+                state = State.DATA;
+                break;
+            case TRAFFIC_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST:
+                break;
+            case TRAFFIC_OUT_11_CC_DATA_CALL_BLOCK:
+                //TODO: handle
+                state = State.DATA;
+                break;
+            case TRAFFIC_OUT_12_CC_DATA_CALL_ACKNOWLEDGE:
+                break;
+            case TRAFFIC_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE:
+                break;
+            case TRAFFIC_OUT_14_CC_DATA_CALL_ASSIGNMENT:
+                break;
+            case TRAFFIC_OUT_15_CC_HEADER_DELAY:
+                break;
+            case TRAFFIC_OUT_16_CC_IDLE:
+                mEncryptedCallStateDetermined = false;
+                mEncryptedCall = false;
+                break;
+            case TRAFFIC_OUT_17_CC_DISCONNECT:
                 mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
                 getIdentifierCollection().remove(IdentifierClass.USER);
+                //Signal that this traffic channel has ended.
+//TODO: commenting these out to see if these are the reason why we're seeing early traffic channel teardown
+//                event = DecoderStateEvent.Event.END;
+//                state = State.FADE;
                 break;
-            case TRAFFIC_OUT_09_DATA_CALL_HEADER:
-                //TODO: handle
-                state = State.DATA;
-                break;
-            case TRAFFIC_OUT_10_DATA_CALL_RECEPTION_REQUEST:
-                break;
-            case TRAFFIC_OUT_11_DATA_CALL_BLOCK:
-                //TODO: handle
-                state = State.DATA;
-                break;
-            case TRAFFIC_OUT_12_DATA_CALL_ACKNOWLEDGE:
-                break;
-            case TRAFFIC_OUT_13_DATA_CALL_ASSIGNMENT_DUPLICATE:
-                break;
-            case TRAFFIC_OUT_14_DATA_CALL_ASSIGNMENT:
-                break;
-            case TRAFFIC_OUT_15_HEADER_DELAY:
-                break;
-            case TRAFFIC_OUT_16_IDLE:
-                mEncryptedCallStateDetermined = false;
-                mEncryptedCall = false;
-                break;
-            case TRAFFIC_OUT_17_DISCONNECT:
-                mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
-                mEncryptedCallStateDetermined = false;
-                mEncryptedCall = false;
-                getIdentifierCollection().remove(IdentifierClass.USER);
-                event = DecoderStateEvent.Event.END;
-                state = State.FADE;
-                break;
-            case TRAFFIC_OUT_24_SITE_INFORMATION:
+            case TRAFFIC_OUT_24_BC_SITE_INFORMATION:
                 if(layer3 instanceof SiteInformation si)
                 {
                     //Update traffic channel manager so it can use this when allocation traffic channels.
                     mTrafficChannelManager.setChannelAccessInformation(si.getChannelAccessInformation());
                 }
                 break;
-            case TRAFFIC_OUT_23_DIGITAL_STATION_ID_INFORMATION:
-            case TRAFFIC_OUT_25_SERVICE_INFORMATION:
-            case TRAFFIC_OUT_26_CONTROL_CHANNEL_INFORMATION:
-            case TRAFFIC_OUT_27_ADJACENT_SITE_INFORMATION:
-            case TRAFFIC_OUT_28_FAILURE_STATUS_INFORMATION:
+            case TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
+            case TRAFFIC_OUT_25_BC_SERVICE_INFORMATION:
+            case TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
+            case TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+            case TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION:
                 break;
-            case TRAFFIC_OUT_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case TRAFFIC_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
                 break;
-            case TRAFFIC_OUT_43_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case TRAFFIC_OUT_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
                 break;
-            case TRAFFIC_OUT_48_STATUS_INQUIRY_REQUEST:
+            case TRAFFIC_OUT_48_CC_STATUS_INQUIRY_REQUEST:
                 break;
-            case TRAFFIC_OUT_49_STATUS_INQUIRY_RESPONSE:
+            case TRAFFIC_OUT_49_CC_STATUS_INQUIRY_RESPONSE:
                 break;
-            case TRAFFIC_OUT_50_STATUS_REQUEST:
+            case TRAFFIC_OUT_50_CC_STATUS_REQUEST:
                 break;
-            case TRAFFIC_OUT_51_STATUS_RESPONSE:
+            case TRAFFIC_OUT_51_CC_STATUS_RESPONSE:
                 break;
-            case TRAFFIC_OUT_52_REMOTE_CONTROL_REQUEST:
+            case TRAFFIC_OUT_52_CC_REMOTE_CONTROL_REQUEST:
                 break;
-            case TRAFFIC_OUT_53_REMOTE_CONTROL_RESPONSE:
+            case TRAFFIC_OUT_53_CC_REMOTE_CONTROL_RESPONSE:
                 break;
-            case TRAFFIC_OUT_56_SHORT_DATA_CALL_REQUEST_HEADER:
+            case TRAFFIC_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
                 break;
-            case TRAFFIC_OUT_57_SHORT_DATA_CALL_BLOCK:
+            case TRAFFIC_OUT_57_CC_SHORT_DATA_CALL_BLOCK:
                 break;
-            case TRAFFIC_OUT_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
                 break;
-            case TRAFFIC_OUT_59_SHORT_DATA_CALL_RESPONSE:
+            case TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
                 break;
             case PROPRIETARY_FORM:
                 break;
@@ -579,40 +595,40 @@ public class NXDNDecoderState extends DecoderState
                     }
                 }
                 break;
-            case TRAFFIC_IN_01_VOICE_CALL:
+            case TRAFFIC_IN_01_CC_VOICE_CALL:
                 state = State.CALL;
                 break;
-            case TRAFFIC_IN_02_VOICE_CALL_RECEPTION_RESPONSE:
-            case TRAFFIC_IN_03_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE:
+            case TRAFFIC_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
                 state = State.CALL;
                 break;
-            case TRAFFIC_IN_08_TRANSMISSION_RELEASE:
-            case TRAFFIC_IN_09_DATA_CALL_HEADER:
+            case TRAFFIC_IN_08_CC_TRANSMISSION_RELEASE:
+            case TRAFFIC_IN_09_CC_DATA_CALL_HEADER:
                 state = State.DATA;
                 break;
-            case TRAFFIC_IN_11_DATA_CALL_BLOCK:
+            case TRAFFIC_IN_11_CC_DATA_CALL_BLOCK:
                 state = State.DATA;
                 break;
-            case TRAFFIC_IN_12_DATA_CALL_ACKNOWLEDGE:
-            case TRAFFIC_IN_15_HEADER_DELAY:
-            case TRAFFIC_IN_16_IDLE:
-            case TRAFFIC_IN_17_DISCONNECT_REQUEST:
-            case TRAFFIC_IN_42_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
-            case TRAFFIC_IN_43_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
-            case TRAFFIC_IN_48_STATUS_INQUIRY_REQUEST:
-            case TRAFFIC_IN_49_STATUS_INQUIRY_RESPONSE:
-            case TRAFFIC_IN_50_STATUS_REQUEST:
-            case TRAFFIC_IN_51_STATUS_RESPONSE:
-            case TRAFFIC_IN_52_REMOTE_CONTROL_REQUEST:
-            case TRAFFIC_IN_53_REMOTE_CONTROL_RESPONSE:
-            case TRAFFIC_IN_56_SHORT_DATA_CALL_REQUEST_HEADER:
-            case TRAFFIC_IN_57_SHORT_DATA_CALL_BLOCK:
+            case TRAFFIC_IN_12_CC_DATA_CALL_ACKNOWLEDGE:
+            case TRAFFIC_IN_15_CC_HEADER_DELAY:
+            case TRAFFIC_IN_16_CC_IDLE:
+            case TRAFFIC_IN_17_CC_DISCONNECT_REQUEST:
+            case TRAFFIC_IN_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case TRAFFIC_IN_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case TRAFFIC_IN_48_CC_STATUS_INQUIRY_REQUEST:
+            case TRAFFIC_IN_49_CC_STATUS_INQUIRY_RESPONSE:
+            case TRAFFIC_IN_50_CC_STATUS_REQUEST:
+            case TRAFFIC_IN_51_CC_STATUS_RESPONSE:
+            case TRAFFIC_IN_52_CC_REMOTE_CONTROL_REQUEST:
+            case TRAFFIC_IN_53_CC_REMOTE_CONTROL_RESPONSE:
+            case TRAFFIC_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case TRAFFIC_IN_57_CC_SHORT_DATA_CALL_BLOCK:
                 state = State.DATA;
                 break;
-            case TRAFFIC_IN_58_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
                 state = State.DATA;
                 break;
-            case TRAFFIC_IN_59_SHORT_DATA_CALL_RESPONSE:
+            case TRAFFIC_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
                 break;
             case UNKNOWN:
                 break;

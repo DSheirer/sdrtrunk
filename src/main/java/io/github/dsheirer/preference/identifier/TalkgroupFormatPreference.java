@@ -181,7 +181,7 @@ public class TalkgroupFormatPreference extends Preference
             case UNKNOWN:
                 return IntegerFormat.DECIMAL_HEXADECIMAL;
             default:
-                mLog.warn("Unrecognized protocol for talkgroup/radio formatting: " + protocol);
+//                mLog.warn("Unrecognized protocol for talkgroup/radio formatting: " + protocol);
                 return IntegerFormat.DECIMAL_HEXADECIMAL;
         }
     }

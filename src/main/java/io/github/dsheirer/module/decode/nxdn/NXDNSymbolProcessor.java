@@ -189,6 +189,7 @@ public class NXDNSymbolProcessor
                     if(mSynchronized && symbolsSinceLastSync > 384)
                     {
                         mSampleEqualizer.reset();
+                        mSymbolEqualizer.reset();
                     }
 
                     softSymbol = mSampleEqualizer.getEqualizedSymbol(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], samplePoint);
@@ -756,7 +757,6 @@ public class NXDNSymbolProcessor
         public void reset()
         {
             mSynchronized = false;
-            mSymbolEqualizer.disable();
             mGain = mGainInitial;
         }
 

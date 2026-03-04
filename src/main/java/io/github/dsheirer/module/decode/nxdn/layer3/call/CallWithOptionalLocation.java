@@ -59,12 +59,13 @@ public abstract class CallWithOptionalLocation extends Call
     @Override
     public NXDNRadioIdentifier getSource()
     {
-        if(mSourceIdentifier == null && getCallControlOption().hasLocationId() && getLocationIDOption().isSource())
-        {
+//Disabling fully qualified identifier until we're sure we need this.
+//        if(mSourceIdentifier == null && getCallControlOption().hasLocationId() && getLocationIDOption().isSource())
+//        {
 //            mSourceIdentifier = NXDNFullyQualifiedRadioIdentifier.createFrom(getLocationID().getSystem().getValue(),
 //                    getMessage().getInt(IDENTIFIER_OCTET_3));
-            mSourceIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
-        }
+//            mSourceIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
+//        }
 
         return super.getSource();
     }
@@ -76,12 +77,17 @@ public abstract class CallWithOptionalLocation extends Call
     @Override
     public IntegerIdentifier getDestination()
     {
-        if(mDestinationIdentifier == null && getCallControlOption().hasLocationId() && getLocationIDOption().isDestination())
-        {
-//            mDestinationIdentifier = NXDNFullyQualifiedRadioIdentifier.createFrom(getLocationID().getSystem().getValue(),
-//                    getMessage().getInt(IDENTIFIER_OCTET_3));
-            mDestinationIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
-        }
+//Disabling fully qualified identifier until we're sure we need this.
+//        if(mDestinationIdentifier == null && getCallControlOption().hasLocationId() && getLocationIDOption().isDestination())
+//        {
+//            mDestinationIdentifier = switch (getCallType())
+//            {
+//                case GROUP_BROADCAST, GROUP_CONFERENCE -> NXDNFullyQualifiedTalkgroupIdentifier
+//                        .createTo(getLocationID().getSystem().getValue(), getMessage().getInt(IDENTIFIER_OCTET_5));
+//                default -> NXDNFullyQualifiedRadioIdentifier.createTo(getLocationID().getSystem().getValue(),
+//                        getMessage().getInt(IDENTIFIER_OCTET_5));
+//            };
+//        }
 
         return super.getDestination();
     }

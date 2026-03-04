@@ -55,28 +55,28 @@ public class NXDNNetworkConfigurationMonitor
 
         if(mDigitalStationIDInformation != null)
         {
-            sb.append("CHANNEL STATION ID\n\t").append(mDigitalStationIDInformation).append("\n");
-        }
-        if(mServiceInformation != null)
-        {
-            sb.append("\nSERVICE\n  ").append(mServiceInformation).append("\n");
+            sb.append("Current Channel Station ID\n\t").append(mDigitalStationIDInformation).append("\n");
         }
         if(mSiteInformation != null)
         {
-            sb.append("\nSITE\n  ").append(mSiteInformation).append("\n");
+            sb.append("\nCurrent Site\n  ").append(mSiteInformation).append("\n");
+        }
+        if(mServiceInformation != null)
+        {
+            sb.append("\nCurrent Site Services\n  ").append(mServiceInformation).append("\n");
         }
         if(mFailureStatusInformation != null)
         {
-            sb.append("\nFAILURE STATUS\n  ").append(mFailureStatusInformation).append("\n");
+            sb.append("\nFailure Status\n  ").append(mFailureStatusInformation).append("\n");
         }
         if(mControlChannelInformation != null)
         {
-            sb.append("\nCONTROL\n  ").append(mControlChannelInformation).append("\n");
+            sb.append("\nCurrent Site Control Channel\n  ").append(mControlChannelInformation).append("\n");
         }
 
         if(!mNeighborMap.isEmpty())
         {
-            sb.append("\nNEIGHBORS\n");
+            sb.append("\nNeighbor Sites\n");
             List<Integer> ids = new ArrayList<>(mNeighborMap.keySet());
             Collections.sort(ids);
 
@@ -87,7 +87,7 @@ public class NXDNNetworkConfigurationMonitor
         }
         else
         {
-            sb.append("\nNEIGHBORS\n  NONE\n");
+            sb.append("\nNeighbor Sites\n  NONE\n");
         }
 
         return sb.toString();
@@ -97,28 +97,28 @@ public class NXDNNetworkConfigurationMonitor
     {
         switch(layer3.getMessageType())
         {
-            case CONTROL_OUT_23_DIGITAL_STATION_ID_INFORMATION:
-            case TRAFFIC_OUT_23_DIGITAL_STATION_ID_INFORMATION:
+            case CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
+            case TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
                 mDigitalStationIDInformation = (DigitalStationIDInformation) layer3;
                 break;
-            case CONTROL_OUT_24_SITE_INFORMATION:
-            case TRAFFIC_OUT_24_SITE_INFORMATION:
+            case CONTROL_OUT_24_BC_SITE_INFORMATION:
+            case TRAFFIC_OUT_24_BC_SITE_INFORMATION:
                 mSiteInformation = (SiteInformation) layer3;
                 break;
-            case CONTROL_OUT_25_SERVICE_INFORMATION:
-            case TRAFFIC_OUT_25_SERVICE_INFORMATION:
+            case CONTROL_OUT_25_BC_SERVICE_INFORMATION:
+            case TRAFFIC_OUT_25_BC_SERVICE_INFORMATION:
                 mServiceInformation = (ServiceInformation)layer3;
                 break;
-            case CONTROL_OUT_26_CONTROL_CHANNEL_INFORMATION:
-            case TRAFFIC_OUT_26_CONTROL_CHANNEL_INFORMATION:
+            case CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
+            case TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
                 mControlChannelInformation = (ControlChannelInformation) layer3;
                 break;
-            case CONTROL_OUT_28_FAILURE_STATUS_INFORMATION:
-            case TRAFFIC_OUT_28_FAILURE_STATUS_INFORMATION:
+            case CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION:
+            case TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION:
                 mFailureStatusInformation = (FailureStatusInformation) layer3;
                 break;
-            case CONTROL_OUT_27_ADJACENT_SITE_INFORMATION:
-            case TRAFFIC_OUT_27_ADJACENT_SITE_INFORMATION:
+            case CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+            case TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION:
                 AdjacentSiteInformation adjacent = (AdjacentSiteInformation) layer3;
 
                 if(adjacent.hasChannel1())
