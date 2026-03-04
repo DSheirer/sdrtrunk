@@ -107,22 +107,30 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         mNoiseSquelch.setSquelchStateListener(squelchState -> {
             if(squelchState == SquelchState.SQUELCH)
             {
-                // If we were buffering and never confirmed tone, discard
                 if(mToneSquelchEnabled && !mToneConfirmed)
                 {
+                    // Tone never matched - don't notify call end since we never notified call start
                     mAudioBuffer.clear();
+                }
+                else
+                {
+                    notifyCallEnd();
                 }
                 mSquelchOpenedTimestamp = 0;
                 mDetectedCtcssTone = null;
                 mToneConfirmed = false;
-                notifyCallEnd();
             }
             else
             {
                 mSquelchOpenedTimestamp = System.currentTimeMillis();
                 mAudioBuffer.clear();
                 mToneConfirmed = false;
-                notifyCallStart();
+                // Only notify call start immediately if tone squelch is disabled
+                // If tone squelch is enabled, we wait until tone is confirmed
+                if(!mToneSquelchEnabled)
+                {
+                    notifyCallStart();
+                }
             }
         });
     }
@@ -258,7 +266,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             else
             {
                 // Tone lost - stop passing audio, start buffering again in case it returns
-                mLog.debug("Tone lost after confirmation - rebuffering");
                 mToneConfirmed = false;
                 mSquelchOpenedTimestamp = System.currentTimeMillis();
                 mAudioBuffer.clear();
@@ -268,7 +275,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         else if(isWithinGracePeriod())
         {
             // Within grace period - buffer audio
-            mLog.debug("Buffering audio, buffer size: " + mAudioBuffer.size());
             mAudioBuffer.add(audio.clone());
         }
         else
@@ -276,8 +282,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             // Grace period expired - check if tone matches
             if(mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone)
             {
-                // Tone matches - flush buffer and continue
-                mLog.debug("Grace period expired but tone matches - flushing buffer");
+                // Tone matches - notify call start, then flush buffer
+                notifyCallStart();
                 mToneConfirmed = true;
                 for(float[] buffered : mAudioBuffer)
                 {
@@ -290,7 +296,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             else
             {
                 // Tone doesn't match - discard buffer and this audio
-                mLog.debug("Grace period expired, no tone match. Detected: " + mDetectedCtcssTone + " | Configured: " + mConfiguredCtcssTone + " | Discarding " + mAudioBuffer.size() + " buffered packets");
                 mAudioBuffer.clear();
             }
         }
@@ -553,6 +558,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 if(mToneSquelchEnabled && !mToneConfirmed && 
                    mDetectedCtcssTone == mConfiguredCtcssTone && !mAudioBuffer.isEmpty())
                 {
+                    notifyCallStart();
                     mToneConfirmed = true;
                     for(float[] buffered : mAudioBuffer)
                     {
