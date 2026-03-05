@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.nxdn;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
@@ -61,6 +62,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
 
+    private final DecodeConfigNXDN mConfig;
     private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNMessageProcessor mMessageProcessor;
@@ -70,8 +72,6 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
     private IRealFilter mPulseShapingFilter;
-    private final int mSymbolRate;
-    private DecodeConfigNXDN mConfig;
     private IDemodulator mDemodulator;
 
     @Override
@@ -87,11 +87,26 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     public NXDNDecoder(DecodeConfigNXDN config)
     {
         mConfig = config;
-        mSymbolRate = config.getTransmissionMode().getSymbolRate();
         mMessageProcessor = new NXDNMessageProcessor(config);
         mMessageProcessor.setMessageListener(getMessageListener());
         mMessageFramer = new NXDNMessageFramer(mMessageProcessor, config.getTransmissionMode());
         mSymbolProcessor = new NXDNSymbolProcessor(mMessageFramer, this);
+    }
+
+    /**
+     * Preloads NXDN channel details passed from the control channel used to resolve channel frequency information
+     * in traffic channel broadcast messaging.
+     *
+     * @param preloadData containing a DMR network configuration monitor.
+     */
+    @Subscribe
+    public void preload(NXDNChannelInfoPreloadData preloadData)
+    {
+        System.out.println("NXDN decoder received preload data");
+        if(mMessageProcessor != null)
+        {
+            mMessageProcessor.preload(preloadData);
+        }
     }
 
     @Override

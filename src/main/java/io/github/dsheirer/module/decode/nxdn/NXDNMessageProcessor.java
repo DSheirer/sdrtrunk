@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer2.SACCHAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer2.SACCHFragment;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
@@ -47,6 +48,28 @@ public class NXDNMessageProcessor implements Listener<IMessage>
     private final Map<Integer, ChannelFrequency> mChannelFrequencyMap = new HashMap<>();
     private final SACCHAssembler mSACCHAssembler = new SACCHAssembler();
     private final TalkerAliasAssembler mTalkerAliasAssembler;
+
+    /**
+     * Sets channel preload information.  This is used to preload a traffic channel with system channel information
+     * from the control channel when a traffic channel is allocated, on startup.
+     * @param data to preload
+     */
+    public void preload(NXDNChannelInfoPreloadData data)
+    {
+        ChannelInformation channelInformation = data.getData();
+        if(mChannelAccessInformation == null)
+        {
+            mChannelAccessInformation = channelInformation.getChannelAccessInformation();
+        }
+
+        for(ChannelFrequency channelFrequency: channelInformation.getChannelFrequencies())
+        {
+            if(!mChannelFrequencyMap.containsKey(channelFrequency.getChannel()))
+            {
+                mChannelFrequencyMap.put(channelFrequency.getChannel(), channelFrequency);
+            }
+        }
+    }
 
     /**
      * Downstream message listener

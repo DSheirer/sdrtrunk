@@ -33,7 +33,6 @@ import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
-import io.github.dsheirer.module.decode.nxdn.layer2.SACCHFragment;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
@@ -76,6 +75,7 @@ public class NXDNDecoderState extends DecoderState
     private final NXDNTrafficChannelManager mTrafficChannelManager;
     private boolean mEncryptedCallStateDetermined = false;
     private boolean mEncryptedCall = false;
+    private int mDisconnectResponseCount = 0;
 
     /**
      * Constructs an instance
@@ -175,10 +175,6 @@ public class NXDNDecoderState extends DecoderState
             else if(nxdn instanceof Audio nxdnAudio)
             {
                 processAudio(nxdnAudio);
-            }
-            else if(nxdn instanceof SACCHFragment fragment)
-            {
-//                broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.ACTIVE));
             }
         }
     }
@@ -556,10 +552,16 @@ public class NXDNDecoderState extends DecoderState
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
                 getIdentifierCollection().remove(IdentifierClass.USER);
-                //Signal that this traffic channel has ended.
-//TODO: commenting these out to see if these are the reason why we're seeing early traffic channel teardown
-//                event = DecoderStateEvent.Event.END;
-//                state = State.FADE;
+                mDisconnectResponseCount++;
+
+                //Delay channel teardown until after we receive at least 2x disconnect responses
+                if(mChannel.isTrafficChannel() && mDisconnectResponseCount >= 2)
+                {
+                    //Signal that this traffic channel has ended.
+                    event = DecoderStateEvent.Event.END;
+                    state = State.FADE;
+                    mDisconnectResponseCount = 0;
+                }
                 break;
             case TRAFFIC_OUT_24_BC_SITE_INFORMATION:
                 if(layer3 instanceof SiteInformation si)
