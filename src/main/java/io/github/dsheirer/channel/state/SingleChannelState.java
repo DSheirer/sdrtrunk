@@ -470,7 +470,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
      * Proxy between the internal identifier collection and the external update notification listener.  This proxy
      * enables access to internal components to broadcast silent identifier update notifications externally.
      */
-    public class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
+    public static class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
     {
         private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
 

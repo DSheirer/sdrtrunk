@@ -71,7 +71,7 @@ import java.util.List;
  */
 public class NXDNDecoderState extends DecoderState
 {
-    private final Channel mChannelConfiguration;
+    private final Channel mChannel;
     private final NXDNNetworkConfigurationMonitor mNetworkConfigurationMonitor = new NXDNNetworkConfigurationMonitor();
     private final NXDNTrafficChannelManager mTrafficChannelManager;
     private boolean mEncryptedCallStateDetermined = false;
@@ -84,8 +84,16 @@ public class NXDNDecoderState extends DecoderState
      */
     public NXDNDecoderState(Channel channel, NXDNTrafficChannelManager trafficChannelManager)
     {
-        mChannelConfiguration = channel;
+        mChannel = channel;
         mTrafficChannelManager = trafficChannelManager;
+    }
+
+    /**
+     * Indicates if we have a non-null traffic channel manager
+     */
+    private boolean hasTrafficChannelManager()
+    {
+        return mTrafficChannelManager != null;
     }
 
     @Override
@@ -99,7 +107,7 @@ public class NXDNDecoderState extends DecoderState
         super.start();
 
         //Change the default (45-second) traffic channel timeout to 1 second
-        if(mChannelConfiguration.isTrafficChannel())
+        if(mChannel.isTrafficChannel())
         {
             broadcast(new ChangeChannelTimeoutEvent(this, Channel.ChannelType.TRAFFIC, 1000));
         }
@@ -114,7 +122,23 @@ public class NXDNDecoderState extends DecoderState
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
-        //Auxiliary decoder event processing is not supported for NXDN.
+        switch(event.getEvent())
+        {
+            case REQUEST_RESET:
+                resetState();
+                break;
+            case NOTIFICATION_SOURCE_FREQUENCY:
+                setCurrentFrequency(event.getFrequency());
+
+                //Only update the traffic channel manager if we're not a traffic channel.
+                if(hasTrafficChannelManager() && mChannel.isStandardChannel())
+                {
+                    mTrafficChannelManager.setCurrentControlFrequency(getCurrentFrequency(), mChannel);
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
@@ -123,7 +147,7 @@ public class NXDNDecoderState extends DecoderState
         StringBuilder sb = new StringBuilder();
         sb.append("NXDN Channel Activity Summary\n");
 
-        if(mChannelConfiguration.getDecodeConfiguration() instanceof DecodeConfigNXDN configNXDN)
+        if(mChannel.getDecodeConfiguration() instanceof DecodeConfigNXDN configNXDN)
         {
             sb.append("Transmission Mode: ").append(configNXDN.getTransmissionMode()).append("\n");
         }

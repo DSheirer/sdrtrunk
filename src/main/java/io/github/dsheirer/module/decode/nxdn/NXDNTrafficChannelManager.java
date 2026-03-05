@@ -31,8 +31,6 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
-import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventDuplicateDetector;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
@@ -66,13 +64,16 @@ import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages trunked system traffic channel activations
  */
 public class NXDNTrafficChannelManager extends TrafficChannelManager implements IDecodeEventProvider,
-        IChannelEventListener, IChannelEventProvider, IMessageListener
+        IChannelEventListener, IChannelEventProvider
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NXDNTrafficChannelManager.class);
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
     private final Channel mParentChannel;
@@ -86,6 +87,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     private final TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
     private List<Channel> mManagedTrafficChannels;
     private Listener<IDecodeEvent> mDecodeEventListener;
+    private Listener<ChannelEvent> mChannelEventListener;
     private ChannelAccessInformation mChannelAccessInformation;
     private boolean mIgnoreDataCalls;
 
@@ -314,7 +316,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                 if(!mIgnoreDataCalls)
                 {
-                    if(!mAllocatedTrafficChannelMap.containsKey(channel.getDownlinkFrequency()))
+                    if(channel.isValid() && channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
+                            !mAllocatedTrafficChannelMap.containsKey(channel.getDownlinkFrequency()))
                     {
                         //Retrieve a channel from the traffic channel queue
                         Channel traffic = mAvailableTrafficChannelQueue.poll();
@@ -522,7 +525,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                 }
             }
 
-            if(channel != null && channel.isValid() && !mAllocatedTrafficChannelMap.containsKey(frequency))
+            if(channel != null && channel.isValid() && channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
+                    !mAllocatedTrafficChannelMap.containsKey(frequency))
             {
                 //Retrieve a channel from the traffic channel queue
                 Channel traffic = mAvailableTrafficChannelQueue.poll();
@@ -584,27 +588,53 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         return mTrafficChannelTeardownMonitor;
     }
 
+    /**
+     * Broadcasts the channel event ot an optionally registered listener
+     * @param event to broadcast
+     */
+    private void broadcast(ChannelEvent event)
+    {
+        if(mChannelEventListener != null)
+        {
+            mChannelEventListener.receive(event);
+        }
+    }
+
     @Override
     public void setChannelEventListener(Listener<ChannelEvent> listener)
     {
-        //TODO: configure this
+        mChannelEventListener = listener;
     }
 
     @Override
     public void removeChannelEventListener()
     {
-
+        mChannelEventListener = null;
     }
 
-    @Override
-    public Listener<IMessage> getMessageListener()
-    {
-        return null;
-    }
-
+    /**
+     * Process the current control frequency to ensure we don't allocated traffic channels for the same frequency.
+     * @param previous frequency for the control channel (to remove from allocated channels)
+     * @param current frequency for the control channel (to add to allocated channels)
+     * @param channel for the current control channel
+     */
     @Override
     protected void processControlFrequencyUpdate(long previous, long current, Channel channel)
     {
+        mLock.lock();
+
+        try
+        {
+            //Clear any traffic channel that is already allocated on the new/current control frequency
+            if(mAllocatedTrafficChannelMap.containsKey(current))
+            {
+                broadcast(new ChannelEvent(mAllocatedTrafficChannelMap.get(current), ChannelEvent.Event.REQUEST_DISABLE));
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
 
     }
 
@@ -623,7 +653,25 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     @Override
     public void stop()
     {
+        mLock.lock();
 
+        try
+        {
+            mAvailableTrafficChannelQueue.clear();
+
+            List<Channel> channels = new ArrayList<>(mAllocatedTrafficChannelMap.values());
+
+            //Issue a disable request for each traffic channel
+            for(Channel channel: channels)
+            {
+                LOGGER.info("Stopping NXDN traffic channel: " + channel);
+                broadcast(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_DISABLE));
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     @Override
