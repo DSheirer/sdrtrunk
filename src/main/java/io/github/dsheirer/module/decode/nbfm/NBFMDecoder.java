@@ -39,6 +39,8 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.decode.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.ctcss.CTCSSMessage;
+import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.module.decode.dcs.DCSMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.sample.Listener;
@@ -76,6 +78,9 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private final double mChannelBandwidth;
     private CTCSSCode mConfiguredCtcssTone;
     private CTCSSCode mDetectedCtcssTone;
+    private DCSCode mConfiguredDcsTone;
+    private DCSCode mDetectedDcsTone;
+    private boolean mUsingDcs = false;
     private boolean mToneSquelchEnabled = false;
     private long mSquelchOpenedTimestamp = 0;
     private static final long TONE_DETECTION_GRACE_PERIOD_MS = 350; // Allow time for tone detection
@@ -94,7 +99,19 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         //Save channel bandwidth to setup channel baseband filter.
         mChannelBandwidth = config.getBandwidth().getValue();
         mConfiguredCtcssTone = config.getCtcssTone();
-        mToneSquelchEnabled = (mConfiguredCtcssTone != null);
+        mConfiguredDcsTone = config.getDcsTone();
+        
+        // Determine if tone squelch is enabled and which type
+        if(mConfiguredDcsTone != null)
+        {
+            mToneSquelchEnabled = true;
+            mUsingDcs = true;
+        }
+        else if(mConfiguredCtcssTone != null)
+        {
+            mToneSquelchEnabled = true;
+            mUsingDcs = false;
+        }
         mNoiseSquelch = new NoiseSquelch(config.getSquelchNoiseOpenThreshold(), config.getSquelchNoiseCloseThreshold(),
                 config.getSquelchHysteresisOpenThreshold(), config.getSquelchHysteresisCloseThreshold());
 
@@ -118,6 +135,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 }
                 mSquelchOpenedTimestamp = 0;
                 mDetectedCtcssTone = null;
+                mDetectedDcsTone = null;
                 mToneConfirmed = false;
             }
             else
@@ -238,6 +256,22 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     }
 
     /**
+     * Checks if the detected tone matches the configured tone (CTCSS or DCS)
+     * @return true if tone matches
+     */
+    private boolean isToneMatch()
+    {
+        if(mUsingDcs)
+        {
+            return mDetectedDcsTone != null && mDetectedDcsTone == mConfiguredDcsTone;
+        }
+        else
+        {
+            return mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone;
+        }
+    }
+
+    /**
      * Handles resampled 8kHz audio - sends to CTCSS decoder and manages buffering/output
      */
     private void handleResampledAudio(float[] audio)
@@ -258,7 +292,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         else if(mToneConfirmed)
         {
             // Tone was confirmed - verify it's still present
-            if(mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone)
+            if(isToneMatch())
             {
                 broadcast(audio);
                 notifyCallContinuation();
@@ -280,7 +314,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         else
         {
             // Grace period expired - check if tone matches
-            if(mDetectedCtcssTone != null && mDetectedCtcssTone == mConfiguredCtcssTone)
+            if(isToneMatch())
             {
                 // Tone matches - notify call start, then flush buffer
                 notifyCallStart();
@@ -541,7 +575,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     }
 
     /**
-     * Process incoming messages, looking for CTCSS tone updates
+     * Process incoming messages, looking for CTCSS/DCS tone updates
      */
     private void processMessage(IMessage message)
     {
@@ -555,7 +589,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             {
                 mDetectedCtcssTone = ctcssMessage.getCTCSSCode();
                 
-                if(mToneSquelchEnabled && !mToneConfirmed && 
+                // Check for early tone match (before grace period expires)
+                if(mToneSquelchEnabled && !mUsingDcs && !mToneConfirmed && 
                    mDetectedCtcssTone == mConfiguredCtcssTone && !mAudioBuffer.isEmpty())
                 {
                     notifyCallStart();
@@ -566,6 +601,23 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                     }
                     mAudioBuffer.clear();
                 }
+            }
+        }
+        else if(message instanceof DCSMessage dcsMessage)
+        {
+            mDetectedDcsTone = dcsMessage.getDCSCode();
+            
+            // Check for early tone match (before grace period expires)
+            if(mToneSquelchEnabled && mUsingDcs && !mToneConfirmed && 
+               mDetectedDcsTone == mConfiguredDcsTone && !mAudioBuffer.isEmpty())
+            {
+                notifyCallStart();
+                mToneConfirmed = true;
+                for(float[] buffered : mAudioBuffer)
+                {
+                    broadcast(buffered);
+                }
+                mAudioBuffer.clear();
             }
         }
     }

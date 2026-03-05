@@ -454,7 +454,9 @@ public class DecoderFactory
         // Add DCS decoder if a DCS code is configured
         if(decodeConfigNBFM.hasDcsTone())
         {
-            modules.add(new DCSDecoder());
+            DCSDecoder dcsDecoder = new DCSDecoder();
+            nbfmDecoder.setDemodulatedAudioListener(dcsDecoder);
+            modules.add(dcsDecoder);
             modules.add(new DCSDecoderState());
         }
     }
