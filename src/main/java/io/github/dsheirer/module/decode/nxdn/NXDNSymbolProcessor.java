@@ -207,7 +207,11 @@ public class NXDNSymbolProcessor
                     symbol = toSymbol(softSymbol);
 
                     mFeedbackDecoder.broadcast(softSymbol);
-//                    getSyncResultsViewer().symbol(corrected);
+
+                    if(mVisualize)
+                    {
+                        getSyncResultsViewer().symbol(softSymbol);
+                    }
 
                     mMessageFramer.process(symbol);
 

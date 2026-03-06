@@ -51,7 +51,6 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -63,7 +62,6 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
-import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -331,38 +329,17 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             ToggleButton tb9600 = new ToggleButton(TransmissionMode.M9600.getLabel());
             tb9600.setUserData(TransmissionMode.M9600);
             mTransmissionModeButton.getButtons().add(tb9600);
-
-            //Set 4800 as the default selected mode
-            tb4800.setSelected(true);
+            mTransmissionModeButton.getToggleGroup().selectToggle(tb4800);
 
             mTransmissionModeButton.getToggleGroup().selectedToggleProperty()
-                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-
-
-
-            //Note: there is a weird timing bug with the segmented button where the toggles are not added to
-            //the toggle group until well after the control is rendered.  We attempt to setItem() on the
-            //decode configuration and we're unable to correctly set the bandwidth setting.  As a work
-            //around, we'll listen for the toggles to be added and update them here.  This normally only
-            //happens when we first instantiate the editor and load an item for editing the first time.
-            mTransmissionModeButton.getToggleGroup().getToggles().addListener((ListChangeListener<Toggle>) c ->
-            {
-                //This change event happens when the toggles are added -- we don't need to inspect the change event
-                if(getItem() != null && getItem().getDecodeConfiguration() instanceof DecodeConfigNXDN config)
-                {
-                    //Capture current modified state so that we can reapply after adjusting control states
-                    boolean modified = modifiedProperty().get();
-
-                    TransmissionMode transmissionMode = config.getTransmissionMode();
-
-                    for(Toggle toggle: getTransmissionModeButton().getToggleGroup().getToggles())
+                .addListener((observable, oldValue, newValue) -> {
+                    //Only trigger change detection when both values are not null and not equal to each other
+                    if(oldValue != null && newValue != null && !oldValue.equals(newValue))
                     {
-                        toggle.setSelected(toggle.getUserData() == transmissionMode);
+                        //Only set modified if the toggle changed from one to the other
+                        modifiedProperty().set(true);
                     }
-
-                    modifiedProperty().set(modified);
-                }
-            });
+                });
         }
 
         return mTransmissionModeButton;
