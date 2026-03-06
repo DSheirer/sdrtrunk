@@ -266,14 +266,14 @@ public class NXDNDecoderState extends DecoderState
                 if(layer3 instanceof VoiceCallAssignment vca)
                 {
                     //Decode event is created by the traffic channel manager
-                    mTrafficChannelManager.processVoiceCallAssignment(vca, "CONTROL-04");
+                    mTrafficChannelManager.processVoiceCallAssignment(vca);
                 }
                 break;
             case CONTROL_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE:
                 if(layer3 instanceof VoiceCallAssignmentDuplicateControl vcadc)
                 {
                     //This informs when there are 2-calls ongoing where a radio can participate in either call
-                    mTrafficChannelManager.processVoiceCallAssignment(vcadc, "CONTROL-05");
+                    mTrafficChannelManager.processVoiceCallAssignment(vcadc);
                 }
                 break;
             case CONTROL_OUT_09_CC_DATA_CALL_RESPONSE:
@@ -419,15 +419,10 @@ public class NXDNDecoderState extends DecoderState
                 }
                 break;
             case CONTROL_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
-                //TODO: implement a short data packet assembler
-                break;
             case CONTROL_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
-                //TODO: implement a short data packet assembler
-                break;
             case CONTROL_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
-                //TODO: implement a short data packet assembler
-                break;
             case CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
+                //These messages are handled/reassembled in the message processor
                 break;
 
             case PROPRIETARY_FORM:
@@ -485,7 +480,7 @@ public class NXDNDecoderState extends DecoderState
                     mEncryptedCall = vc.getEncryptionKeyIdentifier().isEncrypted();
                     state = mEncryptedCall ? State.ENCRYPTED : State.CALL;
                     event = DecoderStateEvent.Event.START;
-                    mTrafficChannelManager.processVoiceCall(vc, getCurrentChannel(), "TRAFFIC-01");
+                    mTrafficChannelManager.processVoiceCall(vc, getCurrentChannel());
                 }
                 break;
             case TRAFFIC_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST:
@@ -507,14 +502,14 @@ public class NXDNDecoderState extends DecoderState
                 {
                     //ICD says this is only on the control channel, but the messages table shows traffic channel also
                     //Decode event is created by the traffic channel manager
-                    mTrafficChannelManager.processVoiceCallAssignment(vca, "TRAFFIC-04");
+                    mTrafficChannelManager.processVoiceCallAssignment(vca);
                 }
                 break;
             case TRAFFIC_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE:
                 if(layer3 instanceof VoiceCallAssignmentDuplicateTraffic vcadt)
                 {
                     //This informs when there are 2-calls ongoing where a radio can participate in either call
-                    mTrafficChannelManager.processVoiceCallAssignment(vcadt, "TRAFFIC-05");
+                    mTrafficChannelManager.processVoiceCallAssignment(vcadt);
                 }
                 break;
             case TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:

@@ -244,15 +244,14 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param timestamp for the event
      * @return tracker
      */
-    private NXDNChannelEventTracker createTracker(DecodeEventType eventType, IdentifierCollection ic, NXDNChannel channel,
-                                                  long timestamp, String debugSource)
+    private NXDNChannelEventTracker createTracker(DecodeEventType eventType, IdentifierCollection ic,
+                                                  NXDNChannel channel, long timestamp)
     {
         long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
 
         DecodeEvent event = NXDNDecodeEvent.builder(eventType, timestamp)
                 .timeslot(0)
                 .channel(channel)
-                .details(debugSource)
                 .identifiers(ic)
                 .build();
         NXDNChannelEventTracker tracker = new NXDNChannelEventTracker(event);
@@ -308,7 +307,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                 if(tracker == null)
                 {
-                    tracker = createTracker(eventType, ic, channel, timestamp, "DEBUG DATA CALL");
+                    tracker = createTracker(eventType, ic, channel, timestamp);
                     Duplex duplex = dco.getDuplex();
                     TransmissionMode mode = dco.getTransmissionMode();
                     tracker.addDetails("TIMER:" + callTimer + " " + duplex + " " + mode);
@@ -316,7 +315,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                 if(!mIgnoreDataCalls)
                 {
-                    if(channel.isValid() && channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
+                    if(!tracker.isTrafficChannelAllocated() && channel.isValid() &&
+                            channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
                             !mAllocatedTrafficChannelMap.containsKey(channel.getDownlinkFrequency()))
                     {
                         //Retrieve a channel from the traffic channel queue
@@ -324,7 +324,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                         if(traffic != null)
                         {
-                            requestTrafficChannelStart(traffic, channel, ic);
+                            requestTrafficChannelStart(traffic, channel, ic, tracker);
                         }
                         else
                         {
@@ -347,12 +347,12 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      *
      * @param vca to process
      */
-    public void processVoiceCallAssignment(VoiceCallAssignment vca, String debugSource)
+    public void processVoiceCallAssignment(VoiceCallAssignment vca)
     {
         if(vca.hasChannel() && vca.getChannel().getDownlinkFrequency() > 0)
         {
             processVoiceCall(vca.getIdentifiers(), vca.getChannel(), vca.getCallType(), vca.getEncryptionKeyIdentifier(),
-                    vca.getTimestamp(), vca.getCallOption(), vca.getCallTimer(), debugSource);
+                    vca.getTimestamp(), vca.getCallOption(), vca.getCallTimer());
         }
     }
 
@@ -361,7 +361,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      *
      * @param vca to process
      */
-    public void processVoiceCallAssignment(VoiceCallAssignmentDuplicateTraffic vca, String debugSource)
+    public void processVoiceCallAssignment(VoiceCallAssignmentDuplicateTraffic vca)
     {
         NXDNChannel channel = vca.getChannel();
 
@@ -372,7 +372,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         }
 
         processVoiceCall(vca.getIdentifiers(), channel, vca.getCallType(), vca.getEncryptionKeyIdentifier(),
-                vca.getTimestamp(), vca.getCallOption(), vca.getCallTimer(), debugSource);
+                vca.getTimestamp(), vca.getCallOption(), vca.getCallTimer());
     }
 
     /**
@@ -380,7 +380,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param voiceCall message
      * @param channel for the call, can be null
      */
-    public void processVoiceCall(VoiceCall voiceCall, IChannelDescriptor channel, String debugSource)
+    public void processVoiceCall(VoiceCall voiceCall, IChannelDescriptor channel)
     {
         NXDNChannel nxdn = null;
         if(channel instanceof NXDNChannel nxdnChannel)
@@ -393,7 +393,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         }
 
         processVoiceCall(voiceCall.getIdentifiers(), nxdn, voiceCall.getCallType(), voiceCall.getEncryptionKeyIdentifier(),
-                voiceCall.getTimestamp(), voiceCall.getCallOption(), CallTimer.UNSPECIFIED, debugSource);
+                voiceCall.getTimestamp(), voiceCall.getCallOption(), CallTimer.UNSPECIFIED);
     }
 
     /**
@@ -484,7 +484,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      */
     private void processVoiceCall(List<Identifier> identifiers, NXDNChannel channel, CallType callType,
                                   EncryptionKeyIdentifier encryption, long timestamp, VoiceCallOption vco,
-                                  CallTimer callTimer, String debugSource)
+                                  CallTimer callTimer)
     {
         mLock.lock();
 
@@ -511,7 +511,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             if(tracker == null)
             {
                 DecodeEventType eventType = getType(callType, encryption);
-                tracker = createTracker(eventType, ic, channel, timestamp, debugSource);
+                tracker = createTracker(eventType, ic, channel, timestamp);
                 AudioCodec audioCodec = vco.getCodec();
                 TransmissionMode mode = vco.getTransmissionMode();
 
@@ -525,7 +525,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                 }
             }
 
-            if(channel != null && channel.isValid() && channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
+            if(!tracker.isTrafficChannelAllocated() && channel != null && channel.isValid() &&
+                    channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
                     !mAllocatedTrafficChannelMap.containsKey(frequency))
             {
                 //Retrieve a channel from the traffic channel queue
@@ -533,7 +534,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                 if(traffic != null)
                 {
-                    requestTrafficChannelStart(traffic, channel, ic);
+                    requestTrafficChannelStart(traffic, channel, ic, tracker);
                 }
                 else
                 {
@@ -555,10 +556,11 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      *
      * @param trafficChannel to use for the traffic channel
      * @param nxdnChannel that describes the traffic channel downlink frequency
-     * @param identifierCollection containing identifiers for the call
+     * @param ic containing identifiers for the call
+     * @param tracker to update with channel allocation flag
      */
     private void requestTrafficChannelStart(Channel trafficChannel, NXDNChannel nxdnChannel,
-                                            IdentifierCollection identifierCollection)
+                                            IdentifierCollection ic, NXDNChannelEventTracker tracker)
     {
         if(nxdnChannel != null && nxdnChannel.getDownlinkFrequency() > 0 && getInterModuleEventBus() != null)
         {
@@ -571,9 +573,10 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(nxdnChannel.getDownlinkFrequency(), trafficChannel);
             ChannelStartProcessingRequest startChannelRequest = new ChannelStartProcessingRequest(trafficChannel,
-                    nxdnChannel, identifierCollection, this);
+                    nxdnChannel, ic, this);
             startChannelRequest.addPreloadDataContent(new NXDNChannelInfoPreloadData(mChannelAccessInformation, mChannelFrequencies));
             getInterModuleEventBus().post(startChannelRequest);
+            tracker.setTrafficChannelAllocated(true);
         }
         else
         {
@@ -737,7 +740,11 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                                     .findFirst()
                                     .ifPresent(frequency -> {
                                         mAllocatedTrafficChannelMap.remove(frequency);
-                                        removeTracker(frequency);
+                                        //Don't remove the tracker.  There's a chance the control channel can still
+                                        //reference the now terminating traffic channel and cause a residual event
+                                        //creation and channel allocation and we'll use the tracker to keep that from
+                                        //happening.
+                                        //removeTracker(frequency);
                                         mAvailableTrafficChannelQueue.add(channel);
                                     });
                             break;
@@ -754,12 +761,16 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                                         //processing manager set the 'tuner not available' in the details already
                                         NXDNChannelEventTracker tracker = mEventTrackerMap.get(rejectedFrequency);
 
-                                        if(tracker != null && !tracker.getEvent().getDetails().contains(CHANNEL_START_REJECTED))
+                                        if(tracker != null)
                                         {
-                                            tracker.addDetails(CHANNEL_START_REJECTED + " " + channelEvent.getDescription() +
-                                                    (tracker.getEvent().getDetails() != null ? " - " + tracker.getEvent().getDetails() : ""));
+                                            if(!tracker.getEvent().getDetails().contains(CHANNEL_START_REJECTED))
+                                            {
+                                                tracker.addDetails(CHANNEL_START_REJECTED + " " + channelEvent.getDescription() +
+                                                        (tracker.getEvent().getDetails() != null ? " - " + tracker.getEvent().getDetails() : ""));
+                                            }
+                                            tracker.setTrafficChannelAllocated(false);
+                                            broadcast(tracker);
                                         }
-                                        broadcast(tracker);
                                     });
                             break;
                     }

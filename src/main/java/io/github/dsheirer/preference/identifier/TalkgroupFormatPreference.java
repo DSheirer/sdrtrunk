@@ -48,14 +48,12 @@ import org.slf4j.LoggerFactory;
  */
 public class TalkgroupFormatPreference extends Preference
 {
-    private final static Logger mLog = LoggerFactory.getLogger(TalkgroupFormatPreference.class);
-    private Preferences mPreferences = Preferences.userNodeForPackage(TalkgroupFormatPreference.class);
-
     public static final String TALKGROUP_FORMAT_PROPERTY = "talkgroup.format.";
     public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = "talkgroup.fixed.width.";
-
-    private Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new EnumMap<>(Protocol.class);
-    private Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new EnumMap<>(Protocol.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TalkgroupFormatPreference.class);
+    private final Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new EnumMap<>(Protocol.class);
+    private final Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new EnumMap<>(Protocol.class);
+    private final Preferences mPreferences = Preferences.userNodeForPackage(TalkgroupFormatPreference.class);
 
     /**
      * Constructs an instance of identifier formatting preference.
@@ -157,7 +155,7 @@ public class TalkgroupFormatPreference extends Preference
             case UNKNOWN:
                 return IntegerFormat.DECIMAL;
             default:
-                mLog.warn("Unrecognized protocol for default format: " + protocol);
+                LOGGER.warn("Unrecognized protocol for default format: " + protocol);
                 return IntegerFormat.DECIMAL;
         }
     }
@@ -205,7 +203,7 @@ public class TalkgroupFormatPreference extends Preference
                 return true;
             case UNKNOWN:
             default:
-                mLog.warn("Unrecognized protocol for default/fixed width: " + protocol);
+                LOGGER.warn("Unrecognized protocol for default/fixed width: " + protocol);
                 return true;
         }
     }
@@ -355,7 +353,6 @@ public class TalkgroupFormatPreference extends Preference
                 return PassportTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));
             default:
-                mLog.warn("Unrecognized protocol for talkgroup/radio formatting: " + talkgroupIdentifier.getProtocol());
                 return talkgroupIdentifier.toString();
         }
     }

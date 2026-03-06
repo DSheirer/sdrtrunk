@@ -102,7 +102,6 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     @Subscribe
     public void preload(NXDNChannelInfoPreloadData preloadData)
     {
-        System.out.println("NXDN decoder received preload data");
         if(mMessageProcessor != null)
         {
             mMessageProcessor.preload(preloadData);

@@ -26,7 +26,13 @@ import io.github.dsheirer.module.decode.nxdn.layer2.SACCHFragment;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.IChannelInformationReceiver;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.Idle;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallBlock;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.PacketDataAssembler;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallBlock;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallRequestHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataInitializationVector;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAlias;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAliasAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
@@ -46,6 +52,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
     private final static Logger LOGGER = LoggerFactory.getLogger(NXDNMessageProcessor.class);
     private ChannelAccessInformation mChannelAccessInformation;
     private final Map<Integer, ChannelFrequency> mChannelFrequencyMap = new HashMap<>();
+    private final PacketDataAssembler mPacketDataAssembler = new PacketDataAssembler();
     private final SACCHAssembler mSACCHAssembler = new SACCHAssembler();
     private final TalkerAliasAssembler mTalkerAliasAssembler;
 
@@ -133,6 +140,26 @@ public class NXDNMessageProcessor implements Listener<IMessage>
             {
                 //Clear any captured talker alias fragments at the end of the call or idle mode
                 mTalkerAliasAssembler.reset();
+            }
+            else if(message instanceof ShortDataCallRequestHeader header)
+            {
+                mPacketDataAssembler.process(header);
+            }
+            else if(message instanceof ShortDataCallBlock block)
+            {
+                mPacketDataAssembler.process(block);
+            }
+            else if(message instanceof DataCallHeader header)
+            {
+                mPacketDataAssembler.process(header);
+            }
+            else if(message instanceof DataCallBlock block)
+            {
+                mPacketDataAssembler.process(block);
+            }
+            else if(message instanceof ShortDataInitializationVector iv)
+            {
+                mPacketDataAssembler.process(iv);
             }
         }
 

@@ -332,8 +332,13 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             tb9600.setUserData(TransmissionMode.M9600);
             mTransmissionModeButton.getButtons().add(tb9600);
 
+            //Set 4800 as the default selected mode
+            tb4800.setSelected(true);
+
             mTransmissionModeButton.getToggleGroup().selectedToggleProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+
+
 
             //Note: there is a weird timing bug with the segmented button where the toggles are not added to
             //the toggle group until well after the control is rendered.  We attempt to setItem() on the

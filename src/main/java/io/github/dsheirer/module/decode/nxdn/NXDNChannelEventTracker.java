@@ -29,6 +29,8 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
  */
 public class NXDNChannelEventTracker extends ChannelEventTracker<DecodeEvent>
 {
+    private boolean mTrafficChannelAllocated = false;
+
     /**
      * Constructs an instance
      *
@@ -37,5 +39,22 @@ public class NXDNChannelEventTracker extends ChannelEventTracker<DecodeEvent>
     public NXDNChannelEventTracker(DecodeEvent event)
     {
         super(event);
+    }
+
+    /**
+     * Indicates if a traffic channel was allocated for this event
+     */
+    public boolean isTrafficChannelAllocated()
+    {
+        return mTrafficChannelAllocated;
+    }
+
+    /**
+     * Sets flag to indicate if traffic channel was allocated
+     * @param allocated as the flag
+     */
+    public void setTrafficChannelAllocated(boolean allocated)
+    {
+        mTrafficChannelAllocated = allocated;
     }
 }
