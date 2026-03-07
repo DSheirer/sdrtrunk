@@ -53,13 +53,18 @@ public abstract class UserData extends NXDNLayer3Message
     }
 
     /**
+     * Length of the user data payload.  Implemented by the subclass.
+     * @return length of the payload.
+     */
+    public abstract int getUserDataByteLength();
+
+    /**
      * User data payload from this message.
-     * @param lengthOctets in octets of the user data element.
      * @return extracted user data payload.
      */
-    public BinaryMessage getUserData(int lengthOctets)
+    public BinaryMessage getUserData()
     {
-        return getMessage().get(OFFSET_USER_DATA, OFFSET_USER_DATA + (lengthOctets * 8));
+        return getMessage().get(OFFSET_USER_DATA, OFFSET_USER_DATA + (getUserDataByteLength() * 8));
     }
 
     /**

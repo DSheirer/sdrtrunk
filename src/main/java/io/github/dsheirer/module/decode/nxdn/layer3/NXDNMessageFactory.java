@@ -249,15 +249,23 @@ public class NXDNMessageFactory
                 return new RemoteControlRequestWithESN(message, timestamp, type, ran, lich);
             case CONTROL_IN_55_CC_REMOTE_CONTROL_RESPONSE_WITH_ESN:
                 return new RemoteControlResponseWithESN(message, timestamp, type, ran, lich);
+            case CONTROL_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case CONTROL_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
             case TRAFFIC_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
             case TRAFFIC_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
                 return  new ShortDataCallRequestHeader(message, timestamp, type, ran, lich);
+            case CONTROL_IN_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
+            case CONTROL_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
             case TRAFFIC_IN_57_CC_SHORT_DATA_CALL_BLOCK:
             case TRAFFIC_OUT_57_CC_SHORT_DATA_CALL_BLOCK:
                 return new ShortDataCallBlock(message, timestamp, type, ran, lich);
+            case CONTROL_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case CONTROL_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
             case TRAFFIC_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
             case TRAFFIC_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
                 return new ShortDataInitializationVector(message, timestamp, type, ran, lich);
+            case CONTROL_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
+            case CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
             case TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
             case TRAFFIC_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
                 return new ShortDataCallResponse(message, timestamp, type, ran, lich);

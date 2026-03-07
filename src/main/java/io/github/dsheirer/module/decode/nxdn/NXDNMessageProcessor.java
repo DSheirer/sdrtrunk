@@ -29,10 +29,10 @@ import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallBlock;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
-import io.github.dsheirer.module.decode.nxdn.layer3.call.PacketDataAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallBlock;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallRequestHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataInitializationVector;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.PacketDataAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAlias;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAliasAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
@@ -105,6 +105,8 @@ public class NXDNMessageProcessor implements Listener<IMessage>
     @Override
     public void receive(IMessage message)
     {
+        IMessage toSendAfterThisMessage = null;
+
         if(message != null && message.isValid())
         {
             //Capture channel access information from Site Information message
@@ -147,7 +149,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
             }
             else if(message instanceof ShortDataCallBlock block)
             {
-                mPacketDataAssembler.process(block);
+                toSendAfterThisMessage = mPacketDataAssembler.process(block);
             }
             else if(message instanceof DataCallHeader header)
             {
@@ -155,7 +157,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
             }
             else if(message instanceof DataCallBlock block)
             {
-                mPacketDataAssembler.process(block);
+                toSendAfterThisMessage = mPacketDataAssembler.process(block);
             }
             else if(message instanceof ShortDataInitializationVector iv)
             {
@@ -164,6 +166,11 @@ public class NXDNMessageProcessor implements Listener<IMessage>
         }
 
         dispatch(message);
+
+        if(toSendAfterThisMessage != null)
+        {
+            dispatch(toSendAfterThisMessage);
+        }
     }
 
     /**

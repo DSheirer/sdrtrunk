@@ -70,12 +70,14 @@ import java.util.List;
  */
 public class NXDNDecoderState extends DecoderState
 {
+    private static final int IDLE_DURING_CALL_MAX_COUNT = 5;
     private final Channel mChannel;
     private final NXDNNetworkConfigurationMonitor mNetworkConfigurationMonitor = new NXDNNetworkConfigurationMonitor();
     private final NXDNTrafficChannelManager mTrafficChannelManager;
     private boolean mEncryptedCallStateDetermined = false;
     private boolean mEncryptedCall = false;
     private int mDisconnectResponseCount = 0;
+    private int mIdleDuringCallCount = IDLE_DURING_CALL_MAX_COUNT;
 
     /**
      * Constructs an instance
@@ -475,6 +477,7 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_OUT_01_CC_VOICE_CALL:
                 if(layer3 instanceof VoiceCall vc)
                 {
+                    mIdleDuringCallCount = 0;
                     getIdentifierCollection().update(vc.getIdentifiers());
                     mEncryptedCallStateDetermined = true;
                     mEncryptedCall = vc.getEncryptionKeyIdentifier().isEncrypted();
@@ -496,6 +499,7 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
                 state = State.CALL;
                 event = DecoderStateEvent.Event.CONTINUATION;
+                mIdleDuringCallCount = 0;
                 break;
             case TRAFFIC_OUT_04_CC_VOICE_CALL_ASSIGNMENT:
                 if(layer3 instanceof VoiceCallAssignment vca)
@@ -517,6 +521,7 @@ public class NXDNDecoderState extends DecoderState
                 mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
+                mIdleDuringCallCount = IDLE_DURING_CALL_MAX_COUNT;
                 //Only remove the FROM identifier, anticipating a continuation call for the same talkgroup
                 getIdentifierCollection().remove(Role.FROM);
                 break;
@@ -539,8 +544,20 @@ public class NXDNDecoderState extends DecoderState
             case TRAFFIC_OUT_15_CC_HEADER_DELAY:
                 break;
             case TRAFFIC_OUT_16_CC_IDLE:
-                mEncryptedCallStateDetermined = false;
-                mEncryptedCall = false;
+                 //Hack: on both 4800 and 9600 systems there can be instances during a call where they send IDLE frames
+                 //We'll track when we're in a call and continue a call state until the sequence of IDLE messages
+                 //exceeds a threshold and then the state will be flipped to ACTIVE from CALL.
+                mIdleDuringCallCount++;
+
+                if(mIdleDuringCallCount < IDLE_DURING_CALL_MAX_COUNT)
+                {
+                    state = State.CALL;
+                }
+                else
+                {
+                    mEncryptedCallStateDetermined = false;
+                    mEncryptedCall = false;
+                }
                 break;
             case TRAFFIC_OUT_17_CC_DISCONNECT:
                 mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
@@ -665,6 +682,7 @@ public class NXDNDecoderState extends DecoderState
      */
     private void processAudio(Audio audio)
     {
+        mIdleDuringCallCount = 0;
         State state = State.CALL;
 
         if(mEncryptedCallStateDetermined && mEncryptedCall)

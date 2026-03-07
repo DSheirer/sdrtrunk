@@ -40,11 +40,18 @@ public class DataCallBlock extends UserData
     }
 
     @Override
+    public int getUserDataByteLength()
+    {
+        return 20;
+    }
+
+    @Override
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
         sb.append(getMessageType());
         sb.append(" PACKET FRAME:").append(getPacketFrameNumber()).append(" BLOCK_NUMBER:").append(getBlockNumber());
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 }
