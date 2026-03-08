@@ -27,12 +27,14 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
@@ -55,6 +57,8 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignmentDupl
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.GPS;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.NXDNPacketMessage;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest2;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationResponse;
@@ -62,6 +66,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationClearRe
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationCommand;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAliasComplete;
+import io.github.dsheirer.protocol.Protocol;
 import java.util.Collections;
 import java.util.List;
 
@@ -177,6 +182,10 @@ public class NXDNDecoderState extends DecoderState
             else if(nxdn instanceof Audio nxdnAudio)
             {
                 processAudio(nxdnAudio);
+            }
+            else if(nxdn instanceof NXDNPacketMessage packet)
+            {
+                processPacketMessage(packet);
             }
         }
     }
@@ -693,5 +702,26 @@ public class NXDNDecoderState extends DecoderState
         mTrafficChannelManager.processCallProgressUpdate(getCurrentChannel(), audio.getTimestamp());
 
         broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.CONTINUATION, state));
+    }
+
+    /**
+     * Process packet-based messages
+     * @param message to process
+     */
+    private void processPacketMessage(NXDNPacketMessage message)
+    {
+        if(message instanceof GPS gps)
+        {
+            PlottableDecodeEvent plottableEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, gps.getTimestamp())
+                    .identifiers(new IdentifierCollection(message.getPacketSequence().getHeader().getIdentifiers()))
+                    .channel(getCurrentChannel())
+                    .details("POS: " + gps.getLocation())
+                    .protocol(Protocol.NXDN)
+                    .location(gps.getLocation())
+                    .heading(gps.getHeading())
+                    .speed(gps.getSpeed())
+                    .build();
+            broadcast(plottableEvent);
+        }
     }
 }

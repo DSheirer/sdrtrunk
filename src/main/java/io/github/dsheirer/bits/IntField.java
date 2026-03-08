@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,6 +107,16 @@ public record IntField(int start, int end)
     public static IntField length6(int start)
     {
         return new IntField(start, (start + 5));
+    }
+
+    /**
+     * Utility constructor method for a field with seven bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static IntField length7(int start)
+    {
+        return new IntField(start, (start + 6));
     }
 
     /**

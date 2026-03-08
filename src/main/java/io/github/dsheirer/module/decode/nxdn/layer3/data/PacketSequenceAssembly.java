@@ -118,18 +118,29 @@ public class PacketSequenceAssembly
 
         if(mPayload == null)
         {
-            mUserDataList.sort(Comparator.comparingInt(UserData::getBlockNumber).reversed());
-            mPayload = new CorrectedBinaryMessage(mUserDataList.getFirst().getUserDataByteLength() * mUserDataList.size() * 8);
+            int padOctets = mPacketInformation.getPadOctetCount();
+            mUserDataList.sort(Comparator.comparingInt(UserData::getBlockNumber));
+            mPayload = new CorrectedBinaryMessage((mUserDataList.getFirst().getUserDataByteLength() * mUserDataList.size() - padOctets) * 8);
 
             int offset = 0;
 
-            for(UserData userData : mUserDataList)
+            for(int block = 0; block < mUserDataList.size(); block++)
             {
-                BinaryMessage fragment = userData.getUserData();
-                mPayload.load(offset, fragment);
-                offset += fragment.size();
-            }
+                UserData userData = mUserDataList.get(block);
 
+                if(block == 0)
+                {
+                    BinaryMessage fragment = userData.getUserData(padOctets);
+                    mPayload.load(offset, fragment);
+                    offset += fragment.size();
+                }
+                else
+                {
+                    BinaryMessage fragment = userData.getUserData();
+                    mPayload.load(offset, fragment);
+                    offset += fragment.size();
+                }
+            }
         }
 
         return mPayload;

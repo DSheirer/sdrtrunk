@@ -66,6 +66,9 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionReque
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.GPS;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.NXDNPacketMessage;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.PacketSequence;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest2;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryResponse;
@@ -85,6 +88,21 @@ import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAlias;
  */
 public class NXDNMessageFactory
 {
+    /**
+     * Creates an NXDN message parser for the packet sequence.
+     * @param packetSequence to wrap in a message parser
+     * @return message parser or null
+     */
+    public static NXDNPacketMessage get(PacketSequence packetSequence)
+    {
+        if(GPS.isGPS(packetSequence))
+        {
+            return new GPS(packetSequence);
+        }
+
+        return null;
+    }
+
     /**
      * Creates an NXDN message parser for a message on the outbound control channel (CC)
      * @param message content

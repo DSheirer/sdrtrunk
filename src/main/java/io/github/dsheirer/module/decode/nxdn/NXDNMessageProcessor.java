@@ -32,12 +32,13 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallBlock;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallRequestHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataInitializationVector;
-import io.github.dsheirer.module.decode.nxdn.layer3.data.PacketDataAssembler;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.PacketSequenceAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAlias;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAliasAssembler;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ChannelAccessInformation;
 import io.github.dsheirer.sample.Listener;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
     private final static Logger LOGGER = LoggerFactory.getLogger(NXDNMessageProcessor.class);
     private ChannelAccessInformation mChannelAccessInformation;
     private final Map<Integer, ChannelFrequency> mChannelFrequencyMap = new HashMap<>();
-    private final PacketDataAssembler mPacketDataAssembler = new PacketDataAssembler();
+    private final PacketSequenceAssembler mPacketSequenceAssembler = new PacketSequenceAssembler();
     private final SACCHAssembler mSACCHAssembler = new SACCHAssembler();
     private final TalkerAliasAssembler mTalkerAliasAssembler;
 
@@ -105,7 +106,7 @@ public class NXDNMessageProcessor implements Listener<IMessage>
     @Override
     public void receive(IMessage message)
     {
-        IMessage toSendAfterThisMessage = null;
+        List<NXDNMessage> messagesToSend = null;
 
         if(message != null && message.isValid())
         {
@@ -145,31 +146,34 @@ public class NXDNMessageProcessor implements Listener<IMessage>
             }
             else if(message instanceof ShortDataCallRequestHeader header)
             {
-                mPacketDataAssembler.process(header);
+                mPacketSequenceAssembler.process(header);
             }
             else if(message instanceof ShortDataCallBlock block)
             {
-                toSendAfterThisMessage = mPacketDataAssembler.process(block);
+                messagesToSend = mPacketSequenceAssembler.process(block);
             }
             else if(message instanceof DataCallHeader header)
             {
-                mPacketDataAssembler.process(header);
+                mPacketSequenceAssembler.process(header);
             }
             else if(message instanceof DataCallBlock block)
             {
-                toSendAfterThisMessage = mPacketDataAssembler.process(block);
+                messagesToSend = mPacketSequenceAssembler.process(block);
             }
             else if(message instanceof ShortDataInitializationVector iv)
             {
-                mPacketDataAssembler.process(iv);
+                mPacketSequenceAssembler.process(iv);
             }
         }
 
         dispatch(message);
 
-        if(toSendAfterThisMessage != null)
+        if(messagesToSend != null)
         {
-            dispatch(toSendAfterThisMessage);
+            for(NXDNMessage additional: messagesToSend)
+            {
+                dispatch(additional);
+            }
         }
     }
 

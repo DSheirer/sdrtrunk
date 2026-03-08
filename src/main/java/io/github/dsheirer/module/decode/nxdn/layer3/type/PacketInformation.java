@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ public record PacketInformation(CorrectedBinaryMessage message, int offset, bool
     private static final int DELIVERY_FLAG = 0;
     private static final int SELECTIVE_RETRY_FLAG = 2;
     private static final IntField BLOCK_COUNT = IntField.length4(4);
-    private static final IntField PAD_OCTET_COUNT = IntField.length4(8);
+    private static final IntField PAD_OCTET_COUNT = IntField.length5(8);
     private static final int START_FRAGMENT_FLAG = 13;
     private static final int CIRCULAR_FRAGMENT_FLAG = 14;
     private static final IntField TX_FRAGMENT_COUNT = IntField.length9(15);

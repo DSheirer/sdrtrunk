@@ -42,7 +42,9 @@ public class ShortDataCallBlock extends UserData
     @Override
     public int getUserDataByteLength()
     {
-        return 8;
+        //The 18-byte UPCH carries 14 bytes payload (2-empty bytes at end) and FACCH1 carries 8 bytes.
+        //See CAI para. 6.4.1.10
+        return getMessage().size() == 144 ? 14 : 8;
     }
 
     @Override

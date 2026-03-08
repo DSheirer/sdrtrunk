@@ -19,17 +19,22 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer3.data;
 
+import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageFactory;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallBlock;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallBlock;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallRequestHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataInitializationVector;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.UserData;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 /**
- * Reassembles short and packet data
+ * Reassembles short call and data call packet sequences
  */
-public class PacketDataAssembler
+public class PacketSequenceAssembler
 {
     private PacketSequenceAssembly mPacketSequenceAssembly;
 
@@ -39,7 +44,6 @@ public class PacketDataAssembler
      */
     public void process(ShortDataCallRequestHeader header)
     {
-//        System.out.println("Short Data Call Header received: " + header);
         mPacketSequenceAssembly = new PacketSequenceAssembly(header);
     }
 
@@ -47,24 +51,14 @@ public class PacketDataAssembler
      * Process a short data block on control or traffic channel
      * @param data to process
      */
-    public PacketSequence process(ShortDataCallBlock data)
+    public List<NXDNMessage> process(ShortDataCallBlock data)
     {
-//        System.out.println("Short Data Call Block received: " + data);
-
         if(mPacketSequenceAssembly != null && mPacketSequenceAssembly.isShortData())
         {
-            mPacketSequenceAssembly.add(data);
-
-            if(mPacketSequenceAssembly.isComplete())
-            {
-                PacketSequence sequence = mPacketSequenceAssembly.getPacketSequence();
-                System.out.println(new Date() + " " + sequence);
-                mPacketSequenceAssembly = null;
-                return sequence;
-            }
+            return processUserData(data);
         }
 
-        return null;
+        return Collections.emptyList();
     }
 
     /**
@@ -73,7 +67,6 @@ public class PacketDataAssembler
      */
     public void process(ShortDataInitializationVector iv)
     {
-        System.out.println("Short Data Initialization Vector received: " + iv);
         if(mPacketSequenceAssembly != null && mPacketSequenceAssembly.isShortData())
         {
             mPacketSequenceAssembly.set(iv);
@@ -86,7 +79,6 @@ public class PacketDataAssembler
      */
     public void process(DataCallHeader header)
     {
-//        System.out.println("Data Call Header received: " + header);
         mPacketSequenceAssembly = new PacketSequenceAssembly(header);
     }
 
@@ -94,23 +86,51 @@ public class PacketDataAssembler
      * Process a data call block (on the traffic channel)
      * @param data to process
      */
-    public PacketSequence process(DataCallBlock data)
+    public List<NXDNMessage> process(DataCallBlock data)
     {
-//        System.out.println("Data Call Block received: " + data);
-
         if(mPacketSequenceAssembly != null && mPacketSequenceAssembly.isDataCall())
         {
-            mPacketSequenceAssembly.add(data);
+            return processUserData(data);
+        }
 
-            if(mPacketSequenceAssembly.isComplete())
+        return Collections.emptyList();
+    }
+
+    /**
+     * Adds the user data block to the sequence
+     * @param userData to add
+     * @return packet sequene if it's now complete.
+     */
+    private List<NXDNMessage> processUserData(UserData userData)
+    {
+        mPacketSequenceAssembly.add(userData);
+
+        if(mPacketSequenceAssembly.isComplete())
+        {
+            PacketSequence packetSequence = mPacketSequenceAssembly.getPacketSequence();
+            NXDNPacketMessage message = NXDNMessageFactory.get(packetSequence);
+
+            if(message != null)
             {
-                PacketSequence sequence = mPacketSequenceAssembly.getPacketSequence();
-                System.out.println(new Date() + " " + sequence);
-                mPacketSequenceAssembly = null;
-                return sequence;
+                System.out.println(new Date() + " " + message);
+            }
+            else
+            {
+                System.out.println(new Date() + " " + packetSequence);
+            }
+
+            mPacketSequenceAssembly = null;
+
+            if(message != null)
+            {
+                return List.of(packetSequence, message);
+            }
+            else
+            {
+                return List.of(packetSequence);
             }
         }
 
-        return null;
+        return Collections.emptyList();
     }
 }

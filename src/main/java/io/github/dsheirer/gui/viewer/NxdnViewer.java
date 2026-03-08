@@ -28,19 +28,33 @@ import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentif
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.NXDNDecoderState;
+import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessageFramer;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessageProcessor;
 import io.github.dsheirer.module.decode.nxdn.NXDNTrafficChannelManager;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallRequestHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.GPS;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.prefs.Preferences;
@@ -79,7 +93,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * APCO25 Phase 1 viewer panel
+ * NXDN Viewer
  */
 public class NxdnViewer extends VBox
 {
@@ -640,5 +654,172 @@ public class NxdnViewer extends VBox
         }
 
         return mFindNextButton;
+    }
+
+    public static class A implements Listener<IMessage>
+    {
+        private Path mOutput;
+        private int mTarget;
+        private long mMinLat = Long.MAX_VALUE;
+        private long mMaxLat = 0;
+        private long mMinLon = Long.MAX_VALUE;
+        private long mMaxLon = 0;
+
+        private Map<Integer,Integer> mCountMap = new TreeMap<>();
+
+        public A(Path output, int target)
+        {
+            mOutput = output;
+            mTarget = target;
+        }
+
+        public void logResults()
+        {
+            System.out.println("Min Lat: "  + mMinLat + " Max Lat: " + mMaxLat);
+            System.out.println("Min Lon: "  + mMaxLat + " Max Lon: " + mMaxLon);
+
+            List<Integer> ids = new ArrayList<>(mCountMap.keySet());
+            Collections.sort(ids);
+
+            for(int id: ids)
+            {
+                System.out.println("ID:" + id + " Count:" + mCountMap.get(id));
+            }
+        }
+
+        @Override
+        public void receive(IMessage message)
+        {
+            if(message instanceof GPS gps)
+            {
+                NXDNMessage header = gps.getPacketSequence().getHeader();
+
+                int id = 0;
+
+                if(header instanceof ShortDataCallRequestHeader sd)
+                {
+                    id = sd.getSource().getValue();
+                }
+                else if(header instanceof DataCallHeader dch)
+                {
+                    id = dch.getSource().getValue();
+                }
+
+                if(mTarget != 0 && id != mTarget)
+                {
+                    return;
+                }
+
+                if(mCountMap.containsKey(id))
+                {
+                    mCountMap.put(id, mCountMap.get(id) + 1);
+                }
+                else
+                {
+                    mCountMap.put(id, new Integer(1));
+                }
+
+                long lat = gps.getRawLatitude();
+                long lon = gps.getRawLongitude();
+
+                if(lat < mMinLat)
+                {
+                    mMinLat = lat;
+                }
+                else if(lat > mMaxLat)
+                {
+                    mMaxLat = lat;
+                }
+
+                if(lon < mMinLon)
+                {
+                    mMinLon = lon;
+                }
+                else if(lon > mMaxLon)
+                {
+                    mMaxLon = lon;
+                }
+
+                try
+                {
+                    Files.writeString(mOutput, gps + "\n", StandardOpenOption.APPEND);
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    static void main() throws IOException
+    {
+        Path directory = Paths.get("/home/denny/SDRTrunk/recordings");
+        int target = 1998;
+        Path output = directory.resolve(target == 0 ? "GPS.txt" : "GPS_" + target + ".txt");
+        A a = new A(output, target);
+
+        if(Files.exists(output))
+        {
+            Files.delete(output);
+        }
+
+        try
+        {
+            output.toFile().createNewFile();
+
+            File[] files = directory.toFile().listFiles();
+
+            if(files == null)
+            {
+                return;
+            }
+
+            List<File> fileList = Arrays.asList(files);
+            Collections.sort(fileList);
+            for(File file: fileList)
+            {
+                if(file.getName().endsWith(".bits"))
+                {
+                    if(file != null && file.exists())
+                    {
+                        DecodeConfigNXDN config = new DecodeConfigNXDN();
+                        NXDNMessageProcessor messageProcessor = new NXDNMessageProcessor(config);
+
+                        Channel empty = new Channel("Empty");
+                        TransmissionMode transmissionMode = file.getName().contains("4800") ? TransmissionMode.M4800 : TransmissionMode.M9600;
+                        config.setTransmissionMode(transmissionMode);
+                        empty.setDecodeConfiguration(new DecodeConfigNXDN());
+                        NXDNMessageFramer messageFramer = new NXDNMessageFramer(messageProcessor, transmissionMode);
+                        messageProcessor.setMessageListener(a);
+
+                        try(BinaryReader reader = new BinaryReader(file.toPath(), 200))
+                        {
+                            while(reader.hasNext())
+                            {
+                                ByteBuffer buffer = reader.next();
+                                for(byte value : buffer.array())
+                                {
+                                    for(int x = 0; x <= 3; x++)
+                                    {
+                                        messageFramer.processWithHardSyncDetection(Dibit.parse(value, x));
+                                    }
+                                }
+                            }
+                        }
+                        catch(Exception ioe)
+                        {
+                            ioe.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        catch(IOException ioe)
+        {
+            ioe.printStackTrace();
+        }
+
+        a.logResults();
     }
 }

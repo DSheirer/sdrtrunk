@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
@@ -62,9 +61,45 @@ public abstract class UserData extends NXDNLayer3Message
      * User data payload from this message.
      * @return extracted user data payload.
      */
-    public BinaryMessage getUserData()
+    public CorrectedBinaryMessage getUserData()
     {
-        return getMessage().get(OFFSET_USER_DATA, OFFSET_USER_DATA + (getUserDataByteLength() * 8));
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage(getUserDataByteLength() * 8);
+
+        //Extract the data from the message in byte-reversed order
+        int reverse = (getUserDataByteLength() - 1) * 8;
+        int forward = OFFSET_USER_DATA;
+
+        while(reverse >= 0)
+        {
+            message.setByte(reverse, getMessage().getByte(forward));
+            forward += 8;
+            reverse -= 8;
+        }
+
+        return message;
+    }
+
+    /**
+     * User data payload from this message.
+     * @param padOctets to ignore
+     * @return extracted user data payload.
+     */
+    public CorrectedBinaryMessage getUserData(int padOctets)
+    {
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage((getUserDataByteLength() - padOctets) * 8);
+
+        //Extract the data from the message in byte-reversed order
+        int reverse = (getUserDataByteLength() - padOctets - 1) * 8;
+        int forward = OFFSET_USER_DATA;
+
+        while(reverse >= 0)
+        {
+            message.setByte(reverse, getMessage().getByte(forward));
+            forward += 8;
+            reverse -= 8;
+        }
+
+        return message;
     }
 
     /**

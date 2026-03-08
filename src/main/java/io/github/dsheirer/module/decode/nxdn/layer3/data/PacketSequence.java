@@ -50,6 +50,14 @@ public class PacketSequence extends NXDNMessage
         mShortDataIV = iv;
     }
 
+    /**
+     * Header message
+     */
+    public NXDNLayer3Message getHeader()
+    {
+        return mHeader;
+    }
+
     @Override
     public String toString()
     {
