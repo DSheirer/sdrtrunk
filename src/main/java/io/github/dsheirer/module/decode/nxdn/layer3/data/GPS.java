@@ -49,8 +49,23 @@ public class GPS extends NXDNPacketMessage
     private static final IntField DATE_UTC_YEAR = IntField.length7(184); //Year: 2000 - 2127
     private static final IntField DATE_UTC_MONTH = IntField.length4(191); //Month: 1-12
     private static final IntField DATE_UTC_DAY = IntField.length5(195); //Day: 0-30 (add 1 to value to get 1-31)
+
     private static final IntField LONGITUDE = IntField.length32(200);
+    private static final IntField LONGITUDE_DEGREE_TENS = IntField.length6(200);
+    private static final IntField LONGITUDE_DEGREE_ONES = IntField.length4(206);
+    //I haven't yet figured out minutes and fractional minutes
+    private static final IntField LONGITUDE_MINUTES = IntField.length6(212);
+    private static final int LONGITUDE_ALWAYS_ZERO = 216;
+    private static final int LONGITUDE_HEMISPHERE_FLAG = 231;
+
     private static final IntField LATITUDE = IntField.length32(232);
+    private static final IntField LATITUDE_DEGREE_TENS = IntField.length6(232);
+    private static final IntField LATITUDE_DEGREE_ONES = IntField.length4(238);
+    //I haven't yet figured out minutes and fractional minutes
+    private static final IntField LATITUDE_MINUTES = IntField.length6(244);
+    private static final int LATITUDE_ALWAYS_ZERO = 248;
+    private static final int LATITUDE_HEMISPHERE_FLAG = 263;
+
     private static final IntField UNKNOWN_9 = IntField.length16(264); //Always 0x0000 ?
     private static final IntField UNKNOWN_10 = IntField.length15(280);
     private static final IntField TIME_UTC_HOURS = IntField.length5(295);
@@ -58,7 +73,7 @@ public class GPS extends NXDNPacketMessage
     private static final IntField TIME_UTC_SECONDS = IntField.length6(306);
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss z");
     private static final DecimalFormat DEGREES_FORMAT = new DecimalFormat("0.00000");
-    private static final double SCALOR_GUESS = 1.0 / 6_555_000D;
+    private static final double SCALOR_JUNK_NOT_VALID = 1.0 / 6_555_000D;
     private Long mTimestamp;
 
     /**
@@ -69,6 +84,22 @@ public class GPS extends NXDNPacketMessage
     public GPS(PacketSequence packetSequence)
     {
         super(packetSequence);
+    }
+
+    public String getLatGuess()
+    {
+        int degrees = (getMessage().getInt(LATITUDE_DEGREE_TENS) * 10) + getMessage().getInt(LATITUDE_DEGREE_ONES);
+        degrees *= getMessage().get(LATITUDE_HEMISPHERE_FLAG) ? -1 : 1;
+        int minutes = getMessage().getInt(LATITUDE_MINUTES);
+        return "LAT D:" + degrees + " M:" + minutes;
+    }
+
+    public String getLonGuess()
+    {
+        int degrees = (getMessage().getInt(LONGITUDE_DEGREE_TENS) * 10) + getMessage().getInt(LONGITUDE_DEGREE_ONES);
+        degrees *= getMessage().get(LONGITUDE_HEMISPHERE_FLAG) ? -1 : 1;
+        int minutes = getMessage().getInt(LONGITUDE_MINUTES);
+        return "LON D:" + degrees + " M:" + minutes;
     }
 
     /**
@@ -87,8 +118,10 @@ public class GPS extends NXDNPacketMessage
     {
         StringBuilder sb = getMessageBuilder();
         sb.append("GPS");
-        sb.append(" RAW LAT:").append(getMessage().getInt(LATITUDE));
-        sb.append(" RAW LON:").append(getMessage().getInt(LONGITUDE));
+        sb.append(" " + getLatGuess());
+        sb.append(" " + getLonGuess());
+        sb.append(" HEX LAT:").append(Integer.toHexString(getMessage().getInt(LATITUDE)).toUpperCase());
+        sb.append(" HEX LON:").append(Integer.toHexString(getMessage().getInt(LONGITUDE)).toUpperCase());
         sb.append(" POS:").append(DEGREES_FORMAT.format(getLatitude()));
         sb.append(" ").append(DEGREES_FORMAT.format(getLongitude()));
         sb.append(" HDG:").append(getHeading());
@@ -132,7 +165,7 @@ public class GPS extends NXDNPacketMessage
      */
     public double getLatitude()
     {
-        return getMessage().getInt(LATITUDE) * SCALOR_GUESS;
+        return getMessage().getInt(LATITUDE) * SCALOR_JUNK_NOT_VALID;
     }
 
     public long getRawLatitude()
@@ -152,7 +185,7 @@ public class GPS extends NXDNPacketMessage
     public double getLongitude()
     {
         //fix everything to the western hemisphere until we can figure out the hemisphere indicator bit
-        return getMessage().getInt(LONGITUDE) * SCALOR_GUESS * -1;
+        return getMessage().getInt(LONGITUDE) * SCALOR_JUNK_NOT_VALID * -1;
     }
 
     public long getTimestamp()
