@@ -189,18 +189,11 @@ public abstract class FCDTunerController extends TunerController
                 int bus = LibUsb.getBusNumber(device);
                 int port = LibUsb.getPortNumber(device);
 
-                if(port > 0)
-                {
-                    String portAddress = TunerManager.getPortAddress(device);
+                String portAddress = TunerManager.getPortAddress(device);
 
-                    if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
-                    {
-                        foundDevice = device;
-                    }
-                    else
-                    {
-                        LibUsb.unrefDevice(device);
-                    }
+                if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
+                {
+                    foundDevice = device;
                 }
                 else
                 {
