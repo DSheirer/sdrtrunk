@@ -29,6 +29,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -293,6 +294,11 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             {
                 NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(channel.getDownlinkFrequency(), timestamp);
                 MutableIdentifierCollection ic = new MutableIdentifierCollection(identifiers);
+                //Include the parent channel alias list so the event logger can resolve TO aliases
+                if(mParentChannel.getAliasListName() != null && !mParentChannel.getAliasListName().isEmpty())
+                {
+                    ic.update(AliasListConfigurationIdentifier.create(mParentChannel.getAliasListName()));
+                }
                 if(tracker != null)
                 {
                     if(tracker.isSameCallCheckingToAndFrom(ic, timestamp))
@@ -501,6 +507,11 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
             MutableIdentifierCollection ic = new MutableIdentifierCollection(identifiers);
             mTalkerAliasManager.enrich(ic);
+            //Include the parent channel alias list so the event logger can resolve TO aliases for group calls
+            if(mParentChannel.getAliasListName() != null && !mParentChannel.getAliasListName().isEmpty())
+            {
+                ic.update(AliasListConfigurationIdentifier.create(mParentChannel.getAliasListName()));
+            }
             if(tracker != null)
             {
                 if(tracker.isSameCallCheckingToAndFrom(ic, timestamp))
