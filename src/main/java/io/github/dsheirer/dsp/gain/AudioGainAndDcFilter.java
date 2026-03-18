@@ -47,6 +47,7 @@ public class AudioGainAndDcFilter
     private float mObjectiveGain;
     private float mObjectiveAmplitude;
     private float mMaxObservedAmplitude;
+    private float mPercentDecayRate = 10f;
 
     /**
      * Constructs an instance
@@ -82,8 +83,9 @@ public class AudioGainAndDcFilter
         float currentAmplitude;
         float dcAccumulator = 0.0f;
 
-        //Decay the max observed value by 10% each buffer so that an initial spike doesn't carry across all buffers
-        mMaxObservedAmplitude *= 0.9f;
+        //Decay the max observed value by a specified percentage each buffer so that an initial
+        // spike doesn't carry across all buffers
+        mMaxObservedAmplitude *= ((100 - mPercentDecayRate )/ 100);
 
         for(float sample: samples)
         {
@@ -135,5 +137,14 @@ public class AudioGainAndDcFilter
         mCurrentGain = gain;
         mObjectiveGain = objective;
         return processed;
+    }
+
+    /**
+     * Overrides the default decay rate of 10 %.
+     * @param newRate specified as a percentage
+     */
+    public void setDecayRate(float newRate)
+    {
+        mPercentDecayRate = newRate;
     }
 }
