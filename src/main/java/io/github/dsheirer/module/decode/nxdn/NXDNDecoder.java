@@ -175,8 +175,8 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 
         //Process buffer for channel power measurements
         mPowerMonitor.process(i, q);
-//        i = mBasebandFilterI.filter(i);
-//        q = mBasebandFilterQ.filter(q);
+        i = mBasebandFilterI.filter(i);
+        q = mBasebandFilterQ.filter(q);
 
         float[] demodulated = mDemodulator.demodulate(i, q);
         demodulated = mPulseShapingFilter.filter(demodulated);
@@ -322,19 +322,20 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 //        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
 
         //NXDN 4800 Channels
-//        config = new DecodeConfigNXDN(TransmissionMode.M4800);
+        config = new DecodeConfigNXDN(TransmissionMode.M4800);
 //        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
         //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
 //        String file = directory + "20260104_065056_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
 //        String file = directory + "20260104_065240_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
 //        String file = directory + "AceVentura Sample 1/20260122_071724_154987500_SCFR_SITE_null_1_baseband.wav";
 //        String file = directory + "AceVentura Sample 2/20260122_073239_154987500_SCFR_SITE_null_1_baseband.wav";
+        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
 
         //Type-D Channels
-        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);
+//        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);
 //        String file = directory + "Type C and D/20260314_091952_451775000_Heimes_Omaha_TYPE_D_114_baseband.wav";
 //        String file = directory + "Type C and D/20260318_034719_452675000_Heimes_Omaha_TYPE_D_0_baseband.wav";
-        String file = directory + "Type C and D/20260320_065339_451450000_Heimes_Omaha_TYPE_D_0_baseband.wav";
+//        String file = directory + "Type C and D/20260320_065339_451450000_Heimes_Omaha_TYPE_D_0_baseband.wav";
 
         //This file has PPM mis-adjusted by 8.0 to test for equalizer balance
 //        String file = directory + "20260119_044740_150845000_Mobiletech-Communications-(NXDN)_Oswego_Control_2_baseband.wav";

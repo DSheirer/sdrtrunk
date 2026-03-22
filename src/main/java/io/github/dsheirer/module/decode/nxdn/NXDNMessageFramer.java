@@ -134,11 +134,11 @@ public class NXDNMessageFramer
     public void syncDetected()
     {
         //Ignore any sync detections that happen when we're already assembling a frame.
-        if(mMessageAssembler != null)
-        {
-            System.out.println("****** NXDN SYNC DETECTED WHILE STILL ASSEMBLING PREVIOUS MESSAGE - THIS HAPPENS DUE TO DROPPED SAMPLES *****");
-            dispatchMessage();
-        }
+//        if(mMessageAssembler != null)
+//        {
+//            System.out.println("****** NXDN SYNC DETECTED WHILE STILL ASSEMBLING PREVIOUS MESSAGE - THIS HAPPENS DUE TO DROPPED SAMPLES *****");
+//            dispatchMessage();
+//        }
 
         mMessageAssembler = new NXDNFrameAssembler();
 
@@ -150,7 +150,7 @@ public class NXDNMessageFramer
 
         if(mSymbolsSinceLastSync < 0)
         {
-            System.out.println("***** SYMBOLS SINE LAST SYNC AT SYNC DETECTION: " + mSymbolsSinceLastSync);
+//            System.out.println("***** SYMBOLS SINE LAST SYNC AT SYNC DETECTION: " + mSymbolsSinceLastSync);
             mSymbolsSinceLastSync = 0;
         }
     }
