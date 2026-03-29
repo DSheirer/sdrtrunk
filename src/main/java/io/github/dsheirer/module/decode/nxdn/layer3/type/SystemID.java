@@ -17,37 +17,26 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import java.util.List;
+import io.github.dsheirer.bits.IntField;
 
 /**
- * Voice call encryption initialization vector.
+ * Type-D System ID.
  */
-public class VoiceCallInitializationVector extends InitializationVector
+public class SystemID extends LocationID
 {
+    private static final IntField INTEGRATOR_CODE = IntField.length4(0);
+    private static final IntField SYSTEM_CODE = IntField.length15(4);
 
     /**
      * Constructs an instance
-     *
-     * @param message with binary data
-     * @param timestamp for the message
-     * @param type of message
-     * @param ran value
-     * @param lich info
+     * @param message containing the System ID field
+     * @param offset to the start of the field
      */
-    public VoiceCallInitializationVector(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public SystemID(CorrectedBinaryMessage message, int offset)
     {
-        super(message, timestamp, type, ran, lich);
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return List.of();
+        super(message.getInt(INTEGRATOR_CODE, offset), message.getInt(SYSTEM_CODE, offset));
     }
 }

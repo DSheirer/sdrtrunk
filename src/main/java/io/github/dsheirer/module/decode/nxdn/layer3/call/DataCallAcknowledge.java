@@ -24,7 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.ErrorBlockFlags;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.ErrorBlockFlag;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ResponseInformation;
 import java.util.List;
 
@@ -36,7 +36,7 @@ public class DataCallAcknowledge extends DataCall
     private static final IntField RESPONSE_INFORMATION = IntField.length16(OCTET_7);
     private static final IntField ERROR_BLOCK_FLAG = IntField.length16(OCTET_9);
     private ResponseInformation mResponseInformation;
-    private ErrorBlockFlags mErrorBlockFlags;
+    private ErrorBlockFlag mErrorBlockFlag;
 
     /**
      * Constructs an instance
@@ -60,7 +60,7 @@ public class DataCallAcknowledge extends DataCall
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
         sb.append(" ").append(getResponseInformation());
-        sb.append(" ").append(getErrorBlockFlags());
+        sb.append(" ").append(getErrorBlockFlag());
         return sb.toString();
     }
 
@@ -82,14 +82,14 @@ public class DataCallAcknowledge extends DataCall
      * Flags indicating error state with any received blocks.
      * @return flags
      */
-    public ErrorBlockFlags getErrorBlockFlags()
+    public ErrorBlockFlag getErrorBlockFlag()
     {
-        if(mErrorBlockFlags == null)
+        if(mErrorBlockFlag == null)
         {
-            mErrorBlockFlags = new ErrorBlockFlags(getMessage().getInt(ERROR_BLOCK_FLAG));
+            mErrorBlockFlag = new ErrorBlockFlag(getMessage().getInt(ERROR_BLOCK_FLAG));
         }
 
-        return mErrorBlockFlags;
+        return mErrorBlockFlag;
     }
 
     @Override

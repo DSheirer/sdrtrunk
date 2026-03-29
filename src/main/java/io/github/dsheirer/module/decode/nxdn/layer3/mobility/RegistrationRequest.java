@@ -34,6 +34,7 @@ public class RegistrationRequest extends Registration
 {
     private static final IntField SUBSCRIBER_TYPE = IntField.length16(OCTET_8);
     private static final IntField VERSION = IntField.length8(OCTET_10);
+    private static final IntField REGISTRATION_SEQUENCE_NUMBER_TYPE_D = IntField.length16(OCTET_11);
     private SubscriberType mSubscriberType;
 
     /**
@@ -58,7 +59,17 @@ public class RegistrationRequest extends Registration
         {
             sb.append("EMERGENCY ");
         }
-        sb.append("REGISTRATION REQUEST FROM RADIO:").append(getRadio());
+
+        if(isTypeD())
+        {
+            sb.append("REGISTRATION REQUEST #").append(getRegistrationSequenceNumber());
+            sb.append(" FROM RADIO:").append(getRadio());
+        }
+        else
+        {
+            sb.append("REGISTRATION REQUEST FROM RADIO:").append(getRadio());
+        }
+
         sb.append(" TALKGROUP:").append(getGroup());
         if(getRegistrationOption().isPriorityStation())
         {
@@ -89,6 +100,14 @@ public class RegistrationRequest extends Registration
     public int getVersion()
     {
         return getMessage().getInt(VERSION);
+    }
+
+    /**
+     * Type-D registration sequence number.  Indicates how many times the SU has registered.
+     */
+    public int getRegistrationSequenceNumber()
+    {
+        return getMessage().getInt(REGISTRATION_SEQUENCE_NUMBER_TYPE_D);
     }
 
     @Override

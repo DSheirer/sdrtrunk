@@ -17,27 +17,27 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import java.util.List;
 
 /**
- * Base NXDN SCCH layer 3 message implementation
+ * Authentication inquiry response 2 - multi-system format
  */
-public class SCCHMessage extends NXDNLayer3Message
+public class AuthenticationInquiryResponseMultiSystem extends AuthenticationInquiryResponse
 {
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
+     * @param type of message
+     * @param ran value
+     * @param lich info
      */
-    public SCCHMessage(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public AuthenticationInquiryResponseMultiSystem(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -45,12 +45,14 @@ public class SCCHMessage extends NXDNLayer3Message
     @Override
     public String toString()
     {
-        return "SCCH MSG:" + getMessage().toHexString();
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return List.of();
+        StringBuilder sb = getMessageBuilder();
+        if(getAuthenticationOption().isEmergency())
+        {
+            sb.append("EMERGENCY ");
+        }
+        sb.append("AUTHENTICATION RESPONSE (MULTI-SYSTEM) FROM:").append(getSource());
+        sb.append(" TO:").append(getDestination());
+        sb.append(" VALUE:").append(getAuthenticationValue());
+        return sb.toString();
     }
 }

@@ -317,19 +317,22 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         String directory = "/media/denny/T9/Recordings/NXDN/"; //Linux
 
         //NXDN 9600 Channels
-//        config = new DecodeConfigNXDN(TransmissionMode.M9600);
+        config = new DecodeConfigNXDN(TransmissionMode.M9600);
 //        config.add(new ChannelFrequency(105, 451887500, 0));
 //        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
 
+        //Weird 938 MHz site in Springfield, VA that is all CRC errors.
+        String file = directory + "20260324_033833_938736125_SYSTEM_SITE_null_47_baseband.wav";
+
         //NXDN 4800 Channels
-        config = new DecodeConfigNXDN(TransmissionMode.M4800);
+//        config = new DecodeConfigNXDN(TransmissionMode.M4800);
 //        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
         //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
 //        String file = directory + "20260104_065056_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
 //        String file = directory + "20260104_065240_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
 //        String file = directory + "AceVentura Sample 1/20260122_071724_154987500_SCFR_SITE_null_1_baseband.wav";
 //        String file = directory + "AceVentura Sample 2/20260122_073239_154987500_SCFR_SITE_null_1_baseband.wav";
-        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
+//        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
 
         //Type-D Channels
 //        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);

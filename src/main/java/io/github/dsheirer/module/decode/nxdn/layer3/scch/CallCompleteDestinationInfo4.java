@@ -17,22 +17,23 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.CauseMM;
 import java.util.List;
 
 /**
- * Group registration response
+ * Repeater busy - Destination ID
  */
-public class GroupRegistrationResponse extends GroupRegistration
+public class CallCompleteDestinationInfo4 extends Information4
 {
-    private static final IntField CAUSE = IntField.length8(OCTET_6);
+    private IntegerIdentifier mDestination;
 
     /**
      * Constructs an instance
@@ -40,10 +41,10 @@ public class GroupRegistrationResponse extends GroupRegistration
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
-     * @param ran value
-     * @param lich info
+     * @param ran from the frame
+     * @param lich from the frame
      */
-    public GroupRegistrationResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public CallCompleteDestinationInfo4(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -52,34 +53,40 @@ public class GroupRegistrationResponse extends GroupRegistration
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        if(getGroupRegistrationOption().isEmergency())
-        {
-            sb.append("EMERGENCY ");
-        }
-        sb.append("GROUP REGISTRATION RESPONSE:").append(getCause());
-        sb.append(" RADIO:").append(getRadio());
-        sb.append(" TALKGROUP:").append(getGroup());
+        sb.append("CALL COMPLETE TO ").append(getDestinationType());
+        sb.append(":").append(getDestination());
+        sb.append(" INFO4");
         return sb.toString();
     }
 
-
-    @Override
-    protected int getLocationIdOffset()
+    public String getDestinationType()
     {
-        return OCTET_7 + 5;
+        return getGroupUnitFlag() ? "TALKGROUP" : "RADIO";
     }
 
     /**
-     * Response cause for the request
+     * Destination radio or talkgroup that is using this repeater
      */
-    public CauseMM getCause()
+    public IntegerIdentifier getDestination()
     {
-        return CauseMM.fromValue(getMessage().getInt(CAUSE));
+        if(mDestination == null)
+        {
+            if(getGroupUnitFlag())
+            {
+                mDestination = NXDNTalkgroupIdentifier.createTypeDTo(getIdentifier(getMessage()));
+            }
+            else
+            {
+                mDestination = NXDNRadioIdentifier.createTypeDTo(getIdentifier(getMessage()));
+            }
+        }
+
+        return mDestination;
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of(getRadio(), getGroup());
+        return List.of(getDestination());
     }
 }

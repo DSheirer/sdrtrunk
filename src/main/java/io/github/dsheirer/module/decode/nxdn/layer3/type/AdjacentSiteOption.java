@@ -20,45 +20,22 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
 /**
- * Registration option
+ * Adjacent site options
  */
-public class RegistrationOption extends Option
+public class AdjacentSiteOption extends Option
 {
-    private static final int MASK_EMERGENCY = 0x10;
-    private static final int MASK_HOME_VISITOR = 0x08;
-    private static final int MASK_PRIORITY_STATION = 0x04;
+    private static final int MASK_ISOLATED_SITE = 0x10;
 
-    /**
-     * Constructs an instance
-     *
-     * @param value for the field
-     */
-    public RegistrationOption(int value)
+    public AdjacentSiteOption(int value)
     {
         super(value);
     }
 
     /**
-     * Indicates if the emergency flag is set
+     * Indicates if the site is isolated (true) or normal (false).
      */
-    public boolean isEmergency()
+    public boolean isIsolatedSite()
     {
-        return isSet(MASK_EMERGENCY);
-    }
-
-    /**
-     * Indicates if the registering radio is homed on this system (false) or visiting (true)
-     */
-    public boolean isVisitor()
-    {
-        return isSet(MASK_HOME_VISITOR);
-    }
-
-    /**
-     * Indicates if the registrant is a priority station
-     */
-    public boolean isPriorityStation()
-    {
-        return isSet(MASK_PRIORITY_STATION);
+        return isSet(MASK_ISOLATED_SITE);
     }
 }

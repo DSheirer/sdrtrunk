@@ -17,27 +17,19 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Repeater busy.
- *
- * Note: this is an Info 2 message that is identical to Info 4, so we extend the Info 4 message.  It is likely that
- * one of the messages (Info 2 or Info 4) indicates START CALL and the other indicates CALL IN PROGRESS.
+ * Initialization vector part 2 of 2.
  */
-public class CallInProgressDestinationInfo2 extends Information4
+public class InitializationVectorPart2 extends Information3
 {
-    private IntegerIdentifier mDestination;
-
     /**
      * Constructs an instance
      *
@@ -47,7 +39,7 @@ public class CallInProgressDestinationInfo2 extends Information4
      * @param ran from the frame
      * @param lich from the frame
      */
-    public CallInProgressDestinationInfo2(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public InitializationVectorPart2(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -56,40 +48,21 @@ public class CallInProgressDestinationInfo2 extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("CALL IN PROGRESS ON REPEATER ").append(getRepeater()).append(" TO ").append(getDestinationType());
-        sb.append(":").append(getDestination());
-        sb.append(" INFO2");
+        sb.append("ENCRYPTION IV PART 2:").append(getIV());
         return sb.toString();
     }
 
-    public String getDestinationType()
-    {
-        return getGroupUnitFlag() ? "TG" : "RA";
-    }
-
     /**
-     * Destination radio or talkgroup that is using this repeater
+     * Initialization vector part 2 fragment
      */
-    public IntegerIdentifier getDestination()
+    public int getIV()
     {
-        if(mDestination == null)
-        {
-            if(getGroupUnitFlag())
-            {
-                mDestination = NXDNTalkgroupIdentifier.createTypeDTo(getHomeRepeater(), getIdentifier(getMessage()));
-            }
-            else
-            {
-                mDestination = NXDNRadioIdentifier.createTypeDTo(getHomeRepeater(), getIdentifier(getMessage()));
-            }
-        }
-
-        return mDestination;
+        return getIdentifier(getMessage());
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of(getDestination());
+        return List.of();
     }
 }

@@ -19,14 +19,17 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
+/**
+ * NXDN Call Type enumeration
+ */
 public enum CallType
 {
     GROUP_BROADCAST(0, "GROUP BROADCAST"),
     GROUP_CONFERENCE(1, "GROUP CONFERENCE"),
     UNSPECIFIED(2, "UNSPECIFIED"),
-    SESSION_CALL(3, "SESSION CALL"), //On Type-D systems, per dsd-fme
+    SESSION_CALL(3, "SESSION CALL WITH TRUNK CONTROL"), //Type-D systems
     INDIVIDUAL(4, "INDIVIDUAL"),
-    RESERVED_5(5, "RESERVED 5"),
+    RESERVED(5, "RESERVED"),
     INTERCONNECT(6, "INTERCONNECT"),
     SPEED_DIAL(7, "SPEED DIAL"),
     UNKNOWN(-1, "UNKNOWN");
@@ -34,17 +37,28 @@ public enum CallType
     private final int mValue;
     private final String mLabel;
 
+    /**
+     * Constructs an instance
+     * @param value for the entry
+     * @param label for the entry
+     */
     CallType(int value, String label)
     {
         mValue = value;
         mLabel = label;
     }
 
+    /**
+     * Value for the entry
+     */
     public int getValue()
     {
         return mValue;
     }
 
+    /**
+     * Pretty print format
+     */
     @Override
     public String toString()
     {
@@ -66,7 +80,7 @@ public enum CallType
             case 2 -> UNSPECIFIED;
             case 3 -> SESSION_CALL;
             case 4 -> INDIVIDUAL;
-            case 5 -> RESERVED_5;
+            case 5 -> RESERVED;
             case 6 -> INTERCONNECT;
             case 7 -> SPEED_DIAL;
             default -> UNKNOWN;

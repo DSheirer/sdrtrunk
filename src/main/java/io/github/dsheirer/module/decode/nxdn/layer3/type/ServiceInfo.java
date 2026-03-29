@@ -19,8 +19,6 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,21 +28,15 @@ import java.util.List;
  *
  * Note: name is truncated so that it doesn't collide with the ServiceInformation message.
  */
-public class ServiceInfo
+public class ServiceInfo extends Option
 {
-    private static final IntField FLAGS = IntField.length16(0);
-    private final CorrectedBinaryMessage mMessage;
-    private final int mOffset;
-
     /**
      * Constructs an instance
-     * @param message containing the field
-     * @param offset to the field.
+     * @param value of the field
      */
-    public ServiceInfo(CorrectedBinaryMessage message, int offset)
+    public ServiceInfo(int value)
     {
-        mMessage = message;
-        mOffset = offset;
+        super(value);
     }
 
     @Override
@@ -62,12 +54,10 @@ public class ServiceInfo
     {
         List<Service> services = new ArrayList<>();
 
-        int flags = mMessage.getInt(FLAGS, mOffset);
-
         //Check each service to see if the flag for that service is set in the flags field
         for(Service service: Service.values())
         {
-            if((flags & service.getValue()) == service.getValue())
+            if(isSet(service.getValue()))
             {
                 services.add(service);
             }

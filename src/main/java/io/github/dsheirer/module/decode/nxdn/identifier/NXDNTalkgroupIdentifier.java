@@ -114,13 +114,12 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
 
     /**
      * Creates a Type-D talkgroup identifier with the TO role.
-     * @param repeater that is home for the ID
-     * @param talkgroup value
+     * @param value for the home repeater and talkgroup combined into a 16-bit integer
      * @return identifier
      */
-    public static NXDNTalkgroupIdentifier createTypeDTo(int repeater, int talkgroup)
+    public static NXDNTalkgroupIdentifier createTypeDTo(int value)
     {
-        NXDNTalkgroupIdentifier identifier = new NXDNTalkgroupIdentifier((repeater << 11) + talkgroup, Role.TO);
+        NXDNTalkgroupIdentifier identifier = new NXDNTalkgroupIdentifier(value, Role.TO);
         identifier.setTypeD(true);
         return identifier;
     }

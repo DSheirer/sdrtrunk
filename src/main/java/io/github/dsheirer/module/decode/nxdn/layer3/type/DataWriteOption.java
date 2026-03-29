@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,37 +19,28 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.jspecify.annotations.NonNull;
-
 /**
- * Error flags for transmitted data blocks.
- * @param flags in a 16-bit field where MSB = block 15 and LSB = block 1.
+ * Data write options field.
  */
-public record ErrorBlockFlags(int flags)
+public class DataWriteOption extends Option
 {
-    @NonNull
-    @Override
-    public String toString()
+    private static final int MASK_EMERGENCY = 0x80;
+
+    /**
+     * Constructs an instance
+     *
+     * @param value for the field
+     */
+    public DataWriteOption(int value)
     {
-        if(flags == 0)
-        {
-            return "NO ERRORS";
-        }
-        else
-        {
-            List<Integer> errorBlocks = new ArrayList<>();
+        super(value);
+    }
 
-            for(int x = 0; x < 16; x++)
-            {
-                if((flags & x) == x)
-                {
-                    errorBlocks.add(x);
-                }
-            }
-
-            return "ERROR BLOCKS " + errorBlocks;
-        }
+    /**
+     * Indicates if this is emergency
+     */
+    public boolean isEmergency()
+    {
+        return isSet(MASK_EMERGENCY);
     }
 }

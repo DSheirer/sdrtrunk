@@ -17,20 +17,17 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import java.util.List;
 
 /**
- * Voice call encryption initialization vector.
+ * Authentication inquiry request 2 - multi-system format
  */
-public class VoiceCallInitializationVector extends InitializationVector
+public class AuthenticationInquiryRequestMultiSystem extends AuthenticationInquiryRequest
 {
-
     /**
      * Constructs an instance
      *
@@ -40,14 +37,22 @@ public class VoiceCallInitializationVector extends InitializationVector
      * @param ran value
      * @param lich info
      */
-    public VoiceCallInitializationVector(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public AuthenticationInquiryRequestMultiSystem(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
 
     @Override
-    public List<Identifier> getIdentifiers()
+    public String toString()
     {
-        return List.of();
+        StringBuilder sb = getMessageBuilder();
+        if(getAuthenticationOption().isEmergency())
+        {
+            sb.append("EMERGENCY ");
+        }
+        sb.append("AUTHENTICATION REQUEST (MULTI-SYSTEM) FROM:").append(getSource());
+        sb.append(" TO:").append(getDestination());
+        sb.append(" PARAMETER:").append(getAuthenticationParameter());
+        return sb.toString();
     }
 }

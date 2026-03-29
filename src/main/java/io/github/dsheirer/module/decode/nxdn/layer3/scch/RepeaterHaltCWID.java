@@ -17,24 +17,19 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Repeater busy - Destination ID
+ * Repeater halt (during CWID)
  */
-public class CallCompleteDestinationInfo4 extends Information4
+public class RepeaterHaltCWID extends Information4
 {
-    private IntegerIdentifier mDestination;
-
     /**
      * Constructs an instance
      *
@@ -44,7 +39,7 @@ public class CallCompleteDestinationInfo4 extends Information4
      * @param ran from the frame
      * @param lich from the frame
      */
-    public CallCompleteDestinationInfo4(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public RepeaterHaltCWID(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -53,40 +48,13 @@ public class CallCompleteDestinationInfo4 extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("CALL COMPLETE TO ").append(getDestinationType());
-        sb.append(":").append(getDestination());
-        sb.append(" INFO4");
+        sb.append("REPEATER:").append(getRepeater()).append(" HALTED DURING CWID - FREE REPEATER:").append(getRepeater2());
         return sb.toString();
-    }
-
-    public String getDestinationType()
-    {
-        return getGroupUnitFlag() ? "TALKGROUP" : "RADIO";
-    }
-
-    /**
-     * Destination radio or talkgroup that is using this repeater
-     */
-    public IntegerIdentifier getDestination()
-    {
-        if(mDestination == null)
-        {
-            if(getGroupUnitFlag())
-            {
-                mDestination = NXDNTalkgroupIdentifier.createTypeDTo(getHomeRepeater(), getIdentifier(getMessage()));
-            }
-            else
-            {
-                mDestination = NXDNRadioIdentifier.createTypeDTo(getHomeRepeater(), getIdentifier(getMessage()));
-            }
-        }
-
-        return mDestination;
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of(getDestination());
+        return List.of();
     }
 }

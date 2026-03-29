@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,7 +110,17 @@ public record LongField(int start, int end)
     }
 
     /**
-     * Utility constructor method for a field with two octets of length.
+     * Utility constructor method for a field with 23 bits of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static LongField length23(int start)
+    {
+        return new LongField(start, (start + 22));
+    }
+
+    /**
+     * Utility constructor method for a field with three octets of length.
      * @param start index (inclusive)
      * @return constructed bit field.
      */
@@ -120,13 +130,23 @@ public record LongField(int start, int end)
     }
 
     /**
-     * Utility constructor method for a field with three octets of length.
+     * Utility constructor method for a field with four octets of length.
      * @param start index (inclusive)
      * @return constructed bit field.
      */
     public static LongField length32(int start)
     {
         return new LongField(start, (start + 31));
+    }
+
+    /**
+     * Utility constructor method for a field with seven octets of length.
+     * @param start index (inclusive)
+     * @return constructed bit field.
+     */
+    public static LongField length56(int start)
+    {
+        return new LongField(start, (start + 55));
     }
 
     /**

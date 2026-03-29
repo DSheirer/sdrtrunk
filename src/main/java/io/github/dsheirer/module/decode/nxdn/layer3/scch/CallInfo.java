@@ -17,19 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNEncryptionKey;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Repeater free
+ * Call information
  */
-public class RepeaterFree extends Information4
+public class CallInfo extends Information1
 {
+    private NXDNEncryptionKey mEncryptionKey;
+
     /**
      * Constructs an instance
      *
@@ -39,7 +42,7 @@ public class RepeaterFree extends Information4
      * @param ran from the frame
      * @param lich from the frame
      */
-    public RepeaterFree(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public CallInfo(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -48,9 +51,24 @@ public class RepeaterFree extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("FREE REPEATER 1:").append(getRepeater());
+        sb.append(getCallOption());
+        sb.append(" INFO FREE REPEATER 1:").append(getRepeater());
         sb.append(" 2:").append(getRepeater2());
         return sb.toString();
+    }
+
+    /**
+     * Encryption for the call
+     */
+    public NXDNEncryptionKey getEncryptionKey()
+    {
+        if(mEncryptionKey == null)
+        {
+            mEncryptionKey = NXDNEncryptionKey.create(getMessage().getInt(CIPHER_TYPE),
+                    getMessage().getInt(KEY_ID_OR_INIT_VECTOR));
+        }
+
+        return mEncryptionKey;
     }
 
     @Override

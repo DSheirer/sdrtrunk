@@ -17,25 +17,23 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.CauseSS;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ErrorBlockFlag;
-import java.util.List;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.ResponseInformation;
 
 /**
- * Short data call request header for simultaneous data call request (FACCH1)
+ * Acknowledge to data write operation
  */
-public class ShortDataCallResponse extends DataCallWithOptionalLocation
+public class DataWriteAcknowledge extends DataWrite
 {
-    private static final int LOCATION_ID_OFFSET = OCTET_10;
-    private static final IntField CAUSE = IntField.length8(OCTET_7);
-    private static final IntField ERROR_BLOCK_FLAG_TYPE_D = IntField.length16(OCTET_11);
+    private static final IntField RESPONSE_INFORMATION = IntField.length16(OCTET_7);
+    private static final IntField ERROR_BLOCK_FLAG = IntField.length16(OCTET_9);
+    private ResponseInformation mResponseInformation;
     private ErrorBlockFlag mErrorBlockFlag;
 
     /**
@@ -47,70 +45,46 @@ public class ShortDataCallResponse extends DataCallWithOptionalLocation
      * @param ran value
      * @param lich info
      */
-    public ShortDataCallResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public DataWriteAcknowledge(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
-    }
-
-    @Override
-    protected int getLocationOffset()
-    {
-        return LOCATION_ID_OFFSET;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("SHORT DATA CALL RESPONSE:").append(getCause());
+        sb.append(getMessageType());
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
-        sb.append(" ").append(getCallOption());
-
-        if(isTypeD())
-        {
-            sb.append(" ").append(getErrorBlockFlag());
-        }
-
-        if(getEncryptionKeyIdentifier().isEncrypted())
-        {
-            sb.append(" ").append(getEncryptionKeyIdentifier());
-        }
-
-        return sb.toString();
+        sb.append(" ").append(getResponseInformation());
+        sb.append(" ").append(getErrorBlockFlag());
+        return super.toString();
     }
 
     /**
-     * Type-D message error block flags.
+     * Response information
+     */
+    public ResponseInformation getResponseInformation()
+    {
+        if(mResponseInformation == null)
+        {
+            mResponseInformation = new ResponseInformation(getMessage().getInt(RESPONSE_INFORMATION));
+        }
+
+        return mResponseInformation;
+    }
+
+    /**
+     * Error block flags
      */
     public ErrorBlockFlag getErrorBlockFlag()
     {
         if(mErrorBlockFlag == null)
         {
-            if(isTypeD())
-            {
-                mErrorBlockFlag = new ErrorBlockFlag(getMessage().getInt(ERROR_BLOCK_FLAG_TYPE_D));
-            }
-            else
-            {
-                mErrorBlockFlag = new ErrorBlockFlag(0);
-            }
+            mErrorBlockFlag = new ErrorBlockFlag(getMessage().getInt(ERROR_BLOCK_FLAG));
         }
 
         return mErrorBlockFlag;
-    }
-
-    /**
-     * Response cause.
-     */
-    public CauseSS getCause()
-    {
-        return CauseSS.fromValue(getMessage().getInt(CAUSE));
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return List.of(getSource(), getDestination(), getEncryptionKeyIdentifier());
     }
 }

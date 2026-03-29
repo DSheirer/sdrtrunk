@@ -41,10 +41,25 @@ public class LocationID
     private static final IntField SITE_REGIONAL = IntField.range(16, 23);
     private static final IntField SITE_LOCAL = IntField.range(19, 23);
 
+    private final LocationCategory mLocationCategory;
     private final NXDNCategory mCategory;
     private final NXDNSystem mSystem;
-    private final NXDNSite mSite;
+    private final NXDNSite mSiteOrIntegrator;
     private final boolean mPartial;
+
+    /**
+     * Used by SystemID sub-class.
+     * @param integrator code
+     * @param system code
+     */
+    protected LocationID(int integrator, int system)
+    {
+        mLocationCategory = LocationCategory.TYPE_D;
+        mCategory = NXDNCategory.create(mLocationCategory);
+        mSystem = new NXDNSystem(system);
+        mSiteOrIntegrator = new NXDNSite(integrator);
+        mPartial = false;
+    }
 
     /**
      * Constructs an instance of a full Location ID field.
@@ -65,47 +80,47 @@ public class LocationID
     public LocationID(CorrectedBinaryMessage message, int offset, boolean partial)
     {
         mPartial = partial;
-        LocationCategory category = LocationCategory.fromValue(message.getInt(CATEGORY, offset));
-        mCategory = NXDNCategory.create(category);
+        mLocationCategory = LocationCategory.fromValue(message.getInt(CATEGORY, offset));
+        mCategory = NXDNCategory.create(mLocationCategory);
 
-        switch(category)
+        switch(mLocationCategory)
         {
             case LOCAL:
                 mSystem = NXDNSystem.create(message.getInt(SYSTEM_LOCAL, offset));
                 if(mPartial)
                 {
-                    mSite = NXDNSite.create(0);
+                    mSiteOrIntegrator = NXDNSite.create(0);
                 }
                 else
                 {
-                    mSite = NXDNSite.create(message.getInt(SITE_LOCAL, offset));
+                    mSiteOrIntegrator = NXDNSite.create(message.getInt(SITE_LOCAL, offset));
                 }
                 break;
             case REGIONAL:
                 mSystem = NXDNSystem.create(message.getInt(SYSTEM_REGIONAL, offset));
                 if(mPartial)
                 {
-                    mSite = NXDNSite.create(0);
+                    mSiteOrIntegrator = NXDNSite.create(0);
                 }
                 else
                 {
-                    mSite = NXDNSite.create(message.getInt(SITE_REGIONAL, offset));
+                    mSiteOrIntegrator = NXDNSite.create(message.getInt(SITE_REGIONAL, offset));
                 }
                 break;
             case GLOBAL:
                 mSystem = NXDNSystem.create(message.getInt(SYSTEM_GLOBAL, offset));
                 if(mPartial)
                 {
-                    mSite = NXDNSite.create(0);
+                    mSiteOrIntegrator = NXDNSite.create(0);
                 }
                 else
                 {
-                    mSite = NXDNSite.create(message.getInt(SITE_GLOBAL, offset));
+                    mSiteOrIntegrator = NXDNSite.create(message.getInt(SITE_GLOBAL, offset));
                 }
                 break;
             default:
                 mSystem = NXDNSystem.create(0);
-                mSite = NXDNSite.create(0);
+                mSiteOrIntegrator = NXDNSite.create(0);
                 break;
         }
     }
@@ -113,7 +128,12 @@ public class LocationID
     @Override
     public String toString()
     {
-        return getCategory() + " SYSTEM:" + getSystem() + (mPartial ? "" : " SITE:" + getSite());
+        if(mLocationCategory.equals(LocationCategory.TYPE_D))
+        {
+            return getCategory() + " SYSTEM:" + getSystem() + " INTEGRATOR:" + getSiteOrIntegrator();
+        }
+
+        return getCategory() + " SYSTEM:" + getSystem() + (mPartial ? "" : " SITE:" + getSiteOrIntegrator());
     }
 
     /**
@@ -133,11 +153,11 @@ public class LocationID
     }
 
     /**
-     * Site identifier
+     * Site identifier or for Type-D this is the Integrator code.
      */
-    public NXDNSite getSite()
+    public NXDNSite getSiteOrIntegrator()
     {
-        return mSite;
+        return mSiteOrIntegrator;
     }
 
     /**
@@ -150,7 +170,7 @@ public class LocationID
         identifiers.add(getSystem());
         if(!mPartial)
         {
-            identifiers.add(getSite());
+            identifiers.add(getSiteOrIntegrator());
         }
 
         return identifiers;

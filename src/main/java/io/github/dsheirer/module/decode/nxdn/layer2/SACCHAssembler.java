@@ -78,16 +78,14 @@ public class SACCHAssembler
             message.load(18, mFragment2.getFragment());
             message.load(36, mFragment3.getFragment());
             message.load(54, mFragment4.getFragment());
-            NXDNMessageType type = mFragment4.getLICH().isOutbound() ? NXDNMessageType.getTrafficOutbound(message) :
-                    NXDNMessageType.getTrafficInbound(message);
+            NXDNMessageType type = NXDNMessageType.getTraffic(message, mFragment4.getLICH());
             layer3 = NXDNMessageFactory.get(type, message, mFragment4.getTimestamp(), mFragment4.getRAN(), mFragment4.getLICH());
         }
         else if(mFragment4 != null && !mFragment4.isSuperFrame())
         {
             CorrectedBinaryMessage message = new CorrectedBinaryMessage(18);
             message.load(0, mFragment4.getFragment());
-            NXDNMessageType type = mFragment4.getLICH().isOutbound() ? NXDNMessageType.getTrafficOutbound(message) :
-                    NXDNMessageType.getTrafficInbound(message);
+            NXDNMessageType type = NXDNMessageType.getTraffic(message, mFragment4.getLICH());
             layer3 = NXDNMessageFactory.get(type, message, mFragment4.getTimestamp(), mFragment4.getRAN(), mFragment4.getLICH());
         }
 

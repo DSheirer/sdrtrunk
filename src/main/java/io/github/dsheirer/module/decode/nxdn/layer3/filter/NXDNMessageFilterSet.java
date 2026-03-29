@@ -39,24 +39,27 @@ public class NXDNMessageFilterSet extends FilterSet<IMessage>
         addFilter(new NXDNAudioMessageFilter());
         addFilter(new NXDNLayer2MessageFilter());
         addFilter(new NXDNLayer3MessageFilter("Proprietary & Talker Alias", NXDNMessageType.OTHER));
-
         addFilter(new NXDNLayer3MessageFilter("Outbound Control Broadcast", NXDNMessageType.CONTROL_OUT_BROADCAST));
         addFilter(new NXDNLayer3MessageFilter("Outbound Control Call Control", NXDNMessageType.CONTROL_OUT_CALL_CONTROL));
-        addFilter(new NXDNLayer3MessageFilter("Outbound Control Call Mobility Management", NXDNMessageType.CONTROL_OUT_MOBILITY_MANAGEMENT));
+        addFilter(new NXDNLayer3MessageFilter("Outbound Control Mobility Management", NXDNMessageType.CONTROL_OUT_MOBILITY_MANAGEMENT));
         addFilter(new NXDNLayer3MessageFilter("Outbound Traffic Broadcast", NXDNMessageType.TRAFFIC_OUT_BROADCAST));
         addFilter(new NXDNLayer3MessageFilter("Outbound Traffic Call Control", NXDNMessageType.TRAFFIC_OUT_CALL_CONTROL));
-        addFilter(new NXDNLayer3MessageFilter("Outbound Traffic Call Mobility Management", NXDNMessageType.TRAFFIC_OUT_MOBILITY_MANAGEMENT));
-        addFilter(new NXDNLayer3MessageFilter("Outbound Type-D", NXDNMessageType.TYPE_D_OUT));
-
+        addFilter(new NXDNLayer3MessageFilter("Outbound Traffic Mobility Management", NXDNMessageType.TRAFFIC_OUT_MOBILITY_MANAGEMENT));
+        addFilter(new NXDNLayer3MessageFilter("Outbound Type-D Broadcast", NXDNMessageType.TYPE_D_OUT_BROADCAST));
+        addFilter(new NXDNLayer3MessageFilter("Outbound Type-D Call Control", NXDNMessageType.TYPE_D_OUT_CALL_CONTROL));
+        addFilter(new NXDNLayer3MessageFilter("Outbound Type-D Mobility Management", NXDNMessageType.TYPE_D_OUT_MOBILITY_MANAGEMENT));
+        addFilter(new NXDNLayer3MessageFilter("Outbound Type-D SCCH", NXDNMessageType.TYPE_D_OUT_SCCH));
         addFilter(new NXDNLayer3MessageFilter("Inbound Control Call Control", NXDNMessageType.CONTROL_IN_CALL_CONTROL));
-        addFilter(new NXDNLayer3MessageFilter("Inbound Control Call Mobility Management", NXDNMessageType.CONTROL_IN_MOBILITY_MANAGEMENT));
+        addFilter(new NXDNLayer3MessageFilter("Inbound Control Mobility Management", NXDNMessageType.CONTROL_IN_MOBILITY_MANAGEMENT));
         addFilter(new NXDNLayer3MessageFilter("Inbound Traffic Call Control", NXDNMessageType.TRAFFIC_IN_CALL_CONTROL));
-        addFilter(new NXDNLayer3MessageFilter("Inbound Traffic Call Mobility Management", NXDNMessageType.TRAFFIC_IN_MOBILITY_MANAGEMENT));
-        addFilter(new NXDNLayer3MessageFilter("Inbound Type-D", NXDNMessageType.TYPE_D_IN));
+        addFilter(new NXDNLayer3MessageFilter("Inbound Traffic Mobility Management", NXDNMessageType.TRAFFIC_IN_MOBILITY_MANAGEMENT));
+        addFilter(new NXDNLayer3MessageFilter("Inbound Type-D Call Control", NXDNMessageType.TYPE_D_IN_CALL_CONTROL));
+        addFilter(new NXDNLayer3MessageFilter("Inbound Type-D Mobility Management", NXDNMessageType.TYPE_D_IN_MOBILITY_MANAGEMENT));
+        addFilter(new NXDNLayer3MessageFilter("Inbound Type-D SCCH", NXDNMessageType.TYPE_D_IN_SCCH));
     }
 
     /**
-     * Override default to descope handling to P25 or sync-loss messages.
+     * Override default to descope handling to NXDN or sync-loss messages.
      * @param message to test
      * @return true if the message can be processed
      */

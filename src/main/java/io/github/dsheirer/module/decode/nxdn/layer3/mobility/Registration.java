@@ -81,7 +81,14 @@ public abstract class Registration extends NXDNLayer3Message
         {
 //            mSourceIdentifier = NXDNFullyQualifiedRadioIdentifier.createFrom(getLocationID().getSystem().getValue(),
 //                    getMessage().getInt(UNIT_ID));
-            mSourceIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(UNIT_ID));
+            if(isTypeD())
+            {
+                mSourceIdentifier = NXDNRadioIdentifier.createTypeDFrom(getMessage().getInt(UNIT_ID));
+            }
+            else
+            {
+                mSourceIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(UNIT_ID));
+            }
         }
 
         return mSourceIdentifier;
@@ -95,7 +102,14 @@ public abstract class Registration extends NXDNLayer3Message
     {
         if(mGroupIdentifier == null)
         {
-            mGroupIdentifier = NXDNTalkgroupIdentifier.createTo(getMessage().getInt(GROUP_ID));
+            if(isTypeD())
+            {
+                mGroupIdentifier = NXDNTalkgroupIdentifier.createTypeDTo(getMessage().getInt(GROUP_ID));
+            }
+            else
+            {
+                mGroupIdentifier = NXDNTalkgroupIdentifier.createTo(getMessage().getInt(GROUP_ID));
+            }
         }
 
         return mGroupIdentifier;

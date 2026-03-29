@@ -34,6 +34,7 @@ public class DataCallHeader extends DataCall implements IPacketHeader
 {
     private static final int OFFSET_PACKET_INFORMATION = OCTET_8;
     private static final LongField INITIALIZATION_VECTOR = LongField.length64(OCTET_11);
+    private static final LongField INITIALIZATION_VECTOR_TYPE_D = LongField.length23(OCTET_11);
     private PacketInformation mPacketInformation;
 
     /**
@@ -88,6 +89,11 @@ public class DataCallHeader extends DataCall implements IPacketHeader
      */
     public String getInitializationVector()
     {
+        if(isTypeD())
+        {
+            return Long.toHexString(getMessage().getLong(INITIALIZATION_VECTOR_TYPE_D)).toUpperCase();
+        }
+
         return Long.toHexString(getMessage().getLong(INITIALIZATION_VECTOR)).toUpperCase();
     }
 

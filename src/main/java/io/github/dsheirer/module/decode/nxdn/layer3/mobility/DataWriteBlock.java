@@ -22,11 +22,12 @@ package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.UserData;
 
 /**
- * Authentication inquiry response 2 - multi-system format
+ * Data write block for sending firmware updates to the SU radio
  */
-public class AuthenticationInquiryResponse2 extends AuthenticationInquiryResponse
+public class DataWriteBlock extends UserData
 {
     /**
      * Constructs an instance
@@ -37,22 +38,24 @@ public class AuthenticationInquiryResponse2 extends AuthenticationInquiryRespons
      * @param ran value
      * @param lich info
      */
-    public AuthenticationInquiryResponse2(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public DataWriteBlock(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
+    }
+
+    @Override
+    public int getUserDataByteLength()
+    {
+        return 18;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        if(getAuthenticationOption().isEmergency())
-        {
-            sb.append("EMERGENCY ");
-        }
-        sb.append("AUTHENTICATION RESPONSE (MULTI-SYSTEM) FROM:").append(getSource());
-        sb.append(" TO:").append(getDestination());
-        sb.append(" VALUE:").append(getAuthenticationValue());
+        sb.append(getMessageType()).append(" PACKET FRAME:").append(getPacketFrameNumber());
+        sb.append(" BLOCK NUMBER:").append(getBlockNumber());
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 }

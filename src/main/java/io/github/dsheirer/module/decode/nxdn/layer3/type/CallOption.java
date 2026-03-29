@@ -24,8 +24,8 @@ package io.github.dsheirer.module.decode.nxdn.layer3.type;
  */
 public abstract class CallOption extends Option
 {
-    private static int MASK_DUPLEX = 0x10;
-    private static int MASK_TRANSMISSION_MODE = 0x02;
+    private static final int MASK_DUPLEX = 0x10;
+    private static final int MASK_TRANSMISSION_MODE = 0x02;
 
     /**
      * Constructs an instance
@@ -42,7 +42,7 @@ public abstract class CallOption extends Option
      */
     public Duplex getDuplex()
     {
-        return (mValue & MASK_DUPLEX) == MASK_DUPLEX ? Duplex.DUPLEX : Duplex.HALF_DUPLEX;
+        return isSet(MASK_DUPLEX) ? Duplex.DUPLEX : Duplex.HALF_DUPLEX;
     }
 
     /**
@@ -51,7 +51,6 @@ public abstract class CallOption extends Option
      */
     public TransmissionMode getTransmissionMode()
     {
-        return (mValue & MASK_TRANSMISSION_MODE) == MASK_TRANSMISSION_MODE ?
-                TransmissionMode.M9600 : TransmissionMode.M4800;
+        return isSet(MASK_TRANSMISSION_MODE) ? TransmissionMode.M9600 : TransmissionMode.M4800;
     }
 }

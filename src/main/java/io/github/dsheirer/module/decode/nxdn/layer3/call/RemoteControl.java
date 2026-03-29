@@ -29,7 +29,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ControlCommand;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.Delivery;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationIDOption;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationOrSystemIDOption;
 
 /**
  * Base remote control message
@@ -127,10 +127,10 @@ public abstract class RemoteControl extends CallControl
     /**
      * Location ID option
      */
-    public LocationIDOption getLocationIDOption()
+    public LocationOrSystemIDOption getLocationIDOption()
     {
         IntField field = IntField.length5(getLocationOffset());
-        return LocationIDOption.fromValue(getMessage().getInt(field));
+        return LocationOrSystemIDOption.fromValue(getMessage().getInt(field));
     }
 
     /**

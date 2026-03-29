@@ -42,7 +42,7 @@ public class SiteInformation extends NXDNLayer3Message implements IChannelInform
 {
     private static final int LOCATION_ID = OCTET_1;
     private static final int CHANNEL_STRUCTURE = OCTET_4;
-    private static final int SERVICE_INFORMATION = OCTET_6;
+    private static final IntField SERVICE_INFORMATION = IntField.length16(OCTET_6);
     private static final int RESTRICTION_INFORMATION = OCTET_8;
     private static final int CHANNEL_ACCESS_INFORMATION = OCTET_11;
     private static final IntField VERSION_NUMBER = IntField.length8(OCTET_14);
@@ -178,7 +178,7 @@ public class SiteInformation extends NXDNLayer3Message implements IChannelInform
     {
         if(mServiceInfo == null)
         {
-            mServiceInfo = new ServiceInfo(getMessage(), SERVICE_INFORMATION);
+            mServiceInfo = new ServiceInfo(getMessage().getInt(SERVICE_INFORMATION));
         }
 
         return mServiceInfo;

@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
@@ -61,18 +61,18 @@ public abstract class Information4 extends SCCH
         {
             return switch (getIdentifier(message))
             {
-                case TYPE_REPEATER_IDLE -> NXDNMessageType.SCCH_OUT_INFO_4_REPEATER_IDLE;
-                case TYPE_REPEATER_HALT -> NXDNMessageType.SCCH_OUT_INFO_4_REPEATER_HALT;
-                case TYPE_REPEATER_FREE -> NXDNMessageType.SCCH_OUT_INFO_4_REPEATER_FREE;
-                case TYPE_SITE_ID -> NXDNMessageType.SCCH_OUT_INFO_4_SITE_ID;
-                default -> getRepeater(message) == END_CALL ? NXDNMessageType.SCCH_OUT_INFO_4_CALL_COMPLETE_DESTINATION :
-                        NXDNMessageType.SCCH_OUT_INFO_4_CALL_IN_PROGRESS_DESTINATION;
+                case TYPE_REPEATER_IDLE -> NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_REPEATER_IDLE;
+                case TYPE_REPEATER_HALT -> NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_REPEATER_HALT;
+                case TYPE_REPEATER_FREE -> NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_REPEATER_FREE;
+                case TYPE_SITE_ID -> NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_SITE_ID;
+                default -> getRepeater(message) == END_CALL ? NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_CALL_COMPLETE_DESTINATION :
+                        NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_CALL_IN_PROGRESS_DESTINATION;
             };
         }
         else
         {
-            return getRepeater(message) == END_CALL ? NXDNMessageType.SCCH_IN_INFO_4_CALL_COMPLETE_DESTINATION :
-                    NXDNMessageType.SCCH_IN_INFO_4_CALL_IN_PROGRESS_DESTINATION;
+            return getRepeater(message) == END_CALL ? NXDNMessageType.TYPE_D_SCCH_IN_INFO_4_CALL_COMPLETE_DESTINATION :
+                    NXDNMessageType.TYPE_D_SCCH_IN_INFO_4_CALL_IN_PROGRESS_DESTINATION;
         }
     }
 

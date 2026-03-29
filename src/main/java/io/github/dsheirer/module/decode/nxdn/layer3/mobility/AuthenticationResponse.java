@@ -17,19 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.LongField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Voice call encryption initialization vector.
+ * Type-D authentication response.
  */
-public class VoiceCallInitializationVector extends InitializationVector
+public class AuthenticationResponse extends NXDNLayer3Message
 {
+    private static final LongField AUTHENTICATION_VALUE = LongField.length56(OCTET_1);
 
     /**
      * Constructs an instance
@@ -38,11 +41,27 @@ public class VoiceCallInitializationVector extends InitializationVector
      * @param timestamp for the message
      * @param type of message
      * @param ran value
-     * @param lich info
+     * @param lich value
      */
-    public VoiceCallInitializationVector(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public AuthenticationResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = getMessageBuilder();
+        sb.append("AUTHENTICATION RESPONSE:").append(getAuthenticationParameter());
+        return sb.toString();
+    }
+
+    /**
+     * Hexadecimal version of the authentication parameter
+     */
+    public String getAuthenticationParameter()
+    {
+        return Long.toHexString(getMessage().getLong(AUTHENTICATION_VALUE)).toUpperCase();
     }
 
     @Override

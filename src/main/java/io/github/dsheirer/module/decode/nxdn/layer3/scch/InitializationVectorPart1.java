@@ -17,23 +17,21 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.bits.FragmentedIntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.SiteType;
 import java.util.List;
 
 /**
- * Site ID
+ * Initialization vector part 1
  */
-public class SiteID extends Information4
+public class InitializationVectorPart1 extends Information1
 {
-    private static final IntField SITE_TYPE = IntField.length2(3);
-    private static final IntField SITE_CODE = IntField.length5(8);
+    private static final FragmentedIntField IV = FragmentedIntField.of(8, 9, 10, 11, 12, 18, 19, 20, 21, 22, 23);
 
     /**
      * Constructs an instance
@@ -44,7 +42,7 @@ public class SiteID extends Information4
      * @param ran from the frame
      * @param lich from the frame
      */
-    public SiteID(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public InitializationVectorPart1(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -53,22 +51,20 @@ public class SiteID extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("SITE ID:").append(getSite());
-        sb.append(" TYPE:").append(getSiteType());
+        sb.append(getCallOption());
+        sb.append(" ENCRYPTION IV PART 1:").append(getIV());
+        sb.append(" FREE REPEATER 1:").append(getRepeater());
+        sb.append(" 2:").append(getRepeater2());
         return sb.toString();
-    }
 
-    public int getSite()
-    {
-        return getMessage().getInt(SITE_CODE);
     }
 
     /**
-     * Site type: WIDE, MIDDLE, or NARROW
+     * Initialization vector part 2 fragment
      */
-    public SiteType getSiteType()
+    public int getIV()
     {
-        return SiteType.fromValue(getMessage().getInt(SITE_TYPE));
+        return getMessage().getInt(IV);
     }
 
     @Override

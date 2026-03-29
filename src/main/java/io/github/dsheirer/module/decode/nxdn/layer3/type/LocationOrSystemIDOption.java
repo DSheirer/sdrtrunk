@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,9 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
 /**
- * Qualifier for a location ID value.
+ * Qualifier for a location ID or (Type-D)system ID value.
  */
-public enum LocationIDOption
+public enum LocationOrSystemIDOption
 {
     COMMON,
     DESTINATION,
@@ -50,12 +50,27 @@ public enum LocationIDOption
      * @param value that was transmitted as a five bit field
      * @return matching entry or RESERVED.
      */
-    public static LocationIDOption fromValue(int value)
+    public static LocationOrSystemIDOption fromValue(int value)
     {
         return switch(value)
         {
             //Note: value includes the 3x spare bits as the least significant bits
             case 0x00 -> COMMON;
+            case 0x08 -> DESTINATION;
+            case 0x10 -> SOURCE;
+            default -> RESERVED;
+        };
+    }
+
+    /**
+     * Utility method to lookup the entry from the transmitted value for Type-D systems
+     * @param value to lookup
+     * @return option
+     */
+    public static LocationOrSystemIDOption fromTypeDValue(int value)
+    {
+        return switch(value)
+        {
             case 0x08 -> DESTINATION;
             case 0x10 -> SOURCE;
             default -> RESERVED;

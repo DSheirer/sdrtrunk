@@ -17,37 +17,46 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
-import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Voice call encryption initialization vector.
+ * Type D error block flags.  A 16-bit field where each block represents the error status of a transmitted block.
  */
-public class VoiceCallInitializationVector extends InitializationVector
+public class ErrorBlockFlag extends Option
 {
-
     /**
      * Constructs an instance
-     *
-     * @param message with binary data
-     * @param timestamp for the message
-     * @param type of message
-     * @param ran value
-     * @param lich info
+     * @param value of the field
      */
-    public VoiceCallInitializationVector(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public ErrorBlockFlag(int value)
     {
-        super(message, timestamp, type, ran, lich);
+        super(value);
     }
 
     @Override
-    public List<Identifier> getIdentifiers()
+    public String toString()
     {
-        return List.of();
+        if(mValue == 0)
+        {
+            return "NO BLOCK ERRORS";
+        }
+
+        List<Integer> blocks = new ArrayList<>();
+
+        for(int x = 0; x < 16; x++)
+        {
+            if(isSet(x))
+            {
+                blocks.add(15 - x);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("ERROR BLOCKS ").append(blocks);
+
+        return sb.toString();
     }
 }

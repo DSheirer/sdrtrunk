@@ -17,23 +17,23 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
-import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CauseMM;
 import java.util.List;
 
 /**
- * Repeater busy - Destination ID
+ * Group registration response for Type-D systems
  */
-public class CallInProgressDestinationInfo4 extends Information4
+public class GroupRegistrationResponseTypeD extends GroupRegistration
 {
-    private IntegerIdentifier mDestination;
+    private static final IntField CAUSE = IntField.length8(OCTET_6);
+    private static final IntField VISITOR_GROUP_ID = IntField.length16(OCTET_7);
 
     /**
      * Constructs an instance
@@ -41,11 +41,10 @@ public class CallInProgressDestinationInfo4 extends Information4
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
-     * @param ran from the frame
-     * @param lich from the frame
+     * @param ran value
+     * @param lich info
      */
-    public CallInProgressDestinationInfo4(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type,
-                                          int ran, LICH lich)
+    public GroupRegistrationResponseTypeD(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -54,40 +53,46 @@ public class CallInProgressDestinationInfo4 extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("CALL IN PROGRESS ON REPEATER:").append(getRepeater()).append(" TO ").append(getDestinationType());
-        sb.append(":").append(getDestination());
-        sb.append(" INFO4");
+        if(getGroupRegistrationOption().isEmergency())
+        {
+            sb.append("EMERGENCY ");
+        }
+        sb.append("GROUP REGISTRATION RESPONSE:").append(getCause());
+        sb.append(" RADIO:").append(getRadio());
+        sb.append(" TALKGROUP:").append(getGroup());
+
+        if(getGroupRegistrationOption().isVisitor())
+        {
+            sb.append(" ROAMING TALKGROUP:").append(getVisitorGroupID());
+        }
         return sb.toString();
     }
 
-    public String getDestinationType()
+    /**
+     * Optional temporary visiting group ID
+     */
+    public int getVisitorGroupID()
     {
-        return getGroupUnitFlag() ? "TG" : "RA";
+        return getMessage().getInt(VISITOR_GROUP_ID);
+    }
+
+    @Override
+    protected int getLocationIdOffset()
+    {
+        return OCTET_7 + 5;
     }
 
     /**
-     * Destination radio or talkgroup that is using this repeater
+     * Response cause for the request
      */
-    public IntegerIdentifier getDestination()
+    public CauseMM getCause()
     {
-        if(mDestination == null)
-        {
-            if(getGroupUnitFlag())
-            {
-                mDestination = NXDNTalkgroupIdentifier.createTypeDTo(getHomeRepeater(), getIdentifier(getMessage()));
-            }
-            else
-            {
-                mDestination = NXDNRadioIdentifier.createTypeDTo(getHomeRepeater(), getIdentifier(getMessage()));
-            }
-        }
-
-        return mDestination;
+        return CauseMM.fromValue(getMessage().getInt(CAUSE));
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of(getDestination());
+        return List.of(getRadio(), getGroup());
     }
 }

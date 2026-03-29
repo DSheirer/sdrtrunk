@@ -69,4 +69,12 @@ public abstract class NXDNLayer3Message extends NXDNMessage
         return mType;
     }
 
+    /**
+     * Indicates if this is a Type-D message type
+     */
+    public boolean isTypeD()
+    {
+        return getMessageType().isTypeD();
+    }
+
 }

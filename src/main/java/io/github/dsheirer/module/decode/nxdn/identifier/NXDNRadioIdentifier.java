@@ -135,38 +135,35 @@ public class NXDNRadioIdentifier extends RadioIdentifier
 
     /**
      * Creates a Type-D radio identifier with the FROM role.
-     * @param repeater that is home for the ID
-     * @param radio of the radio
+     * @param radio value that combines the home repeater and the radio
      * @return identifier
      */
-    public static NXDNRadioIdentifier createTypeDFrom(int repeater, int radio)
+    public static NXDNRadioIdentifier createTypeDFrom(int radio)
     {
-        NXDNRadioIdentifier identifier = new NXDNRadioIdentifier((repeater << 11) + radio, Role.FROM);
+        NXDNRadioIdentifier identifier = new NXDNRadioIdentifier(radio, Role.FROM);
         identifier.setTypeD(true);
         return identifier;
     }
 
     /**
      * Creates a Type-D radio identifier with the TO role.
-     * @param repeater that is home for the ID
-     * @param radio of the radio
+     * @param radio value that combines the home repeater and the radio
      * @return identifier
      */
-    public static NXDNRadioIdentifier createTypeDTo(int repeater, int radio)
+    public static NXDNRadioIdentifier createTypeDTo(int radio)
     {
-        NXDNRadioIdentifier identifier = new NXDNRadioIdentifier((repeater << 11) + radio, Role.TO);
+        NXDNRadioIdentifier identifier = new NXDNRadioIdentifier(radio, Role.TO);
         identifier.setTypeD(true);
         return identifier;
     }
     /**
      * Creates a Type-D radio identifier with the ANY role.
-     * @param repeater that is home for the ID
-     * @param radio of the radio
+     * @param radio value that combines the home repeater and the radio
      * @return identifier
      */
-    public static NXDNRadioIdentifier createTypeDAny(int repeater, int radio)
+    public static NXDNRadioIdentifier createTypeDAny(int radio)
     {
-        NXDNRadioIdentifier identifier = new NXDNRadioIdentifier((repeater << 11) + radio, Role.ANY);
+        NXDNRadioIdentifier identifier = new NXDNRadioIdentifier(radio, Role.ANY);
         identifier.setTypeD(true);
         return identifier;
     }

@@ -17,19 +17,24 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Repeater idle
+ * Repeater busy - Destination ID
  */
-public class RepeaterIdle extends Information4
+public class CallInProgressDestinationInfo4 extends Information4
 {
+    private IntegerIdentifier mDestination;
+
     /**
      * Constructs an instance
      *
@@ -39,7 +44,8 @@ public class RepeaterIdle extends Information4
      * @param ran from the frame
      * @param lich from the frame
      */
-    public RepeaterIdle(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public CallInProgressDestinationInfo4(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type,
+                                          int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -48,13 +54,40 @@ public class RepeaterIdle extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("REPEATER IDLE:").append(getRepeater()).append(" FREE:").append(getRepeater2());
+        sb.append("CALL IN PROGRESS ON REPEATER:").append(getRepeater()).append(" TO ").append(getDestinationType());
+        sb.append(":").append(getDestination());
+        sb.append(" INFO4");
         return sb.toString();
+    }
+
+    public String getDestinationType()
+    {
+        return getGroupUnitFlag() ? "TG" : "RA";
+    }
+
+    /**
+     * Destination radio or talkgroup that is using this repeater
+     */
+    public IntegerIdentifier getDestination()
+    {
+        if(mDestination == null)
+        {
+            if(getGroupUnitFlag())
+            {
+                mDestination = NXDNTalkgroupIdentifier.createTypeDTo(getIdentifier(getMessage()));
+            }
+            else
+            {
+                mDestination = NXDNRadioIdentifier.createTypeDTo(getIdentifier(getMessage()));
+            }
+        }
+
+        return mDestination;
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of();
+        return List.of(getDestination());
     }
 }

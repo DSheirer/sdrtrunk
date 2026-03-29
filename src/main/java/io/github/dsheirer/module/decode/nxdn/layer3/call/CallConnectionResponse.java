@@ -17,16 +17,20 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
+package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CallOption;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.VoiceCallOption;
+import java.util.List;
 
 /**
- * Authentication inquiry request 2 - multi-system format
+ * Type-D call connection response to respond to an SU call connection across sites.
  */
-public class AuthenticationInquiryRequest2 extends AuthenticationInquiryRequest
+public class CallConnectionResponse extends CallWithOptionalLocation
 {
     /**
      * Constructs an instance
@@ -37,22 +41,26 @@ public class AuthenticationInquiryRequest2 extends AuthenticationInquiryRequest
      * @param ran value
      * @param lich info
      */
-    public AuthenticationInquiryRequest2(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public CallConnectionResponse(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
 
     @Override
-    public String toString()
+    protected int getLocationOffset()
     {
-        StringBuilder sb = getMessageBuilder();
-        if(getAuthenticationOption().isEmergency())
-        {
-            sb.append("EMERGENCY ");
-        }
-        sb.append("AUTHENTICATION REQUEST (MULTI-SYSTEM) FROM:").append(getSource());
-        sb.append(" TO:").append(getDestination());
-        sb.append(" PARAMETER:").append(getAuthenticationParameter());
-        return sb.toString();
+        return OCTET_8;
+    }
+
+    @Override
+    public CallOption getCallOption()
+    {
+        return new VoiceCallOption(0);
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return List.of(getSource(), getDestination());
     }
 }

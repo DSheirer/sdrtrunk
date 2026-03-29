@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
@@ -26,9 +26,9 @@ import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Initialization vector part 2 of 2.
+ * Repeater idle
  */
-public class InitializationVectorPart2 extends Information3
+public class RepeaterIdle extends Information4
 {
     /**
      * Constructs an instance
@@ -39,7 +39,7 @@ public class InitializationVectorPart2 extends Information3
      * @param ran from the frame
      * @param lich from the frame
      */
-    public InitializationVectorPart2(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public RepeaterIdle(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -48,16 +48,8 @@ public class InitializationVectorPart2 extends Information3
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("ENCRYPTION IV PART 2:").append(getIV());
+        sb.append("REPEATER IDLE:").append(getRepeater()).append(" FREE:").append(getRepeater2());
         return sb.toString();
-    }
-
-    /**
-     * Initialization vector part 2 fragment
-     */
-    public int getIV()
-    {
-        return getIdentifier(getMessage());
     }
 
     @Override

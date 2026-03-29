@@ -22,24 +22,27 @@ package io.github.dsheirer.module.decode.nxdn.layer3.broadcast;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNSite;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.RestrictionInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.ServiceInfo;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.SystemID;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Service information
+ * Service information for Type-D system
  */
-public class ServiceInformation extends NXDNLayer3Message
+public class ServiceInformationTypeD extends NXDNLayer3Message
 {
-    private static final int LOCATION_ID = OCTET_1;
-    private static final IntField SERVICE_INFORMATION = IntField.length16(OCTET_4);
-    private static final int RESTRICTION_INFORMATION = OCTET_6;
-    private LocationID mLocationID;
+    private static final int SYSTEM_ID = OCTET_1 + 5;
+    private static final IntField SITE_CODE = IntField.length8(OCTET_4);
+    private static final IntField SERVICE_INFORMATION = IntField.length16(OCTET_5);
+    private static final int RESTRICTION_INFORMATION = OCTET_7;
+    private NXDNSite mSite;
+    private SystemID mSystemID;
     private ServiceInfo mServiceInfo;
     private RestrictionInformation mRestrictionInformation;
 
@@ -51,7 +54,7 @@ public class ServiceInformation extends NXDNLayer3Message
      * @param ran value
      * @param lich info
      */
-    public ServiceInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public ServiceInformationTypeD(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -60,23 +63,37 @@ public class ServiceInformation extends NXDNLayer3Message
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append(getLocationID());
+        sb.append(getSystemID());
+        sb.append(" SITE:").append(getSite());
         sb.append(" ").append(getServiceInformation());
         sb.append(" ").append(getRestrictionInformation());
         return sb.toString();
     }
 
     /**
-     * Location ID field
+     * Site information
      */
-    public LocationID getLocationID()
+    public NXDNSite getSite()
     {
-        if(mLocationID == null)
+        if(mSite == null)
         {
-            mLocationID = new LocationID(getMessage(), LOCATION_ID);
+            mSite = NXDNSite.create(getMessage().getInt(SITE_CODE));
         }
 
-        return mLocationID;
+        return mSite;
+    }
+
+    /**
+     * Location ID field
+     */
+    public SystemID getSystemID()
+    {
+        if(mSystemID == null)
+        {
+            mSystemID = new SystemID(getMessage(), SYSTEM_ID);
+        }
+
+        return mSystemID;
     }
 
     /**

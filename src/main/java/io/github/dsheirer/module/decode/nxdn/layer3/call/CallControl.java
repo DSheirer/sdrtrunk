@@ -86,7 +86,14 @@ public abstract class CallControl extends NXDNLayer3Message
     {
         if(mSourceIdentifier == null)
         {
-            mSourceIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
+            if(isTypeD())
+            {
+                mSourceIdentifier = NXDNRadioIdentifier.createTypeDFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
+            }
+            else
+            {
+                mSourceIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
+            }
         }
 
         return mSourceIdentifier;
@@ -100,11 +107,24 @@ public abstract class CallControl extends NXDNLayer3Message
     {
         if(mDestinationIdentifier == null)
         {
-            mDestinationIdentifier = switch (getCallType())
+            if(isTypeD())
             {
-                case GROUP_BROADCAST, GROUP_CONFERENCE -> NXDNTalkgroupIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
-                default -> NXDNRadioIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
-            };
+                mDestinationIdentifier = switch (getCallType())
+                {
+                    case GROUP_BROADCAST, GROUP_CONFERENCE -> NXDNTalkgroupIdentifier
+                            .createTypeDTo(getMessage().getInt(IDENTIFIER_OCTET_5));
+                    default -> NXDNRadioIdentifier.createTypeDTo(getMessage().getInt(IDENTIFIER_OCTET_5));
+                };
+            }
+            else
+            {
+                mDestinationIdentifier = switch (getCallType())
+                {
+                    case GROUP_BROADCAST, GROUP_CONFERENCE -> NXDNTalkgroupIdentifier
+                            .createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
+                    default -> NXDNRadioIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
+                };
+            }
         }
 
         return mDestinationIdentifier;

@@ -20,7 +20,6 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.coding;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.nxdn.layer1.Frame;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,11 +37,6 @@ public class Convolution
     private static final boolean[] G2 = {false, true, true, false, true, false, false, true, false, true, true, false,
         true, false, false, true, true, false, false, true, false, true, true, false, true, false, false, true, false,
             true, true, false};
-
-    private static final int M = 4;
-    private static final int[] COST_TABLE_0 = {0, 0, 0, 0, 2, 2, 2, 2};
-    private static final int[] COST_TABLE_1 = {0, 2, 2, 0, 0, 2, 2, 0};
-    private static final int STATES_COUNT = 8;
 
     /**
      * Decodes the convolutionally encoded message and counts the true bit errors, ignoring any punctured bit errors.
@@ -66,7 +60,7 @@ public class Convolution
         paths.add(primaryPath);
         int messageLength = encoded.size() / 2 - 4; //Exclude the final 4 flushing (0) bits which we'll add separately.
 
-        //Auto-decode leaves the message pointer at the first bit position where it encountered the error.  Explorer
+        //Auto-decode leaves the message pointer at the first bit position where it encountered the error.  Explore
         //from that point to find the maximum likelihood message.
         for(int x = primaryPath.getMessagePointer(); x < messageLength; x++)
         {
@@ -75,11 +69,11 @@ public class Convolution
             if(paths.size() < 16)
             {
                 List<Path> clones = new ArrayList<>();
-                for(Path experiment : paths)
+                for(Path prototype : paths)
                 {
-                    Path clone = experiment.clone();
+                    Path clone = prototype.clone();
                     clones.add(clone);
-                    experiment.add(false);
+                    prototype.add(false);
                     clone.add(true);
                 }
                 paths.addAll(clones);
@@ -106,12 +100,12 @@ public class Convolution
         }
 
         //Send the final four flushing zero bits onto each path
-        for(int x = 0; x < 4; x++)
+        for(Path path : paths)
         {
-            for(Path path : paths)
-            {
-                path.add(false);
-            }
+            path.add(false);
+            path.add(false);
+            path.add(false);
+            path.add(false);
         }
 
         //Do a final score-order sort and select the lowest scoring path as the first path in the sorted collection.
@@ -163,54 +157,5 @@ public class Convolution
 
         System.out.println("private static final boolean[] G1 = {" + Arrays.toString(g1) + "};");
         System.out.println("private static final boolean[] G2 = {" + Arrays.toString(g2) + "};");
-    }
-
-    static void main()
-    {
-//        generatePolynomialValues();
-        CorrectedBinaryMessage truth =     CorrectedBinaryMessage.load("001101010101001101000101101100000000001101011000010101100110001000110111");
-        CorrectedBinaryMessage punctured = CorrectedBinaryMessage.load("001100010100001100000100101100000000001100011000010100100110001000110110");
-        CorrectedBinaryMessage original = CorrectedBinaryMessage.load("01001100010000000001000100100011");
-        boolean passes = NXDNCRC.checkSACCH(original);
-
-        System.out.println("Passes: " +  passes);
-        System.out.println("    MESSAGE: " + original);
-        System.out.println("    ENCODED: " + truth);
-        System.out.println("  PUNCTURED: " + punctured); //
-
-        for(int x = 0; x < punctured.size(); x++)
-        {
-            punctured.flip(x);
-
-            for(int y = x; y < punctured.size(); y++)
-            {
-                punctured.flip(y);
-
-                CorrectedBinaryMessage decoded = decode(punctured, Frame.PUNCTURE_PROVIDER_SACCH_SCCH);
-                boolean correct = NXDNCRC.checkSACCH(decoded);
-
-                if(!correct)
-                {
-                    System.out.println("          Incorrect: " + decoded + " AT X:" + x + " Y:" + y);
-                }
-
-                decoded.xor(original);
-
-                if(decoded.cardinality() > 0)
-                {
-                    System.out.println("           Original: " + original);
-                    System.out.println("Bit Error Positions: " + decoded + "\n");
-                }
-
-                //Undo the error that was introduced.
-                punctured.flip(y);
-            }
-
-            //Undo the error that was introduced.
-            punctured.flip(x);
-        }
-
-        System.out.println("Finished");
-
     }
 }

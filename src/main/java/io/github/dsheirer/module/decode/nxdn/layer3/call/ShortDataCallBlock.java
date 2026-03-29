@@ -23,6 +23,9 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 
+/**
+ * Short data call block for user data.
+ */
 public class ShortDataCallBlock extends UserData
 {
     /**

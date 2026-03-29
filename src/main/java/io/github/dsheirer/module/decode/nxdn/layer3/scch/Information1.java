@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
@@ -85,10 +85,10 @@ public abstract class Information1 extends SCCH
     {
         if(getIVType(message))
         {
-            return lich.isOutbound() ? NXDNMessageType.SCCH_OUT_INFO_1_INITIALIZATION_VECTOR_PART1 :
-                    NXDNMessageType.SCCH_IN_INFO_1_INITIALIZATION_VECTOR_PART1;
+            return lich.isOutbound() ? NXDNMessageType.TYPE_D_SCCH_OUT_INFO_1_INITIALIZATION_VECTOR_PART1 :
+                    NXDNMessageType.TYPE_D_SCCH_IN_INFO_1_INITIALIZATION_VECTOR_PART1;
         }
 
-        return lich.isOutbound() ? NXDNMessageType.SCCH_OUT_INFO_1_CALL_INFO : NXDNMessageType.SCCH_IN_INFO_1_CALL_INFO;
+        return lich.isOutbound() ? NXDNMessageType.TYPE_D_SCCH_OUT_INFO_1_CALL_INFO : NXDNMessageType.TYPE_D_SCCH_IN_INFO_1_CALL_INFO;
     }
 }

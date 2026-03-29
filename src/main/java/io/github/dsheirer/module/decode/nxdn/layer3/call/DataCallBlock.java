@@ -42,7 +42,7 @@ public class DataCallBlock extends UserData
     @Override
     public int getUserDataByteLength()
     {
-        return 20;
+        return isTypeD() ? 18 : 20;
     }
 
     @Override

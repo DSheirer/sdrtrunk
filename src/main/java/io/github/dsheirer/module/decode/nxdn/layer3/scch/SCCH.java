@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
@@ -34,7 +34,7 @@ public abstract class SCCH extends NXDNLayer3Message
     protected static final int AREA = 2;
     protected static final IntField REPEATER_1 = IntField.length5(3);
     protected static final IntField REPEATER_2 = IntField.length5(8);
-    protected static final IntField IDENTIFIER = IntField.length11(13);
+    protected static final IntField IDENTIFIER = IntField.length16(8);
 
     /**
      * Constructs an instance

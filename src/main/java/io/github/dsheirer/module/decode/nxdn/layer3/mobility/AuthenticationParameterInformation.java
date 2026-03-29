@@ -17,32 +17,51 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Voice call encryption initialization vector.
+ * Type-D authentication parameter information is a request to the SU to authenticate.
  */
-public class VoiceCallInitializationVector extends InitializationVector
+public class AuthenticationParameterInformation extends NXDNLayer3Message
 {
+    private static final IntField AUTHENTICATION_PARAMETER = IntField.length16(OCTET_1);
 
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
-     * @param type of message
-     * @param ran value
-     * @param lich info
+     * @param type
+     * @param ran
+     * @param lich
      */
-    public VoiceCallInitializationVector(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public AuthenticationParameterInformation(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = getMessageBuilder();
+        sb.append("AUTHENTICATE WITH:").append(getAuthenticationParameter());
+        return sb.toString();
+    }
+
+    /**
+     * Hexadecimal version of the authentication parameter
+     */
+    public String getAuthenticationParameter()
+    {
+        return Integer.toHexString(getMessage().getInt(AUTHENTICATION_PARAMETER)).toUpperCase();
     }
 
     @Override

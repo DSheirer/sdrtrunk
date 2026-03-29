@@ -17,29 +17,27 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Repeater halt (during CWID)
+ * Base NXDN SCCH layer 3 message implementation
  */
-public class RepeaterHaltCWID extends Information4
+public class SCCHMessage extends NXDNLayer3Message
 {
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
-     * @param type of message
-     * @param ran from the frame
-     * @param lich from the frame
      */
-    public RepeaterHaltCWID(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public SCCHMessage(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -47,9 +45,7 @@ public class RepeaterHaltCWID extends Information4
     @Override
     public String toString()
     {
-        StringBuilder sb = getMessageBuilder();
-        sb.append("REPEATER:").append(getRepeater()).append(" HALTED DURING CWID - FREE REPEATER:").append(getRepeater2());
-        return sb.toString();
+        return "SCCH MSG:" + getMessage().toHexString();
     }
 
     @Override

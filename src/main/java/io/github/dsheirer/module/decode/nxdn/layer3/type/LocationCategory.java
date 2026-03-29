@@ -27,6 +27,7 @@ public enum LocationCategory
     GLOBAL(10, 12, "GLOBAL"),
     REGIONAL(14, 8, "REGIONAL"),
     LOCAL(17, 5, "LOCAL"),
+    TYPE_D(0, 0, "TYPE-D"),
     RESERVED(1, 1, "RESERVED");
 
     private final int mSystemFieldLength;

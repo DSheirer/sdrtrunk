@@ -26,7 +26,8 @@ import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationID;
-import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationIDOption;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.LocationOrSystemIDOption;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.SystemID;
 
 /**
  * Call message with optional location field for fully qualified source/destination identifiers.
@@ -95,10 +96,10 @@ public abstract class CallWithOptionalLocation extends Call
     /**
      * Location ID Option field.
      */
-    public LocationIDOption getLocationIDOption()
+    public LocationOrSystemIDOption getLocationIDOption()
     {
         IntField field = IntField.length2(getLocationOffset());
-        return LocationIDOption.fromValue(getMessage().getInt(field));
+        return LocationOrSystemIDOption.fromValue(getMessage().getInt(field));
     }
 
     /**
@@ -106,6 +107,12 @@ public abstract class CallWithOptionalLocation extends Call
      */
     public LocationID getLocationID()
     {
+        //In Type-D systems, this is a System ID field
+        if(isTypeD())
+        {
+            return new SystemID(getMessage(), getLocationOffset() + 5);
+        }
+
         return new LocationID(getMessage(), getLocationOffset() + 5, true);
     }
 }

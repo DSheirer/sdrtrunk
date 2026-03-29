@@ -151,7 +151,7 @@ public class NXDNCRC
     }
 
     /**
-     * Calculates an checksum and compares it to the transmitted CRC value for the message using the specified initial fill value
+     * Calculates a checksum and compares it to the transmitted CRC value for the message using the specified initial fill value
      * @param message to check
      * @param length of the message to check (bit positions: 0 to length - 1)
      * @param registerMask for initial fill and masking the return calculated checksum

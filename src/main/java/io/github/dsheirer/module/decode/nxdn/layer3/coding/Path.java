@@ -48,11 +48,11 @@ public class Path implements Comparable<Path>
     private final PunctureProvider mPunctureProvider;
 
     //Cloneable fields
-    private int mState;
     private CorrectedBinaryMessage mMessage;
-    private int mMessagePointer = 0;
-    private int mEncodedPointer;
     private int mBitErrors;
+    private int mEncodedPointer;
+    private int mMessagePointer = 0;
+    private int mState;
 
     /**
      * Constructs an instance

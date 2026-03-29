@@ -31,6 +31,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 public abstract class InitializationVector extends NXDNLayer3Message
 {
     private static final LongField INITIALIZATION_VECTOR = LongField.length64(OCTET_1);
+    private static final LongField INITIALIZATION_VECTOR_TYPE_D = LongField.length23(OCTET_1);
 
     /**
      * Constructs an instance
@@ -60,6 +61,13 @@ public abstract class InitializationVector extends NXDNLayer3Message
      */
     public String getInitializationVector()
     {
-        return Long.toHexString(getMessage().getLong(INITIALIZATION_VECTOR)).toUpperCase();
+        if(isTypeD())
+        {
+            return Long.toHexString(getMessage().getLong(INITIALIZATION_VECTOR_TYPE_D)).toUpperCase();
+        }
+        else
+        {
+            return Long.toHexString(getMessage().getLong(INITIALIZATION_VECTOR)).toUpperCase();
+        }
     }
 }

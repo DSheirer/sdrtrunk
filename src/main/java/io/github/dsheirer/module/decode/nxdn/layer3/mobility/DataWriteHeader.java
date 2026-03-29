@@ -17,32 +17,35 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.typed;
+package io.github.dsheirer.module.decode.nxdn.layer3.mobility;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNEncryptionKey;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
-import java.util.List;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.IPacketHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.PacketInformation;
+import io.github.dsheirer.protocol.Protocol;
 
 /**
- * Call information
+ * Header for writing data to a SU radio
  */
-public class CallInfo extends Information1
+public class DataWriteHeader extends DataWrite implements IPacketHeader
 {
-    private NXDNEncryptionKey mEncryptionKey;
+    private static final int PACKET_INFORMATION_OFFSET = OCTET_8;
+    private PacketInformation mPacketInformation;;
 
     /**
      * Constructs an instance
      *
      * @param message with binary data
      * @param timestamp for the message
-     * @param type of message
-     * @param ran from the frame
-     * @param lich from the frame
+     * @param type
+     * @param ran
+     * @param lich
      */
-    public CallInfo(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public DataWriteHeader(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
@@ -51,29 +54,33 @@ public class CallInfo extends Information1
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append(getCallOption());
-        sb.append(" INFO FREE REPEATER 1:").append(getRepeater());
-        sb.append(" 2:").append(getRepeater2());
+        sb.append("DATA WRITE HEADER");
+        if(getDataWriteOption().isEmergency())
+        {
+            sb.append(" EMERGENCY");
+        }
+        sb.append(" FROM:").append(getSource());
+        sb.append(" TO:").append(getDestination());
+        sb.append(" ").append(getPacketInformation());
         return sb.toString();
     }
 
     /**
-     * Encryption for the call
+     * Packet information
      */
-    public NXDNEncryptionKey getEncryptionKey()
+    public PacketInformation getPacketInformation()
     {
-        if(mEncryptionKey == null)
+        if(mPacketInformation == null)
         {
-            mEncryptionKey = NXDNEncryptionKey.create(getMessage().getInt(CIPHER_TYPE),
-                    getMessage().getInt(KEY_ID_OR_INIT_VECTOR));
+            mPacketInformation = new PacketInformation(getMessage(), PACKET_INFORMATION_OFFSET, true);
         }
 
-        return mEncryptionKey;
+        return mPacketInformation;
     }
 
     @Override
-    public List<Identifier> getIdentifiers()
+    public EncryptionKeyIdentifier getEncryptionKeyIdentifier()
     {
-        return List.of();
+        return EncryptionKeyIdentifier.create(Protocol.NXDN, new NXDNEncryptionKey(0, 0));
     }
 }

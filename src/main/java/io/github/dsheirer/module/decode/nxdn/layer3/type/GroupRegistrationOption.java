@@ -42,15 +42,15 @@ public class GroupRegistrationOption extends Option
      */
     public boolean isEmergency()
     {
-        return (mValue & MASK_EMERGENCY) == MASK_EMERGENCY;
+        return isSet(MASK_EMERGENCY);
     }
 
     /**
-     * Indicates if the registrant is a priority station
+     * Indicates if the registrant is a visitor
      */
     public boolean isVisitor()
     {
-        return (mValue & MASK_VISITOR) == MASK_VISITOR;
+        return isSet(MASK_VISITOR);
     }
 
     /**

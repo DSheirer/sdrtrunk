@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.call;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
@@ -30,6 +31,8 @@ import java.util.List;
  */
 public class TransmissionRelease extends CallControl
 {
+    private static final IntField FREE_REPEATER = IntField.length5(OCTET_2 + 3);
+
     /**
      * Constructs an instance
      *
@@ -42,6 +45,14 @@ public class TransmissionRelease extends CallControl
     public TransmissionRelease(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
+    }
+
+    /**
+     * Free repeater number for Type D systems when the message is an outbound message
+     */
+    public int getFreeRepeater()
+    {
+        return getMessage().getInt(FREE_REPEATER);
     }
 
     @Override
@@ -62,6 +73,12 @@ public class TransmissionRelease extends CallControl
         sb.append(getCallType()).append(" END CALL");
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
+
+        if(isTypeD())
+        {
+            sb.append(" FREE REPEATER:" + getFreeRepeater());
+        }
+
         return sb.toString();
     }
 

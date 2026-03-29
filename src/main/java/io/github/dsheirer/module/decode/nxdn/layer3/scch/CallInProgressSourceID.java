@@ -17,19 +17,22 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer3.call;
+package io.github.dsheirer.module.decode.nxdn.layer3.scch;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNRadioIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNMessageType;
 import java.util.List;
 
 /**
- * Voice call encryption initialization vector.
+ * Repeater busy - Source Identifier
  */
-public class VoiceCallInitializationVector extends InitializationVector
+public class CallInProgressSourceID extends Information3
 {
+    private NXDNRadioIdentifier mSource;
 
     /**
      * Constructs an instance
@@ -37,17 +40,38 @@ public class VoiceCallInitializationVector extends InitializationVector
      * @param message with binary data
      * @param timestamp for the message
      * @param type of message
-     * @param ran value
-     * @param lich info
+     * @param ran from the frame
+     * @param lich from the frame
      */
-    public VoiceCallInitializationVector(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
+    public CallInProgressSourceID(CorrectedBinaryMessage message, long timestamp, NXDNMessageType type, int ran, LICH lich)
     {
         super(message, timestamp, type, ran, lich);
     }
 
     @Override
+    public String toString()
+    {
+        StringBuilder sb = getMessageBuilder();
+        sb.append("REPEATER:").append(getRepeater()).append(" BUSY FM:").append(getSource());
+        return sb.toString();
+    }
+
+    /**
+     * Source radio
+     */
+    public IntegerIdentifier getSource()
+    {
+        if(mSource == null)
+        {
+            mSource = NXDNRadioIdentifier.createTypeDFrom(getIdentifier(getMessage()));
+        }
+
+        return mSource;
+    }
+
+    @Override
     public List<Identifier> getIdentifiers()
     {
-        return List.of();
+        return List.of(getSource());
     }
 }
