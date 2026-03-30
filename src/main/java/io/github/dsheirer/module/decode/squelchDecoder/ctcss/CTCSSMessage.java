@@ -28,28 +28,25 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Continuous Tone Coded Squelch (CTCSS) tone detected message
+ * CTCSS tone debug message
  */
 public class CTCSSMessage extends Message
 {
-    private final CTCSSCode mCTCSSCode;
+    private final CTCSSCode mCTCSSCode = null;
     private String mDebugMessage;
     private boolean mInitialThreshold;
 
     /**
      * Constructs an instance
-     * @param code that was detected
      * @param timestamp when the code was detected
      */
-    public CTCSSMessage(CTCSSCode code, long timestamp, String debugMessage)
+    public CTCSSMessage(long timestamp)
     {
         super(timestamp);
-        mCTCSSCode = code;
-        mDebugMessage = debugMessage;
     }
     public CTCSSMessage()
     {
-        mCTCSSCode = null;
+//        mCTCSSCode = null;
         mDebugMessage = null;
         mInitialThreshold = false;
     }

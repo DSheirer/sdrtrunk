@@ -17,29 +17,37 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.squelchFilter;
+package io.github.dsheirer.module.decode.squelchDecoder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import io.github.dsheirer.module.decode.squelchFilter.ctcss.CTCSSCode;
-import io.github.dsheirer.module.decode.squelchFilter.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
+
+import java.util.EnumSet;
+import java.util.Set;
+
 
 /**
  * Channel-level tone/code filter configuration. Supports CTCSS & DCS.
  * Multiple filters can be configured per channel. Audio is only passed when at least one
  * configured filter matches the received signal.
  */
-public class SquelchFilterConfig
+public class squelchDecoderConfig
 {
-    /**
-     * Types of tone/code squelch filters supported
-     */
+
     public enum SquelchType
     {
         NONE("None"),
         CTCSS("CTCSS"),
         DCS("DCS");
 
+        public static final Set<SquelchType> SQUELCH_TYPE ;
+        static
+        {
+            EnumSet<SquelchType> types = EnumSet.allOf(SquelchType.class);
+            SQUELCH_TYPE = java.util.Collections.unmodifiableSet(types);
+        }
         private final String mLabel;
 
         SquelchType(String label)
@@ -61,7 +69,7 @@ public class SquelchFilterConfig
     /**
      * Default constructor for Jackson XML deserialization
      */
-    public SquelchFilterConfig()
+    public squelchDecoderConfig()
     {
     }
 
@@ -71,7 +79,7 @@ public class SquelchFilterConfig
      * @param value the tone/code value as a string
      * @param label user-friendly label for this filter (e.g., "Chelsea PD")
      */
-    public SquelchFilterConfig(SquelchType squelchType, String value, String label)
+    public squelchDecoderConfig(SquelchType squelchType, String value, String label)
     {
         mSquelchType = squelchType;
         mValue = value;

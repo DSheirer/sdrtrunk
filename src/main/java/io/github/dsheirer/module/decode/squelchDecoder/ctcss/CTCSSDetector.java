@@ -42,39 +42,32 @@ public class CTCSSDetector
     private static final double RESAMPLED_AUDIO_SAMPLE_RATE = 8000.0;
 
     /**
-     * Minimum SNR (signal-to-noise ratio in dB) for a tone to be considered detected.
-     * CTCSS tones are typically 10-15% of peak deviation, so they're relatively weak.
+     * K factor is the multiplier * std deviation which determines threshold
      */
-    private static final float DETECTION_THRESHOLD_DB = 6.0f;
     private static final float K_FACTOR = 3.0f;
     /**
      * Number of consecutive detections required before reporting a match.
-     * Prevents false triggers from transient energy.
+     * The first and last detected tones in a transmission tend to be incorrect,
+     *  so we require at least 2 detections up front and at the end.
      */
     private static final int CONFIRMATION_COUNT = 2;
-
-    /**
-     * Number of consecutive misses before declaring tone lost.
-     */
     private static final int LOSS_COUNT = 2;
 
-    private final Set<CTCSSCode> mTargetCodes;
+    private final Set<CTCSSCode> mTargetCodes;      // codes we are looking to match in this channel
     private final float[] mDetectingFrequencies;
-    private final CTCSSCode[] mDectectingCodeArray;
+    private final CTCSSCode[] mDetectingCodeArray;  // codes we are detecting
     private final int mBlockSize;
 
     // Goertzel coefficients for each target frequency
     private final double[] mCoefficients;
 
-    // Sample accumulator
     private float[] mSampleBuffer;
-    private int mSampleIndex = 0;
 
     // Detection state
     private CTCSSCode mPreviousDetectedCode = null;
     private int mConfirmationCounter = 0;
     private int mLossCounter = 0;
-    private Listener<IMessage> mMessageListener;
+    private final Listener<IMessage> mMessageListener;
 
     // Callback
     private CTCSSDetectorListener mListener;
@@ -104,13 +97,13 @@ public class CTCSSDetector
         // Detect all codes including one on each end of the spectrum (DETECTING_CODES)
         // We find the strongest tone across all frequencies, then check if it's in our allowed set.
         Set<CTCSSCode> allCodes = CTCSSCode.DETECTING_CODES;
-        mDectectingCodeArray = allCodes.toArray(new CTCSSCode[0]);
-        mDetectingFrequencies = new float[mDectectingCodeArray.length];
-        mCoefficients = new double[mDectectingCodeArray.length];
+        mDetectingCodeArray = allCodes.toArray(new CTCSSCode[0]);
+        mDetectingFrequencies = new float[mDetectingCodeArray.length];
+        mCoefficients = new double[mDetectingCodeArray.length];
 
-        for(int i = 0; i < mDectectingCodeArray.length; i++)
+        for(int i = 0; i < mDetectingCodeArray.length; i++)
         {
-            mDetectingFrequencies[i] = mDectectingCodeArray[i].getFrequency();
+            mDetectingFrequencies[i] = mDetectingCodeArray[i].getFrequency();
         }
 
         mSampleBuffer = new float[mBlockSize];
@@ -178,7 +171,7 @@ public class CTCSSDetector
         }
         // Testing shows that if the power is below approx. 100, the tone can't be detected reliably
         // The lowest-most and upper-most tones are not valid CTCSS tones.
-        CTCSSMessage message = new CTCSSMessage();
+        CTCSSMessage message = new CTCSSMessage();      // uses timestamp at now
         if(maxPower < 100 || maxIndex == 0 || maxIndex == mDetectingFrequencies.length - 1)
         {
             // skip further detection
@@ -209,7 +202,7 @@ public class CTCSSDetector
 
         if(maxPower > threshold)
         {
-            CTCSSCode detected = mDectectingCodeArray[maxIndex];
+            CTCSSCode detected = mDetectingCodeArray[maxIndex];
             handleDetection(detected);
         }
         else
@@ -218,7 +211,7 @@ public class CTCSSDetector
         }
         // TODO: check if listener exists first to save on processing?
         String s = MessageFormat.format("Detected CTCSS code: {0} maxPower: {1} 2nd threshold: {2} K_Factor: {3} ",
-                mDectectingCodeArray[maxIndex].toString(),
+                mDetectingCodeArray[maxIndex].toString(),
                 String.format("%.1f", maxPower),
                 String.format("%.1f", threshold),
                 String.format("%.1f",(maxPower - mean) / stdDev));
@@ -342,18 +335,5 @@ public class CTCSSDetector
         mConfirmationCounter = 0;
         mLossCounter = 0;
     }
-
-//    /**
-//     * Returns the currently detected CTCSS code, or null if none detected.
-//     */
-//    public CTCSSCode getDetectedCode()
-//    {
-//        return (mConfirmationCounter >= CONFIRMATION_COUNT) ? mPreviousDetectedCode : null;
-//    }
-////    public DecoderType getDecoderType()
-////    {
-////        return DecoderType.CTCSS;
-////    }
-
 }
 

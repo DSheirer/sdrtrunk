@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.squelchFilter.ctcss;
+package io.github.dsheirer.module.decode.squelchDecoder.ctcss;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -82,10 +82,12 @@ public enum CTCSSCode
      * Set of all standard (non-UNKNOWN) CTCSS codes
      */
     public static final Set<CTCSSCode> STANDARD_CODES;
+    public static final Set<CTCSSCode> DETECTING_CODES;
 
     static
     {
         EnumSet<CTCSSCode> codes = EnumSet.allOf(CTCSSCode.class);
+        DETECTING_CODES = java.util.Collections.unmodifiableSet(codes);
         codes.remove(UNKNOWNL);
         codes.remove(UNKNOWNH);
         STANDARD_CODES = java.util.Collections.unmodifiableSet(codes);

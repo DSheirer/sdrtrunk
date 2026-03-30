@@ -38,11 +38,11 @@ import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.dsp.gain.AudioGainAndDcFilter;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.SquelchControlDecoder;
-import io.github.dsheirer.module.decode.squelchFilter.SquelchFilterConfig;
-import io.github.dsheirer.module.decode.squelchFilter.ctcss.CTCSSCode;
-import io.github.dsheirer.module.decode.squelchFilter.ctcss.CTCSSDetector;
-import io.github.dsheirer.module.decode.squelchFilter.dcs.DCSCode;
-import io.github.dsheirer.module.decode.squelchFilter.dcs.DCSDetector;
+import io.github.dsheirer.module.decode.squelchDecoder.squelchDecoderConfig;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSDetector;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSDetector;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.IComplexSamplesListener;
@@ -58,12 +58,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * NBFM decoder with integrated noise squelch, channel-level tone filtering, FM de-emphasis,
- * and squelch tail removal.
+ * NBFM decoder with integrated noise squelch, channel-level tone filtering.
  *
- *
- * When tone filtering is enabled, audio only passes when noise squelch is open AND a
- * matching CTCSS/DCS tone is detected.
  */
 public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventListener, IComplexSamplesListener,
         Listener<ComplexSamples>, IRealBufferProvider, IDecoderStateEventProvider, INoiseSquelchController
@@ -124,7 +120,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
          // Configure tone filtering
         configureToneFilters(config);
 
-        // Audio pipeline: NoiseSquelch -> Resampler -> CTCSS -> De-emphasis -> gain -> Output
+        // Audio pipeline: NoiseSquelch -> Resampler -> CTCSS or DCS -> 1200 baud decocders -> HPF -> De-emphasis -> gain -> Output
         // TODO: other decoders need unfiltered audio, so de-emphasis and gain need to be addressed somewhere else
 
         mNoiseSquelch.setAudioListener(audio -> {
@@ -220,8 +216,9 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         if(mCTCSSSquelchEnabled)
         {
-            List<SquelchFilterConfig> filters = config.getSquelchFilters();
-            for(SquelchFilterConfig filter : filters)
+
+            List<squelchDecoderConfig> filters = config.getSquelchFilters();
+            for(squelchDecoderConfig filter : filters)
             {
                 if(!filter.isValid())
                 {
@@ -280,7 +277,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
      */
     private void createCTCSSDetector()
     {
-        mCTCSSDetector = new CTCSSDetector(mAllowedCTCSSCodes, (float) DEMODULATED_AUDIO_SAMPLE_RATE);
+        mCTCSSDetector = new CTCSSDetector(mAllowedCTCSSCodes, getMessageListener());
         // Goertzel now comes after resampler which is 8000 Hz sample rate (fixed)
         //mCTCSSDetector = new CTCSSDetector();
         mCTCSSDetector.setListener(new CTCSSDetector.CTCSSDetectorListener()
@@ -346,6 +343,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 mToneMatched = true;
                 // Tone just matched — now fire the deferred call start
                 notifyCallStart();
+
             }
         }
 
@@ -573,27 +571,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         // are idle.
         if(mNoiseSquelch.isSquelched())
         {
-//            // Don't immediately clear tone match — squelch may briefly close during
-//            // a transmission (noise spikes, signal fading). Track how long squelch
-//            // has been closed and only clear after sustained silence.
-//            // TODO: this is probably not needed. If the squelch is closed, no tone detection is taking place
-//            if(mCTCSSSquelchEnabled)
-//            {
-//                mSquelchClosedSamples += demodulated.length;
-//
-//                // Clear tone match after ~500ms of sustained squelch (transmission truly ended)
-//                if(mSquelchClosedSamples > mSquelchHoldoverSamples)
-//                {
-//                    mToneMatched = false;
-//                }
-//            }
             notifyIdle();
         }
-//        else
-//        {
-//            // Squelch is open — reset the closed counter
-//            mSquelchClosedSamples = 0;
-//        }
     }
 
     /**
@@ -691,35 +670,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         mNoiseSquelch.setSampleRate(decimatedSampleRate);
 
-//        // === NEW: Calculate de-emphasis alpha for this sample rate ===
-//        if(mDeemphasisEnabled)
-//        {
-//            DecodeConfigNBFM.DeemphasisMode mode = getDecodeConfiguration().getDeemphasis();
-//            if(mode != null && mode.getMicroseconds() > 0)
-//            {
-//                double tau = mode.getMicroseconds() / 1_000_000.0; // Convert µs to seconds
-//                double dt = 1.0 / decimatedSampleRate;
-//                mDeemphasisAlpha = (float)(dt / (tau + dt));
-//                mLog.info("FM de-emphasis configured: τ={}µs, α={}, sample rate={}",
-//                        mode.getMicroseconds(), String.format("%.6f", mDeemphasisAlpha), decimatedSampleRate);
-//            }
-//        }
-
-//        // Recreate CTCSS detector at the actual decimated sample rate
-//        if(mCTCSSSquelchEnabled && !mAllowedCTCSSCodes.isEmpty())
-//        {
-//            createCTCSSDetector((float) decimatedSampleRate);
-//        }
-//
-//        // Recreate DCS detector at the actual decimated sample rate
-//        if(mCTCSSSquelchEnabled && !mAllowedDCSCodes.isEmpty())
-//        {
-//            createDCSDetector((float) decimatedSampleRate);
-//        }
-
-//        // Tone match holdover: 500ms of sustained squelch before clearing tone match
-//        mSquelchHoldoverSamples = (int)(decimatedSampleRate * 0.5);
-
         int passBandStop = (int) (mChannelBandwidth * .8);
         int stopBandStart = (int) mChannelBandwidth;
 
@@ -757,7 +707,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
 
-        //mResampler.setListener(NBFMDecoder.this::broadcast);
+        //mResampler.setListener(NBFMDecoder.this::broadcast);  // TODO
         mResampler.setListener(NBFMDecoder.this::processResampledAudio);
 
     }
@@ -788,7 +738,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             // Tone filtering enabled but no match - drop audio buffer here
             return;
         }
-        // deemphasis filter
+        // deemphasis filter TODO: this is here only to test concept. Needs to be moved downstream of 1200 baud decoders.
         float[] audio = resampled;
         if(mDeemphasisEnabled)
         {
