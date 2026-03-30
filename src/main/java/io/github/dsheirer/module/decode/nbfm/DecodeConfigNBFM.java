@@ -44,11 +44,11 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     private int mSquelchHysteresisCloseThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_CLOSE_THRESHOLD;
 
     // Channel-level squelch filtering
-    private List<squelchDecoderConfig> mSquelchFilters = new ArrayList<>();
+    private List<squelchDecoderConfig> mSquelchDecoders = new ArrayList<>();
     private boolean mSquelchFilterEnabled = false;
 
      // FM de-emphasis
-    private DeemphasisMode mDeemphasis = DeemphasisMode.US_75US;
+    private DeemphasisMode mDeemphasis = DeemphasisMode.NONE;
 
     /**
      * FM de-emphasis time constant options
@@ -60,6 +60,7 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
      * 3 known values and one to bridge the gap. A user should be able to find a personal preference from
      * the values below.
      */
+    // TODO get this out of here and into its own file
     public enum DeemphasisMode
     {
         NONE("None", 0),
@@ -132,7 +133,7 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
      * Indicates if the user wants the demodulated audio to be high-pass filtered.
      * @return enable status, defaults to true.
      */
-    @JacksonXmlProperty(isAttribute = true, localName = "audioFilter")
+    @JacksonXmlProperty(isAttribute = true, localName = "audioHPFilter")
     public boolean isAudioFilter()
     {
         return mAudioHPFilter;
@@ -140,11 +141,11 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
 
     /**
      * Sets the enabled state of high-pass filtering of the demodulated audio.
-     * @param audioFilter to true to enable high-pass filtering.
+     * @param audioHPFilter to true to enable high-pass filtering.
      */
-    public void setAudioFilter(boolean audioFilter)
+    public void setAudioFilter(boolean audioHPFilter)
     {
-        mAudioHPFilter = audioFilter;
+        mAudioHPFilter = audioHPFilter;
     }
 
     /**
@@ -158,16 +159,6 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     }
 
     /**
-     * Squelch noise close threshold in the range 0.0 to 1.0, greater than or equal to open threshold, with a default of 0.2
-     * @return noise close threshold
-     */
-    @JacksonXmlProperty(isAttribute = true, localName = "squelchNoiseCloseThreshold")
-    public float getSquelchNoiseCloseThreshold()
-    {
-        return mSquelchNoiseCloseThreshold;
-    }
-
-    /**
      * Sets the squelch noise threshold.
      * @param open in range 0.0 to 1.0 with a default of 0.1
      */
@@ -178,6 +169,16 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
             throw new IllegalArgumentException("Squelch noise open threshold is out of range: " + open);
         }
         mSquelchNoiseOpenThreshold = open;
+    }
+
+    /**
+     * Squelch noise close threshold in the range 0.0 to 1.0, greater than or equal to open threshold, with a default of 0.2
+     * @return noise close threshold
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "squelchNoiseCloseThreshold")
+    public float getSquelchNoiseCloseThreshold()
+    {
+        return mSquelchNoiseCloseThreshold;
     }
 
     /**
@@ -240,54 +241,51 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     }
 
      /**
-     * List of CTCSS/DCS squelch filters for this channel. When enabled, audio is only passed
-     * when the received signal matches at least one of the configured codes.
-     * Empty list with filtering enabled means no audio passes (muted).
-     * Filtering disabled means all audio passes (backward compatible).
+     * List of CTCSS/DCS squelch decoders for this channel.
      */
-    @JacksonXmlElementWrapper(localName = "squelchFilters")
-    @JacksonXmlProperty(localName = "squelchFilter")
-    public List<squelchDecoderConfig> getSquelchFilters()
+    @JacksonXmlElementWrapper(localName = "squelchDecoders")
+    @JacksonXmlProperty(localName = "squelchDecoder")
+    public List<squelchDecoderConfig> getSquelchDecoders()
     {
-        return mSquelchFilters;
+        return mSquelchDecoders;
     }
 
-    public void setSquelchFilters(List<squelchDecoderConfig> squelchFilters)
+    public void setSquelchDecoders(List<squelchDecoderConfig> squelchDecoders)
     {
-        mSquelchFilters = squelchFilters != null ? squelchFilters : new ArrayList<>();
+        mSquelchDecoders = squelchDecoders != null ? squelchDecoders : new ArrayList<>();
     }
 
     /**
-     * Adds a tone filter to the channel configuration
+     * Adds a squelch decoder to the channel configuration
      */
-    public void addSquelchFilter(squelchDecoderConfig filter)
+    public void addSquelchDecoder(squelchDecoderConfig decoder)
     {
-        if(filter != null)
+        if(decoder != null)
         {
-            mSquelchFilters.add(filter);
+            mSquelchDecoders.add(decoder);
+
         }
     }
 
     /**
      * Removes a squelch filter from the channel configuration
      */
-    public void removeSquelchFilter(squelchDecoderConfig filter)
+    public void removeSquelchDecoder(squelchDecoderConfig decoder)
     {
-        mSquelchFilters.remove(filter);
+        mSquelchDecoders.remove(decoder);
     }
+
 
     /**
      * Indicates if squelch filtering is enabled for this channel
      */
-    @JacksonXmlProperty(isAttribute = true, localName = "squelchFilterEnabled")
-    public boolean isSquelchFilterEnabled()
+    //@JacksonXmlProperty(isAttribute = true, localName = "squelchFilterEnabled")
+    @JsonIgnore
+    public boolean isSquelchDecoderEnabled()
     {
-        return mSquelchFilterEnabled;
-    }
-
-    public void setSquelchFilterEnabled(boolean enabled)
-    {
-        mSquelchFilterEnabled = enabled;
+        List<squelchDecoderConfig> decoders = getSquelchDecoders();
+        // TODO right now only looking at first and only decoder, need to fix when multiple decoders are possible
+        return !decoders.isEmpty() && decoders.getFirst().getSquelchType() != squelchDecoderConfig.SquelchType.NONE;
     }
 
     /**
@@ -296,7 +294,7 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     @JsonIgnore
     public boolean hasSquelchFiltering()
     {
-        return mSquelchFilterEnabled && !mSquelchFilters.isEmpty();
+        return mSquelchFilterEnabled && !mSquelchDecoders.isEmpty();
     }
 
     /**

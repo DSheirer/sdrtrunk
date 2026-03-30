@@ -52,6 +52,11 @@ public class CTCSSDetector
      */
     private static final int CONFIRMATION_COUNT = 2;
     private static final int LOSS_COUNT = 2;
+    // Detection states
+    private CTCSSCode mPreviousDetectedCode = null;
+    private int mConfirmationCounter = 0;
+    private int mLossCounter = 0;
+    private boolean mUnmuted = false;               // used for event logging
 
     private final Set<CTCSSCode> mTargetCodes;      // codes we are looking to match in this channel
     private final float[] mDetectingFrequencies;
@@ -63,10 +68,7 @@ public class CTCSSDetector
 
     private float[] mSampleBuffer;
 
-    // Detection state
-    private CTCSSCode mPreviousDetectedCode = null;
-    private int mConfirmationCounter = 0;
-    private int mLossCounter = 0;
+
     private final Listener<IMessage> mMessageListener;
 
     // Callback
@@ -90,7 +92,7 @@ public class CTCSSDetector
      */
     public CTCSSDetector(Set<CTCSSCode> targetCodes, Listener<IMessage> messageListener)
     {
-        mMessageListener = messageListener;
+        mMessageListener = messageListener;     // for logging info
         mBlockSize = 512;
         mTargetCodes = targetCodes;
 
@@ -250,9 +252,10 @@ public class CTCSSDetector
      */
     private void handleDetection(CTCSSCode newCode)
     {
+        // since we now have detection, reset the loss counter
         mLossCounter = 0;
 
-        // Only accept tones that are in our allowed set
+        // If tone is not present in the set...
         if(!mTargetCodes.contains(newCode))
         {
             // Track confirmed rejections — only notify after same wrong tone seen CONFIRMATION_COUNT times
@@ -264,7 +267,18 @@ public class CTCSSDetector
 
                     if(mConfirmationCounter >= CONFIRMATION_COUNT && mListener != null)
                     {
+                        if(mUnmuted)
+                        {
+                            CTCSSMessage message = new CTCSSMessage();
+                            message.setInitialThreshold(false);
+                            String s = MessageFormat.format("Configured CTCSS code: {0}, wrong tone detected {1} times, audio will be MUTED",
+                                    mPreviousDetectedCode.toString(),
+                                    CONFIRMATION_COUNT);
+                            message.setMessage(s);
+                            mMessageListener.receive(message);
+                        }
                         mListener.ctcssRejected(newCode);
+                        mUnmuted = false;
                     }
                 }
                 // Already confirmed rejected
@@ -287,6 +301,17 @@ public class CTCSSDetector
                 if(mConfirmationCounter >= CONFIRMATION_COUNT && mListener != null)
                 {
                     mListener.ctcssDetected(newCode);
+                    if(!mUnmuted)
+                    {
+                        CTCSSMessage message = new CTCSSMessage();
+                        message.setInitialThreshold(true);
+                        String s = MessageFormat.format("Configured CTCSS code: {0}, correct tone detected {1} times, audio will be UN-MUTED",
+                                newCode.toString(),
+                                CONFIRMATION_COUNT);
+                        message.setMessage(s);
+                        mMessageListener.receive(message);
+                        mUnmuted = true;
+                    }
                 }
             }
             // Already confirmed -- just keep reporting
@@ -314,9 +339,19 @@ public class CTCSSDetector
 
             if(mLossCounter >= LOSS_COUNT)
             {
+                if(mUnmuted)
+                {
+                    CTCSSMessage message = new CTCSSMessage();
+                    message.setInitialThreshold(false);
+                    String s = MessageFormat.format("Configured CTCSS code: {0}, no tone detected {1} times, audio will be MUTED",
+                            mPreviousDetectedCode.toString(),
+                            LOSS_COUNT);
+                    message.setMessage(s);
+                    mMessageListener.receive(message);
+                }
                 mPreviousDetectedCode = null;
                 mConfirmationCounter = 0;
-
+                mUnmuted = false;
                 if(mListener != null)
                 {
                     mListener.ctcssLost();
@@ -326,11 +361,15 @@ public class CTCSSDetector
     }
 
     /**
-     * Resets the detector state.
+     * Resets the detector state. Called when the noise squelch closes
      */
     public void reset()
     {
-        //mSampleIndex = 0;
+        CTCSSMessage message = new CTCSSMessage();
+        message.setInitialThreshold(false);
+        message.setMessage("Noise squelch closed, audio will be MUTED");
+        mUnmuted = false;
+        mMessageListener.receive(message);
         mPreviousDetectedCode = null;
         mConfirmationCounter = 0;
         mLossCounter = 0;

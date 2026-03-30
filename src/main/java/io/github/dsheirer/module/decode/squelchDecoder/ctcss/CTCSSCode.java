@@ -131,7 +131,8 @@ public enum CTCSSCode
     @Override
     public String toString()
     {
-        return mFrequencyLabel + " Hz";
+    //    return mFrequencyLabel + " Hz";
+        return getDisplayString();
     }
 
     /**

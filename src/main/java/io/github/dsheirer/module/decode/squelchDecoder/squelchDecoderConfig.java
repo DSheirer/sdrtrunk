@@ -64,7 +64,7 @@ public class squelchDecoderConfig
 
     private SquelchType mSquelchType = SquelchType.NONE;
     private String mValue = "";
-    private String mLabel = "";
+    //private String mLabel = "";
 
     /**
      * Default constructor for Jackson XML deserialization
@@ -75,15 +75,14 @@ public class squelchDecoderConfig
 
     /**
      * Constructs an instance
-     * @param squelchType of this filter (CTCSS, DCS, or NAC)
+     * @param squelchType of this filter (CTCSS, DCS)
      * @param value the tone/code value as a string
-     * @param label user-friendly label for this filter (e.g., "Chelsea PD")
      */
-    public squelchDecoderConfig(SquelchType squelchType, String value, String label)
+    public squelchDecoderConfig(SquelchType squelchType, String value)
     {
         mSquelchType = squelchType;
         mValue = value;
-        mLabel = label;
+        //mLabel = label;
     }
 
     /**
@@ -116,19 +115,19 @@ public class squelchDecoderConfig
         mValue = value;
     }
 
-    /**
-     * User-friendly label
-     */
-    @JacksonXmlProperty(isAttribute = true, localName = "label")
-    public String getLabel()
-    {
-        return mLabel;
-    }
+//    /**
+//     * User-friendly label
+//     */
+//    @JacksonXmlProperty(isAttribute = true, localName = "label")
+//    public String getLabel()
+//    {
+//        return mLabel;
+//    }
 
-    public void setLabel(String label)
-    {
-        mLabel = label;
-    }
+//    public void setLabel(String label)
+//    {
+//        mLabel = label;
+//    }
 
     /**
      * Returns the CTCSS code for this filter, or null if not a CTCSS filter or value is invalid.
@@ -217,10 +216,10 @@ public class squelchDecoderConfig
                 break;
         }
 
-        if(mLabel != null && !mLabel.isEmpty())
-        {
-            sb.append(" — ").append(mLabel);
-        }
+//        if(mLabel != null && !mLabel.isEmpty())
+//        {
+//            sb.append(" — ").append(mLabel);
+//        }
 
         return sb.toString();
     }

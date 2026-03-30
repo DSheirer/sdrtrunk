@@ -45,8 +45,8 @@ public class NBFMDecoderState extends AnalogDecoderState
     private Identifier mTalkgroupIdentifier;
 
     // Tone filter configuration (from DecodeConfigNBFM)
-    private boolean mToneFilterEnabled = false;
-    private List<squelchDecoderConfig> mConfiguredFilters = new ArrayList<>();
+    private boolean mSquelchDecoderEnabled = false;
+    private List<squelchDecoderConfig> mConfiguredSquelchDecoders = new ArrayList<>();
 
     // De-emphasis configuration
     private DecodeConfigNBFM.DeemphasisMode mDeemphasisMode = DecodeConfigNBFM.DeemphasisMode.NONE;
@@ -68,10 +68,10 @@ public class NBFMDecoderState extends AnalogDecoderState
         mChannelNameIdentifier = new SimpleStringIdentifier(mChannelName, IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
         mTalkgroupIdentifier = new NBFMTalkgroup(decodeConfig.getTalkgroup());
 
-        mToneFilterEnabled = decodeConfig.isSquelchFilterEnabled();
-        if(mToneFilterEnabled && decodeConfig.getSquelchFilters() != null)
+        mSquelchDecoderEnabled = decodeConfig.isSquelchDecoderEnabled();
+        if(mSquelchDecoderEnabled && decodeConfig.getSquelchDecoders() != null)
         {
-            mConfiguredFilters.addAll(decodeConfig.getSquelchFilters());
+            mConfiguredSquelchDecoders.addAll(decodeConfig.getSquelchDecoders());
         }
 
         mDeemphasisMode = decodeConfig.getDeemphasis();
@@ -179,13 +179,13 @@ public class NBFMDecoderState extends AnalogDecoderState
         }
 
         sb.append("\n\nTone Filter: ");
-        if(mToneFilterEnabled)
+        if(mSquelchDecoderEnabled)
         {
             sb.append("ENABLED\n");
             sb.append("Configured Filter: ");
-            if(!mConfiguredFilters.isEmpty())
+            if(!mConfiguredSquelchDecoders.isEmpty())
             {
-                sb.append(mConfiguredFilters.get(0).getDisplayString());
+                sb.append(mConfiguredSquelchDecoders.get(0).getDisplayString());
             }
             sb.append("\n");
         }
@@ -194,7 +194,7 @@ public class NBFMDecoderState extends AnalogDecoderState
             sb.append("Disabled\n");
         }
 
-        sb.append("\nCurrent Status: ").append(mToneStatus).append("\n");
+        //sb.append("\nCurrent Status: ").append(mToneStatus).append("\n");
 
         synchronized(mToneCounts)
         {

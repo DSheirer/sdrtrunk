@@ -217,12 +217,12 @@ public class squelchDecoder extends SquelchControlDecoder implements ISourceEven
      */
     private void configureToneFilters(DecodeConfigNBFM config)
     {
-        mCTCSSSquelchEnabled = config.isSquelchFilterEnabled();
+        mCTCSSSquelchEnabled = config.isSquelchDecoderEnabled();
 
         if(mCTCSSSquelchEnabled)
         {
 
-            List<squelchDecoderConfig> filters = config.getSquelchFilters();
+            List<squelchDecoderConfig> filters = config.getSquelchDecoders();
             for(squelchDecoderConfig filter : filters)
             {
                 if(!filter.isValid())

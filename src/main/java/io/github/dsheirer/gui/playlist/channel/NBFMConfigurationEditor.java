@@ -137,6 +137,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
+            // channel bandwidth
             Label bandwidthLabel = new Label("Channel Bandwidth");
             GridPane.setHalignment(bandwidthLabel, HPos.RIGHT);
             GridPane.setConstraints(bandwidthLabel, 0, 0);
@@ -145,6 +146,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getBandwidthButton(), 1, 0);
             gridPane.getChildren().add(getBandwidthButton());
 
+            //De-emphasis
             Label deemphasisLabel = new Label("De-emphasis");
             GridPane.setHalignment(deemphasisLabel, HPos.RIGHT);
             GridPane.setConstraints(deemphasisLabel, 0, 1);
@@ -152,9 +154,11 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getDeemphasisCombo(), 1, 1, 2, 1);
             gridPane.getChildren().add(getDeemphasisCombo());
 
+            // High pass audio filter
             GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
             gridPane.getChildren().add(getAudioFilterEnable());
 
+            // talkgroup
             Label talkgroupLabel = new Label("Talkgroup To Assign");
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
             GridPane.setConstraints(talkgroupLabel, 0, 2);
@@ -163,6 +167,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getTalkgroupField(), 1, 2);
             gridPane.getChildren().add(getTalkgroupField());
 
+            // Squelch Decoder type
             Label typeLabel = new Label("Squelch Decoder Type");
             GridPane.setHalignment(typeLabel, HPos.RIGHT);
             GridPane.setConstraints(typeLabel, 2, 2);
@@ -200,6 +205,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mDcsCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
             GridPane.setConstraints(mDcsCodeCombo, 5, 2);
             gridPane.getChildren().add(mDcsCodeCombo);
+
 
             mDecoderPane.setContent(gridPane);
 
@@ -508,7 +514,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             getDeemphasisCombo().setValue(decodeConfigNBFM.getDeemphasis());
 
-            List<squelchDecoderConfig> savedFilters = decodeConfigNBFM.getSquelchFilters();
+            // TODO: setPromptText is not working after the first time.
+            List<squelchDecoderConfig> savedFilters = decodeConfigNBFM.getSquelchDecoders();
             if(savedFilters != null && !savedFilters.isEmpty())
             {
                 squelchDecoderConfig filter = savedFilters.get(0);
@@ -604,14 +611,15 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         config.setAudioFilter(getAudioFilterEnable().isSelected());
 
         config.setDeemphasis(getDeemphasisCombo().getValue());
-        List<squelchDecoderConfig> filters = new ArrayList<>();
+
+        List<squelchDecoderConfig> squelchDecoders = new ArrayList<>();
         squelchDecoderConfig.SquelchType selectedType = mSquelchTypeCombo.getValue();
         if(selectedType == squelchDecoderConfig.SquelchType.CTCSS)
         {
             CTCSSCode code = mCtcssCodeCombo.getValue();
             if(code != null)
             {
-                filters.add(new squelchDecoderConfig(selectedType, code.name(), ""));
+                squelchDecoders.add(new squelchDecoderConfig(selectedType, code.name()));
             }
         }
         if(selectedType == squelchDecoderConfig.SquelchType.DCS)
@@ -619,10 +627,14 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             DCSCode code = mDcsCodeCombo.getValue();
             if(code != null)
             {
-                filters.add(new squelchDecoderConfig(selectedType, code.name(), ""));
+                squelchDecoders.add(new squelchDecoderConfig(selectedType, code.name()));
             }
         }
-        config.setSquelchFilters(filters);
+        if(selectedType == squelchDecoderConfig.SquelchType.NONE)
+        {
+            squelchDecoders.add((new squelchDecoderConfig(selectedType, null)));
+        }
+        config.setSquelchDecoders(squelchDecoders);
         getItem().setDecodeConfiguration(config);
     }
 
