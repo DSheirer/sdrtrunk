@@ -40,6 +40,7 @@ public enum DecoderType
 
     //Auxiliary Decoders
     DCS("Digital Coded Squelch (DCS)", "DCS", Protocol.DCS),
+    CTCSS("Continuous Tone Squelch", "CTCSS", Protocol.CTCSS),
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
     LJ_1200("LJ1200 173.075", "LJ1200", Protocol.LOJACK),
     MDC1200("MDC1200", "MDC1200", Protocol.MDC1200),
