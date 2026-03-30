@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.squelchDecoder.squelchDecoderConfig;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -46,6 +49,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -80,6 +84,11 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private final TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
     private final IntegerFormatter mDecimalFormatter = new IntegerFormatter(1, 65535);
     private final HexFormatter mHexFormatter = new HexFormatter(1, 65535);
+
+    private ComboBox<DecodeConfigNBFM.DeemphasisMode> mDeemphasisCombo;
+    private ComboBox<squelchDecoderConfig.SquelchType> mSquelchTypeCombo;
+    private ComboBox<CTCSSCode> mCtcssCodeCombo;
+    private ComboBox<DCSCode> mDcsCodeCombo;
 
     /**
      * Constructs an instance
@@ -136,16 +145,61 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getBandwidthButton(), 1, 0);
             gridPane.getChildren().add(getBandwidthButton());
 
-            Label talkgroupLabel = new Label("Talkgroup To Assign");
-            GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
-            GridPane.setConstraints(talkgroupLabel, 0, 1);
-            gridPane.getChildren().add(talkgroupLabel);
-
-            GridPane.setConstraints(getTalkgroupField(), 1, 1);
-            gridPane.getChildren().add(getTalkgroupField());
+            Label deemphasisLabel = new Label("De-emphasis");
+            GridPane.setHalignment(deemphasisLabel, HPos.RIGHT);
+            GridPane.setConstraints(deemphasisLabel, 0, 1);
+            gridPane.getChildren().add(deemphasisLabel);
+            GridPane.setConstraints(getDeemphasisCombo(), 1, 1, 2, 1);
+            gridPane.getChildren().add(getDeemphasisCombo());
 
             GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
             gridPane.getChildren().add(getAudioFilterEnable());
+
+            Label talkgroupLabel = new Label("Talkgroup To Assign");
+            GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
+            GridPane.setConstraints(talkgroupLabel, 0, 2);
+            gridPane.getChildren().add(talkgroupLabel);
+
+            GridPane.setConstraints(getTalkgroupField(), 1, 2);
+            gridPane.getChildren().add(getTalkgroupField());
+
+            Label typeLabel = new Label("Squelch Decoder Type");
+            GridPane.setHalignment(typeLabel, HPos.RIGHT);
+            GridPane.setConstraints(typeLabel, 2, 2);
+            gridPane.getChildren().add(typeLabel);
+
+            mSquelchTypeCombo = new ComboBox<>();
+            mSquelchTypeCombo.getItems().addAll(squelchDecoderConfig.SquelchType.SQUELCH_TYPE);
+            mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+            mSquelchTypeCombo.valueProperty().addListener((obs, ov, nv) -> {
+                updateToneCodeVisibility();
+                modifiedProperty().set(true);
+            });
+            GridPane.setConstraints(mSquelchTypeCombo, 3, 2);
+            gridPane.getChildren().add(mSquelchTypeCombo);
+
+            // CTCSS code selector
+            mCtcssCodeCombo = new ComboBox<>();
+            mCtcssCodeCombo.getItems().addAll(CTCSSCode.STANDARD_CODES);    // excludes unknown/dummy codes
+            mCtcssCodeCombo.setPromptText("Select CTCSS tone");
+            mCtcssCodeCombo.setPrefWidth(200);
+            mCtcssCodeCombo.setVisible(false);
+            mCtcssCodeCombo.setManaged(false);
+            mCtcssCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
+            GridPane.setConstraints(mCtcssCodeCombo, 4, 2);
+            gridPane.getChildren().add(mCtcssCodeCombo);
+
+            // DCS code selector
+            mDcsCodeCombo = new ComboBox<>();
+            mDcsCodeCombo.getItems().addAll(DCSCode.STANDARD_CODES);
+            mDcsCodeCombo.getItems().addAll(DCSCode.INVERTED_CODES);
+            mDcsCodeCombo.setPromptText("Select DCS code");
+            mDcsCodeCombo.setPrefWidth(200);
+            mDcsCodeCombo.setVisible(false);
+            mDcsCodeCombo.setManaged(false);
+            mDcsCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
+            GridPane.setConstraints(mDcsCodeCombo, 5, 2);
+            gridPane.getChildren().add(mDcsCodeCombo);
 
             mDecoderPane.setContent(gridPane);
 
@@ -161,6 +215,44 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mDecoderPane;
+    }
+
+    private ComboBox<DecodeConfigNBFM.DeemphasisMode> getDeemphasisCombo()
+    {
+        if(mDeemphasisCombo == null)
+        {
+            mDeemphasisCombo = new ComboBox<>();
+            mDeemphasisCombo.getItems().addAll(DecodeConfigNBFM.DeemphasisMode.values());
+            mDeemphasisCombo.setValue(DecodeConfigNBFM.DeemphasisMode.NONE);
+            mDeemphasisCombo.setTooltip(new Tooltip("FM de-emphasis restores flat audio from pre-emphasized FM signal"));
+            mDeemphasisCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
+        }
+        return mDeemphasisCombo;
+    }
+
+    private void updateToneCodeVisibility()
+    {
+        switch(mSquelchTypeCombo.getValue())
+        {
+            case squelchDecoderConfig.SquelchType.NONE:
+                mCtcssCodeCombo.setVisible(false);
+                mCtcssCodeCombo.setManaged(false);
+                mDcsCodeCombo.setVisible(false);
+                mDcsCodeCombo.setManaged(false);
+                break;
+            case squelchDecoderConfig.SquelchType.CTCSS:
+                mCtcssCodeCombo.setVisible(true);
+                mCtcssCodeCombo.setManaged(true);
+                mDcsCodeCombo.setVisible(false);
+                mDcsCodeCombo.setManaged(false);
+                break;
+            case squelchDecoderConfig.SquelchType.DCS:
+                mCtcssCodeCombo.setVisible(false);
+                mCtcssCodeCombo.setManaged(false);
+                mDcsCodeCombo.setVisible(true);
+                mDcsCodeCombo.setManaged(true);
+                break;
+        }
     }
 
     private TitledPane getEventLogPane()
@@ -327,6 +419,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         {
             mTalkgroupField = new TextField();
             mTalkgroupField.setTextFormatter(mTalkgroupTextFormatter);
+            mTalkgroupField.setPrefWidth(100);
         }
 
         return mTalkgroupField;
@@ -412,6 +505,45 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             updateTextFormatter(decodeConfigNBFM.getTalkgroup());
             getAudioFilterEnable().setDisable(false);
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
+
+            getDeemphasisCombo().setValue(decodeConfigNBFM.getDeemphasis());
+
+            List<squelchDecoderConfig> savedFilters = decodeConfigNBFM.getSquelchFilters();
+            if(savedFilters != null && !savedFilters.isEmpty())
+            {
+                squelchDecoderConfig filter = savedFilters.get(0);
+                mSquelchTypeCombo.setValue(filter.getSquelchType());
+                updateToneCodeVisibility();
+                if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.NONE)
+                {
+                    mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+                }
+                if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.CTCSS)
+                {
+                    CTCSSCode code = filter.getCTCSSCode();
+                    if(code != null && code != CTCSSCode.UNKNOWNH && code != CTCSSCode.UNKNOWNL)
+                    {
+                        mCtcssCodeCombo.setValue(code);
+                    }
+                }
+                if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.DCS)
+                {
+                    DCSCode code = filter.getDCSCode();
+                    if(code != null)
+                    {
+                        mDcsCodeCombo.setValue(code);
+                    }
+                }
+            }
+            else
+            {
+                mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+                mCtcssCodeCombo.setValue(null);
+                mCtcssCodeCombo.setPromptText("Select PL tone");
+                mDcsCodeCombo.setValue(null);
+                mDcsCodeCombo.setPromptText("Select DCS code");
+                updateToneCodeVisibility();
+            }
         }
         else
         {
@@ -426,6 +558,15 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getTalkgroupField().setDisable(true);
             getAudioFilterEnable().setDisable(true);
             getAudioFilterEnable().setSelected(false);
+
+            // === TODO: Reset new controls ===
+            getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NONE);
+            mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+            mCtcssCodeCombo.setValue(null);
+            mCtcssCodeCombo.setPromptText("Select PL tone");
+            mDcsCodeCombo.setValue(null);
+            mDcsCodeCombo.setPromptText("Select DCS code");
+            updateToneCodeVisibility();
         }
     }
 
@@ -461,6 +602,27 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setTalkgroup(talkgroup);
         config.setAudioFilter(getAudioFilterEnable().isSelected());
+
+        config.setDeemphasis(getDeemphasisCombo().getValue());
+        List<squelchDecoderConfig> filters = new ArrayList<>();
+        squelchDecoderConfig.SquelchType selectedType = mSquelchTypeCombo.getValue();
+        if(selectedType == squelchDecoderConfig.SquelchType.CTCSS)
+        {
+            CTCSSCode code = mCtcssCodeCombo.getValue();
+            if(code != null)
+            {
+                filters.add(new squelchDecoderConfig(selectedType, code.name(), ""));
+            }
+        }
+        if(selectedType == squelchDecoderConfig.SquelchType.DCS)
+        {
+            DCSCode code = mDcsCodeCombo.getValue();
+            if(code != null)
+            {
+                filters.add(new squelchDecoderConfig(selectedType, code.name(), ""));
+            }
+        }
+        config.setSquelchFilters(filters);
         getItem().setDecodeConfiguration(config);
     }
 
