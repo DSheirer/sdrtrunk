@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dcs;
+package io.github.dsheirer.module.decode.squelchDecoder.dcs;
 
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;

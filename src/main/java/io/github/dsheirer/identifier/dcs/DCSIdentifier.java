@@ -23,7 +23,7 @@ import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
 import io.github.dsheirer.protocol.Protocol;
 
 /**

@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dcs;
+package io.github.dsheirer.module.decode.squelchDecoder.dcs;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.dcs.DCSIdentifier;
