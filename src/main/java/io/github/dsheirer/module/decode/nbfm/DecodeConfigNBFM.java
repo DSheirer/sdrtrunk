@@ -128,29 +128,49 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         }
     }
 
+    /**
+     * Indicates if the user wants the demodulated audio to be high-pass filtered.
+     * @return enable status, defaults to true.
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "audioFilter")
     public boolean isAudioFilter()
     {
         return mAudioHPFilter;
     }
 
+    /**
+     * Sets the enabled state of high-pass filtering of the demodulated audio.
+     * @param audioFilter to true to enable high-pass filtering.
+     */
     public void setAudioFilter(boolean audioFilter)
     {
         mAudioHPFilter = audioFilter;
     }
 
+    /**
+     * Squelch noise open threshold in the range 0.0 to 1.0 with a default of 0.1
+     * @return noise open threshold
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "squelchNoiseOpenThreshold")
     public float getSquelchNoiseOpenThreshold()
     {
         return mSquelchNoiseOpenThreshold;
     }
 
+    /**
+     * Squelch noise close threshold in the range 0.0 to 1.0, greater than or equal to open threshold, with a default of 0.2
+     * @return noise close threshold
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "squelchNoiseCloseThreshold")
     public float getSquelchNoiseCloseThreshold()
     {
         return mSquelchNoiseCloseThreshold;
     }
 
+    /**
+     * Sets the squelch noise threshold.
+     * @param open in range 0.0 to 1.0 with a default of 0.1
+     */
     public void setSquelchNoiseOpenThreshold(float open)
     {
         if(open < NoiseSquelch.MINIMUM_NOISE_THRESHOLD || open > NoiseSquelch.MAXIMUM_NOISE_THRESHOLD)
@@ -160,6 +180,10 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         mSquelchNoiseOpenThreshold = open;
     }
 
+    /**
+     * Sets the squelch noise close threshold.
+     * @param close in range 0.0 to 1.0 and greater than or equal to open, with a default of 0.1
+     */
     public void setSquelchNoiseCloseThreshold(float close)
     {
         if(close < NoiseSquelch.MINIMUM_NOISE_THRESHOLD || close > NoiseSquelch.MAXIMUM_NOISE_THRESHOLD)
@@ -169,12 +193,20 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         mSquelchNoiseCloseThreshold = close;
     }
 
+    /**
+     * Squelch hysteresis open threshold in range 1-10 with a default of 4.
+     * @return hysteresis open threshold
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "squelchHysteresisOpenThreshold")
     public int getSquelchHysteresisOpenThreshold()
     {
         return mSquelchHysteresisOpenThreshold;
     }
 
+    /**
+     * Sets the squelch time threshold in the range 1-10.
+     * @param open threshold
+     */
     public void setSquelchHysteresisOpenThreshold(int open)
     {
         if(open < NoiseSquelch.MINIMUM_HYSTERESIS_THRESHOLD || open > NoiseSquelch.MAXIMUM_HYSTERESIS_THRESHOLD)
@@ -184,12 +216,20 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         mSquelchHysteresisOpenThreshold = open;
     }
 
+    /**
+     * Squelch hysteresis close threshold in range 1-10 with a default of 4.
+     * @return hysteresis close threshold
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "squelchHysteresisCloseThreshold")
     public int getSquelchHysteresisCloseThreshold()
     {
         return mSquelchHysteresisCloseThreshold;
     }
 
+    /**
+     * Sets the squelch close threshold in the range 1-10.
+     * @param close threshold
+     */
     public void setSquelchHysteresisCloseThreshold(int close)
     {
         if(close < NoiseSquelch.MINIMUM_HYSTERESIS_THRESHOLD || close > NoiseSquelch.MAXIMUM_HYSTERESIS_THRESHOLD)
