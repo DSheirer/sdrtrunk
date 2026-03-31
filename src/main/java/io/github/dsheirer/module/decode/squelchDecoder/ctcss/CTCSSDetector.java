@@ -66,13 +66,13 @@ public class CTCSSDetector
     // Goertzel coefficients for each target frequency
     private final double[] mCoefficients;
 
-    private float[] mSampleBuffer;
+    private float[] mSampleBuffer;      // TODO no reason for this, just call as a parameter
 
 
-    private final Listener<IMessage> mMessageListener;
+    private final Listener<IMessage> mLoggingListener;
 
     // Callback
-    private CTCSSDetectorListener mListener;
+    private CTCSSDetectorListener mDetectionListener;
 
     /**
      * Listener interface for CTCSS detection events
@@ -90,9 +90,9 @@ public class CTCSSDetector
      * //@param targetCodes the set of CTCSS codes to accept as matches. If null or empty, accepts all standard codes.
      * //@param sampleRate the sample rate of the input audio in Hz
      */
-    public CTCSSDetector(Set<CTCSSCode> targetCodes, Listener<IMessage> messageListener)
+    public CTCSSDetector(Set<CTCSSCode> targetCodes, Listener<IMessage> loggingListener)
     {
-        mMessageListener = messageListener;     // for logging info
+        mLoggingListener = loggingListener;     // for logging info
         mBlockSize = 512;
         mTargetCodes = targetCodes;
 
@@ -123,7 +123,7 @@ public class CTCSSDetector
      */
     public void setListener(CTCSSDetectorListener listener)
     {
-        mListener = listener;
+        mDetectionListener = listener;
     }
 
     /**
@@ -178,8 +178,8 @@ public class CTCSSDetector
         {
             // skip further detection
             message.setInitialThreshold(false);
-            message.setMessage("Signal too week or detected CTCSS tone is outside of range of valid tones");
-            mMessageListener.receive(message);
+            message.setMessage("Signal too weak or detected CTCSS tone is outside of range of valid tones");
+            mLoggingListener.receive(message);
             handleNoDetection();
             return;
         }
@@ -218,7 +218,7 @@ public class CTCSSDetector
                 String.format("%.1f", threshold),
                 String.format("%.1f",(maxPower - mean) / stdDev));
         message.setMessage(s);
-        mMessageListener.receive(message);      // send to Decoded Messages Log if enabled.
+        mLoggingListener.receive(message);      // send to Decoded Messages Log if enabled.
     }
 
     /**
@@ -265,7 +265,7 @@ public class CTCSSDetector
                 {
                     mConfirmationCounter++;
 
-                    if(mConfirmationCounter >= CONFIRMATION_COUNT && mListener != null)
+                    if(mConfirmationCounter >= CONFIRMATION_COUNT && mDetectionListener != null)
                     {
                         if(mUnmuted)
                         {
@@ -275,9 +275,9 @@ public class CTCSSDetector
                                     mPreviousDetectedCode.toString(),
                                     CONFIRMATION_COUNT);
                             message.setMessage(s);
-                            mMessageListener.receive(message);
+                            mLoggingListener.receive(message);
                         }
-                        mListener.ctcssRejected(newCode);
+                        mDetectionListener.ctcssRejected(newCode);
                         mUnmuted = false;
                     }
                 }
@@ -298,9 +298,9 @@ public class CTCSSDetector
             {
                 mConfirmationCounter++;
 
-                if(mConfirmationCounter >= CONFIRMATION_COUNT && mListener != null)
+                if(mConfirmationCounter >= CONFIRMATION_COUNT && mDetectionListener != null)
                 {
-                    mListener.ctcssDetected(newCode);
+                    mDetectionListener.ctcssDetected(newCode);
                     if(!mUnmuted)
                     {
                         CTCSSMessage message = new CTCSSMessage();
@@ -309,15 +309,15 @@ public class CTCSSDetector
                                 newCode.toString(),
                                 CONFIRMATION_COUNT);
                         message.setMessage(s);
-                        mMessageListener.receive(message);
+                        mLoggingListener.receive(message);
                         mUnmuted = true;
                     }
                 }
             }
             // Already confirmed -- just keep reporting
-            else if(mListener != null)
+            else if(mDetectionListener != null)
             {
-                mListener.ctcssDetected(newCode);
+                mDetectionListener.ctcssDetected(newCode);
             }
         }
         else
@@ -347,14 +347,14 @@ public class CTCSSDetector
                             mPreviousDetectedCode.toString(),
                             LOSS_COUNT);
                     message.setMessage(s);
-                    mMessageListener.receive(message);
+                    mLoggingListener.receive(message);
                 }
                 mPreviousDetectedCode = null;
                 mConfirmationCounter = 0;
                 mUnmuted = false;
-                if(mListener != null)
+                if(mDetectionListener != null)
                 {
-                    mListener.ctcssLost();
+                    mDetectionListener.ctcssLost();
                 }
             }
         }
@@ -369,7 +369,7 @@ public class CTCSSDetector
         message.setInitialThreshold(false);
         message.setMessage("Noise squelch closed, audio will be MUTED");
         mUnmuted = false;
-        mMessageListener.receive(message);
+        mLoggingListener.receive(message);
         mPreviousDetectedCode = null;
         mConfirmationCounter = 0;
         mLossCounter = 0;
