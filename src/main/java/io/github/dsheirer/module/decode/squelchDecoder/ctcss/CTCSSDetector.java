@@ -40,6 +40,7 @@ public class CTCSSDetector
 {
     private static final Logger mLog = LoggerFactory.getLogger(CTCSSDetector.class);
     private static final double RESAMPLED_AUDIO_SAMPLE_RATE = 8000.0;
+    private static final int MIN_BLOCK_SIZE = 512;
 
     /**
      * K factor is the multiplier * std deviation which determines threshold
@@ -61,17 +62,12 @@ public class CTCSSDetector
     private final Set<CTCSSCode> mTargetCodes;      // codes we are looking to match in this channel
     private final float[] mDetectingFrequencies;
     private final CTCSSCode[] mDetectingCodeArray;  // codes we are detecting
-    private final int mBlockSize;
 
     // Goertzel coefficients for each target frequency
     private final double[] mCoefficients;
 
-    private float[] mSampleBuffer;      // TODO no reason for this, just call as a parameter
-
-
+    // Listeners
     private final Listener<IMessage> mLoggingListener;
-
-    // Callback
     private CTCSSDetectorListener mDetectionListener;
 
     /**
@@ -93,7 +89,6 @@ public class CTCSSDetector
     public CTCSSDetector(Set<CTCSSCode> targetCodes, Listener<IMessage> loggingListener)
     {
         mLoggingListener = loggingListener;     // for logging info
-        mBlockSize = 512;
         mTargetCodes = targetCodes;
 
         // Detect all codes including one on each end of the spectrum (DETECTING_CODES)
@@ -107,8 +102,6 @@ public class CTCSSDetector
         {
             mDetectingFrequencies[i] = mDetectingCodeArray[i].getFrequency();
         }
-
-        mSampleBuffer = new float[mBlockSize];
 
         // Pre-compute Goertzel coefficients: 2 * cos(2π * freq / sampleRate)
         for(int i = 0; i < mDetectingFrequencies.length; i++)
@@ -134,12 +127,11 @@ public class CTCSSDetector
      */
     public void process(float[] samples)
     {
-        if(samples == null || samples.length == 0)
+        if(samples == null || samples.length < MIN_BLOCK_SIZE)
         {
             return;
         }
-        System.arraycopy(samples, 0, mSampleBuffer, 0, samples.length);
-        analyzeBlock();
+        analyzeBlock(samples);
     }
 
     /**
@@ -153,7 +145,7 @@ public class CTCSSDetector
      *  double precision math with the single precision to see if it makes a difference.
      *
      */
-    private void analyzeBlock()
+    private void analyzeBlock(float[] samples)
     {
         double[] distribution = new double[mDetectingFrequencies.length];
 
@@ -162,7 +154,7 @@ public class CTCSSDetector
 
         for(int i = 0; i < mDetectingFrequencies.length; i++)
         {
-            double power = goertzel(mSampleBuffer, mBlockSize, mCoefficients[i]);
+            double power = goertzel(samples, samples.length, mCoefficients[i]);
             distribution[i] = power;
 
             if(power > maxPower)
