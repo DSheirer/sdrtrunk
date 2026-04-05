@@ -52,13 +52,10 @@ import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
- * NBFM decoder with integrated noise squelch, channel-level tone filtering.
+ * NBFM decoder with integrated noise squelch, channel-level squelch tone decoder.
  *
  */
 public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventListener, IComplexSamplesListener,
@@ -87,7 +84,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
      // === TODO: might need to be reorganized and removed from this file
     private boolean mSquelchDecoderEnabled = false;
-    private Set<CTCSSCode> mAllowedCTCSSCodes = EnumSet.noneOf(CTCSSCode.class);
+    private List<CTCSSCode> mAllowedCTCSSCodes = new ArrayList<>();
     private Set<DCSCode> mAllowedDCSCodes = new HashSet<>();
     private volatile CTCSSCode mDetectedCTCSS = null;
     private volatile DCSCode mDetectedDCS = null;
@@ -114,7 +111,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         // Configure de-emphasis
         configureDeemphasis(config.getDeemphasis());
-        mAudioGain = new AudioGainAndDcFilter(.5F, 5F, 0.7F);
+        mAudioGain = new AudioGainAndDcFilter(.5F, 5F, 0.8F);
         mAudioGain.setDecayRate(2);     // set a 2 percent decay rate
 
          // Configure tone filtering
@@ -719,7 +716,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
      */
     private void processResampledAudio(float [] resampled)
     {
-        // TODO is there a logic error here? Are there samples when squelched?
         if(!mNoiseSquelch.isSquelched())
         {
             if(mCTCSSDetector != null)
@@ -748,6 +744,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             // Tone filtering enabled but no match - drop audio buffer here
             return;
         }
+
         // deemphasis filter TODO: this is here only to test concept. Needs to be moved downstream of 1200 baud decoders.
         float[] audio = resampled;
         if(mDeemphasisEnabled)

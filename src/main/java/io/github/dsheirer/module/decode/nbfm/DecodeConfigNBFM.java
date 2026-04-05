@@ -56,9 +56,10 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
      * Commercial broadcast stations in North America and Europe use 75 us and 53 us respectively
      * But this is NBFM and reliable documentation for de-emphasis is difficult to find. There was one
      * reference on a repeater builder site that mentions 3dB @ 3 KHz, but it sounds pretty severe and weak
-     * signals come through pretty muffled sounding. There is no standard found for NBFM. So included are
-     * 3 known values and one to bridge the gap. A user should be able to find a personal preference from
-     * the values below.
+     * signals come through pretty muffled sounding. The Linux GQRX app recommends 530us for NBFM, and it also sounds
+     * very muffled in the app. GQRX offers a range of 25us to 530us. There is no standard found for NBFM.
+     * So included are some known values and one to bridge the gap. A user should be able to find a personal
+     * preference from the values below.
      */
     // TODO get this out of here and into its own file
     public enum DeemphasisMode

@@ -24,6 +24,7 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -51,15 +52,14 @@ public class CTCSSDetector
      * The first and last detected tones in a transmission tend to be incorrect,
      *  so we require at least 2 detections up front and at the end.
      */
-    private static final int CONFIRMATION_COUNT = 2;
-    private static final int LOSS_COUNT = 2;
+    private static final int OPEN_THRESHOLD_COUNT = 2;
+    private static final int CLOSE_THRESHOLD_COUNT = 2;
     // Detection states
-    private CTCSSCode mPreviousDetectedCode = null;
-    private int mConfirmationCounter = 0;
-    private int mLossCounter = 0;
-    private boolean mUnmuted = false;               // used for event logging
+    private int mOpenCounter = 0;
+    private int mCloseCounter = 0;
+    private boolean mUnmuted = false;
 
-    private final Set<CTCSSCode> mTargetCodes;      // codes we are looking to match in this channel
+    private final List<CTCSSCode> mTargetCodes;      // codes we are looking to match in this channel
     private final float[] mDetectingFrequencies;
     private final CTCSSCode[] mDetectingCodeArray;  // codes we are detecting
 
@@ -86,7 +86,7 @@ public class CTCSSDetector
      * //@param targetCodes the set of CTCSS codes to accept as matches. If null or empty, accepts all standard codes.
      * //@param sampleRate the sample rate of the input audio in Hz
      */
-    public CTCSSDetector(Set<CTCSSCode> targetCodes, Listener<IMessage> loggingListener)
+    public CTCSSDetector(List<CTCSSCode> targetCodes, Listener<IMessage> loggingListener)
     {
         mLoggingListener = loggingListener;     // for logging info
         mTargetCodes = targetCodes;
@@ -121,36 +121,23 @@ public class CTCSSDetector
 
     /**
      * Processes a buffer of demodulated FM audio samples.
-     * Samples are accumulated into blocks, and Goertzel analysis is performed on each complete block.
+     * Goertzel analysis performed on a block of 512 audio samples and the relative power is calculated
+     * for each CTCSS tone and placed into a frequency distribution array. The standard deviation of the array
+     * is calculated to determine threshold based on the noise. The highest powered tone must exceed this threshold
+     * to be considered for match detection. Testing revealed that there can be multiple peaks present in
+     * the distribution that were considered to be interference rather than desired signals.
      *
      * @param samples demodulated audio samples
      */
     public void process(float[] samples)
     {
+        double[] distribution = new double[mDetectingFrequencies.length];
+        double maxPower = 0;
+        int maxIndex = -1;
         if(samples == null || samples.length < MIN_BLOCK_SIZE)
         {
             return;
         }
-        analyzeBlock(samples);
-    }
-
-    /**
-     * Analyzes the current block of samples using a Goertzel algorithm for each ctcss frequency.
-     * TODO: new detection algorithm to store the powers in to an array
-     *  and subtract out (zero) the peak and the adjacent powers. Then find the next peak.
-     *  then make sure the first peak is more than 6dB more than the next. This will take care of
-     *  muting channels with interference where there might be more than 1 tone present.
-     *
-     * TODO: Also use the Goertzel algo that is in the DSP folder.  Might want to compare the
-     *  double precision math with the single precision to see if it makes a difference.
-     *
-     */
-    private void analyzeBlock(float[] samples)
-    {
-        double[] distribution = new double[mDetectingFrequencies.length];
-
-        double maxPower = 0;
-        int maxIndex = -1;
 
         for(int i = 0; i < mDetectingFrequencies.length; i++)
         {
@@ -178,9 +165,10 @@ public class CTCSSDetector
         message.setInitialThreshold(true);
 
         // Determine threshold based on the noise level in the distribution using standard deviation.
-        //  Co-channel interference from strong signals will cause multiple spikes in the distribution
+        //  adjacent channel interference from strong signals will cause multiple spikes in the distribution
         double sum = 0.0;
-        for (double num : distribution) {
+        for (double num : distribution)
+        {
             sum += num;
         }
         double mean = sum / distribution.length;
@@ -197,13 +185,13 @@ public class CTCSSDetector
         if(maxPower > threshold)
         {
             CTCSSCode detected = mDetectingCodeArray[maxIndex];
-            handleDetection(detected);
+            detectionLogicTree(detected);
         }
         else
         {
             handleNoDetection();
         }
-        // TODO: check if listener exists first to save on processing?
+
         String s = MessageFormat.format("Detected CTCSS code: {0} maxPower: {1} 2nd threshold: {2} K_Factor: {3} ",
                 mDetectingCodeArray[maxIndex].toString(),
                 String.format("%.1f", maxPower),
@@ -239,85 +227,123 @@ public class CTCSSDetector
     }
 
     /**
-     * Handles detection of a CTCSS tone in the current block.
-     * Only reports to the listener if the detected tone is in the allowed (target) set.
+     * Handles detection logic of a CTCSS tone in the current block.
+     * TODO: this will probably move to somewhere else
      */
-    private void handleDetection(CTCSSCode newCode)
+    private void detectionLogicTree(CTCSSCode newCode)
     {
-        // since we now have detection, reset the loss counter
-        mLossCounter = 0;
-
-        // If tone is not present in the set...
-        if(!mTargetCodes.contains(newCode))
+        /*
+         * 	if muted
+         * 		if newTone != null && newTone == setting
+         * 			if openCounter >= OpenThreshold
+         * 				unmute
+         * 				closecounter = 0
+         * 				report accepted
+         * 			else
+         * 				openCounter++
+         *
+         * 		else	// wrong tone
+         * 			openCounter = 0
+         *
+         *
+         * 	else // if not muted, call is ongoing
+         * 		if newTone != null && newTone == setting
+         * 			all is good - call continues
+         * 			closeCounter = 0
+         * 		else
+         * 			if(closeCounter >= closeThreshold
+         * 				mute call
+         * 				openCounter = 0
+         * 				report rejected
+         * 			else
+         * 				closeCounter++
+         * 				all is still good, but there is a incorrect tone detected below the threshold counts
+         * 				report accepted
+         *
+         * reset
+         * 	mute call
+         * 	openCounter = 0
+         * 	closeCounter = 0
+         */
+        if (!mUnmuted)
         {
-            // Track confirmed rejections — only notify after same wrong tone seen CONFIRMATION_COUNT times
-            if(mPreviousDetectedCode == newCode)
+            if (newCode != null && mTargetCodes.contains(newCode))
             {
-                if(mConfirmationCounter < CONFIRMATION_COUNT)
+                if (mOpenCounter >= OPEN_THRESHOLD_COUNT)
                 {
-                    mConfirmationCounter++;
-
-                    if(mConfirmationCounter >= CONFIRMATION_COUNT && mDetectionListener != null)
-                    {
-                        if(mUnmuted)
-                        {
-                            CTCSSMessage message = new CTCSSMessage();
-                            message.setInitialThreshold(false);
-                            String s = MessageFormat.format("Configured CTCSS code: {0}, wrong tone detected {1} times, audio will be MUTED",
-                                    mPreviousDetectedCode.toString(),
-                                    CONFIRMATION_COUNT);
-                            message.setMessage(s);
-                            mLoggingListener.receive(message);
-                        }
-                        mDetectionListener.ctcssRejected(newCode);
-                        mUnmuted = false;
-                    }
-                }
-                // Already confirmed rejected
-            }
-            else
-            {
-                mPreviousDetectedCode = newCode;
-                mConfirmationCounter = 1;
-            }
-            return;
-        }
-
-        if(mPreviousDetectedCode == newCode)
-        {
-            // Same tone detected again -- increment confirmation
-            if(mConfirmationCounter < CONFIRMATION_COUNT)
-            {
-                mConfirmationCounter++;
-
-                if(mConfirmationCounter >= CONFIRMATION_COUNT && mDetectionListener != null)
-                {
+                    mUnmuted = true;
+                    mCloseCounter = 0;
                     mDetectionListener.ctcssDetected(newCode);
-                    if(!mUnmuted)
-                    {
-                        CTCSSMessage message = new CTCSSMessage();
-                        message.setInitialThreshold(true);
-                        String s = MessageFormat.format("Configured CTCSS code: {0}, correct tone detected {1} times, audio will be UN-MUTED",
-                                newCode.toString(),
-                                CONFIRMATION_COUNT);
-                        message.setMessage(s);
-                        mLoggingListener.receive(message);
-                        mUnmuted = true;
-                    }
+                }
+                else
+                {
+                    mOpenCounter++;
                 }
             }
-            // Already confirmed -- just keep reporting
-            else if(mDetectionListener != null)
+            else    // wrong tone or no tone
             {
-                mDetectionListener.ctcssDetected(newCode);
+                mOpenCounter = 0;
             }
         }
         else
         {
-            // Different tone -- restart confirmation
-            mPreviousDetectedCode = newCode;
-            mConfirmationCounter = 1;
+            if (newCode != null && mTargetCodes.contains(newCode))
+            {
+                // all is good, call continues
+                mCloseCounter = 0;
+            }
+            else
+            {
+                if (mCloseCounter >= CLOSE_THRESHOLD_COUNT)
+                {
+                    mUnmuted = false;
+                    mOpenCounter = 0;
+                    mDetectionListener.ctcssRejected(newCode);
+                }
+                else
+                {
+                    mCloseCounter++;
+                    // all is still good with the call, but a bad tone was decoded
+                }
+            }
         }
+
+        String toneString;
+        if (newCode == null)
+        {
+            toneString = "NONE";
+        }
+        else
+        {
+            toneString = newCode.toString();
+        }
+
+        String mutedString;
+        if (mUnmuted)
+        {
+            mutedString = "UNMUTED";
+        }
+        else
+        {
+            mutedString = "MUTED";
+        }
+
+        if(mCloseCounter == 1)
+        {
+            int dummy = 0;  // for breakpoint in debugger
+        }
+
+        CTCSSCode setCode = mTargetCodes.getFirst();
+        CTCSSMessage message = new CTCSSMessage();
+        message.setInitialThreshold(true);
+        String s = MessageFormat.format("CTCSS Configured: {0}, Detected {1}, Open Counts: {2}, Close counts: {3}, Audio: {4}",
+                setCode,
+                toneString,
+                mOpenCounter,
+                mCloseCounter,
+                mutedString);
+        message.setMessage(s);
+        mLoggingListener.receive(message);
     }
 
     /**
@@ -325,31 +351,7 @@ public class CTCSSDetector
      */
     private void handleNoDetection()
     {
-        if(mPreviousDetectedCode != null)
-        {
-            mLossCounter++;
-
-            if(mLossCounter >= LOSS_COUNT)
-            {
-                if(mUnmuted)
-                {
-                    CTCSSMessage message = new CTCSSMessage();
-                    message.setInitialThreshold(false);
-                    String s = MessageFormat.format("Configured CTCSS code: {0}, no tone detected {1} times, audio will be MUTED",
-                            mPreviousDetectedCode.toString(),
-                            LOSS_COUNT);
-                    message.setMessage(s);
-                    mLoggingListener.receive(message);
-                }
-                mPreviousDetectedCode = null;
-                mConfirmationCounter = 0;
-                mUnmuted = false;
-                if(mDetectionListener != null)
-                {
-                    mDetectionListener.ctcssLost();
-                }
-            }
-        }
+        detectionLogicTree(null);
     }
 
     /**
@@ -362,9 +364,8 @@ public class CTCSSDetector
         message.setMessage("Noise squelch closed, audio will be MUTED");
         mUnmuted = false;
         mLoggingListener.receive(message);
-        mPreviousDetectedCode = null;
-        mConfirmationCounter = 0;
-        mLossCounter = 0;
+        mCloseCounter = 0;
+        mOpenCounter = 0;
     }
 }
 
