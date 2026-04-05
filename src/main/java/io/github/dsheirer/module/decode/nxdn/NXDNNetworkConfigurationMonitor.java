@@ -21,12 +21,15 @@ package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInformationTypeD;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.DigitalStationIDInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.FailureStatusInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.Neighbor;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ServiceInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.RepeaterIdle;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.SiteID;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +48,15 @@ public class NXDNNetworkConfigurationMonitor
     private SiteInformation mSiteInformation;
     private Map<Integer, Neighbor> mNeighborMap = new HashMap<>();
 
+    private AdjacentSiteInformationTypeD mTypeDNeighborA;
+    private AdjacentSiteInformationTypeD mTypeDNeighborB;
+    private Integer mTypeDRepeater;
+    private List<Integer> mTypeDObservedRepeaters = new ArrayList<>();
+    private SiteID mTypeDSiteID;
+
+    /**
+     * Constructs an instance
+     */
     public NXDNNetworkConfigurationMonitor()
     {
     }
@@ -61,6 +73,10 @@ public class NXDNNetworkConfigurationMonitor
         {
             sb.append("\nCurrent Site\n  ").append(mSiteInformation).append("\n");
         }
+        else if(mTypeDSiteID != null)
+        {
+            sb.append("\nCurrent Site\n  ").append(mTypeDSiteID).append("\n");
+        }
         if(mServiceInformation != null)
         {
             sb.append("\nCurrent Site Services\n  ").append(mServiceInformation).append("\n");
@@ -74,6 +90,17 @@ public class NXDNNetworkConfigurationMonitor
             sb.append("\nCurrent Site Control Channel\n  ").append(mControlChannelInformation).append("\n");
         }
 
+        if(mTypeDRepeater != null)
+        {
+            sb.append("\nType-D Current Repeater: ").append(mTypeDRepeater).append("\n");
+        }
+
+        if(!mTypeDObservedRepeaters.isEmpty())
+        {
+            Collections.sort(mTypeDObservedRepeaters);
+            sb.append("\nType-D Observed Repeater Numbers:").append(mTypeDObservedRepeaters).append("\n");
+        }
+
         if(!mNeighborMap.isEmpty())
         {
             sb.append("\nNeighbor Sites\n");
@@ -83,6 +110,29 @@ public class NXDNNetworkConfigurationMonitor
             for(Integer id : ids)
             {
                 sb.append("  ").append(mNeighborMap.get(id)).append("\n");
+            }
+        }
+        else if(mTypeDNeighborA != null || mTypeDNeighborB != null)
+        {
+            sb.append("\nNeighbor Sites\n");
+
+            if(mTypeDNeighborA != null)
+            {
+                sb.append("  ").append(mTypeDNeighborA.getSystemID1()).append(" SITE:").append(mTypeDNeighborA.getSite1()).append("\n");
+
+                if(mTypeDNeighborA.hasSite2())
+                {
+                    sb.append("  ").append(mTypeDNeighborA.getSystemID2()).append(" SITE:").append(mTypeDNeighborA.getSite2()).append("\n");
+                }
+            }
+            if(mTypeDNeighborB != null)
+            {
+                sb.append("  ").append(mTypeDNeighborB.getSystemID1()).append(" SITE:").append(mTypeDNeighborB.getSite1()).append("\n");
+
+                if(mTypeDNeighborB.hasSite2())
+                {
+                    sb.append("  ").append(mTypeDNeighborB.getSystemID2()).append(" SITE:").append(mTypeDNeighborB.getSite2()).append("\n");
+                }
             }
         }
         else
@@ -99,7 +149,11 @@ public class NXDNNetworkConfigurationMonitor
         {
             case CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
             case TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
-                mDigitalStationIDInformation = (DigitalStationIDInformation) layer3;
+            case TYPE_D_OUT_23_BC_DIGITAL_STATION_ID:
+                if(layer3 instanceof DigitalStationIDInformation dsii)
+                {
+                    mDigitalStationIDInformation = dsii;
+                }
                 break;
             case CONTROL_OUT_24_BC_SITE_INFORMATION:
             case TRAFFIC_OUT_24_BC_SITE_INFORMATION:
@@ -107,7 +161,11 @@ public class NXDNNetworkConfigurationMonitor
                 break;
             case CONTROL_OUT_25_BC_SERVICE_INFORMATION:
             case TRAFFIC_OUT_25_BC_SERVICE_INFORMATION:
-                mServiceInformation = (ServiceInformation)layer3;
+            case TYPE_D_OUT_25_BC_SERVICE_INFORMATION:
+                if(layer3 instanceof ServiceInformation sii)
+                {
+                    mServiceInformation = sii;
+                }
                 break;
             case CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
             case TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
@@ -119,39 +177,40 @@ public class NXDNNetworkConfigurationMonitor
                 break;
             case CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION:
             case TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION:
-                AdjacentSiteInformation adjacent = (AdjacentSiteInformation) layer3;
-
-                if(adjacent.hasChannel1())
+                if(layer3 instanceof AdjacentSiteInformation adjacent)
                 {
-                    Neighbor n1 = adjacent.getNeighbor1();
-
-                    if(n1 != null)
+                    if(adjacent.hasChannel1())
                     {
-                        mNeighborMap.put(n1.id(), n1);
+                        Neighbor n1 = adjacent.getNeighbor1();
 
-                        if(adjacent.hasChannel2())
+                        if(n1 != null)
                         {
-                            Neighbor n2 = adjacent.getNeighbor2();
+                            mNeighborMap.put(n1.id(), n1);
 
-                            if(n2 != null)
+                            if(adjacent.hasChannel2())
                             {
-                                mNeighborMap.put(n2.id(), n2);
+                                Neighbor n2 = adjacent.getNeighbor2();
 
-                                if(adjacent.hasChannel3())
+                                if(n2 != null)
                                 {
-                                    Neighbor n3 = adjacent.getNeighbor3();
+                                    mNeighborMap.put(n2.id(), n2);
 
-                                    if(n3 != null)
+                                    if(adjacent.hasChannel3())
                                     {
-                                        mNeighborMap.put(n3.id(), n3);
+                                        Neighbor n3 = adjacent.getNeighbor3();
 
-                                        if(adjacent.hasChannel4())
+                                        if(n3 != null)
                                         {
-                                            Neighbor n4 = adjacent.getNeighbor4();
+                                            mNeighborMap.put(n3.id(), n3);
 
-                                            if(n4 != null)
+                                            if(adjacent.hasChannel4())
                                             {
-                                                mNeighborMap.put(n4.id(), n4);
+                                                Neighbor n4 = adjacent.getNeighbor4();
+
+                                                if(n4 != null)
+                                                {
+                                                    mNeighborMap.put(n4.id(), n4);
+                                                }
                                             }
                                         }
                                     }
@@ -160,7 +219,31 @@ public class NXDNNetworkConfigurationMonitor
                         }
                     }
                 }
+            case TYPE_D_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+                if(layer3 instanceof AdjacentSiteInformationTypeD atd)
+                {
+                    if(atd.isIndex())
+                    {
+                        mTypeDNeighborB = atd;
+                    }
+                    else
+                    {
+                        mTypeDNeighborA = atd;
+                    }
+                }
                 break;
+            case TYPE_D_SCCH_OUT_INFO_4_REPEATER_IDLE:
+                if(layer3 instanceof RepeaterIdle ri)
+                {
+                    mTypeDRepeater = ri.getRepeater();
+
+                    if(!mTypeDObservedRepeaters.contains(ri.getRepeater2()))
+                    {
+                        mTypeDObservedRepeaters.add(ri.getRepeater2());
+                    }
+                }
+                break;
+            case TYPE_D_SCCH_OUT_INFO_4_SITE_ID:
         }
     }
 }

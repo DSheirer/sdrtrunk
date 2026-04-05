@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.nxdn.layer1.SymbolEqualizerC4FM;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
-import io.github.dsheirer.module.decode.nxdn.layer1.sync.control.NXDNControlSoftSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.standard.NXDNStandardSoftSyncDetector;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
@@ -44,8 +43,9 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
  */
 public class NXDNSymbolProcessor
 {
+    private static final float TIMING_LOOP_GAIN = 0.4f;
     private static final float SOFT_SYMBOL_QUADRANT_BOUNDARY = (float)(Math.PI / 2.0);
-    private static final float SYNC_THRESHOLD_DETECTION = 35;
+    private static final float SYNC_THRESHOLD_DETECTION = 37;
     private static final float SYNC_THRESHOLD_OPTIMIZED = 40;
     private static final float SYNC_THRESHOLD_EQUALIZED = 40;
     private static final float TWO_PI = (float)(Math.PI * 2.0);
@@ -60,7 +60,6 @@ public class NXDNSymbolProcessor
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNStandardSoftSyncDetector mSyncDetector = NXDNSyncDetectorFactory.getStandardDetector();
     private final NXDNStandardSoftSyncDetector mSyncDetectorLagging = NXDNSyncDetectorFactory.getStandardDetector();
-    private final NXDNControlSoftSyncDetector mControlSoftSyncDetector = NXDNSyncDetectorFactory.getControlDetector();
     private final SampleEqualizer mSampleEqualizer = new SampleEqualizer();
     private final SymbolEqualizerC4FM mSymbolEqualizer = new SymbolEqualizerC4FM();
     private double mNoiseStandardDeviationThreshold;
@@ -78,10 +77,11 @@ public class NXDNSymbolProcessor
     private int mDebugSymbolCounter = 0;
     private int mDebugSampleCounter = 0;
     private boolean mSynchronized = false;
+    private boolean mDelayedSyncDetectionTriggerPending = false;
 
     private final boolean mVisualize = false;
-    private final int mDebugSymbolStart = 0;
-    private static final DecimalFormat DF = new DecimalFormat("00.00");
+    private final int mDebugSymbolStart = 2020; //1890 is actual start of modulation
+    private static final DecimalFormat DF = new DecimalFormat("00.000");
 
     /**
      * Constructs an instance
@@ -130,7 +130,6 @@ public class NXDNSymbolProcessor
 
         int samplesPointer = 0;
         float softSymbol, scorePrimary, scoreControl;
-        Dibit delayedSymbol;
         Correction correctionCandidate;
 
         if(!mSynchronized && samples.length > 400)
@@ -189,16 +188,13 @@ public class NXDNSymbolProcessor
                     if(mSynchronized && symbolsSinceLastSync > 192)
                     {
                         mSampleEqualizer.reset();
-                        mSymbolEqualizer.reset();
+                        mSymbolEqualizer.disable();
                     }
 
                     softSymbol = mSampleEqualizer.getEqualizedSymbol(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], samplePoint);
 
                     //Broadcast the decoded soft symbol to an optionally registered listener (ie Symbol view in channel panel).
                     Dibit symbol = toSymbol(softSymbol);
-
-                    softSymbol = mSymbolEqualizer.process(softSymbol, symbol);
-                    symbol = toSymbol(softSymbol);
 
 //                    if(!mSynchronized)
 //                    {
@@ -209,6 +205,50 @@ public class NXDNSymbolProcessor
 //                        double adjustment = mSampleEqualizer.getAdjustment(softSymbol, symbol, bufferPointer);
 //                        int a = 0;
 //                    }
+
+                    scorePrimary = mSyncDetector.process(softSymbol);
+//                    scoreControl = mControlSoftSyncDetector.process(softSymbol);
+
+                    correctionCandidate = INVALID_SYNC_DETECTION;
+
+                    //Check for lagging sync pattern
+                    float lag = (float)(bufferPointer + samplePoint - mLaggingSyncOffset);
+                    int lagIntegral = (int)Math.floor(lag);
+                    float softSymbolLag = mSampleEqualizer.getEqualizedSymbol(mBuffer[lagIntegral], mBuffer[lagIntegral + 1], lag - lagIntegral);
+                    float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
+
+//                    if(mVisualize)
+//                    {
+//                        System.out.println(mDebugSymbolCounter + " PRI:" + DF.format(scorePrimary) + " LAG:" + DF.format(scoreLag) +
+//                                " EQ-B:" + mSampleEqualizer.mBalance + " EQ-G:" + mSampleEqualizer.mGain + (mSynchronized ? " :S" : ""));
+//
+//                        boolean sync = (scorePrimary > SYNC_THRESHOLD_DETECTION) || (scoreLag > SYNC_THRESHOLD_DETECTION);
+//
+//                        if(scorePrimary > 30 || scoreLag > 30)
+//                        {
+//                            System.out.println(mDebugSymbolCounter +
+//                                    "\tPRIMARY:" + scorePrimary +
+//                                    "\tLAG:" + scoreLag +
+//                                    (sync ? " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< sync detected: " + symbolsSinceLastSync : ""));
+//                        }
+//                    }
+
+                    if(scorePrimary > SYNC_THRESHOLD_DETECTION && scorePrimary > scoreLag)
+                    {
+                        double optimizationPoint = bufferPointer + samplePoint;
+                        correctionCandidate = mSampleEqualizer.optimize(mSyncDetector, 0, scorePrimary,
+                                optimizationPoint);
+                    }
+                    else if(scoreLag > SYNC_THRESHOLD_DETECTION)
+                    {
+                        double optimizationPoint = bufferPointer + samplePoint;
+                        correctionCandidate = mSampleEqualizer.optimize(mSyncDetectorLagging, -mLaggingSyncOffset,
+                                scoreLag, optimizationPoint);
+                    }
+
+                    //Equalizer processes current soft symbol and returns a delayed soft symbol that is equalized
+                    softSymbol = mSymbolEqualizer.process(softSymbol, symbol);
+                    symbol = toSymbol(softSymbol);
 
                     mFeedbackDecoder.broadcast(softSymbol);
 
@@ -223,59 +263,32 @@ public class NXDNSymbolProcessor
                     //detected sync patterns in the delay buffer before they are sent downstream for recording.  This
                     //ensures that replay of the recorded demodulated bit stream has fully corrected sync patterns
                     //when possible.
-                    delayedSymbol = mSymbolDelayLine.insert(symbol);
-                    mDibitAssembler.receive(delayedSymbol);
-
-                    scorePrimary = mSyncDetector.process(softSymbol);
-//                    scoreControl = mControlSoftSyncDetector.process(softSymbol);
-
-                    correctionCandidate = INVALID_SYNC_DETECTION;
-
-                    //Check for lagging sync pattern
-                    float lag = (float)(bufferPointer + samplePoint - mLaggingSyncOffset);
-                    int lagIntegral = (int)Math.floor(lag);
-                    float softSymbolLag = mSampleEqualizer.getEqualizedSymbol(mBuffer[lagIntegral], mBuffer[lagIntegral + 1], lag - lagIntegral);
-                    float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
-
-//                    System.out.println(mDebugSymbolCounter + " PRI:" + DF.format(scorePrimary) + " LAG:" + DF.format(scoreLag) +
-//                            " CTL:" + DF.format(scoreControl) + (mSynchronized ? " :S" : ""));
-
-                    //                    boolean sync = (scorePrimary > SYNC_THRESHOLD_DETECTION) || (scoreLag > SYNC_THRESHOLD_DETECTION);
-//
-//                    if(scorePrimary > 30 || scoreLag > 30)
-//                    {
-//                        System.out.println(mDebugSymbolCounter +
-//                                "\tPRIMARY:" + scorePrimary +
-//                                "\tLAG:" + scoreLag +
-//                                "\tCONTROL:" + scoreControl +
-//                                (sync ? " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< sync detected: " + symbolsSinceLastSync : ""));
-//                    }
-
-                    if(scorePrimary > 40 && scorePrimary > scoreLag)
-                    {
-                        //Note: the symbol equalizer introduces a 1-symbol delay, so we subtract a symbol for optimization
-                        double optimizationPoint = bufferPointer + samplePoint - mSamplesPerSymbol;
-                        correctionCandidate = mSampleEqualizer.optimize(mSyncDetector, 0, scorePrimary,
-                                optimizationPoint);
-                    }
-                    else if(scoreLag > 40)
-                    {
-                        //Note: the symbol equalizer introduces a 1-symbol delay, so we subtract a symbol for optimization
-                        double optimizationPoint = bufferPointer + samplePoint - mSamplesPerSymbol;
-                        correctionCandidate = mSampleEqualizer.optimize(mSyncDetectorLagging, -mLaggingSyncOffset,
-                                scoreLag, optimizationPoint);
-                    }
+                    mDibitAssembler.receive(mSymbolDelayLine.insert(symbol));
 
                     if(correctionCandidate.isValid())
                     {
                         mSampleEqualizer.apply(correctionCandidate);
-                        samplePoint += correctionCandidate.getTimingCorrection();
 
-                        mMessageFramer.syncDetected();
+                        if(mSynchronized && Math.abs(correctionCandidate.getTimingCorrection()) < 1.0)
+                        {
+                            samplePoint += (correctionCandidate.getTimingCorrection() * TIMING_LOOP_GAIN);
+                        }
+                        else
+                        {
+                            samplePoint += correctionCandidate.getTimingCorrection();
+                        }
+
+                        mDelayedSyncDetectionTriggerPending = true;
                         symbolsSinceLastSync = 0;
                         mSynchronized = true;
                         mSymbolEqualizer.enable();
+                        mSymbolDelayLine.update(mSyncDetector.getSyncDibits());
                         visualizeSyncDetect(scorePrimary, true, "DETECT - POST", bufferPointer, samplePoint);
+                    }
+                    else if(mDelayedSyncDetectionTriggerPending)
+                    {
+                        mMessageFramer.syncDetected();
+                        mDelayedSyncDetectionTriggerPending = false;
                     }
 
                     //Add another symbol's worth of samples to the counter for processing
@@ -369,8 +382,8 @@ public class NXDNSymbolProcessor
             return;
         }
 
-        //Correct for the 1-symbol delay from the symbol equalizer
-        samplePoint -= mSamplesPerSymbol;
+//        //Correct for the 1-symbol delay from the symbol equalizer
+//        samplePoint -= mSamplesPerSymbol;
         int integral = (int)Math.floor(samplePoint);
         samplePoint -= integral;
         bufferPointer += integral;
@@ -581,7 +594,7 @@ public class NXDNSymbolProcessor
          */
         public double getTimingCorrection()
         {
-            return mTimingAdjustment - mAdditionalOffset;
+            return mAdditionalOffset + mTimingAdjustment;
         }
 
         /**

@@ -317,12 +317,12 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         String directory = "/media/denny/T9/Recordings/NXDN/"; //Linux
 
         //NXDN 9600 Channels
-        config = new DecodeConfigNXDN(TransmissionMode.M9600);
+//        config = new DecodeConfigNXDN(TransmissionMode.M9600);
 //        config.add(new ChannelFrequency(105, 451887500, 0));
 //        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
 
         //Weird 938 MHz site in Springfield, VA that is all CRC errors.
-        String file = directory + "20260324_033833_938736125_SYSTEM_SITE_null_47_baseband.wav";
+//        String file = directory + "20260324_033833_938736125_SYSTEM_SITE_null_47_baseband.wav";
 
         //NXDN 4800 Channels
 //        config = new DecodeConfigNXDN(TransmissionMode.M4800);
@@ -335,9 +335,11 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 //        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
 
         //Type-D Channels
-//        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);
+        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);
+//        String file = directory + "Type C and D/Action Radio Hennepin tadscottsmith/20260402_152326_464125000_Action-Radio---Hennepin_LCN-1_103_baseband.wav";
+//        String file = directory + "Type C and D/Action Radio Hennepin 2 tadscottsmith/recordings/20260330_221120_464650000_Action-Radio_Hennepin_LCN-4_92_baseband.wav";
 //        String file = directory + "Type C and D/20260314_091952_451775000_Heimes_Omaha_TYPE_D_114_baseband.wav";
-//        String file = directory + "Type C and D/20260318_034719_452675000_Heimes_Omaha_TYPE_D_0_baseband.wav";
+        String file = directory + "Type C and D/20260318_034719_452675000_Heimes_Omaha_TYPE_D_0_baseband.wav";
 //        String file = directory + "Type C and D/20260320_065339_451450000_Heimes_Omaha_TYPE_D_0_baseband.wav";
 
         //This file has PPM mis-adjusted by 8.0 to test for equalizer balance
@@ -355,8 +357,15 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
             {
                 if(message instanceof NXDNMessage nxdn)
                 {
-                    System.out.println("BE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn.toString());
-                    decoder.log();
+                    if(nxdn.isValid())
+                    {
+                        System.out.println("BE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn.toString());
+                        //                    decoder.log();
+                    }
+                    else
+                    {
+                        System.out.println("\t\tBE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn.toString());
+                    }
                 }
                 else
                 {

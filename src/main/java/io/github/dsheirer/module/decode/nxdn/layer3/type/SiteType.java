@@ -24,10 +24,23 @@ package io.github.dsheirer.module.decode.nxdn.layer3.type;
  */
 public enum SiteType
 {
-    RESERVED,
-    WIDE,
-    MIDDLE,
-    NARROW;
+    RESERVED("RESERVED"),
+    WIDE("LARGE COVERAGE AREA"),
+    MIDDLE("MEDIUM COVERAGE AREA"),
+    NARROW("SMALL COVERAGE AREA");
+
+    private String mLabel;
+
+    /**
+     * Constructs an instance
+     * @param label to display to user
+     */
+    SiteType(String label)
+    {
+        mLabel = label;
+    }
+
+
 
     /**
      * Utility method to lookup the type from the value.
@@ -43,5 +56,11 @@ public enum SiteType
             case 3 -> NARROW;
             default -> RESERVED;
         };
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
     }
 }

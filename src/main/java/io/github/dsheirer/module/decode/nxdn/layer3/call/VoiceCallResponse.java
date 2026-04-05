@@ -70,21 +70,32 @@ public class VoiceCallResponse extends VoiceCallWithOptionalLocation
             sb.append("PRIORITY PAGING ");
         }
 
+        if(isTypeD())
+        {
+            sb.append("TYPE-D ");
+        }
+
         CauseVD cause = getCause();
 
-        if(cause == CauseVD.ACCEPTED_NORMAL)
+        if(cause == CauseVD.ACCEPTED_NORMAL || cause == CauseVD.UNKNOWN)
         {
-            sb.append(getCallType()).append(" CALL GRANTED");
+            sb.append(getCallType()).append(" CALL RESPONSE");
         }
         else
         {
-            sb.append(getCallType()).append(" CALL FAIL:").append(cause);
-
+            sb.append(getCallType()).append(" CALL RESPONSE FAIL:").append(cause);
         }
         sb.append(" FROM:").append(getSource());
         sb.append(" TO:").append(getDestination());
         sb.append(" ").append(getEncryptionKeyIdentifier());
-        sb.append(getCallOption());
+
+        if(isTypeD())
+        {
+            sb.append(" FREE REPEATER:").append(getMessage().getInt(CALL_OPTION));
+        }
+
+        sb.append(" ").append(getCallOption());
+
         return sb.toString();
     }
 

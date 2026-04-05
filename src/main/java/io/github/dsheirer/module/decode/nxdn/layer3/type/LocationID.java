@@ -130,7 +130,7 @@ public class LocationID
     {
         if(mLocationCategory.equals(LocationCategory.TYPE_D))
         {
-            return getCategory() + " SYSTEM:" + getSystem() + " INTEGRATOR:" + getSiteOrIntegrator();
+            return "SYSTEM:" + getSystem();
         }
 
         return getCategory() + " SYSTEM:" + getSystem() + (mPartial ? "" : " SITE:" + getSiteOrIntegrator());

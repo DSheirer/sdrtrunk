@@ -63,7 +63,7 @@ public class ServiceInformationTypeD extends NXDNLayer3Message
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append(getSystemID());
+        sb.append("TYPE-D ").append(getSystemID());
         sb.append(" SITE:").append(getSite());
         sb.append(" ").append(getServiceInformation());
         sb.append(" ").append(getRestrictionInformation());

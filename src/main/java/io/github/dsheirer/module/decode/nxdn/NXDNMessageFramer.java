@@ -199,23 +199,12 @@ public class NXDNMessageFramer
         {
             syncDetected();
         }
-        else if(mSymbolsSinceLastSync == 384)
+        else if(mSymbolsSinceLastSync == 192)
         {
             if(mHardSyncDetector.getCurrentBitErrors() <= 10)
             {
                 syncDetected();
             }
         }
-
     }
-
-    /**
-     * Indicates if there is a non-null message assembler and it is completed, but not yet dispatched.
-     * @return true if there is a complete message.
-     */
-    public boolean isComplete()
-    {
-        return false;
-    }
-
 }

@@ -48,8 +48,8 @@ public class RepeaterFree extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("FREE REPEATER 1:").append(getRepeater());
-        sb.append(" 2:").append(getRepeater2());
+        sb.append("FREE REPEATER A:").append(getRepeater());
+        sb.append(" B:").append(getRepeater2());
         return sb.toString();
     }
 

@@ -23,44 +23,33 @@ package io.github.dsheirer.module.decode.nxdn.audio;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequence;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.p25.audio.Phase2EncryptionSyncParameters;
-import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupVoiceChannelUpdate;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaGroupRegroupVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUpdateExplicit;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCTelephoneInterconnectVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitToUnitVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.EncryptionSyncParameters;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
+import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
+import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallInitializationVector;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressDestinationInfo2;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressDestinationInfo4;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressSourceID;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInfo;
 import io.github.dsheirer.preference.UserPreferences;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * P25 Phase 1 IMBE Frame recorder generates P25 call sequence recordings containing JSON representations of audio
+ * NXDN AMBE+ Frame recorder generates call sequence recordings containing JSON representations of audio
  * frames, optional encryption and call identifiers.
  */
 public class NXDNCallSequenceRecorder extends MBECallSequenceRecorder
 {
     private final static Logger mLog = LoggerFactory.getLogger(NXDNCallSequenceRecorder.class);
-
-    public static final String PROTOCOL = "APCO25-PHASE1";
-
+    public static final String PROTOCOL = "NXDN";
     private MBECallSequence mCallSequence;
 
     /**
-     * Constructs a P25-Phase2 MBE call sequence recorder.
+     * Constructs an instance
      *
      * @param userPreferences to obtain the recording directory
      * @param channelFrequency for the channel to record
@@ -87,15 +76,33 @@ public class NXDNCallSequenceRecorder extends MBECallSequenceRecorder
     @Override
     public void receive(IMessage message)
     {
-        if(message instanceof P25P1Message)
+        if(message instanceof NXDNMessage nxdn)
         {
-            P25P1Message p25 = (P25P1Message)message;
-
-            if(p25.isValid())
+            if(nxdn.isValid())
             {
-                process(p25);
+                if(nxdn instanceof Audio audio)
+                {
+                    process(audio);
+                }
+                else if(nxdn instanceof NXDNLayer3Message layer3)
+                {
+                    process(layer3);
+                }
             }
         }
+    }
+
+    /**
+     * Gets and optionally creates a new call sequence.
+     */
+    private MBECallSequence getCallSequence()
+    {
+        if(mCallSequence == null)
+        {
+            mCallSequence = new MBECallSequence(PROTOCOL);
+        }
+
+        return mCallSequence;
     }
 
 
@@ -112,145 +119,90 @@ public class NXDNCallSequenceRecorder extends MBECallSequenceRecorder
     }
 
     /**
-     * Processes any P25 Phase 1 message
+     * Processes any NXDN layer 3 message
      */
-    public void process(P25P1Message message)
+    public void process(NXDNLayer3Message layer3)
     {
-        if(message instanceof LDUMessage)
+        switch(layer3.getMessageType())
         {
-            process((LDUMessage)message);
-        }
-        else if(message instanceof TDULCMessage)
-        {
-            process((TDULCMessage)message);
-        }
-        else if(message instanceof TDUMessage)
-        {
-            flush();
-        }
-        else if (message instanceof HDUMessage)
-        {
-            process((HDUMessage)message);
-        }
-    }
+            case TRAFFIC_IN_01_CC_VOICE_CALL:
+            case TRAFFIC_OUT_01_CC_VOICE_CALL:
+            case TYPE_D_IN_01_CC_VOICE_CALL:
+            case TYPE_D_OUT_01_CC_VOICE_CALL:
+                if(layer3 instanceof VoiceCall vc)
+                {
+                    getCallSequence().setCallType(vc.getCallType().toString());
+                    getCallSequence().setFromIdentifier(vc.getSource());
+                    getCallSequence().setToIdentifier(vc.getDestination());
 
-    private void process(TDULCMessage tdulc)
-    {
-        process(tdulc.getLinkControlWord());
+                    if(vc.getEncryptionKeyIdentifier().isEncrypted())
+                    {
+                        getCallSequence().setEncrypted(true);
+                    }
+                }
+                break;
+            case TRAFFIC_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TYPE_D_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TYPE_D_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+                if(layer3 instanceof VoiceCallInitializationVector iv)
+                {
+                    //TODO: implement superframes with IV injected into each
+                }
+                break;
+            case TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:
+            case TRAFFIC_OUT_08_CC_TRANSMISSION_RELEASE:
+            case TYPE_D_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:
+            case TYPE_D_OUT_08_CC_TRANSMISSION_RELEASE:
+                writeCallSequence(mCallSequence);
+                mCallSequence = null;
+                break;
+            case TYPE_D_SCCH_IN_INFO_4_CALL_IN_PROGRESS_DESTINATION:
+            case TYPE_D_SCCH_OUT_INFO_4_CALL_IN_PROGRESS_DESTINATION:
+                if(layer3 instanceof CallInProgressDestinationInfo4 info4)
+                {
+                    getCallSequence().setToIdentifier(info4.getDestination());
+                }
+                break;
+            case TYPE_D_SCCH_IN_INFO_3_CALL_IN_PROGRESS_SOURCE:
+            case TYPE_D_SCCH_OUT_INFO_3_CALL_IN_PROGRESS_SOURCE:
+                if(layer3 instanceof CallInProgressSourceID source)
+                {
+                    getCallSequence().setFromIdentifier(source.getSource());
+                }
+                break;
+            case TYPE_D_SCCH_IN_INFO_2_CALL_IN_PROGRESS_DESTINATION:
+            case TYPE_D_SCCH_OUT_INFO_2_CALL_IN_PROGRESS_DESTINATION:
+                if(layer3 instanceof CallInProgressDestinationInfo2 info2)
+                {
+                    getCallSequence().setToIdentifier(info2.getDestination());
+                }
+                break;
+            case TYPE_D_SCCH_IN_INFO_1_CALL_INFO:
+            case TYPE_D_SCCH_OUT_INFO_1_CALL_INFO:
+                if(layer3 instanceof CallInfo ci && ci.getEncryptionKey().isEncrypted())
+                {
+                    getCallSequence().setEncrypted(true);
+                }
+            break;
+        }
     }
 
     /**
-     * Processes Voice LDU messages
+     * Process audio messages
      */
-    private void process(LDUMessage lduMessage)
+    private void process(Audio audio)
     {
-        if(mCallSequence == null)
-        {
-            mCallSequence = new MBECallSequence(PROTOCOL);
-        }
-
-        if(lduMessage instanceof LDU1Message)
-        {
-            process((LDU1Message)lduMessage);
-        }
-
-        List<byte[]> voiceFrames = lduMessage.getIMBEFrames();
-
-        long baseTimestamp = lduMessage.getTimestamp();
+        List<byte[]> voiceFrames = audio.getAudioFrames();
+        long timestamp = audio.getTimestamp();
 
         for(byte[] frame : voiceFrames)
         {
             BinaryMessage frameBits = BinaryMessage.from(frame);
-            mCallSequence.addVoiceFrame(baseTimestamp, frameBits.toHexString());
+            getCallSequence().addVoiceFrame(timestamp, frameBits.toHexString());
 
             //Voice frames are 20 milliseconds each, so we increment the timestamp by 20 for each one
-            baseTimestamp += 20;
-        }
-
-        if(lduMessage instanceof LDU2Message)
-        {
-            process((LDU2Message)lduMessage);
-        }
-    }
-
-    private void process(LinkControlWord lcw)
-    {
-        if(lcw.isValid() && mCallSequence != null)
-        {
-            switch(lcw.getOpcode())
-            {
-                case GROUP_VOICE_CHANNEL_USER:
-                    LCGroupVoiceChannelUser gvcu = (LCGroupVoiceChannelUser)lcw;
-                    mCallSequence.setFromIdentifier(gvcu.getSourceAddress().toString());
-                    mCallSequence.setToIdentifier(gvcu.getGroupAddress().toString());
-                    mCallSequence.setCallType(CALL_TYPE_GROUP);
-                    break;
-                case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-                    LCUnitToUnitVoiceChannelUser uuvcu = (LCUnitToUnitVoiceChannelUser)lcw;
-                    mCallSequence.setFromIdentifier(uuvcu.getSourceAddress().toString());
-                    mCallSequence.setToIdentifier(uuvcu.getTargetAddress().toString());
-                    mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
-                    break;
-                case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
-                    LCGroupVoiceChannelUpdateExplicit gvcue = (LCGroupVoiceChannelUpdateExplicit)lcw;
-                    mCallSequence.setToIdentifier(gvcue.getGroupAddress().toString());
-                    mCallSequence.setCallType(CALL_TYPE_GROUP);
-                    break;
-                case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-                    LCTelephoneInterconnectVoiceChannelUser tivcu = (LCTelephoneInterconnectVoiceChannelUser)lcw;
-                    mCallSequence.setToIdentifier(tivcu.getAddress().toString());
-                    mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
-                    break;
-                case MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_USER:
-                    LCMotorolaGroupRegroupVoiceChannelUser mpgvcu = (LCMotorolaGroupRegroupVoiceChannelUser)lcw;
-                    mCallSequence.setFromIdentifier(mpgvcu.getSourceAddress().toString());
-                    mCallSequence.setToIdentifier(mpgvcu.getSupergroupAddress().toString());
-                    mCallSequence.setCallType(CALL_TYPE_GROUP);
-                    break;
-                case MOTOROLA_GROUP_REGROUP_VOICE_CHANNEL_UPDATE:
-                    LCMotorolaGroupRegroupVoiceChannelUpdate mpgvcup = (LCMotorolaGroupRegroupVoiceChannelUpdate)lcw;
-                    mCallSequence.setToIdentifier(mpgvcup.getSupergroupAddress().toString());
-                    mCallSequence.setCallType(CALL_TYPE_GROUP);
-                    break;
-                case CALL_TERMINATION_OR_CANCELLATION:
-                case MOTOROLA_TALK_COMPLETE:
-                    writeCallSequence(mCallSequence);
-                    mCallSequence = null;
-                    break;
-            }
-        }
-    }
-
-    private void process(LDU1Message ldu1Message)
-    {
-        process(ldu1Message.getLinkControlWord());
-    }
-
-    private void process(LDU2Message ldu2Message)
-    {
-        EncryptionSyncParameters parameters = ldu2Message.getEncryptionSyncParameters();
-
-        if(parameters.isValid() && parameters.isEncryptedAudio())
-        {
-            mCallSequence.setEncrypted(true);
-            mCallSequence.setEncryptionSyncParameters(parameters);
-        }
-    }
-
-    private void process(HDUMessage hduMessage)
-    {
-        if(mCallSequence == null)
-        {
-            mCallSequence = new MBECallSequence(PROTOCOL);
-        }
-
-        HeaderData hd = hduMessage.getHeaderData();
-
-        if (hd.isEncryptedAudio())
-        {
-            mCallSequence.setEncrypted(true);
-            Phase2EncryptionSyncParameters esp = new Phase2EncryptionSyncParameters((EncryptionKeyIdentifier)hd.getEncryptionKey(), hd.getMessageIndicator());
-            mCallSequence.setEncryptionSyncParameters(esp);
+            timestamp += 20;
         }
     }
 }

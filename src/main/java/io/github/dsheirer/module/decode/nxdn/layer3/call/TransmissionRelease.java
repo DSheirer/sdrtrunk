@@ -32,6 +32,7 @@ import java.util.List;
 public class TransmissionRelease extends CallControl
 {
     private static final IntField FREE_REPEATER = IntField.length5(OCTET_2 + 3);
+    private static final IntField REPEATER_ID = IntField.length5(OCTET_3);
 
     /**
      * Constructs an instance
@@ -55,10 +56,31 @@ public class TransmissionRelease extends CallControl
         return getMessage().getInt(FREE_REPEATER);
     }
 
+    /**
+     * This repeater ID
+     */
+    public int getRepeater()
+    {
+        return getMessage().getInt(REPEATER_ID);
+    }
+
+    /**
+     * Indicates if the source and destination have non-zero values.
+     */
+    public boolean hasIdentifiers()
+    {
+        return getSource().getValue() != 0 && getDestination().getValue() != 0;
+    }
+
     @Override
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
+
+        if(isTypeD())
+        {
+            sb.append("TYPE-D ");
+        }
 
         if(getCallControlOption().isEmergency())
         {
@@ -71,12 +93,20 @@ public class TransmissionRelease extends CallControl
         }
 
         sb.append(getCallType()).append(" END CALL");
-        sb.append(" FROM:").append(getSource());
-        sb.append(" TO:").append(getDestination());
+
+        if(hasIdentifiers())
+        {
+            sb.append(" FROM:").append(getSource());
+            sb.append(" TO:").append(getDestination());
+        }
+        else
+        {
+            sb.append(" REPEATER:").append(getRepeater());
+        }
 
         if(isTypeD())
         {
-            sb.append(" FREE REPEATER:" + getFreeRepeater());
+            sb.append(" FREE:" + getFreeRepeater());
         }
 
         return sb.toString();

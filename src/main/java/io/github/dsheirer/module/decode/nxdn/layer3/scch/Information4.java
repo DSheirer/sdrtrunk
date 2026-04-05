@@ -59,7 +59,9 @@ public abstract class Information4 extends SCCH
     {
         if(lich.isOutbound())
         {
-            return switch (getIdentifier(message))
+            int identifier = getUnitId(message);
+
+            return switch (getUnitId(message))
             {
                 case TYPE_REPEATER_IDLE -> NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_REPEATER_IDLE;
                 case TYPE_REPEATER_HALT -> NXDNMessageType.TYPE_D_SCCH_OUT_INFO_4_REPEATER_HALT;

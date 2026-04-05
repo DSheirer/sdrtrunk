@@ -35,6 +35,7 @@ public abstract class SCCH extends NXDNLayer3Message
     protected static final IntField REPEATER_1 = IntField.length5(3);
     protected static final IntField REPEATER_2 = IntField.length5(8);
     protected static final IntField IDENTIFIER = IntField.length16(8);
+    protected static final IntField UNIT_ID = IntField.length11(8 + 5);
 
     /**
      * Constructs an instance
@@ -53,7 +54,7 @@ public abstract class SCCH extends NXDNLayer3Message
     @Override
     public StringBuilder getMessageBuilder()
     {
-        return super.getMessageBuilder().append("TYPE-D ").append(getArea()).append(mLICH).append(" ");
+        return super.getMessageBuilder().append("TYPE-D SCCH ").append(getArea());
     }
 
     /**
@@ -127,5 +128,15 @@ public abstract class SCCH extends NXDNLayer3Message
     public static int getIdentifier(CorrectedBinaryMessage message)
     {
         return message.getInt(IDENTIFIER);
+    }
+
+    /**
+     * Utility method to parse the unit or group identifier (without the home repeater) field from the message
+     * @param message containing an identifier value
+     * @return identifier
+     */
+    public static int getUnitId(CorrectedBinaryMessage message)
+    {
+        return message.getInt(UNIT_ID);
     }
 }

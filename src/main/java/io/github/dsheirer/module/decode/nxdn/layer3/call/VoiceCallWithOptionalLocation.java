@@ -54,7 +54,14 @@ public abstract class VoiceCallWithOptionalLocation extends CallWithOptionalLoca
     {
         if(mVoiceCallOption == null)
         {
-            mVoiceCallOption = new VoiceCallOption(getMessage().getInt(CALL_OPTION));
+            if(isTypeD())
+            {
+                mVoiceCallOption = new VoiceCallOption(0);
+            }
+            else
+            {
+                mVoiceCallOption = new VoiceCallOption(getMessage().getInt(CALL_OPTION));
+            }
         }
 
         return mVoiceCallOption;

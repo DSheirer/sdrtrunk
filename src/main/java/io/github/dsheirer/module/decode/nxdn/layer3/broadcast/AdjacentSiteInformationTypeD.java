@@ -68,7 +68,7 @@ public class AdjacentSiteInformationTypeD extends NXDNLayer3Message
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("NEIGHBOR ").append(isIndex() ? "3:" : "1:");
+        sb.append("TYPE-D NEIGHBOR-").append(isIndex() ? "3:" : "1:");
         sb.append(getSystemID1()).append(" SITE:").append(getSite1());
 
         if(getSiteOption1().isIsolatedSite())
@@ -76,15 +76,26 @@ public class AdjacentSiteInformationTypeD extends NXDNLayer3Message
             sb.append(" (ISOLATED)");
         }
 
-        sb.append("NEIGHBOR ").append(isIndex() ? "4:" : "2:");
-        sb.append(getSystemID2()).append(" SITE:").append(getSite2());
-
-        if(getSiteOption2().isIsolatedSite())
+        if(hasSite2())
         {
-            sb.append(" (ISOLATED)");
+            sb.append(" NEIGHBOR-").append(isIndex() ? "4:" : "2:");
+            sb.append(getSystemID2()).append(" SITE:").append(getSite2());
+
+            if(getSiteOption2().isIsolatedSite())
+            {
+                sb.append(" (ISOLATED)");
+            }
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Indicates if the site 2 field is empty (false) or not (true)
+     */
+    public boolean hasSite2()
+    {
+        return getSystemID2().getSystem().getValue() != 0 && getSite2().getValue() != 0;
     }
 
     /**

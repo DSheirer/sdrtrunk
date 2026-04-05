@@ -602,6 +602,8 @@ public enum NXDNMessageType
      */
     public static NXDNMessageType getSCCH(CorrectedBinaryMessage message, LICH lich)
     {
+        int structure = SCCH.getStructure(message);
+
         return switch(SCCH.getStructure(message))
         {
             case 0 -> Information4.getMessageType(message, lich);

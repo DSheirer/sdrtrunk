@@ -53,7 +53,7 @@ public class SiteID extends Information4
     public String toString()
     {
         StringBuilder sb = getMessageBuilder();
-        sb.append("SITE ID:").append(getSite());
+        sb.append("SITE:").append(getSite());
         sb.append(" TYPE:").append(getSiteType());
         return sb.toString();
     }

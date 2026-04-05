@@ -26,7 +26,7 @@ public enum CallType
 {
     GROUP_BROADCAST(0, "GROUP BROADCAST"),
     GROUP_CONFERENCE(1, "GROUP CONFERENCE"),
-    UNSPECIFIED(2, "UNSPECIFIED"),
+    TRANSMISSION_RELEASE(2, "TRANSMISSION RELEASE"),
     SESSION_CALL(3, "SESSION CALL WITH TRUNK CONTROL"), //Type-D systems
     INDIVIDUAL(4, "INDIVIDUAL"),
     RESERVED(5, "RESERVED"),
@@ -77,7 +77,7 @@ public enum CallType
         {
             case 0 -> GROUP_BROADCAST;
             case 1 -> GROUP_CONFERENCE;
-            case 2 -> UNSPECIFIED;
+            case 2 -> TRANSMISSION_RELEASE;
             case 3 -> SESSION_CALL;
             case 4 -> INDIVIDUAL;
             case 5 -> RESERVED;

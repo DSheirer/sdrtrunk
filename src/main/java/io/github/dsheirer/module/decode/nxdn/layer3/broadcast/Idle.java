@@ -48,7 +48,13 @@ public class Idle extends NXDNLayer3Message
     @Override
     public String toString()
     {
-        return getMessageBuilder().append("IDLE").append(" MSG:").append(getMessage().toHexString()).toString();
+        StringBuilder sb = getMessageBuilder();
+        if(isTypeD())
+        {
+            sb.append("TYPE-D ");
+        }
+        sb.append("IDLE");
+        return sb.toString();
     }
 
     @Override
