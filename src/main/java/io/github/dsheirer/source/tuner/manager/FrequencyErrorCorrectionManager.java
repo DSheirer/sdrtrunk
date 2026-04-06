@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ public class FrequencyErrorCorrectionManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(FrequencyErrorCorrectionManager.class);
 
-    private static final double FREQUENCY_CORRECTION_ERROR_THRESHOLD = 0.4;
+    private static final double FREQUENCY_CORRECTION_ERROR_THRESHOLD = 0.2;
     private static final long AUTO_CORRECTION_OBSERVATION_PERIOD_MILLISECONDS = 30 * 1000; //30 seconds
     private static final long INITIAL_AUTO_CORRECTION_OBSERVATION_PERIOD_MILLISECONDS = 5 * 1000; //5 seconds
     private long mObservationPeriodStart;

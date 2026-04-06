@@ -1015,6 +1015,7 @@ public class NXDNSymbolProcessor
 
             mBalance = Math.min(mBalance, EQUALIZER_MAXIMUM_BALANCE);
             mBalance = Math.max(mBalance, -EQUALIZER_MAXIMUM_BALANCE);
+            mFeedbackDecoder.processPLLError(mBalance, 2400);
 
             mGain = Math.min(mGain, mGainMax);
             mGain = Math.max(mGain, mGainMin);
