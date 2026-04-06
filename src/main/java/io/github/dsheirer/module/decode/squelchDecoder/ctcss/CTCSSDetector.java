@@ -298,7 +298,10 @@ public class CTCSSDetector
                 {
                     mUnmuted = false;
                     mOpenCounter = 0;
-                    mDetectionListener.ctcssRejected(newCode);
+                    if(newCode != null)
+                        mDetectionListener.ctcssRejected(newCode);
+                    else
+                        mDetectionListener.ctcssLost();
                 }
                 else
                 {
@@ -328,11 +331,6 @@ public class CTCSSDetector
             mutedString = "MUTED";
         }
 
-        if(mCloseCounter == 1)
-        {
-            int dummy = 0;  // for breakpoint in debugger
-        }
-
         CTCSSCode setCode = mTargetCodes.getFirst();
         CTCSSMessage message = new CTCSSMessage();
         message.setInitialThreshold(true);
@@ -351,6 +349,7 @@ public class CTCSSDetector
      */
     private void handleNoDetection()
     {
+
         detectionLogicTree(null);
     }
 
@@ -366,6 +365,7 @@ public class CTCSSDetector
         mLoggingListener.receive(message);
         mCloseCounter = 0;
         mOpenCounter = 0;
+        mDetectionListener.ctcssLost();
     }
 }
 

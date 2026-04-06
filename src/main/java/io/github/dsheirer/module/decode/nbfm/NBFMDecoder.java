@@ -288,9 +288,10 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             @Override
             public void ctcssRejected(CTCSSCode code)
             {
-                if(mDecoderState != null && code != null)
+                if(mDecoderState != null)
                 {
                     mDecoderState.setRejectedCTCSS(code);
+                    mToneMatched = false;
                 }
             }
 
