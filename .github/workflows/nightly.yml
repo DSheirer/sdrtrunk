@@ -12,7 +12,6 @@ jobs:
   # ============================================================
   build-native:
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -24,7 +23,7 @@ jobs:
           - os: macos-latest
             target: osx-aarch64
             lib_glob: "*.dylib"
-          - os: macos-13
+          - os: macos-15-intel
             target: osx-x86_64
             lib_glob: "*.dylib"
           - os: windows-latest
@@ -33,14 +32,11 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 25 (for JNI headers)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v3
         with:
           java-version: '25'
           distribution: 'liberica'
@@ -107,14 +103,11 @@ jobs:
     needs: build-native
     runs-on: ubuntu-latest
 
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v3
         with:
           java-version: '25'
           distribution: 'liberica'
@@ -163,16 +156,15 @@ jobs:
           cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
       - name: Build Linux and Mac releases with Gradle
-        run: ./gradlew runtimeZipOthers -PprojectVersion=nightly
-        shell: bash
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: runtimeZipOthers -PprojectVersion=nightly
 
       - name: Build Windows release with Gradle
-        run: ./gradlew runtimeZipWindows -PprojectVersion=nightly
-        shell: bash
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: runtimeZipWindows -PprojectVersion=nightly
 
       # Inject platform-specific native libs into release zips
       - name: Inject native libraries into release packages
@@ -180,13 +172,11 @@ jobs:
           cd build/image
           for zip in *.zip; do
             echo "Processing $zip"
-            # Order matters: match aarch64 BEFORE x86_64 (the substring "x86_64" is unique
-            # but "linux-" / "windows-" prefixes are shared, so check the more specific arch first)
+            # Order matters: match aarch64 BEFORE x86_64 (the prefix is shared)
             if   [[ "$zip" == *"linux-aarch64"*   ]]; then dir="linux-aarch64"
             elif [[ "$zip" == *"linux-x86_64"*    ]]; then dir="linux-x86_64"
             elif [[ "$zip" == *"osx-aarch64"*     ]]; then dir="osx-aarch64"
             elif [[ "$zip" == *"osx-x86_64"*      ]]; then dir="osx-x86_64"
-            elif [[ "$zip" == *"windows-aarch64"* ]]; then dir="windows-aarch64"
             elif [[ "$zip" == *"windows-x86_64"*  ]]; then dir="windows-x86_64"
             else echo "  Skipping: $zip"; continue; fi
 
@@ -217,7 +207,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
+          name: Nightly Build
           prerelease: true
+          body: |
+            Automatic nightly build of the HydraSDR fork of sdrtrunk.
+
+            **HydraSDR support**
+            - Native JNI bridge to **libhydrasdr v1.1.1** (hardware-agnostic HAL)
+            - Near-zero-copy streaming via pre-allocated double-buffered float[] + JNI critical sections
+            - ~20× lower CPU vs the previous pure-Java USB path
+            - HydraSDR RFOne supported via libhydrasdr's device-info / capabilities API (no chip-specific assumptions)
+
+            **Bundled native libraries**
+            - Linux x86_64 / aarch64: `libhydrasdr_jni.so`
+            - macOS aarch64 / x86_64: `libhydrasdr_jni.dylib`
+            - Windows x86_64: `hydrasdr_jni.dll` + `hydrasdr.dll` + `libusb-1.0.dll`
+
+            On Linux/macOS you must also have `libhydrasdr` and `libusb-1.0` installed via your system package manager (`apt install libhydrasdr0 libusb-1.0-0` / `brew install libhydrasdr libusb`).
+
+            See `build_info.txt` in this release for the exact commit and build timestamp.
           files: |
             build/image/*.zip
             build/image/build_info.txt
