@@ -11,6 +11,7 @@ jobs:
   # ============================================================
   build-native:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -140,15 +141,16 @@ jobs:
           cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release
 
-      - name: Build Linux and Mac releases with Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          arguments: runtimeZipOthers -PprojectVersion=nightly
+
+      - name: Build Linux and Mac releases with Gradle
+        run: ./gradlew runtimeZipOthers -PprojectVersion=nightly
+        shell: bash
 
       - name: Build Windows release with Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          arguments: runtimeZipWindows -PprojectVersion=nightly
+        run: ./gradlew runtimeZipWindows -PprojectVersion=nightly
+        shell: bash
 
       # Inject platform-specific native libs into release zips
       - name: Inject native libraries into release packages
