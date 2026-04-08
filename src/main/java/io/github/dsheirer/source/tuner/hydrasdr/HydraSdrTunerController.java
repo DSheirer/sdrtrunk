@@ -278,14 +278,13 @@ public class HydraSdrTunerController extends TunerController implements HydraSdr
 		mTotalSamples += sampleCount;
 		mCallbackTimeNs += (System.nanoTime() - t0);
 
-		/* Periodic stats + streaming health check */
+		/* Periodic streaming health check (USB unplug, device error).
+		 * Performance stats are exposed via getPerformanceStats() and rendered
+		 * by HydraSdrTunerEditor's Tuner Info panel — no need to log them. */
 		long now = System.currentTimeMillis();
 		if(now - mLastStatsLog >= STATS_LOG_INTERVAL_MS)
 		{
 			mLastStatsLog = now;
-			mLog.info("HydraSDR perf: " + getPerformanceStats().replace('\n', ' '));
-
-			/* Check if native side stopped unexpectedly (USB unplug, error) */
 			if(mStreaming && mDeviceHandle != 0 && !HydraSdrNative.isStreaming(mDeviceHandle))
 			{
 				mLog.error("HydraSDR streaming stopped unexpectedly");

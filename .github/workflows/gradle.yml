@@ -55,8 +55,8 @@ jobs:
           # decode LZMA2 ("Unexpected codec ID: a"). Pre-extract here using
           # 7z.exe (preinstalled on windows-latest) into the path libhydrasdr's
           # FetchContent expects so its broken extraction step is bypassed.
-          # NOTE: the .7z archive has no top-level dir — its contents are
-          # VS2022/, MinGW64/, etc. — so we must extract INTO libusb-1.0.29/.
+          # NOTE: the .7z archive has no top-level dir - its contents are
+          # VS2022/, MinGW64/, etc. - so we must extract INTO libusb-1.0.29/.
           $libusbDir = "jni/build/_deps/libusb-1.0.29"
           New-Item -ItemType Directory -Force -Path $libusbDir | Out-Null
           Invoke-WebRequest -Uri "https://github.com/libusb/libusb/releases/download/v1.0.29/libusb-1.0.29.7z" -OutFile "libusb.7z"
