@@ -48,6 +48,7 @@ import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTuner;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerConfiguration;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerEditor;
+import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrNative;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
@@ -380,7 +381,14 @@ public class TunerFactory
             case HACKRF:
                 return new HackRFTuner(new HackRFTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case HYDRASDR:
-                return new HydraSdrTuner(new HydraSdrTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+                if(!HydraSdrNative.isLoaded())
+                {
+                    throw new SourceException("HydraSDR native library (hydrasdr_jni) not available");
+                }
+                /* Multi-device: enumerate via native library and match by USB port.
+                 * Each discovered USB HydraSDR device gets its own serial-based controller. */
+                long hydraSerial = HydraSdrTunerController.findSerialForUsbPort(bus, portAddress);
+                return new HydraSdrTuner(new HydraSdrTunerController(hydraSerial, tunerErrorListener), tunerErrorListener, channelizerType);
             case RTL2832:
                 return new RTL2832Tuner(new RTL2832TunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             default:
@@ -430,7 +438,7 @@ public class TunerFactory
             case HACKRF_ONE:
             case HACKRF_RAD1O:
                 return new HackRFTunerConfiguration(uniqueID);
-            case HYDRASDR_R828D:
+            case HYDRASDR:
                 return new HydraSdrTunerConfiguration(uniqueID);
             case RAFAELMICRO_R820T:
                 return new R820TTunerConfiguration(uniqueID);
