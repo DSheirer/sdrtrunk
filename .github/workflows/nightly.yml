@@ -1,44 +1,198 @@
-# Build and publish releases for Linux, Mac, and Windows
+# Create nightly release for Linux, Mac and Windows.
+# Builds native JNI libraries for each platform, then packages with Gradle.
 name: Nightly Release
 
 on:
   workflow_dispatch:
 
 jobs:
-  nightly:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+  # ============================================================
+  # Build native JNI libraries for each platform
+  # ============================================================
+  build-native:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            lib_glob: "*.so"
+          - os: ubuntu-24.04-arm
+            target: linux-aarch64
+            lib_glob: "*.so"
+          - os: macos-latest
+            target: osx-aarch64
+            lib_glob: "*.dylib"
+          - os: macos-13
+            target: osx-x86_64
+            lib_glob: "*.dylib"
+          - os: windows-latest
+            target: windows-x86_64
+            lib_glob: "*.dll"
 
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 25 (Liberica Full with JavaFX)
-        uses: actions/setup-java@v3
+      - name: Set up JDK 25 (for JNI headers)
+        uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'liberica'
           java-package: 'jdk+fx'
 
-      - name: Build Linux and Mac releases
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: runtimeZipOthers -PprojectVersion=0.6.2-beta-1-buns-eastern
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev ninja-build
 
-      - name: Build Windows release
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: runtimeZipWindows -PprojectVersion=0.6.2-beta-1-buns-eastern
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libusb ninja
 
-      - name: Create build info file
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install build dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y ninja pkgconfiglite
+          vcpkg install libusb:x64-windows
+          # libhydrasdr's CMakeLists uses pkg_check_modules(libusb-1.0) — needs both
+          # the pkg-config binary (pkgconfiglite) and the .pc file (vcpkg).
+          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows" >> $env:GITHUB_ENV
+          echo "C:/vcpkg/installed/x64-windows/bin" >> $env:GITHUB_PATH
+        shell: pwsh
+
+      - name: Build HydraSDR JNI native library
+        run: |
+          mkdir -p jni/build
+          cd jni/build
+          cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+        shell: bash
+
+      - name: Upload native libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: hydrasdr-native-${{ matrix.target }}
+          path: |
+            jni/build/${{ matrix.lib_glob }}
+          retention-days: 1
+
+  # ============================================================
+  # Package releases with Gradle
+  # ============================================================
+  nightly:
+    needs: build-native
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+          java-package: 'jdk+fx'
+
+      # Download all native library artifacts
+      - name: Download native libs (linux-x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-linux-x86_64
+          path: native/linux-x86_64
+
+      - name: Download native libs (linux-aarch64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-linux-aarch64
+          path: native/linux-aarch64
+        continue-on-error: true
+
+      - name: Download native libs (osx-aarch64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-osx-aarch64
+          path: native/osx-aarch64
+
+      - name: Download native libs (osx-x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-osx-x86_64
+          path: native/osx-x86_64
+
+      - name: Download native libs (windows-x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-windows-x86_64
+          path: native/windows-x86_64
+
+      # Build local JNI (needed for gradle compile on Linux)
+      - name: Install native build deps
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev ninja-build
+
+      - name: Build local JNI
+        run: |
+          mkdir -p jni/build
+          cd jni/build
+          cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
+      - name: Build Linux and Mac releases with Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          arguments: runtimeZipOthers -PprojectVersion=nightly
+
+      - name: Build Windows release with Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          arguments: runtimeZipWindows -PprojectVersion=nightly
+
+      # Inject platform-specific native libs into release zips
+      - name: Inject native libraries into release packages
+        run: |
+          cd build/image
+          for zip in *.zip; do
+            echo "Processing $zip"
+            # Order matters: match aarch64 BEFORE x86_64 (the substring "x86_64" is unique
+            # but "linux-" / "windows-" prefixes are shared, so check the more specific arch first)
+            if   [[ "$zip" == *"linux-aarch64"*   ]]; then dir="linux-aarch64"
+            elif [[ "$zip" == *"linux-x86_64"*    ]]; then dir="linux-x86_64"
+            elif [[ "$zip" == *"osx-aarch64"*     ]]; then dir="osx-aarch64"
+            elif [[ "$zip" == *"osx-x86_64"*      ]]; then dir="osx-x86_64"
+            elif [[ "$zip" == *"windows-aarch64"* ]]; then dir="windows-aarch64"
+            elif [[ "$zip" == *"windows-x86_64"*  ]]; then dir="windows-x86_64"
+            else echo "  Skipping: $zip"; continue; fi
+
+            native_dir="../../native/$dir"
+            if [ -d "$native_dir" ] && [ "$(ls -A $native_dir 2>/dev/null)" ]; then
+              # Extract top-level directory name from zip (robust: find first directory entry)
+              top_dir=$(unzip -l "$zip" | grep '/$' | head -1 | awk '{print $NF}' | cut -d/ -f1)
+              if [ -z "$top_dir" ]; then
+                echo "  ERROR: Could not determine top-level dir in $zip"
+                continue
+              fi
+              mkdir -p "/tmp/inject/$top_dir/lib/native"
+              cp "$native_dir"/* "/tmp/inject/$top_dir/lib/native/"
+              cd /tmp/inject && zip -r "$OLDPWD/$zip" "$top_dir/lib/native/" && cd "$OLDPWD"
+              rm -rf /tmp/inject
+              echo "  Injected native libs from $dir into $top_dir/lib/native/"
+            else
+              echo "  No native libs for $dir"
+            fi
+          done
+        shell: bash
+
+      - name: Create Build Info file
         run: |
           echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
 
-      - name: Publish to release
+      - name: Add build artifacts to nightly release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.6.2-beta-1-buns-eastern
-          name: v0.6.2-beta-1-buns-eastern
+          tag_name: nightly
           prerelease: true
           files: |
             build/image/*.zip

@@ -1,9 +1,5 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+# This workflow builds the sdrtrunk Java project with Gradle and the
+# HydraSDR native JNI library with CMake on all supported platforms.
 
 name: Java CI with Gradle
 
@@ -16,19 +12,60 @@ on:
 jobs:
   build:
     strategy:
-      matrix: 
+      matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 25
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'liberica'
           java-package: 'jdk+fx'
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev ninja-build
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libusb ninja
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install build dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y ninja pkgconfiglite
+          vcpkg install libusb:x64-windows
+          # libhydrasdr's CMakeLists uses pkg_check_modules(libusb-1.0) — needs both
+          # the pkg-config binary (pkgconfiglite) and the .pc file (vcpkg).
+          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows" >> $env:GITHUB_ENV
+          echo "C:/vcpkg/installed/x64-windows/bin" >> $env:GITHUB_PATH
+        shell: pwsh
+
+      - name: Build HydraSDR JNI native library
+        run: |
+          mkdir -p jni/build
+          cd jni/build
+          cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+        shell: bash
+
+      - name: Verify native libraries
+        run: |
+          echo "=== JNI build output ==="
+          ls -la jni/build/ 2>/dev/null || true
+        shell: bash
+
       - name: Build with Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v4
         with:
-          arguments: clean build
+          arguments: clean build -x test

@@ -1,6 +1,7 @@
 /*
  * *****************************************************************************
  * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2026 Benjamin Vernoux
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -145,7 +146,7 @@ def jvmArgsWindows =
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
          '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
          '-XX:+UseCompactObjectHeaders',   //JDK25 - use compact object headers
-         '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //SDRPlay API library path
+         '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64;c:\\Program Files\\HydraSDR;jni\\build;lib\\native;..\\lib\\native'] //SDRPlay + HydraSDR library paths
 
 /**
  * JVM Arguments for running the application on Linux.
@@ -196,6 +197,46 @@ idea {
     module {
         downloadJavadoc = true
         downloadSources = true
+    }
+}
+
+/**
+ * HydraSDR native JNI library directory.  Contains hydrasdr_jni.dll, libhydrasdr.dll, libusb-1.0.dll
+ */
+def hydraSdrJniDir = file("${projectDir}/jni/build")
+
+/**
+ * Copies HydraSDR native DLLs into the application lib directory for distribution.
+ */
+tasks.register('copyHydraSdrNativeLibs', Copy) {
+    from(hydraSdrJniDir) {
+        include '*.dll'
+        include '*.so'
+        include '*.dylib'
+    }
+    into "${buildDir}/libs/native"
+    onlyIf { hydraSdrJniDir.exists() }
+}
+
+/**
+ * Ensure native libs are copied before distribution packaging.
+ */
+tasks.named('distZip') { dependsOn 'copyHydraSdrNativeLibs' }
+tasks.named('distTar') { dependsOn 'copyHydraSdrNativeLibs' }
+
+/**
+ * Include HydraSDR native libs in application distributions.
+ */
+distributions {
+    main {
+        contents {
+            from(hydraSdrJniDir) {
+                include '*.dll'
+                include '*.so'
+                include '*.dylib'
+                into 'lib/native'
+            }
+        }
     }
 }
 
@@ -263,6 +304,28 @@ def configure(org.beryx.runtime.RuntimeZipTask rt, List<String> jvmArgs) {
 
     //Runtime images have auto appended version in image zip name.  Override to include version in single target image.
     rt.extension.imageZip.set(file("$buildDir/image/sdr-trunk.zip"))
+
+    //Copy HydraSDR native JNI libraries into runtime image (if available from local build)
+    rt.doLast {
+        def nativeDir = file("${projectDir}/jni/build")
+        if(nativeDir.exists()) {
+            file("${buildDir}/image").eachDir { imageDir ->
+                if(imageDir.name.startsWith('sdr-trunk-')) {
+                    def targetDir = file("${imageDir}/lib/native")
+                    targetDir.mkdirs()
+                    copy {
+                        from(nativeDir) {
+                            include '*.dll'
+                            include '*.so'
+                            include '*.dylib'
+                        }
+                        into targetDir
+                    }
+                    logger.lifecycle("Copied HydraSDR native libs to ${targetDir}")
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -320,16 +383,10 @@ tasks.register('runtimeZipCurrent', org.beryx.runtime.RuntimeZipTask) {rt ->
  * Usage: ./gradlew runtimeZipWindows   (linux - using gradlew)
  */
 tasks.register('runtimeZipWindows', org.beryx.runtime.RuntimeZipTask) {rt ->
-    //Windows aarch64
-    if(file(jdk_windows_aarch64).exists()) {
-        rt.extension.targetPlatform(targetWindowsAarch64, jdk_windows_aarch64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetWindowsAarch64) {
-            jdkHome = jdkDownload(jdk_download_windows_aarch64)
-        }
-    }
-    //Windows x86-64
+    //Windows x86-64 only. Windows aarch64 is intentionally not built because the
+    //HydraSDR JNI native library is not produced for that target by CI, and shipping
+    //a Windows ARM image without lib/native/hydrasdr_jni.dll would silently break
+    //HydraSDR support on that platform.
     if(file(jdk_windows_x86_64).exists()) {
         rt.extension.targetPlatform(targetWindowsX86_64, jdk_windows_x86_64, [])
     }

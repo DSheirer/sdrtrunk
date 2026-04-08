@@ -1,6 +1,7 @@
 /*
  * *****************************************************************************
  * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2026 Benjamin Vernoux
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,74 +23,85 @@ import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
-import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController.BoardID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HydraSDR Tuner
+ * HydraSDR Tuner using native libhydrasdr via JNI.
  */
 public class HydraSdrTuner extends Tuner
 {
-    private final static Logger mLog = LoggerFactory.getLogger(HydraSdrTuner.class);
+	private static final Logger mLog = LoggerFactory.getLogger(HydraSdrTuner.class);
 
-    /**
-     * Constructs an instance
-     * @param controller for the HydraSDR
-     * @param tunerErrorListener to listen for errors from this tuner
-     * @param channelizerType for the channelizer
-     */
-    public HydraSdrTuner(HydraSdrTunerController controller, ITunerErrorListener tunerErrorListener,
-                       ChannelizerType channelizerType)
-    {
-        super(controller, tunerErrorListener, channelizerType);
-    }
+	/**
+	 * Constructs an instance
+	 * @param controller for the HydraSDR
+	 * @param tunerErrorListener to listen for errors from this tuner
+	 * @param channelizerType for the channelizer
+	 */
+	public HydraSdrTuner(HydraSdrTunerController controller, ITunerErrorListener tunerErrorListener,
+		ChannelizerType channelizerType)
+	{
+		super(controller, tunerErrorListener, channelizerType);
+	}
 
-    @Override
-    public String getPreferredName()
-    {
-        return "HydraSDR " + getController().getDeviceInfo().getSerialNumber();
-    }
+	@Override
+	public String getPreferredName()
+	{
+		HydraSdrDeviceInfo info = getController().getDeviceInfo();
+		if(info != null)
+		{
+			return "HydraSDR " + info.getSerialNumber();
+		}
+		return "HydraSDR";
+	}
 
-    /**
-     * HydraSDR tuner controller
-     */
-    public HydraSdrTunerController getController()
-    {
-        return (HydraSdrTunerController)getTunerController();
-    }
+	/**
+	 * HydraSDR tuner controller
+	 */
+	public HydraSdrTunerController getController()
+	{
+		return (HydraSdrTunerController)getTunerController();
+	}
 
-    @Override
-    public String getUniqueID()
-    {
-        try
-        {
-            return getController().getDeviceInfo().getSerialNumber();
-        }
-        catch(Exception e)
-        {
-            mLog.error("error getting serial number", e);
-        }
+	@Override
+	public String getUniqueID()
+	{
+		try
+		{
+			HydraSdrDeviceInfo info = getController().getDeviceInfo();
+			if(info != null)
+			{
+				return info.getSerialNumber();
+			}
+		}
+		catch(Exception e)
+		{
+			mLog.error("Error getting serial number", e);
+		}
 
-        return BoardID.HYDRASDR_RFONE.getLabel();
-    }
+		return "HydraSDR";
+	}
 
-    @Override
-    public TunerClass getTunerClass()
-    {
-        return TunerClass.HYDRASDR;
-    }
+	@Override
+	public TunerClass getTunerClass()
+	{
+		return TunerClass.HYDRASDR;
+	}
 
-    @Override
-    public double getSampleSize()
-    {
-        return 13.0;
-    }
+	@Override
+	public double getSampleSize()
+	{
+		/* 12-bit ADC + ~1 bit processing gain from libhydrasdr decimation */
+		return 13.0;
+	}
 
-    @Override
-    public int getMaximumUSBBitsPerSecond()
-    {
-        //4-bytes per sample = 32 bits times 10 MSps = 320,000,000 bits per second
-        return 320000000;
-    }
+	@Override
+	public int getMaximumUSBBitsPerSecond()
+	{
+		/* HydraSDR streams raw 16-bit ADC samples at 20 MSps over USB
+		 * (libhydrasdr converts to 10 MHz complex IQ on the host).
+		 * 2 bytes/sample x 20 MSps = 40 MB/s = 320 Mbps */
+		return 320_000_000;
+	}
 }
