@@ -224,6 +224,77 @@ if(WIN32)
 endif()
 
 # ============================================================
+# Post-build: macOS dylib bundling
+# ============================================================
+# Bundle libhydrasdr.dylib next to libhydrasdr_jni.dylib so the runtime image
+# is self-contained on macOS (no need for users to download libhydrasdr from
+# the upstream release nightly). libusb is intentionally NOT bundled — it is
+# expected to be installed via Homebrew (`brew install libusb`), matching the
+# convention used by upstream hydrasdr-host-tools-macOS releases.
+#
+# macOS uses install names baked into the binary, so we must rewrite the
+# JNI bridge's reference to libhydrasdr to use @loader_path. libhydrasdr's
+# own reference to libusb is left as-is (will resolve via the system /
+# Homebrew install).
+#
+# IMPORTANT: this code path has not been validated on a real Mac at the time
+# of writing. The logic mirrors what upstream hydrasdr-host-tools does for its
+# own macOS release archive.
+if(APPLE AND HYDRASDR_USE_FETCH)
+	# Macros / paths used in the post-build script:
+	#   $<TARGET_FILE:hydrasdr>     -> libhydrasdr.<full version>.dylib (real file)
+	#   $<TARGET_SONAME_FILE:hydrasdr> -> libhydrasdr.<SOVERSION>.dylib (the symlink
+	#                                     name embedded in the install-name of
+	#                                     anything linking against libhydrasdr)
+	# We copy the real file AND the entire symlink chain (libhydrasdr.dylib ->
+	# libhydrasdr.1.dylib -> libhydrasdr.1.1.1.dylib) so that whatever name the
+	# dynamic linker resolves at runtime, it finds the file. cp -P preserves
+	# symlinks (does not dereference them).
+	add_custom_command(TARGET hydrasdr_jni POST_BUILD
+		COMMAND bash -c "set -e; \
+			SRC_DIR=\"$(dirname $<TARGET_FILE:hydrasdr>)\"; \
+			DST_DIR='$<TARGET_FILE_DIR:hydrasdr_jni>'; \
+			echo \"Copying libhydrasdr*.dylib (real + symlinks) from $SRC_DIR\"; \
+			cp -P \"$SRC_DIR\"/libhydrasdr*.dylib \"$DST_DIR/\""
+		VERBATIM
+		COMMENT "Copying libhydrasdr dylib + symlink chain"
+	)
+
+	# Rewrite install names so libhydrasdr_jni.dylib finds libhydrasdr next to
+	# itself instead of at the original FetchContent build-tree path.
+	#
+	# libusb references inside libhydrasdr are LEFT ALONE on purpose: the
+	# convention used by upstream hydrasdr-host-tools-macOS releases is that
+	# libusb is a system / Homebrew dependency (`brew install libusb`), not
+	# something we ship. Mirroring that here.
+	#
+	# The script enumerates libhydrasdr_jni.dylib's actual linked deps via
+	# otool and rewrites whatever path it finds (rather than hardcoding the
+	# original install-name strings, which can vary across CMake versions).
+	add_custom_command(TARGET hydrasdr_jni POST_BUILD
+		COMMAND bash -c "set -e; \
+			BINDIR='$<TARGET_FILE_DIR:hydrasdr_jni>'; \
+			JNI_LIB='$<TARGET_FILE:hydrasdr_jni>'; \
+			HYDRASDR_REAL_NAME='$<TARGET_FILE_NAME:hydrasdr>'; \
+			HYDRASDR_REAL_LIB=\"$BINDIR/$HYDRASDR_REAL_NAME\"; \
+			echo 'Fixing libhydrasdr install names for self-contained macOS bundle...'; \
+			echo \"  JNI lib:     $JNI_LIB\"; \
+			echo \"  HydraSDR lib: $HYDRASDR_REAL_LIB\"; \
+			for old in $(otool -L \"$JNI_LIB\" | awk 'NR>1 && /libhydrasdr/ {print $1}'); do \
+				new=\"@loader_path/$(basename $old)\"; \
+				echo \"  install_name_tool -change $old $new\"; \
+				install_name_tool -change \"$old\" \"$new\" \"$JNI_LIB\"; \
+			done; \
+			install_name_tool -id \"@loader_path/$HYDRASDR_REAL_NAME\" \"$HYDRASDR_REAL_LIB\"; \
+			codesign --force --sign - \"$HYDRASDR_REAL_LIB\" \"$JNI_LIB\"; \
+			echo 'Final dependencies:'; \
+			otool -L \"$JNI_LIB\" \"$HYDRASDR_REAL_LIB\""
+		VERBATIM
+		COMMENT "Rewriting libhydrasdr install name + ad-hoc resigning"
+	)
+endif()
+
+# ============================================================
 # Install
 # ============================================================
 install(TARGETS hydrasdr_jni
