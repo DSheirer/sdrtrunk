@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2024-2025 Benjamin VERNOUX
+ * Copyright (C) 2026 Benjamin VERNOUX
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,7 +140,11 @@ public class HydraSdrNative
 			String programFiles = System.getenv("ProgramFiles");
 			String userDir = System.getProperty("user.dir");
 			jniName = "hydrasdr_jni.dll";
-			depNames = new String[] {"libusb-1.0.dll", "libhydrasdr.dll"};
+			/* Both names listed: MinGW builds the libhydrasdr core as
+			 * libhydrasdr.dll (with the lib prefix), MSVC builds it as
+			 * hydrasdr.dll (no prefix). The loop tolerates missing files
+			 * via depFile.exists(), so listing both is safe on both toolchains. */
+			depNames = new String[] {"libusb-1.0.dll", "libhydrasdr.dll", "hydrasdr.dll"};
 			searchDirs = new String[][] {
 				{userDir + "\\jni\\build"},
 				{userDir + "\\lib\\native"},
