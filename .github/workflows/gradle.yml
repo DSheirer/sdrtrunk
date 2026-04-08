@@ -18,11 +18,16 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    # Force still-on-Node20 actions (gradle/actions/setup-gradle@v4,
+    # ilammy/msvc-dev-cmd@v1) to run on Node 24 to silence deprecation warnings.
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'liberica'
@@ -42,14 +47,33 @@ jobs:
 
       - name: Install build dependencies (Windows)
         if: runner.os == 'Windows'
+        run: choco install -y ninja
+        shell: pwsh
+
+      # Workaround for libhydrasdr's CMakeLists.txt bug on Windows: it downloads
+      # libusb-1.0.29.7z and extracts it via `cmake -E tar`, which cannot decode
+      # LZMA2 ("Unexpected codec ID: a"). We pre-extract the same archive into
+      # the location libhydrasdr expects so its FetchContent step finds the file
+      # already present and skips the broken extraction.
+      - name: Pre-extract libusb for Windows
+        if: runner.os == 'Windows'
         run: |
-          choco install -y ninja pkgconfiglite
-          vcpkg install libusb:x64-windows
-          # libhydrasdr's CMakeLists uses pkg_check_modules(libusb-1.0) — needs both
-          # the pkg-config binary (pkgconfiglite) and the .pc file (vcpkg).
-          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows" >> $env:GITHUB_ENV
-          echo "C:/vcpkg/installed/x64-windows/bin" >> $env:GITHUB_PATH
+          # Workaround for libhydrasdr's CMakeLists.txt: it downloads
+          # libusb-1.0.29.7z and extracts via `cmake -E tar`, which fails to
+          # decode LZMA2 ("Unexpected codec ID: a"). Pre-extract here using
+          # 7z.exe (preinstalled on windows-latest) into the path libhydrasdr's
+          # FetchContent expects so its broken extraction step is bypassed.
+          # NOTE: the .7z archive has no top-level dir — its contents are
+          # VS2022/, MinGW64/, etc. — so we must extract INTO libusb-1.0.29/.
+          $libusbDir = "jni/build/_deps/libusb-1.0.29"
+          New-Item -ItemType Directory -Force -Path $libusbDir | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/libusb/libusb/releases/download/v1.0.29/libusb-1.0.29.7z" -OutFile "libusb.7z"
+          & "C:\Program Files\7-Zip\7z.exe" x libusb.7z -o"$libusbDir" -y
+          if (-not (Test-Path "$libusbDir/VS2022/MS64/dll/libusb-1.0.dll")) {
+            Write-Error "libusb pre-extraction failed: expected DLL not found"
+            exit 1
+          }
+          Remove-Item libusb.7z
         shell: pwsh
 
       - name: Build HydraSDR JNI native library
