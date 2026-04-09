@@ -23,6 +23,7 @@ import io.github.dsheirer.buffer.INativeBufferFactory;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
+import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -59,6 +60,7 @@ public abstract class USBTunerController extends TunerController
 
     protected int mBus;
     protected String mPortAddress;
+    private TunerClass mTunerClass = TunerClass.UNKNOWN;
     private Context mDeviceContext = new Context();
     private boolean mOwnsDeviceContext = true; //false when context is shared from TunerManager
     private Device mDevice;
@@ -120,18 +122,18 @@ public abstract class USBTunerController extends TunerController
     }
 
     /**
+     * Sets the tuner class expected for this controller so that device matching can validate the
+     * descriptor when a platform reports incomplete USB topology information.
+     */
+    public void setTunerClass(TunerClass tunerClass)
+    {
+        mTunerClass = tunerClass != null ? tunerClass : TunerClass.UNKNOWN;
+    }
+
+    /**
      * Tuner type for this USB controller
      */
     public abstract TunerType getTunerType();
-
-    /**
-     * USB Vendor ID (VID) for this tuner, used to disambiguate devices when port numbers are unavailable (e.g. macOS).
-     * Subclasses should override to return their specific VID. Returns -1 to skip VID filtering.
-     */
-    protected int getUSBVendorId()
-    {
-        return -1;
-    }
 
     /**
      * Factory for converting received streaming sample data into native buffers, as provided by sub-class.
@@ -446,8 +448,6 @@ public abstract class USBTunerController extends TunerController
         DeviceList deviceList = new DeviceList();
         int count = LibUsb.getDeviceList(mDeviceContext, deviceList);
 
-        int targetVendorId = getUSBVendorId();
-
         if(count >= 0)
         {
             for(Device device: deviceList)
@@ -461,13 +461,14 @@ public abstract class USBTunerController extends TunerController
 
                     if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
                     {
-                        //When port addresses are unavailable (all empty on macOS), also check VID to avoid
-                        //matching hub/root devices before the actual tuner.
-                        if(targetVendorId >= 0)
+                        //When port addresses are unavailable (all empty on macOS), verify the tuner class too
+                        //so that multiple USB devices on the same bus don't match the wrong controller.
+                        if(mTunerClass != TunerClass.UNKNOWN)
                         {
                             DeviceDescriptor desc = new DeviceDescriptor();
                             int descStatus = LibUsb.getDeviceDescriptor(device, desc);
-                            if(descStatus == LibUsb.SUCCESS && (desc.idVendor() & 0xFFFF) == targetVendorId)
+                            if(descStatus == LibUsb.SUCCESS &&
+                                    TunerClass.lookup(desc.idVendor(), desc.idProduct()) == mTunerClass)
                             {
                                 foundDevice = device;
                             }

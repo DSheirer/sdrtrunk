@@ -79,12 +79,6 @@ public class RTL2832TunerController extends USBTunerController
     }
 
     @Override
-    protected int getUSBVendorId()
-    {
-        return 0x0BDA; //Realtek - used to disambiguate when port addresses are empty (macOS)
-    }
-
-    @Override
     protected INativeBufferFactory getNativeBufferFactory()
     {
         return mNativeBufferFactory;
