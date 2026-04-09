@@ -96,6 +96,48 @@ if(NOT HydraSDR_FOUND AND NOT HYDRASDR_USE_LOCAL)
 	set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 	set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
+	# Workaround: hydrasdr's CMakeLists downloads libusb-1.0.29.7z and
+	# extracts via file(ARCHIVE_EXTRACT) which fails on LZMA2 with cmake.
+	# Pre-extract with 7-Zip and set cache variables so hydrasdr skips its
+	# own download entirely.
+	if(WIN32 AND MSVC)
+		set(_LIBUSB_VER "1.0.29")
+		set(_LIBUSB_DIR "${CMAKE_BINARY_DIR}/_deps/libusb-${_LIBUSB_VER}")
+
+		if(MSVC_VERSION LESS 1920)
+			message(FATAL_ERROR "MSVC 2019 or later required (found MSVC_VERSION=${MSVC_VERSION})")
+		endif()
+		# libusb pre-built archive uses VS2022 binaries (compatible with VS2019+)
+		set(_LIBUSB_VS_DIR "VS2022")
+
+		if(NOT EXISTS "${_LIBUSB_DIR}/${_LIBUSB_VS_DIR}/MS64/dll/libusb-1.0.dll")
+			find_program(_7Z_EXE NAMES 7z 7z.exe
+				PATHS "C:/Program Files/7-Zip" "C:/Program Files (x86)/7-Zip"
+				ENV ProgramFiles)
+			if(_7Z_EXE)
+				set(_LIBUSB_URL "https://github.com/libusb/libusb/releases/download/v${_LIBUSB_VER}/libusb-${_LIBUSB_VER}.7z")
+				set(_LIBUSB_7Z "${CMAKE_BINARY_DIR}/_deps/libusb-${_LIBUSB_VER}.7z")
+				if(NOT EXISTS "${_LIBUSB_7Z}")
+					message(STATUS "Downloading libusb ${_LIBUSB_VER}...")
+					file(DOWNLOAD "${_LIBUSB_URL}" "${_LIBUSB_7Z}")
+				endif()
+				message(STATUS "Pre-extracting libusb ${_LIBUSB_VER} with 7-Zip...")
+				file(MAKE_DIRECTORY "${_LIBUSB_DIR}")
+				execute_process(
+					COMMAND "${_7Z_EXE}" x "${_LIBUSB_7Z}" "-o${_LIBUSB_DIR}" -y
+					OUTPUT_QUIET)
+			endif()
+		endif()
+
+		# Tell hydrasdr where libusb is so it skips its own download
+		if(EXISTS "${_LIBUSB_DIR}/${_LIBUSB_VS_DIR}/MS64/dll/libusb-1.0.lib")
+			set(LIBUSB_INCLUDE_DIR "${_LIBUSB_DIR}/include" CACHE PATH "" FORCE)
+			set(LIBUSB_LIBRARIES "${_LIBUSB_DIR}/${_LIBUSB_VS_DIR}/MS64/dll/libusb-1.0.lib" CACHE FILEPATH "" FORCE)
+			set(LIBUSB_DLL "${_LIBUSB_DIR}/${_LIBUSB_VS_DIR}/MS64/dll/libusb-1.0.dll" CACHE FILEPATH "" FORCE)
+			message(STATUS "libusb ${_LIBUSB_VER} pre-extracted (${_LIBUSB_VS_DIR})")
+		endif()
+	endif()
+
 	FetchContent_MakeAvailable(hydrasdr)
 
 	# After FetchContent, the hydrasdr target is available
@@ -106,6 +148,12 @@ endif()
 # Build hydrasdr_jni shared library
 # ============================================================
 add_library(hydrasdr_jni SHARED hydrasdr_jni.c)
+
+# MSVC: use static runtime (/MT) to eliminate VCRUNTIME140.dll dependency
+if(MSVC)
+	set_property(TARGET hydrasdr_jni PROPERTY
+		MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 target_include_directories(hydrasdr_jni PRIVATE
 	${JNI_INCLUDE_DIRS}
@@ -158,17 +206,20 @@ if(WIN32)
 				$<TARGET_FILE_DIR:hydrasdr_jni>
 			COMMENT "Copying libhydrasdr.dll to build output"
 		)
-	elseif(HYDRASDR_DIR)
-		# Local build: find and copy DLLs
+	else()
+		# System-installed or local build: find and copy DLLs
 		find_file(HYDRASDR_DLL
 			NAMES libhydrasdr.dll hydrasdr.dll
-			PATHS
+			HINTS
 				${HYDRASDR_DIR}/build/hydrasdr-tools/src
 				${HYDRASDR_DIR}/build/libhydrasdr/src
 				${HYDRASDR_DIR}/build/bin
 				${HYDRASDR_DIR}/build
 				${HYDRASDR_DIR}/bin
-			NO_DEFAULT_PATH
+			PATHS
+				/mingw64/bin
+				/usr/local/bin
+				/usr/bin
 		)
 
 		if(HYDRASDR_DLL)

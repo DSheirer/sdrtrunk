@@ -201,28 +201,92 @@ idea {
 }
 
 /**
- * HydraSDR native JNI library directory.  Contains hydrasdr_jni.dll, libhydrasdr.dll, libusb-1.0.dll
+ * Toolchain suffix for build directories.
+ *
+ * Override with -Ptoolchain=<name> to isolate builds per compiler:
+ *   -Ptoolchain=mingw64 -> jni/build_mingw64/ + build_mingw64/
+ *   -Ptoolchain=vs2022  -> jni/build_vs2022/  + build_vs2022/
+ * Default: jni/build/ + build/ (CI default).
  */
-def hydraSdrJniDir = file("${projectDir}/jni/build")
+if(project.hasProperty('toolchain')) {
+    buildDir = file("${projectDir}/build_${project.property('toolchain')}")
+}
+def jniBuildName = project.hasProperty('toolchain') ? "build_${project.property('toolchain')}" : 'build'
+ext.hydraSdrJniDir = file("${projectDir}/jni/${jniBuildName}")
 
 /**
- * Copies HydraSDR native DLLs into the application lib directory for distribution.
+ * Builds the HydraSDR JNI native library via CMake + Ninja.
+ *
+ * Uses whatever compiler is available in the current environment
+ * (GCC from MINGW64, cl.exe from VS dev prompt, gcc/clang on Linux/macOS).
+ *
+ * Skipped when the JNI build directory already contains native libraries
+ * (e.g. CI pre-builds them in a separate step before calling Gradle).
  */
-tasks.register('copyHydraSdrNativeLibs', Copy) {
-    from(hydraSdrJniDir) {
-        include '*.dll'
-        include '*.so'
-        include '*.dylib'
+tasks.register('buildHydraSdrJni', Exec) {
+    def jniSrcDir = file("${projectDir}/jni")
+
+    doFirst {
+        if(!hydraSdrJniDir.exists()) {
+            hydraSdrJniDir.mkdirs()
+        }
     }
-    into "${buildDir}/libs/native"
-    onlyIf { hydraSdrJniDir.exists() }
+
+    workingDir hydraSdrJniDir
+
+    if(os.isWindows()) {
+        commandLine 'cmd', '/c', 'cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build . --config Release'
+    } else {
+        commandLine 'bash', '-c', 'cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build . --config Release'
+    }
+
+    // Skip if native libs already present (CI pre-build or previous local build)
+    // Skip if jni/ source directory doesn't exist
+    // Skip if cmake is not available (no C toolchain configured)
+    onlyIf {
+        if(!jniSrcDir.exists()) return false
+        if(!fileTree(hydraSdrJniDir).matching { include '*.dll'; include '*.so'; include '*.dylib' }.files.isEmpty()) return false
+
+        // Check cmake and ninja are available
+        for(def tool : ['cmake', 'ninja']) {
+            def check = os.isWindows() ? ['cmd', '/c', "${tool} --version"] : ['bash', '-c', "${tool} --version"]
+            try {
+                def proc = check.execute()
+                proc.waitFor()
+                if(proc.exitValue() != 0) {
+                    logger.warn("HydraSDR JNI: ${tool} not found — skipping native build. See BUILD.md.")
+                    return false
+                }
+            } catch(Exception e) {
+                logger.warn("HydraSDR JNI: ${tool} not found — skipping native build. See BUILD.md.")
+                return false
+            }
+        }
+
+        // On Windows, check a C compiler is available (cl.exe or gcc)
+        if(os.isWindows()) {
+            def ccCheck = ['cmd', '/c', 'where cl.exe || where gcc.exe']
+            try {
+                def proc = ccCheck.execute()
+                proc.waitFor()
+                if(proc.exitValue() != 0) {
+                    logger.warn('HydraSDR JNI: no C compiler found — skipping native build.')
+                    logger.warn('  Run from x64 Native Tools Command Prompt for VS 2022 or MSYS2 MINGW64 shell.')
+                    return false
+                }
+            } catch(Exception e) {
+                logger.warn('HydraSDR JNI: no C compiler found — skipping native build. See BUILD.md.')
+                return false
+            }
+        }
+        return true
+    }
 }
 
-/**
- * Ensure native libs are copied before distribution packaging.
- */
-tasks.named('distZip') { dependsOn 'copyHydraSdrNativeLibs' }
-tasks.named('distTar') { dependsOn 'copyHydraSdrNativeLibs' }
+// Wire native build before any packaging task that copies libs
+tasks.named('installDist') { dependsOn 'buildHydraSdrJni' }
+tasks.named('distZip') { dependsOn 'buildHydraSdrJni' }
+tasks.named('distTar') { dependsOn 'buildHydraSdrJni' }
 
 /**
  * Include HydraSDR native libs in application distributions.
@@ -300,14 +364,17 @@ def configure(org.beryx.runtime.RuntimeZipTask rt, List<String> jvmArgs) {
     rt.extension.additive.set(true)
 
     //Recommended options for reducing/shrinking runtime target image size
-    rt.extension.addOptions('--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages')
+    rt.extension.addOptions('--strip-debug', '--compress', 'zip-6', '--no-header-files', '--no-man-pages')
 
     //Runtime images have auto appended version in image zip name.  Override to include version in single target image.
     rt.extension.imageZip.set(file("$buildDir/image/sdr-trunk.zip"))
 
+    //Ensure native JNI libs are built before packaging
+    rt.dependsOn 'buildHydraSdrJni'
+
     //Copy HydraSDR native JNI libraries into runtime image (if available from local build)
     rt.doLast {
-        def nativeDir = file("${projectDir}/jni/build")
+        def nativeDir = hydraSdrJniDir
         if(nativeDir.exists()) {
             file("${buildDir}/image").eachDir { imageDir ->
                 if(imageDir.name.startsWith('sdr-trunk-')) {
@@ -383,10 +450,7 @@ tasks.register('runtimeZipCurrent', org.beryx.runtime.RuntimeZipTask) {rt ->
  * Usage: ./gradlew runtimeZipWindows   (linux - using gradlew)
  */
 tasks.register('runtimeZipWindows', org.beryx.runtime.RuntimeZipTask) {rt ->
-    //Windows x86-64 only. Windows aarch64 is intentionally not built because the
-    //HydraSDR JNI native library is not produced for that target by CI, and shipping
-    //a Windows ARM image without lib/native/hydrasdr_jni.dll would silently break
-    //HydraSDR support on that platform.
+    //Windows x86-64
     if(file(jdk_windows_x86_64).exists()) {
         rt.extension.targetPlatform(targetWindowsX86_64, jdk_windows_x86_64, [])
     }

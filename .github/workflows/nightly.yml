@@ -5,6 +5,10 @@ name: Nightly Release
 on:
   workflow_dispatch:
 
+concurrency:
+  group: nightly-release
+  cancel-in-progress: true
+
 jobs:
   # ============================================================
   # Build native JNI libraries for each platform
@@ -202,7 +206,12 @@ jobs:
         run: |
           echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
 
-      - name: Add build artifacts to nightly release
+      - name: Delete previous nightly release
+        run: gh release delete nightly --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create nightly release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
@@ -212,10 +221,11 @@ jobs:
             Automatic nightly build of the HydraSDR fork of sdrtrunk.
 
             **HydraSDR support**
-            - Native JNI bridge to **libhydrasdr v1.1.1** (hardware-agnostic HAL)
-            - Near-zero-copy streaming via pre-allocated double-buffered float[] + JNI critical sections
-            - ~20x lower CPU vs the previous pure-Java USB path
-            - HydraSDR RFOne supported via libhydrasdr's device-info / capabilities API (no chip-specific assumptions)
+            - Native JNI bridge to **libhydrasdr v1.1.x** (hardware-agnostic HAL)
+            - Near-zero-copy streaming via pre-allocated double-buffered float arrays
+            - ~25x lower streaming CPU overhead vs the previous pure-Java USB path
+            - HydraSDR RFOne supported via libhydrasdr's device-info / capabilities API
+            - USB disconnect detection via independent watchdog timer
 
             **Bundled native libraries**
             - Linux x86_64 / aarch64: `libhydrasdr_jni.so`
