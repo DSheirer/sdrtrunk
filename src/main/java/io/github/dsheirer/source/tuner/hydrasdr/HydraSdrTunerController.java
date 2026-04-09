@@ -26,8 +26,11 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
+import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,8 +81,9 @@ public class HydraSdrTunerController extends TunerController implements HydraSdr
 	private volatile long mFactoryTimeNs = 0;
 	private volatile long mBroadcastTimeNs = 0;
 	private volatile long mStatsStartTime = 0;
-	private volatile long mLastStatsLog = 0;
-	private static final long STATS_LOG_INTERVAL_MS = 10_000;
+	private volatile long mLastCallbackTime = 0;
+	private static final long WATCHDOG_TIMEOUT_MS = 5_000;
+	private ScheduledFuture<?> mWatchdogFuture;
 
 	/**
 	 * Constructs an instance.
@@ -217,6 +221,7 @@ public class HydraSdrTunerController extends TunerController implements HydraSdr
 				mStreaming = true;
 				mLastDroppedSamples = 0;
 				resetPerformanceStats();
+				startWatchdog();
 				mLog.info("HydraSDR streaming started");
 			}
 			else
@@ -231,6 +236,7 @@ public class HydraSdrTunerController extends TunerController implements HydraSdr
 	 */
 	private void stopStreaming()
 	{
+		stopWatchdog();
 		if(mStreaming && mDeviceHandle != 0)
 		{
 			int result = HydraSdrNative.stopRx(mDeviceHandle);
@@ -253,6 +259,7 @@ public class HydraSdrTunerController extends TunerController implements HydraSdr
 	@Override
 	public void onSamples(float[] iSamples, float[] qSamples, int sampleCount, long droppedSamples)
 	{
+		mLastCallbackTime = System.currentTimeMillis();
 		long t0 = System.nanoTime();
 
 		if(droppedSamples > mLastDroppedSamples)
@@ -277,20 +284,39 @@ public class HydraSdrTunerController extends TunerController implements HydraSdr
 		mCallbackCount++;
 		mTotalSamples += sampleCount;
 		mCallbackTimeNs += (System.nanoTime() - t0);
+	}
 
-		/* Periodic streaming health check (USB unplug, device error).
-		 * Performance stats are exposed via getPerformanceStats() and rendered
-		 * by HydraSdrTunerEditor's Tuner Info panel — no need to log them. */
-		long now = System.currentTimeMillis();
-		if(now - mLastStatsLog >= STATS_LOG_INTERVAL_MS)
+	/**
+	 * Starts a watchdog timer that runs independently of the native callback
+	 * thread. If no callback arrives within WATCHDOG_TIMEOUT_MS, the device
+	 * is considered disconnected or in error. Uses a heartbeat timestamp
+	 * set by onSamples() — no JNI call overhead.
+	 */
+	private void startWatchdog()
+	{
+		stopWatchdog();
+		mLastCallbackTime = System.currentTimeMillis();
+		mWatchdogFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() ->
 		{
-			mLastStatsLog = now;
-			if(mStreaming && mDeviceHandle != 0 && !HydraSdrNative.isStreaming(mDeviceHandle))
+			if(mStreaming && (System.currentTimeMillis() - mLastCallbackTime) > WATCHDOG_TIMEOUT_MS)
 			{
-				mLog.error("HydraSDR streaming stopped unexpectedly");
+				mLog.error("HydraSDR streaming stopped unexpectedly (device error or USB disconnect)");
 				mStreaming = false;
+				stopWatchdog();
 				setErrorMessage("HydraSDR streaming stopped unexpectedly (device error or USB disconnect)");
 			}
+		}, WATCHDOG_TIMEOUT_MS, WATCHDOG_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Stops the watchdog timer.
+	 */
+	private void stopWatchdog()
+	{
+		if(mWatchdogFuture != null)
+		{
+			mWatchdogFuture.cancel(false);
+			mWatchdogFuture = null;
 		}
 	}
 

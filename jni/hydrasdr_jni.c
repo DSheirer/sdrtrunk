@@ -24,8 +24,7 @@
 #ifdef _WIN32
 #include <windows.h>
 static CRITICAL_SECTION g_table_cs;
-static int g_table_cs_init = 0;
-#define TABLE_LOCK()   do { if (!g_table_cs_init) { InitializeCriticalSection(&g_table_cs); g_table_cs_init = 1; } EnterCriticalSection(&g_table_cs); } while(0)
+#define TABLE_LOCK()   EnterCriticalSection(&g_table_cs)
 #define TABLE_UNLOCK() LeaveCriticalSection(&g_table_cs)
 #else
 #include <pthread.h>
@@ -63,8 +62,8 @@ typedef struct {
 	 * Two sets alternate so Java can consume one while native fills the other. */
 	jfloatArray ji_buf[2];
 	jfloatArray jq_buf[2];
-	int buf_index;
-	int buf_size;
+	volatile int buf_index;
+	volatile int buf_size;
 	volatile int active;           /* 1 if streaming is active */
 } jni_stream_ctx_t;
 
@@ -73,7 +72,11 @@ typedef struct {
  * Supports up to MAX_DEVICES concurrent HydraSDR devices.
  * Keyed by the native device handle pointer.
  */
+/* Maximum concurrent HydraSDR devices supported */
 #define MAX_DEVICES 8
+
+/* Maximum samples per callback (4M samples = 32 MB of float arrays) */
+#define MAX_SAMPLES_PER_CALLBACK (4 * 1024 * 1024)
 
 static struct {
 	uintptr_t handle;
@@ -489,6 +492,10 @@ static int jni_stream_callback(hydrasdr_transfer_t *transfer)
 	int sample_count = transfer->sample_count;
 	float *samples = (float *)transfer->samples;
 
+	/* Sanity check: reject absurd sample counts */
+	if (sample_count <= 0 || sample_count > MAX_SAMPLES_PER_CALLBACK)
+		return 0;
+
 	/*
 	 * Double-buffer: reuse pre-allocated Java arrays when size matches.
 	 * On size change, free old buffers and allocate new ones.
@@ -631,15 +638,20 @@ Java_io_github_dsheirer_source_tuner_hydrasdr_HydraSdrNative_stopRx(
 
 	/*
 	 * Signal the callback to detach its thread and stop processing.
-	 * Then hydrasdr_stop_rx blocks until the streaming thread exits.
-	 * The callback's detach_and_exit path runs before the thread terminates,
-	 * ensuring proper JVM DetachCurrentThread.
+	 *
+	 * CRITICAL CONTRACT: hydrasdr_stop_rx() MUST block until the streaming
+	 * thread has fully exited and will never call the callback again.
+	 * The callback checks 'stopping' and calls DetachCurrentThread before
+	 * the thread terminates. If hydrasdr_stop_rx() returned before the
+	 * thread exits, cleanup_stream_ctx() below would free resources still
+	 * in use by the callback — causing a use-after-free.
 	 */
 	ctx->stopping = 1;
 
 	int ret = hydrasdr_stop_rx(dev);
 
-	/* Streaming thread has exited -- safe to clean up */
+	/* hydrasdr_stop_rx() has returned — streaming thread has exited.
+	 * Safe to clean up JNI global refs and context. */
 	cleanup_stream_ctx(env, ctx);
 	release_stream_ctx((uintptr_t)handle);
 
@@ -702,30 +714,32 @@ Java_io_github_dsheirer_source_tuner_hydrasdr_HydraSdrNative_getDeviceInfo(
 
 	(*env)->CallVoidMethod(env, jinfo, setBoardId, (jint)info.board_id);
 
-	jstring boardName = (*env)->NewStringUTF(env, info.board_name);
-	(*env)->CallVoidMethod(env, jinfo, setBoardName, boardName);
-	(*env)->DeleteLocalRef(env, boardName);
+	/* Helper: set a string field, safely handling NewStringUTF OOM */
+#define SET_STRING_FIELD(setter, cstr) do {                           \
+		jstring _js = (*env)->NewStringUTF(env, (cstr));              \
+		if (_js) {                                                    \
+			(*env)->CallVoidMethod(env, jinfo, (setter), _js);        \
+			(*env)->DeleteLocalRef(env, _js);                         \
+		}                                                             \
+	} while (0)
 
-	jstring fwVersion = (*env)->NewStringUTF(env, info.firmware_version);
-	(*env)->CallVoidMethod(env, jinfo, setFirmwareVersion, fwVersion);
-	(*env)->DeleteLocalRef(env, fwVersion);
+	SET_STRING_FIELD(setBoardName, info.board_name);
+	SET_STRING_FIELD(setFirmwareVersion, info.firmware_version);
 
 	/* Format serial number - 64-bit like hydrasdr host tools: 0xMSB32LSB32 */
 	char serial_str[64];
 	uint32_t sn_msb = info.part_serial.serial_no[2];
 	uint32_t sn_lsb = info.part_serial.serial_no[3];
 	snprintf(serial_str, sizeof(serial_str), "0x%08X%08X", sn_msb, sn_lsb);
-	jstring serialNumber = (*env)->NewStringUTF(env, serial_str);
-	(*env)->CallVoidMethod(env, jinfo, setSerialNumber, serialNumber);
-	(*env)->DeleteLocalRef(env, serialNumber);
+	SET_STRING_FIELD(setSerialNumber, serial_str);
 
 	char part_str[32];
 	snprintf(part_str, sizeof(part_str), "%08X%08X",
 		info.part_serial.part_id[1],
 		info.part_serial.part_id[0]);
-	jstring partNumber = (*env)->NewStringUTF(env, part_str);
-	(*env)->CallVoidMethod(env, jinfo, setPartNumber, partNumber);
-	(*env)->DeleteLocalRef(env, partNumber);
+	SET_STRING_FIELD(setPartNumber, part_str);
+
+#undef SET_STRING_FIELD
 
 	(*env)->CallVoidMethod(env, jinfo, setCapabilities, (jint)info.features);
 	(*env)->CallVoidMethod(env, jinfo, setMinFrequency, (jlong)info.min_frequency);
@@ -792,4 +806,16 @@ Java_io_github_dsheirer_source_tuner_hydrasdr_HydraSdrNative_errorName(
 	if (!name)
 		name = "UNKNOWN";
 	return (*env)->NewStringUTF(env, name);
+}
+
+/* ==================== JNI Lifecycle ==================== */
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
+{
+	(void)vm;
+	(void)reserved;
+#ifdef _WIN32
+	InitializeCriticalSection(&g_table_cs);
+#endif
+	return JNI_VERSION_1_6;
 }
