@@ -28,6 +28,7 @@ import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.filter.iir.DeemphasisFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
 import io.github.dsheirer.dsp.fm.IDemodulator;
@@ -76,12 +77,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private RealResampler mResampler;
     private final double mChannelBandwidth;
 
-    // === TODO: FM de-emphasis and gain will need to be moved downstream of the 1200 baud decoders
-    private float mDeemphasisAlpha = 0;
-    private float mPreviousDeemphasis = 0;
-    private boolean mDeemphasisEnabled = false;
-    private AudioGainAndDcFilter mAudioGain;
-
      // === TODO: might need to be reorganized and removed from this file
     private boolean mSquelchDecoderEnabled = false;
     private List<CTCSSCode> mAllowedCTCSSCodes = new ArrayList<>();
@@ -109,16 +104,10 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         mNoiseSquelch = new NoiseSquelch(config.getSquelchNoiseOpenThreshold(), config.getSquelchNoiseCloseThreshold(),
                 config.getSquelchHysteresisOpenThreshold(), config.getSquelchHysteresisCloseThreshold());
 
-        // Configure de-emphasis
-        configureDeemphasis(config.getDeemphasis());
-        mAudioGain = new AudioGainAndDcFilter(.5F, 5F, 0.8F);
-        mAudioGain.setDecayRate(2);     // set a 2 percent decay rate
-
          // Configure tone filtering
         configureSquelchDecoders(config);
 
-        // TODO: Audio pipeline: NoiseSquelch -> Resampler -> CTCSS or DCS -> 1200 baud decocders -> HPF -> De-emphasis -> gain -> Output
-        // TODO: other decoders need unfiltered audio, so de-emphasis and gain need to be addressed somewhere else
+        // Audio pipeline: NoiseSquelch -> Resampler -> CTCSS or DCS -> 1200 baud decocders -> HPF -> De-emphasis -> gain -> Output
 
         mNoiseSquelch.setAudioListener(audio -> {
             // if squelch is closing (it hasn't propagated yet to mute the audio)
@@ -160,48 +149,6 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     public void setDecoderState(NBFMDecoderState decoderState)
     {
         mDecoderState = decoderState;
-    }
-
-    /**
-     * Configures FM de-emphasis filter parameters based on the selected mode
-     */
-    private void configureDeemphasis(DecodeConfigNBFM.DeemphasisMode mode)
-    {
-        if(mode != null && mode != DecodeConfigNBFM.DeemphasisMode.NONE && mode.getMicroseconds() > 0)
-        {
-            mDeemphasisEnabled = true;
-            double tau = mode.getMicroseconds() / 1_000_000.0; // Convert µs to seconds
-            double dt = 1.0 / DEMODULATED_AUDIO_SAMPLE_RATE;
-            mDeemphasisAlpha = (float)(dt / (tau + dt));
-        }
-        else
-        {
-            mDeemphasisEnabled = false;
-        }
-    }
-
-    /**
-     * Applies single-pole IIR de-emphasis filter to demodulated audio.
-     * This restores flat frequency response from pre-emphasized FM transmission.
-     */
-    private float[] applyDeemphasis(float[] samples)
-    {
-        if(!mDeemphasisEnabled || mDeemphasisAlpha <= 0)
-        {
-            return samples;
-        }
-
-        float[] output = new float[samples.length];
-        float prev = mPreviousDeemphasis;
-
-        for(int i = 0; i < samples.length; i++)
-        {
-            output[i] = mDeemphasisAlpha * samples[i] + (1.0f - mDeemphasisAlpha) * prev;
-            prev = output[i];
-        }
-
-        mPreviousDeemphasis = prev;
-        return output;
     }
 
     /**
@@ -746,17 +693,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             return;
         }
 
-        // deemphasis filter TODO: this is here only to test concept. Needs to be moved downstream of 1200 baud decoders.
-        float[] audio = resampled;
-        if(mDeemphasisEnabled)
-        {
-            audio = applyDeemphasis(resampled);
-            audio = mAudioGain.process(audio);      // usually need some gain after de-emphasis
-        }
-        // audio gain
-        // send audio to registered listeners
-        // TODO: need to do something about listeners that need unfiltered audio or move audio filters
-        broadcast(audio);
+        broadcast(resampled);
     }
 
 

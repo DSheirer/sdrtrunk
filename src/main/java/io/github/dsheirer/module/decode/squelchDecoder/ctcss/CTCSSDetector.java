@@ -306,7 +306,7 @@ public class CTCSSDetector
                 else
                 {
                     mCloseCounter++;
-                    // all is still good with the call, but a bad tone was decoded
+                    // all is still good with the call, but a bad tone was decoded and the closeCounter hasn't reached a threshold yet.
                 }
             }
         }
@@ -367,5 +367,6 @@ public class CTCSSDetector
         mOpenCounter = 0;
         mDetectionListener.ctcssLost();
     }
+    public static record GoertzelResult(CTCSSCode code, CTCSSMessage debugMessage){}
 }
 

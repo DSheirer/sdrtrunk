@@ -74,6 +74,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TitledPane mSourcePane;
     private TextField mTalkgroupField;
     private ToggleSwitch mAudioFilterEnable;
+    private ToggleSwitch mALCEnable;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
@@ -155,8 +156,18 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getDeemphasisCombo());
 
             // High pass audio filter
-            GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
+            // Note: normally the label and its toggle switch are one cell.  They were split to make the next row
+            //  look better. The label is manually created and placed here.  Might want to create a new grid plane instead.
+            Label HPFLabel = new Label(("High-pass Audio Filter (300 Hz)"));
+            GridPane.setHalignment(HPFLabel, HPos.RIGHT);
+            GridPane.setConstraints(HPFLabel, 2, 1);
+            gridPane.getChildren().add(HPFLabel);
+            GridPane.setConstraints(getAudioFilterEnable(), 3, 1);
             gridPane.getChildren().add(getAudioFilterEnable());
+
+            // ALC (Automatic Level Control)
+            GridPane.setConstraints(getALCEnable(), 4, 1);
+            gridPane.getChildren().add(getALCEnable());
 
             // talkgroup
             Label talkgroupLabel = new Label("Talkgroup To Assign");
@@ -229,7 +240,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         {
             mDeemphasisCombo = new ComboBox<>();
             mDeemphasisCombo.getItems().addAll(DecodeConfigNBFM.DeemphasisMode.values());
-            mDeemphasisCombo.setValue(DecodeConfigNBFM.DeemphasisMode.NONE);
+            mDeemphasisCombo.setValue(DecodeConfigNBFM.DeemphasisMode.NBFM_300);
             mDeemphasisCombo.setTooltip(new Tooltip("FM de-emphasis restores flat audio from pre-emphasized FM signal"));
             mDeemphasisCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
         }
@@ -360,14 +371,31 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mAudioFilterEnable == null)
         {
-            mAudioFilterEnable = new ToggleSwitch("High-Pass Audio Filter");
+            // removed label from toggle switch so that the label and the switch can be in different columns
+            //  to make things look better on the next line. Perhaps make a new grid pane instead.
+            //mAudioFilterEnable = new ToggleSwitch("High-Pass Audio Filter (300 Hz)");
+            mAudioFilterEnable = new ToggleSwitch("");
             mAudioFilterEnable.setTooltip(new Tooltip("High-pass filter to remove DC offset and sub-audible signalling"));
             mAudioFilterEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mAudioFilterEnable;
     }
+    /**
+     * Toggle switch for enable/disable the Automatic Level Control (ALC) in the audio module.
+     * @return toggle switch.
+     */
+    private ToggleSwitch getALCEnable()
+    {
+        if(mALCEnable == null)
+        {
+            mALCEnable = new ToggleSwitch("Automatic Level Control");
+            mALCEnable.setTooltip(new Tooltip("Automatic Level Control (ALC). Tries to make the volume of each received transmission the same."));
+            mALCEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
 
+        return mALCEnable;
+    }
     private SegmentedButton getBandwidthButton()
     {
         if(mBandwidthButton == null)
@@ -512,6 +540,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getAudioFilterEnable().setDisable(false);
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
 
+            getALCEnable().setDisable(false);
+            getALCEnable().setSelected(decodeConfigNBFM.isAudioALC());
+
             getDeemphasisCombo().setValue(decodeConfigNBFM.getDeemphasis());
 
             // TODO: setPromptText is not working after the first time.
@@ -565,9 +596,11 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getTalkgroupField().setDisable(true);
             getAudioFilterEnable().setDisable(true);
             getAudioFilterEnable().setSelected(false);
+            getALCEnable().setDisable(true);
+            getALCEnable().setSelected(false);
 
             // === TODO: Reset new controls ===
-            getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NONE);
+            getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NBFM_300);
             mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
             mCtcssCodeCombo.setValue(null);
             mCtcssCodeCombo.setPromptText("Select PL tone");
@@ -609,6 +642,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setTalkgroup(talkgroup);
         config.setAudioFilter(getAudioFilterEnable().isSelected());
+        config.setAudioALC(getALCEnable().isSelected());
 
         config.setDeemphasis(getDeemphasisCombo().getValue());
 

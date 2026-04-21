@@ -135,13 +135,14 @@ public class AudioGainAndDcFilter
         }
 
         mCurrentGain = gain;
+        mLog.debug("Gain: {}", gain);
         mObjectiveGain = objective;
         return processed;
     }
 
     /**
      * Overrides the default decay rate of 10 %.
-     * @param newRate specified as a percentage
+     * @param newRate specified as a percentage (i.e. 2 equals 2%)
      */
     public void setDecayRate(float newRate)
     {

@@ -38,6 +38,7 @@ import java.util.List;
 public class DecodeConfigNBFM extends DecodeConfigAnalog
 {
     private boolean mAudioHPFilter = true;
+    private boolean mAudioALC = false;
     private float mSquelchNoiseOpenThreshold = NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD;
     private float mSquelchNoiseCloseThreshold = NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD;
     private int mSquelchHysteresisOpenThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD;
@@ -51,37 +52,33 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     private DeemphasisMode mDeemphasis = DeemphasisMode.NONE;
 
     /**
-     * FM de-emphasis time constant options
+     * FM de-emphasis
      *
-     * Commercial broadcast stations in North America and Europe use 75 us and 53 us respectively
-     * But this is NBFM and reliable documentation for de-emphasis is difficult to find. There was one
-     * reference on a repeater builder site that mentions 3dB @ 3 KHz, but it sounds pretty severe and weak
-     * signals come through pretty muffled sounding. The Linux GQRX app recommends 530us for NBFM, and it also sounds
-     * very muffled in the app. GQRX offers a range of 25us to 530us. There is no standard found for NBFM.
-     * So included are some known values and one to bridge the gap. A user should be able to find a personal
-     * preference from the values below.
+     * Per TIA-603-E, all NBFM use a -6 dB per octave roll off from 300 Hz to 3000 Hz.
+     * It also specifies an additional -12 dB above 2500 (not implemented to save on filter passes, the resampler
+     * takes care of a lot of that), and an additional -6 dB below 500 (not implemented to save on filter passes, the
+     * existing high pass filter takes care of most of that).
      */
-    // TODO get this out of here and into its own file
     public enum DeemphasisMode
     {
         NONE("None", 0),
-        CEPT_53US("53 µs (Europe/CEPT)", 53),
-        US_75US("75 µs (North America)", 75),
-        OTHER_166US("166 µs (Other)", 166),
-        NBFM_333US("333 µs (3dB @ 3KHz)", 333);
+        //CEPT_53US("53 µs (Europe/CEPT)", 18867),
+        //US_75US("75 µs (North America)", 13333),
+        //OTHER_166US("166 µs (Other)", 6024),
+        NBFM_300("-6dB/octave @ 300-3KHz", 300);
 
         private final String mLabel;
-        private final int mMicroseconds;
+        private final int mCutoff;
 
-        DeemphasisMode(String label, int microseconds)
+        DeemphasisMode(String label, int cutoffFreq)
         {
             mLabel = label;
-            mMicroseconds = microseconds;
+            mCutoff = cutoffFreq;
         }
 
-        public int getMicroseconds()
+        public int getCutoff()
         {
-            return mMicroseconds;
+            return mCutoff;
         }
 
         @Override
@@ -147,6 +144,26 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     public void setAudioFilter(boolean audioHPFilter)
     {
         mAudioHPFilter = audioHPFilter;
+    }
+
+
+    /**
+     * Indicates if the user wants automatic level control
+     * @return enable status, defaults to false;
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "audioALC")
+    public boolean isAudioALC()
+    {
+        return mAudioALC;
+    }
+
+    /**
+     * Sets the enabled state of high-pass filtering of the demodulated audio.
+     * @param audioALC set to enabled automatic level control (ALC)
+     */
+    public void setAudioALC(boolean audioALC)
+    {
+        mAudioALC = audioALC;
     }
 
     /**

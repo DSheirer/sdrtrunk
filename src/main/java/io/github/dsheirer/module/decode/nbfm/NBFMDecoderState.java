@@ -175,7 +175,7 @@ public class NBFMDecoderState extends AnalogDecoderState
 
         if(mDeemphasisMode != DecodeConfigNBFM.DeemphasisMode.NONE)
         {
-            sb.append("\nDe-emphasis: ").append(mDeemphasisMode.getMicroseconds()).append("µs");
+            sb.append("\nDe-emphasis: ").append(mDeemphasisMode.getCutoff()).append("Hz");
         }
 
         sb.append("\n\nTone Filter: ");
