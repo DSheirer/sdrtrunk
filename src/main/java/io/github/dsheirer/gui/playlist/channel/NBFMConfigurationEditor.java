@@ -599,7 +599,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getALCEnable().setDisable(true);
             getALCEnable().setSelected(false);
 
-            // === TODO: Reset new controls ===
+            // === TODO: Reset new controls, set to disabled ===
             getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NBFM_300);
             mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
             mCtcssCodeCombo.setValue(null);

@@ -135,7 +135,7 @@ public class AudioGainAndDcFilter
         }
 
         mCurrentGain = gain;
-        mLog.debug("Gain: {}", gain);
+        //mLog.debug("Gain: {}", gain);
         mObjectiveGain = objective;
         return processed;
     }
