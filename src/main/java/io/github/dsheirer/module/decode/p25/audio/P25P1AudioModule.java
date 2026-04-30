@@ -44,7 +44,7 @@ public class P25P1AudioModule extends ImbeAudioModule
 
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-    private GraphicEqualizer mGraphicEQ;
+    private volatile GraphicEqualizer mGraphicEQ;
     private List<LDUMessage> mCachedLDUMessages = new ArrayList<>();
 
     public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
@@ -69,7 +69,7 @@ public class P25P1AudioModule extends ImbeAudioModule
             mGraphicEQ.setBandGains(bandGains);
         }
 
-        mLog.info("P25P1AudioModule graphic EQ configured: enabled={} gains={}",
+        mLog.debug("P25P1AudioModule graphic EQ configured: enabled={} gains={}",
             enabled, bandGains != null ? java.util.Arrays.toString(bandGains) : "null");
     }
 
@@ -166,9 +166,10 @@ public class P25P1AudioModule extends ImbeAudioModule
                 float[] audio = getAudioCodec().getAudio(frame);
                 audio = mGain.apply(audio);
 
-                if(mGraphicEQ != null && mGraphicEQ.isEnabled())
+                GraphicEqualizer eq = mGraphicEQ;
+                if(eq != null && eq.isEnabled())
                 {
-                    mGraphicEQ.process(audio);
+                    eq.process(audio);
                 }
 
                 addAudio(audio);

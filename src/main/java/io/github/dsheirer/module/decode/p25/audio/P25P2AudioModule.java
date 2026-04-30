@@ -64,7 +64,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
     private Listener<IMessage> mMessageListener;
-    private GraphicEqualizer mGraphicEQ;
+    private volatile GraphicEqualizer mGraphicEQ;
 
     public P25P2AudioModule(UserPreferences userPreferences, int timeslot, AliasList aliasList)
     {
@@ -88,7 +88,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
             mGraphicEQ.setBandGains(bandGains);
         }
 
-        mLog.info("P25P2AudioModule graphic EQ configured: enabled={} gains={}",
+        mLog.debug("P25P2AudioModule graphic EQ configured: enabled={} gains={}",
             enabled, bandGains != null ? java.util.Arrays.toString(bandGains) : "null");
     }
 
@@ -213,9 +213,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                     IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
                     float[] audio = audioWithMetadata.getAudio();
 
-                    if(mGraphicEQ != null && mGraphicEQ.isEnabled())
+                    GraphicEqualizer eq = mGraphicEQ;
+                    if(eq != null && eq.isEnabled())
                     {
-                        mGraphicEQ.process(audio);
+                        eq.process(audio);
                     }
 
                     addAudio(audio);

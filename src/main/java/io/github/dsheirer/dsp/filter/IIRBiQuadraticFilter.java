@@ -197,7 +197,21 @@ final public class IIRBiQuadraticFilter {
     // perform one filtering step
     public double filter(double x)
     {
+        // Guard against NaN/Infinity input poisoning the feedback state
+        if(Double.isNaN(x) || Double.isInfinite(x))
+        {
+            return 0.0;
+        }
+
         y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+
+        // If output is NaN/Infinity (numerical instability), reset filter state
+        if(Double.isNaN(y) || Double.isInfinite(y))
+        {
+            reset();
+            return x;
+        }
+
         x2 = x1;
         x1 = x;
         y2 = y1;
