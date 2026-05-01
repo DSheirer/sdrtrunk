@@ -26,6 +26,7 @@ import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.gui.viewer.sync.FMSyncResultsViewer;
 import io.github.dsheirer.gui.viewer.sync.ISyncResultsListener;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
+import io.github.dsheirer.module.decode.nxdn.layer1.C4FMDecisionDirectedEqualizer;
 import io.github.dsheirer.module.decode.nxdn.layer1.SymbolEqualizerC4FM;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
@@ -62,6 +63,7 @@ public class NXDNSymbolProcessor
     private final NXDNStandardSoftSyncDetector mSyncDetectorLagging = NXDNSyncDetectorFactory.getStandardDetector();
     private final SampleEqualizer mSampleEqualizer = new SampleEqualizer();
     private final SymbolEqualizerC4FM mSymbolEqualizer = new SymbolEqualizerC4FM();
+    private final C4FMDecisionDirectedEqualizer mNewEqualizer = new C4FMDecisionDirectedEqualizer(16);
     private double mNoiseStandardDeviationThreshold;
     private double mSamplePoint;
     private double mSamplePointAdjustment;
@@ -79,9 +81,10 @@ public class NXDNSymbolProcessor
     private boolean mSynchronized = false;
     private boolean mDelayedSyncDetectionTriggerPending = false;
 
-    private final boolean mVisualize = false;
-    private final int mDebugSymbolStart = 2020; //1890 is actual start of modulation
+    private final boolean mVisualize = true;
+    private final int mDebugSymbolStart = 202000; //1890 is actual start of modulation
     private static final DecimalFormat DF = new DecimalFormat("00.000");
+
 
     /**
      * Constructs an instance
@@ -189,9 +192,20 @@ public class NXDNSymbolProcessor
                     {
                         mSampleEqualizer.reset();
                         mSymbolEqualizer.disable();
+                        mNewEqualizer.disable();
                     }
 
                     softSymbol = mSampleEqualizer.getEqualizedSymbol(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], samplePoint);
+
+
+                    //Check for lagging sync pattern
+                    float lag = (float)(bufferPointer + samplePoint - mLaggingSyncOffset);
+                    int lagIntegral = (int)Math.floor(lag);
+                    float softSymbolLag = mSampleEqualizer.getEqualizedSymbol(mBuffer[lagIntegral], mBuffer[lagIntegral + 1], lag - lagIntegral);
+                    float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
+
+                    mNewEqualizer.processSample(softSymbolLag);
+                    float equalized = mNewEqualizer.processSymbol(softSymbol);
 
                     //Broadcast the decoded soft symbol to an optionally registered listener (ie Symbol view in channel panel).
                     Dibit symbol = toSymbol(softSymbol);
@@ -211,11 +225,6 @@ public class NXDNSymbolProcessor
 
                     correctionCandidate = INVALID_SYNC_DETECTION;
 
-                    //Check for lagging sync pattern
-                    float lag = (float)(bufferPointer + samplePoint - mLaggingSyncOffset);
-                    int lagIntegral = (int)Math.floor(lag);
-                    float softSymbolLag = mSampleEqualizer.getEqualizedSymbol(mBuffer[lagIntegral], mBuffer[lagIntegral + 1], lag - lagIntegral);
-                    float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
 
 //                    if(mVisualize)
 //                    {
@@ -250,11 +259,13 @@ public class NXDNSymbolProcessor
                     softSymbol = mSymbolEqualizer.process(softSymbol, symbol);
                     symbol = toSymbol(softSymbol);
 
-                    mFeedbackDecoder.broadcast(softSymbol);
+//                    mFeedbackDecoder.broadcast(softSymbol);
+                    mFeedbackDecoder.broadcast(equalized);
 
                     if(mVisualize)
                     {
-                        getSyncResultsViewer().symbol(softSymbol);
+//                        getSyncResultsViewer().symbol(softSymbol);
+                        getSyncResultsViewer().symbol(equalized);
                     }
 
                     mMessageFramer.process(symbol);
@@ -281,6 +292,7 @@ public class NXDNSymbolProcessor
                         mDelayedSyncDetectionTriggerPending = true;
                         symbolsSinceLastSync = 0;
                         mSynchronized = true;
+                        mNewEqualizer.enable();
                         mSymbolEqualizer.enable();
                         mSymbolDelayLine.update(mSyncDetector.getSyncDibits());
                         visualizeSyncDetect(scorePrimary, true, "DETECT - POST", bufferPointer, samplePoint);
@@ -681,7 +693,7 @@ public class NXDNSymbolProcessor
     }
 
     /**
-     * Equalizer
+     * Sample equalizer providing gain and balance (DC offset compensation).
      *
      * Note: equalizer is initialized with a gain value of 1.219, as determined through significant testing against
      * both P25 and DMR C4FM modulated samples that employ pulse shaping filters.  Gain value is adjusted and

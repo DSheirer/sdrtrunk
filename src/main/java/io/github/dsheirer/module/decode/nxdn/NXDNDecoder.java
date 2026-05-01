@@ -325,8 +325,12 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 //        String file = directory + "20260324_033833_938736125_SYSTEM_SITE_null_47_baseband.wav";
 
         //NXDN 4800 Channels
-//        config = new DecodeConfigNXDN(TransmissionMode.M4800);
-//        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
+        config = new DecodeConfigNXDN(TransmissionMode.M4800);
+        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
+        //Lower SNR recordings
+//        String file = directory + "20260430_023556_152982500_Mobiletech-Communications-(NXDN)_Manlius_Manlius_15_baseband.wav";
+        //        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
+
         //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
 //        String file = directory + "20260104_065056_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
 //        String file = directory + "20260104_065240_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
@@ -334,12 +338,13 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 //        String file = directory + "AceVentura Sample 2/20260122_073239_154987500_SCFR_SITE_null_1_baseband.wav";
 //        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
 
+
         //Type-D Channels
-        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);
+//        config = new DecodeConfigNXDN(TransmissionMode.TYPE_D);
 //        String file = directory + "Type C and D/Action Radio Hennepin tadscottsmith/20260402_152326_464125000_Action-Radio---Hennepin_LCN-1_103_baseband.wav";
 //        String file = directory + "Type C and D/Action Radio Hennepin 2 tadscottsmith/recordings/20260330_221120_464650000_Action-Radio_Hennepin_LCN-4_92_baseband.wav";
 //        String file = directory + "Type C and D/20260314_091952_451775000_Heimes_Omaha_TYPE_D_114_baseband.wav";
-        String file = directory + "Type C and D/20260318_034719_452675000_Heimes_Omaha_TYPE_D_0_baseband.wav";
+//        String file = directory + "Type C and D/20260318_034719_452675000_Heimes_Omaha_TYPE_D_0_baseband.wav";
 //        String file = directory + "Type C and D/20260320_065339_451450000_Heimes_Omaha_TYPE_D_0_baseband.wav";
 
         //This file has PPM mis-adjusted by 8.0 to test for equalizer balance

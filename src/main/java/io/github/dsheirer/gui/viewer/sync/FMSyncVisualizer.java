@@ -49,6 +49,10 @@ public class FMSyncVisualizer extends VBox implements ISyncResultsListener
     private final XYChart.Series<Number, Number> mSymbolSeries = new XYChart.Series<>();
     private final XYChart.Series<Number, Number> mSymbolSeriesMarker = new XYChart.Series<>();
     private final ScatterChart<Number, Number> mConstellationChart = new ScatterChart<>(mConstellationI, mConstellationQ);
+    private final XYChart.Series<Number, Number> mConstellationSymbols = new XYChart.Series<>();
+    private static final int CONSTELLATION_SYMBOL_COUNT = 50;
+    private int mConstellationSymbolPointer = 0;
+
     private final LineChart<Number, Number> mSampleChart = new LineChart<>(mSampleTiming, mSamplePhase);
     private final ScatterChart<Number, Number> mSymbolChart = new ScatterChart<>(mSymbolTiming, mSymbolPhase);
 
@@ -86,6 +90,23 @@ public class FMSyncVisualizer extends VBox implements ISyncResultsListener
 
         mConstellationChart.setPrefSize(400, 400);
         mConstellationChart.setAnimated(false);
+        XYChart.Series<Number, Number> constellationIdeal = new XYChart.Series<>();
+        constellationIdeal.setName("Ideal");
+        float PI_4 = (float) (Math.PI / 4);
+        constellationIdeal.getData().add(new XYChart.Data<>(PI_4, PI_4));
+        constellationIdeal.getData().add(new XYChart.Data<>(PI_4, -PI_4));
+        constellationIdeal.getData().add(new XYChart.Data<>(-PI_4, PI_4));
+        constellationIdeal.getData().add(new XYChart.Data<>(-PI_4, -PI_4));
+        mConstellationChart.getData().add(constellationIdeal);
+        mConstellationSymbols.setName("Symbols");
+
+        for(int x = 0; x < CONSTELLATION_SYMBOL_COUNT; x++)
+        {
+            mConstellationSymbols.getData().add(new XYChart.Data<>(0, 0));
+        }
+
+        mConstellationChart.getData().add(mConstellationSymbols);
+
         mSampleChart.setAnimated(false);
         mSymbolChart.setAnimated(false);
         mSymbolChart.setId("symbol-chart");
@@ -135,6 +156,12 @@ public class FMSyncVisualizer extends VBox implements ISyncResultsListener
         }
         mSymbolSeries.getData().get(mSymbolPointer++).setYValue(symbol);
         mSymbolPointer %= SYMBOL_CHART_SERIES_COUNT;
+
+        XYChart.Data<Number,Number> element = mConstellationSymbols.getData().get(mConstellationSymbolPointer);
+        element.setXValue(Math.cos(symbol));
+        element.setYValue(Math.sin(symbol));
+        mConstellationSymbolPointer++;
+        mConstellationSymbolPointer %= CONSTELLATION_SYMBOL_COUNT;
     }
 
     @Override
@@ -151,31 +178,6 @@ public class FMSyncVisualizer extends VBox implements ISyncResultsListener
         mEqualizerGainHistory[mEqualizerPointer] = 0f;
 
         Platform.runLater(() -> {
-            XYChart.Series<Number, Number> constellationIdeal = new XYChart.Series<>();
-            constellationIdeal.setName("Ideal");
-            float PI_4 = (float) (Math.PI / 4);
-            constellationIdeal.getData().add(new XYChart.Data<>(PI_4, PI_4));
-            constellationIdeal.getData().add(new XYChart.Data<>(PI_4, -PI_4));
-            constellationIdeal.getData().add(new XYChart.Data<>(-PI_4, PI_4));
-            constellationIdeal.getData().add(new XYChart.Data<>(-PI_4, -PI_4));
-            constellationIdeal.getData().add(new XYChart.Data<>(1, 0));
-            constellationIdeal.getData().add(new XYChart.Data<>(-1, 0));
-            constellationIdeal.getData().add(new XYChart.Data<>(0, 1));
-            constellationIdeal.getData().add(new XYChart.Data<>(0, -1));
-
-            mConstellationChart.getData().clear();
-            mConstellationChart.getData().add(constellationIdeal);
-
-            XYChart.Series<Number, Number> constellation = new XYChart.Series<>();
-            constellation.setName("Decoded");
-
-            for(int x = 0; x < symbols.length; x++)
-            {
-                constellation.getData().add(new XYChart.Data<>(Math.cos(symbols[x]), Math.sin(symbols[x])));
-            }
-
-            mConstellationChart.getData().add(constellation);
-
             XYChart.Series<Number, Number> sampleSeries = new XYChart.Series<>();
             sampleSeries.setName("Demodulated Samples");
 
