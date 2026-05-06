@@ -26,7 +26,7 @@ import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.gui.viewer.sync.FMSyncResultsViewer;
 import io.github.dsheirer.gui.viewer.sync.ISyncResultsListener;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
-import io.github.dsheirer.module.decode.nxdn.layer1.C4FMFractionalDecisionDirectedEqualizer;
+import io.github.dsheirer.module.decode.nxdn.layer1.C4FMEqualizer;
 import io.github.dsheirer.module.decode.nxdn.layer1.SymbolEqualizerC4FM;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
@@ -64,7 +64,7 @@ public class NXDNSymbolProcessor
     private final NXDNStandardSoftSyncDetector mSyncDetectorLagging = NXDNSyncDetectorFactory.getStandardDetector();
     private final SampleEqualizer mSampleEqualizer = new SampleEqualizer();
     private final SymbolEqualizerC4FM mSymbolEqualizer = new SymbolEqualizerC4FM();
-    private final C4FMFractionalDecisionDirectedEqualizer mNewEqualizer = new C4FMFractionalDecisionDirectedEqualizer(3);
+    private final C4FMEqualizer mNewEqualizer;
     private double mNoiseStandardDeviationThreshold;
     private double mSamplePoint;
     private double mSamplePointAdjustment;
@@ -95,6 +95,7 @@ public class NXDNSymbolProcessor
     {
         mMessageFramer = messageFramer;
         mFeedbackDecoder = feedbackDecoder;
+        mNewEqualizer = new C4FMEqualizer(mSyncDetector.getSyncSymbols(), 9);
         DF.setPositivePrefix(" ");
     }
 

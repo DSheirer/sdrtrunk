@@ -313,8 +313,8 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         LOGGER.info("Starting ...");
 
         DecodeConfigNXDN config = null;
-//        String directory = "D:\\Recordings\\NXDN\\"; //Windows
-        String directory = "/media/denny/T9/Recordings/NXDN/"; //Linux
+        String directory = "D:\\Recordings\\NXDN\\"; //Windows
+//        String directory = "/media/denny/T9/Recordings/NXDN/"; //Linux
 
         //NXDN 9600 Channels
 //        config = new DecodeConfigNXDN(TransmissionMode.M9600);
@@ -328,8 +328,8 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         config = new DecodeConfigNXDN(TransmissionMode.M4800);
 //        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
         //Lower SNR recordings
-        String file = directory + "20260430_023556_152982500_Mobiletech-Communications-(NXDN)_Manlius_Manlius_15_baseband.wav";
-//        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
+//        String file = directory + "20260430_023556_152982500_Mobiletech-Communications-(NXDN)_Manlius_Manlius_15_baseband.wav";
+        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
 
         //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
 //        String file = directory + "20260104_065056_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
