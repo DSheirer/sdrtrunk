@@ -71,6 +71,7 @@ public class NXDNSymbolProcessor
     private double mSamplePointAdjustmentIncrement;
     private double mSamplePointAdjustmentMax;
     private double mSamplesPerSymbol;
+    private double mTimingCorrectionThreshold;
     private float[] mBuffer;
     private float mLaggingSyncOffset;
     private float mOptimizeFineIncrement;
@@ -81,8 +82,9 @@ public class NXDNSymbolProcessor
     private int mDebugSampleCounter = 0;
     private boolean mSynchronized = false;
     private boolean mDelayedSyncDetectionTriggerPending = false;
+    private int mDelayedSyncDetectionSymbolsRemaining = 0;
 
-    private final boolean mVisualize = true;
+    private final boolean mVisualize = false;
     private final int mDebugSymbolStart = 202000; //1890 is actual start of modulation
     private static final DecimalFormat DF = new DecimalFormat("00.000");
 
@@ -251,7 +253,8 @@ public class NXDNSymbolProcessor
 
                     //Equalizer processes current soft symbol and returns a delayed soft symbol that is equalized
                     softSymbol = mSymbolEqualizer.process(softSymbol, symbol);
-                    symbol = toSymbol(softSymbol);
+//                    symbol = toSymbol(softSymbol);
+                    symbol = toSymbol(equalized);
 
 //                    mFeedbackDecoder.broadcast(softSymbol);
                     mFeedbackDecoder.broadcast(equalized);
@@ -270,13 +273,16 @@ public class NXDNSymbolProcessor
                     //when possible.
                     mDibitAssembler.receive(mSymbolDelayLine.insert(symbol));
 
+//                    System.out.println("Symbol: " + symbol);
+
+
                     if(correctionCandidate.isValid())
                     {
                         mSampleEqualizer.apply(correctionCandidate);
 
                         if(mSynchronized)
                         {
-                            double adjustment = Math.clamp(correctionCandidate.getTimingCorrection(), -0.3, 0.3);
+                            double adjustment = Math.clamp(correctionCandidate.getTimingCorrection(), -mTimingCorrectionThreshold, mTimingCorrectionThreshold);
                             System.out.println("\t\tCLAMPED TIMING ADJUSTMENT: " + correctionCandidate.getTimingCorrection() + " CLAMPED:" + adjustment);
                             samplePoint += adjustment;
                         }
@@ -284,9 +290,16 @@ public class NXDNSymbolProcessor
                         {
                             System.out.println("\t\tFULL TIMING ADJUSTMENT: " + correctionCandidate.getTimingCorrection());
                             samplePoint += correctionCandidate.getTimingCorrection();
+
+                            if(Math.abs(correctionCandidate.getTimingCorrection()) > mTimingCorrectionThreshold)
+                            {
+                                //TODO: Resample the symbols and inter-symbols and feed to the equalizer to train against.
+                            }
                         }
 
                         mDelayedSyncDetectionTriggerPending = true;
+                        mDelayedSyncDetectionSymbolsRemaining = mNewEqualizer.getDelay();
+//                        mDelayedSyncDetectionSymbolsRemaining = 1;
                         symbolsSinceLastSync = 0;
                         mSynchronized = true;
                         mNewEqualizer.syncDetected();
@@ -297,8 +310,13 @@ public class NXDNSymbolProcessor
                     }
                     else if(mDelayedSyncDetectionTriggerPending)
                     {
-                        mMessageFramer.syncDetected();
-                        mDelayedSyncDetectionTriggerPending = false;
+                        mDelayedSyncDetectionSymbolsRemaining--;
+
+                        if(mDelayedSyncDetectionSymbolsRemaining <= 0)
+                        {
+                            mMessageFramer.syncDetected();
+                            mDelayedSyncDetectionTriggerPending = false;
+                        }
                     }
 
                     //Add another symbol's worth of samples to the counter for processing
@@ -337,6 +355,7 @@ public class NXDNSymbolProcessor
     public void setSamplesPerSymbol(float samplesPerSymbol)
     {
         mSamplesPerSymbol = samplesPerSymbol;
+        mTimingCorrectionThreshold = samplesPerSymbol / 15;
         mNoiseStandardDeviationThreshold = .2;
         mSamplePoint = samplesPerSymbol;
         mSamplePointAdjustmentMax = samplesPerSymbol / 2;
@@ -540,12 +559,12 @@ public class NXDNSymbolProcessor
      */
     public static class Correction
     {
+        private final double mTimingAdjustment;
         private final double mAdditionalOffset;
         private final float mBalanceAdjustment;
         private final float mGainAdjustment;
         private final float mDetectionScore;
         private final float mOptimizationScore;
-        private final double mTimingAdjustment;
         private int mCorrectedBitCount = 0;
 
         /**

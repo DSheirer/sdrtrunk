@@ -43,6 +43,7 @@ public class C4FMEqualizer
     private float mStepSize = 0.01f; //mu in range 0.0001 to 0.01
     private boolean mEnabled = false;
     private int mDelay = 0;
+    private int mProcessingDelay = 0;
     private int mSyncDelay;
     private FloatAveragingBuffer mMeanResidualError = new FloatAveragingBuffer(30, 10);
 
@@ -72,6 +73,7 @@ public class C4FMEqualizer
         //Make the tap count odd length for equal delay on either side of the main tap
         tapCount = (tapCount % 2 == 1) ? tapCount : tapCount + 1;
         mDelay = tapCount; //Use tap count as delay before we double it
+        mProcessingDelay = tapCount / 2;
         mSyncDelay = tapCount / 2; //Symbol countdown from sync detection to sync symbols centered in the buffer
         tapCount *= 2;
         mTaps = new float[tapCount];
@@ -80,6 +82,15 @@ public class C4FMEqualizer
         DF.setPositivePrefix(" ");
         int bufferLength = mSyncSymbols.length * 2 + mTaps.length - 2;
         mBuffer = new float[bufferLength];
+    }
+
+    /**
+     * Symbol processing delay.
+     * @return processing delay in symbols.
+     */
+    public int getDelay()
+    {
+        return mProcessingDelay;
     }
 
     /**
@@ -106,7 +117,7 @@ public class C4FMEqualizer
     {
         mSyncDetected = true;
         mTrainingSymbolsRemaining = mSyncDelay;
-        System.out.println("Training mode countdown started ....");
+//        System.out.println("Training mode countdown started ....");
     }
 
     public void syncLost()
@@ -130,11 +141,6 @@ public class C4FMEqualizer
             if(mVariance.getResult() > 0.225)
             {
                 mTaps = Arrays.copyOf(mTrainingSnapshot, mTrainingSnapshot.length);
-                System.out.println("Starting Training Taps: " + Arrays.toString(mTaps) + " Current Variance: " + mVariance.getResult() + " >> REUSED PREVIOUS TRAINING <<");
-            }
-            else
-            {
-                System.out.println("Starting Training Taps: " + Arrays.toString(mTaps) + " Current Variance: " + mVariance.getResult() + " ### GOOD DYNAMICS ###");
             }
 
             float[] history = mBuffer;
@@ -160,8 +166,6 @@ public class C4FMEqualizer
                     }
 
                     error = mSyncSymbols[symbolIndex] - y;
-                    System.out.println("\tAttempt " + attempt + " Symbol:" + symbolIndex +
-                            " Value:" + mSyncSymbols[symbolIndex] + " Y:" + y + " Error:" + error);
                     variance.increment(error);
 
                     for(index = 0; index < mTaps.length; index++)
@@ -170,26 +174,22 @@ public class C4FMEqualizer
                     }
                 }
 
-                System.out.println("Attempt " + attempt + " Variance:" + DF.format(variance.getResult()));
                 attempt++;
-
                 improvement = previousVariance - variance.getResult();
             }
             while(attempt < TRAINING_ITERATIONS_MAX && improvement > TRAINING_IMPROVEMENT_GOAL_PER_ITERATION);
 
-            System.out.println("Training against sync sequence complete");
+            System.out.println("Training Iterations:" + attempt + " End Variance:" + DF.format(variance.getResult()));
 
             //Use the trained taps if they converge, else revert to the previous trained taps.
             if(variance.getResult() < TRAINING_IMPROVEMENT_THRESHOLD)
             {
                 mTrainingSnapshot = Arrays.copyOf(mTaps, mTaps.length);
-                System.out.println("TAPS: " + Arrays.toString(mTaps) + " ***UPDATED WITH THIS TRAINING ITERATION***");
                 mDynamicTapUpdates = true;
             }
             else
             {
                 mTaps = Arrays.copyOf(mTrainingSnapshot, mTrainingSnapshot.length);
-                System.out.println("TAPS: " + Arrays.toString(mTaps) + " ### REVERTED ###");
                 mDynamicTapUpdates = false;
             }
         }
@@ -201,7 +201,7 @@ public class C4FMEqualizer
             mDynamicTapUpdates = true;
         }
 
-        System.out.println("*** Sync Detect Training Complete - Variance: " + mVariance.getResult() + " Count:" + mVariance.getN());
+//        System.out.println("*** Sync Detect Training Complete - Variance: " + mVariance.getResult() + " Count:" + mVariance.getN());
         mVariance.clear();
     }
 
@@ -261,12 +261,12 @@ public class C4FMEqualizer
             float originalError = Dibit.getError(originalValue);
             float residualError = Dibit.getError(y);
             float meanResidual = mMeanResidualError.get(residualError);
-            System.out.println("IN: " + DF.format(mBuffer[mDelay]) +
-                " OUT: " + DF.format(y) +
-                " ORIG ERROR:" + DF.format(originalError) +
-                " RESIDUAL:" + DF.format(residualError) +
-                " MEAN:" + DF.format(meanResidual) +
-                (mDynamicTapUpdates ? " ** DYNAMIC TAP UPDATE" : ""));
+//            System.out.println("IN: " + DF.format(mBuffer[mDelay]) +
+//                " OUT: " + DF.format(y) +
+//                " ORIG ERROR:" + DF.format(originalError) +
+//                " RESIDUAL:" + DF.format(residualError) +
+//                " MEAN:" + DF.format(meanResidual) +
+//                (mDynamicTapUpdates ? " ** DYNAMIC TAP UPDATE" : ""));
 
             mVariance.increment(residualError);
         }

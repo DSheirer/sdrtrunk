@@ -30,8 +30,10 @@ import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
 import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -308,6 +310,41 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         return this;
     }
 
+    public static class MyListener implements Listener<IMessage>
+    {
+        private int mInvalidMessages;
+        private int mValidMessages;
+        private int mValidMessageBitErrors;
+
+        public void log()
+        {
+            System.out.println("Invalid: " + mInvalidMessages + " Valid: " + mValidMessages + " Valid-Bit Errors: " + mValidMessageBitErrors);
+        }
+
+        @Override
+        public void receive(IMessage message)
+        {
+            if(message instanceof NXDNMessage nxdn)
+            {
+                if(nxdn.isValid())
+                {
+                    System.out.println("BE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn);
+                    mValidMessages++;
+                    mValidMessageBitErrors += nxdn.getMessage().getCorrectedBitCount();
+                }
+                else
+                {
+                    System.out.println("\t\tBE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn);
+                    mInvalidMessages++;
+                }
+            }
+            else
+            {
+                System.out.println(message.toString());
+            }
+        }
+    }
+
     public static void main(String[] args)
     {
         LOGGER.info("Starting ...");
@@ -317,19 +354,19 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 //        String directory = "/media/denny/T9/Recordings/NXDN/"; //Linux
 
         //NXDN 9600 Channels
-//        config = new DecodeConfigNXDN(TransmissionMode.M9600);
-//        config.add(new ChannelFrequency(105, 451887500, 0));
-//        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
+        config = new DecodeConfigNXDN(TransmissionMode.M9600);
+        config.add(new ChannelFrequency(105, 451887500, 0));
+        String file = directory + "20251127_063701_451887500_Bush-NXDN-96_Sentinel-Heights_Control_45_baseband.wav";
 
         //Weird 938 MHz site in Springfield, VA that is all CRC errors.
 //        String file = directory + "20260324_033833_938736125_SYSTEM_SITE_null_47_baseband.wav";
 
         //NXDN 4800 Channels
-        config = new DecodeConfigNXDN(TransmissionMode.M4800);
+//        config = new DecodeConfigNXDN(TransmissionMode.M4800);
 //        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
         //Lower SNR recordings
+//        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
 //        String file = directory + "20260430_023556_152982500_Mobiletech-Communications-(NXDN)_Manlius_Manlius_15_baseband.wav";
-        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
 
         //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
 //        String file = directory + "20260104_065056_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
@@ -355,29 +392,9 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 
         NXDNDecoder decoder = new NXDNDecoder(config);
         decoder.start();
-        decoder.setMessageListener(new Listener<IMessage>()
-        {
-            @Override
-            public void receive(IMessage message)
-            {
-                if(message instanceof NXDNMessage nxdn)
-                {
-                    if(nxdn.isValid())
-                    {
-                        System.out.println("BE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn.toString());
-                        //                    decoder.log();
-                    }
-                    else
-                    {
-                        System.out.println("\t\tBE:" + nxdn.getMessage().getCorrectedBitCount() + " " + nxdn.toString());
-                    }
-                }
-                else
-                {
-                    System.out.println(message.toString());
-                }
-            }
-        });
+
+        MyListener listener = new MyListener();
+        decoder.setMessageListener(listener);
 
         try(ComplexWaveSource source = new ComplexWaveSource(new File(file), autoReplay))
         {
@@ -402,6 +419,8 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         {
             LOGGER.error("Error", ioe);
         }
+
+        listener.log();
 
         LOGGER.info("Finished");
     }
