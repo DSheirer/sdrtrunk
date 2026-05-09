@@ -46,7 +46,6 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
 
     // Channel-level squelch filtering
     private List<squelchDecoderConfig> mSquelchDecoders = new ArrayList<>();
-    private boolean mSquelchFilterEnabled = false;
 
      // FM de-emphasis
     private DeemphasisMode mDeemphasis = DeemphasisMode.NONE;
@@ -304,15 +303,6 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         List<squelchDecoderConfig> decoders = getSquelchDecoders();
         // TODO right now only looking at first and only decoder, need to fix when multiple decoders are possible
         return !decoders.isEmpty() && decoders.getFirst().getSquelchType() != squelchDecoderConfig.SquelchType.NONE;
-    }
-
-    /**
-     * Indicates if this channel has valid, enabled tone filters configured
-     */
-    @JsonIgnore
-    public boolean hasSquelchFiltering()
-    {
-        return mSquelchFilterEnabled && !mSquelchDecoders.isEmpty();
     }
 
     /**

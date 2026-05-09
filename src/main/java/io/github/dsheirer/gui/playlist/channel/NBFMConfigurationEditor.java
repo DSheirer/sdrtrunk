@@ -49,14 +49,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
-import javafx.scene.control.TitledPane;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.TextAlignment;
 import org.controlsfx.control.SegmentedButton;
@@ -158,7 +152,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             // High pass audio filter
             // Note: normally the label and its toggle switch are one cell.  They were split to make the next row
             //  look better. The label is manually created and placed here.  Might want to create a new grid plane instead.
-            Label HPFLabel = new Label(("High-pass Audio Filter (300 Hz)"));
+            Label HPFLabel = new Label("High-pass Audio Filter (300 Hz)");
             GridPane.setHalignment(HPFLabel, HPos.RIGHT);
             GridPane.setConstraints(HPFLabel, 2, 1);
             gridPane.getChildren().add(HPFLabel);
@@ -188,7 +182,12 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mSquelchTypeCombo.getItems().addAll(squelchDecoderConfig.SquelchType.SQUELCH_TYPE);
             mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
             mSquelchTypeCombo.valueProperty().addListener((obs, ov, nv) -> {
-                updateToneCodeVisibility();
+                updateSquelchCodeVisibility();
+                mCtcssCodeCombo.setValue(null);
+                mDcsCodeCombo.setValue(null);
+                // this hack solves the problem of the promptText going away after using the comboBox first time:
+                mCtcssCodeCombo.setSkin(new ComboBoxListViewSkin<>(mCtcssCodeCombo));
+                mDcsCodeCombo.setSkin(new ComboBoxListViewSkin<>(mDcsCodeCombo));
                 modifiedProperty().set(true);
             });
             GridPane.setConstraints(mSquelchTypeCombo, 3, 2);
@@ -197,10 +196,10 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             // CTCSS code selector
             mCtcssCodeCombo = new ComboBox<>();
             mCtcssCodeCombo.getItems().addAll(CTCSSCode.STANDARD_CODES);    // excludes unknown/dummy codes
+            mCtcssCodeCombo.setValue(null);
             mCtcssCodeCombo.setPromptText("Select CTCSS tone");
             mCtcssCodeCombo.setPrefWidth(200);
             mCtcssCodeCombo.setVisible(false);
-            mCtcssCodeCombo.setManaged(false);
             mCtcssCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
             GridPane.setConstraints(mCtcssCodeCombo, 4, 2);
             gridPane.getChildren().add(mCtcssCodeCombo);
@@ -209,14 +208,13 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mDcsCodeCombo = new ComboBox<>();
             mDcsCodeCombo.getItems().addAll(DCSCode.STANDARD_CODES);
             mDcsCodeCombo.getItems().addAll(DCSCode.INVERTED_CODES);
+            mDcsCodeCombo.setValue(null);
             mDcsCodeCombo.setPromptText("Select DCS code");
             mDcsCodeCombo.setPrefWidth(200);
             mDcsCodeCombo.setVisible(false);
-            mDcsCodeCombo.setManaged(false);
             mDcsCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
-            GridPane.setConstraints(mDcsCodeCombo, 5, 2);
+            GridPane.setConstraints(mDcsCodeCombo, 4, 2);
             gridPane.getChildren().add(mDcsCodeCombo);
-
 
             mDecoderPane.setContent(gridPane);
 
@@ -247,29 +245,31 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         return mDeemphasisCombo;
     }
 
-    private void updateToneCodeVisibility()
+    private void updateSquelchCodeVisibility()
     {
         switch(mSquelchTypeCombo.getValue())
         {
             case squelchDecoderConfig.SquelchType.NONE:
                 mCtcssCodeCombo.setVisible(false);
-                mCtcssCodeCombo.setManaged(false);
                 mDcsCodeCombo.setVisible(false);
-                mDcsCodeCombo.setManaged(false);
                 break;
             case squelchDecoderConfig.SquelchType.CTCSS:
                 mCtcssCodeCombo.setVisible(true);
-                mCtcssCodeCombo.setManaged(true);
                 mDcsCodeCombo.setVisible(false);
-                mDcsCodeCombo.setManaged(false);
                 break;
             case squelchDecoderConfig.SquelchType.DCS:
                 mCtcssCodeCombo.setVisible(false);
-                mCtcssCodeCombo.setManaged(false);
                 mDcsCodeCombo.setVisible(true);
-                mDcsCodeCombo.setManaged(true);
                 break;
         }
+    }
+
+    private void resetSquelchCodes()
+    {
+        mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+        mCtcssCodeCombo.setValue(null);
+        mDcsCodeCombo.setValue(null);
+        updateSquelchCodeVisibility();
     }
 
     private TitledPane getEventLogPane()
@@ -545,16 +545,19 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             getDeemphasisCombo().setValue(decodeConfigNBFM.getDeemphasis());
 
-            // TODO: setPromptText is not working after the first time.
-            List<squelchDecoderConfig> savedFilters = decodeConfigNBFM.getSquelchDecoders();
-            if(savedFilters != null && !savedFilters.isEmpty())
+            List<squelchDecoderConfig> savedSquelchDecoders = decodeConfigNBFM.getSquelchDecoders();
+            if(savedSquelchDecoders != null && !savedSquelchDecoders.isEmpty())
             {
-                squelchDecoderConfig filter = savedFilters.get(0);
+
+                // TODO add multiple decodes
+                squelchDecoderConfig filter = savedSquelchDecoders.get(0);
+                //
                 mSquelchTypeCombo.setValue(filter.getSquelchType());
-                updateToneCodeVisibility();
+                updateSquelchCodeVisibility();
                 if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.NONE)
                 {
                     mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+                    resetSquelchCodes();
                 }
                 if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.CTCSS)
                 {
@@ -575,12 +578,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             }
             else
             {
-                mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
-                mCtcssCodeCombo.setValue(null);
-                mCtcssCodeCombo.setPromptText("Select PL tone");
-                mDcsCodeCombo.setValue(null);
-                mDcsCodeCombo.setPromptText("Select DCS code");
-                updateToneCodeVisibility();
+               resetSquelchCodes();
             }
         }
         else
@@ -599,14 +597,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getALCEnable().setDisable(true);
             getALCEnable().setSelected(false);
 
-            // === TODO: Reset new controls, set to disabled ===
-            getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NBFM_300);
-            mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
-            mCtcssCodeCombo.setValue(null);
-            mCtcssCodeCombo.setPromptText("Select PL tone");
-            mDcsCodeCombo.setValue(null);
-            mDcsCodeCombo.setPromptText("Select DCS code");
-            updateToneCodeVisibility();
+            getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NONE);
+            resetSquelchCodes();
         }
     }
 

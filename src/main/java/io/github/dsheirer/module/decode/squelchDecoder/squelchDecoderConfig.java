@@ -64,7 +64,6 @@ public class squelchDecoderConfig
 
     private SquelchType mSquelchType = SquelchType.NONE;
     private String mValue = "";
-    //private String mLabel = "";
 
     /**
      * Default constructor for Jackson XML deserialization
@@ -82,7 +81,6 @@ public class squelchDecoderConfig
     {
         mSquelchType = squelchType;
         mValue = value;
-        //mLabel = label;
     }
 
     /**
@@ -114,20 +112,6 @@ public class squelchDecoderConfig
     {
         mValue = value;
     }
-
-//    /**
-//     * User-friendly label
-//     */
-//    @JacksonXmlProperty(isAttribute = true, localName = "label")
-//    public String getLabel()
-//    {
-//        return mLabel;
-//    }
-
-//    public void setLabel(String label)
-//    {
-//        mLabel = label;
-//    }
 
     /**
      * Returns the CTCSS code for this filter, or null if not a CTCSS filter or value is invalid.
@@ -215,12 +199,6 @@ public class squelchDecoderConfig
                 sb.append("No squelch filter configured.");
                 break;
         }
-
-//        if(mLabel != null && !mLabel.isEmpty())
-//        {
-//            sb.append(" — ").append(mLabel);
-//        }
-
         return sb.toString();
     }
 
