@@ -37,7 +37,6 @@ public class RealResampler
     private Listener<float[]> mResampledListener;
     private BufferManager mBufferManager;
     private double mResampleFactor;
-    private boolean mLastBatch;
 
     /**
      * Constructs an instance.
@@ -105,8 +104,6 @@ public class RealResampler
      */
     public void resample(float[] samples, boolean lastBatch)
     {
-        // store state of lastBatch for buffer flushing in consumeOutput below
-        mLastBatch = lastBatch;
         mBufferManager.load(samples);
         mResampler.process(mResampleFactor, mBufferManager, lastBatch);
 
@@ -234,21 +231,6 @@ public class RealResampler
             if(mResampledListener != null)
             {
                 mResampledListener.receive(resampled);
-            }
-            // if this is the last batch of audio being processed by the resampler and there are still
-            //  samples remaining in the buffer, pad the block with zeros to make
-            //  mOutputArrayLength (usually 512) samples.
-            if(mLastBatch && mOutputBuffer.position() != 0)
-            {
-                float[] resampled = new float[mOutputArrayLength];
-                mOutputBuffer.flip();       // sets limit to remaining array length
-                mOutputBuffer.get(resampled, 0, mOutputBuffer.limit());     // unused are already zeroed, for padding
-                mOutputBuffer.compact();
-
-                if (mResampledListener != null)
-                {
-                    mResampledListener.receive(resampled);
-                }
             }
         }
     }
