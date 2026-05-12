@@ -337,56 +337,20 @@ public class CTCSSDetector
 
         if(maxIndex >= 0 && snrDB > DETECTION_THRESHOLD_DB)
         {
-            // Narrowband check: compare the strongest bin against its nearest neighbors.
-            // A real CTCSS tone produces a sharp spike at one frequency. Broadband interference
-            // (e.g. digital data bursts) energizes all bins roughly equally and fails this check.
-            float neighborSum = 0;
-            int neighborCount = 0;
+            // Note: the narrowband check (comparing strongest bin vs neighbors) was removed
+            // in ap-14.9.7. CTCSS tones are sub-audible (~10-15% of peak deviation), so when
+            // voice audio is present, the broadband voice energy dominates ALL Goertzel bins
+            // equally. The CTCSS tone only adds ~0.3-0.5 dB above neighbors during active voice,
+            // which is below any useful narrowband threshold. This caused tone squelch to never
+            // open during transmissions. The 3-block confirmation count is sufficient to reject
+            // broadband interference — random noise won't consistently peak at the same CTCSS
+            // frequency 3 times in a row across 42 possible tones (<0.06% probability).
 
-            for(int offset = 1; offset <= NARROWBAND_NEIGHBOR_COUNT; offset++)
-            {
-                int belowIndex = maxIndex - offset;
-                int aboveIndex = maxIndex + offset;
-
-                if(belowIndex >= 0)
-                {
-                    neighborSum += powers[belowIndex];
-                    neighborCount++;
-                }
-                if(aboveIndex < powers.length)
-                {
-                    neighborSum += powers[aboveIndex];
-                    neighborCount++;
-                }
-            }
-
-            if(neighborCount > 0)
-            {
-                float neighborAvg = neighborSum / neighborCount;
-                float narrowbandDB = (float)(10.0 * Math.log10((maxPower / (neighborAvg + 1e-10f)) + 1e-10));
-
-                // Use relaxed threshold for low-frequency tones where bin spacing
-                // causes spectral leakage (e.g., 97.4/100.0/103.5 Hz are ~3 Hz apart)
-                float effectiveThreshold = (mTargetFrequencies[maxIndex] <= LOW_FREQ_NARROWBAND_CUTOFF)
-                    ? LOW_FREQ_NARROWBAND_THRESHOLD_DB
-                    : NARROWBAND_THRESHOLD_DB;
-
-                if(narrowbandDB < effectiveThreshold)
-                {
-                    // Strongest bin is not significantly above its neighbors — broadband energy, not a tone
-                    LOGGER.trace("CTCSS rejected broadband energy at {} Hz: SNR={} dB but narrowband={} dB (threshold {} dB)",
-                            mTargetFrequencies[maxIndex], String.format("%.1f", snrDB),
-                            String.format("%.1f", narrowbandDB), effectiveThreshold);
-                    handleNoDetection();
-                    return;
-                }
-            }
+            CTCSSCode detected = mTargetCodeArray[maxIndex];
 
             // For low-frequency tones, spectral leakage can cause a neighboring non-target bin
             // to narrowly beat the actual target bin. If a target tone is within 2 bins of the
             // winner and within 2 dB, prefer the target tone — it's almost certainly the real tone.
-            CTCSSCode detected = mTargetCodeArray[maxIndex];
-
             if(!mTargetCodes.contains(detected) && mTargetFrequencies[maxIndex] <= LOW_FREQ_NARROWBAND_CUTOFF)
             {
                 for(int offset = 1; offset <= 2; offset++)
@@ -423,32 +387,21 @@ public class CTCSSDetector
                 }
             }
 
-            float neighborAvgForLog = 0;
-            int nCount = 0;
-            for(int offset = 1; offset <= NARROWBAND_NEIGHBOR_COUNT; offset++)
-            {
-                if(maxIndex - offset >= 0) { neighborAvgForLog += powers[maxIndex - offset]; nCount++; }
-                if(maxIndex + offset < powers.length) { neighborAvgForLog += powers[maxIndex + offset]; nCount++; }
-            }
-            float narrowbandDBLog = (nCount > 0)
-                ? (float)(10.0 * Math.log10((maxPower / ((neighborAvgForLog / nCount) + 1e-10f)) + 1e-10))
-                : 0;
-
             // Log at DEBUG only on confirmation transitions; TRACE for every block
             if(mConfirmationCounter < CONFIRMATION_COUNT ||
                (mDetectedCode != detected))
             {
-                LOGGER.debug("CTCSS tone {} ({} Hz) detected: SNR={} dB narrowband={} dB confirm={}/{} target={}",
+                LOGGER.debug("CTCSS tone {} ({} Hz) detected: SNR={} dB confirm={}/{} target={}",
                         detected, String.format("%.1f", mTargetFrequencies[maxIndex]),
-                        String.format("%.1f", snrDB), String.format("%.1f", narrowbandDBLog),
+                        String.format("%.1f", snrDB),
                         mConfirmationCounter, CONFIRMATION_COUNT,
                         mTargetCodes.contains(detected) ? "YES" : "NO");
             }
             else
             {
-                LOGGER.trace("CTCSS tone {} ({} Hz) detected: SNR={} dB narrowband={} dB confirm={}/{} target={}",
+                LOGGER.trace("CTCSS tone {} ({} Hz) detected: SNR={} dB confirm={}/{} target={}",
                         detected, String.format("%.1f", mTargetFrequencies[maxIndex]),
-                        String.format("%.1f", snrDB), String.format("%.1f", narrowbandDBLog),
+                        String.format("%.1f", snrDB),
                         mConfirmationCounter, CONFIRMATION_COUNT,
                         mTargetCodes.contains(detected) ? "YES" : "NO");
             }
