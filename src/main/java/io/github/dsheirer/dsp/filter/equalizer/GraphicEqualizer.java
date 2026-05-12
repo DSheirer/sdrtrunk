@@ -22,27 +22,38 @@ package io.github.dsheirer.dsp.filter.equalizer;
 import io.github.dsheirer.dsp.filter.IIRBiQuadraticFilter;
 
 /**
- * 5-band graphic equalizer using cascaded IIR biquad peak filters.
+ * 10-band graphic equalizer using cascaded IIR biquad peak filters.
  *
- * Default center frequencies are optimized for voice audio at 8 kHz sample rate:
- *   Band 1:  100 Hz  - Sub-bass / rumble
- *   Band 2:  400 Hz  - Low-mid / body
- *   Band 3: 1000 Hz  - Mid / intelligibility
- *   Band 4: 2000 Hz  - Upper-mid / presence
- *   Band 5: 3500 Hz  - High / clarity (near Nyquist at 8 kHz)
+ * Default center frequencies are logarithmically spaced from 70 Hz to 3.2 kHz,
+ * optimized for voice audio at 8 kHz sample rate (~0.6 octave spacing):
+ *   Band  1:   70 Hz  - Sub-bass / rumble
+ *   Band  2:  110 Hz  - Bass
+ *   Band  3:  165 Hz  - Upper bass
+ *   Band  4:  250 Hz  - Low-mid / body
+ *   Band  5:  380 Hz  - Mid-low
+ *   Band  6:  585 Hz  - Mid / warmth
+ *   Band  7:  900 Hz  - Mid / intelligibility
+ *   Band  8: 1370 Hz  - Upper-mid / presence
+ *   Band  9: 2100 Hz  - High-mid / clarity
+ *   Band 10: 3200 Hz  - High / sibilance (near Nyquist at 8 kHz)
  *
  * Each band has an adjustable gain from -12 dB to +12 dB.
- * Q (bandwidth) is fixed at 1.0 (approximately 1 octave).
+ * Q (bandwidth) is fixed at 2.0 (~0.7 octave per band).
  */
 public class GraphicEqualizer
 {
-    public static final int BAND_COUNT = 5;
-    public static final double DEFAULT_Q = 1.0;
+    public static final int BAND_COUNT = 10;
+    public static final double DEFAULT_Q = 2.0;
     public static final double MIN_GAIN_DB = -12.0;
     public static final double MAX_GAIN_DB = 12.0;
 
-    public static final double[] DEFAULT_CENTER_FREQUENCIES = {100.0, 400.0, 1000.0, 2000.0, 3500.0};
-    public static final String[] BAND_LABELS = {"100 Hz", "400 Hz", "1 kHz", "2 kHz", "3.5 kHz"};
+    public static final double[] DEFAULT_CENTER_FREQUENCIES = {
+        70.0, 110.0, 165.0, 250.0, 380.0, 585.0, 900.0, 1370.0, 2100.0, 3200.0
+    };
+    public static final String[] BAND_LABELS = {
+        "70 Hz", "110 Hz", "165 Hz", "250 Hz", "380 Hz",
+        "585 Hz", "900 Hz", "1.4 kHz", "2.1 kHz", "3.2 kHz"
+    };
 
     private final IIRBiQuadraticFilter[] mBands;
     private final double[] mGainDb;
@@ -50,7 +61,7 @@ public class GraphicEqualizer
     private boolean mEnabled;
 
     /**
-     * Creates a 5-band graphic equalizer.
+     * Creates a 10-band graphic equalizer.
      *
      * @param sampleRate audio sample rate (typically 8000 Hz for decoded P25 audio)
      */
@@ -88,7 +99,7 @@ public class GraphicEqualizer
     /**
      * Gets the gain in dB for the specified band.
      *
-     * @param band index (0-4)
+     * @param band index (0-9)
      * @return gain in dB
      */
     public double getBandGain(int band)
@@ -103,7 +114,7 @@ public class GraphicEqualizer
     /**
      * Sets the gain for a specific band.
      *
-     * @param band index (0-4)
+     * @param band index (0-9)
      * @param gainDb gain in dB, clamped to [-12, +12]
      */
     public void setBandGain(int band, double gainDb)
@@ -122,7 +133,7 @@ public class GraphicEqualizer
     /**
      * Sets all band gains at once.
      *
-     * @param gains array of 5 gain values in dB
+     * @param gains array of 10 gain values in dB
      */
     public void setBandGains(double[] gains)
     {
@@ -138,7 +149,7 @@ public class GraphicEqualizer
     /**
      * Gets all band gains.
      *
-     * @return array of 5 gain values in dB
+     * @return array of 10 gain values in dB
      */
     public double[] getBandGains()
     {
@@ -158,7 +169,7 @@ public class GraphicEqualizer
     }
 
     /**
-     * Processes a single audio sample through all 5 EQ bands in series.
+     * Processes a single audio sample through all 10 EQ bands in series.
      *
      * @param sample input audio sample
      * @return filtered audio sample

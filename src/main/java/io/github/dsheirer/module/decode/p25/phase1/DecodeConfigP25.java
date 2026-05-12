@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import io.github.dsheirer.dsp.filter.equalizer.GraphicEqualizer;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import java.util.ArrayList;
@@ -45,9 +46,9 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
     private boolean mNacFilterEnabled = false;
     private int mTalkgroup = 0;
 
-    // 5-band graphic equalizer settings
+    // 10-band graphic equalizer settings
     private boolean mGraphicEQEnabled = false;
-    private double[] mGraphicEQBandGains = new double[]{0.0, 0.0, 0.0, 0.0, 0.0};
+    private double[] mGraphicEQBandGains = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     public DecodeConfigP25()
     {
@@ -192,8 +193,7 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
     }
 
     /**
-     * Gets the 5-band graphic equalizer band gains in dB.
-     * Array of 5 values corresponding to bands at 100 Hz, 400 Hz, 1 kHz, 2 kHz, 3.5 kHz.
+     * Gets the 10-band graphic equalizer band gains in dB.
      */
     @JacksonXmlElementWrapper(localName = "graphic_eq_band_gains")
     @JacksonXmlProperty(localName = "gain")
@@ -203,15 +203,25 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
     }
 
     /**
-     * Sets the 5-band graphic equalizer band gains.
+     * Sets the 10-band graphic equalizer band gains.
      *
-     * @param gains array of 5 gain values in dB (-12 to +12)
+     * @param gains array of gain values in dB (-12 to +12).  If a legacy 5-band array is
+     *              provided, remaining bands default to 0 dB for backward compatibility.
      */
     public void setGraphicEQBandGains(double[] gains)
     {
-        if(gains != null && gains.length == 5)
+        if(gains != null)
         {
-            mGraphicEQBandGains = gains;
+            if(gains.length == GraphicEqualizer.BAND_COUNT)
+            {
+                mGraphicEQBandGains = gains;
+            }
+            else if(gains.length > 0 && gains.length < GraphicEqualizer.BAND_COUNT)
+            {
+                // Backward compatibility: pad shorter arrays (e.g. old 5-band configs) with 0 dB
+                mGraphicEQBandGains = new double[GraphicEqualizer.BAND_COUNT];
+                System.arraycopy(gains, 0, mGraphicEQBandGains, 0, gains.length);
+            }
         }
     }
 }

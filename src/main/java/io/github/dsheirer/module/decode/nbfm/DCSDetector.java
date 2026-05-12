@@ -219,8 +219,7 @@ public class DCSDetector
 
     /**
      * Handles detection of a DCS code from the underlying decoder.
-     * Suppresses confirmations when broadband interference is detected (low band energy
-     * ratio below threshold), preventing false DCS matches from digital data bursts.
+     * Applies confirmation counting before reporting accepted or rejected codes.
      */
     private void handleDetection(DCSCode code)
     {
@@ -229,17 +228,18 @@ public class DCSDetector
             return;
         }
 
-        // Reject detection if signal quality indicates broadband interference
-        if(!mSignalQualityValid)
-        {
-            LOGGER.trace("DCS code {} rejected — broadband interference detected (band ratio below threshold)",
-                    code);
-            return;
-        }
+        // Note: broadband interference check removed in ap-14.10. Real DCS signals mixed with
+        // voice audio produce low band ratios (0.05-0.40), well below any useful threshold.
+        // The DCS 23-bit codeword + parity check is sufficient to reject false detections.
 
         // Reset loss tracking — we just got a detection
         mLossCounter = 0;
         mSamplesSinceLastDetection = 0;
+
+        float bandRatio = (mWideBandEnergy > 1e-10f) ? (mLowBandEnergy / mWideBandEnergy) : 0;
+        LOGGER.trace("DCS code {} detected (ratio={} confirm={}/{} target={})",
+                code, String.format("%.3f", bandRatio), mConfirmationCounter, CONFIRMATION_COUNT,
+                mTargetCodes.contains(code) ? "YES" : "NO");
 
         // Check if this code is in our allowed set
         if(!mTargetCodes.contains(code))

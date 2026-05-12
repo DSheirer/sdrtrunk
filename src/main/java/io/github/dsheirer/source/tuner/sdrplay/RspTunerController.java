@@ -35,6 +35,7 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.GainCallbackP
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.PowerOverloadCallbackParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.RspDuoModeCallbackParameters;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     protected static final int MIDDLE_UNUSABLE_BANDWIDTH = 0;
     private I mControlRsp;
     private RspNativeBufferFactory mNativeBufferFactory = new RspNativeBufferFactory(RspSampleRate.RATE_8_000);
+    private final AtomicBoolean mDeviceRemoved = new AtomicBoolean(false);
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -307,6 +309,13 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     @Override
     public void processPowerOverload(TunerSelect tunerSelect, PowerOverloadCallbackParameters parameters)
     {
+        //Ignore power overload callbacks after device has been removed — the SDRplay API
+        //continues to fire these even after removal, causing endless error spam
+        if(mDeviceRemoved.get())
+        {
+            return;
+        }
+
         if(getControlRsp() != null)
         {
             try
@@ -324,6 +333,10 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     public void processDeviceRemoval(TunerSelect tunerSelect)
     {
         mLog.info("Processing device removal for tuner [" + tunerSelect + "] controller class [" + getClass().getSimpleName() + "]");
+
+        //Set flag first to suppress any further power overload callbacks from the SDRplay API
+        mDeviceRemoved.set(true);
+
         //Command the control RSP to nullify the device so that we cease all attempts to control the device via the API
         if(getControlRsp() != null)
         {

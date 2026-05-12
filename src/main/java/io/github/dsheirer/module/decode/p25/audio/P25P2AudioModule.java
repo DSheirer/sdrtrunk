@@ -72,10 +72,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     }
 
     /**
-     * Configures the 5-band graphic equalizer for this audio module.
+     * Configures the 10-band graphic equalizer for this audio module.
      *
      * @param enabled true to enable the EQ
-     * @param bandGains array of 5 gain values in dB (-12 to +12)
+     * @param bandGains array of 10 gain values in dB (-12 to +12)
      */
     public void setGraphicEQ(boolean enabled, double[] bandGains)
     {
