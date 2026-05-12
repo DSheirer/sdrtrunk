@@ -19,12 +19,10 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer1;
 
-import io.github.dsheirer.buffer.FloatAveragingBuffer;
 import io.github.dsheirer.dsp.symbol.Dibit;
-import org.apache.commons.math3.stat.descriptive.moment.Variance;
-
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import org.apache.commons.math3.stat.descriptive.moment.Variance;
 
 /**
  * Adaptive equalizer for C4FM symbols.
@@ -32,28 +30,24 @@ import java.util.Arrays;
 public class C4FMEqualizer
 {
     private static final DecimalFormat DF = new DecimalFormat("0.0000");
-    //Maximum possible error is PI/4 = 0.78, but we clip it to less than half that as the allowable error for tap updates
+    //Maximum possible error is PI/4 = 0.78, but we clip it to less than half as the allowable error for tap updates
     private static final float MAX_SYMBOL_ERROR = 0.3f;
     private static final double TRAINING_IMPROVEMENT_GOAL_PER_ITERATION = 0.001f;
-    private static final double TRAINING_IMPROVEMENT_THRESHOLD = 0.16f;
+    private static final double TRAINING_CONVERGENCE_THRESHOLD = 0.16f;
     private static final double TRAINING_SKIP_THRESHOLD = 0.05;
     private static final int TRAINING_ITERATIONS_MAX = 50;
+    private final float[] mBuffer;
     private float[] mTaps;
-    private float[] mBuffer;
-    private float mStepSize = 0.01f; //mu in range 0.0001 to 0.01
     private boolean mEnabled = false;
     private int mDelay = 0;
     private int mProcessingDelay = 0;
     private int mSyncDelay;
-    private FloatAveragingBuffer mMeanResidualError = new FloatAveragingBuffer(30, 10);
-
     private Variance mVariance = new Variance();
     private float[] mTrainingSnapshot;
     private float[] mSyncSymbols;
     private boolean mSyncDetected = false;
     private int mTrainingSymbolsRemaining = 0;
     private boolean mDynamicTapUpdates = false;
-
     private int mTrainingCount = 0;
 
     /**
@@ -117,7 +111,6 @@ public class C4FMEqualizer
     {
         mSyncDetected = true;
         mTrainingSymbolsRemaining = mSyncDelay;
-//        System.out.println("Training mode countdown started ....");
     }
 
     public void syncLost()
@@ -125,64 +118,128 @@ public class C4FMEqualizer
         //TODO: handle this.
     }
 
+    /**
+     * Process the samples and produce a delayed, equalized soft symbol ready for symbol decision.  Updates the
+     * equalizer taps to correct for the error in the equalized sample relative to the hard symbol decision.
+     *
+     * @param fractional sample that falls halfway between symbols
+     * @param symbol to equalize
+     * @return equalized symbol.
+     */
+    public float process(float fractional, float symbol)
+    {
+        //Shift buffer samples to the right two places and add new sample and symbol.
+        System.arraycopy(mBuffer, 0, mBuffer, 2, mBuffer.length - 2);
+        mBuffer[0] = fractional;
+        mBuffer[1] = symbol;
+
+        //Since there's a buffer delay, count down from sync detect until the pattern is aligned with the buffer
+        // contents and we can start training
+        if(mSyncDetected)
+        {
+            if(--mTrainingSymbolsRemaining <= 0)
+            {
+                train();
+            }
+        }
+
+        float equalized = 0f;
+
+        if(mEnabled)
+        {
+            int index;
+
+            for(index = 0; index < mTaps.length; index++)
+            {
+                equalized += mTaps[index] * mBuffer[index];
+            }
+
+            if(mDynamicTapUpdates)
+            {
+                float error = Dibit.getError(equalized);
+                error = Math.clamp(error, -MAX_SYMBOL_ERROR, MAX_SYMBOL_ERROR);
+
+                //Step size (mu) in range 0.0001 to 0.01
+                float stepSize = 0.01f;
+
+                for(index = 0; index < mTaps.length; index++)
+                {
+                    mTaps[index] += stepSize * error * mBuffer[index];
+                }
+            }
+
+            //Track the residual error that remains after equalization
+            mVariance.increment(Dibit.getError(equalized));
+        }
+        else
+        {
+            //Return the uncorrected, delayed symbol when we're disabled
+            equalized = mBuffer[mDelay];
+        }
+
+        return equalized;
+    }
+
+    /**
+     * Trains the equalizer against the buffered detected sync pattern.  Trains against the sync pattern sequence
+     * multiple times while the per-iteration improvement continues to become smaller and stops training once the
+     * improvement falls below a threshold goal or exceeds a maximum iterations.  If the training converges to
+     * below a threshold, we snapshot and use the trained taps, otherwise fallback to the previous training snapshot.
+     */
     private void train()
     {
         mSyncDetected = false;
 
-        //DEBUG - skip the first training session
-        mTrainingCount++;
-        if(mTrainingCount < 2)
+        //Ensure we've collected enough variance samples in the buffer and we have sufficient variance
+        if(mVariance.getN() <= mSyncDelay || mVariance.getResult() > TRAINING_SKIP_THRESHOLD)
         {
-            return;
-        }
-
-        if(mVariance.getN() <= mSyncDelay || mVariance.getResult() > 0.05)
-        {
+            //If the current variance tracked since the last training session using dynamic tap adjustments at each
+            // symbol is excessive, fallback to the most recent training snapshot as a better starting point
             if(mVariance.getResult() > 0.225)
             {
                 mTaps = Arrays.copyOf(mTrainingSnapshot, mTrainingSnapshot.length);
             }
 
-            float[] history = mBuffer;
-            float y, error;
-            int symbolIndex, index;
-
+            float accumulator, error;
+            int symbolIndex, index, trainingIterationCount = 0;
+            double improvement, previousVariance;
             Variance variance = new Variance();
-
-            int attempt = 0;
-            double previousVariance = 1.0;
-            double improvement;
 
             do
             {
                 previousVariance = variance.getN() == 0 ? 20.0 : variance.getResult();
                 variance.clear();
+
                 for(symbolIndex = 0; symbolIndex < mSyncSymbols.length; symbolIndex++)
                 {
-                    y = 0.0f;
+                    accumulator = 0.0f;
                     for(index = 0; index < mTaps.length; index++)
                     {
-                        y += mTaps[index] * history[index + (2 * symbolIndex)];
+                        accumulator += mTaps[index] * mBuffer[index + (2 * symbolIndex)];
                     }
 
-                    error = mSyncSymbols[symbolIndex] - y;
+                    error = mSyncSymbols[symbolIndex] - accumulator;
                     variance.increment(error);
+
+                    //Step size (mu) in range 0.0001 to 0.01
+                    float stepSize = 0.01f;
 
                     for(index = 0; index < mTaps.length; index++)
                     {
-                        mTaps[index] += 0.01f * error * history[index + (2 * symbolIndex)];
+                        mTaps[index] += error * stepSize * mBuffer[index + (2 * symbolIndex)];
                     }
                 }
 
-                attempt++;
+                trainingIterationCount++;
                 improvement = previousVariance - variance.getResult();
             }
-            while(attempt < TRAINING_ITERATIONS_MAX && improvement > TRAINING_IMPROVEMENT_GOAL_PER_ITERATION);
+            while(trainingIterationCount < TRAINING_ITERATIONS_MAX && improvement > TRAINING_IMPROVEMENT_GOAL_PER_ITERATION);
 
-            System.out.println("Training Iterations:" + attempt + " End Variance:" + DF.format(variance.getResult()));
+//            System.out.println("Training Iterations:" + trainingIterationCount + " End Variance:" + DF.format(variance.getResult()));
 
-            //Use the trained taps if they converge, else revert to the previous trained taps.
-            if(variance.getResult() < TRAINING_IMPROVEMENT_THRESHOLD)
+            //Use and snapshot the trained taps if they converge, otherwise revert to the previous training snapshot and
+            //disable dynamic tap updates until the signal becomes less noisy
+            if(variance.getResult() < TRAINING_CONVERGENCE_THRESHOLD)
             {
                 mTrainingSnapshot = Arrays.copyOf(mTaps, mTaps.length);
                 mDynamicTapUpdates = true;
@@ -195,13 +252,11 @@ public class C4FMEqualizer
         }
         else if(mVariance.getN() >= mSyncDelay && mVariance.getResult() < TRAINING_SKIP_THRESHOLD)
         {
-            System.out.println("Skipping retrain - variance is acceptable");
             //Snapshot the current taps as the training sequence
             mTrainingSnapshot = Arrays.copyOf(mTaps, mTaps.length);
             mDynamicTapUpdates = true;
         }
 
-//        System.out.println("*** Sync Detect Training Complete - Variance: " + mVariance.getResult() + " Count:" + mVariance.getN());
         mVariance.clear();
     }
 
@@ -212,77 +267,5 @@ public class C4FMEqualizer
     {
         Arrays.fill(mTaps, 0f);
         mTaps[mDelay] = 1.0f;
-    }
-
-    /**
-     * Inserts a fractionally spaced sample into the delay queue.  Note: this is an insert only operation
-     * and the taps are not updated until the next symbol is processed.
-     * @param sample that is fractionally spaced between symbol periods.
-     */
-    public void processSample(float sample)
-    {
-        //Shift buffer samples to the right by 2 places to add new fractional sample and symbol.
-        System.arraycopy(mBuffer, 0, mBuffer, 2, mBuffer.length - 2);
-        mBuffer[0] = sample;
-    }
-
-    /**
-     * Processes a soft sample (ie symbol), updates the equalizer taps, and returns the equalized symbol.
-     *
-     * @param sample to equalizer=
-     * @return equalized symbol.
-     */
-    public float processSymbol(float sample)
-    {
-        mBuffer[1] = sample;
-
-        float y = 0f;
-        int index;
-
-        if(mEnabled)
-        {
-            for(index = 0; index < mTaps.length; index++)
-            {
-                y += mTaps[index] * mBuffer[index];
-            }
-
-            if(mDynamicTapUpdates)
-            {
-                float error = Dibit.getError(y);
-                error = Math.clamp(error, -MAX_SYMBOL_ERROR, MAX_SYMBOL_ERROR);
-
-                for(index = 0; index < mTaps.length; index++)
-                {
-                    mTaps[index] += mStepSize * error * mBuffer[index];
-                }
-            }
-
-            float originalValue = mBuffer[mDelay];
-            float originalError = Dibit.getError(originalValue);
-            float residualError = Dibit.getError(y);
-            float meanResidual = mMeanResidualError.get(residualError);
-//            System.out.println("IN: " + DF.format(mBuffer[mDelay]) +
-//                " OUT: " + DF.format(y) +
-//                " ORIG ERROR:" + DF.format(originalError) +
-//                " RESIDUAL:" + DF.format(residualError) +
-//                " MEAN:" + DF.format(meanResidual) +
-//                (mDynamicTapUpdates ? " ** DYNAMIC TAP UPDATE" : ""));
-
-            mVariance.increment(residualError);
-        }
-        else
-        {
-            y = mBuffer[mDelay];
-        }
-
-        if(mSyncDetected)
-        {
-            if(--mTrainingSymbolsRemaining <= 0)
-            {
-                train();
-            }
-        }
-
-        return y;
     }
 }

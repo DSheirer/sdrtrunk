@@ -27,7 +27,6 @@ import io.github.dsheirer.gui.viewer.sync.FMSyncResultsViewer;
 import io.github.dsheirer.gui.viewer.sync.ISyncResultsListener;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.nxdn.layer1.C4FMEqualizer;
-import io.github.dsheirer.module.decode.nxdn.layer1.SymbolEqualizerC4FM;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.standard.NXDNStandardSoftSyncDetector;
@@ -35,6 +34,7 @@ import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
@@ -63,8 +63,7 @@ public class NXDNSymbolProcessor
     private final NXDNStandardSoftSyncDetector mSyncDetector = NXDNSyncDetectorFactory.getStandardDetector();
     private final NXDNStandardSoftSyncDetector mSyncDetectorLagging = NXDNSyncDetectorFactory.getStandardDetector();
     private final SampleEqualizer mSampleEqualizer = new SampleEqualizer();
-    private final SymbolEqualizerC4FM mSymbolEqualizer = new SymbolEqualizerC4FM();
-    private final C4FMEqualizer mNewEqualizer;
+    private final C4FMEqualizer mSymbolEqualizer;
     private double mNoiseStandardDeviationThreshold;
     private double mSamplePoint;
     private double mSamplePointAdjustment;
@@ -97,7 +96,7 @@ public class NXDNSymbolProcessor
     {
         mMessageFramer = messageFramer;
         mFeedbackDecoder = feedbackDecoder;
-        mNewEqualizer = new C4FMEqualizer(mSyncDetector.getSyncSymbols(), 9);
+        mSymbolEqualizer = new C4FMEqualizer(mSyncDetector.getSyncSymbols(), 9);
         DF.setPositivePrefix(" ");
     }
 
@@ -196,7 +195,6 @@ public class NXDNSymbolProcessor
                     {
                         mSampleEqualizer.reset();
                         mSymbolEqualizer.disable();
-                        mNewEqualizer.disable();
                     }
 
                     softSymbol = mSampleEqualizer.getEqualizedSymbol(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], samplePoint);
@@ -210,15 +208,7 @@ public class NXDNSymbolProcessor
 //                    softSymbolLag = Math.clamp(softSymbolLag, -FLOAT_PI, FLOAT_PI);
 
                     float scoreLag = mSyncDetectorLagging.process(softSymbolLag);
-
-                    mNewEqualizer.processSample(softSymbolLag);
-                    float equalized = mNewEqualizer.processSymbol(softSymbol);
-
-                    //Broadcast the decoded soft symbol to an optionally registered listener (ie Symbol view in channel panel).
-                    Dibit symbol = toSymbol(softSymbol);
-
                     scorePrimary = mSyncDetector.process(softSymbol);
-//                    scoreControl = mControlSoftSyncDetector.process(softSymbol);
 
                     correctionCandidate = INVALID_SYNC_DETECTION;
 
@@ -240,29 +230,26 @@ public class NXDNSymbolProcessor
 
                     if(scorePrimary > SYNC_THRESHOLD_DETECTION && scorePrimary > scoreLag)
                     {
-                        double optimizationPoint = bufferPointer + samplePoint;
                         correctionCandidate = mSampleEqualizer.optimize(mSyncDetector, 0, scorePrimary,
-                                optimizationPoint);
+                                (bufferPointer + samplePoint));
                     }
                     else if(scoreLag > SYNC_THRESHOLD_DETECTION)
                     {
-                        double optimizationPoint = bufferPointer + samplePoint;
                         correctionCandidate = mSampleEqualizer.optimize(mSyncDetectorLagging, -mLaggingSyncOffset,
-                                scoreLag, optimizationPoint);
+                                scoreLag, (bufferPointer + samplePoint));
                     }
 
-                    //Equalizer processes current soft symbol and returns a delayed soft symbol that is equalized
-                    softSymbol = mSymbolEqualizer.process(softSymbol, symbol);
-//                    symbol = toSymbol(softSymbol);
-                    symbol = toSymbol(equalized);
+                    softSymbol = mSymbolEqualizer.process(softSymbolLag, softSymbol);
 
-//                    mFeedbackDecoder.broadcast(softSymbol);
-                    mFeedbackDecoder.broadcast(equalized);
+                    //Broadcast the decoded soft symbol to an optionally registered listener (ie Symbol view in channel panel).
+                    Dibit symbol = toSymbol(softSymbol);
+
+                    //Equalizer processes current soft symbol and returns a delayed soft symbol that is equalized
+                    mFeedbackDecoder.broadcast(softSymbol);
 
                     if(mVisualize)
                     {
-//                        getSyncResultsViewer().symbol(softSymbol);
-                        getSyncResultsViewer().symbol(equalized);
+                        getSyncResultsViewer().symbol(softSymbol);
                     }
 
                     mMessageFramer.process(symbol);
@@ -273,22 +260,18 @@ public class NXDNSymbolProcessor
                     //when possible.
                     mDibitAssembler.receive(mSymbolDelayLine.insert(symbol));
 
-//                    System.out.println("Symbol: " + symbol);
-
-
                     if(correctionCandidate.isValid())
                     {
                         mSampleEqualizer.apply(correctionCandidate);
 
                         if(mSynchronized)
                         {
-                            double adjustment = Math.clamp(correctionCandidate.getTimingCorrection(), -mTimingCorrectionThreshold, mTimingCorrectionThreshold);
-                            System.out.println("\t\tCLAMPED TIMING ADJUSTMENT: " + correctionCandidate.getTimingCorrection() + " CLAMPED:" + adjustment);
+                            double adjustment = Math.clamp(correctionCandidate.getTimingCorrection(),
+                                    -mTimingCorrectionThreshold, mTimingCorrectionThreshold);
                             samplePoint += adjustment;
                         }
                         else
                         {
-                            System.out.println("\t\tFULL TIMING ADJUSTMENT: " + correctionCandidate.getTimingCorrection());
                             samplePoint += correctionCandidate.getTimingCorrection();
 
                             if(Math.abs(correctionCandidate.getTimingCorrection()) > mTimingCorrectionThreshold)
@@ -298,13 +281,11 @@ public class NXDNSymbolProcessor
                         }
 
                         mDelayedSyncDetectionTriggerPending = true;
-                        mDelayedSyncDetectionSymbolsRemaining = mNewEqualizer.getDelay();
-//                        mDelayedSyncDetectionSymbolsRemaining = 1;
-                        symbolsSinceLastSync = 0;
+                        mDelayedSyncDetectionSymbolsRemaining = mSymbolEqualizer.getDelay();
                         mSynchronized = true;
-                        mNewEqualizer.syncDetected();
-                        mNewEqualizer.enable();
-                        mSymbolEqualizer.enable(); //TODO: This isn't needed any more
+                        symbolsSinceLastSync = 0;
+                        mSymbolEqualizer.syncDetected();
+                        mSymbolEqualizer.enable();
                         mSymbolDelayLine.update(mSyncDetector.getSyncDibits());
                         visualizeSyncDetect(scorePrimary, true, "DETECT - POST", bufferPointer, samplePoint);
                     }
@@ -1038,6 +1019,7 @@ public class NXDNSymbolProcessor
             }
             else
             {
+                System.out.println(new Date() + " applying unsync Gain Adjustment: " + correction.getGainAdjustment());
                 mBalance += remainingBalanceToCorrect;
                 mGain += correction.getGainAdjustment();
             }
