@@ -34,7 +34,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import org.slf4j.Logger;
@@ -241,16 +243,11 @@ public class ThemeManager
         //constructed immediately afterwards (in particular the main JFrame) find a fully
         //populated UIDefaults set.  UIManager.setLookAndFeel is safe to call before the EDT
         //is running.
+        LookAndFeel newLaf;
         try
         {
-            if(darkMode)
-            {
-                UIManager.setLookAndFeel(new FlatDarkLaf());
-            }
-            else
-            {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            }
+            newLaf = darkMode ? new FlatDarkLaf() : new FlatLightLaf();
+            UIManager.setLookAndFeel(newLaf);
         }
         catch(Exception e)
         {
@@ -261,17 +258,50 @@ public class ThemeManager
         try
         {
             //JIDE 3.6.18 has compile-time `instanceof WindowsLookAndFeel` checks throughout
-            //LookAndFeelFactory.  On Linux/macOS JDKs that class is not present at all, so any
-            //call path that reaches those checks fails with NoClassDefFoundError.  The 3-arg
-            //overload lets us hand JIDE an explicit Metal LAF instance for *type detection*
-            //while leaving the real (FlatLaf) defaults table in place; JIDE's Metal branch
-            //matches first and the Windows branch is never reached.
+            //LookAndFeelFactory.  The 3-arg overload lets us hand JIDE an explicit Metal LAF
+            //instance for type detection while leaving the real (FlatLaf) defaults table in
+            //place; JIDE's Metal branch matches first.
             LookAndFeelFactory.installJideExtension(UIManager.getLookAndFeelDefaults(),
                     new MetalLookAndFeel(), LookAndFeelFactory.VSNET_STYLE);
         }
         catch(Throwable t)
         {
             mLog.warn("Unable to install JIDE LAF extension after theme change", t);
+        }
+
+        //JIDE's Metal-flavored extension overwrites FlatLaf's color/font/border defaults for
+        //standard Swing component keys (Table.background, TabbedPane.foreground, etc.) which
+        //leaves the inner content of the app looking like a Metal LAF island in a FlatLaf
+        //chrome.  Re-apply FlatLaf's standard defaults on top of JIDE's install - JIDE's UI
+        //delegate registrations live under Jide-prefixed keys that FlatLaf does not define,
+        //so they survive untouched.
+        try
+        {
+            UIDefaults flatFresh = (darkMode ? new FlatDarkLaf() : new FlatLightLaf()).getDefaults();
+            UIDefaults active = UIManager.getLookAndFeelDefaults();
+            for(java.util.Map.Entry<Object, Object> entry: flatFresh.entrySet())
+            {
+                Object key = entry.getKey();
+                Object value = entry.getValue();
+                String keyName = String.valueOf(key);
+
+                //Do not overwrite JIDE-specific keys, even though FlatLaf would not normally
+                //define them - belt-and-braces in case a future FlatLaf version adds keys
+                //whose names happen to start with "Jide".
+                if(keyName.startsWith("Jide") || keyName.contains(".Jide"))
+                {
+                    continue;
+                }
+
+                if(value != null)
+                {
+                    active.put(key, value);
+                }
+            }
+        }
+        catch(Throwable t)
+        {
+            mLog.warn("Unable to re-apply FlatLaf defaults after JIDE install", t);
         }
 
         //Re-rendering any already-realized Swing windows must happen on the EDT.

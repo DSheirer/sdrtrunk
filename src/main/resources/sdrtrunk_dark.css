@@ -73,6 +73,8 @@
     -fx-prompt-text-fill: #888888;
     -fx-highlight-fill: #214283;
     -fx-highlight-text-fill: #ffffff;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
 }
 
 .text-area .content
@@ -177,7 +179,9 @@
     -fx-background-color: #2b2b2b;
     -fx-control-inner-background: #313335;
     -fx-control-inner-background-alt: #353739;
-    -fx-table-cell-border-color: #3c3f41;
+    -fx-table-cell-border-color: #4f5356;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
 }
 
 .table-view .column-header, .table-view .filler, .table-view .column-header-background,
@@ -226,12 +230,25 @@
 .titled-pane > .content
 {
     -fx-background-color: #2b2b2b;
-    -fx-border-color: #3c3f41;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
 }
 
 .separator .line
 {
-    -fx-border-color: #444444;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1 0 0 0;
+}
+
+.split-pane
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.split-pane > .split-pane-divider
+{
+    -fx-background-color: #4f5356;
+    -fx-padding: 0 1 0 1;
 }
 
 .tooltip
