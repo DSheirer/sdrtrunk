@@ -1,3 +1,38 @@
+## Custom Additions in This Fork
+
+This fork adds the following features on top of the upstream SDRTrunk release. All settings are configured inside SDRTrunk's native Preferences dialog under **View → Preferences → External Outputs** — no config files or manual editing required.
+
+> **Build requirement:** This fork requires [Bellsoft Liberica JDK 25 Full](https://bell-sw.com/pages/downloads/#jdk-25) to build and run. The "Full" edition bundles JavaFX, which standard OpenJDK does not include. Build with `.\gradlew.bat clean distZip` on Windows.
+
+---
+
+### System Event Logging
+Writes all control and traffic channel decode events to daily rolling CSV files — one file per trunking system, named `{SYSTEM}_YYYY-MM-DD_events.csv`. Files roll over at midnight and append on restart so no data is lost. Enable per-channel under **Playlist Editor → Logging → System Events Log**.
+
+### Talker Alias Logging
+Persists the active radio alias map to a CSV state file (`{SYSTEM}_talker_aliases.csv`). Aliases accumulate across restarts — the file is never reset to zero. New over-the-air aliases are merged on top of previously saved ones automatically.
+
+### Control Channel Heartbeat Monitor
+Fires throttled HTTP GET pings to configured endpoints (e.g. Uptime Kuma, or any HTTP push API) whenever a P25 Phase 1 control channel is actively receiving RFSS Status Broadcast messages. If the channel goes silent — antenna problem, SDR disconnect, coverage gap — the pings stop and your uptime monitor alerts you.
+
+Configure under **View → Preferences → External Outputs → Heartbeat Monitor**:
+
+![Heartbeat Monitor preferences panel](docs/images/heartbeat_monitor.png)
+
+### TCP Network Streaming
+Streams all decode activity as live newline-delimited JSON (NDJSON) over TCP. Multiple clients can connect simultaneously with no polling delay. Two ports:
+
+- **Port 9500 — Event stream:** Every call event (GROUP_CALL, DATA_CALL, etc.) from all P25 and DMR channels, tagged with system name
+- **Port 9501 — Raw CC stream:** Every valid decoded control-channel message (TSBKs, CSBKs, AMBTCs) before SDRTrunk processes it into a higher-level event. DMR voice frames are filtered out — signaling only.
+
+Configure under **View → Preferences → External Outputs → Network Stream**:
+
+![Network Stream preferences panel](docs/images/network_stream.png)
+
+All existing CSV logging continues unchanged — TCP streaming is purely additive.
+
+---
+
 ![Gradle Build](https://github.com/dsheirer/sdrtrunk/actions/workflows/gradle.yml/badge.svg)
 ![Nightly Release](https://github.com/dsheirer/sdrtrunk/actions/workflows/nightly.yml/badge.svg)
 
