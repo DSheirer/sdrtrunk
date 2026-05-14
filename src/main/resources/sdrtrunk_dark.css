@@ -430,7 +430,7 @@
     -fx-text-fill: #ececec;
 }
 
-/* Bright high-contrast palette for chart series lines and symbols on a dark plot background. */
+/* Bright high-contrast palette for chart series lines on a dark plot background. */
 .default-color0.chart-series-line { -fx-stroke: #ff5555; }
 .default-color1.chart-series-line { -fx-stroke: #55aaff; }
 .default-color2.chart-series-line { -fx-stroke: #55ff7f; }
@@ -440,11 +440,20 @@
 .default-color6.chart-series-line { -fx-stroke: #ff7fbf; }
 .default-color7.chart-series-line { -fx-stroke: #ffffff; }
 
-.default-color0.chart-line-symbol, .default-color0.chart-symbol { -fx-background-color: #ff5555, #2b2b2b; }
-.default-color1.chart-line-symbol, .default-color1.chart-symbol { -fx-background-color: #55aaff, #2b2b2b; }
-.default-color2.chart-line-symbol, .default-color2.chart-symbol { -fx-background-color: #55ff7f, #2b2b2b; }
-.default-color3.chart-line-symbol, .default-color3.chart-symbol { -fx-background-color: #ffd34f, #2b2b2b; }
-.default-color4.chart-line-symbol, .default-color4.chart-symbol { -fx-background-color: #cf9bff, #2b2b2b; }
-.default-color5.chart-line-symbol, .default-color5.chart-symbol { -fx-background-color: #4fe6ff, #2b2b2b; }
-.default-color6.chart-line-symbol, .default-color6.chart-symbol { -fx-background-color: #ff7fbf, #2b2b2b; }
-.default-color7.chart-line-symbol, .default-color7.chart-symbol { -fx-background-color: #ffffff, #2b2b2b; }
+/* All chart data points render as bright white dots regardless of series.  Lines still carry
+   the per-series colour so they remain distinguishable. */
+.chart-symbol,
+.chart-line-symbol,
+.default-color0.chart-symbol, .default-color0.chart-line-symbol,
+.default-color1.chart-symbol, .default-color1.chart-line-symbol,
+.default-color2.chart-symbol, .default-color2.chart-line-symbol,
+.default-color3.chart-symbol, .default-color3.chart-line-symbol,
+.default-color4.chart-symbol, .default-color4.chart-line-symbol,
+.default-color5.chart-symbol, .default-color5.chart-line-symbol,
+.default-color6.chart-symbol, .default-color6.chart-line-symbol,
+.default-color7.chart-symbol, .default-color7.chart-line-symbol
+{
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 3px;
+    -fx-padding: 3px;
+}
