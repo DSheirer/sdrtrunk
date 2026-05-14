@@ -7,9 +7,9 @@ This fork adds the following features on top of the upstream SDRTrunk release. A
 ---
 
 ### System Event Logging
-If you use SDRTrunk's Events tab, you already know what this captures — everything that appears there, across both control and traffic channels, for every system you monitor. Group calls, individual calls, data calls, affiliations, registrations, site updates — any event SDRTrunk decodes shows up in that tab, and this feature lets you do something with it.
+Everything that appears in the channel Events tab can now be saved to disk or streamed over the network. Both options are independent and can be used together.
 
-Enable CSV logging and those same events are written to daily rolling files (`{SYSTEM}_YYYY-MM-DD_events.csv`) — one file per trunking system, rolling over at midnight and appending on restart. Enable TCP streaming and those same events flow out live over the network in real-time. Both options are independent — you can use one, the other, or both together. Enable per-channel under **Playlist Editor → Logging → System Events Log**.
+Enable CSV logging and events are written to daily rolling files (`{SYSTEM}_YYYY-MM-DD_events.csv`), one per trunking system, rolling at midnight and appending on restart. Enable TCP streaming and the same events flow out live in real-time. Configure per-channel under **Playlist Editor → Logging → System Events Log**.
 
 ### Talker Alias Logging
 By default, SDRTrunk does not save talker alias data to disk — aliases are only held in memory and lost when the application closes. This fork changes that: talker alias data is now automatically captured from every monitored system and written to a persistent CSV state file (`{SYSTEM}_talker_aliases.csv`) with no configuration required.
