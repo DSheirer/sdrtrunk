@@ -394,26 +394,30 @@ public class ThemeManager
     {
         boolean darkMode = theme.isDark();
 
-        //Read the FlatLaf-installed colours so each theme contributes its own palette to the
-        //JIDE-specific keys and the user-defaults overrides.  Fall back to reasonable defaults if
-        //a key is missing.
-        ColorUIResource bgPanel = uir(UIManager.getColor("Panel.background"),
+        //CRITICAL: read from UIManager.getLookAndFeelDefaults() (LAF layer only) rather than
+        //UIManager.getColor() / UIManager.getDefaults() (which is the merged view).  The merged
+        //view returns user-defaults entries from earlier applyExplicitOverrides calls instead of
+        //the fresh LAF values, which means a second theme switch picks up the previous theme's
+        //palette and the toggle appears broken after the first change.
+        UIDefaults laf = UIManager.getLookAndFeelDefaults();
+
+        ColorUIResource bgPanel = uir(laf.getColor("Panel.background"),
                 darkMode ? 0x2b2b2b : 0xf2f2f2);
-        ColorUIResource bgRaised = uir(UIManager.getColor("Button.background"),
+        ColorUIResource bgRaised = uir(laf.getColor("Button.background"),
                 darkMode ? 0x3c3f41 : 0xffffff);
-        ColorUIResource bgInput = uir(UIManager.getColor("TextField.background"),
+        ColorUIResource bgInput = uir(laf.getColor("TextField.background"),
                 darkMode ? 0x313335 : 0xffffff);
-        ColorUIResource bgSelection = uir(UIManager.getColor("List.selectionBackground"),
+        ColorUIResource bgSelection = uir(laf.getColor("List.selectionBackground"),
                 darkMode ? 0x214283 : 0x2675bf);
-        ColorUIResource fgPrimary = uir(UIManager.getColor("Label.foreground"),
+        ColorUIResource fgPrimary = uir(laf.getColor("Label.foreground"),
                 darkMode ? 0xe6e6e6 : 0x1e1e1e);
-        ColorUIResource fgSelection = uir(UIManager.getColor("List.selectionForeground"),
+        ColorUIResource fgSelection = uir(laf.getColor("List.selectionForeground"),
                 0xffffff);
-        ColorUIResource fgDisabled = uir(UIManager.getColor("Label.disabledForeground"),
+        ColorUIResource fgDisabled = uir(laf.getColor("Label.disabledForeground"),
                 darkMode ? 0x6a6a6a : 0x8c8c8c);
-        ColorUIResource border = uir(UIManager.getColor("Component.borderColor"),
+        ColorUIResource border = uir(laf.getColor("Component.borderColor"),
                 darkMode ? 0x4f5356 : 0xc4c4c4);
-        ColorUIResource altRow = uir(UIManager.getColor("Table.alternateRowColor"),
+        ColorUIResource altRow = uir(laf.getColor("Table.alternateRowColor"),
                 darkMode ? 0x353739 : 0xfafafa);
 
         //Use a slightly brighter foreground than FlatLaf's default in dark mode so text reads
