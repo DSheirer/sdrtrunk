@@ -729,40 +729,44 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
 
     private void keepaliveTick()
     {
-        if(mWebSocket == null || !mConnected.get())
-        {
-            return;
-        }
-
-        if(mKeepaliveAwaitingAck)
-        {
-            mKeepaliveMissedAcks++;
-            mLog.debug("{}Keepalive ack missed ({}/{})", ch(), mKeepaliveMissedAcks, KEEPALIVE_MISSED_ACK_THRESHOLD);
-        }
-
-        if(mKeepaliveMissedAcks >= KEEPALIVE_MISSED_ACK_THRESHOLD)
-        {
-            mLog.warn("{}Keepalive timeout — {} consecutive missed acks, reconnecting", ch(), mKeepaliveMissedAcks);
-            stopKeepalive();
-            mConnected.set(false);
-            mChannelOnline.set(false);
-            mStreamActive.set(false);
-            mCurrentStreamId.set(-1);
-            // Abort the dead WebSocket so connectWebSocket() starts fresh
-            if(mWebSocket != null)
-            {
-                try { mWebSocket.abort(); } catch(Exception e) { /* ignore */ }
-                mWebSocket = null;
-            }
-            setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-            setLastErrorDetail("Keepalive timeout — connection dead");
-            scheduleReconnect();
-            return;
-        }
-
-        // Send keepalive command
+        // CRITICAL: wrap entire body in try-catch. ScheduledExecutorService.scheduleAtFixedRate
+        // silently kills the recurring task if the Runnable throws ANY uncaught exception —
+        // no more ticks, no error logged, the keepalive just stops. If that happens, the
+        // connection can sit dead forever with no detection and no reconnect.
         try
         {
+            if(mWebSocket == null || !mConnected.get())
+            {
+                return;
+            }
+
+            if(mKeepaliveAwaitingAck)
+            {
+                mKeepaliveMissedAcks++;
+                mLog.debug("{}Keepalive ack missed ({}/{})", ch(), mKeepaliveMissedAcks, KEEPALIVE_MISSED_ACK_THRESHOLD);
+            }
+
+            if(mKeepaliveMissedAcks >= KEEPALIVE_MISSED_ACK_THRESHOLD)
+            {
+                mLog.warn("{}Keepalive timeout — {} consecutive missed acks, reconnecting", ch(), mKeepaliveMissedAcks);
+                stopKeepalive();
+                mConnected.set(false);
+                mChannelOnline.set(false);
+                mStreamActive.set(false);
+                mCurrentStreamId.set(-1);
+                // Abort the dead WebSocket so connectWebSocket() starts fresh
+                if(mWebSocket != null)
+                {
+                    try { mWebSocket.abort(); } catch(Exception e) { /* ignore */ }
+                    mWebSocket = null;
+                }
+                setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
+                setLastErrorDetail("Keepalive timeout — connection dead");
+                scheduleReconnect();
+                return;
+            }
+
+            // Send keepalive command
             mKeepaliveAwaitingAck = true;
             JsonObject cmd = new JsonObject();
             cmd.addProperty("command", "keepalive");
@@ -773,7 +777,7 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
         }
         catch(Exception e)
         {
-            mLog.warn("{}Keepalive send failed: {}", ch(), e.getMessage());
+            mLog.warn("{}Keepalive tick failed (non-fatal): {}", ch(), e.getMessage());
             mKeepaliveMissedAcks++;
         }
     }
@@ -1040,7 +1044,25 @@ public class ZelloBroadcaster extends AbstractAudioBroadcaster<ZelloConfiguratio
                         }
                         else
                         {
-                            mChannelOnline.set(false);
+                            // Channel went offline (e.g. server-side channel disabled, network partition).
+                            // If we were previously online, this is a state change that needs recovery.
+                            if(mChannelOnline.getAndSet(false))
+                            {
+                                mLog.warn("{}Zello channel went offline (status={}), reconnecting", ch(), status);
+                                stopKeepalive();
+                                mConnected.set(false);
+                                mStreamActive.set(false);
+                                mCurrentStreamId.set(-1);
+                                if(mWebSocket != null)
+                                {
+                                    try { mWebSocket.sendClose(WebSocket.NORMAL_CLOSURE, "channel offline"); }
+                                    catch(Exception e) { /* ignore */ }
+                                    mWebSocket = null;
+                                }
+                                setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
+                                setLastErrorDetail("Channel offline (status=" + status + ")");
+                                scheduleReconnect();
+                            }
                         }
                     }
                     else if("on_stream_stop".equals(command))
