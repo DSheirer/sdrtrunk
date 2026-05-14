@@ -438,6 +438,39 @@ public class ThemeManager
         //ToolTip needs to stand out from the panel.
         UIManager.put("ToolTip.background", bgRaised);
         UIManager.put("ToolTip.foreground", fgPrimary);
+
+        //JIDE components (JideTabbedPane, JideSplitPane, JideButton, etc.) read their colors
+        //from JIDE-specific UIManager keys, not the standard Swing keys.  Set those too so
+        //tabs and other JIDE widgets render with the same palette.
+        UIManager.put("JideTabbedPane.background", bgPanel);
+        UIManager.put("JideTabbedPane.foreground", fgPrimary);
+        UIManager.put("JideTabbedPane.tabAreaBackground", bgPanel);
+        UIManager.put("JideTabbedPane.selectedTabBackground", bgRaised);
+        UIManager.put("JideTabbedPane.activeTabBackground", bgRaised);
+        UIManager.put("JideTabbedPane.tabListBackground", bgRaised);
+        UIManager.put("JideTabbedPane.selectedTabTextForeground", fgSelection);
+        UIManager.put("JideTabbedPane.unselectedTabTextForeground", fgPrimary);
+        UIManager.put("JideTabbedPane.activeTabTextForeground", fgSelection);
+        UIManager.put("JideTabbedPane.shadow", border);
+        UIManager.put("JideTabbedPane.darkShadow", border);
+        UIManager.put("JideTabbedPane.light", bgRaised);
+        UIManager.put("JideTabbedPane.highlight", bgRaised);
+
+        UIManager.put("JideSplitPane.background", bgPanel);
+        UIManager.put("JideSplitPaneDivider.background", bgPanel);
+        UIManager.put("JideSplitPane.dividerColor", border);
+
+        UIManager.put("JideButton.background", bgRaised);
+        UIManager.put("JideButton.foreground", fgPrimary);
+        UIManager.put("JideButton.selectedBackground", bgSelection);
+        UIManager.put("JideButton.selectedForeground", fgSelection);
+        UIManager.put("JideButton.shadow", border);
+        UIManager.put("JideButton.darkShadow", border);
+        UIManager.put("JideButton.light", bgRaised);
+        UIManager.put("JideButton.highlight", bgRaised);
+
+        UIManager.put("JideLabel.background", bgPanel);
+        UIManager.put("JideLabel.foreground", fgPrimary);
     }
 
     private void pruneDeadReferencesAndCheckPresent(Scene scene)
