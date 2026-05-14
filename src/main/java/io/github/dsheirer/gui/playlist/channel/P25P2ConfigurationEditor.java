@@ -223,6 +223,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             List<EventLogType> types = new ArrayList<>();
             types.add(EventLogType.CALL_EVENT);
             types.add(EventLogType.DECODED_MESSAGE);
+            types.add(EventLogType.SYSTEM_CALL_EVENT);
 
             mEventLogConfigurationEditor = new EventLogConfigurationEditor(types);
             mEventLogConfigurationEditor.setPadding(new Insets(5,5,5,5));

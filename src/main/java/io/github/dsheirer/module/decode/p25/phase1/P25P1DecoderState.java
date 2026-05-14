@@ -29,6 +29,7 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -172,6 +173,7 @@ import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.PacketUtil;
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
@@ -192,6 +194,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final Listener<ChannelEvent> mChannelEventListener;
     private final P25TrafficChannelManager mTrafficChannelManager;
     private ServiceOptions mCurrentServiceOptions;
+    private List<ControlChannelHeartbeat> mHeartbeatMonitors = new ArrayList<>();
+    private Listener<IMessage> mRawStreamListener;
 
     /**
      * Constructs an APCO-25 decoder state with an optional traffic channel manager.
@@ -272,9 +276,30 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     /**
      * Primary message processing method.
      */
+    /**
+     * Sets heartbeat monitors to fire on RFSS status broadcasts.
+     */
+    public void setHeartbeatMonitors(List<ControlChannelHeartbeat> monitors)
+    {
+        mHeartbeatMonitors = monitors;
+    }
+
+    /**
+     * Sets a listener to receive raw valid messages (for TCP streaming).
+     */
+    public void setRawStreamListener(Listener<IMessage> listener)
+    {
+        mRawStreamListener = listener;
+    }
+
     @Override
     public void receive(IMessage iMessage)
     {
+        if(mRawStreamListener != null && iMessage.isValid())
+        {
+            mRawStreamListener.receive(iMessage);
+        }
+
         if(iMessage instanceof P25P1Message message)
         {
             getIdentifierCollection().update(message.getNAC());
@@ -634,6 +659,15 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
                     }
                     mNetworkConfigurationMonitor.process(ambtc);
+                    if(!mHeartbeatMonitors.isEmpty() && ambtc instanceof AMBTCRFSSStatusBroadcast rsbHb
+                            && rsbHb.getSystem() instanceof IntegerIdentifier sysIdent
+                            && rsbHb.getSite() instanceof IntegerIdentifier siteIdent)
+                    {
+                        for(ControlChannelHeartbeat hb : mHeartbeatMonitors)
+                        {
+                            hb.onRFSSStatusBroadcast(sysIdent.getValue(), siteIdent.getValue());
+                        }
+                    }
                     break;
 
                 //Channel grants
@@ -1264,6 +1298,15 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         getIdentifierCollection().update(frequencyID);
                     }
                     mNetworkConfigurationMonitor.process(tsbk);
+                    if(!mHeartbeatMonitors.isEmpty() && tsbk instanceof RFSSStatusBroadcast rfssHb
+                            && rfssHb.getSystem() instanceof IntegerIdentifier sysIdent
+                            && rfssHb.getSite() instanceof IntegerIdentifier siteIdent)
+                    {
+                        for(ControlChannelHeartbeat hb : mHeartbeatMonitors)
+                        {
+                            hb.onRFSSStatusBroadcast(sysIdent.getValue(), siteIdent.getValue());
+                        }
+                    }
                     break;
 
                 case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:

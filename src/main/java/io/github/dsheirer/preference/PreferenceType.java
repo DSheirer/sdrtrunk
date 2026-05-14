@@ -36,6 +36,8 @@ public enum PreferenceType
     PLAYBACK,
     RADIO_REFERENCE,
     RECORD,
+    SOURCE_HEARTBEAT,
+    SOURCE_NETWORK_STREAM,
     TALKGROUP_FORMAT,
     TUNER;
 }

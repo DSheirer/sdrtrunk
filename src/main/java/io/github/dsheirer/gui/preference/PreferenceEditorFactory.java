@@ -28,6 +28,8 @@ import io.github.dsheirer.gui.preference.mp3.MP3PreferenceEditor;
 import io.github.dsheirer.gui.preference.playback.PlaybackPreferenceEditor;
 import io.github.dsheirer.gui.preference.record.RecordPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
+import io.github.dsheirer.gui.preference.network.HeartbeatPreferenceEditor;
+import io.github.dsheirer.gui.preference.network.NetworkStreamPreferenceEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.scene.Node;
 
@@ -56,6 +58,10 @@ public class PreferenceEditorFactory
                 return new DirectoryPreferenceEditor(userPreferences);
             case JMBE_LIBRARY:
                 return new JmbeLibraryPreferenceEditor(userPreferences);
+            case SOURCE_HEARTBEAT:
+                return new HeartbeatPreferenceEditor(userPreferences);
+            case SOURCE_NETWORK_STREAM:
+                return new NetworkStreamPreferenceEditor(userPreferences);
             case SOURCE_TUNERS:
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:

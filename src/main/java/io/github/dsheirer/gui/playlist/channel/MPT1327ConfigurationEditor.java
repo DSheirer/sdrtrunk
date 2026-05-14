@@ -216,6 +216,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             types.add(EventLogType.DECODED_MESSAGE);
             types.add(EventLogType.TRAFFIC_CALL_EVENT);
             types.add(EventLogType.TRAFFIC_DECODED_MESSAGE);
+            types.add(EventLogType.SYSTEM_CALL_EVENT);
 
             mEventLogConfigurationEditor = new EventLogConfigurationEditor(types);
             mEventLogConfigurationEditor.setPadding(new Insets(5,5,5,5));

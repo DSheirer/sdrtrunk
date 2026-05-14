@@ -29,7 +29,8 @@ public enum EventLogType
     DECODED_MESSAGE( "Decoded Messages", "_decoded_messages" ),
     TRAFFIC_DECODED_MESSAGE( "Traffic Channel Decoded Messages", "_decoded_messages" ),
     CALL_EVENT( "Call Events", "_call_events" ),
-    TRAFFIC_CALL_EVENT( "Traffic Channel Call Events", "_call_events" );
+    TRAFFIC_CALL_EVENT( "Traffic Channel Call Events", "_call_events" ),
+    SYSTEM_CALL_EVENT( "System Events Log (control + traffic)", "_system_events" );
 
     private String mDisplayString;
     private String mFileSuffix;

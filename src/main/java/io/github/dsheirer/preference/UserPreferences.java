@@ -36,6 +36,8 @@ import io.github.dsheirer.preference.record.RecordPreference;
 import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
+import io.github.dsheirer.preference.network.HeartbeatPreference;
+import io.github.dsheirer.preference.network.NetworkStreamPreference;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -70,6 +72,8 @@ public class UserPreferences implements Listener<PreferenceType>
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
     private VectorCalibrationPreference mVectorCalibrationPreference;
+    private NetworkStreamPreference mNetworkStreamPreference;
+    private HeartbeatPreference mHeartbeatPreference;
 
     private SwingPreference mSwingPreference = new SwingPreference();
     private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
@@ -214,6 +218,22 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Network stream preferences
+     */
+    public NetworkStreamPreference getNetworkStreamPreference()
+    {
+        return mNetworkStreamPreference;
+    }
+
+    /**
+     * Heartbeat monitor preferences
+     */
+    public HeartbeatPreference getHeartbeatPreference()
+    {
+        return mHeartbeatPreference;
+    }
+
+    /**
      * Loads the managed preferences
      */
     private void loadPreferenceTypes()
@@ -232,6 +252,8 @@ public class UserPreferences implements Listener<PreferenceType>
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this::receive);
         mTunerPreference = new TunerPreference(this::receive);
         mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);
+        mNetworkStreamPreference = new NetworkStreamPreference(this::receive);
+        mHeartbeatPreference = new HeartbeatPreference(this::receive);
     }
 
     /**

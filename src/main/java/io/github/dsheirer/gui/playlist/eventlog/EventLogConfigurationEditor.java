@@ -50,6 +50,15 @@ public class EventLogConfigurationEditor extends Editor<EventLogConfiguration>
             EventLogControl control = new EventLogControl(type);
             mControls.add(control);
             getChildren().add(control);
+
+            if(type == EventLogType.SYSTEM_CALL_EVENT)
+            {
+                Label hint = new Label("Writes to event_logs/{system}_YYYY-MM-DD_events.csv · Rolls over at midnight · Old files require manual cleanup");
+                hint.setStyle("-fx-font-size: 10px; -fx-text-fill: #888888;");
+                hint.setPadding(new javafx.geometry.Insets(0, 5, 5, 45));
+                hint.setWrapText(true);
+                getChildren().add(hint);
+            }
         }
     }
 

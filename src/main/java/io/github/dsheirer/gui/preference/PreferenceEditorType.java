@@ -32,6 +32,8 @@ public enum PreferenceEditorType
     AUDIO_RECORD("Record"),
     AUDIO_OUTPUT("Playback/Tones"),
     AUDIO_CALL_MANAGEMENT("Call Management"),
+    SOURCE_HEARTBEAT("Heartbeat Monitor"),
+    SOURCE_NETWORK_STREAM("Network Stream"),
     SOURCE_TUNERS("Tuners"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
     VECTOR_CALIBRATION("Vector Calibration"),

@@ -103,10 +103,17 @@ import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
 import io.github.dsheirer.module.decode.tait.Tait1200MessageFilter;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
+import io.github.dsheirer.identifier.alias.TalkerAliasLogger;
+import io.github.dsheirer.module.decode.p25.phase1.ControlChannelHeartbeat;
+import io.github.dsheirer.module.decode.p25.phase1.NetworkEventBroadcastModule;
+import io.github.dsheirer.module.decode.p25.phase1.NetworkStreamManager;
+import io.github.dsheirer.preference.network.HeartbeatEntry;
+import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -287,15 +294,45 @@ public class DecoderFactory
 
         if(channel.getChannelType() == ChannelType.STANDARD)
         {
+            String systemName = channel.getSystem();
+            if(systemName == null || systemName.trim().isEmpty()) { systemName = channel.getName(); }
+            final String safeSystemName = StringUtils.replaceIllegalCharacters(systemName.trim());
+            Path eventLogDir = userPreferences.getDirectoryPreference().getDirectoryEventLog();
+
             P25TrafficChannelManager primaryTCM = new P25TrafficChannelManager(channel);
             modules.add(primaryTCM);
-            modules.add(new P25P1DecoderState(channel, primaryTCM));
+            P25P1DecoderState p25DecoderState = new P25P1DecoderState(channel, primaryTCM);
+            modules.add(p25DecoderState);
+
+            TalkerAliasLogger aliasLogger = new TalkerAliasLogger(eventLogDir, safeSystemName);
+            primaryTCM.getTalkerAliasManager().setChangeListener(aliasLogger::onAliasUpdate);
+            aliasLogger.bootstrap(primaryTCM.getTalkerAliasManager());
+
+            p25DecoderState.setHeartbeatMonitors(loadHeartbeatMonitors(userPreferences));
+
+            NetworkStreamManager streamManager = loadNetworkStreamManager(userPreferences);
+            if(streamManager != null)
+            {
+                modules.add(new NetworkEventBroadcastModule(safeSystemName, streamManager));
+                final NetworkStreamManager mgr = streamManager;
+                p25DecoderState.setRawStreamListener(msg ->
+                        mgr.broadcastRaw(formatRawMessage(safeSystemName, msg)));
+            }
         }
         else if(trafficChannelManager instanceof P25TrafficChannelManager parentTCM)
         {
             P25P1DecoderState decoderState = new P25P1DecoderState(channel, parentTCM);
             decoderState.setCurrentChannel(channelDescriptor);
             modules.add(decoderState);
+
+            NetworkStreamManager trafficStreamManager = loadNetworkStreamManager(userPreferences);
+            if(trafficStreamManager != null)
+            {
+                String trafficSystem = channel.getSystem();
+                if(trafficSystem == null || trafficSystem.trim().isEmpty()) { trafficSystem = channel.getName(); }
+                String safeTrafficSystem = StringUtils.replaceIllegalCharacters(trafficSystem.trim());
+                modules.add(new NetworkEventBroadcastModule(safeTrafficSystem, trafficStreamManager));
+            }
         }
         else
         {
@@ -565,6 +602,20 @@ public class DecoderFactory
             activeStates.add(State.CONTROL);
             modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
         }
+
+        String dmrSystem = channel.getSystem();
+        if(dmrSystem == null || dmrSystem.trim().isEmpty()) { dmrSystem = channel.getName(); }
+        final String safeDmrSystem = StringUtils.replaceIllegalCharacters(dmrSystem.trim());
+        NetworkStreamManager dmrStreamManager = loadNetworkStreamManager(userPreferences);
+        if(dmrStreamManager != null)
+        {
+            modules.add(new NetworkEventBroadcastModule(safeDmrSystem, dmrStreamManager));
+            final NetworkStreamManager dmrMgr = dmrStreamManager;
+            state1.setRawStreamListener(msg ->
+                    dmrMgr.broadcastRaw(formatDmrRawMessage(safeDmrSystem, DMRMessage.TIMESLOT_1, msg)));
+            state2.setRawStreamListener(msg ->
+                    dmrMgr.broadcastRaw(formatDmrRawMessage(safeDmrSystem, DMRMessage.TIMESLOT_2, msg)));
+        }
     }
 
     /**
@@ -792,4 +843,54 @@ public class DecoderFactory
 
         return null;
     }
+
+    private static NetworkStreamManager loadNetworkStreamManager(UserPreferences userPreferences)
+    {
+        if(!userPreferences.getNetworkStreamPreference().isEnabled())
+        {
+            return null;
+        }
+        int eventPort = userPreferences.getNetworkStreamPreference().getEventPort();
+        int rawPort = userPreferences.getNetworkStreamPreference().getRawPort();
+        return NetworkStreamManager.getInstance(eventPort, rawPort);
+    }
+
+    private static List<ControlChannelHeartbeat> loadHeartbeatMonitors(UserPreferences userPreferences)
+    {
+        List<ControlChannelHeartbeat> monitors = new ArrayList<>();
+        for(HeartbeatEntry entry : userPreferences.getHeartbeatPreference().getEntries())
+        {
+            if(entry.isEnabled())
+            {
+                monitors.add(new ControlChannelHeartbeat(
+                    entry.getSystemId(), entry.getSiteId(), entry.getChannelName(),
+                    entry.getPushUrl2(), entry.getKumaUrl(), entry.getIntervalSeconds()));
+            }
+        }
+        return monitors;
+    }
+
+    private static String formatRawMessage(String systemName, io.github.dsheirer.message.IMessage msg)
+    {
+        String text = msg.toString()
+            .replace("\\", "\\\\").replace("\"", "\\\"")
+            .replace("\n", " ").replace("\r", "");
+        return "{\"pipe\":\"raw\",\"system\":\"" + systemName
+            + "\",\"timestamp\":\"" + java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            + "\",\"message\":\"" + text + "\"}";
+    }
+
+    private static String formatDmrRawMessage(String systemName, int timeslot, io.github.dsheirer.message.IMessage msg)
+    {
+        String text = msg.toString()
+            .replace("\\", "\\\\").replace("\"", "\\\"")
+            .replace("\n", " ").replace("\r", "");
+        return "{\"pipe\":\"raw\",\"protocol\":\"DMR\",\"system\":\"" + systemName
+            + "\",\"timeslot\":" + timeslot
+            + ",\"timestamp\":" + msg.getTimestamp()
+            + ",\"message\":\"" + text + "\"}";
+    }
+
+
 }

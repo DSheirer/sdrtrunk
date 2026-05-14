@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,7 @@ public class EventLogManager
 
     private UserPreferences mUserPreferences;
     private AliasModel mAliasModel;
+    private final ConcurrentHashMap<String, RollingSystemEventLogger> mSystemLoggers = new ConcurrentHashMap<>();
 
     public EventLogManager(AliasModel aliasModel, UserPreferences userPreferences)
     {
@@ -77,10 +79,28 @@ public class EventLogManager
                         loggers.add(getLogger(type, prefix, frequency));
                     }
                     break;
+                case SYSTEM_CALL_EVENT:
+                    loggers.add(getSystemEventLogModule(channel));
+                    break;
             }
         }
 
         return loggers;
+    }
+
+
+    private Module getSystemEventLogModule(Channel channel)
+    {
+        String systemName = channel.getSystem();
+        if(systemName == null || systemName.trim().isEmpty())
+        {
+            systemName = channel.getName();
+        }
+        String safeSystemName = StringUtils.replaceIllegalCharacters(systemName.trim());
+        RollingSystemEventLogger logger = mSystemLoggers.computeIfAbsent(safeSystemName,
+            name -> new RollingSystemEventLogger(
+                mUserPreferences.getDirectoryPreference().getDirectoryEventLog(), name));
+        return new SystemEventLogModule(logger, mAliasModel);
     }
 
     public EventLogger getLogger(EventLogType eventLogType, String prefix, long frequency)

@@ -25,6 +25,8 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.function.Consumer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,12 +41,22 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TalkerAliasManager
 {
     private Map<Integer,TalkerAliasIdentifier> mAliasMap = new ConcurrentHashMap<>();
+    private Consumer<Map<Integer, TalkerAliasIdentifier>> mChangeListener;
 
     /**
      * Constructs an instance
      */
     public TalkerAliasManager()
     {
+    }
+
+    /**
+     * Sets a listener that will be called whenever the alias map changes.
+     * @param listener consumer to notify with a copy of the current map
+     */
+    public void setChangeListener(Consumer<Map<Integer, TalkerAliasIdentifier>> listener)
+    {
+        mChangeListener = listener;
     }
 
     /**
@@ -56,7 +68,11 @@ public class TalkerAliasManager
     {
         if(identifier.getRole() == Role.FROM)
         {
-            mAliasMap.put(identifier.getValue(), alias);
+            TalkerAliasIdentifier previous = mAliasMap.put(identifier.getValue(), alias);
+            if(mChangeListener != null && !alias.equals(previous))
+            {
+                mChangeListener.accept(new HashMap<>(mAliasMap));
+            }
         }
     }
 
@@ -143,4 +159,17 @@ public class TalkerAliasManager
 
         return sb.toString();
     }
+
+    /**
+     * Preloads aliases from a persisted source (e.g. a CSV file) without overwriting existing entries.
+     * @param aliases to preload
+     */
+    public void preload(Map<Integer, TalkerAliasIdentifier> aliases)
+    {
+        for(Map.Entry<Integer, TalkerAliasIdentifier> entry : aliases.entrySet())
+        {
+            mAliasMap.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+    }
+
 }
