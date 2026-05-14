@@ -26,6 +26,7 @@ import com.jidesoft.plaf.LookAndFeelFactory;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Window;
 import java.lang.ref.WeakReference;
@@ -270,11 +271,9 @@ public class ThemeManager
         }
 
         //JIDE's Metal-flavored extension overwrites FlatLaf's color/font/border defaults for
-        //standard Swing component keys (Table.background, TabbedPane.foreground, etc.) which
-        //leaves the inner content of the app looking like a Metal LAF island in a FlatLaf
-        //chrome.  Re-apply FlatLaf's standard defaults on top of JIDE's install - JIDE's UI
-        //delegate registrations live under Jide-prefixed keys that FlatLaf does not define,
-        //so they survive untouched.
+        //standard Swing component keys.  Re-apply FlatLaf's defaults on top of JIDE's install
+        //so the inner panels pick up dark backgrounds.  JIDE's UI delegate registrations live
+        //under Jide-prefixed keys that FlatLaf does not define, so they survive untouched.
         try
         {
             UIDefaults flatFresh = (darkMode ? new FlatDarkLaf() : new FlatLightLaf()).getDefaults();
@@ -285,9 +284,6 @@ public class ThemeManager
                 Object value = entry.getValue();
                 String keyName = String.valueOf(key);
 
-                //Do not overwrite JIDE-specific keys, even though FlatLaf would not normally
-                //define them - belt-and-braces in case a future FlatLaf version adds keys
-                //whose names happen to start with "Jide".
                 if(keyName.startsWith("Jide") || keyName.contains(".Jide"))
                 {
                     continue;
@@ -303,6 +299,14 @@ public class ThemeManager
         {
             mLog.warn("Unable to re-apply FlatLaf defaults after JIDE install", t);
         }
+
+        //FlatLaf's per-component foreground/background lookups go through derived/lazy values
+        //that JIDE's Metal initializer was also feeding from, so even after the defaults copy
+        //above some labels and buttons end up with Metal-era dark foregrounds on a dark
+        //background.  Brute-force the standard component colour keys via UIManager.put which
+        //writes to the user-defaults layer that takes precedence over the LAF defaults.  Use
+        //near-white rather than FlatLaf's #bbbbbb so text reads sharply on the dark panels.
+        applyExplicitOverrides(darkMode);
 
         //Re-rendering any already-realized Swing windows must happen on the EDT.
         Runnable updateRealized = () -> {
@@ -320,6 +324,120 @@ public class ThemeManager
         {
             EventQueue.invokeLater(updateRealized);
         }
+    }
+
+    private void applyExplicitOverrides(boolean darkMode)
+    {
+        Color bgPanel;
+        Color bgRaised;
+        Color bgInput;
+        Color bgSelection;
+        Color fgPrimary;
+        Color fgSelection;
+        Color fgDisabled;
+        Color border;
+
+        if(darkMode)
+        {
+            bgPanel = new Color(0x2b2b2b);
+            bgRaised = new Color(0x3c3f41);
+            bgInput = new Color(0x313335);
+            bgSelection = new Color(0x214283);
+            fgPrimary = new Color(0xe6e6e6);
+            fgSelection = Color.WHITE;
+            fgDisabled = new Color(0x6a6a6a);
+            border = new Color(0x4f5356);
+        }
+        else
+        {
+            //Light mode mirrors FlatLightLaf's palette.
+            bgPanel = new Color(0xf2f2f2);
+            bgRaised = new Color(0xffffff);
+            bgInput = new Color(0xffffff);
+            bgSelection = new Color(0x2675bf);
+            fgPrimary = new Color(0x1e1e1e);
+            fgSelection = Color.WHITE;
+            fgDisabled = new Color(0x8c8c8c);
+            border = new Color(0xc4c4c4);
+        }
+
+        String[] simpleComponents = {
+                "Button", "ToggleButton", "CheckBox", "RadioButton",
+                "Label", "Menu", "MenuItem", "CheckBoxMenuItem", "RadioButtonMenuItem",
+                "MenuBar", "PopupMenu", "Panel", "Viewport", "ScrollPane",
+                "Separator", "ToolBar", "ToolTip", "FormattedTextField",
+                "TitledBorder", "TabbedPane", "OptionPane", "ProgressBar",
+                "Spinner", "Slider", "ComboBox", "EditorPane", "PasswordField"
+        };
+
+        for(String c: simpleComponents)
+        {
+            UIManager.put(c + ".background", bgPanel);
+            UIManager.put(c + ".foreground", fgPrimary);
+            UIManager.put(c + ".disabledForeground", fgDisabled);
+            UIManager.put(c + ".disabledText", fgDisabled);
+        }
+
+        //Buttons sit on a slightly raised tone than the panel they live on.
+        for(String c: new String[]{"Button", "ToggleButton", "ComboBox", "Spinner"})
+        {
+            UIManager.put(c + ".background", bgRaised);
+        }
+
+        //Text inputs use their own background tone for affordance.
+        for(String c: new String[]{"TextField", "TextArea", "TextPane", "EditorPane",
+                "FormattedTextField", "PasswordField"})
+        {
+            UIManager.put(c + ".background", bgInput);
+            UIManager.put(c + ".foreground", fgPrimary);
+            UIManager.put(c + ".caretForeground", fgPrimary);
+            UIManager.put(c + ".inactiveForeground", fgDisabled);
+            UIManager.put(c + ".selectionBackground", bgSelection);
+            UIManager.put(c + ".selectionForeground", fgSelection);
+        }
+
+        //Tables, trees and lists.
+        for(String c: new String[]{"Table", "Tree", "List"})
+        {
+            UIManager.put(c + ".background", bgInput);
+            UIManager.put(c + ".foreground", fgPrimary);
+            UIManager.put(c + ".selectionBackground", bgSelection);
+            UIManager.put(c + ".selectionForeground", fgSelection);
+        }
+
+        UIManager.put("Table.gridColor", border);
+        UIManager.put("Table.alternateRowColor", new Color(darkMode ? 0x353739 : 0xfafafa));
+        UIManager.put("TableHeader.background", bgRaised);
+        UIManager.put("TableHeader.foreground", fgPrimary);
+        UIManager.put("TableHeader.cellBorder", javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, border));
+
+        //Tab labels read black-on-dark with the JIDE-flavoured TabbedPane otherwise.
+        UIManager.put("TabbedPane.foreground", fgPrimary);
+        UIManager.put("TabbedPane.background", bgPanel);
+        UIManager.put("TabbedPane.selectedForeground", fgSelection);
+        UIManager.put("TabbedPane.selected", bgRaised);
+        UIManager.put("TabbedPane.contentAreaColor", bgPanel);
+        UIManager.put("TabbedPane.darkShadow", border);
+        UIManager.put("TabbedPane.shadow", border);
+
+        //Menu hover and selected states.
+        UIManager.put("MenuItem.selectionBackground", bgSelection);
+        UIManager.put("MenuItem.selectionForeground", fgSelection);
+        UIManager.put("Menu.selectionBackground", bgSelection);
+        UIManager.put("Menu.selectionForeground", fgSelection);
+
+        //Borders and split-pane divider colour.
+        UIManager.put("SplitPane.background", bgPanel);
+        UIManager.put("SplitPane.dividerFocusColor", bgSelection);
+        UIManager.put("SplitPaneDivider.draggingColor", bgSelection);
+        UIManager.put("Component.borderColor", border);
+        UIManager.put("Component.disabledBorderColor", border);
+        UIManager.put("Separator.foreground", border);
+        UIManager.put("Separator.background", bgPanel);
+
+        //ToolTip needs to stand out from the panel.
+        UIManager.put("ToolTip.background", bgRaised);
+        UIManager.put("ToolTip.foreground", fgPrimary);
     }
 
     private void pruneDeadReferencesAndCheckPresent(Scene scene)

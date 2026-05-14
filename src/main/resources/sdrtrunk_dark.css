@@ -29,10 +29,10 @@
     -fx-default-button: #4a90d9;
     -fx-focus-color: #4a90d9;
     -fx-faint-focus-color: #4a90d922;
-    -fx-text-fill: #d6d6d6;
-    -fx-text-base-color: #d6d6d6;
-    -fx-text-background-color: #d6d6d6;
-    -fx-mark-color: #d6d6d6;
+    -fx-text-fill: #ececec;
+    -fx-text-base-color: #ececec;
+    -fx-text-background-color: #ececec;
+    -fx-mark-color: #ececec;
     -fx-mark-highlight-color: #ffffff;
     -fx-selection-bar: #214283;
     -fx-selection-bar-non-focused: #3a3d3f;
@@ -41,18 +41,18 @@
 
 .label
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .text
 {
-    -fx-fill: #d6d6d6;
+    -fx-fill: #ececec;
 }
 
 .button, .toggle-button, .menu-button, .split-menu-button, .choice-box, .combo-box-base
 {
     -fx-background-color: #3c3f41, #4a4d4f, #3c3f41, #3c3f41;
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .button:hover, .toggle-button:hover, .menu-button:hover
@@ -69,7 +69,7 @@
 .text-field, .text-area, .password-field
 {
     -fx-background-color: #313335;
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
     -fx-prompt-text-fill: #888888;
     -fx-highlight-fill: #214283;
     -fx-highlight-text-fill: #ffffff;
@@ -135,7 +135,7 @@
 
 .menu-item .label
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .menu-item:focused .label, .menu-item:hover .label
@@ -192,12 +192,12 @@
 
 .table-view .column-header .label, .tree-table-view .column-header .label
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .table-row-cell, .tree-table-row-cell, .list-cell, .tree-cell
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
     -fx-background-color: -fx-control-inner-background;
 }
 
@@ -224,7 +224,7 @@
 
 .titled-pane > .title > .text
 {
-    -fx-fill: #d6d6d6;
+    -fx-fill: #ececec;
 }
 
 .titled-pane > .content
@@ -254,7 +254,7 @@
 .tooltip
 {
     -fx-background-color: #3c3f41;
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
     -fx-border-color: #555a5e;
 }
 
@@ -270,7 +270,7 @@
 
 .toggle-switch
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .toggle-switch > .thumb-area
@@ -287,7 +287,7 @@
 
 .toggle-switch > .thumb
 {
-    -fx-background-color: #d6d6d6;
+    -fx-background-color: #ececec;
 }
 
 .spinner
@@ -298,7 +298,7 @@
 .spinner .text-field
 {
     -fx-background-color: #313335;
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .spinner .increment-arrow-button, .spinner .decrement-arrow-button
@@ -308,7 +308,7 @@
 
 .spinner .increment-arrow, .spinner .decrement-arrow
 {
-    -fx-background-color: #d6d6d6;
+    -fx-background-color: #ececec;
 }
 
 .progress-bar > .track
@@ -323,7 +323,7 @@
 
 .combo-box .list-cell, .choice-box .label
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
     -fx-background-color: transparent;
 }
 
@@ -375,12 +375,12 @@
 
 .axis
 {
-    -fx-tick-label-fill: #d6d6d6;
+    -fx-tick-label-fill: #ececec;
 }
 
 .axis-label
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .chart-vertical-grid-lines, .chart-horizontal-grid-lines
@@ -391,10 +391,10 @@
 .chart-legend
 {
     -fx-background-color: #313335;
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
 
 .chart-title
 {
-    -fx-text-fill: #d6d6d6;
+    -fx-text-fill: #ececec;
 }
