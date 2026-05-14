@@ -17,7 +17,7 @@ Fires throttled HTTP GET pings to configured endpoints (e.g. Uptime Kuma, or any
 
 Configure under **View → Preferences → External Outputs → Heartbeat Monitor**:
 
-![Heartbeat Monitor preferences panel](docs/images/heartbeat_monitor.png)
+![Heartbeat Monitor preferences panel](<img width="1180" height="770" alt="photo1" src="https://github.com/user-attachments/assets/ba7debd2-fe99-4a26-ac51-f53b055988de" />)
 
 ### TCP Network Streaming
 Streams all decode activity as live newline-delimited JSON (NDJSON) over TCP. Multiple clients can connect simultaneously with no polling delay. Two ports:
@@ -27,7 +27,7 @@ Streams all decode activity as live newline-delimited JSON (NDJSON) over TCP. Mu
 
 Configure under **View → Preferences → External Outputs → Network Stream**:
 
-![Network Stream preferences panel](docs/images/network_stream.png)
+![Network Stream preferences panel](<img width="1180" height="770" alt="photo2" src="https://github.com/user-attachments/assets/0cd0b841-09a0-4c61-af70-52f14a595f90" />)
 
 All existing CSV logging continues unchanged — TCP streaming is purely additive.
 
