@@ -23,8 +23,12 @@ import io.github.dsheirer.gui.theme.Theme;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.application.ApplicationPreference;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -33,14 +37,16 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 /**
- * Appearance preferences - selects the active UI {@link Theme} for both the Swing main window and
- * the JavaFX panels.
+ * Appearance preferences - selects the active UI {@link Theme} and the global GUI zoom factor for
+ * both the Swing main window and the JavaFX panels.
  */
 public class AppearancePreferenceEditor extends HBox
 {
     private final ApplicationPreference mApplicationPreference;
     private GridPane mEditorPane;
     private VBox mThemeRadioGroup;
+    private Slider mGuiScaleSlider;
+    private Label mGuiScaleValueLabel;
 
     public AppearancePreferenceEditor(UserPreferences userPreferences)
     {
@@ -63,11 +69,32 @@ public class AppearancePreferenceEditor extends HBox
             mEditorPane = new GridPane();
             mEditorPane.setMaxWidth(Double.MAX_VALUE);
             mEditorPane.setVgap(10);
-            mEditorPane.setHgap(3);
+            mEditorPane.setHgap(8);
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
 
             mEditorPane.add(new Label("Theme"), 0, row, 3, 1);
             mEditorPane.add(getThemeRadioGroup(), 0, ++row, 3, 1);
+
+            Separator separator = new Separator(Orientation.HORIZONTAL);
+            GridPane.setHgrow(separator, Priority.ALWAYS);
+            mEditorPane.add(separator, 0, ++row, 3, 1);
+
+            mEditorPane.add(new Label("GUI Scale"), 0, ++row, 3, 1);
+
+            HBox sliderRow = new HBox(8);
+            sliderRow.setPadding(new Insets(2, 0, 2, 4));
+            HBox.setHgrow(getGuiScaleSlider(), Priority.ALWAYS);
+            Button resetButton = new Button("Reset");
+            resetButton.setOnAction(e -> {
+                getGuiScaleSlider().setValue(ApplicationPreference.DEFAULT_GUI_SCALE);
+                mApplicationPreference.setGuiScale(ApplicationPreference.DEFAULT_GUI_SCALE);
+            });
+            sliderRow.getChildren().addAll(getGuiScaleSlider(), getGuiScaleValueLabel(), resetButton);
+            mEditorPane.add(sliderRow, 0, ++row, 3, 1);
+
+            Label hint = new Label("Adjusts the size of all UI components. Takes effect immediately.");
+            hint.setWrapText(true);
+            mEditorPane.add(hint, 0, ++row, 3, 1);
 
             ColumnConstraints c1 = new ColumnConstraints();
             c1.setPercentWidth(30);
@@ -110,5 +137,69 @@ public class AppearancePreferenceEditor extends HBox
         }
 
         return mThemeRadioGroup;
+    }
+
+    /**
+     * Slider to adjust the global GUI zoom factor.  The slider snaps to 10% increments and only
+     * persists the value when the user releases the slider so we do not thrash a LAF reinstall on
+     * every intermediate value during a drag.
+     */
+    private Slider getGuiScaleSlider()
+    {
+        if(mGuiScaleSlider == null)
+        {
+            mGuiScaleSlider = new Slider(ApplicationPreference.MIN_GUI_SCALE,
+                    ApplicationPreference.MAX_GUI_SCALE,
+                    mApplicationPreference.getGuiScale());
+            mGuiScaleSlider.setMajorTickUnit(0.25d);
+            mGuiScaleSlider.setMinorTickCount(1);
+            mGuiScaleSlider.setSnapToTicks(true);
+            mGuiScaleSlider.setShowTickMarks(true);
+            mGuiScaleSlider.setShowTickLabels(false);
+            mGuiScaleSlider.setBlockIncrement(0.1d);
+
+            //Update the live percentage label as the user drags.
+            mGuiScaleSlider.valueProperty().addListener((obs, oldV, newV) -> {
+                if(newV != null)
+                {
+                    getGuiScaleValueLabel().setText(formatScale(newV.doubleValue()));
+                }
+            });
+
+            //Persist + apply only when the user finishes the drag - avoids reinstalling the LAF
+            //on every intermediate frame.
+            mGuiScaleSlider.valueChangingProperty().addListener((obs, wasChanging, changing) -> {
+                if(wasChanging && !changing)
+                {
+                    mApplicationPreference.setGuiScale(mGuiScaleSlider.getValue());
+                }
+            });
+
+            //Cover keyboard / scroll-wheel adjustments which never enter the changing=true state.
+            mGuiScaleSlider.setOnMouseReleased(e -> {
+                if(!mGuiScaleSlider.isValueChanging())
+                {
+                    mApplicationPreference.setGuiScale(mGuiScaleSlider.getValue());
+                }
+            });
+        }
+
+        return mGuiScaleSlider;
+    }
+
+    private Label getGuiScaleValueLabel()
+    {
+        if(mGuiScaleValueLabel == null)
+        {
+            mGuiScaleValueLabel = new Label(formatScale(mApplicationPreference.getGuiScale()));
+            mGuiScaleValueLabel.setMinWidth(50);
+        }
+
+        return mGuiScaleValueLabel;
+    }
+
+    private static String formatScale(double scale)
+    {
+        return Math.round(scale * 100) + "%";
     }
 }

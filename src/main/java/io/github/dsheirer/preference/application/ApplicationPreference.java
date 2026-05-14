@@ -36,12 +36,19 @@ public class ApplicationPreference extends Preference
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_START_TIMEOUT = "channel.auto.start.timeout";
     private static final String PREFERENCE_KEY_DARK_MODE = "dark.mode";
     private static final String PREFERENCE_KEY_THEME = "ui.theme";
+    private static final String PREFERENCE_KEY_GUI_SCALE = "ui.gui.scale";
+
+    /** Hard bounds for the GUI zoom factor. */
+    public static final double MIN_GUI_SCALE = 0.5d;
+    public static final double MAX_GUI_SCALE = 2.0d;
+    public static final double DEFAULT_GUI_SCALE = 1.0d;
 
     private final static Logger mLog = LoggerFactory.getLogger(ApplicationPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(ApplicationPreference.class);
     private Integer mChannelAutoStartTimeout;
     private Boolean mAutomaticDiagnosticMonitoring;
     private Theme mTheme;
+    private Double mGuiScale;
 
     /**
      * Constructs an instance
@@ -158,5 +165,38 @@ public class ApplicationPreference extends Preference
     public boolean isDarkMode()
     {
         return getTheme().isDark();
+    }
+
+    /**
+     * Returns the GUI zoom factor.  1.0 = 100% (default).  Bounded to
+     * [{@link #MIN_GUI_SCALE}, {@link #MAX_GUI_SCALE}].
+     */
+    public double getGuiScale()
+    {
+        if(mGuiScale == null)
+        {
+            mGuiScale = mPreferences.getDouble(PREFERENCE_KEY_GUI_SCALE, DEFAULT_GUI_SCALE);
+            mGuiScale = clampScale(mGuiScale);
+        }
+
+        return mGuiScale;
+    }
+
+    /**
+     * Sets the GUI zoom factor.  Out-of-range values are clamped to the supported bounds.
+     */
+    public void setGuiScale(double scale)
+    {
+        double clamped = clampScale(scale);
+        mGuiScale = clamped;
+        mPreferences.putDouble(PREFERENCE_KEY_GUI_SCALE, clamped);
+        notifyPreferenceUpdated();
+    }
+
+    private static double clampScale(double scale)
+    {
+        if(Double.isNaN(scale) || scale < MIN_GUI_SCALE) return MIN_GUI_SCALE;
+        if(scale > MAX_GUI_SCALE) return MAX_GUI_SCALE;
+        return scale;
     }
 }

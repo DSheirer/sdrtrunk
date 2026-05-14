@@ -73,6 +73,7 @@ public class ThemeManager
     private final String mDarkStylesheetUrl;
     private volatile UserPreferences mUserPreferences;
     private volatile Theme mCurrentTheme = Theme.LIGHT;
+    private volatile double mCurrentGuiScale = 1.0d;
     /** Data URL of the currently-active per-theme accent stylesheet, or null. */
     private volatile String mAccentStylesheetUrl;
 
@@ -107,6 +108,7 @@ public class ThemeManager
         boolean firstBind = (mUserPreferences == null);
         mUserPreferences = userPreferences;
         mCurrentTheme = userPreferences.getApplicationPreference().getTheme();
+        mCurrentGuiScale = userPreferences.getApplicationPreference().getGuiScale();
 
         if(firstBind)
         {
@@ -273,13 +275,15 @@ public class ThemeManager
         }
 
         Theme updated = mUserPreferences.getApplicationPreference().getTheme();
+        double updatedScale = mUserPreferences.getApplicationPreference().getGuiScale();
 
-        if(updated == mCurrentTheme)
+        if(updated == mCurrentTheme && Math.abs(updatedScale - mCurrentGuiScale) < 1e-6)
         {
             return;
         }
 
         mCurrentTheme = updated;
+        mCurrentGuiScale = updatedScale;
         applyAll(updated);
     }
 
@@ -410,8 +414,14 @@ public class ThemeManager
             String border = hex(laf.getColor("Component.borderColor"),
                     dark ? 0x4f5356 : 0xc4c4c4);
 
+            //JavaFX side of the GUI scale: setting -fx-font-size on .root cascades through
+            //Modena because most sizes are em-relative.  Modena's default is 12px; multiplying
+            //by mCurrentGuiScale and rounding to one decimal gives a clean scaled baseline.
+            double scaledFontSize = Math.round(12.0d * mCurrentGuiScale * 10.0d) / 10.0d;
+
             StringBuilder css = new StringBuilder();
             css.append(".root {");
+            css.append("-fx-font-size: ").append(scaledFontSize).append("px;");
             css.append("-fx-base: ").append(base).append(";");
             css.append("-fx-background: ").append(base).append(";");
             css.append("-fx-control-inner-background: ").append(inner).append(";");
@@ -472,6 +482,12 @@ public class ThemeManager
 
     private void applySwingLookAndFeel(Theme theme)
     {
+        //FlatLaf reads the flatlaf.uiScale system property when its LAF instance is initialised.
+        //Set it before constructing the LAF so this theme apply picks up the user's zoom factor.
+        //We also clear any previous UIManager-stored override so the system property takes effect.
+        System.setProperty("flatlaf.uiScale", String.valueOf(mCurrentGuiScale));
+        UIManager.put("flatlaf.uiScale", null);
+
         //Install the LAF synchronously on the calling thread so any Swing components constructed
         //immediately afterwards (in particular the main JFrame) find a fully populated UIDefaults
         //set.  UIManager.setLookAndFeel is safe to call before the EDT is running.
