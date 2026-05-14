@@ -441,7 +441,8 @@
 .default-color7.chart-series-line { -fx-stroke: #ffffff; }
 
 /* All chart data points render as bright white dots regardless of series.  Lines still carry
-   the per-series colour so they remain distinguishable. */
+   the per-series colour so they remain distinguishable.  Only -fx-background-color is set so
+   the symbol size and shape continue to match Modena's defaults. */
 .chart-symbol,
 .chart-line-symbol,
 .default-color0.chart-symbol, .default-color0.chart-line-symbol,
@@ -454,6 +455,4 @@
 .default-color7.chart-symbol, .default-color7.chart-line-symbol
 {
     -fx-background-color: #ffffff;
-    -fx-background-radius: 3px;
-    -fx-padding: 3px;
 }
