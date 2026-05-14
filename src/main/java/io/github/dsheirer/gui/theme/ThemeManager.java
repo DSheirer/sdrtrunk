@@ -36,6 +36,7 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -259,11 +260,14 @@ public class ThemeManager
 
         try
         {
-            //JIDE components (split panes, docking) need their UI delegates re-registered
-            //after every LAF change.  Pass an explicit style: the no-arg version probes
-            //com.sun.java.swing.plaf.windows.WindowsLookAndFeel which is not present on
-            //non-Windows JDKs, throwing ClassNotFoundException at startup.
-            LookAndFeelFactory.installJideExtension(LookAndFeelFactory.VSNET_STYLE);
+            //JIDE 3.6.18 has compile-time `instanceof WindowsLookAndFeel` checks throughout
+            //LookAndFeelFactory.  On Linux/macOS JDKs that class is not present at all, so any
+            //call path that reaches those checks fails with NoClassDefFoundError.  The 3-arg
+            //overload lets us hand JIDE an explicit Metal LAF instance for *type detection*
+            //while leaving the real (FlatLaf) defaults table in place; JIDE's Metal branch
+            //matches first and the Windows branch is never reached.
+            LookAndFeelFactory.installJideExtension(UIManager.getLookAndFeelDefaults(),
+                    new MetalLookAndFeel(), LookAndFeelFactory.VSNET_STYLE);
         }
         catch(Throwable t)
         {
