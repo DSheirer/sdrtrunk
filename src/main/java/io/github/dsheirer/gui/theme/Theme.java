@@ -32,13 +32,12 @@ public enum Theme
 {
     LIGHT("Light", "com.formdev.flatlaf.FlatLightLaf", false),
     DARK("Dark", "com.formdev.flatlaf.FlatDarkLaf", true),
-    INTELLIJ("IntelliJ", "com.formdev.flatlaf.FlatIntelliJLaf", false),
-    DARCULA("Darcula", "com.formdev.flatlaf.FlatDarculaLaf", true),
     NORD("Nord", "com.formdev.flatlaf.intellijthemes.FlatNordIJTheme", true),
     DRACULA("Dracula", "com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme", true),
     SOLARIZED_LIGHT("Solarized Light", "com.formdev.flatlaf.intellijthemes.FlatSolarizedLightIJTheme", false),
     SOLARIZED_DARK("Solarized Dark", "com.formdev.flatlaf.intellijthemes.FlatSolarizedDarkIJTheme", true),
-    MONOKAI_PRO("Monokai Pro", "com.formdev.flatlaf.intellijthemes.FlatMonokaiProIJTheme", true);
+    MATERIAL_DEEP_OCEAN("Material Deep Ocean", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMaterialDeepOceanIJTheme", true),
+    ARC_DARK("Arc Dark", "com.formdev.flatlaf.intellijthemes.FlatArcDarkIJTheme", true);
 
     private final String mDisplayName;
     private final String mLafClassName;

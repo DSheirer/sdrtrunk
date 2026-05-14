@@ -73,6 +73,8 @@ public class ThemeManager
     private final String mDarkStylesheetUrl;
     private volatile UserPreferences mUserPreferences;
     private volatile Theme mCurrentTheme = Theme.LIGHT;
+    /** Data URL of the currently-active per-theme accent stylesheet, or null. */
+    private volatile String mAccentStylesheetUrl;
 
     private ThemeManager()
     {
@@ -112,7 +114,11 @@ public class ThemeManager
             attachJavaFxWindowListener();
         }
 
-        applySwingLookAndFeel(mCurrentTheme);
+        //applyAll installs the Swing LAF *and* computes the per-theme accent stylesheet URL so it
+        //is ready before any Scene.register call.  At init time the FX-side scene walk is a no-op
+        //because nothing has registered yet, but mAccentStylesheetUrl gets populated for later
+        //register(...) calls.
+        applyAll(mCurrentTheme);
     }
 
     /**
@@ -281,6 +287,12 @@ public class ThemeManager
     {
         applySwingLookAndFeel(theme);
 
+        //Compute the per-theme accent stylesheet on the calling thread so the data URL is ready
+        //before the FX apply runs.  Capture the previous URL so we can remove it from each Scene.
+        String previousAccentUrl = mAccentStylesheetUrl;
+        String nextAccentUrl = buildAccentStylesheet(theme);
+        mAccentStylesheetUrl = nextAccentUrl;
+
         Runnable fxApply = () -> {
             synchronized(mScenes)
             {
@@ -294,7 +306,7 @@ public class ThemeManager
                     }
                     else
                     {
-                        applyToScene(scene, theme.isDark());
+                        applyToScene(scene, theme.isDark(), previousAccentUrl, nextAccentUrl);
                     }
                 }
             }
@@ -304,7 +316,7 @@ public class ThemeManager
                 Scene scene = window.getScene();
                 if(scene != null)
                 {
-                    applyToScene(scene, theme.isDark());
+                    applyToScene(scene, theme.isDark(), previousAccentUrl, nextAccentUrl);
                 }
             }
         };
@@ -326,18 +338,41 @@ public class ThemeManager
         }
     }
 
+    /**
+     * Apply the current theme to a single Scene.  Used when a new Scene is registered or appears
+     * mid-session.  The accent-stylesheet swap is handled by the (previousUrl, nextUrl) overload.
+     */
     private void applyToScene(Scene scene, boolean darkMode)
     {
-        if(mDarkStylesheetUrl == null)
-        {
-            return;
-        }
+        applyToScene(scene, darkMode, null, mAccentStylesheetUrl);
+    }
 
+    /**
+     * Update a Scene's stylesheets to match the current theme: ensures the dark-mode CSS is
+     * present iff {@code darkMode}, removes {@code previousAccentUrl} if present, and ensures
+     * {@code nextAccentUrl} is present so theme-specific accent colours are applied.
+     */
+    private void applyToScene(Scene scene, boolean darkMode, String previousAccentUrl,
+                              String nextAccentUrl)
+    {
         Runnable r = () -> {
-            scene.getStylesheets().remove(mDarkStylesheetUrl);
-            if(darkMode)
+            if(mDarkStylesheetUrl != null)
             {
-                scene.getStylesheets().add(mDarkStylesheetUrl);
+                scene.getStylesheets().remove(mDarkStylesheetUrl);
+                if(darkMode)
+                {
+                    scene.getStylesheets().add(mDarkStylesheetUrl);
+                }
+            }
+
+            if(previousAccentUrl != null && !previousAccentUrl.equals(nextAccentUrl))
+            {
+                scene.getStylesheets().remove(previousAccentUrl);
+            }
+
+            if(nextAccentUrl != null && !scene.getStylesheets().contains(nextAccentUrl))
+            {
+                scene.getStylesheets().add(nextAccentUrl);
             }
         };
 
@@ -349,6 +384,90 @@ public class ThemeManager
         {
             Platform.runLater(r);
         }
+    }
+
+    /**
+     * Build a small per-theme stylesheet that overrides Modena's accent and surface colours so
+     * each theme reads visibly different in the JavaFX panels.  Returns a {@code data:} URL that
+     * can be added to a Scene's stylesheets list directly.
+     */
+    private String buildAccentStylesheet(Theme theme)
+    {
+        try
+        {
+            UIDefaults laf = UIManager.getLookAndFeelDefaults();
+            boolean dark = theme.isDark();
+
+            String base = hex(laf.getColor("Panel.background"), dark ? 0x2b2b2b : 0xf2f2f2);
+            String inner = hex(laf.getColor("TextField.background"), dark ? 0x313335 : 0xffffff);
+            String innerAlt = hex(laf.getColor("Table.alternateRowColor"), dark ? 0x353739 : 0xfafafa);
+            String accent = hex(laf.getColor("Component.accentColor"),
+                    hexInt(laf.getColor("List.selectionBackground"), dark ? 0x4a90d9 : 0x2675bf));
+            String selectionBg = hex(laf.getColor("List.selectionBackground"),
+                    dark ? 0x214283 : 0x2675bf);
+            String selectionFg = hex(laf.getColor("List.selectionForeground"), 0xffffff);
+            String text = hex(laf.getColor("Label.foreground"), dark ? 0xe6e6e6 : 0x1e1e1e);
+            String border = hex(laf.getColor("Component.borderColor"),
+                    dark ? 0x4f5356 : 0xc4c4c4);
+
+            StringBuilder css = new StringBuilder();
+            css.append(".root {");
+            css.append("-fx-base: ").append(base).append(";");
+            css.append("-fx-background: ").append(base).append(";");
+            css.append("-fx-control-inner-background: ").append(inner).append(";");
+            css.append("-fx-control-inner-background-alt: ").append(innerAlt).append(";");
+            css.append("-fx-accent: ").append(accent).append(";");
+            css.append("-fx-default-button: ").append(accent).append(";");
+            css.append("-fx-focus-color: ").append(accent).append(";");
+            css.append("-fx-faint-focus-color: ").append(accent).append("22;");
+            css.append("-fx-selection-bar: ").append(selectionBg).append(";");
+            css.append("-fx-selection-bar-text: ").append(selectionFg).append(";");
+            css.append("-fx-selection-bar-non-focused: ").append(innerAlt).append(";");
+            css.append("-fx-text-fill: ").append(text).append(";");
+            css.append("-fx-text-base-color: ").append(text).append(";");
+            css.append("-fx-text-background-color: ").append(text).append(";");
+            css.append("-fx-mark-color: ").append(text).append(";");
+            css.append("}");
+            css.append(".table-row-cell:filled:selected, .list-cell:filled:selected,")
+               .append(" .tree-cell:filled:selected, .tree-table-row-cell:filled:selected {")
+               .append("-fx-background: ").append(selectionBg).append(";")
+               .append("-fx-background-color: ").append(selectionBg).append(";")
+               .append("-fx-text-fill: ").append(selectionFg).append(";")
+               .append("-fx-table-cell-border-color: ").append(border).append(";")
+               .append("}");
+            css.append(".button:default {")
+               .append("-fx-base: ").append(accent).append(";")
+               .append("-fx-text-fill: ").append(selectionFg).append(";")
+               .append("}");
+            css.append(".scroll-bar .thumb {")
+               .append("-fx-background-color: ").append(border).append(";")
+               .append("-fx-background-radius: 3;")
+               .append("}");
+            css.append(".scroll-bar .thumb:hover {")
+               .append("-fx-background-color: ").append(accent).append(";")
+               .append("}");
+
+            //URL-encode the body; java.net.URLEncoder is fine for our restricted charset.
+            String encoded = java.net.URLEncoder.encode(css.toString(),
+                    java.nio.charset.StandardCharsets.UTF_8);
+            return "data:text/css," + encoded;
+        }
+        catch(Throwable t)
+        {
+            mLog.warn("Unable to build per-theme accent stylesheet for theme " + theme, t);
+            return null;
+        }
+    }
+
+    private static String hex(Color c, int fallbackRgb)
+    {
+        int rgb = (c != null) ? (c.getRGB() & 0xFFFFFF) : (fallbackRgb & 0xFFFFFF);
+        return String.format("#%06x", rgb);
+    }
+
+    private static int hexInt(Color c, int fallbackRgb)
+    {
+        return (c != null) ? (c.getRGB() & 0xFFFFFF) : (fallbackRgb & 0xFFFFFF);
     }
 
     private void applySwingLookAndFeel(Theme theme)
