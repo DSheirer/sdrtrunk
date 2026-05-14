@@ -61,6 +61,7 @@ public class ThemeManager
     private static final ThemeManager INSTANCE = new ThemeManager();
 
     private final Set<WeakReference<Scene>> mScenes = new LinkedHashSet<>();
+    private final Set<WeakReference<java.awt.Component>> mSwingRoots = new LinkedHashSet<>();
     private final String mDarkStylesheetUrl;
     private volatile UserPreferences mUserPreferences;
     private volatile boolean mDarkMode;
@@ -138,6 +139,36 @@ public class ThemeManager
         }
 
         applyToScene(scene, mDarkMode);
+    }
+
+    /**
+     * Register a Swing component that may be temporarily detached from any Window's component tree
+     * (e.g. swappable right-pane components in the Channel tab).  Plain
+     * {@link SwingUtilities#updateComponentTreeUI(java.awt.Component)} walks of
+     * {@link Window#getWindows()} miss such components and they end up carrying stale colours from
+     * the LAF that was active when they were last attached.  Registered components get
+     * {@code updateComponentTreeUI} called on them whenever the theme is applied.
+     */
+    public void registerSwing(java.awt.Component component)
+    {
+        if(component == null)
+        {
+            return;
+        }
+
+        synchronized(mSwingRoots)
+        {
+            Iterator<WeakReference<java.awt.Component>> it = mSwingRoots.iterator();
+            while(it.hasNext())
+            {
+                java.awt.Component existing = it.next().get();
+                if(existing == null || existing == component)
+                {
+                    it.remove();
+                }
+            }
+            mSwingRoots.add(new WeakReference<>(component));
+        }
     }
 
     /**
@@ -309,11 +340,30 @@ public class ThemeManager
         //near-white rather than FlatLaf's #bbbbbb so text reads sharply on the dark panels.
         applyExplicitOverrides(darkMode);
 
-        //Re-rendering any already-realized Swing windows must happen on the EDT.
+        //Re-rendering any already-realized Swing windows must happen on the EDT.  Also walk any
+        //Swing components explicitly registered via registerSwing(...) - they may be detached
+        //from any Window's tree at toggle time (e.g. swappable channel-tab right components).
         Runnable updateRealized = () -> {
             for(Window window: Window.getWindows())
             {
                 SwingUtilities.updateComponentTreeUI(window);
+            }
+
+            synchronized(mSwingRoots)
+            {
+                Iterator<WeakReference<java.awt.Component>> it = mSwingRoots.iterator();
+                while(it.hasNext())
+                {
+                    java.awt.Component c = it.next().get();
+                    if(c == null)
+                    {
+                        it.remove();
+                    }
+                    else
+                    {
+                        SwingUtilities.updateComponentTreeUI(c);
+                    }
+                }
             }
         };
 
