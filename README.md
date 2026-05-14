@@ -10,7 +10,9 @@ This fork adds the following features on top of the upstream SDRTrunk release. A
 Writes all control and traffic channel decode events to daily rolling CSV files — one file per trunking system, named `{SYSTEM}_YYYY-MM-DD_events.csv`. Files roll over at midnight and append on restart so no data is lost. Enable per-channel under **Playlist Editor → Logging → System Events Log**.
 
 ### Talker Alias Logging
-Persists the active radio alias map to a CSV state file (`{SYSTEM}_talker_aliases.csv`). Aliases accumulate across restarts — the file is never reset to zero. New over-the-air aliases are merged on top of previously saved ones automatically.
+By default, SDRTrunk does not save talker alias data to disk — aliases are only held in memory and lost when the application closes. This fork changes that: talker alias data is now automatically captured from every monitored system and written to a persistent CSV state file (`{SYSTEM}_talker_aliases.csv`) with no configuration required.
+
+Aliases accumulate across restarts — the file is never reset to zero. Each time SDRTrunk starts, previously saved aliases are silently reloaded so your alias count only ever grows. New over-the-air aliases received during a session are merged on top, and if a radio transmits a different alias than what was previously recorded, the newer value takes over automatically.
 
 ### Control Channel Heartbeat Monitor
 Fires throttled HTTP GET pings to configured endpoints (e.g. Uptime Kuma, or any HTTP push API) whenever a P25 Phase 1 control channel is actively receiving RFSS Status Broadcast messages. If the channel goes silent — antenna problem, SDR disconnect, coverage gap — the pings stop and your uptime monitor alerts you.
