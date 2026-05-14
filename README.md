@@ -7,7 +7,9 @@ This fork adds the following features on top of the upstream SDRTrunk release. A
 ---
 
 ### System Event Logging
-Writes all control and traffic channel decode events to daily rolling CSV files — one file per trunking system, named `{SYSTEM}_YYYY-MM-DD_events.csv`. Files roll over at midnight and append on restart so no data is lost. Enable per-channel under **Playlist Editor → Logging → System Events Log**.
+If you use SDRTrunk's Events tab, you already know what this captures — everything that appears there, across both control and traffic channels, for every system you monitor. Group calls, individual calls, data calls, affiliations, registrations, site updates — any event SDRTrunk decodes shows up in that tab, and this feature lets you do something with it.
+
+Enable CSV logging and those same events are written to daily rolling files (`{SYSTEM}_YYYY-MM-DD_events.csv`) — one file per trunking system, rolling over at midnight and appending on restart. Enable TCP streaming and those same events flow out live over the network in real-time. Both options are independent — you can use one, the other, or both together. Enable per-channel under **Playlist Editor → Logging → System Events Log**.
 
 ### Talker Alias Logging
 By default, SDRTrunk does not save talker alias data to disk — aliases are only held in memory and lost when the application closes. This fork changes that: talker alias data is now automatically captured from every monitored system and written to a persistent CSV state file (`{SYSTEM}_talker_aliases.csv`) with no configuration required.
@@ -24,7 +26,7 @@ Configure under **View → Preferences → External Outputs → Heartbeat Monito
 ### TCP Network Streaming
 Streams all decode activity as live newline-delimited JSON (NDJSON) over TCP. Multiple clients can connect simultaneously with no polling delay. Two ports:
 
-- **Port 9500 — Event stream:** Every call event (GROUP_CALL, DATA_CALL, etc.) from all P25 and DMR channels, tagged with system name
+- **Port 9500 — Event stream:** Everything you see in SDRTrunk's Events tab — group calls, individual calls, data calls, affiliations, registrations, site updates — from all P25 and DMR channels, delivered in real-time as JSON. Each message is tagged with the system name so a single connected client can receive all your monitored systems at once and filter from there.
 - **Port 9501 — Raw CC stream:** Every valid decoded control-channel message (TSBKs, CSBKs, AMBTCs) before SDRTrunk processes it into a higher-level event. DMR voice frames are filtered out — signaling only.
 
 Configure under **View → Preferences → External Outputs → Network Stream**:
