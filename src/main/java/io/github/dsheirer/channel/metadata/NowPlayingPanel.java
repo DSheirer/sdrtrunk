@@ -28,7 +28,6 @@ import io.github.dsheirer.module.decode.event.MessageActivityPanel;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
-import java.awt.Color;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
@@ -98,7 +97,6 @@ public class NowPlayingPanel extends JPanel
             mTabbedPane.addTab("Messages", mMessageActivityPanel);
             mTabbedPane.addTab("Channel", mChannelSpectrumSquelchPanel);
             mTabbedPane.setFont(this.getFont());
-            mTabbedPane.setForeground(Color.BLACK);
             //Register state change listener to toggle visibility state for channel tab to turn-on/off FFT processing
             mTabbedPane.addChangeListener(e -> mChannelSpectrumSquelchPanel.setPanelVisible(getTabbedPane().getSelectedIndex() == getTabbedPane()
                     .indexOfComponent(mChannelSpectrumSquelchPanel)));
