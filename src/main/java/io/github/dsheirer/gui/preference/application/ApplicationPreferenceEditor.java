@@ -45,6 +45,7 @@ public class ApplicationPreferenceEditor extends HBox
     private Label mAutoStartTimeoutLabel;
     private Spinner<Integer> mTimeoutSpinner;
     private ToggleSwitch mAutomaticDiagnosticMonitoringToggle;
+    private ToggleSwitch mDarkModeToggle;
 
     /**
      * Constructs an instance
@@ -74,8 +75,18 @@ public class ApplicationPreferenceEditor extends HBox
             mEditorPane.setHgap(3);
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
 
+            Label appearanceLabel = new Label("Appearance");
+            mEditorPane.add(appearanceLabel, 0, row, 2, 1);
+            GridPane.setHalignment(getDarkModeToggle(), HPos.RIGHT);
+            mEditorPane.add(getDarkModeToggle(), 0, ++row);
+            mEditorPane.add(new Label("Dark Mode"), 1, row, 2, 1);
+
+            Separator appearanceSeparator = new Separator(Orientation.HORIZONTAL);
+            GridPane.setHgrow(appearanceSeparator, Priority.ALWAYS);
+            mEditorPane.add(appearanceSeparator, 0, ++row, 3, 1);
+
             Label monitoringLabel = new Label("Application Health and Diagnostic Monitoring.");
-            mEditorPane.add(monitoringLabel, 0, row, 2, 1);
+            mEditorPane.add(monitoringLabel, 0, ++row, 2, 1);
             GridPane.setHalignment(getAutomaticDiagnosticMonitoringToggle(), HPos.RIGHT);
             mEditorPane.add(getAutomaticDiagnosticMonitoringToggle(), 0, ++row);
             mEditorPane.add(new Label("Enable Diagnostic Monitoring"), 1, row, 2, 1);
@@ -138,5 +149,21 @@ public class ApplicationPreferenceEditor extends HBox
         }
 
         return mAutomaticDiagnosticMonitoringToggle;
+    }
+
+    /**
+     * Toggle switch to enable/disable dark mode.
+     */
+    private ToggleSwitch getDarkModeToggle()
+    {
+        if(mDarkModeToggle == null)
+        {
+            mDarkModeToggle = new ToggleSwitch();
+            mDarkModeToggle.setSelected(mApplicationPreference.isDarkMode());
+            mDarkModeToggle.selectedProperty().addListener((observable, oldValue, enabled) ->
+                    mApplicationPreference.setDarkMode(enabled));
+        }
+
+        return mDarkModeToggle;
     }
 }

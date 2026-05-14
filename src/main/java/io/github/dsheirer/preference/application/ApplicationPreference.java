@@ -33,11 +33,13 @@ public class ApplicationPreference extends Preference
 {
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING = "automatic.diagnostic.monitoring";
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_START_TIMEOUT = "channel.auto.start.timeout";
+    private static final String PREFERENCE_KEY_DARK_MODE = "dark.mode";
 
     private final static Logger mLog = LoggerFactory.getLogger(ApplicationPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(ApplicationPreference.class);
     private Integer mChannelAutoStartTimeout;
     private Boolean mAutomaticDiagnosticMonitoring;
+    private Boolean mDarkMode;
 
     /**
      * Constructs an instance
@@ -102,6 +104,31 @@ public class ApplicationPreference extends Preference
     {
         mAutomaticDiagnosticMonitoring = enabled;
         mPreferences.putBoolean(PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING, enabled);
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Indicates whether dark mode is enabled for the application UI.
+     * @return enabled.
+     */
+    public boolean isDarkMode()
+    {
+        if(mDarkMode == null)
+        {
+            mDarkMode = mPreferences.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
+        }
+
+        return mDarkMode;
+    }
+
+    /**
+     * Sets the dark mode preference.
+     * @param enabled true to enable dark mode.
+     */
+    public void setDarkMode(boolean enabled)
+    {
+        mDarkMode = enabled;
+        mPreferences.putBoolean(PREFERENCE_KEY_DARK_MODE, enabled);
         notifyPreferenceUpdated();
     }
 }
