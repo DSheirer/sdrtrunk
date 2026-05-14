@@ -366,16 +366,28 @@
 .chart
 {
     -fx-background-color: #2b2b2b;
+    -fx-padding: 5px;
+}
+
+.chart-content
+{
+    -fx-background-color: #2b2b2b;
 }
 
 .chart-plot-background
 {
-    -fx-background-color: #313335;
+    -fx-background-color: #1c1c1c;
 }
 
 .axis
 {
     -fx-tick-label-fill: #ececec;
+    AXIS_COLOR: #4f5356;
+}
+
+.axis .axis-tick-mark, .axis .axis-minor-tick-mark
+{
+    -fx-stroke: #6a6f73;
 }
 
 .axis-label
@@ -388,9 +400,28 @@
     -fx-stroke: #3c3f41;
 }
 
+.chart-alternative-row-fill
+{
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+}
+
+.chart-alternative-column-fill
+{
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+}
+
 .chart-legend
 {
     -fx-background-color: #313335;
+    -fx-text-fill: #ececec;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
+}
+
+.chart-legend-item
+{
     -fx-text-fill: #ececec;
 }
 
@@ -398,3 +429,22 @@
 {
     -fx-text-fill: #ececec;
 }
+
+/* Bright high-contrast palette for chart series lines and symbols on a dark plot background. */
+.default-color0.chart-series-line { -fx-stroke: #ff5555; }
+.default-color1.chart-series-line { -fx-stroke: #55aaff; }
+.default-color2.chart-series-line { -fx-stroke: #55ff7f; }
+.default-color3.chart-series-line { -fx-stroke: #ffd34f; }
+.default-color4.chart-series-line { -fx-stroke: #cf9bff; }
+.default-color5.chart-series-line { -fx-stroke: #4fe6ff; }
+.default-color6.chart-series-line { -fx-stroke: #ff7fbf; }
+.default-color7.chart-series-line { -fx-stroke: #ffffff; }
+
+.default-color0.chart-line-symbol, .default-color0.chart-symbol { -fx-background-color: #ff5555, #2b2b2b; }
+.default-color1.chart-line-symbol, .default-color1.chart-symbol { -fx-background-color: #55aaff, #2b2b2b; }
+.default-color2.chart-line-symbol, .default-color2.chart-symbol { -fx-background-color: #55ff7f, #2b2b2b; }
+.default-color3.chart-line-symbol, .default-color3.chart-symbol { -fx-background-color: #ffd34f, #2b2b2b; }
+.default-color4.chart-line-symbol, .default-color4.chart-symbol { -fx-background-color: #cf9bff, #2b2b2b; }
+.default-color5.chart-line-symbol, .default-color5.chart-symbol { -fx-background-color: #4fe6ff, #2b2b2b; }
+.default-color6.chart-line-symbol, .default-color6.chart-symbol { -fx-background-color: #ff7fbf, #2b2b2b; }
+.default-color7.chart-line-symbol, .default-color7.chart-symbol { -fx-background-color: #ffffff, #2b2b2b; }

@@ -39,6 +39,7 @@ import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
+import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -328,37 +329,42 @@ public class ThemeManager
 
     private void applyExplicitOverrides(boolean darkMode)
     {
-        Color bgPanel;
-        Color bgRaised;
-        Color bgInput;
-        Color bgSelection;
-        Color fgPrimary;
-        Color fgSelection;
-        Color fgDisabled;
-        Color border;
+        //Colors stored under UIManager keys must be ColorUIResource (or null) for
+        //LookAndFeel.installColorsAndFont() to overwrite a component's existing colour
+        //on subsequent updateComponentTreeUI calls.  Using a plain java.awt.Color pins
+        //the component foreground/background permanently and prevents the theme from
+        //ever toggling back.
+        ColorUIResource bgPanel;
+        ColorUIResource bgRaised;
+        ColorUIResource bgInput;
+        ColorUIResource bgSelection;
+        ColorUIResource fgPrimary;
+        ColorUIResource fgSelection;
+        ColorUIResource fgDisabled;
+        ColorUIResource border;
 
         if(darkMode)
         {
-            bgPanel = new Color(0x2b2b2b);
-            bgRaised = new Color(0x3c3f41);
-            bgInput = new Color(0x313335);
-            bgSelection = new Color(0x214283);
-            fgPrimary = new Color(0xe6e6e6);
-            fgSelection = Color.WHITE;
-            fgDisabled = new Color(0x6a6a6a);
-            border = new Color(0x4f5356);
+            bgPanel = new ColorUIResource(0x2b2b2b);
+            bgRaised = new ColorUIResource(0x3c3f41);
+            bgInput = new ColorUIResource(0x313335);
+            bgSelection = new ColorUIResource(0x214283);
+            fgPrimary = new ColorUIResource(0xe6e6e6);
+            fgSelection = new ColorUIResource(Color.WHITE);
+            fgDisabled = new ColorUIResource(0x6a6a6a);
+            border = new ColorUIResource(0x4f5356);
         }
         else
         {
             //Light mode mirrors FlatLightLaf's palette.
-            bgPanel = new Color(0xf2f2f2);
-            bgRaised = new Color(0xffffff);
-            bgInput = new Color(0xffffff);
-            bgSelection = new Color(0x2675bf);
-            fgPrimary = new Color(0x1e1e1e);
-            fgSelection = Color.WHITE;
-            fgDisabled = new Color(0x8c8c8c);
-            border = new Color(0xc4c4c4);
+            bgPanel = new ColorUIResource(0xf2f2f2);
+            bgRaised = new ColorUIResource(0xffffff);
+            bgInput = new ColorUIResource(0xffffff);
+            bgSelection = new ColorUIResource(0x2675bf);
+            fgPrimary = new ColorUIResource(0x1e1e1e);
+            fgSelection = new ColorUIResource(Color.WHITE);
+            fgDisabled = new ColorUIResource(0x8c8c8c);
+            border = new ColorUIResource(0xc4c4c4);
         }
 
         String[] simpleComponents = {
@@ -406,7 +412,7 @@ public class ThemeManager
         }
 
         UIManager.put("Table.gridColor", border);
-        UIManager.put("Table.alternateRowColor", new Color(darkMode ? 0x353739 : 0xfafafa));
+        UIManager.put("Table.alternateRowColor", new ColorUIResource(darkMode ? 0x353739 : 0xfafafa));
         UIManager.put("TableHeader.background", bgRaised);
         UIManager.put("TableHeader.foreground", fgPrimary);
         UIManager.put("TableHeader.cellBorder", javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, border));
