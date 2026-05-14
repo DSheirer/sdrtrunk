@@ -236,35 +236,42 @@ public class ThemeManager
 
     private void applySwingLookAndFeel(boolean darkMode)
     {
-        Runnable r = () -> {
-            try
+        //Install the LAF synchronously on the calling thread so that any Swing components
+        //constructed immediately afterwards (in particular the main JFrame) find a fully
+        //populated UIDefaults set.  UIManager.setLookAndFeel is safe to call before the EDT
+        //is running.
+        try
+        {
+            if(darkMode)
             {
-                if(darkMode)
-                {
-                    UIManager.setLookAndFeel(new FlatDarkLaf());
-                }
-                else
-                {
-                    UIManager.setLookAndFeel(new FlatLightLaf());
-                }
+                UIManager.setLookAndFeel(new FlatDarkLaf());
             }
-            catch(Exception e)
+            else
             {
-                mLog.error("Unable to apply Swing look-and-feel for dark mode = " + darkMode, e);
-                return;
+                UIManager.setLookAndFeel(new FlatLightLaf());
             }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Unable to apply Swing look-and-feel for dark mode = " + darkMode, e);
+            return;
+        }
 
-            try
-            {
-                //JIDE components (split panes, docking) need their UI delegates re-registered
-                //after every LAF change.
-                LookAndFeelFactory.installJideExtension();
-            }
-            catch(Exception e)
-            {
-                mLog.warn("Unable to install JIDE LAF extension after theme change", e);
-            }
+        try
+        {
+            //JIDE components (split panes, docking) need their UI delegates re-registered
+            //after every LAF change.  Pass an explicit style: the no-arg version probes
+            //com.sun.java.swing.plaf.windows.WindowsLookAndFeel which is not present on
+            //non-Windows JDKs, throwing ClassNotFoundException at startup.
+            LookAndFeelFactory.installJideExtension(LookAndFeelFactory.VSNET_STYLE);
+        }
+        catch(Throwable t)
+        {
+            mLog.warn("Unable to install JIDE LAF extension after theme change", t);
+        }
 
+        //Re-rendering any already-realized Swing windows must happen on the EDT.
+        Runnable updateRealized = () -> {
             for(Window window: Window.getWindows())
             {
                 SwingUtilities.updateComponentTreeUI(window);
@@ -273,11 +280,11 @@ public class ThemeManager
 
         if(EventQueue.isDispatchThread())
         {
-            r.run();
+            updateRealized.run();
         }
         else
         {
-            EventQueue.invokeLater(r);
+            EventQueue.invokeLater(updateRealized);
         }
     }
 
