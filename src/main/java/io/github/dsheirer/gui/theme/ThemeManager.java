@@ -418,9 +418,12 @@ public class ThemeManager
         UIManager.put("TableHeader.cellBorder", javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, border));
 
         //Tab labels read black-on-dark with the JIDE-flavoured TabbedPane otherwise.
+        //Selected tabs sit on the raised surface (white in light mode, dark gray in dark mode),
+        //not on the blue selection background, so the selected-tab text is primary foreground -
+        //not the white selection foreground that is right for list/table row selections.
         UIManager.put("TabbedPane.foreground", fgPrimary);
         UIManager.put("TabbedPane.background", bgPanel);
-        UIManager.put("TabbedPane.selectedForeground", fgSelection);
+        UIManager.put("TabbedPane.selectedForeground", fgPrimary);
         UIManager.put("TabbedPane.selected", bgRaised);
         UIManager.put("TabbedPane.contentAreaColor", bgPanel);
         UIManager.put("TabbedPane.darkShadow", border);
@@ -448,15 +451,18 @@ public class ThemeManager
         //JIDE components (JideTabbedPane, JideSplitPane, JideButton, etc.) read their colors
         //from JIDE-specific UIManager keys, not the standard Swing keys.  Set those too so
         //tabs and other JIDE widgets render with the same palette.
+        //Selected/active tab text uses fgPrimary because the JIDE tabs sit on the raised
+        //surface, not the blue selection background.  In light mode the raised tone is white,
+        //so fgSelection (also white) would render invisible-on-white.
         UIManager.put("JideTabbedPane.background", bgPanel);
         UIManager.put("JideTabbedPane.foreground", fgPrimary);
         UIManager.put("JideTabbedPane.tabAreaBackground", bgPanel);
         UIManager.put("JideTabbedPane.selectedTabBackground", bgRaised);
         UIManager.put("JideTabbedPane.activeTabBackground", bgRaised);
         UIManager.put("JideTabbedPane.tabListBackground", bgRaised);
-        UIManager.put("JideTabbedPane.selectedTabTextForeground", fgSelection);
+        UIManager.put("JideTabbedPane.selectedTabTextForeground", fgPrimary);
         UIManager.put("JideTabbedPane.unselectedTabTextForeground", fgPrimary);
-        UIManager.put("JideTabbedPane.activeTabTextForeground", fgSelection);
+        UIManager.put("JideTabbedPane.activeTabTextForeground", fgPrimary);
         UIManager.put("JideTabbedPane.shadow", border);
         UIManager.put("JideTabbedPane.darkShadow", border);
         UIManager.put("JideTabbedPane.light", bgRaised);
