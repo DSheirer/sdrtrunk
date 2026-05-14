@@ -109,9 +109,92 @@ public class ThemeManager
         if(firstBind)
         {
             MyEventBus.getGlobalEventBus().register(this);
+            attachJavaFxWindowListener();
         }
 
         applySwingLookAndFeel(mCurrentTheme);
+    }
+
+    /**
+     * Install a listener on {@link javafx.stage.Window#getWindows()} so that every JavaFX window
+     * created in the application (including ad-hoc {@code Alert}, {@code TextInputDialog} and
+     * other transient dialogs spawned by the playlist editor and similar) automatically picks up
+     * the current theme without each call site needing to remember to register its Scene.  Idle
+     * cost is one listener invocation per window opened; the listener short-circuits when the FX
+     * toolkit is not yet started.
+     */
+    private void attachJavaFxWindowListener()
+    {
+        Runnable attach = () -> {
+            try
+            {
+                javafx.stage.Window.getWindows().addListener(
+                        (javafx.collections.ListChangeListener<javafx.stage.Window>) change -> {
+                    while(change.next())
+                    {
+                        if(change.wasAdded())
+                        {
+                            for(javafx.stage.Window w: change.getAddedSubList())
+                            {
+                                themeWindowWhenSceneReady(w);
+                            }
+                        }
+                    }
+                });
+
+                //Also cover any windows that already existed when we installed the listener.
+                for(javafx.stage.Window w: javafx.stage.Window.getWindows())
+                {
+                    themeWindowWhenSceneReady(w);
+                }
+            }
+            catch(Throwable t)
+            {
+                mLog.warn("Unable to attach JavaFX Window list listener for auto-theming", t);
+            }
+        };
+
+        if(Platform.isFxApplicationThread())
+        {
+            attach.run();
+        }
+        else
+        {
+            try
+            {
+                Platform.runLater(attach);
+            }
+            catch(IllegalStateException ignored)
+            {
+                //FX toolkit not started yet - first JFXPanel construction will start it; we
+                //re-attempt the attach lazily inside applyAll() via the Window.getWindows() walk.
+            }
+        }
+    }
+
+    private void themeWindowWhenSceneReady(javafx.stage.Window window)
+    {
+        if(window == null)
+        {
+            return;
+        }
+
+        Scene scene = window.getScene();
+        if(scene != null)
+        {
+            applyToScene(scene, isDarkMode());
+        }
+        else
+        {
+            //The Scene may be assigned after the Window is added to the list (the
+            //typical Alert/Dialog lifecycle).  Listen once for the assignment.
+            window.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if(newScene != null)
+                {
+                    applyToScene(newScene, isDarkMode());
+                }
+            });
+        }
     }
 
     /**
