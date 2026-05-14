@@ -94,6 +94,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1'
     implementation 'com.fazecast:jSerialComm:2.11.4'
     implementation 'com.formdev:flatlaf:3.5.4'
+    implementation 'com.formdev:flatlaf-intellij-themes:3.5.4'
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     implementation 'com.github.jiconfont:jiconfont-javafx:1.0.0'
     implementation 'com.github.jiconfont:jiconfont-swing:1.0.1'

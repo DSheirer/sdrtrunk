@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.preference.application;
 
+import io.github.dsheirer.gui.theme.Theme;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
@@ -34,12 +35,13 @@ public class ApplicationPreference extends Preference
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING = "automatic.diagnostic.monitoring";
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_START_TIMEOUT = "channel.auto.start.timeout";
     private static final String PREFERENCE_KEY_DARK_MODE = "dark.mode";
+    private static final String PREFERENCE_KEY_THEME = "ui.theme";
 
     private final static Logger mLog = LoggerFactory.getLogger(ApplicationPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(ApplicationPreference.class);
     private Integer mChannelAutoStartTimeout;
     private Boolean mAutomaticDiagnosticMonitoring;
-    private Boolean mDarkMode;
+    private Theme mTheme;
 
     /**
      * Constructs an instance
@@ -108,27 +110,53 @@ public class ApplicationPreference extends Preference
     }
 
     /**
-     * Indicates whether dark mode is enabled for the application UI.
-     * @return enabled.
+     * Returns the selected UI theme.  Falls back to a sensible default if no preference has been
+     * stored - if the legacy {@code dark.mode} boolean is true the default is {@link Theme#DARK},
+     * otherwise {@link Theme#LIGHT}.
      */
-    public boolean isDarkMode()
+    public Theme getTheme()
     {
-        if(mDarkMode == null)
+        if(mTheme == null)
         {
-            mDarkMode = mPreferences.getBoolean(PREFERENCE_KEY_DARK_MODE, false);
+            String stored = mPreferences.get(PREFERENCE_KEY_THEME, null);
+            if(stored != null)
+            {
+                mTheme = Theme.fromName(stored);
+            }
+            else
+            {
+                //Migrate from the older boolean preference so existing users keep their setting.
+                mTheme = mPreferences.getBoolean(PREFERENCE_KEY_DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
+            }
         }
 
-        return mDarkMode;
+        return mTheme;
     }
 
     /**
-     * Sets the dark mode preference.
-     * @param enabled true to enable dark mode.
+     * Sets the selected UI theme.
      */
-    public void setDarkMode(boolean enabled)
+    public void setTheme(Theme theme)
     {
-        mDarkMode = enabled;
-        mPreferences.putBoolean(PREFERENCE_KEY_DARK_MODE, enabled);
+        if(theme == null)
+        {
+            theme = Theme.LIGHT;
+        }
+
+        mTheme = theme;
+        mPreferences.put(PREFERENCE_KEY_THEME, theme.name());
+        //Keep the legacy boolean in sync so any older code path that reads it still behaves
+        //correctly.
+        mPreferences.putBoolean(PREFERENCE_KEY_DARK_MODE, theme.isDark());
         notifyPreferenceUpdated();
+    }
+
+    /**
+     * @return true if the currently selected theme is a dark palette.  Retained for callers that
+     *         only care about the dark/light distinction.
+     */
+    public boolean isDarkMode()
+    {
+        return getTheme().isDark();
     }
 }

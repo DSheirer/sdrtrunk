@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,17 @@
 
 package io.github.dsheirer.gui.preference.application;
 
+import io.github.dsheirer.gui.theme.Theme;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.application.ApplicationPreference;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -45,7 +48,7 @@ public class ApplicationPreferenceEditor extends HBox
     private Label mAutoStartTimeoutLabel;
     private Spinner<Integer> mTimeoutSpinner;
     private ToggleSwitch mAutomaticDiagnosticMonitoringToggle;
-    private ToggleSwitch mDarkModeToggle;
+    private VBox mThemeRadioGroup;
 
     /**
      * Constructs an instance
@@ -75,11 +78,9 @@ public class ApplicationPreferenceEditor extends HBox
             mEditorPane.setHgap(3);
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
 
-            Label appearanceLabel = new Label("Appearance");
-            mEditorPane.add(appearanceLabel, 0, row, 2, 1);
-            GridPane.setHalignment(getDarkModeToggle(), HPos.RIGHT);
-            mEditorPane.add(getDarkModeToggle(), 0, ++row);
-            mEditorPane.add(new Label("Dark Mode"), 1, row, 2, 1);
+            Label appearanceLabel = new Label("Theme");
+            mEditorPane.add(appearanceLabel, 0, row, 3, 1);
+            mEditorPane.add(getThemeRadioGroup(), 0, ++row, 3, 1);
 
             Separator appearanceSeparator = new Separator(Orientation.HORIZONTAL);
             GridPane.setHgrow(appearanceSeparator, Priority.ALWAYS);
@@ -152,18 +153,35 @@ public class ApplicationPreferenceEditor extends HBox
     }
 
     /**
-     * Toggle switch to enable/disable dark mode.
+     * Vertical group of radio buttons - one per {@link Theme}.  Selecting one persists the theme
+     * via {@link ApplicationPreference#setTheme(Theme)} which triggers a global preference event
+     * and a re-theme through the ThemeManager.
      */
-    private ToggleSwitch getDarkModeToggle()
+    private VBox getThemeRadioGroup()
     {
-        if(mDarkModeToggle == null)
+        if(mThemeRadioGroup == null)
         {
-            mDarkModeToggle = new ToggleSwitch();
-            mDarkModeToggle.setSelected(mApplicationPreference.isDarkMode());
-            mDarkModeToggle.selectedProperty().addListener((observable, oldValue, enabled) ->
-                    mApplicationPreference.setDarkMode(enabled));
+            mThemeRadioGroup = new VBox(4);
+            mThemeRadioGroup.setPadding(new Insets(2, 0, 2, 4));
+            ToggleGroup group = new ToggleGroup();
+            Theme current = mApplicationPreference.getTheme();
+
+            for(Theme theme: Theme.values())
+            {
+                RadioButton rb = new RadioButton(theme.getDisplayName());
+                rb.setToggleGroup(group);
+                rb.setUserData(theme);
+                rb.setSelected(theme == current);
+                rb.setOnAction(e -> {
+                    if(rb.isSelected())
+                    {
+                        mApplicationPreference.setTheme((Theme) rb.getUserData());
+                    }
+                });
+                mThemeRadioGroup.getChildren().add(rb);
+            }
         }
 
-        return mDarkModeToggle;
+        return mThemeRadioGroup;
     }
 }

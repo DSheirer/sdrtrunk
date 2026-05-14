@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.gui.theme;
 
-import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.google.common.eventbus.Subscribe;
 import com.jidesoft.plaf.LookAndFeelFactory;
@@ -45,14 +44,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Centralized light/dark theme manager.
+ * Centralized theme manager that drives both Swing and JavaFX appearance from the user
+ * preference selection.
  *
- * <p>Tracks every JavaFX {@link Scene} that opts in and applies (or removes) the dark stylesheet
- * when the user toggles the {@code Dark Mode} preference.  Also drives Swing look-and-feel
- * via {@link FlatDarkLaf} / {@link FlatLightLaf} so the main Swing window and all child windows
- * follow the same setting.
- *
- * <p>Subscribes to the global event bus for {@link PreferenceType#APPLICATION} updates.
+ * <p>Each {@link Theme} pairs a FlatLaf look-and-feel class with a dark/light flag.  When a
+ * theme is applied:
+ * <ul>
+ *   <li>The Swing LAF is installed (reflected from {@link Theme#getLafClassName()}).</li>
+ *   <li>JIDE's LAF extension is reinstalled with an explicit Metal LAF for type detection so
+ *       JIDE's compile-time {@code WindowsLookAndFeel} {@code instanceof} checks do not hit
+ *       the missing-class branch on Linux/macOS JDKs.</li>
+ *   <li>FlatLaf's standard defaults are re-applied on top of JIDE's clobber, and a set of
+ *       JIDE-specific colour keys (JideTabbedPane.*, JideSplitPane.*, JideButton.*) are seeded
+ *       from FlatLaf's just-installed values so each theme's palette propagates to JIDE widgets
+ *       automatically.</li>
+ *   <li>The dark JavaFX stylesheet is applied to (or removed from) every registered Scene
+ *       depending on the theme's dark flag.</li>
+ * </ul>
  */
 public class ThemeManager
 {
@@ -64,7 +72,7 @@ public class ThemeManager
     private final Set<WeakReference<java.awt.Component>> mSwingRoots = new LinkedHashSet<>();
     private final String mDarkStylesheetUrl;
     private volatile UserPreferences mUserPreferences;
-    private volatile boolean mDarkMode;
+    private volatile Theme mCurrentTheme = Theme.LIGHT;
 
     private ThemeManager()
     {
@@ -73,14 +81,11 @@ public class ThemeManager
 
         if(mDarkStylesheetUrl == null)
         {
-            mLog.warn("Dark stylesheet [{}] not found on classpath - dark mode will only affect Swing.",
+            mLog.warn("Dark stylesheet [{}] not found on classpath - dark themes will only affect Swing.",
                     DARK_STYLESHEET);
         }
     }
 
-    /**
-     * @return the singleton instance.
-     */
     public static ThemeManager getInstance()
     {
         return INSTANCE;
@@ -89,8 +94,6 @@ public class ThemeManager
     /**
      * Bind the theme manager to the user preferences and apply the current preference immediately.
      * Safe to call multiple times - subsequent calls update the reference and re-apply.
-     *
-     * @param userPreferences source of the dark-mode preference.
      */
     public void initialize(UserPreferences userPreferences)
     {
@@ -101,30 +104,32 @@ public class ThemeManager
 
         boolean firstBind = (mUserPreferences == null);
         mUserPreferences = userPreferences;
-        mDarkMode = userPreferences.getApplicationPreference().isDarkMode();
+        mCurrentTheme = userPreferences.getApplicationPreference().getTheme();
 
         if(firstBind)
         {
             MyEventBus.getGlobalEventBus().register(this);
         }
 
-        applySwingLookAndFeel(mDarkMode);
+        applySwingLookAndFeel(mCurrentTheme);
     }
 
     /**
-     * @return current dark-mode state.
+     * @return the currently active theme.
+     */
+    public Theme getCurrentTheme()
+    {
+        return mCurrentTheme;
+    }
+
+    /**
+     * @return true if the currently active theme is dark.
      */
     public boolean isDarkMode()
     {
-        return mDarkMode;
+        return mCurrentTheme != null && mCurrentTheme.isDark();
     }
 
-    /**
-     * Register a Scene to receive theme updates.  The Scene is held via {@link WeakReference}
-     * so callers do not need to unregister - garbage-collected Scenes are pruned on the next pass.
-     *
-     * @param scene to track.
-     */
     public void register(Scene scene)
     {
         if(scene == null)
@@ -138,16 +143,15 @@ public class ThemeManager
             mScenes.add(new WeakReference<>(scene));
         }
 
-        applyToScene(scene, mDarkMode);
+        applyToScene(scene, isDarkMode());
     }
 
     /**
      * Register a Swing component that may be temporarily detached from any Window's component tree
-     * (e.g. swappable right-pane components in the Channel tab).  Plain
-     * {@link SwingUtilities#updateComponentTreeUI(java.awt.Component)} walks of
-     * {@link Window#getWindows()} miss such components and they end up carrying stale colours from
-     * the LAF that was active when they were last attached.  Registered components get
-     * {@code updateComponentTreeUI} called on them whenever the theme is applied.
+     * (e.g. swappable right-pane components in the Channel tab).  Registered components get
+     * {@link SwingUtilities#updateComponentTreeUI(java.awt.Component)} called on them whenever the
+     * theme is applied, so they pick up the current palette even if they weren't attached when the
+     * user toggled.
      */
     public void registerSwing(java.awt.Component component)
     {
@@ -171,10 +175,6 @@ public class ThemeManager
         }
     }
 
-    /**
-     * Receives notification when any preference changes.  Re-reads the dark-mode setting and
-     * propagates if it differs from the last known value.
-     */
     @Subscribe
     public void onPreferenceUpdated(PreferenceType type)
     {
@@ -183,20 +183,20 @@ public class ThemeManager
             return;
         }
 
-        boolean updated = mUserPreferences.getApplicationPreference().isDarkMode();
+        Theme updated = mUserPreferences.getApplicationPreference().getTheme();
 
-        if(updated == mDarkMode)
+        if(updated == mCurrentTheme)
         {
             return;
         }
 
-        mDarkMode = updated;
+        mCurrentTheme = updated;
         applyAll(updated);
     }
 
-    private void applyAll(boolean darkMode)
+    private void applyAll(Theme theme)
     {
-        applySwingLookAndFeel(darkMode);
+        applySwingLookAndFeel(theme);
 
         Runnable fxApply = () -> {
             synchronized(mScenes)
@@ -211,19 +211,17 @@ public class ThemeManager
                     }
                     else
                     {
-                        applyToScene(scene, darkMode);
+                        applyToScene(scene, theme.isDark());
                     }
                 }
             }
 
-            //Also walk every currently-shown JavaFX window so that dialogs, alerts and
-            //popups that were not explicitly registered still pick up the theme.
             for(javafx.stage.Window window: javafx.stage.Window.getWindows())
             {
                 Scene scene = window.getScene();
                 if(scene != null)
                 {
-                    applyToScene(scene, darkMode);
+                    applyToScene(scene, theme.isDark());
                 }
             }
         };
@@ -270,21 +268,19 @@ public class ThemeManager
         }
     }
 
-    private void applySwingLookAndFeel(boolean darkMode)
+    private void applySwingLookAndFeel(Theme theme)
     {
-        //Install the LAF synchronously on the calling thread so that any Swing components
-        //constructed immediately afterwards (in particular the main JFrame) find a fully
-        //populated UIDefaults set.  UIManager.setLookAndFeel is safe to call before the EDT
-        //is running.
-        LookAndFeel newLaf;
+        //Install the LAF synchronously on the calling thread so any Swing components constructed
+        //immediately afterwards (in particular the main JFrame) find a fully populated UIDefaults
+        //set.  UIManager.setLookAndFeel is safe to call before the EDT is running.
+        LookAndFeel newLaf = instantiate(theme);
         try
         {
-            newLaf = darkMode ? new FlatDarkLaf() : new FlatLightLaf();
             UIManager.setLookAndFeel(newLaf);
         }
         catch(Exception e)
         {
-            mLog.error("Unable to apply Swing look-and-feel for dark mode = " + darkMode, e);
+            mLog.error("Unable to apply Swing look-and-feel for theme = " + theme, e);
             return;
         }
 
@@ -292,8 +288,8 @@ public class ThemeManager
         {
             //JIDE 3.6.18 has compile-time `instanceof WindowsLookAndFeel` checks throughout
             //LookAndFeelFactory.  The 3-arg overload lets us hand JIDE an explicit Metal LAF
-            //instance for type detection while leaving the real (FlatLaf) defaults table in
-            //place; JIDE's Metal branch matches first.
+            //instance for type detection while leaving the real (FlatLaf) defaults table in place;
+            //JIDE's Metal branch matches first.
             LookAndFeelFactory.installJideExtension(UIManager.getLookAndFeelDefaults(),
                     new MetalLookAndFeel(), LookAndFeelFactory.VSNET_STYLE);
         }
@@ -303,12 +299,12 @@ public class ThemeManager
         }
 
         //JIDE's Metal-flavored extension overwrites FlatLaf's color/font/border defaults for
-        //standard Swing component keys.  Re-apply FlatLaf's defaults on top of JIDE's install
-        //so the inner panels pick up dark backgrounds.  JIDE's UI delegate registrations live
-        //under Jide-prefixed keys that FlatLaf does not define, so they survive untouched.
+        //standard Swing component keys.  Re-apply FlatLaf's defaults on top of JIDE's install so
+        //the inner panels pick up the right colours.  JIDE's UI delegate registrations live under
+        //Jide-prefixed keys that FlatLaf does not define, so they survive untouched.
         try
         {
-            UIDefaults flatFresh = (darkMode ? new FlatDarkLaf() : new FlatLightLaf()).getDefaults();
+            UIDefaults flatFresh = instantiate(theme).getDefaults();
             UIDefaults active = UIManager.getLookAndFeelDefaults();
             for(java.util.Map.Entry<Object, Object> entry: flatFresh.entrySet())
             {
@@ -332,17 +328,14 @@ public class ThemeManager
             mLog.warn("Unable to re-apply FlatLaf defaults after JIDE install", t);
         }
 
-        //FlatLaf's per-component foreground/background lookups go through derived/lazy values
-        //that JIDE's Metal initializer was also feeding from, so even after the defaults copy
-        //above some labels and buttons end up with Metal-era dark foregrounds on a dark
-        //background.  Brute-force the standard component colour keys via UIManager.put which
-        //writes to the user-defaults layer that takes precedence over the LAF defaults.  Use
-        //near-white rather than FlatLaf's #bbbbbb so text reads sharply on the dark panels.
-        applyExplicitOverrides(darkMode);
+        //Brute-force the standard component colour keys via UIManager.put which writes to the
+        //user-defaults layer that takes precedence over the LAF defaults.  Colours are read from
+        //the FlatLaf-installed defaults so each theme contributes its own palette.
+        applyExplicitOverrides(theme);
 
-        //Re-rendering any already-realized Swing windows must happen on the EDT.  Also walk any
-        //Swing components explicitly registered via registerSwing(...) - they may be detached
-        //from any Window's tree at toggle time (e.g. swappable channel-tab right components).
+        //Re-rendering already-realized Swing windows must happen on the EDT.  Also walk any Swing
+        //components explicitly registered via registerSwing(...) - they may be detached from any
+        //Window's tree at toggle time (e.g. swappable channel-tab right components).
         Runnable updateRealized = () -> {
             for(Window window: Window.getWindows())
             {
@@ -377,44 +370,57 @@ public class ThemeManager
         }
     }
 
-    private void applyExplicitOverrides(boolean darkMode)
+    /**
+     * Reflectively instantiate the FlatLaf class for the given theme.  Falls back to
+     * {@link FlatLightLaf} if the class is missing - that should not happen in a normal build but
+     * keeps the app usable if a theme jar is removed.
+     */
+    private LookAndFeel instantiate(Theme theme)
     {
-        //Colors stored under UIManager keys must be ColorUIResource (or null) for
-        //LookAndFeel.installColorsAndFont() to overwrite a component's existing colour
-        //on subsequent updateComponentTreeUI calls.  Using a plain java.awt.Color pins
-        //the component foreground/background permanently and prevents the theme from
-        //ever toggling back.
-        ColorUIResource bgPanel;
-        ColorUIResource bgRaised;
-        ColorUIResource bgInput;
-        ColorUIResource bgSelection;
-        ColorUIResource fgPrimary;
-        ColorUIResource fgSelection;
-        ColorUIResource fgDisabled;
-        ColorUIResource border;
-
-        if(darkMode)
+        try
         {
-            bgPanel = new ColorUIResource(0x2b2b2b);
-            bgRaised = new ColorUIResource(0x3c3f41);
-            bgInput = new ColorUIResource(0x313335);
-            bgSelection = new ColorUIResource(0x214283);
-            fgPrimary = new ColorUIResource(0xe6e6e6);
-            fgSelection = new ColorUIResource(Color.WHITE);
-            fgDisabled = new ColorUIResource(0x6a6a6a);
-            border = new ColorUIResource(0x4f5356);
+            Class<?> cls = Class.forName(theme.getLafClassName());
+            return (LookAndFeel) cls.getDeclaredConstructor().newInstance();
         }
-        else
+        catch(Throwable t)
         {
-            //Light mode mirrors FlatLightLaf's palette.
-            bgPanel = new ColorUIResource(0xf2f2f2);
-            bgRaised = new ColorUIResource(0xffffff);
-            bgInput = new ColorUIResource(0xffffff);
-            bgSelection = new ColorUIResource(0x2675bf);
-            fgPrimary = new ColorUIResource(0x1e1e1e);
-            fgSelection = new ColorUIResource(Color.WHITE);
-            fgDisabled = new ColorUIResource(0x8c8c8c);
-            border = new ColorUIResource(0xc4c4c4);
+            mLog.error("Unable to instantiate LAF [{}] for theme {} - falling back to FlatLightLaf",
+                    theme.getLafClassName(), theme, t);
+            return new FlatLightLaf();
+        }
+    }
+
+    private void applyExplicitOverrides(Theme theme)
+    {
+        boolean darkMode = theme.isDark();
+
+        //Read the FlatLaf-installed colours so each theme contributes its own palette to the
+        //JIDE-specific keys and the user-defaults overrides.  Fall back to reasonable defaults if
+        //a key is missing.
+        ColorUIResource bgPanel = uir(UIManager.getColor("Panel.background"),
+                darkMode ? 0x2b2b2b : 0xf2f2f2);
+        ColorUIResource bgRaised = uir(UIManager.getColor("Button.background"),
+                darkMode ? 0x3c3f41 : 0xffffff);
+        ColorUIResource bgInput = uir(UIManager.getColor("TextField.background"),
+                darkMode ? 0x313335 : 0xffffff);
+        ColorUIResource bgSelection = uir(UIManager.getColor("List.selectionBackground"),
+                darkMode ? 0x214283 : 0x2675bf);
+        ColorUIResource fgPrimary = uir(UIManager.getColor("Label.foreground"),
+                darkMode ? 0xe6e6e6 : 0x1e1e1e);
+        ColorUIResource fgSelection = uir(UIManager.getColor("List.selectionForeground"),
+                0xffffff);
+        ColorUIResource fgDisabled = uir(UIManager.getColor("Label.disabledForeground"),
+                darkMode ? 0x6a6a6a : 0x8c8c8c);
+        ColorUIResource border = uir(UIManager.getColor("Component.borderColor"),
+                darkMode ? 0x4f5356 : 0xc4c4c4);
+        ColorUIResource altRow = uir(UIManager.getColor("Table.alternateRowColor"),
+                darkMode ? 0x353739 : 0xfafafa);
+
+        //Use a slightly brighter foreground than FlatLaf's default in dark mode so text reads
+        //sharper on the JIDE-flavoured surfaces.  Light themes keep their own contrast.
+        if(darkMode && fgPrimary.getRed() < 0xd0)
+        {
+            fgPrimary = new ColorUIResource(0xe6e6e6);
         }
 
         String[] simpleComponents = {
@@ -434,13 +440,11 @@ public class ThemeManager
             UIManager.put(c + ".disabledText", fgDisabled);
         }
 
-        //Buttons sit on a slightly raised tone than the panel they live on.
         for(String c: new String[]{"Button", "ToggleButton", "ComboBox", "Spinner"})
         {
             UIManager.put(c + ".background", bgRaised);
         }
 
-        //Text inputs use their own background tone for affordance.
         for(String c: new String[]{"TextField", "TextArea", "TextPane", "EditorPane",
                 "FormattedTextField", "PasswordField"})
         {
@@ -452,7 +456,6 @@ public class ThemeManager
             UIManager.put(c + ".selectionForeground", fgSelection);
         }
 
-        //Tables, trees and lists.
         for(String c: new String[]{"Table", "Tree", "List"})
         {
             UIManager.put(c + ".background", bgInput);
@@ -462,15 +465,15 @@ public class ThemeManager
         }
 
         UIManager.put("Table.gridColor", border);
-        UIManager.put("Table.alternateRowColor", new ColorUIResource(darkMode ? 0x353739 : 0xfafafa));
+        UIManager.put("Table.alternateRowColor", altRow);
         UIManager.put("TableHeader.background", bgRaised);
         UIManager.put("TableHeader.foreground", fgPrimary);
-        UIManager.put("TableHeader.cellBorder", javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, border));
+        UIManager.put("TableHeader.cellBorder",
+                javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, border));
 
-        //Tab labels read black-on-dark with the JIDE-flavoured TabbedPane otherwise.
-        //Selected tabs sit on the raised surface (white in light mode, dark gray in dark mode),
-        //not on the blue selection background, so the selected-tab text is primary foreground -
-        //not the white selection foreground that is right for list/table row selections.
+        //Tab labels: selected tabs sit on the raised surface (which is white in light themes),
+        //not on the blue selection background, so the selected-tab text is the primary
+        //foreground - not the white selection foreground that is right for row selections.
         UIManager.put("TabbedPane.foreground", fgPrimary);
         UIManager.put("TabbedPane.background", bgPanel);
         UIManager.put("TabbedPane.selectedForeground", fgPrimary);
@@ -479,13 +482,11 @@ public class ThemeManager
         UIManager.put("TabbedPane.darkShadow", border);
         UIManager.put("TabbedPane.shadow", border);
 
-        //Menu hover and selected states.
         UIManager.put("MenuItem.selectionBackground", bgSelection);
         UIManager.put("MenuItem.selectionForeground", fgSelection);
         UIManager.put("Menu.selectionBackground", bgSelection);
         UIManager.put("Menu.selectionForeground", fgSelection);
 
-        //Borders and split-pane divider colour.
         UIManager.put("SplitPane.background", bgPanel);
         UIManager.put("SplitPane.dividerFocusColor", bgSelection);
         UIManager.put("SplitPaneDivider.draggingColor", bgSelection);
@@ -494,16 +495,11 @@ public class ThemeManager
         UIManager.put("Separator.foreground", border);
         UIManager.put("Separator.background", bgPanel);
 
-        //ToolTip needs to stand out from the panel.
         UIManager.put("ToolTip.background", bgRaised);
         UIManager.put("ToolTip.foreground", fgPrimary);
 
-        //JIDE components (JideTabbedPane, JideSplitPane, JideButton, etc.) read their colors
-        //from JIDE-specific UIManager keys, not the standard Swing keys.  Set those too so
-        //tabs and other JIDE widgets render with the same palette.
-        //Selected/active tab text uses fgPrimary because the JIDE tabs sit on the raised
-        //surface, not the blue selection background.  In light mode the raised tone is white,
-        //so fgSelection (also white) would render invisible-on-white.
+        //JIDE components read their colours from JIDE-specific UIManager keys, not the standard
+        //Swing keys.  Seed those from the same palette so JIDE widgets follow the theme.
         UIManager.put("JideTabbedPane.background", bgPanel);
         UIManager.put("JideTabbedPane.foreground", fgPrimary);
         UIManager.put("JideTabbedPane.tabAreaBackground", bgPanel);
@@ -533,6 +529,23 @@ public class ThemeManager
 
         UIManager.put("JideLabel.background", bgPanel);
         UIManager.put("JideLabel.foreground", fgPrimary);
+    }
+
+    /**
+     * Convert a {@link Color} to a {@link ColorUIResource}, falling back to {@code fallbackRgb} if
+     * the input is null.  Existing UIResource colours are returned as-is.
+     */
+    private static ColorUIResource uir(Color c, int fallbackRgb)
+    {
+        if(c == null)
+        {
+            return new ColorUIResource(fallbackRgb);
+        }
+        if(c instanceof ColorUIResource cuir)
+        {
+            return cuir;
+        }
+        return new ColorUIResource(c);
     }
 
     private void pruneDeadReferencesAndCheckPresent(Scene scene)
