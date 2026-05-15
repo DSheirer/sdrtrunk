@@ -1,12 +1,10 @@
-# Create nightly release for Linux, Mac and Windows using the Linux runner.
+# Build and publish nightly releases for Linux, Mac, and Windows
 name: Nightly Release
 
 on:
   push:
     branches: [ master ]
-# Don't run nightly build for pull requests - uncomment to test changes to this action within scope of the PR review
-#  pull_request:
-#    branches: [ master ]
+  workflow_dispatch:   # allows manual trigger from the Actions tab
 
 jobs:
   nightly:
@@ -15,28 +13,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+      - name: Set up JDK 25 (Liberica Full with JavaFX)
         uses: actions/setup-java@v3
         with:
           java-version: '25'
           distribution: 'liberica'
           java-package: 'jdk+fx'
 
-      - name: Build Linux and Mac releases with Gradle
+      - name: Build Linux and Mac releases
         uses: gradle/gradle-build-action@v2
         with:
           arguments: runtimeZipOthers -PprojectVersion=nightly
 
-      - name: Build Windows release with Gradle
+      - name: Build Windows release
         uses: gradle/gradle-build-action@v2
         with:
           arguments: runtimeZipWindows -PprojectVersion=nightly
 
-      - name: Create Build Info file
+      - name: Create build info file
         run: |
           echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
 
-      - name: Add build artifacts to nightly release
+      - name: Publish to nightly release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
