@@ -1,10 +1,10 @@
-# Build and publish nightly releases for Linux, Mac, and Windows
+# Build and publish releases for Linux, Mac, and Windows
 name: Nightly Release
 
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:   # allows manual trigger from the Actions tab
+  workflow_dispatch:
 
 jobs:
   nightly:
@@ -23,21 +23,22 @@ jobs:
       - name: Build Linux and Mac releases
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: runtimeZipOthers -PprojectVersion=nightly
+          arguments: runtimeZipOthers -PprojectVersion=0.6.2-beta-1-buns-eastern
 
       - name: Build Windows release
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: runtimeZipWindows -PprojectVersion=nightly
+          arguments: runtimeZipWindows -PprojectVersion=0.6.2-beta-1-buns-eastern
 
       - name: Create build info file
         run: |
           echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
 
-      - name: Publish to nightly release
+      - name: Publish to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
+          tag_name: v0.6.2-beta-1-buns-eastern
+          name: v0.6.2-beta-1-buns-eastern
           prerelease: true
           files: |
             build/image/*.zip
