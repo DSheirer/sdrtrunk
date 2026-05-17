@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.PassThroughChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -65,6 +66,12 @@ public class PassThroughSourceManager extends ChannelSourceManager
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public TunerFrequencyErrorManager getTunerFrequencyErrorManager()
+    {
+        return mTunerController.getTunerFrequencyErrorManager();
     }
 
     @Override

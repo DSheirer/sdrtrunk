@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -132,6 +132,10 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         }
 
         float decimatedSampleRate = (float)sampleRate / decimation;
+
+        //Set the decimated sample rate to use for PLL error reporting.
+        setDecimatedSampleRate(decimatedSampleRate);
+
         int symbolLength = 16;
         float rolloff = 0.2f;
 

@@ -148,6 +148,10 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);
         float decimatedSampleRate = (float)sampleRate / decimation;
+
+        //Set the decimated sample rate to use for PLL error reporting.
+        setDecimatedSampleRate(decimatedSampleRate);
+
         int symbolLength = 26;
         float rrcAlpha = 0.2f;
         float[] rrcTaps = FilterFactory.getRootRaisedCosine(samplesPerSymbol, symbolLength, rrcAlpha);

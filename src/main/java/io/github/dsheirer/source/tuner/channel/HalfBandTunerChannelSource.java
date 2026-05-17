@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import io.github.dsheirer.dsp.mixer.ComplexMixerFactory;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import io.github.dsheirer.util.Dispatcher;
 import java.util.Iterator;
 import org.slf4j.Logger;
@@ -44,13 +45,15 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     //Maximum number of filled buffers for the blocking queue
     private static final int BUFFER_MAX_CAPACITY = 600;
 
-    private Dispatcher<T> mBufferDispatcher;
-    private ComplexMixer mFrequencyCorrectionMixer;
-    private IRealDecimationFilter mIDecimationFilter;
-    private IRealDecimationFilter mQDecimationFilter;
+    private final Dispatcher<T> mBufferDispatcher;
+    private final ComplexMixer mFrequencyCorrectionMixer;
+    private final IRealDecimationFilter mIDecimationFilter;
+    private final IRealDecimationFilter mQDecimationFilter;
     private Listener<ComplexSamples> mSamplesListener;
-    private double mChannelSampleRate;
-    private long mTunerFrequency;
+    private final double mChannelSampleRate;
+    private long mChannelFrequency;
+    private final long mFrequencyOffset;
+    private long mFrequencyCorrection;
 
     /**
      * Constructs a frequency translating and CIC decimating channel source.
@@ -60,14 +63,16 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
      * @param sampleRate of the incoming sample stream
      * @param channelSpecification for the requested channel.
      * @param threadName for the dispatcher
+     * @param tunerFrequencyErrorManager to connect with the channel error manager
      * @throws FilterDesignException if a final cleanup filter cannot be designed using the remez filter
      *                               designer and the filter parameters.
      */
     public HalfBandTunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
-                                      double sampleRate, ChannelSpecification channelSpecification, String threadName)
+                                      double sampleRate, ChannelSpecification channelSpecification, String threadName,
+                                      TunerFrequencyErrorManager tunerFrequencyErrorManager)
                                             throws FilterDesignException
     {
-        super(producerSourceEventListener, tunerChannel, threadName);
+        super(producerSourceEventListener, tunerChannel, threadName, tunerFrequencyErrorManager);
 
         int desiredDecimation = (int)(sampleRate / channelSpecification.getMinimumSampleRate());
         int decimation = DecimationFilterFactory.getDecimationRate(desiredDecimation);
@@ -81,9 +86,20 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
 
         //Setup the frequency mixer to the current source frequency
         mChannelSampleRate = sampleRate / (double)decimation;
-        mTunerFrequency = tunerChannel.getFrequency();
-        long frequencyOffset = mTunerFrequency - getTunerChannel().getFrequency();
-        mFrequencyCorrectionMixer = ComplexMixerFactory.getMixer(frequencyOffset, sampleRate);
+        mChannelFrequency = tunerChannel.getFrequency();
+        mFrequencyOffset = mChannelFrequency - getTunerChannel().getFrequency();
+        mFrequencyCorrectionMixer = ComplexMixerFactory.getMixer(mFrequencyOffset, sampleRate);
+    }
+
+    /**
+     * Sets and applies the channel decoder requested frequency correction.
+     * @param correction requested by the downstream processors.
+     */
+    @Override
+    public void setFrequencyCorrection(long correction)
+    {
+        mFrequencyCorrection = correction;
+        updateMixerFrequencyOffset();
     }
 
     @Override
@@ -122,7 +138,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     @Override
     public void setFrequency(long frequency)
     {
-        mTunerFrequency = frequency;
+        mChannelFrequency = frequency;
         updateMixerFrequencyOffset();
     }
 
@@ -132,7 +148,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
      */
     private void updateMixerFrequencyOffset()
     {
-        long offset = mTunerFrequency - getTunerChannel().getFrequency();
+        long offset = mChannelFrequency - getTunerChannel().getFrequency() + mFrequencyCorrection;
         mFrequencyCorrectionMixer.setFrequency(offset);
     }
 

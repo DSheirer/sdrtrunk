@@ -34,7 +34,6 @@ import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
@@ -1019,14 +1018,13 @@ public class NXDNSymbolProcessor
             }
             else
             {
-                System.out.println(new Date() + " applying unsync Gain Adjustment: " + correction.getGainAdjustment());
                 mBalance += remainingBalanceToCorrect;
                 mGain += correction.getGainAdjustment();
             }
 
             mBalance = Math.min(mBalance, EQUALIZER_MAXIMUM_BALANCE);
             mBalance = Math.max(mBalance, -EQUALIZER_MAXIMUM_BALANCE);
-            mFeedbackDecoder.processPLLError(mBalance, 2400);
+            mFeedbackDecoder.processPLLError(mBalance); //TODO: fixme
 
             mGain = Math.min(mGain, mGainMax);
             mGain = Math.max(mGain, mGainMin);

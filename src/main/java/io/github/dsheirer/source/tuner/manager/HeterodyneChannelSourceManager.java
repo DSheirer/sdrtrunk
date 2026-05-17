@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -54,10 +55,20 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     private NativeSampleDelayBuffer mSampleDelayBuffer;
     private boolean mRunning = true;
 
+    /**
+     * Constructs an instance
+     * @param tunerController for the tuner
+     */
     public HeterodyneChannelSourceManager(TunerController tunerController)
     {
         mTunerController = tunerController;
         mTunerController.addListener(this);
+    }
+
+    @Override
+    public TunerFrequencyErrorManager getTunerFrequencyErrorManager()
+    {
+        return mTunerController.getTunerFrequencyErrorManager();
     }
 
     @Override
@@ -122,8 +133,9 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 try
                 {
                     //Attempt to create the channel source first, in case we get a filter design exception
-                    HalfBandTunerChannelSource tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
-                            tunerChannel, mTunerController.getSampleRate(), channelSpecification, threadName);
+                    HalfBandTunerChannelSource<?> tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
+                            tunerChannel, mTunerController.getSampleRate(), channelSpecification, threadName,
+                            getTunerFrequencyErrorManager());
 
                     //Add to the list of channel sources so that it will receive the tuner frequency change
                     mChannelSources.add(tunerChannelSource);
@@ -327,10 +339,6 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                         }
                         broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
                     }
-                    break;
-                case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
-                    //Rebroadcast so that the tuner source can process this event
-                    broadcast(sourceEvent);
                     break;
                 case NOTIFICATION_CHANNEL_COUNT_CHANGE:
                     //Lock the tuner controller frequency & sample rate when we're processing channels

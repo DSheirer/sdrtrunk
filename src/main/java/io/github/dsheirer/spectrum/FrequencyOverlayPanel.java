@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -330,11 +330,6 @@ public class FrequencyOverlayPanel extends JPanel implements ISourceEventProcess
      */
     private void drawEstimatedCarrierOffset(Graphics2D graphics)
     {
-        if(mEstimatedCarrierOffsetFrequency == 0)
-        {
-            return;
-        }
-
         long frequency = mFrequency + mEstimatedCarrierOffsetFrequency;
         double xAxis = getAxisFromFrequency(frequency);
 
