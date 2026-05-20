@@ -51,6 +51,9 @@ Configure under **View → Preferences → External Outputs → IMBE Audio Strea
 
 All existing MP3 recording continues unchanged — IMBE streaming is purely additive.
 
+<img width="1180" height="770" alt="Screenshot 2026-05-20 124555" src="https://github.com/user-attachments/assets/a78ca1a1-f1d7-4a73-b520-1368b204c890" />
+
+
 ---
 
 ![Gradle Build](https://github.com/dsheirer/sdrtrunk/actions/workflows/gradle.yml/badge.svg)
