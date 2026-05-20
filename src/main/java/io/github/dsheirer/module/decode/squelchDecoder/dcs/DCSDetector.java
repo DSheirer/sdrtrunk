@@ -51,7 +51,6 @@ public class DCSDetector
     private static final double SLOPE_CALCULATION_SUM_XX = 2247.5;
 
     private final Set<DCSCode> mTargetCodes;
-    private final float mSampleRate;
     private final float mBaudLength;
     private final float mSlopeThreshold;
     private final int mPostTransitionSkip;
@@ -84,7 +83,6 @@ public class DCSDetector
     public DCSDetector(Set<DCSCode> targetCodes, float sampleRate)
     {
         mTargetCodes = targetCodes;
-        mSampleRate = sampleRate;
         mBaudLength = sampleRate / DCS_BAUD_RATE;
 
         float scale = sampleRate / 8000.0f;

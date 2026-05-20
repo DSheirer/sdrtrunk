@@ -152,17 +152,17 @@ public class CTCSSDetector
         }
         // Testing shows that if the power is below approx. 100, the tone can't be detected reliably
         // The lowest-most and upper-most tones are not valid CTCSS tones.
-        CTCSSMessage message = new CTCSSMessage();      // uses timestamp at now
+        //CTCSSMessage message = new CTCSSMessage();      // uses timestamp at now
         if(maxPower < 100 || maxIndex == 0 || maxIndex == mDetectingFrequencies.length - 1)
         {
             // skip further detection
-            message.setInitialThreshold(false);
-            message.setMessage("Signal too weak or detected CTCSS tone is outside of range of valid tones");
-            mLoggingListener.receive(message);
+           // message.setInitialThreshold(false);
+            //message.setMessage("Signal too weak or detected CTCSS tone is outside of range of valid tones");
+            //mLoggingListener.receive(message);
             handleNoDetection();
             return;
         }
-        message.setInitialThreshold(true);
+        //message.setInitialThreshold(true);
 
         // Determine threshold based on the noise level in the distribution using standard deviation.
         //  adjacent channel interference from strong signals will cause multiple spikes in the distribution
@@ -197,8 +197,8 @@ public class CTCSSDetector
                 String.format("%.1f", maxPower),
                 String.format("%.1f", threshold),
                 String.format("%.1f",(maxPower - mean) / stdDev));
-        message.setMessage(s);
-        mLoggingListener.receive(message);      // send to Decoded Messages Log if enabled.
+        //message.setMessage(s);
+        //mLoggingListener.receive(message);      // send to Decoded Messages Log if enabled.
     }
 
     /**
@@ -228,7 +228,6 @@ public class CTCSSDetector
 
     /**
      * Handles detection logic of a CTCSS tone in the current block.
-     * TODO: this will probably move to somewhere else
      */
     private void detectionLogicTree(CTCSSCode newCode)
     {
@@ -332,7 +331,7 @@ public class CTCSSDetector
         }
 
         CTCSSCode setCode = mTargetCodes.getFirst();
-        CTCSSMessage message = new CTCSSMessage();
+        CTCSSMessage message = new CTCSSMessage(newCode);
         message.setInitialThreshold(true);
         String s = MessageFormat.format("CTCSS Configured: {0}, Detected {1}, Open Counts: {2}, Close counts: {3}, Audio: {4}",
                 setCode,
@@ -349,7 +348,6 @@ public class CTCSSDetector
      */
     private void handleNoDetection()
     {
-
         detectionLogicTree(null);
     }
 

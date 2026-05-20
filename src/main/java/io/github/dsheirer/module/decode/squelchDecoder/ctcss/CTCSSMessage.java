@@ -32,23 +32,27 @@ import java.util.List;
  */
 public class CTCSSMessage extends Message
 {
-    private final CTCSSCode mCTCSSCode = null;
+    private CTCSSCode mCTCSSCode;
     private String mDebugMessage;
+    private CTCSSIdentifier mIdentifier;
     private boolean mInitialThreshold;
 
     /**
      * Constructs an instance
-     * @param timestamp when the code was detected
      */
-    public CTCSSMessage(long timestamp)
-    {
-        super(timestamp);
-    }
     public CTCSSMessage()
     {
-//        mCTCSSCode = null;
+        super();            // takes care of timestamp
+        mCTCSSCode = null;
         mDebugMessage = null;
         mInitialThreshold = false;
+    }
+    public CTCSSMessage(CTCSSCode code)
+    {
+        super();            // takes care of timestamp
+        mCTCSSCode = code;
+        mIdentifier = code != null ? new CTCSSIdentifier(code) : null;
+        mDebugMessage = null;
     }
 
     @Override
@@ -72,7 +76,11 @@ public class CTCSSMessage extends Message
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.singletonList(new CTCSSIdentifier(mCTCSSCode));
+        if(mIdentifier != null)
+        {
+            return Collections.singletonList(mIdentifier);
+        }
+        return Collections.emptyList();
     }
 
     public void setInitialThreshold(boolean firstThreshold)

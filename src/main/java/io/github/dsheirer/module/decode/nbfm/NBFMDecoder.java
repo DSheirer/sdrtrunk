@@ -217,7 +217,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     }
 
     /**
-     * Creates the CTCSS Goertzel detector at the specified sample rate.
+     * Creates the CTCSS Goertzel detector
      */
     private void createCTCSSDetector()
     {

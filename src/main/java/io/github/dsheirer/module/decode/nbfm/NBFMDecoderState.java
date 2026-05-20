@@ -19,13 +19,16 @@
 
 package io.github.dsheirer.module.decode.nbfm;
 
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.string.SimpleStringIdentifier;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.AnalogDecoderState;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSMessage;
 import io.github.dsheirer.module.decode.squelchDecoder.squelchDecoderConfig;
 import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
@@ -173,16 +176,11 @@ public class NBFMDecoderState extends AnalogDecoderState
         StringBuilder sb = new StringBuilder();
         sb.append("Activity Summary - Decoder:NBFM\n");
 
-        if(mDeemphasisMode != DecodeConfigNBFM.DeemphasisMode.NONE)
-        {
-            sb.append("\nDe-emphasis: ").append(mDeemphasisMode.toString());
-        }
-
-        sb.append("\n\nTone Filter: ");
+         sb.append("\n\nSquelch Decoder: ");
         if(mSquelchDecoderEnabled)
         {
             sb.append("ENABLED\n");
-            sb.append("Configured Filter: ");
+            sb.append("Configured decoder: ");
             if(!mConfiguredSquelchDecoders.isEmpty())
             {
                 sb.append(mConfiguredSquelchDecoders.get(0).getDisplayString());
@@ -200,24 +198,12 @@ public class NBFMDecoderState extends AnalogDecoderState
         {
             if(!mToneCounts.isEmpty())
             {
-                sb.append("\nDetected Tones:\n");
+                sb.append("\nDetected codes:\n");
                 for(Map.Entry<String, int[]> entry : mToneCounts.entrySet())
                 {
                     int accepted = entry.getValue()[0];
                     int rejected = entry.getValue()[1];
-                    String status;
-                    if(accepted > 0 && rejected == 0)
-                    {
-                        status = "ALLOWED (" + accepted + ")";
-                    }
-                    else if(rejected > 0 && accepted == 0)
-                    {
-                        status = "REJECTED (" + rejected + ")";
-                    }
-                    else
-                    {
-                        status = "ALLOWED (" + accepted + ") REJECTED (" + rejected + ")";
-                    }
+                    String status = "ALLOWED (" + accepted + ") REJECTED (" + rejected + ")";
                     sb.append("\t").append(entry.getKey()).append(" - ").append(status).append("\n");
                 }
             }
@@ -226,4 +212,43 @@ public class NBFMDecoderState extends AnalogDecoderState
         sb.append("\n");
         return sb.toString();
     }
+    @Override
+    public void receive(IMessage message)
+    {
+        if(message instanceof CTCSSMessage ctcssMessage)
+        {
+//            if(ctcssMessage.isToneLost())
+//            {
+//                // Tone was lost - clear the identifier
+//                getIdentifierCollection().remove(Form.TONE);
+//                mCurrentCode = CTCSSCode.UNKNOWN;
+//            }
+//            else
+//            {
+//                mCurrentCode = ctcssMessage.getCTCSSCode();
+//                if(!mCtcssCodeCountsMap.containsKey(mCurrentCode))
+//                {
+//                    mCtcssCodeCountsMap.put(mCurrentCode, 1);
+//                }
+//                else
+//                {
+//                    mCtcssCodeCountsMap.put(mCurrentCode, mCtcssCodeCountsMap.get(mCurrentCode) + 1);
+//                }
+                getIdentifierCollection().update(ctcssMessage.getIdentifiers());
+//            }
+        }
+    }
+//    @Override
+//    public void receiveDecoderStateEvent(DecoderStateEvent event)
+//    {
+//        switch(event.getEvent())
+//        {
+//            case REQUEST_RESET:
+//                resetState();
+//                break;
+//            default:
+//                break;
+//        }
+//    }
+
 }
