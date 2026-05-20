@@ -35,6 +35,22 @@ Configure under **View → Preferences → External Outputs → Network Stream**
 
 All existing CSV logging continues unchanged — TCP streaming is purely additive.
 
+### IMBE Audio Stream
+Streams raw compressed voice frames from every active P25 Phase 1 voice channel over TCP in real-time, allowing any application on your network to decode and play live audio without waiting for a call to end and an MP3 file to be written. Latency is ~20ms — the time between a radio keying up and audio arriving at the consumer.
+
+When enabled, SDRTrunk opens a TCP server on the configured port (default 9502) and streams one JSON line per IMBE voice frame as calls happen. Each frame is tagged with the talkgroup, source radio unit, and a unique call ID so consumers can handle multiple simultaneous calls cleanly. The JMBE library used to decode the frames is the same open-source library SDRTrunk uses internally — audio quality is identical.
+
+Three message types flow on the stream:
+- **`call_start`** — emitted when squelch opens; carries talkgroup, source unit ID, system name, and a unique call ID
+- **`frame`** — one per 18-byte IMBE voice frame (~9 per LDU burst, one every ~20ms); carries Base64-encoded vocoder data and a sequence number for dropped-frame detection
+- **`call_end`** — emitted when squelch closes; carries the call ID and total frame count for the transmission
+
+Multiple clients can connect simultaneously — each receives a full copy of the stream. Filter client-side by `talkgroup` or `system` to isolate specific channels. The `seq` field increments per call, so a gap within the same `callId` indicates lost frames.
+
+Configure under **View → Preferences → External Outputs → IMBE Audio Stream**. The preference panel includes full protocol documentation and working code examples in Java and Python.
+
+All existing MP3 recording continues unchanged — IMBE streaming is purely additive.
+
 ---
 
 ![Gradle Build](https://github.com/dsheirer/sdrtrunk/actions/workflows/gradle.yml/badge.svg)
