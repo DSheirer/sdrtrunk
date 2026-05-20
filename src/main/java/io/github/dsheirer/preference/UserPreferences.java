@@ -38,6 +38,7 @@ import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
 import io.github.dsheirer.preference.network.HeartbeatPreference;
 import io.github.dsheirer.preference.network.NetworkStreamPreference;
+import io.github.dsheirer.preference.network.ImbeStreamPreference;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -74,6 +75,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private VectorCalibrationPreference mVectorCalibrationPreference;
     private NetworkStreamPreference mNetworkStreamPreference;
     private HeartbeatPreference mHeartbeatPreference;
+    private ImbeStreamPreference mImbeStreamPreference;
 
     private SwingPreference mSwingPreference = new SwingPreference();
     private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
@@ -234,6 +236,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * IMBE audio stream preferences
+     */
+    public ImbeStreamPreference getImbeStreamPreference()
+    {
+        return mImbeStreamPreference;
+    }
+
+    /**
      * Loads the managed preferences
      */
     private void loadPreferenceTypes()
@@ -254,6 +264,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);
         mNetworkStreamPreference = new NetworkStreamPreference(this::receive);
         mHeartbeatPreference = new HeartbeatPreference(this::receive);
+        mImbeStreamPreference = new ImbeStreamPreference(this::receive);
     }
 
     /**

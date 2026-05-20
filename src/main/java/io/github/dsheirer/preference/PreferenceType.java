@@ -38,6 +38,7 @@ public enum PreferenceType
     RECORD,
     SOURCE_HEARTBEAT,
     SOURCE_NETWORK_STREAM,
+    SOURCE_IMBE_STREAM,
     TALKGROUP_FORMAT,
     TUNER;
 }
