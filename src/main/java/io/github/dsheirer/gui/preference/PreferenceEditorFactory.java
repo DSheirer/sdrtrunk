@@ -31,6 +31,7 @@ import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
 import io.github.dsheirer.gui.preference.network.HeartbeatPreferenceEditor;
 import io.github.dsheirer.gui.preference.network.NetworkStreamPreferenceEditor;
 import io.github.dsheirer.gui.preference.network.ImbeStreamPreferenceEditor;
+import io.github.dsheirer.gui.preference.network.PcmStreamPreferenceEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.scene.Node;
 
@@ -65,6 +66,8 @@ public class PreferenceEditorFactory
                 return new NetworkStreamPreferenceEditor(userPreferences);
             case SOURCE_IMBE_STREAM:
                 return new ImbeStreamPreferenceEditor(userPreferences);
+            case SOURCE_PCM_STREAM:
+                return new PcmStreamPreferenceEditor(userPreferences);
             case SOURCE_TUNERS:
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:

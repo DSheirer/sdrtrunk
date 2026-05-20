@@ -26,6 +26,10 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.module.decode.p25.phase1.PcmStreamManager;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +50,12 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     private int mAudioSampleCount = 0;
     private boolean mRecordAudioOverride;
     private int mTimeslot;
+
+    // PCM stream state — used to broadcast decoded audio to connected TCP clients on port 9503
+    private static final DateTimeFormatter PCM_TIMESTAMP_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private volatile String mPcmCallId = null;
+    private final AtomicInteger mPcmFrameSeq = new AtomicInteger(0);
+    private final AtomicInteger mPcmFrameCount = new AtomicInteger(0);
 
     /**
      * Constructs an abstract audio module
@@ -92,7 +102,30 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                 mAudioSegment.decrementConsumerCount();
                 mAudioSegment = null;
             }
+
+            // PCM stream: broadcast call_end when the segment closes
+            if(mPcmCallId != null)
+            {
+                PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+                if(pcmMgr != null && pcmMgr.isRunning())
+                {
+                    String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
+                            ? mIdentifierCollection.getToIdentifier().toString() : "");
+                    pcmMgr.broadcastCallEnd(mPcmCallId, "", talkgroup, mPcmFrameCount.get());
+                }
+                mPcmCallId = null;
+            }
         }
+    }
+
+    /**
+     * Escapes a string for safe inclusion in a JSON value.
+     */
+    private static String pcmEscape(String s)
+    {
+        if(s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", " ").replace("\r", "");
     }
 
     @Override
@@ -128,6 +161,21 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                 }
 
                 mAudioSampleCount = 0;
+
+                // PCM stream: broadcast call_start for the new segment
+                PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+                if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId == null)
+                {
+                    mPcmCallId = Long.toHexString(System.currentTimeMillis()).substring(4);
+                    mPcmFrameSeq.set(0);
+                    mPcmFrameCount.set(0);
+                    String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
+                            ? mIdentifierCollection.getToIdentifier().toString() : "");
+                    String from = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
+                            ? mIdentifierCollection.getFromIdentifier().toString() : "");
+                    pcmMgr.broadcastCallStart(mPcmCallId, "", talkgroup, from,
+                            LocalDateTime.now().format(PCM_TIMESTAMP_FMT));
+                }
             }
 
             return mAudioSegment;
@@ -146,6 +194,19 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             closeAudioSegment();
             audioSegment = getAudioSegment();
             audioSegment.linkTo(previous);
+        }
+
+        // PCM stream: broadcast decoded audio to connected TCP clients (after getAudioSegment() so mPcmCallId is set)
+        PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+        if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId != null)
+        {
+            String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
+                    ? mIdentifierCollection.getToIdentifier().toString() : "");
+            String from = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
+                    ? mIdentifierCollection.getFromIdentifier().toString() : "");
+            pcmMgr.broadcastPcm(mPcmCallId, "", talkgroup, from,
+                    mPcmFrameSeq.getAndIncrement(), audioBuffer);
+            mPcmFrameCount.incrementAndGet();
         }
 
         try

@@ -35,6 +35,7 @@ public enum PreferenceEditorType
     SOURCE_HEARTBEAT("Heartbeat Monitor"),
     SOURCE_NETWORK_STREAM("Network Stream"),
     SOURCE_IMBE_STREAM("IMBE Audio Stream"),
+    SOURCE_PCM_STREAM("PCM Audio Stream"),
     SOURCE_TUNERS("Tuners"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
     VECTOR_CALIBRATION("Vector Calibration"),

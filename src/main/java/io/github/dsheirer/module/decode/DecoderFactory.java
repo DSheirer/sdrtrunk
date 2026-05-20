@@ -85,6 +85,7 @@ import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.ImbeAudioStreamModule;
 import io.github.dsheirer.module.decode.p25.phase1.ImbeStreamManager;
+import io.github.dsheirer.module.decode.p25.phase1.PcmStreamManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
@@ -351,6 +352,8 @@ public class DecoderFactory
             String safeImbeSystem = StringUtils.replaceIllegalCharacters(imbeSystem.trim());
             modules.add(new ImbeAudioStreamModule(safeImbeSystem, imbeStreamManager));
         }
+
+        loadPcmStreamManager(userPreferences);
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
@@ -863,6 +866,16 @@ public class DecoderFactory
         }
         int port = userPreferences.getImbeStreamPreference().getPort();
         return ImbeStreamManager.getInstance(port);
+    }
+
+    private static PcmStreamManager loadPcmStreamManager(UserPreferences userPreferences)
+    {
+        if(!userPreferences.getPcmStreamPreference().isEnabled())
+        {
+            return null;
+        }
+        int port = userPreferences.getPcmStreamPreference().getPort();
+        return PcmStreamManager.getInstance(port);
     }
 
     private static NetworkStreamManager loadNetworkStreamManager(UserPreferences userPreferences)
