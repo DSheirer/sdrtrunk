@@ -143,11 +143,11 @@ public class NetworkStreamPreferenceEditor extends HBox
             "  \"eventId\":    -1234567890\n" +
             "}\n\n" +
             "// Raw CC stream (port 9501) — P25\n" +
-            "{\"pipe\":\"raw_cc\",\"system\":\"MY_SYSTEM\",\"timestamp\":1715343476000," +
+            "{\"pipe\":\"raw_cc\",\"system\":\"MY_SYSTEM\",\"timestamp\":\"2026-05-10 12:17:56\"," +
             "\"message\":\"TSBK OSP GROUP VOICE GRANT  LCN:5  TGP:1001  SU:1001234 ...\"}\n\n" +
             "// Raw CC stream (port 9501) — DMR\n" +
             "{\"pipe\":\"raw\",\"protocol\":\"DMR\",\"system\":\"MY_DMR_SYSTEM\",\"timeslot\":1," +
-            "\"timestamp\":1715343476123,\"message\":\"CSBK ALOHA  ...\"}";
+            "\"timestamp\":\"2026-05-10 12:17:56\",\"message\":\"CSBK ALOHA  ...\"}";
 
         TextArea formatBox = codeBox(eventExample, 220);
 
