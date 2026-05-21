@@ -26,6 +26,11 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.PcmStreamManager;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -111,7 +116,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                 {
                     String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
                             ? mIdentifierCollection.getToIdentifier().toString() : "");
-                    pcmMgr.broadcastCallEnd(mPcmCallId, "", talkgroup, mPcmFrameCount.get());
+                    pcmMgr.broadcastCallEnd(mPcmCallId, pcmGetSystem(), pcmGetSite(), talkgroup, mPcmFrameCount.get());
                 }
                 mPcmCallId = null;
             }
@@ -121,6 +126,27 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     /**
      * Escapes a string for safe inclusion in a JSON value.
      */
+
+    /** Returns the user-configured system name from the identifier collection, or empty string. */
+    private String pcmGetSystem()
+    {
+        io.github.dsheirer.identifier.Identifier id =
+                mIdentifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
+        if(id instanceof SystemConfigurationIdentifier)
+            return pcmEscape(((SystemConfigurationIdentifier)id).getValue());
+        return "";
+    }
+
+    /** Returns the user-configured site name from the identifier collection, or empty string. */
+    private String pcmGetSite()
+    {
+        io.github.dsheirer.identifier.Identifier id =
+                mIdentifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SITE, Role.ANY);
+        if(id instanceof SiteConfigurationIdentifier)
+            return pcmEscape(((SiteConfigurationIdentifier)id).getValue());
+        return "";
+    }
+
     private static String pcmEscape(String s)
     {
         if(s == null) return "";
@@ -173,7 +199,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                             ? mIdentifierCollection.getToIdentifier().toString() : "");
                     String from = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
                             ? mIdentifierCollection.getFromIdentifier().toString() : "");
-                    pcmMgr.broadcastCallStart(mPcmCallId, "", talkgroup, from,
+                    pcmMgr.broadcastCallStart(mPcmCallId, pcmGetSystem(), pcmGetSite(), talkgroup, from,
                             LocalDateTime.now().format(PCM_TIMESTAMP_FMT));
                 }
             }
@@ -204,7 +230,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                     ? mIdentifierCollection.getToIdentifier().toString() : "");
             String from = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
                     ? mIdentifierCollection.getFromIdentifier().toString() : "");
-            pcmMgr.broadcastPcm(mPcmCallId, "", talkgroup, from,
+            pcmMgr.broadcastPcm(mPcmCallId, pcmGetSystem(), pcmGetSite(), talkgroup, from,
                     mPcmFrameSeq.getAndIncrement(), audioBuffer);
             mPcmFrameCount.incrementAndGet();
         }

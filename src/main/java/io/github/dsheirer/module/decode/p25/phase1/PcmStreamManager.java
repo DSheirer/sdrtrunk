@@ -117,11 +117,12 @@ public class PcmStreamManager
      * @param from      source radio unit identifier
      * @param timestamp human-readable timestamp (yyyy-MM-dd HH:mm:ss)
      */
-    public void broadcastCallStart(String callId, String system, String talkgroup, String from, String timestamp)
+    public void broadcastCallStart(String callId, String system, String site, String talkgroup, String from, String timestamp)
     {
         String json = "{\"type\":\"call_start\"" +
                 ",\"callId\":\"" + escape(callId) + "\"" +
                 ",\"system\":\"" + escape(system) + "\"" +
+                ",\"site\":\"" + escape(site) + "\"" +
                 ",\"talkgroup\":\"" + escape(talkgroup) + "\"" +
                 ",\"from\":\"" + escape(from) + "\"" +
                 ",\"timestamp\":\"" + escape(timestamp) + "\"}";
@@ -141,7 +142,7 @@ public class PcmStreamManager
      * @param seq       zero-based chunk sequence number within this call
      * @param samples   decoded PCM float samples (8000 Hz mono, range -1.0 to 1.0)
      */
-    public void broadcastPcm(String callId, String system, String talkgroup, String from, int seq, float[] samples)
+    public void broadcastPcm(String callId, String system, String site, String talkgroup, String from, int seq, float[] samples)
     {
         ByteBuffer buf = ByteBuffer.allocate(samples.length * 2).order(ByteOrder.LITTLE_ENDIAN);
         for (float sample : samples)
@@ -154,6 +155,7 @@ public class PcmStreamManager
         String json = "{\"type\":\"pcm\"" +
                 ",\"callId\":\"" + escape(callId) + "\"" +
                 ",\"system\":\"" + escape(system) + "\"" +
+                ",\"site\":\"" + escape(site) + "\"" +
                 ",\"talkgroup\":\"" + escape(talkgroup) + "\"" +
                 ",\"from\":\"" + escape(from) + "\"" +
                 ",\"seq\":" + seq +
@@ -169,11 +171,12 @@ public class PcmStreamManager
      * @param talkgroup  talkgroup identifier
      * @param frameCount total number of pcm chunks sent for this call
      */
-    public void broadcastCallEnd(String callId, String system, String talkgroup, int frameCount)
+    public void broadcastCallEnd(String callId, String system, String site, String talkgroup, int frameCount)
     {
         String json = "{\"type\":\"call_end\"" +
                 ",\"callId\":\"" + escape(callId) + "\"" +
                 ",\"system\":\"" + escape(system) + "\"" +
+                ",\"site\":\"" + escape(site) + "\"" +
                 ",\"talkgroup\":\"" + escape(talkgroup) + "\"" +
                 ",\"frames\":" + frameCount + "}";
         broadcast(json);
