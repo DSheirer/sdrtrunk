@@ -112,15 +112,27 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                 mAudioSegment = null;
             }
 
-            // PCM stream: broadcast call_end when the segment closes
-            if(mPcmCallId != null)
+            // PCM stream: broadcast call_end when the segment closes.
+            // Wrapped in try-catch so any PCM failure cannot affect the existing audio pipeline.
+            try
             {
-                PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
-                if(pcmMgr != null && pcmMgr.isRunning())
+                if(mPcmCallId != null)
                 {
-                    pcmMgr.broadcastCallEnd(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
-                            mPcmCachedTalkgroup, mPcmFrameCount.get());
+                    PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+                    if(pcmMgr != null && pcmMgr.isRunning())
+                    {
+                        pcmMgr.broadcastCallEnd(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
+                                mPcmCachedTalkgroup, mPcmFrameCount.get());
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+                mLog.warn("PCM call_end broadcast error: {}", e.getMessage());
+            }
+            finally
+            {
+                // Always clear PCM state regardless of broadcast success or failure
                 mPcmCallId = null;
                 mPcmCachedSystem = "";
                 mPcmCachedSite = "";
@@ -129,10 +141,6 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             }
         }
     }
-
-    /**
-     * Escapes a string for safe inclusion in a JSON value.
-     */
 
     /** Returns the user-configured system name from the identifier collection, or empty string. */
     private String pcmGetSystem()
@@ -195,23 +203,37 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
                 mAudioSampleCount = 0;
 
-                // PCM stream: broadcast call_start for the new segment
-                PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
-                if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId == null)
+                // PCM stream: broadcast call_start for the new segment.
+                // Wrapped in try-catch so any PCM failure cannot affect the existing audio pipeline.
+                try
                 {
-                    mPcmCallId = Long.toHexString(System.currentTimeMillis()).substring(4);
-                    mPcmFrameSeq.set(0);
-                    mPcmFrameCount.set(0);
-                    // Cache metadata once at call_start — reused on every addAudio() frame
-                    mPcmCachedSystem = pcmGetSystem();
-                    mPcmCachedSite = pcmGetSite();
-                    mPcmCachedTalkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
-                            ? mIdentifierCollection.getToIdentifier().toString() : "");
-                    mPcmCachedFrom = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
-                            ? mIdentifierCollection.getFromIdentifier().toString() : "");
-                    pcmMgr.broadcastCallStart(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
-                            mPcmCachedTalkgroup, mPcmCachedFrom,
-                            LocalDateTime.now().format(PCM_TIMESTAMP_FMT));
+                    PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+                    if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId == null)
+                    {
+                        mPcmCallId = Long.toHexString(System.currentTimeMillis()).substring(4);
+                        mPcmFrameSeq.set(0);
+                        mPcmFrameCount.set(0);
+                        // Cache metadata once at call_start — reused on every addAudio() frame
+                        mPcmCachedSystem = pcmGetSystem();
+                        mPcmCachedSite = pcmGetSite();
+                        mPcmCachedTalkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
+                                ? mIdentifierCollection.getToIdentifier().toString() : "");
+                        mPcmCachedFrom = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
+                                ? mIdentifierCollection.getFromIdentifier().toString() : "");
+                        pcmMgr.broadcastCallStart(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
+                                mPcmCachedTalkgroup, mPcmCachedFrom,
+                                LocalDateTime.now().format(PCM_TIMESTAMP_FMT));
+                    }
+                }
+                catch(Exception e)
+                {
+                    mLog.warn("PCM call_start broadcast error: {}", e.getMessage());
+                    // Reset PCM state so the next call gets a clean slate
+                    mPcmCallId = null;
+                    mPcmCachedSystem = "";
+                    mPcmCachedSite = "";
+                    mPcmCachedTalkgroup = "";
+                    mPcmCachedFrom = "";
                 }
             }
 
@@ -233,14 +255,22 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             audioSegment.linkTo(previous);
         }
 
-        // PCM stream: broadcast decoded audio to connected TCP clients (after getAudioSegment() so mPcmCallId is set)
-        PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
-        if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId != null)
+        // PCM stream: broadcast decoded audio to connected TCP clients.
+        // Wrapped in try-catch so any PCM failure cannot affect the existing audio pipeline.
+        try
         {
-            pcmMgr.broadcastPcm(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
-                    mPcmCachedTalkgroup, mPcmCachedFrom,
-                    mPcmFrameSeq.getAndIncrement(), audioBuffer);
-            mPcmFrameCount.incrementAndGet();
+            PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+            if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId != null)
+            {
+                pcmMgr.broadcastPcm(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
+                        mPcmCachedTalkgroup, mPcmCachedFrom,
+                        mPcmFrameSeq.getAndIncrement(), audioBuffer);
+                mPcmFrameCount.incrementAndGet();
+            }
+        }
+        catch(Exception e)
+        {
+            mLog.warn("PCM frame broadcast error: {}", e.getMessage());
         }
 
         try
