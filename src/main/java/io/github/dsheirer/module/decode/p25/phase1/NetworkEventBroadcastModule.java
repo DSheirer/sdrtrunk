@@ -41,7 +41,7 @@ public class NetworkEventBroadcastModule extends Module implements IDecodeEventL
 {
     private static final Logger mLog = LoggerFactory.getLogger(NetworkEventBroadcastModule.class);
     private static final DateTimeFormatter TIMESTAMP_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final java.text.DecimalFormat FREQ_FMT = new java.text.DecimalFormat("0.000000");
+    
 
     private final String mSystemName;
     private final NetworkStreamManager mStreamManager;
@@ -120,7 +120,7 @@ public class NetworkEventBroadcastModule extends Module implements IDecodeEventL
         String freqStr = "";
         if(descriptor != null && descriptor.getDownlinkFrequency() > 0)
         {
-            freqStr = FREQ_FMT.format(descriptor.getDownlinkFrequency() / 1_000_000.0);
+            freqStr = String.format("%.6f", descriptor.getDownlinkFrequency() / 1_000_000.0);
         }
         else
         {
@@ -128,7 +128,7 @@ public class NetworkEventBroadcastModule extends Module implements IDecodeEventL
                     .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
             if(freqId instanceof FrequencyConfigurationIdentifier fci)
             {
-                freqStr = FREQ_FMT.format(fci.getValue() / 1_000_000.0);
+                freqStr = String.format("%.6f", fci.getValue() / 1_000_000.0);
             }
         }
         appendField(sb, "frequency", freqStr, false);
