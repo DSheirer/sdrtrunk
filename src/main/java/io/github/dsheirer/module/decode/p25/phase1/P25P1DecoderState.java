@@ -177,6 +177,9 @@ import io.github.dsheirer.util.PacketUtil;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,6 +192,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderState.class);
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LOGGER);
+    private static final DateTimeFormatter PCM_VID_TIMESTAMP_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
     private final Channel mChannel;
     private final Modulation mModulation;
     private final PatchGroupManager mPatchGroupManager = new PatchGroupManager();
@@ -922,7 +927,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             pcmVidGetSite(),
                             pcmVidGetIdentifier(getIdentifierCollection().getToIdentifier()),
                             pcmVidGetIdentifier(getIdentifierCollection().getFromIdentifier()),
-                            new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(message.getTimestamp())));
+                            PCM_VID_TIMESTAMP_FMT.format(Instant.ofEpochMilli(message.getTimestamp())));
                 }
                 mTrafficChannelManager.processP1TrafficLDU1(getCurrentFrequency(),
                         getIdentifierCollection().getIdentifiers(), message.getTimestamp(), ldu1.toString());

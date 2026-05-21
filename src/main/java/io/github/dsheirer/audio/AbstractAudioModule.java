@@ -61,6 +61,10 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     private volatile String mPcmCallId = null;
     private final AtomicInteger mPcmFrameSeq = new AtomicInteger(0);
     private final AtomicInteger mPcmFrameCount = new AtomicInteger(0);
+    private String mPcmCachedSystem = "";
+    private String mPcmCachedSite = "";
+    private String mPcmCachedTalkgroup = "";
+    private String mPcmCachedFrom = "";
 
     /**
      * Constructs an abstract audio module
@@ -114,11 +118,14 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                 PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
                 if(pcmMgr != null && pcmMgr.isRunning())
                 {
-                    String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
-                            ? mIdentifierCollection.getToIdentifier().toString() : "");
-                    pcmMgr.broadcastCallEnd(mPcmCallId, pcmGetSystem(), pcmGetSite(), talkgroup, mPcmFrameCount.get());
+                    pcmMgr.broadcastCallEnd(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
+                            mPcmCachedTalkgroup, mPcmFrameCount.get());
                 }
                 mPcmCallId = null;
+                mPcmCachedSystem = "";
+                mPcmCachedSite = "";
+                mPcmCachedTalkgroup = "";
+                mPcmCachedFrom = "";
             }
         }
     }
@@ -195,11 +202,15 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                     mPcmCallId = Long.toHexString(System.currentTimeMillis()).substring(4);
                     mPcmFrameSeq.set(0);
                     mPcmFrameCount.set(0);
-                    String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
+                    // Cache metadata once at call_start — reused on every addAudio() frame
+                    mPcmCachedSystem = pcmGetSystem();
+                    mPcmCachedSite = pcmGetSite();
+                    mPcmCachedTalkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
                             ? mIdentifierCollection.getToIdentifier().toString() : "");
-                    String from = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
+                    mPcmCachedFrom = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
                             ? mIdentifierCollection.getFromIdentifier().toString() : "");
-                    pcmMgr.broadcastCallStart(mPcmCallId, pcmGetSystem(), pcmGetSite(), talkgroup, from,
+                    pcmMgr.broadcastCallStart(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
+                            mPcmCachedTalkgroup, mPcmCachedFrom,
                             LocalDateTime.now().format(PCM_TIMESTAMP_FMT));
                 }
             }
@@ -226,11 +237,8 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
         PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
         if(pcmMgr != null && pcmMgr.isRunning() && mPcmCallId != null)
         {
-            String talkgroup = pcmEscape(mIdentifierCollection.getToIdentifier() != null
-                    ? mIdentifierCollection.getToIdentifier().toString() : "");
-            String from = pcmEscape(mIdentifierCollection.getFromIdentifier() != null
-                    ? mIdentifierCollection.getFromIdentifier().toString() : "");
-            pcmMgr.broadcastPcm(mPcmCallId, pcmGetSystem(), pcmGetSite(), talkgroup, from,
+            pcmMgr.broadcastPcm(mPcmCallId, mPcmCachedSystem, mPcmCachedSite,
+                    mPcmCachedTalkgroup, mPcmCachedFrom,
                     mPcmFrameSeq.getAndIncrement(), audioBuffer);
             mPcmFrameCount.incrementAndGet();
         }
