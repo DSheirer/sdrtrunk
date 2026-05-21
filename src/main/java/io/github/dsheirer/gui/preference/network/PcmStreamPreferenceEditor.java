@@ -70,6 +70,10 @@ public class PcmStreamPreferenceEditor extends HBox
             "Unlike the IMBE stream on port 9502, no JMBE library is needed on the client " +
             "— SDRTrunk has already decoded the audio.  Samples are 16-bit signed " +
             "little-endian at 8000 Hz mono, Base64-encoded in each JSON message.\n\n" +
+            "This stream also emits a fast voice_id message the moment a radio unit ID is " +
+            "decoded from the Link Control Word (~180 ms after squelch opens), well before " +
+            "audio frames arrive.  This lets dispatch or alerting apps identify who is " +
+            "talking almost instantly without waiting for the audio pipeline to start.\n\n" +
             "This bypasses SDRTrunk's MP3 recording pipeline entirely, so audio is available " +
             "within ~20 ms of the radio transmitting — before any file is written to disk.");
         subtitle.setWrapText(true);
@@ -111,18 +115,23 @@ public class PcmStreamPreferenceEditor extends HBox
         // ── Message format ─────────────────────────────────────────────────
         root.getChildren().add(sectionHeader("MESSAGE FORMAT  ·  Newline-delimited JSON (NDJSON)"));
         Label fmtDesc = new Label(
-            "Three message types flow on this port.  Each is a single JSON object terminated " +
-            "by a newline (\\n).  Use the \"type\" field to distinguish them. The \"system\" and \"site\" fields reflect the names you configured in SDRTrunk for that channel -- filter client-side on these to isolate specific systems:");
+            "Four message types flow on this port.  Each is a single JSON object terminated " +
+            "by a newline (\\n).  Use the \"type\" field to distinguish them.  The \"system\" " +
+            "and \"site\" fields reflect the names you configured in SDRTrunk for that channel " +
+            "— filter client-side on these to isolate specific systems:");
         fmtDesc.setWrapText(true);
         root.getChildren().add(fmtDesc);
 
         String formatExample =
-            "// 1. Call started -- emitted once when squelch opens\n" +
+            "// 1. Fast unit ID -- fires ~180ms after squelch opens (before audio starts)\n" +
+            "//    Repeats on every LDU1 throughout the call -- deduplicate by talkgroup+from\n" +
+            "{\"type\":\"voice_id\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"from\":\"1234567\",\"timestamp\":\"2026-01-01 12:00:00\"}\n\n" +
+            "// 2. Call started -- emitted once when the audio pipeline opens (~360ms after squelch)\n" +
             "{\"type\":\"call_start\",\"callId\":\"a1b2c3d\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"from\":\"1234567\",\"timestamp\":\"2026-01-01 12:00:00\"}\n\n" +
-            "// 2. PCM audio chunk -- one per decoded audio buffer (~20 ms per active channel)\n" +
+            "// 3. PCM audio chunk -- one per decoded audio buffer (~20 ms per active channel)\n" +
             "{\"type\":\"pcm\",\"callId\":\"a1b2c3d\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"from\":\"1234567\",\"seq\":0,\"samples\":\"BASE64_ENCODED_PCM\"}\n" +
             "// samples = Base64-encoded 16-bit signed little-endian PCM at 8000 Hz mono\n\n" +
-            "// 3. Call ended -- emitted once when squelch closes\n" +
+            "// 4. Call ended -- emitted once when squelch closes\n" +
             "{\"type\":\"call_end\",\"callId\":\"a1b2c3d\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"frames\":90}";
 
         root.getChildren().add(codeBox(formatExample, 200));
@@ -146,16 +155,18 @@ public class PcmStreamPreferenceEditor extends HBox
             "for raw_line in s.makefile():\n" +
             "    msg = json.loads(raw_line)\n" +
             "    t = msg['type']\n\n" +
-            "    if t == 'call_start':\n" +
+            "    if t == 'voice_id':\n" +
+            "        # Fires ~180ms after squelch -- fastest possible unit ID\n" +
+            "        print(f'[ID]    TG {msg[\"talkgroup\"]} | FROM {msg[\"from\"]} | {msg[\"system\"]} / {msg[\"site\"]}')\\n" +
+            "    elif t == 'call_start':\n" +
             "        print(f'[START] TG {msg[\"talkgroup\"]} | FROM {msg[\"from\"]} | call {msg[\"callId\"]}')\n" +
             "    elif t == 'pcm':\n" +
-            "        # Decode Base64 little-endian int16 samples and play them\n" +
             "        samples = np.frombuffer(base64.b64decode(msg['samples']), dtype='<i2').astype(np.float32) / 32767\n" +
             "        sd.play(samples, 8000)\n" +
             "    elif t == 'call_end':\n" +
-            "        print(f'[END]   TG {msg[\"talkgroup\"]} | {msg[\"frames\"]} chunks | call {msg[\"callId\"]}')";
+            "        print(f'[END]   TG {msg[\"talkgroup\"]} | {msg[\"frames\"]} frames | call {msg[\"callId\"]}')";
 
-        root.getChildren().add(codeBox(pythonCode, 260));
+        root.getChildren().add(codeBox(pythonCode, 300));
         root.getChildren().add(new Separator());
 
         // ── Audio format details ───────────────────────────────────────────
