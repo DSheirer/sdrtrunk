@@ -75,6 +75,14 @@ public class NBFMDecoderState extends AnalogDecoderState
         }
     }
 
+    /**
+     * Returns the channel name for this decoder state.
+     */
+    public String getChannelName()
+    {
+        return mChannelName;
+    }
+
     @Override
     public DecoderType getDecoderType()
     {

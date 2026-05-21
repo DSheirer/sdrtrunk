@@ -50,37 +50,11 @@ public class CTCSSDetector
     private static final float DETECTION_THRESHOLD_DB = 6.0f;
 
     /**
-     * Minimum dB by which the strongest Goertzel bin must exceed the average of its
-     * nearest neighbor bins. A real CTCSS tone produces a sharp narrowband peak that
-     * easily clears this threshold. Broadband interference distributes energy evenly
-     * across all bins and fails this check.
-     *
-     * This is the threshold for tones above 120 Hz. For lower tones, the threshold
-     * is reduced because closely-spaced Goertzel bins cause significant spectral
-     * leakage (e.g., 97.4/100.0/103.5 Hz are only ~3 Hz apart, so a real 100 Hz
-     * tone produces nearly equal energy in all three bins — only ~1 dB separation).
-     */
-    private static final float NARROWBAND_THRESHOLD_DB = 3.0f;
-
-    /**
-     * Narrowband threshold for tones at or below this frequency (Hz).
-     * Below this cutoff, we use a relaxed narrowband threshold to account for
-     * spectral leakage between closely-spaced low-frequency Goertzel bins.
+     * Frequency cutoff for the spectral leakage preference logic.
+     * Below this frequency, closely-spaced Goertzel bins cause significant leakage,
+     * so we allow preferring a nearby target bin over the peak bin if within 2 dB.
      */
     private static final float LOW_FREQ_NARROWBAND_CUTOFF = 120.0f;
-
-    /**
-     * Relaxed narrowband threshold for low-frequency tones (<= 120 Hz).
-     * At 100 Hz, real tones show ~1 dB above neighbors due to bin spacing.
-     * 0.5 dB still rejects true broadband interference (which produces 0 dB difference).
-     */
-    private static final float LOW_FREQ_NARROWBAND_THRESHOLD_DB = 0.5f;
-
-    /**
-     * Number of neighbor bins to average on each side of the detected bin for the
-     * narrowband check (2 above + 2 below = 4 total neighbors).
-     */
-    private static final int NARROWBAND_NEIGHBOR_COUNT = 2;
 
     /**
      * Number of consecutive detections required before reporting a match.
@@ -115,6 +89,9 @@ public class CTCSSDetector
     // Tone survey: log top tones periodically regardless of threshold
     private static final int SURVEY_INTERVAL_BLOCKS = 40; // ~every 3 seconds at 75ms/block
     private int mSurveyBlockCounter = 0;
+
+    // Channel identification for log messages (e.g. "MetroFire - Red [483.3125]")
+    private String mChannelLabel = "";
 
     // Callback
     private CTCSSDetectorListener mListener;
@@ -201,8 +178,19 @@ public class CTCSSDetector
             mCoefficients[i] = (float)(2.0 * Math.cos(2.0 * Math.PI * normalizedFreq));
         }
 
-        LOGGER.debug("CTCSSDetector initialized: {} target tones, block size {}, sample rate {}",
-                mTargetCodeArray.length, mBlockSize, mSampleRate);
+        LOGGER.debug("{}CTCSSDetector initialized: {} target tones, block size {}, sample rate {}",
+                mChannelLabel, mTargetCodeArray.length, mBlockSize, mSampleRate);
+    }
+
+    /**
+     * Sets a channel label that is prepended to all log messages for channel identification.
+     * Format example: "MetroFire - Red [483.3125]"
+     *
+     * @param label the channel label, or null/empty for no prefix
+     */
+    public void setChannelLabel(String label)
+    {
+        mChannelLabel = (label != null && !label.isEmpty()) ? "[" + label + "] " : "";
     }
 
     /**
@@ -247,11 +235,8 @@ public class CTCSSDetector
 
     /**
      * Analyzes the current block of samples using Goertzel algorithm for each target frequency.
-     *
-     * Two checks must pass for a detection:
-     * 1. The strongest bin must exceed the total-energy SNR threshold (existing check)
-     * 2. The strongest bin must exceed the average of its nearest neighbor bins by
-     *    NARROWBAND_THRESHOLD_DB (narrowband check — rejects broadband interference)
+     * The strongest bin must exceed the total-energy SNR threshold (DETECTION_THRESHOLD_DB)
+     * to be considered a detection.
      */
     private void analyzeBlock()
     {
@@ -320,7 +305,7 @@ public class CTCSSDetector
                 }
             }
 
-            StringBuilder sb = new StringBuilder("CTCSS survey: ");
+            StringBuilder sb = new StringBuilder(mChannelLabel).append("CTCSS survey: ");
             for(int rank = 0; rank < 3; rank++)
             {
                 if(topIdx[rank] >= 0)
@@ -332,20 +317,20 @@ public class CTCSSDetector
                             mTargetCodeArray[topIdx[rank]], mTargetFrequencies[topIdx[rank]], db));
                 }
             }
+            // Include active bin count in survey for diagnostics
+            int surveyActiveBins = 0;
+            for(int i = 0; i < powers.length; i++)
+            {
+                float np2 = powers[i] / (totalEnergy * mBlockSize);
+                float db2 = (float)(10.0 * Math.log10(np2 + 1e-10));
+                if(db2 > DETECTION_THRESHOLD_DB) surveyActiveBins++;
+            }
+            sb.append(String.format(" [activeBins=%d]", surveyActiveBins));
             LOGGER.debug(sb.toString());
         }
 
         if(maxIndex >= 0 && snrDB > DETECTION_THRESHOLD_DB)
         {
-            // Note: the narrowband check (comparing strongest bin vs neighbors) was removed
-            // in ap-14.9.7. CTCSS tones are sub-audible (~10-15% of peak deviation), so when
-            // voice audio is present, the broadband voice energy dominates ALL Goertzel bins
-            // equally. The CTCSS tone only adds ~0.3-0.5 dB above neighbors during active voice,
-            // which is below any useful narrowband threshold. This caused tone squelch to never
-            // open during transmissions. The 3-block confirmation count is sufficient to reject
-            // broadband interference — random noise won't consistently peak at the same CTCSS
-            // frequency 3 times in a row across 42 possible tones (<0.06% probability).
-
             CTCSSCode detected = mTargetCodeArray[maxIndex];
 
             // For low-frequency tones, spectral leakage can cause a neighboring non-target bin
@@ -363,8 +348,8 @@ public class CTCSSDetector
                         float diffDB = (float)(10.0 * Math.log10((maxPower / (powers[belowIdx] + 1e-10f)) + 1e-10));
                         if(diffDB < 2.0f)
                         {
-                            LOGGER.trace("CTCSS preferring target {} over winner {} (diff={} dB)",
-                                    mTargetCodeArray[belowIdx], detected, String.format("%.1f", diffDB));
+                            LOGGER.trace("{}CTCSS preferring target {} over winner {} (diff={} dB)",
+                                    mChannelLabel, mTargetCodeArray[belowIdx], detected, String.format("%.1f", diffDB));
                             detected = mTargetCodeArray[belowIdx];
                             maxIndex = belowIdx;
                             maxPower = powers[belowIdx];
@@ -376,8 +361,8 @@ public class CTCSSDetector
                         float diffDB = (float)(10.0 * Math.log10((maxPower / (powers[aboveIdx] + 1e-10f)) + 1e-10));
                         if(diffDB < 2.0f)
                         {
-                            LOGGER.trace("CTCSS preferring target {} over winner {} (diff={} dB)",
-                                    mTargetCodeArray[aboveIdx], detected, String.format("%.1f", diffDB));
+                            LOGGER.trace("{}CTCSS preferring target {} over winner {} (diff={} dB)",
+                                    mChannelLabel, mTargetCodeArray[aboveIdx], detected, String.format("%.1f", diffDB));
                             detected = mTargetCodeArray[aboveIdx];
                             maxIndex = aboveIdx;
                             maxPower = powers[aboveIdx];
@@ -391,16 +376,16 @@ public class CTCSSDetector
             if(mConfirmationCounter < CONFIRMATION_COUNT ||
                (mDetectedCode != detected))
             {
-                LOGGER.debug("CTCSS tone {} ({} Hz) detected: SNR={} dB confirm={}/{} target={}",
-                        detected, String.format("%.1f", mTargetFrequencies[maxIndex]),
+                LOGGER.debug("{}CTCSS tone {} ({} Hz) detected: SNR={} dB confirm={}/{} target={}",
+                        mChannelLabel, detected, String.format("%.1f", mTargetFrequencies[maxIndex]),
                         String.format("%.1f", snrDB),
                         mConfirmationCounter, CONFIRMATION_COUNT,
                         mTargetCodes.contains(detected) ? "YES" : "NO");
             }
             else
             {
-                LOGGER.trace("CTCSS tone {} ({} Hz) detected: SNR={} dB confirm={}/{} target={}",
-                        detected, String.format("%.1f", mTargetFrequencies[maxIndex]),
+                LOGGER.trace("{}CTCSS tone {} ({} Hz) detected: SNR={} dB confirm={}/{} target={}",
+                        mChannelLabel, detected, String.format("%.1f", mTargetFrequencies[maxIndex]),
                         String.format("%.1f", snrDB),
                         mConfirmationCounter, CONFIRMATION_COUNT,
                         mTargetCodes.contains(detected) ? "YES" : "NO");
@@ -413,8 +398,8 @@ public class CTCSSDetector
             // Log near-misses at TRACE to avoid flooding overnight logs
             if(maxIndex >= 0 && snrDB > (DETECTION_THRESHOLD_DB - 3.0f))
             {
-                LOGGER.trace("CTCSS tone {} ({} Hz) below threshold: SNR={} dB (need {} dB)",
-                        mTargetCodeArray[maxIndex], String.format("%.1f", mTargetFrequencies[maxIndex]),
+                LOGGER.trace("{}CTCSS tone {} ({} Hz) below threshold: SNR={} dB (need {} dB)",
+                        mChannelLabel, mTargetCodeArray[maxIndex], String.format("%.1f", mTargetFrequencies[maxIndex]),
                         String.format("%.1f", snrDB), DETECTION_THRESHOLD_DB);
             }
             handleNoDetection();
@@ -449,14 +434,24 @@ public class CTCSSDetector
     /**
      * Handles detection of a CTCSS tone in the current block.
      * Only reports to the listener if the detected tone is in the allowed (target) set.
+     *
+     * IMPORTANT: mLossCounter is only reset when the TARGET tone is detected. Non-target
+     * detections do NOT reset the loss counter. This prevents broadband interference
+     * (which randomly lights up different CTCSS bins each block) from holding the tone
+     * gate open indefinitely via the holdover mechanism. Without this, digital noise
+     * bursts following a valid transmission could leak through for their entire duration
+     * because mLossCounter would never reach LOSS_COUNT.
      */
     private void handleDetection(CTCSSCode code)
     {
-        mLossCounter = 0;
-
         // Only accept tones that are in our allowed set
         if(!mTargetCodes.contains(code))
         {
+            // NON-TARGET tone detected: do NOT reset mLossCounter.
+            // Broadband noise/digital interference lights up random CTCSS bins each block.
+            // If we reset mLossCounter here, it would never reach LOSS_COUNT, and a prior
+            // target match (held over from a valid transmission) would stay active forever.
+
             // Track confirmed rejections — only notify after same wrong tone seen CONFIRMATION_COUNT times
             if(mDetectedCode == code)
             {
@@ -478,6 +473,9 @@ public class CTCSSDetector
             }
             return;
         }
+
+        // TARGET tone detected — reset loss counter
+        mLossCounter = 0;
 
         if(mDetectedCode == code)
         {
@@ -544,5 +542,23 @@ public class CTCSSDetector
     public CTCSSCode getDetectedCode()
     {
         return (mConfirmationCounter >= CONFIRMATION_COUNT) ? mDetectedCode : null;
+    }
+
+    /**
+     * Returns the current loss counter value (number of consecutive blocks without target detection).
+     * Used for diagnostic logging.
+     */
+    public int getLossCounter()
+    {
+        return mLossCounter;
+    }
+
+    /**
+     * Returns the raw detected code (even if not yet confirmed), or null.
+     * Used for diagnostic logging.
+     */
+    public CTCSSCode getRawDetectedCode()
+    {
+        return mDetectedCode;
     }
 }

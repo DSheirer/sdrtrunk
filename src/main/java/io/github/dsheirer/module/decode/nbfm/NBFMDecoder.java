@@ -109,6 +109,10 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private static final long TONE_HOLDOVER_MS = 500;
     private volatile long mLastToneMatchTime = 0;
 
+    // Channel identification for log messages
+    private volatile String mChannelLabel = "";
+    private volatile long mChannelFrequencyHz = 0;
+
     // Squelch tail/head removal
     private final boolean mSquelchTailRemovalEnabled;
     private final int mSquelchTailRemovalMs;
@@ -147,17 +151,17 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             if(!mTargetCTCSSCodes.isEmpty())
             {
                 mToneFilterType = ChannelToneFilter.ToneType.CTCSS;
-                mLog.info("CTCSS tone filtering enabled with {} target code(s)", mTargetCTCSSCodes.size());
+                mLog.info("[{}] CTCSS tone filtering enabled with {} target code(s)", mChannelLabel, mTargetCTCSSCodes.size());
             }
             else if(!mTargetDCSCodes.isEmpty())
             {
                 mToneFilterType = ChannelToneFilter.ToneType.DCS;
-                mLog.info("DCS code filtering enabled with {} target code(s)", mTargetDCSCodes.size());
+                mLog.info("[{}] DCS code filtering enabled with {} target code(s)", mChannelLabel, mTargetDCSCodes.size());
             }
             else
             {
                 mToneFilterType = null;
-                mLog.warn("Tone filtering enabled but no valid CTCSS or DCS codes configured");
+                mLog.warn("[{}] Tone filtering enabled but no valid CTCSS or DCS codes configured", mChannelLabel);
             }
         }
         else
@@ -328,6 +332,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     public void setDecoderState(NBFMDecoderState decoderState)
     {
         mDecoderState = decoderState;
+        updateChannelLabel();
     }
 
     /**
@@ -457,6 +462,23 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         {
             // Tone/code not confirmed yet — block audio
             return;
+        }
+
+        // Diagnostic: log when audio passes through with mToneMatch=true but the CTCSS detector
+        // doesn't have the target tone actively confirmed. This indicates holdover-carried audio,
+        // which could be legitimate (brief squelch flutter) or a noise leak.
+        if(mToneFilterEnabled && mCTCSSDetector != null)
+        {
+            CTCSSCode confirmed = mCTCSSDetector.getDetectedCode();
+            if(confirmed == null)
+            {
+                // Audio passing via holdover or stale match — not actively confirmed
+                CTCSSCode raw = mCTCSSDetector.getRawDetectedCode();
+                int lossCount = mCTCSSDetector.getLossCounter();
+                long holdoverAge = System.currentTimeMillis() - mLastToneMatchTime;
+                mLog.debug("[{}] CTCSS gate OPEN via holdover: confirmed=null raw={} lossCounter={} holdoverAge={}ms",
+                        mChannelLabel, raw != null ? raw.getDisplayString() : "none", lossCount, holdoverAge);
+            }
         }
 
         // Step 3: Apply VoxSend audio filter chain (low-pass, de-emphasis, bass boost,
@@ -727,7 +749,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 }
             });
 
-            mLog.info("CTCSSDetector initialized at {} Hz sample rate", DEMODULATED_AUDIO_SAMPLE_RATE);
+            updateChannelLabel();
+            mLog.info("[{}] CTCSSDetector initialized at {} Hz sample rate", mChannelLabel, DEMODULATED_AUDIO_SAMPLE_RATE);
         }
 
         // Initialize DCS detector at 8 kHz if DCS filtering is enabled
@@ -795,7 +818,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 }
             });
 
-            mLog.info("DCSDetector initialized for channel-level DCS filtering");
+            updateChannelLabel();
+            mLog.info("[{}] DCSDetector initialized for channel-level DCS filtering", mChannelLabel);
         }
 
         // Initialize squelch tail remover if enabled
@@ -889,6 +913,47 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             {
                 setSampleRate(sourceEvent.getValue().doubleValue());
             }
+            else if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE)
+            {
+                mChannelFrequencyHz = sourceEvent.getValue().longValue();
+                updateChannelLabel();
+            }
+        }
+    }
+
+    /**
+     * Builds and propagates the channel label to detectors.
+     * Called when either the decoder state (channel name) or frequency becomes available.
+     * Format: "ChannelName [freq MHz]" e.g. "MetroFire - Red [483.3125]"
+     */
+    private void updateChannelLabel()
+    {
+        String channelName = (mDecoderState != null) ? mDecoderState.getChannelName() : null;
+
+        StringBuilder sb = new StringBuilder();
+        if(channelName != null && !channelName.isEmpty())
+        {
+            sb.append(channelName);
+        }
+        if(mChannelFrequencyHz > 0)
+        {
+            double freqMHz = mChannelFrequencyHz / 1_000_000.0;
+            if(sb.length() > 0)
+            {
+                sb.append(" ");
+            }
+            sb.append(String.format("[%.4f]", freqMHz));
+        }
+
+        mChannelLabel = sb.toString();
+
+        if(mCTCSSDetector != null)
+        {
+            mCTCSSDetector.setChannelLabel(mChannelLabel);
+        }
+        if(mDCSDetector != null)
+        {
+            mDCSDetector.setChannelLabel(mChannelLabel);
         }
     }
 }

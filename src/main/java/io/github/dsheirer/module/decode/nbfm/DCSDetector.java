@@ -90,6 +90,9 @@ public class DCSDetector
     private float mWideBandEnergy = 0;
     private boolean mSignalQualityValid = true;
 
+    // Channel identification for log messages (e.g. "MetroFire - Red [483.3125]")
+    private String mChannelLabel = "";
+
     // Callback
     private DCSDetectorListener mListener;
 
@@ -126,7 +129,18 @@ public class DCSDetector
             }
         });
 
-        LOGGER.debug("DCSDetector initialized with {} target code(s)", targetCodes.size());
+        LOGGER.debug("{}DCSDetector initialized with {} target code(s)", mChannelLabel, targetCodes.size());
+    }
+
+    /**
+     * Sets a channel label that is prepended to all log messages for channel identification.
+     * Format example: "MetroFire - Red [483.3125]"
+     *
+     * @param label the channel label, or null/empty for no prefix
+     */
+    public void setChannelLabel(String label)
+    {
+        mChannelLabel = (label != null && !label.isEmpty()) ? "[" + label + "] " : "";
     }
 
     /**
@@ -232,18 +246,21 @@ public class DCSDetector
         // voice audio produce low band ratios (0.05-0.40), well below any useful threshold.
         // The DCS 23-bit codeword + parity check is sufficient to reject false detections.
 
-        // Reset loss tracking — we just got a detection
-        mLossCounter = 0;
         mSamplesSinceLastDetection = 0;
 
         float bandRatio = (mWideBandEnergy > 1e-10f) ? (mLowBandEnergy / mWideBandEnergy) : 0;
-        LOGGER.trace("DCS code {} detected (ratio={} confirm={}/{} target={})",
-                code, String.format("%.3f", bandRatio), mConfirmationCounter, CONFIRMATION_COUNT,
+        LOGGER.trace("{}DCS code {} detected (ratio={} confirm={}/{} target={})",
+                mChannelLabel, code, String.format("%.3f", bandRatio), mConfirmationCounter, CONFIRMATION_COUNT,
                 mTargetCodes.contains(code) ? "YES" : "NO");
 
         // Check if this code is in our allowed set
         if(!mTargetCodes.contains(code))
         {
+            // NON-TARGET code detected: do NOT reset mLossCounter.
+            // Same rationale as CTCSSDetector — broadband interference can produce spurious
+            // DCS codeword matches. If mLossCounter resets on every non-target detection,
+            // a previous target match held over from a valid transmission stays active forever.
+
             // Wrong code — track for confirmed rejection
             if(mDetectedCode == code)
             {
@@ -265,6 +282,9 @@ public class DCSDetector
             }
             return;
         }
+
+        // TARGET code detected — reset loss counter
+        mLossCounter = 0;
 
         // Code is in our allowed set
         if(mDetectedCode == code)
