@@ -182,6 +182,27 @@ public class PcmStreamManager
         broadcast(json);
     }
 
+    /**
+     * Broadcasts a voice_id message when the first LDU1 Link Control Word is decoded (~180ms after squelch open).
+     * This fires BEFORE the audio module releases audio, giving consumers a guaranteed fast SUID notification.
+     *
+     * @param system    system name from SDRTrunk configuration
+     * @param site      site name from SDRTrunk configuration
+     * @param talkgroup talkgroup identifier
+     * @param from      source radio unit identifier (SUID)
+     * @param timestamp human-readable timestamp (yyyy-MM-dd HH:mm:ss)
+     */
+    public void broadcastVoiceId(String system, String site, String talkgroup, String from, String timestamp)
+    {
+        String json = "{\"type\":\"voice_id\"" +
+                ",\"system\":\"" + escape(system) + "\"" +
+                ",\"site\":\"" + escape(site) + "\"" +
+                ",\"talkgroup\":\"" + escape(talkgroup) + "\"" +
+                ",\"from\":\"" + escape(from) + "\"" +
+                ",\"timestamp\":\"" + escape(timestamp) + "\"}";
+        broadcast(json);
+    }
+
     private static String escape(String s)
     {
         if (s == null) return "";

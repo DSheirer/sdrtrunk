@@ -35,6 +35,8 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
@@ -911,6 +913,17 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             if(lcw != null && lcw.isValid())
             {
                 processLC(lcw, message.getTimestamp(), false);
+                // Broadcast fast voice_id (~180ms after squelch open, before audio module releases audio)
+                PcmStreamManager pcmMgr = PcmStreamManager.getInstance();
+                if(pcmMgr != null)
+                {
+                    pcmMgr.broadcastVoiceId(
+                            pcmVidGetSystem(),
+                            pcmVidGetSite(),
+                            pcmVidGetIdentifier(getIdentifierCollection().getToIdentifier()),
+                            pcmVidGetIdentifier(getIdentifierCollection().getFromIdentifier()),
+                            new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(message.getTimestamp())));
+                }
                 mTrafficChannelManager.processP1TrafficLDU1(getCurrentFrequency(),
                         getIdentifierCollection().getIdentifiers(), message.getTimestamp(), ldu1.toString());
             }
@@ -2222,5 +2235,35 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void init()
     {
+    }
+
+    // -----------------------------------------------------------------------
+    // PCM voice_id helpers — extract system/site/identifier strings from the
+    // identifier collection without throwing if nothing is present yet.
+    // -----------------------------------------------------------------------
+
+    private String pcmVidGetSystem()
+    {
+        io.github.dsheirer.identifier.Identifier id =
+                getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
+        if(id instanceof SystemConfigurationIdentifier sci)
+            return sci.getValue();
+        return "";
+    }
+
+    private String pcmVidGetSite()
+    {
+        io.github.dsheirer.identifier.Identifier id =
+                getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION, Form.SITE, Role.ANY);
+        if(id instanceof SiteConfigurationIdentifier sici)
+            return sici.getValue();
+        return "";
+    }
+
+    private String pcmVidGetIdentifier(io.github.dsheirer.identifier.Identifier id)
+    {
+        if(id == null)
+            return "";
+        return id.toString();
     }
 }
