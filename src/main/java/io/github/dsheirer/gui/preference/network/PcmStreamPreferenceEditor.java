@@ -112,18 +112,18 @@ public class PcmStreamPreferenceEditor extends HBox
         root.getChildren().add(sectionHeader("MESSAGE FORMAT  ·  Newline-delimited JSON (NDJSON)"));
         Label fmtDesc = new Label(
             "Three message types flow on this port.  Each is a single JSON object terminated " +
-            "by a newline (\\n).  Use the \"type\" field to distinguish them:");
+            "by a newline (\\n).  Use the \"type\" field to distinguish them. The \"system\" and \"site\" fields reflect the names you configured in SDRTrunk for that channel -- filter client-side on these to isolate specific systems:");
         fmtDesc.setWrapText(true);
         root.getChildren().add(fmtDesc);
 
         String formatExample =
-            "// 1. Call started — emitted once when squelch opens\n" +
-            "{\"type\":\"call_start\",\"callId\":\"776b280\",\"system\":\"DANECOM\",\"talkgroup\":\"13001\",\"from\":\"1306457\",\"timestamp\":\"2026-05-20 17:17:01\"}\n\n" +
-            "// 2. PCM audio chunk — one per decoded audio buffer (~20 ms per active channel)\n" +
-            "{\"type\":\"pcm\",\"callId\":\"776b280\",\"system\":\"DANECOM\",\"talkgroup\":\"13001\",\"from\":\"1306457\",\"seq\":0,\"samples\":\"BASE64_ENCODED_PCM\"}\n" +
+            "// 1. Call started -- emitted once when squelch opens\n" +
+            "{\"type\":\"call_start\",\"callId\":\"a1b2c3d\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"from\":\"1234567\",\"timestamp\":\"2026-01-01 12:00:00\"}\n\n" +
+            "// 2. PCM audio chunk -- one per decoded audio buffer (~20 ms per active channel)\n" +
+            "{\"type\":\"pcm\",\"callId\":\"a1b2c3d\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"from\":\"1234567\",\"seq\":0,\"samples\":\"BASE64_ENCODED_PCM\"}\n" +
             "// samples = Base64-encoded 16-bit signed little-endian PCM at 8000 Hz mono\n\n" +
-            "// 3. Call ended — emitted once when squelch closes\n" +
-            "{\"type\":\"call_end\",\"callId\":\"776b280\",\"system\":\"DANECOM\",\"talkgroup\":\"13001\",\"frames\":90}";
+            "// 3. Call ended -- emitted once when squelch closes\n" +
+            "{\"type\":\"call_end\",\"callId\":\"a1b2c3d\",\"system\":\"MySystem\",\"site\":\"MySite\",\"talkgroup\":\"12345\",\"frames\":90}";
 
         root.getChildren().add(codeBox(formatExample, 200));
         root.getChildren().add(new Separator());
@@ -177,7 +177,7 @@ public class PcmStreamPreferenceEditor extends HBox
 
         Label tip = new Label(
             "💡  Multiple clients can connect simultaneously — each receives its own copy of " +
-            "the full stream.  Filter client-side by \"talkgroup\" or \"system\" to isolate " +
+            "the full stream.  Filter client-side by \"system\", \"site\", or \"talkgroup\" to isolate " +
             "specific channels.  The \"seq\" field increments per call (not globally), so a " +
             "gap in seq numbers within the same callId indicates dropped chunks.");
         tip.setWrapText(true);
