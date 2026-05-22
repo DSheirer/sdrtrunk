@@ -5,6 +5,13 @@ DSheirer/sdrtrunk changes are not repeated; only the `ap-` fork deltas are recor
 
 Versioning follows `0.6.2-ap-<n>` where `<n>` increments for each fork release.
 
+## [0.6.2-ap-14.9.8.1] - 2026-05-20
+
+Extended DCS code support.
+
+### Added
+- Extended the list of supported DCS codes from original 83 found in ETSI TS 103 236 V1.1.1 to the commonly used 104 codes supported in most modern day radios by calculating the Golay values, applying the offset and storing the values bit reversed in decimal notation. - by Paul Donahue (pauldonahue) with help of MS Copilot.
+
 ## [0.6.2-ap-14.6] - 2026-04-11
 
 Runtime-diagnostics release. Adds per-category DEBUG toggles, persistent channel table sort,
