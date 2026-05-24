@@ -19,23 +19,38 @@
 
 package io.github.dsheirer.module.decode.squelchDecoder.ctcss;
 
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.ctcss.CTCSSIdentifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.protocol.Protocol;
 
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * CTCSS tone debug message
+ * CTCSS Detector message carrying CTCSS code, state and debug info for distribution
  */
 public class CTCSSMessage extends Message
 {
-    private CTCSSCode mCTCSSCode;
-    private String mDebugMessage;
-    private CTCSSIdentifier mIdentifier;
-    private boolean mInitialThreshold;
+    private CTCSSCode mConfiguredCode = null;
+    private CTCSSCode mCTCSSCode = null;
+    private String mDebugMessage = null;
+    private CTCSSIdentifier mIdentifier = null;
+    private boolean mMutedStatus = true;
+    private boolean mFirstThreshold = false;
+    private double mPower;
+    private double mPowerThreshold;
+    private DecoderStateEvent.Event mCallEvent;
+    private SquelchCodeState mCodeState;
+
+    public enum SquelchCodeState
+    {
+        ACCEPTED,
+        REJECTED,
+        LOST
+    }
 
     /**
      * Constructs an instance
@@ -43,28 +58,41 @@ public class CTCSSMessage extends Message
     public CTCSSMessage()
     {
         super();            // takes care of timestamp
-        mCTCSSCode = null;
-        mDebugMessage = null;
-        mInitialThreshold = false;
     }
-    public CTCSSMessage(CTCSSCode code)
+
+    /**
+     * constructor
+     * @param configuredCode Configured code for unmuting audio
+     */
+    public CTCSSMessage(CTCSSCode configuredCode)
     {
         super();            // takes care of timestamp
-        mCTCSSCode = code;
-        mIdentifier = code != null ? new CTCSSIdentifier(code) : null;
-        mDebugMessage = null;
+        mConfiguredCode = configuredCode;
     }
 
     @Override
     public String toString()
     {
-        return mDebugMessage;
+        String toneString = mCTCSSCode != null ? mCTCSSCode.toString() : "None";
+        String mutedString = mMutedStatus ? "MUTED" : "UNMUTED";
+        String message = mDebugMessage != null ? mDebugMessage : "";
+
+        String s = MessageFormat.format("CTCSS: {0}, Config: {1}, Detected: {2}, 1st Thresh: {3}, Pwr: {4}, Pwr Thresh: {5}, {6}",
+                mutedString,
+                mConfiguredCode,
+                toneString,
+                mFirstThreshold,
+                String.format("%.1f", mPower),
+                String.format("%.1f", mPowerThreshold),
+                message
+        );
+        return s;
     }
 
     @Override
     public boolean isValid()
     {
-        return mInitialThreshold;
+        return true;
     }
 
     @Override
@@ -83,19 +111,65 @@ public class CTCSSMessage extends Message
         return Collections.emptyList();
     }
 
-    public void setInitialThreshold(boolean firstThreshold)
+    public void setCTCSSCode(CTCSSCode code)
     {
-        mInitialThreshold = firstThreshold;
+        mCTCSSCode = code;
+        mIdentifier = code != null ? new CTCSSIdentifier(code) : null;
     }
 
+    public CTCSSCode getCTCSSCode()
+    {
+        return mCTCSSCode;
+    }
 
     public void setMessage(String s)
     {
         mDebugMessage = s;
     }
 
-    public void setMessage(String message, String code, String format, String format1, String format2)
+    public void setMutedStatus(boolean b)
     {
-
+        mMutedStatus = b;
     }
+
+    public boolean getMutedStatus()
+    {
+        return mMutedStatus;
+    }
+
+    public void setFirstThreshold(boolean b)
+    {
+        mFirstThreshold = b;
+    }
+
+    public void setPower(double power)
+    {
+        mPower = power;
+    }
+
+    public void setPowerThreshold(double powerThreshold)
+    {
+        mPowerThreshold = powerThreshold;
+    }
+
+    public void setCodeState(SquelchCodeState state)
+    {
+        mCodeState = state;
+    }
+
+    public SquelchCodeState getCodeState()
+    {
+        return mCodeState;
+    }
+
+    public void setCallEvent(DecoderStateEvent.Event state)
+    {
+        mCallEvent = state;
+    }
+
+    public DecoderStateEvent.Event getCallEvent()
+    {
+        return mCallEvent;
+    }
+
 }

@@ -93,7 +93,7 @@ public abstract class AnalogDecoderState extends DecoderState implements ISource
     }
 
     /**
-     * Creates/starts a decode call evnet.
+     * Creates/starts a decode call event.
      */
     private void startCallEvent()
     {

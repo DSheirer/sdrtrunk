@@ -30,7 +30,7 @@ import java.util.Set;
 
 /**
  * Channel-level tone/code filter configuration. Supports CTCSS & DCS.
- * Multiple filters can be configured per channel. Audio is only passed when at least one
+ * Audio is only passed when at least one
  * configured filter matches the received signal.
  */
 public class squelchDecoderConfig

@@ -151,7 +151,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             // High pass audio filter
             // Note: normally the label and its toggle switch are one cell.  They were split to make the next row
-            //  look better. The label is manually created and placed here.  Might want to create a new grid plane instead.
+            //  look better. The label is manually created and placed here.  Might want to create a new grid pane instead.
             Label HPFLabel = new Label("High-pass Audio Filter (300 Hz)");
             GridPane.setHalignment(HPFLabel, HPos.RIGHT);
             GridPane.setConstraints(HPFLabel, 2, 1);
@@ -163,6 +163,12 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getALCEnable(), 4, 1);
             gridPane.getChildren().add(getALCEnable());
 
+            /**
+             * The intention here is to have talkgroup and squelch decoder settings on a single line at the bottom
+             * of the pane. In the future a button can be added to add additional talkgroups and filter lines to
+             * allow for multiple decoders on a single NBFM channel. For the time being, a user can "clone" the
+             * channel and setup another decoder at the expense of another channel processing thread.
+             */
             // talkgroup
             Label talkgroupLabel = new Label("Talkgroup To Assign");
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
@@ -185,7 +191,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
                 updateSquelchCodeVisibility();
                 mCtcssCodeCombo.setValue(null);
                 mDcsCodeCombo.setValue(null);
-                // this hack solves the problem of the promptText going away after using the comboBox first time:
+                // this hack solves the problem of the promptText going away after using the comboBox first time (Java 25):
                 mCtcssCodeCombo.setSkin(new ComboBoxListViewSkin<>(mCtcssCodeCombo));
                 mDcsCodeCombo.setSkin(new ComboBoxListViewSkin<>(mDcsCodeCombo));
                 modifiedProperty().set(true);
@@ -549,9 +555,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             if(savedSquelchDecoders != null && !savedSquelchDecoders.isEmpty())
             {
 
-                // TODO add multiple decodes
+                // At present time, only one decoder per channel is used
                 squelchDecoderConfig filter = savedSquelchDecoders.get(0);
-                //
                 mSquelchTypeCombo.setValue(filter.getSquelchType());
                 updateSquelchCodeVisibility();
                 if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.NONE)

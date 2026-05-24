@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.squelchDecoder.dcs;
 
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
@@ -30,6 +31,8 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IRealBufferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 /**
  * Digital Coded Squelch (DCS) demodulator/decoder designed to work with FM demodulated 8 kHz input audio samples and
@@ -43,6 +46,10 @@ import org.slf4j.LoggerFactory;
  * designed to work with 8 kHz audio sample rate.  Each baud period is (8,000 / 134.4) = 59.52 samples per symbol and
  * a full DCS tone sequence is 23 bits * 59.52 samples/bit = 1369 samples.  The DCS tone sequence is continuously
  * transmitted at a rate of 134.4 bits-per-second / 23 = 5.84 repeats per second while the source continues transmitting.
+ *
+ * This decoder was modified to optionally run in inlineMode, when it is directly called from NBFM decoder for
+ * channel level DCS detection and muting. This determination is made during instantiation.
+ *
  */
 public class DCSDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
@@ -58,6 +65,9 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
     private static final int IDEAL_SYMBOL_TRANSITION_MIN = 11;
     private static final int IDEAL_SYMBOL_TRANSITION_MAX = 19;
     private static final int CODE_MASK = 0x7FFFFF; //23-bit mask
+    private static final int LOSS_CODEWORDS = 4;
+    private static final int CONFIRMATION_COUNT = 2;
+
     private static float[] sLowPassFilterCoefficients;
     private boolean mSymbol = false;
     private float mBaudCounter = 0f;
@@ -65,6 +75,15 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
     private float[] mResidual = new float[OVERLAP];
     private int mCode = 0;
     private int mExcessiveOneSequenceCounter = 0;
+    private boolean mInlineMode = true;
+    private Set<DCSCode> mTargetCodes = null;
+    private int mConfirmationCounter = 0;
+    private int mCodewordsSinceMatch = 0;
+    private DCSCode mConfiguredCode = null;
+    private int mSamplesToSkip = 0;
+    private DCSMessage mDCSMessage = null;
+    private boolean mMuted = true;
+
 
     static
     {
@@ -100,8 +119,20 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
     /**
      * Constructs an instance
      */
+    public DCSDecoder(Set<DCSCode> targetCodes)
+    {
+        if(targetCodes != null && !targetCodes.isEmpty())
+        {
+            DCSCode configuredCode = targetCodes.iterator().next();
+            mConfiguredCode = DCSCode.hasValue(configuredCode.getValue()) ? configuredCode : DCSCode.UNKNOWN;
+        }
+        mTargetCodes = targetCodes;
+        mInlineMode = true;
+    }
+
     public DCSDecoder()
     {
+        mInlineMode = false;
     }
 
     /**
@@ -121,7 +152,6 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
     {
         return this::receive;
     }
-
     /**
      * Processes the demodulated 8 kHz audio samples to extract the 300-baud LTR signalling and delivers the decoded
      * symbol array to the registered listener.
@@ -129,11 +159,23 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
      */
     public void receive(float[] samples)
     {
+        process(samples);
+    }
+
+    public DCSMessage process(float[] samples)
+    {
+        if(!mInlineMode)
+        {
+            mDCSMessage = new DCSMessage();
+        }
+        else
+        {
+            mDCSMessage = new DCSMessage(mConfiguredCode);
+        }
         if(getMessageListener() != null)
         {
             float[] filtered = mLowPassFilter.filter(samples);
             float[] buffer = new float[filtered.length + OVERLAP];
-            int samplesToSkip = 0;
             int timingAdjust = 0;
             float slope = 0;
 
@@ -146,9 +188,9 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
                 for(int bufferPointer = 0; bufferPointer < samples.length; bufferPointer++)
                 {
                     //Don't calculate slope if we're within the baud period following the last symbol transition
-                    if(samplesToSkip > 0)
+                    if(mSamplesToSkip > 0)
                     {
-                        samplesToSkip--;
+                        mSamplesToSkip--;
                     }
                     else
                     {
@@ -176,7 +218,7 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
                                 }
 
                                 mBaudCounter += timingAdjust;
-                                samplesToSkip = POST_TRANSITION_SAMPLES_TO_SKIP + timingAdjust;
+                                mSamplesToSkip = POST_TRANSITION_SAMPLES_TO_SKIP + timingAdjust;
                             }
                             else if(slope < mMaxSlope)
                             {
@@ -205,7 +247,7 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
                                 }
 
                                 mBaudCounter += timingAdjust;
-                                samplesToSkip = POST_TRANSITION_SAMPLES_TO_SKIP + timingAdjust;
+                                mSamplesToSkip = POST_TRANSITION_SAMPLES_TO_SKIP + timingAdjust;
                             }
                             else if(slope > mMaxSlope)
                             {
@@ -221,9 +263,25 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
                     {
                         //Update the code value adding in the current symbol
                         mCode = (Integer.rotateLeft(mCode, 1) + (mSymbol ? 1 : 0)) & CODE_MASK;
-                        if(DCSCode.hasValue(mCode))
+                        if(!mInlineMode)
                         {
-                            getMessageListener().receive(new DCSMessage(DCSCode.fromValue(mCode), System.currentTimeMillis()));
+                            if(DCSCode.hasValue(mCode))
+                            {
+                                mDCSMessage.setDCSCode(DCSCode.fromValue(mCode));
+                                getMessageListener().receive(mDCSMessage);
+                            }
+                        }
+                        else
+                        {
+                            if(DCSCode.hasValue(mCode))
+                            {
+                                detectionLogicTree(DCSCode.fromValue(mCode));
+                            }
+                            else
+                            {
+                                detectionLogicTree(null);
+                            }
+
                         }
 
                         mBaudCounter -= BAUD_LENGTH;
@@ -253,6 +311,7 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
                 mLog.warn("Unexpected error while processing DCS samples", e);
             }
         }
+        return mDCSMessage;
     }
 
     /**
@@ -289,5 +348,115 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
 //        mLog.info("SumXX: " + sumXX);
 
         return (float)(sumXY / SLOPE_CALCULATION_SUM_XX);
+    }
+
+    public void reset()
+    {
+        mSymbol = false;
+        mBaudCounter = 0;
+        mMaxSlope = 0;
+        mCode = 0;
+        mExcessiveOneSequenceCounter = 0;
+        mSamplesToSkip = 0;
+        mConfirmationCounter = 0;
+        mCodewordsSinceMatch = 0;
+        mResidual = new float[OVERLAP];
+    }
+
+    /**
+     * Called when noiseSquelch closes in inlineMode
+     * @return DCSMessage
+     */
+    public DCSMessage inlineReset()
+    {
+        reset();
+        mMuted = true;
+        DCSMessage message = new DCSMessage(mConfiguredCode);
+        message.setMessage("Noise squelch closed.");
+        message.setDCSCode(null);
+        message.setMutedStatus(true);
+        message.setCallEvent(DecoderStateEvent.Event.END);
+        message.setCodeState(DCSMessage.SquelchCodeState.LOST);
+        return message;
+    }
+    /**
+     * Handles detection logic of a decoded DCS code in inlineMode
+     * @param newCode currently detected DCS code, or null if no code detected
+     */
+    private void detectionLogicTree(DCSCode newCode)
+    {
+        if (mMuted)
+        {
+            if (newCode != null && mTargetCodes.contains(newCode))
+            {
+                if (mConfirmationCounter >= CONFIRMATION_COUNT)
+                {
+                    // unmute and report detected code
+                    mMuted = false;
+                    mDCSMessage.setMutedStatus(false);
+                    mDCSMessage.setDCSCode(newCode);
+                    mDCSMessage.setMessage("Correct DCS code detected, confirmation passed, now unmuting.");
+                    mDCSMessage.setCallEvent(DecoderStateEvent.Event.START);
+                    mDCSMessage.setCodeState(DCSMessage.SquelchCodeState.ACCEPTED);
+                    mCodewordsSinceMatch = 0;
+                }
+                else
+                {
+                    // increment counter and wait for next detection
+                    mConfirmationCounter++;
+                    mDCSMessage.setDCSCode(newCode);
+                    mDCSMessage.setMessage("Waiting for consecutive correct detections.");
+                }
+            }
+            else    // wrong tone or no tone
+            {
+                mConfirmationCounter = 0;
+                mDCSMessage.setMutedStatus(true);
+                mDCSMessage.setDCSCode(newCode);
+                // no other state changes at this time.
+            }
+        }
+        else    // unmuted and call is ongoing
+        {
+            if (newCode != null && mTargetCodes.contains(newCode))
+            {
+                // all is good, call continues
+                mCodewordsSinceMatch = 0;
+                mDCSMessage.setMutedStatus(false);
+                mDCSMessage.setDCSCode(newCode);
+                mDCSMessage.setCallEvent(DecoderStateEvent.Event.CONTINUATION);
+            }
+            else
+            {
+                if (mCodewordsSinceMatch >= LOSS_CODEWORDS)
+                {
+                    // Mute audio and report rejected code or lost tone
+                    mMuted = true;
+                    mDCSMessage.setMutedStatus(true);
+                    mDCSMessage.setDCSCode(newCode);
+                    mDCSMessage.setMessage("Incorrect DCS code or code lost, now muting.");
+                    mDCSMessage.setCallEvent(DecoderStateEvent.Event.END);
+                    mConfirmationCounter = 0;
+                    if(newCode != null)
+                    {
+                        mDCSMessage.setCodeState(DCSMessage.SquelchCodeState.REJECTED);
+                    }
+                    else
+                    {
+                        mDCSMessage.setCodeState(DCSMessage.SquelchCodeState.LOST);
+                    }
+                }
+                else
+                {
+                    // all is still good with the call, but a bad tone was decoded and the closeCounter hasn't
+                    //  reached a threshold yet.
+                    mCodewordsSinceMatch++;
+                    mDCSMessage.setMutedStatus(false);
+                    mDCSMessage.setDCSCode(newCode);
+                    mDCSMessage.setMessage("Waiting for consecutive incorrect or no code.");
+                    mDCSMessage.setCallEvent(DecoderStateEvent.Event.CONTINUATION);
+                }
+            }
+        }
     }
 }

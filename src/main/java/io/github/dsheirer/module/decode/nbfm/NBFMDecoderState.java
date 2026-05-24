@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.nbfm;
 
-import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -29,6 +28,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.AnalogDecoderState;
 import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSMessage;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSMessage;
 import io.github.dsheirer.module.decode.squelchDecoder.squelchDecoderConfig;
 import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
@@ -50,9 +50,6 @@ public class NBFMDecoderState extends AnalogDecoderState
     // Tone filter configuration (from DecodeConfigNBFM)
     private boolean mSquelchDecoderEnabled = false;
     private List<squelchDecoderConfig> mConfiguredSquelchDecoders = new ArrayList<>();
-
-    // De-emphasis configuration
-    private DecodeConfigNBFM.DeemphasisMode mDeemphasisMode = DecodeConfigNBFM.DeemphasisMode.NONE;
 
     // Current status
     private volatile String mToneStatus = "No tone detected";
@@ -76,8 +73,6 @@ public class NBFMDecoderState extends AnalogDecoderState
         {
             mConfiguredSquelchDecoders.addAll(decodeConfig.getSquelchDecoders());
         }
-
-        mDeemphasisMode = decodeConfig.getDeemphasis();
     }
 
     @Override
@@ -99,9 +94,9 @@ public class NBFMDecoderState extends AnalogDecoderState
     }
 
     /**
-     * Called by NBFMDecoder when a matching CTCSS tone is detected (allowed)
+     * Called by IMessage receive when a matching CTCSS tone is detected (allowed)
      */
-    public void setDetectedCTCSS(CTCSSCode code)
+    public void setAcceptedCTCSS(CTCSSCode code)
     {
         if(code != null)
         {
@@ -111,9 +106,9 @@ public class NBFMDecoderState extends AnalogDecoderState
     }
 
     /**
-     * Called by NBFMDecoder when a matching DCS code is detected (allowed)
+     * Called by IMessage receive when a matching DCS code is detected (allowed)
      */
-    public void setDetectedDCS(DCSCode code)
+    public void setAcceptedDCS(DCSCode code)
     {
         if(code != null)
         {
@@ -123,7 +118,7 @@ public class NBFMDecoderState extends AnalogDecoderState
     }
 
     /**
-     * Called by NBFMDecoder when a non-matching CTCSS tone is detected (rejected)
+     * Called by IMessage receive when a non-matching CTCSS tone is detected (rejected)
      */
     public void setRejectedCTCSS(CTCSSCode code)
     {
@@ -135,7 +130,7 @@ public class NBFMDecoderState extends AnalogDecoderState
     }
 
     /**
-     * Called by NBFMDecoder when a non-matching DCS code is detected (rejected)
+     * Called by IMessage receive when a non-matching DCS code is detected (rejected)
      */
     public void setRejectedDCS(DCSCode code)
     {
@@ -147,11 +142,12 @@ public class NBFMDecoderState extends AnalogDecoderState
     }
 
     /**
-     * Called by NBFMDecoder when tone is lost
+     * Called by IMessage receive when tone is lost
      */
     public void setToneLost()
     {
         mToneStatus = "No tone detected";
+        getIdentifierCollection().remove(Form.TONE);
     }
 
     private void incrementCount(String toneLabel, boolean accepted)
@@ -170,6 +166,9 @@ public class NBFMDecoderState extends AnalogDecoderState
         }
     }
 
+    /**
+     *  Provides information for UI display in Now Playing panel.
+     */
     @Override
     public String getActivitySummary()
     {
@@ -192,8 +191,6 @@ public class NBFMDecoderState extends AnalogDecoderState
             sb.append("Disabled\n");
         }
 
-        //sb.append("\nCurrent Status: ").append(mToneStatus).append("\n");
-
         synchronized(mToneCounts)
         {
             if(!mToneCounts.isEmpty())
@@ -212,43 +209,42 @@ public class NBFMDecoderState extends AnalogDecoderState
         sb.append("\n");
         return sb.toString();
     }
+
+    /**
+     * Listener for IMessages originating in NBFM decoder. If the squelch decoders are enabled,
+     * the message contains information on decoded squelch code (CTCSS/DCS) which is added to the
+     * identifier collection. A tally is collected for codes accepted and rejected for use
+     * in getActivitySummary.
+     *
+     */
     @Override
     public void receive(IMessage message)
     {
         if(message instanceof CTCSSMessage ctcssMessage)
         {
-//            if(ctcssMessage.isToneLost())
-//            {
-//                // Tone was lost - clear the identifier
-//                getIdentifierCollection().remove(Form.TONE);
-//                mCurrentCode = CTCSSCode.UNKNOWN;
-//            }
-//            else
-//            {
-//                mCurrentCode = ctcssMessage.getCTCSSCode();
-//                if(!mCtcssCodeCountsMap.containsKey(mCurrentCode))
-//                {
-//                    mCtcssCodeCountsMap.put(mCurrentCode, 1);
-//                }
-//                else
-//                {
-//                    mCtcssCodeCountsMap.put(mCurrentCode, mCtcssCodeCountsMap.get(mCurrentCode) + 1);
-//                }
-                getIdentifierCollection().update(ctcssMessage.getIdentifiers());
-//            }
+            getIdentifierCollection().update(ctcssMessage.getIdentifiers());
+            if (ctcssMessage.getCodeState() != null)
+            {
+                switch (ctcssMessage.getCodeState())
+                {
+                    case ACCEPTED -> setAcceptedCTCSS(ctcssMessage.getCTCSSCode());
+                    case REJECTED -> setRejectedCTCSS(ctcssMessage.getCTCSSCode());
+                    case LOST -> setToneLost();
+                }
+            }
+        }
+        if(message instanceof DCSMessage dcsMessage)
+        {
+            getIdentifierCollection().update(dcsMessage.getIdentifiers());
+            if (dcsMessage.getCodeState() != null)
+            {
+                switch (dcsMessage.getCodeState())
+                {
+                    case ACCEPTED -> setAcceptedDCS(dcsMessage.getDCSCode());
+                    case REJECTED -> setRejectedDCS(dcsMessage.getDCSCode());
+                    case LOST -> setToneLost();
+                }
+            }
         }
     }
-//    @Override
-//    public void receiveDecoderStateEvent(DecoderStateEvent event)
-//    {
-//        switch(event.getEvent())
-//        {
-//            case REQUEST_RESET:
-//                resetState();
-//                break;
-//            default:
-//                break;
-//        }
-//    }
-
 }

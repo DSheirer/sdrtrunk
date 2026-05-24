@@ -19,10 +19,14 @@
 
 package io.github.dsheirer.module.decode.squelchDecoder.dcs;
 
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.dcs.DCSIdentifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSMessage;
 import io.github.dsheirer.protocol.Protocol;
+
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,8 +35,20 @@ import java.util.List;
  */
 public class DCSMessage extends Message
 {
-    private final DCSCode mDCSCode;
+    private DCSCode mDCSCode = null;
+    private DCSCode mConfiguredCode = null;
+    private String mDebugMessage = null;
+    private DCSIdentifier mIdentifier = null;
+    private boolean mMutedStatus = true;
+    private DecoderStateEvent.Event mCallEvent;
+    private SquelchCodeState mCodeState;
 
+    public enum SquelchCodeState
+    {
+        ACCEPTED,
+        REJECTED,
+        LOST
+    }
     /**
      * Constructs an instance
      * @param code that was detected
@@ -40,14 +56,33 @@ public class DCSMessage extends Message
      */
     public DCSMessage(DCSCode code, long timestamp)
     {
-        super(timestamp);
+        super();
         mDCSCode = code;
     }
+    public DCSMessage(DCSCode configuredCode)
+    {
+        super();    // takes care of timestamp
+        mConfiguredCode = configuredCode;
+    }
 
+    public DCSMessage()
+    {
+        super();
+    }
     @Override
     public String toString()
     {
-        return "Digital Coded Squelch (DCS) Detected: " + mDCSCode.toString();
+        String DCSString = mDCSCode != null ? mDCSCode.toString() : "None";
+        String mutedString = mMutedStatus ? "MUTED" : "UNMUTED";
+        String message = mDebugMessage != null ? mDebugMessage : "";
+
+        String s = MessageFormat.format("DCS: {0}, Config: {1}, Detected: {2}, {3}",
+                mutedString,
+                mConfiguredCode,
+                DCSString,
+                message
+        );
+        return s;
     }
 
     /**
@@ -74,6 +109,51 @@ public class DCSMessage extends Message
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.singletonList(new DCSIdentifier(mDCSCode));
+        if(mIdentifier != null)
+            return Collections.singletonList(mIdentifier);
+        else
+            return Collections.emptyList();
     }
+
+    public void setDCSCode(DCSCode code)
+    {
+        mDCSCode = code;
+        mIdentifier = code != null ? new DCSIdentifier(code) : null;
+    }
+
+    public void setMessage(String s)
+    {
+        mDebugMessage = s;
+    }
+
+    public void setMutedStatus(boolean b)
+    {
+        mMutedStatus = b;
+    }
+
+    public boolean getMutedStatus()
+    {
+        return mMutedStatus;
+    }
+
+    public void setCodeState(SquelchCodeState state)
+    {
+        mCodeState = state;
+    }
+
+    public SquelchCodeState getCodeState()
+    {
+        return mCodeState;
+    }
+
+    public void setCallEvent(DecoderStateEvent.Event state)
+    {
+        mCallEvent = state;
+    }
+
+    public DecoderStateEvent.Event getCallEvent()
+    {
+        return mCallEvent;
+    }
+
 }

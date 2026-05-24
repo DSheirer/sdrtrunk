@@ -56,13 +56,12 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
      * Per TIA-603-E, all NBFM use a -6 dB per octave roll off from 300 Hz to 3000 Hz.
      * It also specifies an additional -12 dB above 2500 (not implemented to save on filter passes, the resampler
      * takes care of a lot of that), and an additional -6 dB below 500 (not implemented to save on filter passes, the
-     * existing high pass filter takes care of most of that).
+     * existing high pass filter takes care of most of that). European standard has same specifications (unlike
+     * commercial FM, which the search engines struggle with).
      */
     public enum DeemphasisMode
     {
         NONE("None", 0),
-        //CEPT_53US("53 µs (Europe/CEPT)", 18867),
-        //US_75US("75 µs (North America)", 13333),
         //OTHER_166US("166 µs (Other)", 6024),
         NBFM_300("-6dB/octave @ 300-3KHz", 300);
 
@@ -296,7 +295,6 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     /**
      * Indicates if squelch filtering is enabled for this channel
      */
-    //@JacksonXmlProperty(isAttribute = true, localName = "squelchFilterEnabled")
     @JsonIgnore
     public boolean isSquelchDecoderEnabled()
     {
@@ -309,6 +307,7 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
      * FM de-emphasis mode. Standard FM broadcasting uses pre-emphasis to boost high
      * frequencies during transmission. De-emphasis restores flat frequency response
      * during receive, improving audio clarity.
+     * TIA-603-E is the US standard for NBFM de-emphasis.
      */
     @JacksonXmlProperty(isAttribute = true, localName = "deemphasis")
     public DeemphasisMode getDeemphasis()

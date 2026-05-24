@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
- * Digital Coded Squelch code identifier.  This is decoded from the transmitted signal and represents the FROM role.
+ * Continuous Tone Coded Squelch code identifier.  This is decoded from the transmitted signal and represents the FROM role.
  */
 public class CTCSSIdentifier extends Identifier<CTCSSCode>
 {
