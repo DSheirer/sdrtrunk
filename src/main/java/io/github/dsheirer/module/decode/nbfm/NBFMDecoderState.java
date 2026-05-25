@@ -198,9 +198,17 @@ public class NBFMDecoderState extends AnalogDecoderState
                 sb.append("\nDetected codes:\n");
                 for(Map.Entry<String, int[]> entry : mToneCounts.entrySet())
                 {
+                    String status;
                     int accepted = entry.getValue()[0];
                     int rejected = entry.getValue()[1];
-                    String status = "ALLOWED (" + accepted + ") REJECTED (" + rejected + ")";
+                    if(accepted > 0)
+                    {
+                        status = "ALLOWED (" + accepted + ")";
+                    }
+                    else
+                    {
+                        status = "REJECTED (" + rejected + ")";
+                    }
                     sb.append("\t").append(entry.getKey()).append(" - ").append(status).append("\n");
                 }
             }

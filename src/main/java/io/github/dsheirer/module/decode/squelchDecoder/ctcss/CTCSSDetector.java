@@ -59,6 +59,8 @@ public class CTCSSDetector
     private int mOpenCounter = 0;
     private int mCloseCounter = 0;
     private boolean mMuted = true;
+    private int mRejectedQualification = 0;
+    private CTCSSCode mPreviousRejectedCode = null;
 
     private final List<CTCSSCode> mTargetCodes;      // codes we are looking to match in this channel
     private final float[] mDetectingFrequencies;
@@ -227,12 +229,50 @@ public class CTCSSDetector
                     mCTCSSMessage.setMessage("Waiting for consecutive correct detections.");
                 }
             }
-            else    // wrong tone or no tone
+            else    // wrong tone or no tone, still muted
             {
                 mOpenCounter = 0;
                 mCTCSSMessage.setMutedStatus(true);
                 mCTCSSMessage.setCTCSSCode(newCode);
-                // no other state changes at this time.
+                if(newCode != null)
+                {
+                    /*
+                     * Qualify the rejected code so that the information in the Now Playing -> Details tab
+                     * is accurate in case someone doesn't know the correct squelch code for this channel.
+                     * We don't want to display codes that are just single detections in noise.
+                     */
+                    if(mRejectedQualification == OPEN_THRESHOLD_COUNT)
+                    {
+                        if(newCode == mPreviousRejectedCode)
+                        {
+                            mCTCSSMessage.setCodeState(CTCSSMessage.SquelchCodeState.REJECTED);
+                            // this will increment past the OPEN_THRESHOLD_COUNT so the rejected state is only sent once. (== above)
+                            mRejectedQualification++;
+                        }
+                        else
+                        {
+                            mRejectedQualification = 0;
+                            mPreviousRejectedCode = newCode;
+                        }
+                    }
+                    else
+                    {
+                        if(newCode == mPreviousRejectedCode)
+                        {
+                            mRejectedQualification++;
+
+                        }
+                        else
+                        {
+                            mRejectedQualification = 0;
+                            mPreviousRejectedCode = newCode;
+                        }
+                    }
+                }
+                else
+                {
+                    mCTCSSMessage.setCodeState(CTCSSMessage.SquelchCodeState.LOST);
+                }
             }
         }
         else    // unmuted and call is ongoing
@@ -293,6 +333,8 @@ public class CTCSSDetector
         mMuted = true;
         mCloseCounter = 0;
         mOpenCounter = 0;
+        mPreviousRejectedCode = null;
+        mRejectedQualification = 0;
         return message;
     }
 

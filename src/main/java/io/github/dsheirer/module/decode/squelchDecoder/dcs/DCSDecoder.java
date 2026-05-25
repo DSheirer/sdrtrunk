@@ -413,7 +413,14 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
                 mConfirmationCounter = 0;
                 mDCSMessage.setMutedStatus(true);
                 mDCSMessage.setDCSCode(newCode);
-                // no other state changes at this time.
+                if(newCode != null)
+                {
+                    mDCSMessage.setCodeState(DCSMessage.SquelchCodeState.REJECTED);
+                }
+                else
+                {
+                    mDCSMessage.setCodeState(DCSMessage.SquelchCodeState.LOST);
+                }
             }
         }
         else    // unmuted and call is ongoing
