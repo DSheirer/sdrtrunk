@@ -166,7 +166,7 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
 
     /**
      * Process this audio buffer looking for a DCS code. It takes 2.6 512 sample-sized buffers to detecte a code.
-     * @param samples
+     * @param samples audio samples to decode (array size is 512)
      * @return DCSMessage to notify a caller (usually NBFMDecoder) that a code was receieved or not for this audio buffer.
      * Since it requires 2.6 buffers to detect/reject a code, this is usually null. Null indicates no state change.
      */
@@ -398,7 +398,7 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
      * Handles detection logic of a decoded DCS code in inlineMode. This is called when there is a valid code
      * or at least 23 bit periods have elapsed since the previous code, if any.
      * @param newCode currently detected DCS code, or null if no code detected
-     * @return DCSmessage containing detected code, optional string message, call event info, musted status
+     * @return DCSMessage containing detected code, optional string message, call event info, muted status
      */
     private DCSMessage detectionLogicTree(DCSCode newCode)
     {

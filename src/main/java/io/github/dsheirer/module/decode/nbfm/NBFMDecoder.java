@@ -39,6 +39,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSMessage;
 import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSDecoder;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSEncode;
 import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSMessage;
 import io.github.dsheirer.module.decode.squelchDecoder.squelchDecoderConfig;
 import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
@@ -135,6 +136,9 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 }
             }
         });
+
+        int dummy = DCSEncode.encode(DCSEncode.OctStr2Int("036"));
+
     }
 
     /**
