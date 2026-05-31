@@ -23,7 +23,6 @@ import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.dcs.DCSIdentifier;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSMessage;
 import io.github.dsheirer.protocol.Protocol;
 
 import java.text.MessageFormat;

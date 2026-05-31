@@ -20,8 +20,6 @@
 package io.github.dsheirer.module.decode.squelchDecoder.ctcss;
 
 import io.github.dsheirer.channel.state.DecoderStateEvent;
-import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +35,7 @@ import java.util.Set;
  * - Run a standard deviation on the array of detected tones to determine a threshold
  * - Reports the strongest matching tone if it exceeds the threshold
  * Processing can be logged when the decoded messages log is turned on in the channel configuration of the playlist
+ * or by viewing the messages tab in the Now Playing window.
  */
 public class CTCSSDetector
 {

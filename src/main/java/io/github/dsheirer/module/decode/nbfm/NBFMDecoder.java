@@ -80,6 +80,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private Set<DCSCode> mConfiguredDCSCodes = new HashSet<>();
     private CTCSSDetector mCTCSSDetector = null;
     private DCSDecoder mDCSDetector = null;
+    private boolean mMute = true;
 
     /**
      * Constructs an instance
@@ -497,12 +498,11 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
     /**
      * Process the Resampled audio for squelch decoding.  This also where audio is muted if no tone code match.
-     *
      * @param resampled audio buffer
      */
+
     private void processResampledAudio(float [] resampled)
     {
-        boolean mute = true;
         if(!mNoiseSquelch.isSquelched())
         {
             if(mCTCSSDetector != null)
@@ -514,18 +514,26 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                     // handles START, CONTINUATION, END.
                     broadcast(new DecoderStateEvent(this, ctcssMessage.getCallEvent(), State.CALL, 0));
                 }
-                mute = ctcssMessage.getMutedStatus();
+                mMute = ctcssMessage.getMutedStatus();
             }
+            /*
+             * While the CTCSS decoder can determine a tone in a single buffer of resampled audio, the DCS decoder
+             * requires 2.6 buffers to determine a code. DCSMessage will be null for audio buffers where there is
+             * no state change.
+             */
             if(mDCSDetector != null)
             {
                 DCSMessage dcsMessage = mDCSDetector.process(resampled);
-                getMessageListener().receive(dcsMessage);     // sending: one of the listeners is NBFMDecoderState
-                if(dcsMessage.getCallEvent() != null)
+                if (dcsMessage != null)
                 {
-                    // handles START, CONTINUATION, END.
-                    broadcast(new DecoderStateEvent(this, dcsMessage.getCallEvent(), State.CALL, 0));
+                    getMessageListener().receive(dcsMessage);     // sending: one of the listeners is NBFMDecoderState
+                    if (dcsMessage.getCallEvent() != null)
+                    {
+                        // handles START, CONTINUATION, END.
+                        broadcast(new DecoderStateEvent(this, dcsMessage.getCallEvent(), State.CALL, 0));
+                    }
+                    mMute = dcsMessage.getMutedStatus();
                 }
-                mute = dcsMessage.getMutedStatus();
             }
         }
         else
@@ -537,25 +545,24 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 CTCSSMessage ctcssMessage = mCTCSSDetector.reset();
                 getMessageListener().receive(ctcssMessage);     // sending: one of the listeners is NBFMDecoderState
                 notifyCallEnd();
-                mute = ctcssMessage.getMutedStatus();
+                mMute = true;
             }
             if(mDCSDetector != null)
             {
                 DCSMessage dcsMessage = mDCSDetector.inlineReset();
                 getMessageListener().receive(dcsMessage);       // sending: one of the listeners is NBFMDecoderState
                 notifyCallEnd();
-                mute = dcsMessage.getMutedStatus();
+                mMute = true;
             }
         }
 
-        if(mSquelchDecoderEnabled && mute)
+        if(mSquelchDecoderEnabled && mMute)
         {
             return;     // drop audio buffer here for muting
         }
 
         broadcast(resampled);
     }
-
 
     /**
      * Monitors sample rate change source event(s) to set up the filters, decimation, and demodulator.
