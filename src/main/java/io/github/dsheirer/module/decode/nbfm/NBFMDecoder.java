@@ -543,7 +543,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         else
         {
             // there can still be one buffer's worth of resampled audio after .isSquelched()
-            // in this logic, the last buffer isn't processed by the squelch decoder
+            // which may result in two consectutive paths here. While the squelch decoders will mute here,
+            // the noise squelch will mute audio in AudioModule.
             if(mCTCSSDetector != null)
             {
                 CTCSSMessage ctcssMessage = mCTCSSDetector.reset();

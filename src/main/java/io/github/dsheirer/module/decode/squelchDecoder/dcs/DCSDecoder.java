@@ -65,8 +65,8 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
     private static final int IDEAL_SYMBOL_TRANSITION_MIN = 11;
     private static final int IDEAL_SYMBOL_TRANSITION_MAX = 19;
     private static final int CODE_MASK = 0x7FFFFF; //23-bit mask
-    private static final int LOSS_CODEWORDS = 4;
-    private static final int CONFIRMATION_COUNT = 2;
+    private static final int LOSS_CODEWORDS = 3;
+    private static final int CONFIRMATION_COUNT = 1;        // one confirming, unmutes on second decode
     private static final int BIT_THRESHOLD_FOR_LOSS = 24;   // one more than actually needed
 
     private static float[] sLowPassFilterCoefficients;
