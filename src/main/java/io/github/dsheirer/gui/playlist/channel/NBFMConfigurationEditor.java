@@ -163,7 +163,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getALCEnable(), 4, 1);
             gridPane.getChildren().add(getALCEnable());
 
-            /**
+            /*
              * The intention here is to have talkgroup and squelch decoder settings on a single line at the bottom
              * of the pane. In the future a button can be added to add additional talkgroups and filter lines to
              * allow for multiple decoders on a single NBFM channel. For the time being, a user can "clone" the

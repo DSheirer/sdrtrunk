@@ -83,7 +83,6 @@ public class DCSDecoder extends Decoder implements IRealBufferListener, Listener
     private DCSCode mConfiguredCode = null;
     private int mSamplesToSkip = 0;
     private DCSMessage detectionMessage = null;
-    //private DCSMessage mInlineDCSMessage = null;
     private boolean mMuted = true;
     private int mBitCounter = 0;
 
