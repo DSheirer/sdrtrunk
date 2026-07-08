@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -112,8 +112,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private List<Channel> mManagedPhase1TrafficChannels;
     private List<Channel> mManagedPhase2TrafficChannels;
     private Map<Long,Channel> mAllocatedTrafficChannelMap = new HashMap<>();
-    private Map<Long,P25TrafficChannelEventTracker> mTS1ChannelGrantEventMap = new HashMap<>();
-    private Map<Long,P25TrafficChannelEventTracker> mTS2ChannelGrantEventMap = new HashMap<>();
+    private Map<Long, P25ChannelEventTracker> mTS1ChannelGrantEventMap = new HashMap<>();
+    private Map<Long, P25ChannelEventTracker> mTS2ChannelGrantEventMap = new HashMap<>();
     private ReentrantLock mLock = new ReentrantLock();
     private Map<Integer, IFrequencyBand> mFrequencyBandMap = new ConcurrentHashMap<>();
     private Listener<ChannelEvent> mChannelEventListener;
@@ -295,7 +295,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * Broadcasts the decode event from the tracker.
      * @param tracker containing a decode event.
      */
-    public void broadcast(P25TrafficChannelEventTracker tracker)
+    public void broadcast(P25ChannelEventTracker tracker)
     {
         broadcast(tracker.getEvent());
     }
@@ -307,7 +307,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param timestamp to compare for staleness
      * @return tracker or null
      */
-    private P25TrafficChannelEventTracker getTrackerRemoveIfStale(APCO25Channel channel, long timestamp)
+    private P25ChannelEventTracker getTrackerRemoveIfStale(APCO25Channel channel, long timestamp)
     {
         return getTrackerRemoveIfStale(channel.getDownlinkFrequency(), channel.getTimeslot(), timestamp);
     }
@@ -320,9 +320,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param timestamp to compare for staleness
      * @return tracker or null
      */
-    private P25TrafficChannelEventTracker getTrackerRemoveIfStale(long frequency, int timeslot, long timestamp)
+    private P25ChannelEventTracker getTrackerRemoveIfStale(long frequency, int timeslot, long timestamp)
     {
-        P25TrafficChannelEventTracker tracker = getTracker(frequency, timeslot);
+        P25ChannelEventTracker tracker = getTracker(frequency, timeslot);
 
         if(tracker != null && tracker.isStale(timestamp))
         {
@@ -338,7 +338,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param frequency for the map lookup
      * @param timeslot to identify the correct map.
      */
-    private P25TrafficChannelEventTracker getTracker(long frequency, int timeslot)
+    private P25ChannelEventTracker getTracker(long frequency, int timeslot)
     {
         if(timeslot == P25P1Message.TIMESLOT_2)
         {
@@ -356,7 +356,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param frequency for the map lookup
      * @param timeslot to identify the correct map.
      */
-    private void addTracker(P25TrafficChannelEventTracker tracker, long frequency, int timeslot)
+    private void addTracker(P25ChannelEventTracker tracker, long frequency, int timeslot)
     {
         if(timeslot == P25P1Message.TIMESLOT_2)
         {
@@ -436,7 +436,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, timeslot);
+            P25ChannelEventTracker tracker = getTracker(frequency, timeslot);
 
             //If we have a tracker that we can mark complete, broadcast the updated tracker/event.
             if(tracker != null && tracker.completeTraffic(timestamp))
@@ -471,7 +471,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, timeslot);
+            P25ChannelEventTracker tracker = getTracker(frequency, timeslot);
 
             //If we have a tracker that is started that we can mark complete, broadcast the updated tracker/event.
             if(tracker != null && tracker.isStarted() && tracker.completeTraffic(timestamp))
@@ -508,7 +508,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timeslot, timestamp);
+            P25ChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timeslot, timestamp);
 
             if(tracker != null && tracker.isComplete())
             {
@@ -544,10 +544,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             try
             {
-                P25TrafficChannelEventTracker trackerTS1 = getTrackerRemoveIfStale(channel.getDownlinkFrequency(),
+                P25ChannelEventTracker trackerTS1 = getTrackerRemoveIfStale(channel.getDownlinkFrequency(),
                         P25P1Message.TIMESLOT_1, timestamp);
 
-                if(trackerTS1 != null && trackerTS1.exceedsMaxTDMADataDuration())
+                if(trackerTS1 != null && trackerTS1.exceedsMaxDataDuration())
                 {
                     removeTracker(frequency, P25P1Message.TIMESLOT_1);
                     trackerTS1 = null;
@@ -563,7 +563,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                             .timeslot(P25P1Message.TIMESLOT_1)
                             .build();
 
-                    trackerTS1 = new P25TrafficChannelEventTracker(continuationGrantEvent);
+                    trackerTS1 = new P25ChannelEventTracker(continuationGrantEvent);
                     addTracker(trackerTS1, frequency, P25P1Message.TIMESLOT_1);
                 }
 
@@ -588,10 +588,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     }
                 }
 
-                P25TrafficChannelEventTracker trackerTS2 = getTrackerRemoveIfStale(channel.getDownlinkFrequency(),
+                P25ChannelEventTracker trackerTS2 = getTrackerRemoveIfStale(channel.getDownlinkFrequency(),
                         P25P1Message.TIMESLOT_2, timestamp);
 
-                if(trackerTS2 != null && trackerTS2.exceedsMaxTDMADataDuration())
+                if(trackerTS2 != null && trackerTS2.exceedsMaxDataDuration())
                 {
                     removeTracker(frequency, P25P1Message.TIMESLOT_2);
                     trackerTS2 = null;
@@ -607,7 +607,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                             .timeslot(P25P1Message.TIMESLOT_2)
                             .build();
 
-                    trackerTS2 = new P25TrafficChannelEventTracker(continuationGrantEvent);
+                    trackerTS2 = new P25ChannelEventTracker(continuationGrantEvent);
                     addTracker(trackerTS2, frequency, P25P1Message.TIMESLOT_2);
                 }
 
@@ -635,7 +635,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timeslot, timestamp);
+            P25ChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timeslot, timestamp);
 
             if(tracker != null && tracker.isComplete())
             {
@@ -664,17 +664,17 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * @param serviceOptions for the call
      * @param ic for the call
      * @param timestamp for the message that is being processed
-     * @return
+     * @return channel descriptor
      */
     public IChannelDescriptor processP2TrafficCurrentUser(long frequency, int timeslot, IChannelDescriptor channelDescriptor,
-                                                          ServiceOptions serviceOptions, MacOpcode macOpcode,
-                                                          IdentifierCollection ic, long timestamp, String additionalDetails, String context)
+                                                              ServiceOptions serviceOptions, MacOpcode macOpcode,
+                                                              IdentifierCollection ic, long timestamp, String additionalDetails, String context)
     {
         mLock.lock();
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timeslot, timestamp);
+            P25ChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timeslot, timestamp);
 
             if(tracker != null && tracker.isComplete())
             {
@@ -704,7 +704,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     .identifiers(ic)
                     .build();
 
-            tracker = new P25TrafficChannelEventTracker(callEvent);
+            tracker = new P25ChannelEventTracker(callEvent);
             addTracker(tracker, frequency, timeslot);
             broadcast(tracker);
             return null;
@@ -822,7 +822,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+            P25ChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
             //If the tracker is already started, it was for another call.  Close it and recreate the event.
             if(tracker != null && tracker.isStarted())
@@ -850,7 +850,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                         .identifiers(mic)
                         .build();
 
-                tracker = new P25TrafficChannelEventTracker(callEvent);
+                tracker = new P25ChannelEventTracker(callEvent);
                 addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             }
 
@@ -905,7 +905,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+            P25ChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
             if(tracker != null && tracker.isComplete())
             {
@@ -953,7 +953,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             IChannelDescriptor channelDescriptor = null;
 
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+            P25ChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
             if(tracker != null && tracker.isComplete())
             {
@@ -996,7 +996,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                             .identifiers(mic)
                             .build();
 
-                    tracker = new P25TrafficChannelEventTracker(callEvent);
+                    tracker = new P25ChannelEventTracker(callEvent);
                     addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
                     broadcast(tracker);
                 }
@@ -1026,7 +1026,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+            P25ChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
             if(tracker != null && tracker.isComplete())
             {
@@ -1055,7 +1055,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     .identifiers(ic)
                     .build();
 
-            tracker = new P25TrafficChannelEventTracker(callEvent);
+            tracker = new P25ChannelEventTracker(callEvent);
             addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             broadcast(tracker);
         }
@@ -1086,7 +1086,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTrackerRemoveIfStale(channel, timestamp);
+            P25ChannelEventTracker tracker = getTrackerRemoveIfStale(channel, timestamp);
 
             //If we have a tracked event, update it.  Otherwise, make sure we have the traffic channel allocated
             if(tracker != null && tracker.isSameCallCheckingToOnly(ic, timestamp))
@@ -1126,7 +1126,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         try
         {
-            P25TrafficChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
+            P25ChannelEventTracker tracker = getTracker(frequency, P25P1Message.TIMESLOT_1);
 
             //If we have a tracker that we can mark complete, broadcast the updated tracker/event.
             if(tracker != null && tracker.isStarted() && tracker.completeTraffic(timestamp))
@@ -1213,7 +1213,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     {
         long frequency = apco25Channel.getDownlinkFrequency();
 
-        P25TrafficChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, P25P1Message.TIMESLOT_1, timestamp);
+        P25ChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, P25P1Message.TIMESLOT_1, timestamp);
 
         if(tracker != null && tracker.isSameCallCheckingToOnly(ic, timestamp))
         {
@@ -1227,7 +1227,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     .identifiers(ic)
                     .build();
 
-                tracker = new P25TrafficChannelEventTracker(event);
+                tracker = new P25ChannelEventTracker(event);
                 addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             }
 
@@ -1278,7 +1278,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                         .details("IGNORED: PHASE 1 DATA CALL " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(ic)
                         .build();
-                tracker = new P25TrafficChannelEventTracker(event);
+                tracker = new P25ChannelEventTracker(event);
                 addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
                 broadcast(tracker);
             }
@@ -1294,7 +1294,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             .details(details)
             .identifiers(ic)
             .build();
-        tracker = new P25TrafficChannelEventTracker(event);
+        tracker = new P25ChannelEventTracker(event);
         addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
 
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
@@ -1340,7 +1340,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         long frequency = apco25Channel.getDownlinkFrequency();
         ic.setTimeslot(timeslot);
 
-        P25TrafficChannelEventTracker tracker = getTrackerRemoveIfStale(apco25Channel, timestamp);
+        P25ChannelEventTracker tracker = getTrackerRemoveIfStale(apco25Channel, timestamp);
 
         if(tracker != null && tracker.isSameCallCheckingToOnly(ic, timestamp))
         {
@@ -1355,7 +1355,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     .timeslot(apco25Channel.getTimeslot())
                     .build();
 
-                tracker = new P25TrafficChannelEventTracker(continuationGrantEvent);
+                tracker = new P25ChannelEventTracker(continuationGrantEvent);
                 addTracker(tracker, frequency, timeslot);
                 broadcast(tracker);
             }
@@ -1396,7 +1396,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 .timeslot(apco25Channel.getTimeslot())
                 .build();
 
-            tracker = new P25TrafficChannelEventTracker(event);
+            tracker = new P25ChannelEventTracker(event);
             addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             broadcast(tracker);
             return;
@@ -1409,7 +1409,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             .timeslot(apco25Channel.getTimeslot())
             .build();
 
-        tracker = new P25TrafficChannelEventTracker(event);
+        tracker = new P25ChannelEventTracker(event);
         addTracker(tracker, frequency, timeslot);
 
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
@@ -1753,7 +1753,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                                         //Leave the event in the map so that it doesn't get recreated.  The channel
                                         //processing manager set the 'tuner not available' in the details already
-                                        P25TrafficChannelEventTracker tracker = getTracker(rejectedFrequency, P25P1Message.TIMESLOT_1);
+                                        P25ChannelEventTracker tracker = getTracker(rejectedFrequency, P25P1Message.TIMESLOT_1);
 
                                         if(tracker != null && !tracker.getEvent().getDetails().contains(CHANNEL_START_REJECTED))
                                         {
@@ -1803,7 +1803,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                                         //Leave the tracked event in the map so that it doesn't get recreated.  The channel
                                         //processing manager set the 'tuner not available' in the details already
-                                        P25TrafficChannelEventTracker tracker = getTracker(rejectedFrequency, P25P1Message.TIMESLOT_1);
+                                        P25ChannelEventTracker tracker = getTracker(rejectedFrequency, P25P1Message.TIMESLOT_1);
                                         if (tracker != null)
                                         {
                                             broadcast(tracker);
@@ -1811,7 +1811,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                                         //Leave the tracked event in the map so that it doesn't get recreated.  The channel
                                         //processing manager set the 'tuner not available' in the details already
-                                        P25TrafficChannelEventTracker tracker2 = getTracker(rejectedFrequency, P25P1Message.TIMESLOT_2);
+                                        P25ChannelEventTracker tracker2 = getTracker(rejectedFrequency, P25P1Message.TIMESLOT_2);
                                         if (tracker2 != null)
                                         {
                                             broadcast(tracker2);

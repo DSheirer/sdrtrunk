@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamplesToNativeBufferModule;
 import io.github.dsheirer.settings.SettingsManager;
+import io.github.dsheirer.source.ChannelFrequencyCorrectionStatusNotification;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
@@ -75,6 +76,11 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChannelSpectrumPanel.class);
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
+    private static final DecimalFormat PPM_FORMAT = new DecimalFormat("0.00000");
+    private static final String LABEL_PREFIX_PPM = "Tuner PPM: ";
+    private static final String LABEL_PREFIX_TUNER = "Tuner:";
+    private static final String LABEL_PREFIX_CHANNEL = "Channel:";
+    private static final String LABEL_PREFIX_DECODER = "Decoder:";
     private final PlaylistManager mPlaylistManager;
     private ProcessingChain mProcessingChain;
     private final ComplexSamplesToNativeBufferModule mSampleStreamTapModule = new ComplexSamplesToNativeBufferModule();
@@ -83,7 +89,11 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     private final FrequencyOverlayPanel mFrequencyOverlayPanel;
     private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
     private final SpinnerNumberModel mNoiseFloorSpinnerModel;
-    private final JLabel mEstimatedCarrierOffsetFrequencyValueLabel;
+    private final JLabel mTunerPPMLabel;
+    private final JLabel mTunerCorrectionLabel;
+    private final JLabel mChannelCorrectionLabel;
+    private final JLabel mDecoderCorrectionLabel;
+    private final JLabel mDummyLabel = new JLabel(" ");
     private boolean mPanelVisible = false;
     private boolean mDftProcessing = false;
     private final NoiseSquelchView mNoiseSquelchView;
@@ -92,6 +102,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     private final JFXPanel mNoiseSquelchPanel;
     private final JFXPanel mSymbolPanel;
     private JSplitPane mSplitPane;
+    private FeedbackDecoder mFeedbackDecoder;
 
     /**
      * Constructs an instance.
@@ -107,12 +118,27 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         fftPanel.setLayout(new MigLayout("insets 0", "[grow,fill]", "[][grow,fill]"));
 
         JPanel labelPanel = new JPanel();
-        labelPanel.setLayout(new MigLayout("insets 2", "[grow,fill][grow,fill,left][right][][]", ""));
-        labelPanel.add(new JLabel("Channel Spectrum    "));
+        labelPanel.setLayout(new MigLayout("insets 2", "[grow,fill][][][][][grow,fill][][]", ""));
 
-        mEstimatedCarrierOffsetFrequencyValueLabel = new JLabel(getPaddedCarrierOffsetLabel(0));
-        mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
-        labelPanel.add(mEstimatedCarrierOffsetFrequencyValueLabel);
+        mTunerPPMLabel = new JLabel(LABEL_PREFIX_PPM);
+        mTunerPPMLabel.setEnabled(false);
+        labelPanel.add(mTunerPPMLabel);
+
+        labelPanel.add(new JLabel("Corrections (Hz) "));
+
+        mTunerCorrectionLabel = new JLabel(LABEL_PREFIX_TUNER);
+        mTunerCorrectionLabel.setEnabled(false);
+        labelPanel.add(mTunerCorrectionLabel);
+
+        mChannelCorrectionLabel = new JLabel(LABEL_PREFIX_CHANNEL);
+        mChannelCorrectionLabel.setEnabled(false);
+        labelPanel.add(mChannelCorrectionLabel);
+
+        mDecoderCorrectionLabel = new JLabel(LABEL_PREFIX_DECODER);
+        mDecoderCorrectionLabel.setEnabled(false);
+        labelPanel.add(mDecoderCorrectionLabel);
+
+        labelPanel.add(mDummyLabel);
 
         mNoiseFloorSpinnerModel = new SpinnerNumberModel(18, 8, 36, 1);
         mNoiseFloorSpinnerModel.addChangeListener(e -> {
@@ -120,8 +146,8 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
             mSpectrumPanel.setSampleSize(number.doubleValue());
         });
         JSpinner noiseFloorSpinner = new JSpinner(mNoiseFloorSpinnerModel);
+        labelPanel.add(new JLabel("Noise Floor:"));
         labelPanel.add(noiseFloorSpinner);
-        labelPanel.add(new JLabel("Noise Floor"));
 
         JButton logIndexesButton = new JButton("Log Settings");
         logIndexesButton.addActionListener(e -> {
@@ -229,11 +255,15 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         mSpectrumPanel.clearSpectrum();
     }
 
-    private String getPaddedCarrierOffsetLabel(long value)
+    /**
+     * Pads the value to a fixed width and returns the previx and padded value.
+     * @param prefix of the label
+     * @param value to pad with spaces
+     * @return padded, prefixed label
+     */
+    private String getPaddedLabel(String prefix, Number value)
     {
-        String paddedValue = StringUtils.leftPad(String.valueOf(value), 5);
-        String paddedText = StringUtils.rightPad(paddedValue + " Hz", 20);
-        return "Carrier Offset: " + paddedText;
+        return prefix + StringUtils.leftPad(String.valueOf(value), 7);
     }
 
     /**
@@ -297,22 +327,6 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         }
     }
 
-    /**
-     * Updates the CarrierOffsetProcessor's current carrier offset tracking frequency
-     * @param carrierOffsetFrequency that is currently measured/estimated.
-     */
-    private void updateEstimatedCarrierOffsetFrequency(long carrierOffsetFrequency)
-    {
-        //Note: we flip the sign on the error measurement because the value represents the amount of offset the PLL
-        //has to apply to move the signal to center/baseband
-        EventQueue.invokeLater(() -> {
-            mEstimatedCarrierOffsetFrequencyValueLabel.setText(getPaddedCarrierOffsetLabel(carrierOffsetFrequency));
-            mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(true);
-        });
-
-        mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(carrierOffsetFrequency);
-    }
-
     private void broadcast(SourceEvent sourceEvent)
     {
         if(mProcessingChain != null)
@@ -327,8 +341,14 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
      */
     private void reset()
     {
-        mEstimatedCarrierOffsetFrequencyValueLabel.setText(getPaddedCarrierOffsetLabel(0));
-        mEstimatedCarrierOffsetFrequencyValueLabel.setEnabled(false);
+        mTunerPPMLabel.setText(LABEL_PREFIX_PPM);
+        mTunerPPMLabel.setEnabled(false);
+        mTunerCorrectionLabel.setText(LABEL_PREFIX_TUNER);
+        mTunerCorrectionLabel.setEnabled(false);
+        mChannelCorrectionLabel.setText(LABEL_PREFIX_CHANNEL);
+        mChannelCorrectionLabel.setEnabled(false);
+        mDecoderCorrectionLabel.setText(LABEL_PREFIX_DECODER);
+        mDecoderCorrectionLabel.setEnabled(false);
         mFrequencyOverlayPanel.process(SourceEvent.frequencyChange(null, 0));
         mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(0));
         mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(0);
@@ -350,6 +370,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
             mSymbolView.setProtocol("");
             mProcessingChain.removeSourceEventListener(mSourceEventProcessor);
             mProcessingChain.removeModule(mSampleStreamTapModule);
+            mFeedbackDecoder = null;
         }
 
         //Invoking reset - we're on the Swing dispatch thread here
@@ -377,6 +398,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
                 setRightComponent(mSymbolPanel);
                 mSymbolView.setSymbolProvider(feedbackDecoder);
                 mSymbolView.setProtocol(feedbackDecoder.getProtocolDescription());
+                mFeedbackDecoder = feedbackDecoder;
             }
 
             mProcessingChain.addModule(mSampleStreamTapModule);
@@ -428,11 +450,38 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         @Override
         public void receive(SourceEvent sourceEvent)
         {
-            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED)
+            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_STATUS)
             {
-                updateEstimatedCarrierOffsetFrequency(sourceEvent.getValue().longValue());
+                if(sourceEvent instanceof ChannelFrequencyCorrectionStatusNotification status)
+                {
+                    //Note: we flip the sign on the error measurement because the value represents the amount of offset the PLL
+                    //has to apply to move the signal to center/baseband
+                    EventQueue.invokeLater(() -> {
+                        mTunerPPMLabel.setText(LABEL_PREFIX_PPM + PPM_FORMAT.format(status.getTunerPPM()));
+                        mTunerPPMLabel.setEnabled(true);
+
+                        if(status.isAutoPPM())
+                        {
+                            mTunerCorrectionLabel.setText(getPaddedLabel(LABEL_PREFIX_TUNER, status.getTunerCorrection()));
+                        }
+                        else
+                        {
+                            mTunerCorrectionLabel.setText(LABEL_PREFIX_TUNER + " disabled");
+                        }
+                        mTunerCorrectionLabel.setEnabled(true);
+                        mChannelCorrectionLabel.setText(getPaddedLabel(LABEL_PREFIX_CHANNEL, status.getChannelCorrection()));
+                        mChannelCorrectionLabel.setEnabled(true);
+                        mDecoderCorrectionLabel.setText(getPaddedLabel(LABEL_PREFIX_DECODER, status.getDecoderCorrection()));
+                        mDecoderCorrectionLabel.setEnabled(true);
+
+                        //We se the offset cursor line to negative so that it aligns with where the signal is located
+                        //instead of the correction that's needed to bring the signal to zero.
+                        mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(-status.getDecoderCorrection());
+                    });
+                }
             }
 
+//TODO: is this still needed?
             mSignalPowerView.receive(sourceEvent);
         }
     }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -47,6 +48,8 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     private List<Integer> mOutputProcessorIndexes = new ArrayList<>();
     private double mTunerSampleRate;
     private double mTunerCenterFrequency;
+    private long mFrequencyCorrection;
+    private boolean mPendingFrequencyCorrectionUpdate = false;
     private PendingOutputProcessorUpdate mPendingOutputProcessorUpdate;
 
     /**
@@ -57,15 +60,25 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      * @param filterManager for access to new or cached synthesis filters
      * @param producerSourceEventListener to receive source event requests (e.g. start/stop sample stream)
      * @param threadName for the channel's dispatcher
+     * @param tunerFrequencyErrorManager to connect with the channel frequency error manager
      * @throws IllegalArgumentException if a channel low pass filter can't be designed to the channel specification
      */
-    public PolyphaseChannelSource(TunerChannel tunerChannel, ChannelCalculator channelCalculator, SynthesisFilterManager filterManager,
-                                  Listener<SourceEvent> producerSourceEventListener, String threadName)
+    public PolyphaseChannelSource(TunerChannel tunerChannel, ChannelCalculator channelCalculator,
+                                  SynthesisFilterManager filterManager,
+                                  Listener<SourceEvent> producerSourceEventListener, String threadName,
+                                  TunerFrequencyErrorManager tunerFrequencyErrorManager)
             throws IllegalArgumentException
     {
-        super(producerSourceEventListener, tunerChannel, threadName);
+        super(producerSourceEventListener, tunerChannel, threadName, tunerFrequencyErrorManager);
         mChannelSampleRate = channelCalculator.getChannelSampleRate();
         doUpdateOutputProcessor(channelCalculator, filterManager);
+    }
+
+    @Override
+    public void setFrequencyCorrection(long correction)
+    {
+        mFrequencyCorrection = correction;
+        mPendingFrequencyCorrectionUpdate = true;
     }
 
     /**
@@ -280,6 +293,13 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
             doUpdateOutputProcessor(channelCalculator, filterManager);
         }
 
+        //Apply channel decider requested frequency correction
+        if(mPendingFrequencyCorrectionUpdate)
+        {
+            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+            mPendingFrequencyCorrectionUpdate = false;
+        }
+
         try
         {
             if(mPolyphaseChannelOutputProcessor != null)
@@ -349,7 +369,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      */
     public long getFrequencyOffset()
     {
-        return mIndexCenterFrequency - getTunerChannel().getFrequency();
+        return mIndexCenterFrequency - getTunerChannel().getFrequency() + mFrequencyCorrection;
     }
 
     @Override

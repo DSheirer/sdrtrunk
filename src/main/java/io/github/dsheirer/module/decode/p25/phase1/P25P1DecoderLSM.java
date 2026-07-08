@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
-import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -39,7 +38,6 @@ import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
-import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import java.io.File;
@@ -61,8 +59,8 @@ import org.slf4j.LoggerFactory;
  * As a child of the FeedbackDecoder, this decoder provides periodic PLL measurements to the tuner for automatic PPM
  * correction.  It also provides a stream of demodulated soft symbols (in radians) for display to the user.
  */
-public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvider, IComplexSamplesListener, ISourceEventListener,
-        ISourceEventProvider, Listener<ComplexSamples>
+public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvider, IComplexSamplesListener,
+        ISourceEventListener, Listener<ComplexSamples>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderLSM.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
@@ -72,7 +70,6 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     private final P25P1DemodulatorLSM mDemodulator;
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
-    private final PowerMonitor mPowerMonitor = new PowerMonitor();
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
@@ -110,8 +107,6 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
                     SYMBOL_RATE + " symbol rate)");
         }
 
-        mPowerMonitor.setSampleRate((int)sampleRate);
-
         int decimation = 1;
 
         //Identify decimation that gets as close to 4.0 Samples Per Symbol as possible (4800 x 4.0 = 19.2 kHz)
@@ -132,6 +127,10 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         }
 
         float decimatedSampleRate = (float)sampleRate / decimation;
+
+        //Set the decimated sample rate to use for PLL error reporting.
+        setDecimatedSampleRate(decimatedSampleRate);
+
         int symbolLength = 16;
         float rolloff = 0.2f;
 
@@ -159,9 +158,6 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
 
         i = mDecimationFilterI.decimateReal(i);
         q = mDecimationFilterQ.decimateReal(q);
-
-        //Process buffer for power measurements
-        mPowerMonitor.process(i, q);
 
         i = mBasebandFilterI.filter(i);
         q = mBasebandFilterQ.filter(q);
@@ -242,22 +238,6 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     public Listener<SourceEvent> getSourceEventListener()
     {
         return this::process;
-    }
-
-    /**
-     * Sets the source event listener to receive source events from this decoder.
-     */
-    @Override
-    public void setSourceEventListener(Listener<SourceEvent> listener)
-    {
-        super.setSourceEventListener(listener);
-        mPowerMonitor.setSourceEventListener(listener);
-    }
-
-    @Override
-    public void removeSourceEventListener()
-    {
-        mPowerMonitor.setSourceEventListener(null);
     }
 
     @Override

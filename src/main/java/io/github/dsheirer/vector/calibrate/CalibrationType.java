@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ public enum CalibrationType
     INTERPOLATOR("Interpolator", 1),
     MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 1),
+    NXDN_SOFT_SYNC_DETECTOR("NXDN Soft Sync Detector", 2),
     OSCILLATOR_REAL("Real Oscillator", 1),
     P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 1),
     SAMPLE_PACKED_CONVERTER("Packed Sample Converter", 1),

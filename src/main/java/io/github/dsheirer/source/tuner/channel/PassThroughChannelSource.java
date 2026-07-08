@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.dsp.mixer.ComplexMixer;
+import io.github.dsheirer.dsp.mixer.ComplexMixerFactory;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -41,6 +43,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     private TunerController mTunerController;
     private Dispatcher<INativeBuffer> mBufferDispatcher;
     private Listener<ComplexSamples> mBufferListener;
+    private ComplexMixer mFrequencyCorrectionMixer;
 
     /**
      * Constructs an instance
@@ -53,10 +56,11 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     public PassThroughChannelSource(Listener<SourceEvent> listener, TunerController tunerController,
                                     TunerChannel tunerChannel, String threadName)
     {
-        super(listener, tunerChannel, threadName);
+        super(listener, tunerChannel, threadName,  tunerController.getTunerFrequencyErrorManager());
         mTunerController = tunerController;
         mBufferDispatcher = new Dispatcher<>(threadName, 50, getHeartbeatManager());
         mBufferDispatcher.setListener(new BufferProcessor());
+        mFrequencyCorrectionMixer = ComplexMixerFactory.getMixer(0,0);
     }
 
     @Override
@@ -82,7 +86,13 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     @Override
     protected void setSampleRate(double sampleRate)
     {
-        mLog.debug("Request to set sample rate: " + sampleRate);
+        mFrequencyCorrectionMixer.setSampleRate(sampleRate);
+    }
+
+    @Override
+    public void setFrequencyCorrection(long correction)
+    {
+        mFrequencyCorrectionMixer.setFrequency(correction);
     }
 
     @Override
@@ -116,7 +126,16 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
                 {
                     try
                     {
-                        mBufferListener.receive(iterator.next());
+                        ComplexSamples samples = iterator.next();
+
+                        if(mFrequencyCorrectionMixer.hasFrequency())
+                        {
+                            mBufferListener.receive(mFrequencyCorrectionMixer.mix(samples));
+                        }
+                        else
+                        {
+                            mBufferListener.receive(samples);
+                        }
                     }
                     catch(Throwable t)
                     {

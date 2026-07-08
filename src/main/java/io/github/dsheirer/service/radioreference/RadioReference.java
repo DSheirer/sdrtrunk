@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,11 +25,18 @@ import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
+import io.github.dsheirer.rrapi.type.CountryInfo;
+import io.github.dsheirer.rrapi.type.County;
+import io.github.dsheirer.rrapi.type.CountyInfo;
+import io.github.dsheirer.rrapi.type.Flavor;
+import io.github.dsheirer.rrapi.type.State;
+import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.rrapi.type.UserInfo;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import javafx.beans.property.BooleanProperty;
@@ -388,6 +395,43 @@ public class RadioReference
             {
                 UserInfo userInfo = radioReference.getService().getUserInfo();
                 System.out.println("User Name: " + userInfo.getUserName() + " Account Expires:" + userInfo.getExpirationDate());
+                RadioReferenceService service = radioReference.getService();
+
+                CountryInfo usInfo = service.getCountryInfo(1);
+                for(State state : usInfo.getStates())
+                {
+                    StateInfo stateInfo = service.getStateInfo(state.getStateId());
+
+                    System.out.println("State: " + stateInfo.getName());
+
+                    for(io.github.dsheirer.rrapi.type.System system: stateInfo.getSystems())
+                    {
+                        int flavor = system.getFlavorId();
+
+                        if(flavor == 36 || flavor == 44 || flavor == 47)
+                        {
+                            Flavor f = service.getFlavor(flavor);
+                            System.out.println("\t" + system.getName() + " Flavor: " + f.getName());
+                        }
+                    }
+
+                    List<County> counties = stateInfo.getCounties();
+                    for(County county : counties)
+                    {
+                        CountyInfo countyInfo = service.getCountyInfo(county.getCountyId());
+
+                        for(io.github.dsheirer.rrapi.type.System system: countyInfo.getSystems())
+                        {
+                            int flavor = system.getFlavorId();
+
+                            if(flavor == 36 || flavor == 44 || flavor == 47)
+                            {
+                                Flavor f = service.getFlavor(flavor);
+                                System.out.println("\tCounty: " + county.getName() + " System: " + system.getName() + " Flavor: " + f.getName());
+                            }
+                        }
+                    }
+                }
             }
             catch(RadioReferenceException rre)
             {

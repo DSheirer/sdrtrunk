@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,9 +48,10 @@ public class TalkerAliasManager
     }
 
     /**
-     * Updates the alias for the
-     * @param identifier
-     * @param alias
+     * Updates the alias for the radio identifier
+     *
+     * @param identifier to update
+     * @param alias to assign to the radio identifier
      */
     public void update(RadioIdentifier identifier, TalkerAliasIdentifier alias)
     {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,13 @@
 
 package io.github.dsheirer.controller.channel.event;
 
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.ModuleEventBusMessage;
 import io.github.dsheirer.module.decode.event.DecodeEventHistory;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class ChannelStartProcessingRequest extends ModuleEventBusMessage
      * @param channelDescriptor that identifies which channel in a multi-channel config to start
      * @param identifierCollection to use for the new channel
      */
-    public ChannelStartProcessingRequest(Channel channel, IChannelDescriptor channelDescriptor,
+    public ChannelStartProcessingRequest(Channel channel, IBandChannelDescriptor channelDescriptor,
                                          IdentifierCollection identifierCollection)
     {
         this(channel, channelDescriptor, identifierCollection, null);
