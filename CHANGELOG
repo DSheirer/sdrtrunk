@@ -1,3 +1,17 @@
+0.6.2-beta-1 20260407 (Benjamin Vernoux)
+ - HydraSDR: replaced pure-Java USB implementation with native JNI bridge to libhydrasdr
+ - Hardware-agnostic device access via libhydrasdr HAL (supports multiple board variants)
+ - Native C de-interleave and optimized IQ conversion, near-zero-copy delivery to channelizer
+ - Double-buffered pre-allocated JNI arrays (zero GC pressure during streaming)
+ - Runtime capability discovery: frequency range, gain ranges, temperature from device
+ - Unified gain API with Linearity, Sensitivity and Custom modes
+ - Multi-device support (up to 8 concurrent HydraSDR devices)
+ - Built-in streaming performance counters (throughput, callback timing, Java overhead)
+ - Streaming health check detects USB disconnect and device errors
+ - Cross-platform: Windows (x86_64), Linux and macOS (x86_64 and aarch64)
+ - CMake build auto-clones libhydrasdr from https://github.com/hydrasdr/hydrasdr-host
+ - CI/CD workflows for multi-platform native builds and release packaging
+
 0.4.0 20200404
  - Release includes embedded Java 14 & JavaFX 13 runtime
  - Adds Polyphase Channelizer with 2x channel oversampling and redesigned source management

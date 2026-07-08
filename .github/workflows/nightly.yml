@@ -1,15 +1,110 @@
-# Create nightly release for Linux, Mac and Windows using the Linux runner.
+# Create nightly release for Linux, Mac and Windows.
+# Builds native JNI libraries for each platform, then packages with Gradle.
 name: Nightly Release
 
 on:
   push:
     branches: [ master ]
-# Don't run nightly build for pull requests - uncomment to test changes to this action within scope of the PR review
-#  pull_request:
-#    branches: [ master ]
+
+concurrency:
+  group: nightly-release
+  cancel-in-progress: true
 
 jobs:
+  # ============================================================
+  # Build native JNI libraries for each platform
+  # ============================================================
+  build-native:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            lib_glob: "*.so"
+          - os: ubuntu-24.04-arm
+            target: linux-aarch64
+            lib_glob: "*.so"
+          - os: macos-latest
+            target: osx-aarch64
+            lib_glob: "*.dylib"
+          - os: macos-15-intel
+            target: osx-x86_64
+            lib_glob: "*.dylib"
+          - os: windows-latest
+            target: windows-x86_64
+            lib_glob: "*.dll"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (for JNI headers)
+        uses: actions/setup-java@v3
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+          java-package: 'jdk+fx'
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev ninja-build
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libusb ninja
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install build dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: choco install -y ninja
+        shell: pwsh
+
+      # Workaround for libhydrasdr's CMakeLists.txt bug on Windows: it downloads
+      # libusb-1.0.29.7z and extracts it via `cmake -E tar`, which cannot decode
+      # LZMA2. Pre-extract with 7z.exe (preinstalled on windows-latest) into the
+      # path libhydrasdr's FetchContent expects.
+      - name: Pre-extract libusb for Windows
+        if: runner.os == 'Windows'
+        run: |
+          # See gradle.yml for full explanation. Short version: libhydrasdr's
+          # CMakeLists fetches libusb-1.0.29.7z and extracts via cmake -E tar,
+          # which can't decode LZMA2. Pre-extract here with 7z.exe.
+          $libusbDir = "jni/build/_deps/libusb-1.0.29"
+          New-Item -ItemType Directory -Force -Path $libusbDir | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/libusb/libusb/releases/download/v1.0.29/libusb-1.0.29.7z" -OutFile "libusb.7z"
+          & "C:\Program Files\7-Zip\7z.exe" x libusb.7z -o"$libusbDir" -y
+          if (-not (Test-Path "$libusbDir/VS2022/MS64/dll/libusb-1.0.dll")) {
+            Write-Error "libusb pre-extraction failed: expected DLL not found"
+            exit 1
+          }
+          Remove-Item libusb.7z
+        shell: pwsh
+
+      - name: Build HydraSDR JNI native library
+        run: |
+          mkdir -p jni/build
+          cd jni/build
+          cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+        shell: bash
+
+      - name: Upload native libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: hydrasdr-native-${{ matrix.target }}
+          path: |
+            jni/build/${{ matrix.lib_glob }}
+          retention-days: 1
+
+  # ============================================================
+  # Package releases with Gradle
+  # ============================================================
   nightly:
+    needs: build-native
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +117,49 @@ jobs:
           distribution: 'liberica'
           java-package: 'jdk+fx'
 
+      # Download all native library artifacts
+      - name: Download native libs (linux-x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-linux-x86_64
+          path: native/linux-x86_64
+
+      - name: Download native libs (linux-aarch64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-linux-aarch64
+          path: native/linux-aarch64
+        continue-on-error: true
+
+      - name: Download native libs (osx-aarch64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-osx-aarch64
+          path: native/osx-aarch64
+
+      - name: Download native libs (osx-x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-osx-x86_64
+          path: native/osx-x86_64
+
+      - name: Download native libs (windows-x86_64)
+        uses: actions/download-artifact@v4
+        with:
+          name: hydrasdr-native-windows-x86_64
+          path: native/windows-x86_64
+
+      # Build local JNI (needed for gradle compile on Linux)
+      - name: Install native build deps
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev ninja-build
+
+      - name: Build local JNI
+        run: |
+          mkdir -p jni/build
+          cd jni/build
+          cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
       - name: Build Linux and Mac releases with Gradle
         uses: gradle/gradle-build-action@v2
         with:
@@ -32,15 +170,87 @@ jobs:
         with:
           arguments: runtimeZipWindows -PprojectVersion=nightly
 
+      # Inject platform-specific native libs into release zips
+      - name: Inject native libraries into release packages
+        run: |
+          cd build/image
+          for zip in *.zip; do
+            echo "Processing $zip"
+            # Order matters: match aarch64 BEFORE x86_64 (the prefix is shared)
+            if   [[ "$zip" == *"linux-aarch64"*   ]]; then dir="linux-aarch64"
+            elif [[ "$zip" == *"linux-x86_64"*    ]]; then dir="linux-x86_64"
+            elif [[ "$zip" == *"osx-aarch64"*     ]]; then dir="osx-aarch64"
+            elif [[ "$zip" == *"osx-x86_64"*      ]]; then dir="osx-x86_64"
+            elif [[ "$zip" == *"windows-x86_64"*  ]]; then dir="windows-x86_64"
+            else echo "  Skipping: $zip"; continue; fi
+
+            native_dir="../../native/$dir"
+            if [ -d "$native_dir" ] && [ "$(ls -A $native_dir 2>/dev/null)" ]; then
+              # Extract top-level directory name from zip (robust: find first directory entry)
+              top_dir=$(unzip -l "$zip" | grep '/$' | head -1 | awk '{print $NF}' | cut -d/ -f1)
+              if [ -z "$top_dir" ]; then
+                echo "  ERROR: Could not determine top-level dir in $zip"
+                continue
+              fi
+              mkdir -p "/tmp/inject/$top_dir/lib/native"
+              cp "$native_dir"/* "/tmp/inject/$top_dir/lib/native/"
+              cd /tmp/inject && zip -r "$OLDPWD/$zip" "$top_dir/lib/native/" && cd "$OLDPWD"
+              rm -rf /tmp/inject
+              echo "  Injected native libs from $dir into $top_dir/lib/native/"
+            else
+              echo "  No native libs for $dir"
+            fi
+          done
+        shell: bash
+
       - name: Create Build Info file
         run: |
           echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
 
-      - name: Add build artifacts to nightly release
+      - name: Delete previous nightly release
+        run: gh release delete nightly --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create nightly release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
+          name: Nightly Build
           prerelease: true
+          body: |
+            Automatic nightly build of the HydraSDR fork of sdrtrunk.
+
+            **HydraSDR support**
+            - Native JNI bridge to **libhydrasdr v1.1.x** (hardware-agnostic HAL)
+            - Near-zero-copy streaming via pre-allocated double-buffered float arrays
+            - ~25x lower streaming CPU overhead vs the previous pure-Java USB path
+            - HydraSDR RFOne supported via libhydrasdr's device-info / capabilities API
+            - USB disconnect detection via independent watchdog timer
+
+            **Bundled native libraries**
+            - Linux x86_64 / aarch64: `libhydrasdr_jni.so`
+            - macOS aarch64 / x86_64: `libhydrasdr_jni.dylib`
+            - Windows x86_64: `hydrasdr_jni.dll` + `hydrasdr.dll` + `libusb-1.0.dll`
+
+            **Windows** release zips are fully self-contained - `hydrasdr.dll`, `libusb-1.0.dll`, and `hydrasdr_jni.dll` are all bundled in `lib/native/`. Just unzip and run.
+
+            **macOS** release zips bundle `libhydrasdr.dylib` and `libhydrasdr_jni.dylib` in `lib/native/`. You only need to install **libusb** via Homebrew:
+            ```
+            brew install libusb
+            ```
+
+            **Linux** release zips bundle only the JNI bridge (`libhydrasdr_jni.so`). You must also install **libhydrasdr** and **libusb-1.0**.
+
+            The official `hydrasdr-host` nightly provides prebuilt distro packages (libhydrasdr + tools) for Debian 11/12/13, Ubuntu 20.04/22.04/24.04, Linux Mint 21/22, Fedora 41/42, AlmaLinux 9, openSUSE Tumbleweed, and Arch Linux:
+
+            https://github.com/hydrasdr/hydrasdr-host/releases/tag/nightly
+
+            Pick the package that matches your distro and install it (`sudo dpkg -i` / `sudo rpm -i` / `sudo pacman -U`). For libusb-1.0 on Debian/Ubuntu: `sudo apt install libusb-1.0-0` (most distros already have it as a transitive dependency).
+
+            If your distro is not in the list, build libhydrasdr from source: https://github.com/hydrasdr/hydrasdr-host
+
+            See `build_info.txt` in this release for the exact commit and build timestamp.
           files: |
             build/image/*.zip
             build/image/build_info.txt
