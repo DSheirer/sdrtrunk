@@ -244,9 +244,9 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
         mRadioDetails.add(new RadioDetail(Protocol.DMR, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFFFF),
             "Format: 0 - FFFFFF"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
-                "Format: 0 - 65,535"));
+                "Format: 1 - 65,535"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
-                "Format: 0 - FFFF"));
+                "Format: 1 - FFFF"));
         mRadioDetails.add(new RadioDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0x7FFFFF),
             "Format: 0 - 8388607"));
         mRadioDetails.add(new RadioDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0x7FFFFF),
