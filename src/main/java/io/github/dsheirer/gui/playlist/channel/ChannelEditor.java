@@ -731,7 +731,9 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
             if(alist != null)
             {
-                mAliasList.set(alist.getAliasListName().toString());
+                mAliasList.set((alist != null && alist.getAliasListName() != null)
+                        ? alist.getAliasListName().toString()
+                        : null);
             }
             else
             {
