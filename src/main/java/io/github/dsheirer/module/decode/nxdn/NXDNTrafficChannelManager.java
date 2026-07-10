@@ -55,12 +55,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.VoiceCallOption;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
