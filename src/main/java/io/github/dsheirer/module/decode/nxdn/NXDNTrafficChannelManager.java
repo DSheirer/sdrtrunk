@@ -55,6 +55,12 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.VoiceCallOption;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,6 +72,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Manages trunked system traffic channel activations
@@ -404,8 +411,9 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param talkerAlias to add or update
      * @param timestamp for the talker alias message
      */
-    public void processTalkerAlias(IChannelDescriptor channel, NXDNTalkerAliasIdentifier talkerAlias,
+    public void processTalkerAlias(String channelname, IChannelDescriptor channel, NXDNTalkerAliasIdentifier talkerAlias,
                                    RadioIdentifier radio, long timestamp)
+
     {
         mLock.lock();
 
@@ -420,7 +428,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                 broadcast(tracker);
             }
 
-            getTalkerAliasManager().update(radio, talkerAlias);
+            getTalkerAliasManager().update(channelname, radio, talkerAlias);
         }
         finally
         {

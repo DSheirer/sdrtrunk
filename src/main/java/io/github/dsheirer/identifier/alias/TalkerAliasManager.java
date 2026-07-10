@@ -24,11 +24,21 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import io.github.dsheirer.preference.UserPreferences;
+
 
 /**
  * Talker alias cache manager.  Collects observed talker aliases and inserts them into an identifier collection when
@@ -39,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TalkerAliasManager
 {
     private Map<Integer,TalkerAliasIdentifier> mAliasMap = new ConcurrentHashMap<>();
+    private UserPreferences mUserPreferences = new UserPreferences();
+
 
     /**
      * Constructs an instance
@@ -53,13 +65,48 @@ public class TalkerAliasManager
      * @param identifier to update
      * @param alias to assign to the radio identifier
      */
-    public void update(RadioIdentifier identifier, TalkerAliasIdentifier alias)
+    public void update( String SiteName , RadioIdentifier identifier, TalkerAliasIdentifier alias)
     {
         if(identifier.getRole() == Role.FROM)
         {
+            if (mAliasMap.get(identifier.getValue()) == null && identifier.getValue() > 0) {
+                String fileName = mUserPreferences.getDirectoryPreference().getDirectoryApplicationRoot().toString() + File.separator + "Aliases" + File.separator + SiteName.replaceFirst("T-","") + ".csv";
+
+                Path filePath = Paths.get(fileName);
+                Path parentDirectoryPath = filePath.getParent();
+
+                if (parentDirectoryPath != null) {
+                    try {
+                        Files.createDirectories(parentDirectoryPath);
+                    } catch (IOException e) {
+                        System.err.println("Failed to create directory: " + parentDirectoryPath);
+                    }
+                } else {
+                    System.err.println("Could not determine the parent directory for: "  + parentDirectoryPath);
+                }
+
+                String contentToAppend = String.valueOf(identifier.getValue()) + "," + alias.toString().replaceFirst("^TA-", "");
+                try {
+                    appendStringToFileLegacy(fileName, contentToAppend);
+                } catch (IOException e) {
+                }
+            }
             mAliasMap.put(identifier.getValue(), alias);
         }
     }
+
+    public static void appendStringToFileLegacy(String filePath, String content) throws IOException {
+
+        try (
+                FileWriter fw = new FileWriter(filePath, true);
+                BufferedWriter bw = new BufferedWriter(fw)
+        ) {
+            bw.write(content);
+            bw.newLine();
+            bw.flush();
+        }
+    }
+
 
     /**
      * Indicates if an alias exists for the identifier

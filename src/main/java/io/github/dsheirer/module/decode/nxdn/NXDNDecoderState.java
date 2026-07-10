@@ -649,7 +649,7 @@ public class NXDNDecoderState extends DecoderState
 
                     if(radio instanceof RadioIdentifier ri)
                     {
-                        mTrafficChannelManager.processTalkerAlias(getCurrentChannel(), tac.getTalkerAlias(), ri, tac.getTimestamp());
+                        mTrafficChannelManager.getTalkerAliasManager().update(mChannel.getSystem() , ri, tac.getTalkerAlias());
                     }
                 }
                 break;
