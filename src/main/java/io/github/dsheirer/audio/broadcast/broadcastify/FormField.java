@@ -30,6 +30,7 @@ public enum FormField
     TIMESTAMP("ts"),
     TALKGROUP_ID("tg"),
     RADIO_ID("src"),
+    RADIO_ID_ALIAS("srcId_alias"),
     FREQUENCY("freq"),
     ENCODING("enc"),
     TEST("test");
