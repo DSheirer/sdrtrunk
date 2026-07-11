@@ -30,6 +30,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
@@ -125,7 +126,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private boolean mIgnoreDataCalls;
     //Used only for data calls
     private DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
-    private TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
+    private TalkerAliasManager mTalkerAliasManager;
 
     /**
      * Constructs an instance.
@@ -134,6 +135,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     public P25TrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
+        mTalkerAliasManager = new TalkerAliasManager(
+            SystemProperties.getInstance().getApplicationRootPath().resolve("Aliases"), parentChannel.getSystem());
 
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 phase1)
         {

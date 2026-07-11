@@ -33,11 +33,13 @@ public class ApplicationPreference extends Preference
 {
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING = "automatic.diagnostic.monitoring";
     private static final String PREFERENCE_KEY_CHANNEL_AUTO_START_TIMEOUT = "channel.auto.start.timeout";
+    private static final String PREFERENCE_KEY_TALKER_ALIAS_CSV_EXPORT = "talker.alias.csv.export";
 
     private final static Logger mLog = LoggerFactory.getLogger(ApplicationPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(ApplicationPreference.class);
     private Integer mChannelAutoStartTimeout;
     private Boolean mAutomaticDiagnosticMonitoring;
+    private Boolean mTalkerAliasCsvExportEnabled;
 
     /**
      * Constructs an instance
@@ -102,6 +104,38 @@ public class ApplicationPreference extends Preference
     {
         mAutomaticDiagnosticMonitoring = enabled;
         mPreferences.putBoolean(PREFERENCE_KEY_CHANNEL_AUTO_DIAGNOSTIC_MONITORING, enabled);
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Indicates if newly observed talker aliases should be exported to local CSV files.
+     */
+    public boolean isTalkerAliasCsvExportEnabled()
+    {
+        if(mTalkerAliasCsvExportEnabled == null)
+        {
+            mTalkerAliasCsvExportEnabled = readTalkerAliasCsvExportEnabled();
+        }
+
+        return mTalkerAliasCsvExportEnabled;
+    }
+
+    /**
+     * Reads the current talker alias CSV export preference without constructing a UserPreferences graph.
+     */
+    public static boolean readTalkerAliasCsvExportEnabled()
+    {
+        return Preferences.userNodeForPackage(ApplicationPreference.class)
+            .getBoolean(PREFERENCE_KEY_TALKER_ALIAS_CSV_EXPORT, false);
+    }
+
+    /**
+     * Enables or disables local talker alias CSV export.
+     */
+    public void setTalkerAliasCsvExportEnabled(boolean enabled)
+    {
+        mTalkerAliasCsvExportEnabled = enabled;
+        mPreferences.putBoolean(PREFERENCE_KEY_TALKER_ALIAS_CSV_EXPORT, enabled);
         notifyPreferenceUpdated();
     }
 }

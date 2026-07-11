@@ -24,11 +24,21 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
+import io.github.dsheirer.preference.application.ApplicationPreference;
+import io.github.dsheirer.util.ThreadPool;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Talker alias cache manager.  Collects observed talker aliases and inserts them into an identifier collection when
@@ -38,13 +48,27 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TalkerAliasManager
 {
+    private static final Logger mLog = LoggerFactory.getLogger(TalkerAliasManager.class);
+    private static final Map<Path,Object> EXPORT_LOCKS = new ConcurrentHashMap<>();
     private Map<Integer,TalkerAliasIdentifier> mAliasMap = new ConcurrentHashMap<>();
+    private final Path mExportFile;
 
     /**
      * Constructs an instance
      */
     public TalkerAliasManager()
     {
+        mExportFile = null;
+    }
+
+    /**
+     * Constructs an instance that exports newly observed and changed aliases to a CSV file.
+     * @param exportDirectory parent directory for the CSV file
+     * @param sourceName system or channel name used for the file name
+     */
+    public TalkerAliasManager(Path exportDirectory, String sourceName)
+    {
+        mExportFile = exportDirectory.resolve(safeFileName(sourceName) + ".csv");
     }
 
     /**
@@ -57,8 +81,55 @@ public class TalkerAliasManager
     {
         if(identifier.getRole() == Role.FROM)
         {
-            mAliasMap.put(identifier.getValue(), alias);
+            TalkerAliasIdentifier previous = mAliasMap.put(identifier.getValue(), alias);
+
+            if(identifier.getValue() > 0 && mExportFile != null && !Objects.equals(alias, previous) &&
+                ApplicationPreference.readTalkerAliasCsvExportEnabled())
+            {
+                int radio = identifier.getValue();
+                String aliasText = alias.toString().replaceFirst("^TA-", "");
+                ThreadPool.CACHED.execute(() -> appendCsv(radio, aliasText));
+            }
         }
+    }
+
+    void appendCsv(int radio, String alias)
+    {
+        synchronized(EXPORT_LOCKS.computeIfAbsent(mExportFile, ignored -> new Object()))
+        {
+            try
+            {
+                Files.createDirectories(mExportFile.getParent());
+                boolean writeHeader = Files.notExists(mExportFile) || Files.size(mExportFile) == 0;
+                StringBuilder content = new StringBuilder();
+
+                if(writeHeader)
+                {
+                    content.append("radio,alias\n");
+                }
+
+                content.append(radio).append(',').append(csv(alias)).append('\n');
+                Files.writeString(mExportFile, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
+            }
+            catch(IOException ioe)
+            {
+                mLog.warn("Unable to export talker alias CSV [{}]", mExportFile, ioe);
+            }
+        }
+    }
+
+    static String csv(String value)
+    {
+        String escaped = value == null ? "" : value.replace("\"", "\"\"");
+        return '"' + escaped + '"';
+    }
+
+    static String safeFileName(String value)
+    {
+        String safe = value == null ? "Talker Aliases" : value.replaceFirst("^T-", "")
+            .replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").trim();
+        return safe.isEmpty() ? "Talker Aliases" : safe;
     }
 
     /**
