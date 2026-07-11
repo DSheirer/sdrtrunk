@@ -368,11 +368,19 @@ public class P25P1MessageFramer
      */
     private void dispatchTSBK()
     {
-        switch(mMessageAssembler.getDataUnitID())
+        P25P1MessageAssembler assembler = mMessageAssembler;
+
+        if(assembler == null)
+        {
+            return;
+        }
+
+        switch(assembler.getDataUnitID())
         {
             case TRUNKING_SIGNALING_BLOCK_1:
-                CorrectedBinaryMessage message1 = mMessageAssembler.getMessage().getSubMessage(0, 196);
-                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message1, mMessageAssembler.getNAC(), getTimestamp());
+                CorrectedBinaryMessage message1 = assembler.getMessage().getSubMessage(0, 196);
+                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
+                    assembler.getDataUnitID(), message1, assembler.getNAC(), getTimestamp());
 
                 if(tsbk1 != null)
                 {
@@ -380,9 +388,16 @@ public class P25P1MessageFramer
                     tsbk1.getMessage().incrementCorrectedBitCount(mDetectedSyncBitErrors);
                     broadcast(tsbk1);
 
-                    if(mMessageAssembler.getMessage().currentSize() >= 391) //Detect forced completion
+                    //Listeners are invoked synchronously and can reset this framer. Do not continue an assembler that
+                    //was cleared or replaced during message delivery.
+                    if(mMessageAssembler != assembler)
                     {
-                        mMessageAssembler.setDataUnitID(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
+                        return;
+                    }
+
+                    if(assembler.getMessage().currentSize() >= 391) //Detect forced completion
+                    {
+                        assembler.setDataUnitID(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
                         dispatchTSBK(); //Recursive call
                     }
                     else if(tsbk1.isValid() && tsbk1.isLastBlock())
@@ -392,7 +407,7 @@ public class P25P1MessageFramer
                     }
                     else //Reconfigure the assembler to continue capturing TSBK2
                     {
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
+                        assembler.reconfigure(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
                     }
                 }
                 else
@@ -402,16 +417,22 @@ public class P25P1MessageFramer
                 }
                 break;
             case TRUNKING_SIGNALING_BLOCK_2:
-                CorrectedBinaryMessage message2 = mMessageAssembler.getMessage().getSubMessage(196, 392);
-                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message2, mMessageAssembler.getNAC(), getTimestamp());
+                CorrectedBinaryMessage message2 = assembler.getMessage().getSubMessage(196, 392);
+                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
+                    assembler.getDataUnitID(), message2, assembler.getNAC(), getTimestamp());
 
                 if(tsbk2 != null)
                 {
                     broadcast(tsbk2);
 
-                    if(mMessageAssembler.getMessage().currentSize() >= 588) //Detect forced completion
+                    if(mMessageAssembler != assembler)
                     {
-                        mMessageAssembler.setDataUnitID(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
+                        return;
+                    }
+
+                    if(assembler.getMessage().currentSize() >= 588) //Detect forced completion
+                    {
+                        assembler.setDataUnitID(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
                         dispatchTSBK(); //Recursive call
                     }
                     else if(tsbk2.isValid() && tsbk2.isLastBlock())
@@ -421,7 +442,7 @@ public class P25P1MessageFramer
                     }
                     else //Reconfigure the assembler to continue capturing TSBK3
                     {
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
+                        assembler.reconfigure(P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
                     }
                 }
                 else
@@ -431,15 +452,19 @@ public class P25P1MessageFramer
                 }
                 break;
             case TRUNKING_SIGNALING_BLOCK_3:
-                CorrectedBinaryMessage message3 = mMessageAssembler.getMessage().getSubMessage(392, 588);
-                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message3, mMessageAssembler.getNAC(), getTimestamp());
+                CorrectedBinaryMessage message3 = assembler.getMessage().getSubMessage(392, 588);
+                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
+                    assembler.getDataUnitID(), message3, assembler.getNAC(), getTimestamp());
                 broadcast(tsbk3);
 
-                adjustDibitCounterFromMessageAssembler();
-                mMessageAssembler = null;
+                if(mMessageAssembler == assembler)
+                {
+                    adjustDibitCounterFromMessageAssembler();
+                    mMessageAssembler = null;
+                }
                 break;
             default:
-                System.out.println("Unexpected TSBK DUID: " +  mMessageAssembler.getDataUnitID());
+                System.out.println("Unexpected TSBK DUID: " + assembler.getDataUnitID());
         }
     }
 
