@@ -62,12 +62,8 @@ version = project.findProperty('projectVersion')
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+        vendor = JvmVendorSpec.BELLSOFT
     }
-}
-
-sourceSets {
-    main.java.srcDirs 'src/main'
-    test.java.srcDirs 'src/test'
 }
 
 test {
