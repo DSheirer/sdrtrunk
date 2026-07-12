@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.gui.preference.application.AppearancePreferenceEditor;
 import io.github.dsheirer.gui.preference.application.ApplicationPreferenceEditor;
 import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
 import io.github.dsheirer.gui.preference.call.CallManagementPreferenceEditor;
@@ -42,6 +43,8 @@ public class PreferenceEditorFactory
         {
             case APPLICATION:
                 return new ApplicationPreferenceEditor(userPreferences);
+            case APPEARANCE:
+                return new AppearancePreferenceEditor(userPreferences);
             case AUDIO_CALL_MANAGEMENT:
                 return new CallManagementPreferenceEditor(userPreferences);
             case AUDIO_MP3:
