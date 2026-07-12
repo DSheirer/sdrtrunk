@@ -330,14 +330,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         if(message instanceof IFrequencyBand)
         {
             IFrequencyBand bandIdentifier = (IFrequencyBand)message;
-
-            //Only store the frequency band if it's new so we don't hold on to more than one instance of the
-            //frequency band message.  Otherwise, we'll hold on to several instances of each message as they get
-            //injected into other messages with channel information.
-            if(!mFrequencyBandMap.containsKey(bandIdentifier.getIdentifier()))
-            {
-                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
-            }
+            mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
         }
     }
 
