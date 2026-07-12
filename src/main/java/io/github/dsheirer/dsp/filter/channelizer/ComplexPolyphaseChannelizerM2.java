@@ -24,6 +24,7 @@ import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.util.Dispatcher;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -46,10 +47,9 @@ import org.slf4j.LoggerFactory;
  *
  * Instead of using an array of channel filters as described in the Harris text, this filter and the sample buffer
  * are arranged as a contiguous array to maximize Java's ability to leverage native processor Single Instruction
- * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into four steps:
+ * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into three steps:
  *
- *   -Multiply the inline array of samples and filter coefficients
- *   -Accumulate the results for each sub-channel
+ *   -Fused multiply and accumulate of the inline sample/filter arrays into each I/Q sub-channel accumulator
  *   -Rearrange the sub-channel results to correctly order the sub-channels
  *   -Perform IFFT
  *
@@ -73,6 +73,15 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private FloatFFT_1D mFFT;
     private float[] mInlineSamples;
     private float[] mInlineFilter;
+
+    /**
+     * Reusable sub-channel accumulator.  This is scratch space that is fully overwritten on each process() invocation
+     * and never escapes the method, so it is allocated once here (sized to the sub-channel count) and reused rather
+     * than being reallocated on every block.  process() is only ever invoked from the single-threaded polyphase buffer
+     * dispatcher (see PolyphaseChannelManager), so reusing this buffer across calls is thread-safe.  It is (re)sized in
+     * init() alongside the other rate-dependent buffers.
+     */
+    private float[] mFilterAccumulator;
     private boolean mTopBlockIndicator = true;
     private int[] mTopBlockMap;
     private int[] mMiddleBlockMap;
@@ -333,48 +342,49 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     /**
      * Processes the sample buffer for each new block of sample data that is loaded and distributes the results to any
      * registered channel listeners.
+     *
+     * Note: mInlineSamples and mInlineFilter are both exactly (subChannelCount * tapsPerChannel) in length (see init()
+     * and getAlignedFilter()), so the fused multiply-accumulate loop below indexes every element of each array exactly
+     * once.  The multiply and per-sub-channel accumulation are fused into a single pass, which removes the previous
+     * per-call interim product array entirely and preserves bit-for-bit identical output: for each sub-channel the
+     * tap products are summed in the same ascending tap order as before, and the JVM does not contract the separate
+     * float multiply/add into an FMA without an explicit Math.fma() call.
      */
     private float[] process()
     {
-        int bufferLength = getSubChannelCount() * mTapsPerChannel;
-        float[] inlineInterimOutput = new float[bufferLength];
+        final int subChannelCount = getSubChannelCount();
+        final int tapsPerChannel = mTapsPerChannel;
+        final float[] inlineSamples = mInlineSamples;
+        final float[] inlineFilter = mInlineFilter;
+        final float[] filterAccumulator = mFilterAccumulator;
 
-        //Multiply each of the samples by the corresponding filter tap
-        for(int x = 0; x < mInlineSamples.length; x++)
+        //Reset the reused accumulator to zero before summing this block's tap products
+        Arrays.fill(filterAccumulator, 0.0f);
+
+        //Fused multiply-accumulate: multiply each sample by its corresponding filter tap and accumulate the product
+        //directly into the appropriate I/Q sub-channel accumulator.
+        for(int tap = 0; tap < tapsPerChannel; tap++)
         {
-            inlineInterimOutput[x] = mInlineSamples[x] * mInlineFilter[x];
-        }
+            final int tapOffset = tap * subChannelCount;
 
-        float[] filterAccumulator = new float[getSubChannelCount()];
-
-        int tapOffset = 0;
-
-        //Accumulate the sample/filter product results into each of the I/Q sub-channels
-        for(int tap = 0; tap < mTapsPerChannel; tap++)
-        {
-            tapOffset = tap * getSubChannelCount();
-
-            for(int channel = 0; channel < getSubChannelCount(); channel++)
+            for(int channel = 0; channel < subChannelCount; channel++)
             {
-                filterAccumulator[channel] += inlineInterimOutput[tapOffset + channel];
+                final int index = tapOffset + channel;
+                filterAccumulator[channel] += inlineSamples[index] * inlineFilter[index];
             }
         }
 
-        float[] processed = new float[getSubChannelCount()];
+        //This output array is handed off to the IFFT dispatcher thread and therefore must be freshly allocated
+        //per block (it escapes this method and cannot be reused).
+        final float[] processed = new float[subChannelCount];
 
-        if(mTopBlockIndicator)
+        //Rearrange the accumulated sub-channels into the order required by the IFFT, alternating between the
+        //top-block and middle-block orderings on successive blocks.
+        final int[] blockMap = mTopBlockIndicator ? mTopBlockMap : mMiddleBlockMap;
+
+        for(int x = 0; x < subChannelCount; x++)
         {
-            for(int x = 0; x < getSubChannelCount(); x++)
-            {
-                processed[x] = filterAccumulator[mTopBlockMap[x]];
-            }
-        }
-        else
-        {
-            for(int x = 0; x < getSubChannelCount(); x++)
-            {
-                processed[x] = filterAccumulator[mMiddleBlockMap[x]];
-            }
+            processed[x] = filterAccumulator[blockMap[x]];
         }
 
         mTopBlockIndicator = !mTopBlockIndicator;
@@ -397,6 +407,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         mMiddleBlockMap = getMiddleBlockMap(channelCount);
         mInlineFilter = getAlignedFilter(coefficients, channelCount, mTapsPerChannel);
         mInlineSamples = new float[bufferLength];
+        mFilterAccumulator = new float[getSubChannelCount()];
     }
 
     /**
