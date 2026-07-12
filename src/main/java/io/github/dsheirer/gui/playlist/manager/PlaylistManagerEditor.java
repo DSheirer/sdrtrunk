@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -189,6 +190,14 @@ public class PlaylistManagerEditor extends HBox
                     }
                 }
             });
+
+            pathColumn.setCellValueFactory(param -> 
+            new SimpleStringProperty(param.getValue().toString()));
+
+            pathColumn.setComparator(String.CASE_INSENSITIVE_ORDER);
+            pathColumn.setSortable(true);
+
+
             pathColumn.setPrefWidth(650);
 
             mPlaylistTableView.getColumns().addAll(iconColumn, pathColumn);
