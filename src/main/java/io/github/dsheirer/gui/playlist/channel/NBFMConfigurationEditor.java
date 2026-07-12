@@ -47,6 +47,8 @@ import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
@@ -73,6 +75,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
+    private Spinner<Integer> mSquelchTailSpinner;
 
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private AuxDecoderConfigurationEditor mAuxDecoderConfigurationEditor;
@@ -146,6 +149,14 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
             gridPane.getChildren().add(getAudioFilterEnable());
+
+            Label tailLabel = new Label("Squelch Tail (ms)");
+            GridPane.setHalignment(tailLabel, HPos.RIGHT);
+            GridPane.setConstraints(tailLabel, 0, 2);
+            gridPane.getChildren().add(tailLabel);
+
+            GridPane.setConstraints(getSquelchTailSpinner(), 1, 2);
+            gridPane.getChildren().add(getSquelchTailSpinner());
 
             mDecoderPane.setContent(gridPane);
 
@@ -268,6 +279,25 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mAudioFilterEnable;
+    }
+
+    /**
+     * Spinner for squelch tail time in milliseconds.
+     * @return spinner control
+     */
+    private Spinner<Integer> getSquelchTailSpinner()
+    {
+        if(mSquelchTailSpinner == null)
+        {
+            mSquelchTailSpinner = new Spinner<>();
+            mSquelchTailSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 500, 0, 10));
+            mSquelchTailSpinner.setPrefWidth(80);
+            mSquelchTailSpinner.setEditable(true);
+            mSquelchTailSpinner.setTooltip(new Tooltip("Squelch tail duration to mimic radio squelch crash (0-500ms)"));
+            mSquelchTailSpinner.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mSquelchTailSpinner;
     }
 
     private SegmentedButton getBandwidthButton()
@@ -412,6 +442,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             updateTextFormatter(decodeConfigNBFM.getTalkgroup());
             getAudioFilterEnable().setDisable(false);
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
+            getSquelchTailSpinner().setDisable(false);
+            getSquelchTailSpinner().getValueFactory().setValue(decodeConfigNBFM.getSquelchTailMs());
         }
         else
         {
@@ -426,6 +458,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getTalkgroupField().setDisable(true);
             getAudioFilterEnable().setDisable(true);
             getAudioFilterEnable().setSelected(false);
+            getSquelchTailSpinner().setDisable(true);
+            getSquelchTailSpinner().getValueFactory().setValue(0);
         }
     }
 
@@ -461,6 +495,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setTalkgroup(talkgroup);
         config.setAudioFilter(getAudioFilterEnable().isSelected());
+        config.setSquelchTailMs(getSquelchTailSpinner().getValue());
         getItem().setDecodeConfiguration(config);
     }
 
