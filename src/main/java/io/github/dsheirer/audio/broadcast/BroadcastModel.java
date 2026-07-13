@@ -361,7 +361,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 }
 
                 broadcast(new BroadcastEvent(audioBroadcaster, BroadcastEvent.Event.BROADCASTER_ADD));
-                ThreadPool.CACHED.submit(audioBroadcaster::start);
+                ThreadPool.CACHED.submit(() -> audioBroadcaster.start());
             }
         }
     }

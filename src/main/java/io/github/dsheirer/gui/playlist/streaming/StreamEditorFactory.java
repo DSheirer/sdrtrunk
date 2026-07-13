@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzEditor;
 import io.github.dsheirer.playlist.PlaylistManager;
 
 /**
