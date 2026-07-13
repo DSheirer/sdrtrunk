@@ -66,8 +66,6 @@ public class TalkerAliasAssembler
             case 4:
                 mFragment4 = fragment;
                 break;
-            default:
-                LOGGER.info("Unexpected NXDN Talker Alias Fragment sequence # - please notify developer: " + fragment);
         }
 
         if(mFragment1 != null && mFragment2 != null && mFragment3 != null && mFragment4 != null)
