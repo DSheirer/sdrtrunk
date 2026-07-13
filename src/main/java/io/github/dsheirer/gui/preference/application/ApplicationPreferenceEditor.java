@@ -45,6 +45,7 @@ public class ApplicationPreferenceEditor extends HBox
     private Label mAutoStartTimeoutLabel;
     private Spinner<Integer> mTimeoutSpinner;
     private ToggleSwitch mAutomaticDiagnosticMonitoringToggle;
+    private ToggleSwitch mTalkerAliasCsvExportToggle;
 
     /**
      * Constructs an instance
@@ -88,6 +89,17 @@ public class ApplicationPreferenceEditor extends HBox
             GridPane.setHalignment(getTimeoutSpinner(), HPos.RIGHT);
             mEditorPane.add(getTimeoutSpinner(), 0, ++row);
             mEditorPane.add(new Label("seconds"), 1, row);
+
+            Separator aliasSeparator = new Separator(Orientation.HORIZONTAL);
+            GridPane.setHgrow(aliasSeparator, Priority.ALWAYS);
+            mEditorPane.add(aliasSeparator, 0, ++row, 3, 1);
+
+            mEditorPane.add(new Label("Talker Alias Export"), 0, ++row, 2, 1);
+            GridPane.setHalignment(getTalkerAliasCsvExportToggle(), HPos.RIGHT);
+            mEditorPane.add(getTalkerAliasCsvExportToggle(), 0, ++row);
+            Label aliasExportLabel = new Label("Export observed DMR, NXDN, and P25 talker aliases to local CSV files");
+            aliasExportLabel.setWrapText(true);
+            mEditorPane.add(aliasExportLabel, 1, row, 2, 1);
 
             ColumnConstraints c1 = new ColumnConstraints();
             c1.setPercentWidth(30);
@@ -138,5 +150,18 @@ public class ApplicationPreferenceEditor extends HBox
         }
 
         return mAutomaticDiagnosticMonitoringToggle;
+    }
+
+    private ToggleSwitch getTalkerAliasCsvExportToggle()
+    {
+        if(mTalkerAliasCsvExportToggle == null)
+        {
+            mTalkerAliasCsvExportToggle = new ToggleSwitch();
+            mTalkerAliasCsvExportToggle.setSelected(mApplicationPreference.isTalkerAliasCsvExportEnabled());
+            mTalkerAliasCsvExportToggle.selectedProperty().addListener((observable, oldValue, enabled) ->
+                mApplicationPreference.setTalkerAliasCsvExportEnabled(enabled));
+        }
+
+        return mTalkerAliasCsvExportToggle;
     }
 }

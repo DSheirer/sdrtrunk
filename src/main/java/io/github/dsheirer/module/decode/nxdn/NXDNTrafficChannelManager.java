@@ -29,6 +29,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -83,7 +84,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     private final Map<Long, Channel> mAllocatedTrafficChannelMap = new HashMap<>();
     private final Map<Long, NXDNChannelEventTracker> mEventTrackerMap = new HashMap<>();
     private final Queue<Channel> mAvailableTrafficChannelQueue = new LinkedTransferQueue<>();
-    private final TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
+    private final TalkerAliasManager mTalkerAliasManager;
     private final TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
     private List<Channel> mManagedTrafficChannels;
     private Listener<IDecodeEvent> mDecodeEventListener;
@@ -100,6 +101,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     public NXDNTrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
+        mTalkerAliasManager = new TalkerAliasManager(
+            SystemProperties.getInstance().getApplicationRootPath().resolve("Aliases"), parentChannel.getSystem());
 
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigNXDN configNXDN)
         {

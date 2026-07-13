@@ -32,6 +32,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageHistoryPreloadData;
 import io.github.dsheirer.message.MessageHistoryRequest;
@@ -104,7 +105,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
     private TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
-    private TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
+    private TalkerAliasManager mTalkerAliasManager;
     private Channel mParentChannel;
     private boolean mIgnoreDataCalls;
 
@@ -122,6 +123,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     public DMRTrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
+        mTalkerAliasManager = new TalkerAliasManager(
+            SystemProperties.getInstance().getApplicationRootPath().resolve("Aliases"), parentChannel.getSystem());
 
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigDMR)
         {
