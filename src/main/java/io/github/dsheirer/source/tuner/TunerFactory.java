@@ -126,10 +126,12 @@ import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerController;
 import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerEditor;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
+import io.github.dsheirer.source.tuner.usb.USBTunerController;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Context;
 
 import javax.sound.sampled.TargetDataLine;
 
@@ -355,13 +357,39 @@ public class TunerFactory
     public static Tuner getUsbTuner(TunerClass tunerClass, String portAddress, int bus, ITunerErrorListener tunerErrorListener,
                                     ChannelizerType channelizerType) throws SourceException
     {
+        return getUsbTuner(tunerClass, portAddress, bus, tunerErrorListener, channelizerType, null);
+    }
+
+    /**
+     * Create a USB tuner, optionally sharing an existing libusb context.
+     * @param tunerClass to instantiate
+     * @param portAddress usb
+     * @param bus usb
+     * @param tunerErrorListener to listen for errors from the tuner
+     * @param channelizerType for the tuner
+     * @param sharedContext existing libusb context to reuse, or null to create a new one
+     * @return instantiated tuner
+     * @throws SourceException if the tuner class is unrecognized
+     */
+    public static Tuner getUsbTuner(TunerClass tunerClass, String portAddress, int bus, ITunerErrorListener tunerErrorListener,
+                                    ChannelizerType channelizerType, Context sharedContext) throws SourceException
+    {
         switch(tunerClass)
         {
             case AIRSPY:
-                return new AirspyTuner(new AirspyTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            {
+                AirspyTunerController c = configureUsbTunerController(new AirspyTunerController(bus, portAddress,
+                        tunerErrorListener), tunerClass, sharedContext);
+                return new AirspyTuner(c, tunerErrorListener, channelizerType);
+            }
             case AIRSPY_HF:
-                return new AirspyHfTuner(new AirspyHfTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            {
+                AirspyHfTunerController c = configureUsbTunerController(new AirspyHfTunerController(bus, portAddress,
+                        tunerErrorListener), tunerClass, sharedContext);
+                return new AirspyHfTuner(c, tunerErrorListener, channelizerType);
+            }
             case FUNCUBE_DONGLE_PRO:
+            {
                 TargetDataLine tdl1 = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO);
                 if(tdl1 != null)
                 {
@@ -369,7 +397,9 @@ public class TunerFactory
                     return new FCDTuner(controller, tunerErrorListener);
                 }
                 throw new SourceException("Unable to find matching tuner sound card mixer");
+            }
             case FUNCUBE_DONGLE_PRO_PLUS:
+            {
                 TargetDataLine tdl2 = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS);
                 if(tdl2 != null)
                 {
@@ -377,15 +407,41 @@ public class TunerFactory
                     return new FCDTuner(controller, tunerErrorListener);
                 }
                 throw new SourceException("Unable to find matching tuner sound card mixer");
+            }
             case HACKRF:
-                return new HackRFTuner(new HackRFTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            {
+                HackRFTunerController c = configureUsbTunerController(new HackRFTunerController(bus, portAddress,
+                        tunerErrorListener), tunerClass, sharedContext);
+                return new HackRFTuner(c, tunerErrorListener, channelizerType);
+            }
             case HYDRASDR:
-                return new HydraSdrTuner(new HydraSdrTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            {
+                HydraSdrTunerController c = configureUsbTunerController(new HydraSdrTunerController(bus, portAddress,
+                        tunerErrorListener), tunerClass, sharedContext);
+                return new HydraSdrTuner(c, tunerErrorListener, channelizerType);
+            }
             case RTL2832:
-                return new RTL2832Tuner(new RTL2832TunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            {
+                RTL2832TunerController c = configureUsbTunerController(new RTL2832TunerController(bus, portAddress,
+                        tunerErrorListener), tunerClass, sharedContext);
+                return new RTL2832Tuner(c, tunerErrorListener, channelizerType);
+            }
             default:
                 throw new SourceException("Unrecognized tuner class [" + tunerClass + "]");
         }
+    }
+
+    private static <T extends USBTunerController> T configureUsbTunerController(T controller, TunerClass tunerClass,
+                                                                                 Context sharedContext)
+    {
+        controller.setTunerClass(tunerClass);
+
+        if(sharedContext != null)
+        {
+            controller.setSharedContext(sharedContext);
+        }
+
+        return controller;
     }
 
     /**
