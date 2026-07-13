@@ -17,13 +17,14 @@
  * ****************************************************************************
  */
 
- package io.github.dsheirer.gui.playlist.streaming;
+ package io.github.dsheirer.audio.broadcast.openmhz;
 
  import io.github.dsheirer.audio.broadcast.BroadcastServerType;
  import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
  import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
  import io.github.dsheirer.gui.control.IntegerTextField;
- import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.gui.playlist.streaming.AbstractBroadcastEditor;
+import io.github.dsheirer.playlist.PlaylistManager;
  import javafx.geometry.HPos;
  import javafx.geometry.Insets;
  import javafx.scene.control.Alert;
