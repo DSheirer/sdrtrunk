@@ -11,6 +11,7 @@
 package io.github.dsheirer.identifier.alias;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,13 +32,26 @@ class TalkerAliasManagerTest
     }
 
     @Test
-    void appendsHeaderOnceAndEscapesAlias() throws Exception
+    void createsHeaderAndAppendsEscapedAliases() throws Exception
     {
-        TalkerAliasManager manager = new TalkerAliasManager(mTemporaryDirectory, "T-Test/System");
+        TalkerAliasManager manager = new TalkerAliasManager(mTemporaryDirectory, "T-Test/System", true);
+        Path exportFile = mTemporaryDirectory.resolve("Test_System.csv");
+
+        assertEquals("radio,alias\n", Files.readString(exportFile));
+
         manager.appendCsv(1001, "Unit \"12\", north");
         manager.appendCsv(1002, "Unit 14");
 
         assertEquals("radio,alias\n1001,\"Unit \"\"12\"\", north\"\n1002,\"Unit 14\"\n",
-            Files.readString(mTemporaryDirectory.resolve("Test_System.csv")));
+            Files.readString(exportFile));
+    }
+
+    @Test
+    void doesNotCreateExportFileWhenDisabled()
+    {
+        TalkerAliasManager manager = new TalkerAliasManager(mTemporaryDirectory, "Test", false);
+        manager.appendCsv(1001, "Unit 12");
+
+        assertFalse(Files.exists(mTemporaryDirectory.resolve("Test.csv")));
     }
 }

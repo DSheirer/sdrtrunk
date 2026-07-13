@@ -52,6 +52,7 @@ public class TalkerAliasManager
     private static final Map<Path,Object> EXPORT_LOCKS = new ConcurrentHashMap<>();
     private Map<Integer,TalkerAliasIdentifier> mAliasMap = new ConcurrentHashMap<>();
     private final Path mExportFile;
+    private volatile boolean mAliasExportEnabled;
 
     /**
      * Constructs an instance
@@ -59,6 +60,7 @@ public class TalkerAliasManager
     public TalkerAliasManager()
     {
         mExportFile = null;
+        mAliasExportEnabled = false;
     }
 
     /**
@@ -68,7 +70,24 @@ public class TalkerAliasManager
      */
     public TalkerAliasManager(Path exportDirectory, String sourceName)
     {
+        this(exportDirectory, sourceName, ApplicationPreference.readTalkerAliasCsvExportEnabled());
+    }
+
+    /**
+     * Constructs an instance that exports newly observed and changed aliases to a CSV file when enabled.
+     *
+     * @param exportDirectory parent directory for the CSV file
+     * @param sourceName system or channel name used for the file name
+     * @param aliasExportEnabled true to initialize the CSV export file
+     */
+    TalkerAliasManager(Path exportDirectory, String sourceName, boolean aliasExportEnabled)
+    {
         mExportFile = exportDirectory.resolve(safeFileName(sourceName) + ".csv");
+
+        if(aliasExportEnabled)
+        {
+            initializeAliasExport();
+        }
     }
 
     /**
@@ -83,8 +102,7 @@ public class TalkerAliasManager
         {
             TalkerAliasIdentifier previous = mAliasMap.put(identifier.getValue(), alias);
 
-            if(identifier.getValue() > 0 && mExportFile != null && !Objects.equals(alias, previous) &&
-                ApplicationPreference.readTalkerAliasCsvExportEnabled())
+            if(identifier.getValue() > 0 && mAliasExportEnabled && !Objects.equals(alias, previous))
             {
                 int radio = identifier.getValue();
                 String aliasText = alias.toString().replaceFirst("^TA-", "");
@@ -95,26 +113,54 @@ public class TalkerAliasManager
 
     void appendCsv(int radio, String alias)
     {
+        if(!mAliasExportEnabled)
+        {
+            return;
+        }
+
+        synchronized(EXPORT_LOCKS.computeIfAbsent(mExportFile, ignored -> new Object()))
+        {
+            if(!mAliasExportEnabled)
+            {
+                return;
+            }
+
+            try
+            {
+                Files.writeString(mExportFile, radio + "," + csv(alias) + '\n', StandardCharsets.UTF_8,
+                    StandardOpenOption.APPEND);
+            }
+            catch(IOException ioe)
+            {
+                mAliasExportEnabled = false;
+                mLog.warn("Unable to export talker alias CSV [{}]", mExportFile, ioe);
+            }
+        }
+    }
+
+    /**
+     * Initializes the alias export file once so that later alias updates do not repeatedly attempt a failed file
+     * creation.
+     */
+    private void initializeAliasExport()
+    {
         synchronized(EXPORT_LOCKS.computeIfAbsent(mExportFile, ignored -> new Object()))
         {
             try
             {
                 Files.createDirectories(mExportFile.getParent());
-                boolean writeHeader = Files.notExists(mExportFile) || Files.size(mExportFile) == 0;
-                StringBuilder content = new StringBuilder();
 
-                if(writeHeader)
+                if(Files.notExists(mExportFile) || Files.size(mExportFile) == 0)
                 {
-                    content.append("radio,alias\n");
+                    Files.writeString(mExportFile, "radio,alias\n", StandardCharsets.UTF_8, StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
                 }
 
-                content.append(radio).append(',').append(csv(alias)).append('\n');
-                Files.writeString(mExportFile, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND);
+                mAliasExportEnabled = true;
             }
             catch(IOException ioe)
             {
-                mLog.warn("Unable to export talker alias CSV [{}]", mExportFile, ioe);
+                mLog.warn("Unable to initialize talker alias CSV export [{}]", mExportFile, ioe);
             }
         }
     }
