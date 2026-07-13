@@ -1,0 +1,273 @@
+/*
+ * Dark Theme CSS for SDRTrunk JavaFX Components
+ */
+
+/* Root styling */
+.root {
+    -fx-base: rgb(30, 30, 30);
+    -fx-background: rgb(30, 30, 30);
+    -fx-control-inner-background: rgb(43, 43, 43);
+    -fx-font-family: "Segoe UI", "Helvetica", "Arial", sans-serif;
+}
+
+/* Text colors */
+.label, .text {
+    -fx-text-fill: rgb(187, 187, 187);
+}
+
+/* Button styling */
+.button {
+    -fx-background-color: rgb(60, 60, 60);
+    -fx-text-fill: rgb(220, 220, 220);
+    -fx-border-color: rgb(80, 80, 80);
+    -fx-border-width: 1px;
+}
+
+.button:hover {
+    -fx-background-color: rgb(70, 70, 70);
+}
+
+.button:pressed {
+    -fx-background-color: rgb(50, 50, 50);
+}
+
+/* TextField styling */
+.text-field, .text-area {
+    -fx-background-color: rgb(43, 43, 43);
+    -fx-text-fill: rgb(220, 220, 220);
+    -fx-prompt-text-fill: rgb(130, 130, 130);
+    -fx-border-color: rgb(80, 80, 80);
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: rgb(100, 140, 200);
+}
+
+/* List and Table styling */
+.list-view, .table-view {
+    -fx-background-color: rgb(43, 43, 43);
+    -fx-control-inner-background: rgb(43, 43, 43);
+    -fx-table-cell-border-color: rgb(60, 60, 60);
+}
+
+.list-cell, .table-row-cell {
+    -fx-background-color: rgb(43, 43, 43);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.list-cell:filled:selected:focused, .list-cell:filled:selected,
+.table-row-cell:selected {
+    -fx-background-color: rgb(75, 110, 175);
+    -fx-text-fill: white;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: rgb(50, 50, 50);
+}
+
+.table-view .column-header {
+    -fx-background-color: rgb(50, 50, 50);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+/* Tree View styling */
+.tree-view {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+.tree-cell {
+    -fx-background-color: rgb(43, 43, 43);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.tree-cell:selected {
+    -fx-background-color: rgb(75, 110, 175);
+    -fx-text-fill: white;
+}
+
+/* TabPane styling */
+.tab-pane {
+    -fx-background-color: rgb(30, 30, 30);
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: rgb(40, 40, 40);
+}
+
+.tab {
+    -fx-background-color: rgb(50, 50, 50);
+    -fx-text-fill: rgb(180, 180, 180);
+}
+
+.tab:selected {
+    -fx-background-color: rgb(43, 43, 43);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.tab:hover {
+    -fx-background-color: rgb(60, 60, 60);
+}
+
+.tab-pane .tab-content-area {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+/* ComboBox styling */
+.combo-box {
+    -fx-background-color: rgb(60, 60, 60);
+}
+
+.combo-box .list-cell {
+    -fx-background-color: rgb(60, 60, 60);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+/* ScrollBar styling */
+.scroll-bar {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: rgb(80, 80, 80);
+    -fx-background-radius: 5px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgb(100, 100, 100);
+}
+
+.scroll-bar .track {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+/* Menu styling */
+.menu-bar {
+    -fx-background-color: rgb(40, 40, 40);
+}
+
+.menu, .menu-item {
+    -fx-background-color: rgb(50, 50, 50);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.menu:showing, .menu:hover, .menu-item:hover {
+    -fx-background-color: rgb(75, 110, 175);
+}
+
+.context-menu {
+    -fx-background-color: rgb(50, 50, 50);
+}
+
+/* Separator styling */
+.separator {
+    -fx-background-color: rgb(80, 80, 80);
+}
+
+/* ProgressBar styling */
+.progress-bar {
+    -fx-background-color: rgb(60, 60, 60);
+}
+
+.progress-bar .bar {
+    -fx-background-color: rgb(75, 110, 175);
+}
+
+/* Spinner styling */
+.spinner {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+.spinner .text-field {
+    -fx-background-color: rgb(43, 43, 43);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+/* ToggleButton styling */
+.toggle-button {
+    -fx-background-color: rgb(60, 60, 60);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.toggle-button:selected {
+    -fx-background-color: rgb(75, 110, 175);
+}
+
+/* CheckBox and RadioButton styling */
+.check-box, .radio-button {
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.check-box .box, .radio-button .radio {
+    -fx-background-color: rgb(60, 60, 60);
+    -fx-border-color: rgb(100, 100, 100);
+}
+
+.check-box:selected .mark, .radio-button:selected .dot {
+    -fx-background-color: rgb(220, 220, 220);
+}
+
+/* SplitPane styling */
+.split-pane {
+    -fx-background-color: rgb(30, 30, 30);
+}
+
+.split-pane-divider {
+    -fx-background-color: rgb(60, 60, 60);
+}
+
+/* TitledPane styling */
+.titled-pane {
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.titled-pane > .title {
+    -fx-background-color: rgb(50, 50, 50);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+.titled-pane > .content {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+/* ToolBar styling */
+.tool-bar {
+    -fx-background-color: rgb(40, 40, 40);
+}
+
+/* Tooltip styling */
+.tooltip {
+    -fx-background-color: rgb(60, 60, 60);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+
+/* ScrollPane styling */
+.scroll-pane {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+/* Chart styling (for spectral displays) */
+.chart {
+    -fx-background-color: rgb(30, 30, 30);
+}
+
+.chart-plot-background {
+    -fx-background-color: rgb(43, 43, 43);
+}
+
+.axis {
+    -fx-tick-label-fill: rgb(187, 187, 187);
+}
+
+.chart-legend {
+    -fx-background-color: rgb(50, 50, 50);
+    -fx-text-fill: rgb(220, 220, 220);
+}
+

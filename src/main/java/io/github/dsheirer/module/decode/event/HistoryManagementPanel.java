@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.filter.FilterEditor;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.preference.UserPreferences;
 import java.awt.EventQueue;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -46,15 +47,19 @@ public class HistoryManagementPanel<T> extends JPanel
     private JLabel mHistoryTitleLabel;
     private JLabel mHistoryValueLabel;
     private String mFilterEditorTitle;
+    private UserPreferences mUserPreferences;
 
     /**
      * Constructs an instance
      * @param model to manage
+     * @param filterEditorTitle for the filter editor
+     * @param userPreferences for accessing user preferences like dark mode
      */
-    public HistoryManagementPanel(ClearableHistoryModel model, String filterEditorTitle)
+    public HistoryManagementPanel(ClearableHistoryModel model, String filterEditorTitle, UserPreferences userPreferences)
     {
         mModel = model;
         mFilterEditorTitle = filterEditorTitle;
+        mUserPreferences = userPreferences;
         setLayout(new MigLayout("insets 6 1 5 5", "[]5[]10[]5[]5[][grow]", ""));
         add(getFilterButton());
         add(getClearButton());
@@ -176,6 +181,12 @@ public class HistoryManagementPanel<T> extends JPanel
         if(mHistorySlider == null)
         {
             mHistorySlider = new JSlider();
+            mHistorySlider.setOpaque(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mHistorySlider.setBackground(new java.awt.Color(43, 43, 43));
+                mHistorySlider.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mHistorySlider.setToolTipText("Adjust history size.  Double-click to reset to default 200");
             mHistorySlider.setMinimum(0);
             mHistorySlider.setMaximum(2000);

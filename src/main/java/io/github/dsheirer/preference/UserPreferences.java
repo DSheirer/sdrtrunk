@@ -22,6 +22,7 @@ package io.github.dsheirer.preference;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.application.ApplicationPreference;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
+import io.github.dsheirer.preference.colortheme.ColorThemePreference;
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.duplicate.CallManagementPreference;
@@ -58,6 +59,7 @@ public class UserPreferences implements Listener<PreferenceType>
 {
     private ApplicationPreference mApplicationPreference;
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
+    private ColorThemePreference mColorThemePreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
     private CallManagementPreference mCallManagementPreference;
@@ -214,12 +216,21 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Color theme preferences
+     */
+    public ColorThemePreference getColorThemePreference()
+    {
+        return mColorThemePreference;
+    }
+
+    /**
      * Loads the managed preferences
      */
     private void loadPreferenceTypes()
     {
         mApplicationPreference = new ApplicationPreference(this::receive);
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
+        mColorThemePreference = new ColorThemePreference(this::receive);
         mDecodeEventPreference = new DecodeEventPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
         mCallManagementPreference = new CallManagementPreference(this::receive);

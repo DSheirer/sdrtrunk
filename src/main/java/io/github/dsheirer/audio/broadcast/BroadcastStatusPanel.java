@@ -146,7 +146,7 @@ public class BroadcastStatusPanel extends JPanel
                     if(state == BroadcastState.CONNECTED)
                     {
                         setBackground(Color.GREEN);
-                        setForeground(table.getForeground());
+                        setForeground(Color.BLACK); // Use black text on green background for better readability
                     }
                     else if(state == BroadcastState.DISABLED)
                     {
@@ -157,12 +157,12 @@ public class BroadcastStatusPanel extends JPanel
                             state == BroadcastState.NETWORK_UNAVAILABLE)
                     {
                         setBackground(Color.YELLOW);
-                        setForeground(table.getForeground());
+                        setForeground(Color.BLACK); // Use black text on yellow background for better readability
                     }
                     else if(state.isErrorState())
                     {
                         setBackground(Color.RED);
-                        setForeground(table.getForeground());
+                        setForeground(Color.WHITE); // Use white text on red background for better readability
                     }
                     else
                     {

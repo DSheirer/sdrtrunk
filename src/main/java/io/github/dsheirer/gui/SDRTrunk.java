@@ -38,6 +38,7 @@ import io.github.dsheirer.gui.preference.CalibrateRequest;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
+import io.github.dsheirer.gui.preference.colortheme.ColorThemeManager;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
@@ -188,6 +189,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         //Register FontAwesome so we can use the fonts in Swing windows
         IconFontSwing.register(FontAwesome.getIconFont());
+
+        //Apply color theme (dark mode if enabled) BEFORE creating GUI components
+        ColorThemeManager.applySwingTheme(mUserPreferences);
 
         mTunerManager = new TunerManager(mUserPreferences);
         mTunerManager.start();
@@ -422,13 +426,22 @@ public class SDRTrunk implements Listener<TunerEvent>
             mMainGui.add(getResourceStatusPanel(), "span,growx");
         }
 
+        //Update GUI components to apply theme after all components are created
+        if(mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+        {
+            ColorThemeManager.updateComponentTreeUI(mMainGui);
+        }
+
         /**
          * Menu items
          */
         JMenuBar menuBar = new JMenuBar();
+        menuBar.setOpaque(true);
+        ColorThemeManager.applyDarkThemeToComponent(menuBar, mUserPreferences);
         mMainGui.setJMenuBar(menuBar);
 
         JMenu fileMenu = new JMenu("File");
+        ColorThemeManager.applyDarkThemeToComponent(fileMenu, mUserPreferences);
         menuBar.add(fileMenu);
 
         JMenuItem processingStatusReportMenuItem = new JMenuItem("Processing Diagnostic Report");
@@ -481,6 +494,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         fileMenu.add(exitMenu);
 
         JMenu viewMenu = new JMenu("View");
+        ColorThemeManager.applyDarkThemeToComponent(viewMenu, mUserPreferences);
 
         JMenuItem viewPlaylistItem = new JMenuItem("Playlist Editor");
         viewPlaylistItem.setIcon(IconFontSwing.buildIcon(FontAwesome.PLAY_CIRCLE_O, 12));
@@ -597,6 +611,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         menuBar.add(viewMenu);
 
         JMenuItem screenCaptureItem = new JMenuItem("Screen Capture");
+        screenCaptureItem.setOpaque(true);
         screenCaptureItem.setIcon(IconFontSwing.buildIcon(FontAwesome.CAMERA, 12));
         screenCaptureItem.setMnemonic(KeyEvent.VK_C);
         screenCaptureItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));

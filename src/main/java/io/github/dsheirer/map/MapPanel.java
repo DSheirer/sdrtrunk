@@ -88,18 +88,22 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
     private JLabel mSelectedTrackSystemLabel;
     private final TrackHistoryModel EMPTY_HISTORY = new TrackHistoryModel();
 
+    private io.github.dsheirer.preference.UserPreferences mUserPreferences;
+
     /**
      * Constructs an instance
      * @param mapService for accessing entities to plot
      * @param aliasModel for alias lookup
      * @param iconModel for icon lookup
      * @param settingsManager for user specified options/settings.
+     * @param userPreferences for accessing user preferences like dark mode
      */
-    public MapPanel(MapService mapService, AliasModel aliasModel, IconModel iconModel, SettingsManager settingsManager)
+    public MapPanel(MapService mapService, AliasModel aliasModel, IconModel iconModel, SettingsManager settingsManager, io.github.dsheirer.preference.UserPreferences userPreferences)
     {
         mSettingsManager = settingsManager;
         mMapService = mapService;
         mMapPainter = new PlottableEntityPainter(aliasModel, iconModel);
+        mUserPreferences = userPreferences;
 
         init();
     }
@@ -190,6 +194,13 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         if(mReplotAllTracksButton == null)
         {
             mReplotAllTracksButton = new JButton("Replot All");
+            mReplotAllTracksButton.setOpaque(true);
+            mReplotAllTracksButton.setContentAreaFilled(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mReplotAllTracksButton.setBackground(new java.awt.Color(43, 43, 43));
+                mReplotAllTracksButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mReplotAllTracksButton.addActionListener(e ->
             {
                 boolean added = mMapPainter.addAll(mMapService.getPlottableEntityModel().getAll());
@@ -330,6 +341,13 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         if(mClearMapButton == null)
         {
             mClearMapButton = new JButton("Clear Map");
+            mClearMapButton.setOpaque(true);
+            mClearMapButton.setContentAreaFilled(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mClearMapButton.setBackground(new java.awt.Color(43, 43, 43));
+                mClearMapButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mClearMapButton.addActionListener(e ->
             {
                 mMapPainter.clearAllEntities();
@@ -349,6 +367,12 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         if(mCenterOnSelectedCheckBox == null)
         {
             mCenterOnSelectedCheckBox = new JCheckBox("Center on Selection");
+            mCenterOnSelectedCheckBox.setOpaque(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mCenterOnSelectedCheckBox.setBackground(new java.awt.Color(43, 43, 43));
+                mCenterOnSelectedCheckBox.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mCenterOnSelectedCheckBox.setSelected(true);
         }
 
@@ -360,6 +384,13 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         if(mDeleteAllTracksButton == null)
         {
             mDeleteAllTracksButton = new JButton("Delete All");
+            mDeleteAllTracksButton.setOpaque(true);
+            mDeleteAllTracksButton.setContentAreaFilled(true);
+            if(mUserPreferences != null && mUserPreferences.getColorThemePreference().isDarkModeEnabled())
+            {
+                mDeleteAllTracksButton.setBackground(new java.awt.Color(43, 43, 43));
+                mDeleteAllTracksButton.setForeground(new java.awt.Color(187, 187, 187));
+            }
             mDeleteAllTracksButton.addActionListener(e -> {
                 mMapService.getPlottableEntityModel().deleteAllTracks();
                 mMapPainter.clearAllEntities();
@@ -535,8 +566,12 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
 
             /**
              * Map image source
+             * Note: Dark mode map tiles have compatibility issues with JXMapViewer.
+             * The map will use standard OpenStreetMap tiles regardless of dark mode setting.
+             * All UI controls around the map will still respect dark mode.
              */
             TileFactoryInfo info = new OSMTileFactoryInfo();
+            
             DefaultTileFactory tileFactory = new DefaultTileFactory(info);
             mMapViewer.setTileFactory(tileFactory);
 

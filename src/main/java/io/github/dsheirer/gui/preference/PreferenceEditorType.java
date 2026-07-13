@@ -26,6 +26,7 @@ public enum PreferenceEditorType
 {
     APPLICATION("Application"),
     CHANNEL_EVENT("Channel Events"),
+    COLOR_THEME("Color Theme"),
     DIRECTORY("Directories"),
     JMBE_LIBRARY("JMBE Audio Library"),
     AUDIO_MP3("MP3"),
