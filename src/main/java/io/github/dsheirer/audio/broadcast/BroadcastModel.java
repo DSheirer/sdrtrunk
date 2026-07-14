@@ -20,6 +20,7 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
@@ -328,6 +329,38 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         }
 
         mRecordingQueue.add(audioRecording);
+    }
+
+    /**
+     * Receives a real-time AudioSegment and dispatches it to all IAudioSegmentBroadcaster instances
+     * (currently PCM-over-LAN, though support for mp3/wav/etc could be added).  These broadcasters 
+     * receive ALL decoded audio segments.  They do not require an alias or other configuration; they 
+     * stream raw audio continuously.  The caller has already incremented the consumer count once for 
+     * this listener; we increment again per broadcaster we forward to and decrement once when done.
+     */
+    public void onAudioSegment(AudioSegment audioSegment)
+    {
+        if(audioSegment == null)
+        {
+            return;
+        }
+
+        try
+        {
+            for(AbstractAudioBroadcaster broadcaster : mBroadcasterMap.values())
+            {
+                if(broadcaster instanceof IAudioSegmentBroadcaster segmentBroadcaster)
+                {
+                    audioSegment.incrementConsumerCount();
+                    segmentBroadcaster.receiveAudioSegment(audioSegment);
+                }
+            }
+        }
+        finally
+        {
+            //Release this listener's consumer reference
+            audioSegment.decrementConsumerCount();
+        }
     }
 
     /**

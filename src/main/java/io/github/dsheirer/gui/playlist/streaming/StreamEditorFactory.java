@@ -52,6 +52,8 @@ public class StreamEditorFactory
                 return new ShoutcastV1StreamEditor(playlistManager);
             case SHOUTCAST_V2:
                 return new ShoutcastV2StreamEditor(playlistManager);
+            case PCM_LAN:
+                return new PcmLanStreamEditor(playlistManager);
             default:
                 return new UnknownStreamEditor(playlistManager);
         }
