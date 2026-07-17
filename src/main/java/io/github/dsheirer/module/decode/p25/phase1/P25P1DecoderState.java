@@ -57,6 +57,7 @@ import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
@@ -192,6 +193,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final Listener<ChannelEvent> mChannelEventListener;
     private final P25TrafficChannelManager mTrafficChannelManager;
     private ServiceOptions mCurrentServiceOptions;
+    private final Integer mNacFilter;
 
     /**
      * Constructs an APCO-25 decoder state with an optional traffic channel manager.
@@ -201,7 +203,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     public P25P1DecoderState(Channel channel, P25TrafficChannelManager trafficChannelManager)
     {
         mChannel = channel;
-        mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
+        DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)channel.getDecodeConfiguration();
+        mModulation = config.getModulation();
+        mNacFilter = config.getNacFilter();
         mNetworkConfigurationMonitor = new P25P1NetworkConfigurationMonitor(mModulation);
 
         if(trafficChannelManager != null)
@@ -277,6 +281,20 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         if(iMessage instanceof P25P1Message message)
         {
+            // NAC filtering - discard messages that don't match configured NAC
+            if(mNacFilter != null && mNacFilter > 0)
+            {
+                Identifier nacIdentifier = message.getNAC();
+                if(nacIdentifier instanceof APCO25Nac nac)
+                {
+                    if(nac.getValue() != mNacFilter.intValue())
+                    {
+                        // NAC doesn't match - discard this message
+                        return;
+                    }
+                }
+            }
+
             getIdentifierCollection().update(message.getNAC());
 
             switch(message.getDUID())
