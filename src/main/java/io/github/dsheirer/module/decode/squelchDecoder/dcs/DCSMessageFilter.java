@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dcs;
+package io.github.dsheirer.module.decode.squelchDecoder.dcs;
 
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;

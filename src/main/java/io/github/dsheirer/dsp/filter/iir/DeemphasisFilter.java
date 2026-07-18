@@ -15,15 +15,22 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.iir;
 
+import io.github.dsheirer.audio.AbstractAudioFilter;
 import org.apache.commons.math3.util.FastMath;
 
-public class DeemphasisFilter
+public class DeemphasisFilter extends AbstractAudioFilter
 {
 	private static final float MAX_SAMPLE_VALUE = 0.95f;
 	private float mAlpha;
 	private float mGain;
 	private float mPrevious = 0.0f;
-	
+
+    /**
+     * Create an instance
+     * @param sampleRate - usually 8000 Hz
+     * @param cutoff - cutoff frequency
+     * @param gain - gain (linear)
+     */
 	public DeemphasisFilter( float sampleRate, float cutoff, float gain )
 	{
 		mAlpha = (float)FastMath.exp( -2.0 * FastMath.PI * cutoff * ( 1.0 / sampleRate ) );
@@ -45,7 +52,7 @@ public class DeemphasisFilter
 		}
 		else return FastMath.max(value, -MAX_SAMPLE_VALUE);
 	}
-	
+	@Override
 	public float[] filter( float[] samples )
 	{
 		for( int x = 0; x < samples.length; x++ )

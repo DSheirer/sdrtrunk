@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.squelchDecoder.squelchDecoderConfig;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -46,13 +49,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
-import javafx.scene.control.TitledPane;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.TextAlignment;
 import org.controlsfx.control.SegmentedButton;
@@ -70,6 +68,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TitledPane mSourcePane;
     private TextField mTalkgroupField;
     private ToggleSwitch mAudioFilterEnable;
+    private ToggleSwitch mALCEnable;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
@@ -80,6 +79,11 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private final TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
     private final IntegerFormatter mDecimalFormatter = new IntegerFormatter(1, 65535);
     private final HexFormatter mHexFormatter = new HexFormatter(1, 65535);
+
+    private ComboBox<DecodeConfigNBFM.DeemphasisMode> mDeemphasisCombo;
+    private ComboBox<squelchDecoderConfig.SquelchType> mSquelchTypeCombo;
+    private ComboBox<CTCSSCode> mCtcssCodeCombo;
+    private ComboBox<DCSCode> mDcsCodeCombo;
 
     /**
      * Constructs an instance
@@ -128,6 +132,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
+            // channel bandwidth
             Label bandwidthLabel = new Label("Channel Bandwidth");
             GridPane.setHalignment(bandwidthLabel, HPos.RIGHT);
             GridPane.setConstraints(bandwidthLabel, 0, 0);
@@ -136,16 +141,86 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getBandwidthButton(), 1, 0);
             gridPane.getChildren().add(getBandwidthButton());
 
+            //De-emphasis
+            Label deemphasisLabel = new Label("De-emphasis");
+            GridPane.setHalignment(deemphasisLabel, HPos.RIGHT);
+            GridPane.setConstraints(deemphasisLabel, 0, 1);
+            gridPane.getChildren().add(deemphasisLabel);
+            GridPane.setConstraints(getDeemphasisCombo(), 1, 1, 2, 1);
+            gridPane.getChildren().add(getDeemphasisCombo());
+
+            // High pass audio filter
+            // Note: normally the label and its toggle switch are one cell.  They were split to make the next row
+            //  look better. The label is manually created and placed here.  Might want to create a new grid pane instead.
+            Label HPFLabel = new Label("High-pass Audio Filter (300 Hz)");
+            GridPane.setHalignment(HPFLabel, HPos.RIGHT);
+            GridPane.setConstraints(HPFLabel, 2, 1);
+            gridPane.getChildren().add(HPFLabel);
+            GridPane.setConstraints(getAudioFilterEnable(), 3, 1);
+            gridPane.getChildren().add(getAudioFilterEnable());
+
+            // ALC (Automatic Level Control)
+            GridPane.setConstraints(getALCEnable(), 4, 1);
+            gridPane.getChildren().add(getALCEnable());
+
+            /*
+             * The intention here is to have talkgroup and squelch decoder settings on a single line at the bottom
+             * of the pane. In the future a button can be added to add additional talkgroups and filter lines to
+             * allow for multiple decoders on a single NBFM channel. For the time being, a user can "clone" the
+             * channel and setup another decoder at the expense of another channel processing thread.
+             */
+            // talkgroup
             Label talkgroupLabel = new Label("Talkgroup To Assign");
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
-            GridPane.setConstraints(talkgroupLabel, 0, 1);
+            GridPane.setConstraints(talkgroupLabel, 0, 2);
             gridPane.getChildren().add(talkgroupLabel);
 
-            GridPane.setConstraints(getTalkgroupField(), 1, 1);
+            GridPane.setConstraints(getTalkgroupField(), 1, 2);
             gridPane.getChildren().add(getTalkgroupField());
 
-            GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
-            gridPane.getChildren().add(getAudioFilterEnable());
+            // Squelch Decoder type
+            Label typeLabel = new Label("Squelch Decoder Type");
+            GridPane.setHalignment(typeLabel, HPos.RIGHT);
+            GridPane.setConstraints(typeLabel, 2, 2);
+            gridPane.getChildren().add(typeLabel);
+
+            mSquelchTypeCombo = new ComboBox<>();
+            mSquelchTypeCombo.getItems().addAll(squelchDecoderConfig.SquelchType.SQUELCH_TYPE);
+            mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+            mSquelchTypeCombo.valueProperty().addListener((obs, ov, nv) -> {
+                updateSquelchCodeVisibility();
+                mCtcssCodeCombo.setValue(null);
+                mDcsCodeCombo.setValue(null);
+                // this hack solves the problem of the promptText going away after using the comboBox first time (Java 25):
+                mCtcssCodeCombo.setSkin(new ComboBoxListViewSkin<>(mCtcssCodeCombo));
+                mDcsCodeCombo.setSkin(new ComboBoxListViewSkin<>(mDcsCodeCombo));
+                modifiedProperty().set(true);
+            });
+            GridPane.setConstraints(mSquelchTypeCombo, 3, 2);
+            gridPane.getChildren().add(mSquelchTypeCombo);
+
+            // CTCSS code selector
+            mCtcssCodeCombo = new ComboBox<>();
+            mCtcssCodeCombo.getItems().addAll(CTCSSCode.STANDARD_CODES);    // excludes unknown/dummy codes
+            mCtcssCodeCombo.setValue(null);
+            mCtcssCodeCombo.setPromptText("Select CTCSS tone");
+            mCtcssCodeCombo.setPrefWidth(200);
+            mCtcssCodeCombo.setVisible(false);
+            mCtcssCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
+            GridPane.setConstraints(mCtcssCodeCombo, 4, 2);
+            gridPane.getChildren().add(mCtcssCodeCombo);
+
+            // DCS code selector
+            mDcsCodeCombo = new ComboBox<>();
+            mDcsCodeCombo.getItems().addAll(DCSCode.STANDARD_CODES);
+            mDcsCodeCombo.getItems().addAll(DCSCode.INVERTED_CODES);
+            mDcsCodeCombo.setValue(null);
+            mDcsCodeCombo.setPromptText("Select DCS code");
+            mDcsCodeCombo.setPrefWidth(200);
+            mDcsCodeCombo.setVisible(false);
+            mDcsCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
+            GridPane.setConstraints(mDcsCodeCombo, 4, 2);
+            gridPane.getChildren().add(mDcsCodeCombo);
 
             mDecoderPane.setContent(gridPane);
 
@@ -161,6 +236,46 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mDecoderPane;
+    }
+
+    private ComboBox<DecodeConfigNBFM.DeemphasisMode> getDeemphasisCombo()
+    {
+        if(mDeemphasisCombo == null)
+        {
+            mDeemphasisCombo = new ComboBox<>();
+            mDeemphasisCombo.getItems().addAll(DecodeConfigNBFM.DeemphasisMode.values());
+            mDeemphasisCombo.setValue(DecodeConfigNBFM.DeemphasisMode.NBFM_300);
+            mDeemphasisCombo.setTooltip(new Tooltip("FM de-emphasis restores flat audio from pre-emphasized FM signal"));
+            mDeemphasisCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
+        }
+        return mDeemphasisCombo;
+    }
+
+    private void updateSquelchCodeVisibility()
+    {
+        switch(mSquelchTypeCombo.getValue())
+        {
+            case squelchDecoderConfig.SquelchType.NONE:
+                mCtcssCodeCombo.setVisible(false);
+                mDcsCodeCombo.setVisible(false);
+                break;
+            case squelchDecoderConfig.SquelchType.CTCSS:
+                mCtcssCodeCombo.setVisible(true);
+                mDcsCodeCombo.setVisible(false);
+                break;
+            case squelchDecoderConfig.SquelchType.DCS:
+                mCtcssCodeCombo.setVisible(false);
+                mDcsCodeCombo.setVisible(true);
+                break;
+        }
+    }
+
+    private void resetSquelchCodes()
+    {
+        mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+        mCtcssCodeCombo.setValue(null);
+        mDcsCodeCombo.setValue(null);
+        updateSquelchCodeVisibility();
     }
 
     private TitledPane getEventLogPane()
@@ -262,14 +377,31 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mAudioFilterEnable == null)
         {
-            mAudioFilterEnable = new ToggleSwitch("High-Pass Audio Filter");
+            // removed label from toggle switch so that the label and the switch can be in different columns
+            //  to make things look better on the next line. Perhaps make a new grid pane instead.
+            //mAudioFilterEnable = new ToggleSwitch("High-Pass Audio Filter (300 Hz)");
+            mAudioFilterEnable = new ToggleSwitch("");
             mAudioFilterEnable.setTooltip(new Tooltip("High-pass filter to remove DC offset and sub-audible signalling"));
             mAudioFilterEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mAudioFilterEnable;
     }
+    /**
+     * Toggle switch for enable/disable the Automatic Level Control (ALC) in the audio module.
+     * @return toggle switch.
+     */
+    private ToggleSwitch getALCEnable()
+    {
+        if(mALCEnable == null)
+        {
+            mALCEnable = new ToggleSwitch("Automatic Level Control");
+            mALCEnable.setTooltip(new Tooltip("Automatic Level Control (ALC). Tries to make the volume of each received transmission the same."));
+            mALCEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
 
+        return mALCEnable;
+    }
     private SegmentedButton getBandwidthButton()
     {
         if(mBandwidthButton == null)
@@ -327,6 +459,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         {
             mTalkgroupField = new TextField();
             mTalkgroupField.setTextFormatter(mTalkgroupTextFormatter);
+            mTalkgroupField.setPrefWidth(100);
         }
 
         return mTalkgroupField;
@@ -412,6 +545,46 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             updateTextFormatter(decodeConfigNBFM.getTalkgroup());
             getAudioFilterEnable().setDisable(false);
             getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
+
+            getALCEnable().setDisable(false);
+            getALCEnable().setSelected(decodeConfigNBFM.isAudioALC());
+
+            getDeemphasisCombo().setValue(decodeConfigNBFM.getDeemphasis());
+
+            List<squelchDecoderConfig> savedSquelchDecoders = decodeConfigNBFM.getSquelchDecoders();
+            if(savedSquelchDecoders != null && !savedSquelchDecoders.isEmpty())
+            {
+
+                // At present time, only one decoder per channel is used
+                squelchDecoderConfig filter = savedSquelchDecoders.get(0);
+                mSquelchTypeCombo.setValue(filter.getSquelchType());
+                updateSquelchCodeVisibility();
+                if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.NONE)
+                {
+                    mSquelchTypeCombo.setValue(squelchDecoderConfig.SquelchType.NONE);
+                    resetSquelchCodes();
+                }
+                if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.CTCSS)
+                {
+                    CTCSSCode code = filter.getCTCSSCode();
+                    if(code != null && code != CTCSSCode.UNKNOWNH && code != CTCSSCode.UNKNOWNL)
+                    {
+                        mCtcssCodeCombo.setValue(code);
+                    }
+                }
+                if(filter.getSquelchType() == squelchDecoderConfig.SquelchType.DCS)
+                {
+                    DCSCode code = filter.getDCSCode();
+                    if(code != null)
+                    {
+                        mDcsCodeCombo.setValue(code);
+                    }
+                }
+            }
+            else
+            {
+               resetSquelchCodes();
+            }
         }
         else
         {
@@ -426,6 +599,11 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getTalkgroupField().setDisable(true);
             getAudioFilterEnable().setDisable(true);
             getAudioFilterEnable().setSelected(false);
+            getALCEnable().setDisable(true);
+            getALCEnable().setSelected(false);
+
+            getDeemphasisCombo().setValue(DecodeConfigNBFM.DeemphasisMode.NONE);
+            resetSquelchCodes();
         }
     }
 
@@ -461,6 +639,33 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setTalkgroup(talkgroup);
         config.setAudioFilter(getAudioFilterEnable().isSelected());
+        config.setAudioALC(getALCEnable().isSelected());
+
+        config.setDeemphasis(getDeemphasisCombo().getValue());
+
+        List<squelchDecoderConfig> squelchDecoders = new ArrayList<>();
+        squelchDecoderConfig.SquelchType selectedType = mSquelchTypeCombo.getValue();
+        if(selectedType == squelchDecoderConfig.SquelchType.CTCSS)
+        {
+            CTCSSCode code = mCtcssCodeCombo.getValue();
+            if(code != null)
+            {
+                squelchDecoders.add(new squelchDecoderConfig(selectedType, code.name()));
+            }
+        }
+        if(selectedType == squelchDecoderConfig.SquelchType.DCS)
+        {
+            DCSCode code = mDcsCodeCombo.getValue();
+            if(code != null)
+            {
+                squelchDecoders.add(new squelchDecoderConfig(selectedType, code.name()));
+            }
+        }
+        if(selectedType == squelchDecoderConfig.SquelchType.NONE)
+        {
+            squelchDecoders.add((new squelchDecoderConfig(selectedType, null)));
+        }
+        config.setSquelchDecoders(squelchDecoders);
         getItem().setDecodeConfiguration(config);
     }
 

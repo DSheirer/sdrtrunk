@@ -32,6 +32,8 @@ import io.github.dsheirer.sample.real.IRealBufferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * Provides packaging of demodulated audio sample buffers into audio segments for broadcast to registered listeners.
  * Includes audio packet metadata in constructed audio segments.
@@ -42,36 +44,7 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     Listener<float[]>
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
-    private static float[] sHighPassFilterCoefficients;
-    private final boolean mAudioFilterEnable;
-
-    static
-    {
-        FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
-            .sampleRate(8000)
-            .stopBandCutoff(200)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.025)
-            .passBandStart(300)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .build();
-        try
-        {
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-            if(designer.isValid())
-            {
-                sHighPassFilterCoefficients = designer.getImpulseResponse();
-            }
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Filter design error", fde);
-        }
-    }
-
-    private final IRealFilter mHighPassFilter = FilterFactory.getRealFilter(sHighPassFilterCoefficients);
+    private List<AbstractAudioFilter>mAudioFilters;
     private final SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private SquelchState mSquelchState = SquelchState.SQUELCH;
 
@@ -81,23 +54,23 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
      * @param aliasList for aliasing identifiers
      * @param timeslot for this audio module
      * @param maxAudioSegmentLength in milliseconds
-     * @param audioFilterEnable to enable or disable high-pass audio filter
+     * @param audioFilters a list of audio filters to apply to the incoming audio samples
      */
-    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength, boolean audioFilterEnable)
+    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength, List<AbstractAudioFilter> audioFilters)
     {
         super(aliasList, timeslot, maxAudioSegmentLength);
-        mAudioFilterEnable = audioFilterEnable;
+        mAudioFilters = audioFilters;
     }
 
     /**
      * Creates an Audio Module.
      * @param aliasList for aliasing identifiers
-     * @param audioFilterEnable to enable or disable high-pass audio filter
+     * @param audioFilters a list of audio filters to apply to the incoming audio samples
      */
-    public AudioModule(AliasList aliasList, boolean audioFilterEnable)
+    public AudioModule(AliasList aliasList,  List<AbstractAudioFilter> audioFilters)
     {
         super(aliasList);
-        mAudioFilterEnable = audioFilterEnable;
+        mAudioFilters = audioFilters;
     }
 
     @Override
@@ -128,9 +101,13 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     {
         if(mSquelchState == SquelchState.UNSQUELCH)
         {
-            if(mAudioFilterEnable)
+            // apply audio filters if any (i.e. deemphasis, high pass, etc.)
+            if(!mAudioFilters.isEmpty())
             {
-                audioBuffer = mHighPassFilter.filter(audioBuffer);
+                for(AbstractAudioFilter filter : mAudioFilters)
+                {
+                    audioBuffer = filter.filter(audioBuffer);
+                }
             }
 
             addAudio(audioBuffer);
