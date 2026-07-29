@@ -35,7 +35,8 @@ public enum ModeDecoderType
     DSTAR("d-star", null),
     FM("fm", DecoderType.NBFM),
     FMN("fmn", DecoderType.NBFM),
-    NXDN("nxdn", DecoderType.NXDN),
+    NXDN48("nxdn48", DecoderType.NXDN),
+    NXDN96("nxdn96", DecoderType.NXDN),
     TELM("telm", null),
     USB("usb", null),
     LSB("lsb", null),
@@ -70,6 +71,7 @@ public enum ModeDecoderType
 
     /**
      * Lookup the entry that matches the mode
+     *
      * @param mode to match
      * @return matching entry or UNKNOWN
      */

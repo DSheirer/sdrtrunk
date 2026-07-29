@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@ import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.Modulation;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -422,6 +424,18 @@ public class FrequencyEditor extends VBox
             {
                 ((DecodeConfigP25Phase1)decodeConfiguration).setModulation(Modulation.C4FM);
             }
+            else if(decodeConfiguration instanceof DecodeConfigNXDN nxdn)
+            {
+                if(modeDecoderType == ModeDecoderType.NXDN48)
+                {
+                    nxdn.setTransmissionMode(TransmissionMode.M4800);
+                }
+                else if(modeDecoderType == ModeDecoderType.NXDN96)
+                {
+                    nxdn.setTransmissionMode(TransmissionMode.M9600);
+                }
+            }
+
             channel.setDecodeConfiguration(decodeConfiguration);
             return channel;
         }
