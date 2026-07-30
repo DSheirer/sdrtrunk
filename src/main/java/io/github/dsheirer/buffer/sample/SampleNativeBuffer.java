@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,12 +30,12 @@ import java.util.Iterator;
  */
 public class SampleNativeBuffer extends AbstractNativeBuffer
 {
-    private short[] mSamples;
-    private short[] mResidualI;
-    private short[] mResidualQ;
-    private float mAverageDc;
-    private Implementation mInterleavedImplementation;
-    private Implementation mNonInterleavedImplementation;
+    private final short[] mSamples;
+    private final short[] mResidualI;
+    private final short[] mResidualQ;
+    private final float mAverageDc;
+    private final Implementation mInterleavedImplementation;
+    private final Implementation mNonInterleavedImplementation;
 
     /**
      * Constructs an instance
@@ -78,7 +78,7 @@ public class SampleNativeBuffer extends AbstractNativeBuffer
     @Override
     public Iterator<ComplexSamples> iterator()
     {
-        return switch(mInterleavedImplementation)
+        return switch(mNonInterleavedImplementation)
         {
             case VECTOR_SIMD_512 -> new SampleBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
             case VECTOR_SIMD_256-> new SampleBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
