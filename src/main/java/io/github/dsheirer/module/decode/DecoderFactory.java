@@ -311,7 +311,12 @@ public class DecoderFactory
             mLog.warn("Expected non-null traffic channel manager for channel " + channel.getName());
         }
 
-        modules.add(new P25P1AudioModule(userPreferences, aliasList));
+        P25P1AudioModule p25P1AudioModule = new P25P1AudioModule(userPreferences, aliasList);
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 p25Phase1Config)
+        {
+            p25P1AudioModule.setNacFilter(p25Phase1Config.getNacFilter());
+        }
+        modules.add(p25P1AudioModule);
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&

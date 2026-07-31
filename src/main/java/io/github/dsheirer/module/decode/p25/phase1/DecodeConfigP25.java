@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
@@ -34,6 +34,7 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
 {
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
+    private Integer mNacFilter = null;
 
     public DecodeConfigP25()
     {
@@ -49,7 +50,6 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
     {
         mIgnoreDataCalls = ignore;
     }
-
 
     @JacksonXmlProperty(isAttribute = true, localName = "traffic_channel_pool_size")
     public int getTrafficChannelPoolSize()
@@ -68,5 +68,34 @@ public abstract class DecodeConfigP25 extends DecodeConfiguration
     public void setTrafficChannelPoolSize(int size)
     {
         mTrafficChannelPoolSize = size;
+    }
+
+    /**
+     * NAC filter value. When set, only messages with matching NAC will be processed.
+     * @return NAC filter value or null if disabled
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "nac_filter")
+    public Integer getNacFilter()
+    {
+        return mNacFilter;
+    }
+
+    /**
+     * Sets the NAC filter value.
+     * @param nac to filter on, or null to disable filtering
+     */
+    public void setNacFilter(Integer nac)
+    {
+        mNacFilter = nac;
+    }
+
+    /**
+     * Indicates if NAC filtering is enabled.
+     * @return true if a NAC filter is configured
+     */
+    @JsonIgnore
+    public boolean hasNacFilter()
+    {
+        return mNacFilter != null && mNacFilter > 0;
     }
 }
