@@ -35,6 +35,7 @@ import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
+import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.gui.viewer.MessageRecordingViewer;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.icon.IconModel;
@@ -135,6 +136,7 @@ public class JavaFxWindowManager extends Application
             //JFXPanel has to be populated on the FX event thread
             Platform.runLater(() -> {
                 Scene scene = new Scene(new StatusBox(resourceMonitor));
+                ThemeManager.getInstance().register(scene);
                 mStatusPanel.setScene(scene);
             });
         }
@@ -207,6 +209,7 @@ public class JavaFxWindowManager extends Application
         {
             createJFXPanel();
             Scene scene = new Scene(getRecordingViewer(), 1100, 800);
+            ThemeManager.getInstance().register(scene);
             mRecordingViewerStage = new Stage();
             mRecordingViewerStage.setTitle("sdrtrunk - Message Recording Viewer (.bits)");
             mRecordingViewerStage.setScene(scene);
@@ -232,6 +235,7 @@ public class JavaFxWindowManager extends Application
         {
             createJFXPanel();
             Scene scene = new Scene(getIconManager(), 500, 500);
+            ThemeManager.getInstance().register(scene);
             mIconManagerStage = new Stage();
             mIconManagerStage.setTitle("sdrtrunk - Icon Manager");
             mIconManagerStage.setScene(scene);
@@ -280,6 +284,7 @@ public class JavaFxWindowManager extends Application
         {
             createJFXPanel();
             Scene scene = new Scene(getJmbeEditor(), 650, 650);
+            ThemeManager.getInstance().register(scene);
             mJmbeEditorStage = new Stage();
             mJmbeEditorStage.setTitle("sdrtrunk - JMBE Library Updater");
             mJmbeEditorStage.setScene(scene);
@@ -321,6 +326,7 @@ public class JavaFxWindowManager extends Application
         {
             createJFXPanel();
             Scene scene = new Scene(getPlaylistEditor(), 1000, 750);
+            ThemeManager.getInstance().register(scene);
             mPlaylistStage = new Stage();
             mPlaylistStage.setTitle("sdrtrunk - Playlist Editor");
             mPlaylistStage.setScene(scene);
@@ -371,6 +377,7 @@ public class JavaFxWindowManager extends Application
         {
             createJFXPanel();
             Scene scene = new Scene(getUserPreferencesEditor(), 900, 500);
+            ThemeManager.getInstance().register(scene);
             mUserPreferencesStage = new Stage();
             mUserPreferencesStage.setTitle("sdrtrunk - User Preferences");
             mUserPreferencesStage.setScene(scene);
@@ -414,6 +421,7 @@ public class JavaFxWindowManager extends Application
         {
             createJFXPanel();
             Scene scene = new Scene(getChannelMapEditor(), 500, 500);
+            ThemeManager.getInstance().register(scene);
             mChannelMapStage = new Stage();
             mChannelMapStage.setTitle("sdrtrunk - Channel Map Editor");
             mChannelMapStage.setScene(scene);

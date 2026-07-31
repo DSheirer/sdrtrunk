@@ -24,6 +24,7 @@ import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
 import io.github.dsheirer.gui.power.SignalPowerView;
 import io.github.dsheirer.gui.squelch.NoiseSquelchView;
 import io.github.dsheirer.gui.symbol.SymbolView;
+import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
@@ -112,6 +113,11 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         mPlaylistManager = playlistManager;
         mNoiseSquelchView = new NoiseSquelchView(mPlaylistManager);
         mSignalPowerView = new SignalPowerView(mPlaylistManager);
+
+        //Register the three swappable right-pane components with the theme manager.  Only one is
+        //attached to the split pane at a time, so the LAF-toggle walk of Window.getWindows() can
+        //miss the detached ones - they get refreshed explicitly via registerSwing.
+        ThemeManager.getInstance().registerSwing(mSignalPowerView);
         setLayout(new MigLayout("insets 0", "[grow,fill]", "[grow,fill]"));
 
         JPanel fftPanel = new JPanel();
@@ -222,10 +228,13 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
 
         mNoiseSquelchPanel = new JFXPanel();
         mSymbolPanel = new JFXPanel();
+        ThemeManager.getInstance().registerSwing(mNoiseSquelchPanel);
+        ThemeManager.getInstance().registerSwing(mSymbolPanel);
 
         //Spin noise squelch panel construction off onto the JavafX UI thread.
         Platform.runLater(() -> {
             Scene scene = new Scene(mNoiseSquelchView);
+            ThemeManager.getInstance().register(scene);
             mNoiseSquelchPanel.setScene(scene);
             Scene scene2 = new Scene(mSymbolView);
             URL resource = getClass().getResource("/sdrtrunk_style.css");
@@ -239,6 +248,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
                 LOGGER.warn("Can't find stylesheet resource for sdrtrunk");
             }
 
+            ThemeManager.getInstance().register(scene2);
             mSymbolPanel.setScene(scene2);
         });
 

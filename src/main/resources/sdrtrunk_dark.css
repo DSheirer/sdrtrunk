@@ -1,0 +1,458 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* sdrtrunk dark theme - applied on top of the default Modena stylesheet. */
+
+.root
+{
+    -fx-base: #2b2b2b;
+    -fx-background: #2b2b2b;
+    -fx-control-inner-background: #313335;
+    -fx-control-inner-background-alt: #3c3f41;
+    -fx-accent: #4a90d9;
+    -fx-default-button: #4a90d9;
+    -fx-focus-color: #4a90d9;
+    -fx-faint-focus-color: #4a90d922;
+    -fx-text-fill: #ececec;
+    -fx-text-base-color: #ececec;
+    -fx-text-background-color: #ececec;
+    -fx-mark-color: #ececec;
+    -fx-mark-highlight-color: #ffffff;
+    -fx-selection-bar: #214283;
+    -fx-selection-bar-non-focused: #3a3d3f;
+    -fx-cell-hover-color: #3a3d3f;
+}
+
+.label
+{
+    -fx-text-fill: #ececec;
+}
+
+.text
+{
+    -fx-fill: #ececec;
+}
+
+.button, .toggle-button, .menu-button, .split-menu-button, .choice-box, .combo-box-base
+{
+    -fx-background-color: #3c3f41, #4a4d4f, #3c3f41, #3c3f41;
+    -fx-text-fill: #ececec;
+}
+
+.button:hover, .toggle-button:hover, .menu-button:hover
+{
+    -fx-background-color: #4a90d9, #5aa0e9, #4a90d9, #3c3f41;
+}
+
+.button:armed, .toggle-button:selected
+{
+    -fx-background-color: #214283, #3672c4, #214283, #214283;
+    -fx-text-fill: #ffffff;
+}
+
+.text-field, .text-area, .password-field
+{
+    -fx-background-color: #313335;
+    -fx-text-fill: #ececec;
+    -fx-prompt-text-fill: #888888;
+    -fx-highlight-fill: #214283;
+    -fx-highlight-text-fill: #ffffff;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
+}
+
+.text-area .content
+{
+    -fx-background-color: #313335;
+}
+
+.scroll-pane, .scroll-pane > .viewport
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.scroll-bar
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.scroll-bar .thumb
+{
+    -fx-background-color: #555a5e;
+    -fx-background-radius: 3;
+}
+
+.scroll-bar .thumb:hover
+{
+    -fx-background-color: #6a7075;
+}
+
+.scroll-bar .increment-button, .scroll-bar .decrement-button
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow
+{
+    -fx-background-color: #c0c0c0;
+}
+
+.menu-bar
+{
+    -fx-background-color: #3c3f41;
+}
+
+.menu, .menu-item, .context-menu, .menu-bar > .container > .menu-button
+{
+    -fx-background-color: transparent;
+}
+
+.menu-item
+{
+    -fx-background-color: #3c3f41;
+}
+
+.menu-item:focused, .menu-item:hover
+{
+    -fx-background-color: #4a90d9;
+}
+
+.menu-item .label
+{
+    -fx-text-fill: #ececec;
+}
+
+.menu-item:focused .label, .menu-item:hover .label
+{
+    -fx-text-fill: #ffffff;
+}
+
+.context-menu
+{
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #555a5e;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab
+{
+    -fx-background-color: #3c3f41;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label
+{
+    -fx-text-fill: #b0b0b0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label
+{
+    -fx-text-fill: #ffffff;
+}
+
+.tab-pane > .tab-header-area
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.table-view, .tree-view, .list-view, .tree-table-view
+{
+    -fx-background-color: #2b2b2b;
+    -fx-control-inner-background: #313335;
+    -fx-control-inner-background-alt: #353739;
+    -fx-table-cell-border-color: #4f5356;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
+}
+
+.table-view .column-header, .table-view .filler, .table-view .column-header-background,
+.tree-table-view .column-header, .tree-table-view .filler, .tree-table-view .column-header-background
+{
+    -fx-background-color: #3c3f41;
+}
+
+.table-view .column-header .label, .tree-table-view .column-header .label
+{
+    -fx-text-fill: #ececec;
+}
+
+.table-row-cell, .tree-table-row-cell, .list-cell, .tree-cell
+{
+    -fx-text-fill: #ececec;
+    -fx-background-color: -fx-control-inner-background;
+}
+
+.table-row-cell:odd, .tree-table-row-cell:odd, .list-cell:odd, .tree-cell:odd
+{
+    -fx-background-color: -fx-control-inner-background-alt;
+}
+
+.table-row-cell:selected, .tree-table-row-cell:selected, .list-cell:selected, .tree-cell:selected
+{
+    -fx-background-color: #214283;
+    -fx-text-fill: #ffffff;
+}
+
+.table-row-cell:filled:hover, .tree-table-row-cell:filled:hover, .list-cell:filled:hover, .tree-cell:filled:hover
+{
+    -fx-background-color: #3a3d3f;
+}
+
+.titled-pane > .title
+{
+    -fx-background-color: #3c3f41;
+}
+
+.titled-pane > .title > .text
+{
+    -fx-fill: #ececec;
+}
+
+.titled-pane > .content
+{
+    -fx-background-color: #2b2b2b;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
+}
+
+.separator .line
+{
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1 0 0 0;
+}
+
+.split-pane
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.split-pane > .split-pane-divider
+{
+    -fx-background-color: #4f5356;
+    -fx-padding: 0 1 0 1;
+}
+
+.tooltip
+{
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #ececec;
+    -fx-border-color: #555a5e;
+}
+
+.check-box .box, .radio-button .radio
+{
+    -fx-background-color: #3c3f41, #4a4d4f;
+}
+
+.check-box:selected .mark, .radio-button:selected .dot
+{
+    -fx-background-color: #ffffff;
+}
+
+.toggle-switch
+{
+    -fx-text-fill: #ececec;
+}
+
+.toggle-switch > .thumb-area
+{
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #555a5e;
+}
+
+.toggle-switch:selected > .thumb-area
+{
+    -fx-background-color: #4a90d9;
+    -fx-border-color: #4a90d9;
+}
+
+.toggle-switch > .thumb
+{
+    -fx-background-color: #ececec;
+}
+
+.spinner
+{
+    -fx-background-color: #313335;
+}
+
+.spinner .text-field
+{
+    -fx-background-color: #313335;
+    -fx-text-fill: #ececec;
+}
+
+.spinner .increment-arrow-button, .spinner .decrement-arrow-button
+{
+    -fx-background-color: #3c3f41;
+}
+
+.spinner .increment-arrow, .spinner .decrement-arrow
+{
+    -fx-background-color: #ececec;
+}
+
+.progress-bar > .track
+{
+    -fx-background-color: #3c3f41;
+}
+
+.progress-bar > .bar
+{
+    -fx-background-color: #4a90d9;
+}
+
+.combo-box .list-cell, .choice-box .label
+{
+    -fx-text-fill: #ececec;
+    -fx-background-color: transparent;
+}
+
+.combo-box-popup .list-view
+{
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #555a5e;
+}
+
+.hyperlink
+{
+    -fx-text-fill: #6ab0ff;
+}
+
+.hyperlink:visited
+{
+    -fx-text-fill: #9683c2;
+}
+
+.dialog-pane
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.dialog-pane > .button-bar > .container
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.dialog-pane .header-panel
+{
+    -fx-background-color: #3c3f41;
+}
+
+.dialog-pane .header-panel .label
+{
+    -fx-text-fill: #ffffff;
+}
+
+.chart
+{
+    -fx-background-color: #2b2b2b;
+    -fx-padding: 5px;
+}
+
+.chart-content
+{
+    -fx-background-color: #2b2b2b;
+}
+
+.chart-plot-background
+{
+    -fx-background-color: #1c1c1c;
+}
+
+.axis
+{
+    -fx-tick-label-fill: #ececec;
+    AXIS_COLOR: #4f5356;
+}
+
+.axis .axis-tick-mark, .axis .axis-minor-tick-mark
+{
+    -fx-stroke: #6a6f73;
+}
+
+.axis-label
+{
+    -fx-text-fill: #ececec;
+}
+
+.chart-vertical-grid-lines, .chart-horizontal-grid-lines
+{
+    -fx-stroke: #3c3f41;
+}
+
+.chart-alternative-row-fill
+{
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+}
+
+.chart-alternative-column-fill
+{
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+}
+
+.chart-legend
+{
+    -fx-background-color: #313335;
+    -fx-text-fill: #ececec;
+    -fx-border-color: #4f5356;
+    -fx-border-width: 1;
+}
+
+.chart-legend-item
+{
+    -fx-text-fill: #ececec;
+}
+
+.chart-title
+{
+    -fx-text-fill: #ececec;
+}
+
+/* Bright high-contrast palette for chart series lines on a dark plot background. */
+.default-color0.chart-series-line { -fx-stroke: #ff5555; }
+.default-color1.chart-series-line { -fx-stroke: #55aaff; }
+.default-color2.chart-series-line { -fx-stroke: #55ff7f; }
+.default-color3.chart-series-line { -fx-stroke: #ffd34f; }
+.default-color4.chart-series-line { -fx-stroke: #cf9bff; }
+.default-color5.chart-series-line { -fx-stroke: #4fe6ff; }
+.default-color6.chart-series-line { -fx-stroke: #ff7fbf; }
+.default-color7.chart-series-line { -fx-stroke: #ffffff; }
+
+/* All chart data points render as bright white dots regardless of series.  Lines still carry
+   the per-series colour so they remain distinguishable.  Only -fx-background-color is set so
+   the symbol size and shape continue to match Modena's defaults. */
+.chart-symbol,
+.chart-line-symbol,
+.default-color0.chart-symbol, .default-color0.chart-line-symbol,
+.default-color1.chart-symbol, .default-color1.chart-line-symbol,
+.default-color2.chart-symbol, .default-color2.chart-line-symbol,
+.default-color3.chart-symbol, .default-color3.chart-line-symbol,
+.default-color4.chart-symbol, .default-color4.chart-line-symbol,
+.default-color5.chart-symbol, .default-color5.chart-line-symbol,
+.default-color6.chart-symbol, .default-color6.chart-line-symbol,
+.default-color7.chart-symbol, .default-color7.chart-line-symbol
+{
+    -fx-background-color: #ffffff;
+}

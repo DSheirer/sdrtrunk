@@ -562,7 +562,10 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             @Override
             public void mouseExited(MouseEvent e)
             {
-                Digit.this.setBackground(Color.WHITE);
+                //Restore the LAF text-field background rather than hardcoding white so the digit
+                //cells match the active theme when the mouse leaves.
+                Color textBg = javax.swing.UIManager.getColor("TextField.background");
+                Digit.this.setBackground(textBg != null ? textBg : Color.WHITE);
                 repaint();
             }
 

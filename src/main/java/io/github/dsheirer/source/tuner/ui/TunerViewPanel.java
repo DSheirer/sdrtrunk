@@ -274,7 +274,10 @@ public class TunerViewPanel extends JPanel
                 }
                 else if(tunerStatus == TunerStatus.DISABLED)
                 {
-                    component.setForeground(Color.DARK_GRAY);
+                    //Use the LAF's disabled-foreground colour so the row reads correctly on any
+                    //theme - DARK_GRAY is invisible on dark backgrounds.
+                    Color disabled = javax.swing.UIManager.getColor("Label.disabledForeground");
+                    component.setForeground(disabled != null ? disabled : table.getForeground());
                 }
                 else
                 {

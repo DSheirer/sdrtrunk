@@ -151,7 +151,10 @@ public class BroadcastStatusPanel extends JPanel
                     else if(state == BroadcastState.DISABLED)
                     {
                         setBackground(table.getBackground());
-                        setForeground(Color.LIGHT_GRAY);
+                        //Use the LAF's disabled-foreground so the cell reads correctly on any
+                        //theme - LIGHT_GRAY is invisible on a light background.
+                        Color disabled = javax.swing.UIManager.getColor("Label.disabledForeground");
+                        setForeground(disabled != null ? disabled : table.getForeground());
                     }
                     else if(state == BroadcastState.INVALID_SETTINGS ||
                             state == BroadcastState.NETWORK_UNAVAILABLE)
