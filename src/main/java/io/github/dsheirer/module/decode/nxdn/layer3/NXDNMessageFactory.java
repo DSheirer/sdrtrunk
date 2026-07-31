@@ -1,0 +1,422 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.nxdn.layer3;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInformationTypeD;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.DigitalStationIDInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.FailureStatusInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.Idle;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ServiceInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ServiceInformationTypeD;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.CallConnectionResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAcknowledge;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignment;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignmentDuplicateControl;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignmentDuplicateTraffic;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallBlock;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallReceptionRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallReceptionResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.DisconnectRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.HeaderDelay;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.RemoteControlRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.RemoteControlRequestWithESN;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.RemoteControlResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.RemoteControlResponseWithESN;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallBlock;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallRequestHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataCallResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.ShortDataInitializationVector;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.StatusInquiryRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.StatusInquiryResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.StatusRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.StatusResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionReleaseExtension;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignment;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignmentDuplicateControl;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallAssignmentDuplicateTraffic;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallConnectionResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallInitializationVector;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallReceptionResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.GPS;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.NXDNPacketMessage;
+import io.github.dsheirer.module.decode.nxdn.layer3.data.PacketSequence;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryRequestMultiSystem;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationInquiryResponseMultiSystem;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationParameterInformation;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.AuthenticationResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.DataWriteAcknowledge;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.DataWriteBlock;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.DataWriteHeader;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.GroupRegistrationResponseTypeD;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationClearRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationClearResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationCommand;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationRequest;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponse;
+import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponseTypeD;
+import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.ProprietaryForm;
+import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAlias;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallCompleteDestinationInfo4;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressDestinationInfo2;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressDestinationInfo4;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressSourceID;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInfo;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.InitializationVectorPart1;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.InitializationVectorPart2;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.RepeaterFree;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.RepeaterHaltCWID;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.RepeaterIdle;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.SiteID;
+
+/**
+ * Factory for creating NXDN messages
+ */
+public class NXDNMessageFactory
+{
+    /**
+     * Creates an NXDN message parser for the packet sequence.
+     * @param packetSequence to wrap in a message parser
+     * @return message parser or null
+     */
+    public static NXDNPacketMessage get(PacketSequence packetSequence)
+    {
+        if(GPS.isGPS(packetSequence))
+        {
+            return new GPS(packetSequence);
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates an NXDN message parser for a message on the outbound control channel (CC)
+     * @param message content
+     * @param timestamp of the message
+     * @param ran value
+     * @param lich info
+     * @return message parser
+     */
+    public static NXDNLayer3Message get(NXDNMessageType type, CorrectedBinaryMessage message, long timestamp, int ran, LICH lich)
+    {
+        switch (type)
+        {
+            case CONTROL_IN_01_CC_VOICE_CALL_REQUEST:
+            case TYPE_D_IN_00_CC_CALL_REQUEST: //Plain call request is handled as voice call request
+            case TYPE_D_IN_04_CC_VOICE_CALL_REQUEST:
+                return new VoiceCallRequest(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_01_CC_VOICE_CALL_RESPONSE:
+            case TYPE_D_OUT_00_CC_CALL_RESPONSE:
+                return new VoiceCallResponse(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_01_CC_VOICE_CALL:
+            case TRAFFIC_OUT_01_CC_VOICE_CALL:
+            case TYPE_D_IN_01_CC_VOICE_CALL:
+            case TYPE_D_OUT_01_CC_VOICE_CALL:
+                return new VoiceCall(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST:
+            case TRAFFIC_OUT_02_CC_VOICE_CALL_RECEPTION_REQUEST:
+                return new VoiceCallReceptionRequest(message, timestamp, type, ran, lich);
+            case CONTROL_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE:
+            case TRAFFIC_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE:
+                return new VoiceCallReceptionResponse(message, timestamp, type, ran, lich);
+            case CONTROL_IN_03_CC_VOICE_CALL_CONNECTION_REQUEST:
+                return new VoiceCallConnectionRequest(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_03_CC_VOICE_CALL_CONNECTION_RESPONSE:
+                return new VoiceCallConnectionResponse(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TYPE_D_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+            case TYPE_D_OUT_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
+                return new VoiceCallInitializationVector(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_04_CC_VOICE_CALL_ASSIGNMENT:
+            case TRAFFIC_OUT_04_CC_VOICE_CALL_ASSIGNMENT:
+            case TYPE_D_OUT_04_CC_VOICE_CALL_ASSIGNMENT:
+                return new VoiceCallAssignment(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE:
+                return new VoiceCallAssignmentDuplicateControl(message, timestamp, type, ran, lich);
+            case TRAFFIC_OUT_05_CC_VOICE_CALL_ASSIGNMENT_DUPLICATE:
+                return new VoiceCallAssignmentDuplicateTraffic(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_06_CC_CALL_CONNECTION_RESPONSE:
+                return new CallConnectionResponse(message, timestamp, type, ran, lich);
+            case TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:
+            case TYPE_D_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:
+                return new TransmissionReleaseExtension(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_08_CC_TRANSMISSION_RELEASE:
+            case TRAFFIC_OUT_08_CC_TRANSMISSION_RELEASE:
+            case TYPE_D_IN_08_CC_TRANSMISSION_RELEASE:
+            case TYPE_D_OUT_08_CC_TRANSMISSION_RELEASE:
+                return new TransmissionRelease(message, timestamp, type, ran, lich);
+            case CONTROL_IN_09_CC_DATA_CALL_REQUEST:
+                return new DataCallRequest(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_09_CC_DATA_CALL_RESPONSE:
+                return new DataCallResponse(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_09_CC_DATA_CALL_HEADER:
+            case TRAFFIC_OUT_09_CC_DATA_CALL_HEADER:
+            case TYPE_D_IN_09_CC_DATA_CALL_HEADER:
+            case TYPE_D_OUT_09_CC_DATA_CALL_HEADER:
+                return new DataCallHeader(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST:
+            case TRAFFIC_OUT_10_CC_DATA_CALL_RECEPTION_REQUEST:
+                return new DataCallReceptionRequest(message, timestamp, type, ran, lich);
+            case CONTROL_IN_10_CC_DATA_CALL_RECEPTION_RESPONSE:
+                return new DataCallReceptionResponse(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_11_CC_DATA_CALL_BLOCK:
+            case TRAFFIC_OUT_11_CC_DATA_CALL_BLOCK:
+            case TYPE_D_IN_11_CC_DATA_CALL_BLOCK:
+            case TYPE_D_OUT_11_CC_DATA_CALL_BLOCK:
+                return new DataCallBlock(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_12_CC_DATA_CALL_ACKNOWLEDGE:
+            case TRAFFIC_OUT_12_CC_DATA_CALL_ACKNOWLEDGE:
+            case TYPE_D_IN_12_CC_DATA_CALL_ACKNOWLEDGE:
+            case TYPE_D_OUT_12_CC_DATA_CALL_ACKNOWLEDGE:
+                return new DataCallAcknowledge(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE:
+                return new DataCallAssignmentDuplicateControl(message, timestamp, type, ran, lich);
+            case TRAFFIC_OUT_13_CC_DATA_CALL_ASSIGNMENT_DUPLICATE:
+                return new DataCallAssignmentDuplicateTraffic(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_14_CC_DATA_CALL_ASSIGNMENT:
+            case TRAFFIC_OUT_14_CC_DATA_CALL_ASSIGNMENT:
+                return new DataCallAssignment(message, timestamp, type, ran, lich);
+            case TRAFFIC_IN_15_CC_HEADER_DELAY:
+            case TRAFFIC_OUT_15_CC_HEADER_DELAY:
+            case TYPE_D_IN_15_CC_HEADER_DELAY:
+            case TYPE_D_OUT_15_CC_HEADER_DELAY:
+                return new HeaderDelay(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_16_CC_IDLE:
+            case TRAFFIC_OUT_16_CC_IDLE:
+            case TYPE_D_IN_16_CC_IDLE:
+            case TYPE_D_OUT_16_CC_IDLE:
+                return new Idle(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_17_CC_DISCONNECT:
+            case TRAFFIC_OUT_17_CC_DISCONNECT:
+            case TYPE_D_OUT_17_CC_DISCONNECT:
+                return new Disconnect(message, timestamp, type, ran, lich);
+            case CONTROL_IN_17_CC_DISCONNECT_REQUEST:
+            case TRAFFIC_IN_17_CC_DISCONNECT_REQUEST:
+            case TYPE_D_IN_17_CC_DISCONNECT_REQUEST:
+                return new DisconnectRequest(message, timestamp, type, ran, lich);
+
+            //Broadcast Messages
+            case CONTROL_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
+            case TRAFFIC_OUT_23_BC_DIGITAL_STATION_ID_INFORMATION:
+            case TYPE_D_OUT_23_BC_DIGITAL_STATION_ID:
+                return new DigitalStationIDInformation(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_24_BC_SITE_INFORMATION:
+            case TRAFFIC_OUT_24_BC_SITE_INFORMATION:
+                return new SiteInformation(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_25_BC_SERVICE_INFORMATION:
+            case TRAFFIC_OUT_25_BC_SERVICE_INFORMATION:
+                return new ServiceInformation(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_25_BC_SERVICE_INFORMATION:
+                return new ServiceInformationTypeD(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
+            case TRAFFIC_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
+                return new ControlChannelInformation(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+            case TRAFFIC_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+                return new AdjacentSiteInformation(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_27_BC_ADJACENT_SITE_INFORMATION:
+                return new AdjacentSiteInformationTypeD(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION:
+            case TRAFFIC_OUT_28_BC_FAILURE_STATUS_INFORMATION:
+                return new FailureStatusInformation(message, timestamp, type, ran, lich);
+
+            //Mobility Management Messages
+            case CONTROL_IN_32_MM_REGISTRATION_REQUEST:
+            case TYPE_D_IN_32_MM_REGISTRATION_REQUEST:
+                return new RegistrationRequest(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_32_MM_REGISTRATION_RESPONSE:
+                return new RegistrationResponse(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_32_MM_REGISTRATION_RESPONSE:
+                return new RegistrationResponseTypeD(message, timestamp, type, ran, lich);
+            case CONTROL_IN_34_MM_REGISTRATION_CLEAR_REQUEST:
+            case TYPE_D_IN_34_MM_REGISTRATION_CLEAR_REQUEST:
+                return new RegistrationClearRequest(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_34_MM_REGISTRATION_CLEAR_RESPONSE:
+            case TYPE_D_OUT_34_MM_REGISTRATION_CLEAR_RESPONSE:
+                return new RegistrationClearResponse(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_35_MM_REGISTRATION_COMMAND:
+                return new RegistrationCommand(message, timestamp, type, ran, lich);
+            case CONTROL_IN_36_MM_GROUP_REGISTRATION_REQUEST:
+            case TYPE_D_IN_36_MM_GROUP_REGISTRATION_REQUEST:
+                return new GroupRegistrationRequest(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_36_MM_GROUP_REGISTRATION_RESPONSE:
+                return new GroupRegistrationResponse(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_36_MM_GROUP_REGISTRATION_RESPONSE:
+                return new GroupRegistrationResponseTypeD(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_38_MM_AUTHENTICATION_PARAMETER_INFORMATION:
+                return new AuthenticationParameterInformation(message, timestamp, type, ran, lich);
+            case TYPE_D_IN_39_MM_AUTHENTICATION_RESPONSE:
+                return new AuthenticationResponse(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_40_MM_AUTHENTICATION_INQUIRY_REQUEST:
+            case TYPE_D_IN_40_MM_AUTHENTICATION_INQUIRY_REQUEST:
+            case TYPE_D_OUT_40_MM_AUTHENTICATION_INQUIRY_REQUEST:
+                return new AuthenticationInquiryRequest(message, timestamp, type, ran, lich);
+            case CONTROL_IN_41_MM_AUTHENTICATION_INQUIRY_RESPONSE:
+            case TYPE_D_IN_41_MM_AUTHENTICATION_INQUIRY_RESPONSE:
+            case TYPE_D_OUT_41_MM_AUTHENTICATION_INQUIRY_RESPONSE:
+                return new AuthenticationInquiryResponse(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case TRAFFIC_IN_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+            case TRAFFIC_OUT_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
+                return new AuthenticationInquiryRequestMultiSystem(message, timestamp, type, ran, lich);
+            case CONTROL_IN_43_MM_AUTHENTICATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case TRAFFIC_IN_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+            case TRAFFIC_OUT_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
+                return new AuthenticationInquiryResponseMultiSystem(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_43_MM_DATA_WRITE_HEADER:
+                return new DataWriteHeader(message, timestamp, type, ran, lich);
+            case TYPE_D_OUT_44_MM_DATA_WRITE_DATA:
+                return new DataWriteBlock(message, timestamp, type, ran, lich);
+            case TYPE_D_IN_45_MM_DATA_WRITE_ACKNOWLEDGE:
+                return new DataWriteAcknowledge(message, timestamp, type, ran, lich);
+            case CONTROL_IN_48_CC_STATUS_INQUIRY_REQUEST:
+            case CONTROL_OUT_48_CC_STATUS_INQUIRY_REQUEST:
+            case TRAFFIC_IN_48_CC_STATUS_INQUIRY_REQUEST:
+            case TRAFFIC_OUT_48_CC_STATUS_INQUIRY_REQUEST:
+            case TYPE_D_IN_48_CC_STATUS_INQUIRY_REQUEST:
+            case TYPE_D_OUT_48_CC_STATUS_INQUIRY_REQUEST:
+                return new StatusInquiryRequest(message, timestamp, type, ran, lich);
+            case CONTROL_IN_49_CC_STATUS_INQUIRY_RESPONSE:
+            case CONTROL_OUT_49_CC_STATUS_INQUIRY_RESPONSE:
+            case TRAFFIC_IN_49_CC_STATUS_INQUIRY_RESPONSE:
+            case TRAFFIC_OUT_49_CC_STATUS_INQUIRY_RESPONSE:
+            case TYPE_D_IN_49_CC_STATUS_INQUIRY_RESPONSE:
+            case TYPE_D_OUT_49_CC_STATUS_INQUIRY_RESPONSE:
+                return new StatusInquiryResponse(message, timestamp, type, ran, lich);
+            case CONTROL_IN_50_CC_STATUS_REQUEST:
+            case CONTROL_OUT_50_CC_STATUS_REQUEST:
+            case TRAFFIC_IN_50_CC_STATUS_REQUEST:
+            case TRAFFIC_OUT_50_CC_STATUS_REQUEST:
+            case TYPE_D_IN_50_CC_STATUS_REQUEST:
+            case TYPE_D_OUT_50_CC_STATUS_REQUEST:
+                return new StatusRequest(message, timestamp, type, ran, lich);
+            case CONTROL_IN_51_CC_STATUS_RESPONSE:
+            case CONTROL_OUT_51_CC_STATUS_RESPONSE:
+            case TRAFFIC_IN_51_CC_STATUS_RESPONSE:
+            case TRAFFIC_OUT_51_CC_STATUS_RESPONSE:
+            case TYPE_D_IN_51_CC_STATUS_RESPONSE:
+            case TYPE_D_OUT_51_CC_STATUS_RESPONSE:
+                return new StatusResponse(message, timestamp, type, ran, lich);
+            case CONTROL_IN_52_CC_REMOTE_CONTROL_REQUEST:
+            case CONTROL_OUT_52_CC_REMOTE_CONTROL_REQUEST:
+            case TRAFFIC_IN_52_CC_REMOTE_CONTROL_REQUEST:
+            case TRAFFIC_OUT_52_CC_REMOTE_CONTROL_REQUEST:
+            case TYPE_D_IN_52_CC_REMOTE_CONTROL_REQUEST:
+            case TYPE_D_OUT_52_CC_REMOTE_CONTROL_REQUEST:
+                return new RemoteControlRequest(message, timestamp, type, ran, lich);
+            case CONTROL_IN_53_CC_REMOTE_CONTROL_RESPONSE:
+            case CONTROL_OUT_53_CC_REMOTE_CONTROL_RESPONSE:
+            case TRAFFIC_IN_53_CC_REMOTE_CONTROL_RESPONSE:
+            case TRAFFIC_OUT_53_CC_REMOTE_CONTROL_RESPONSE:
+            case TYPE_D_IN_53_CC_REMOTE_CONTROL_RESPONSE:
+            case TYPE_D_OUT_53_CC_REMOTE_CONTROL_RESPONSE:
+                return new RemoteControlResponse(message, timestamp, type, ran, lich);
+            case CONTROL_OUT_54_CC_REMOTE_CONTROL_REQUEST_WITH_ESN:
+                return new RemoteControlRequestWithESN(message, timestamp, type, ran, lich);
+            case CONTROL_IN_55_CC_REMOTE_CONTROL_RESPONSE_WITH_ESN:
+                return new RemoteControlResponseWithESN(message, timestamp, type, ran, lich);
+            case CONTROL_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case CONTROL_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case TRAFFIC_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case TRAFFIC_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case TYPE_D_IN_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+            case TYPE_D_OUT_56_CC_SHORT_DATA_CALL_REQUEST_HEADER:
+                return  new ShortDataCallRequestHeader(message, timestamp, type, ran, lich);
+            case CONTROL_IN_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
+            case CONTROL_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
+            case TRAFFIC_IN_57_CC_SHORT_DATA_CALL_BLOCK:
+            case TRAFFIC_OUT_57_CC_SHORT_DATA_CALL_BLOCK:
+            case TYPE_D_IN_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
+            case TYPE_D_OUT_57_CC_SHORT_DATA_CALL_REQUEST_USER_DATA:
+                return new ShortDataCallBlock(message, timestamp, type, ran, lich);
+            case CONTROL_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case CONTROL_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case TRAFFIC_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case TYPE_D_IN_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+            case TYPE_D_OUT_58_CC_SHORT_DATA_CALL_INITIALIZATION_VECTOR:
+                return new ShortDataInitializationVector(message, timestamp, type, ran, lich);
+            case CONTROL_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
+            case CONTROL_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
+            case TRAFFIC_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
+            case TRAFFIC_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
+            case TYPE_D_IN_59_CC_SHORT_DATA_CALL_RESPONSE:
+            case TYPE_D_OUT_59_CC_SHORT_DATA_CALL_RESPONSE:
+                return new ShortDataCallResponse(message, timestamp, type, ran, lich);
+
+            case PROPRIETARY_FORM:
+                return new ProprietaryForm(message, timestamp, type, ran, lich);
+            case TALKER_ALIAS:
+                return new TalkerAlias(message, timestamp, type, ran, lich);
+
+            //NXDN Tpe-D SCCH messages
+            case TYPE_D_SCCH_IN_INFO_4_CALL_IN_PROGRESS_DESTINATION:
+            case TYPE_D_SCCH_OUT_INFO_4_CALL_IN_PROGRESS_DESTINATION:
+                return new CallInProgressDestinationInfo4(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_IN_INFO_4_CALL_COMPLETE_DESTINATION:
+            case TYPE_D_SCCH_OUT_INFO_4_CALL_COMPLETE_DESTINATION:
+                return new CallCompleteDestinationInfo4(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_OUT_INFO_4_REPEATER_IDLE:
+                return new RepeaterIdle(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_OUT_INFO_4_REPEATER_FREE:
+                return new RepeaterFree(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_OUT_INFO_4_REPEATER_HALT:
+                return new RepeaterHaltCWID(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_OUT_INFO_4_SITE_ID:
+                return new SiteID(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_IN_INFO_3_INITIALIZATION_VECTOR_PART2:
+            case TYPE_D_SCCH_OUT_INFO_3_INITIALIZATION_VECTOR_PART2:
+                return new InitializationVectorPart2(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_IN_INFO_3_CALL_IN_PROGRESS_SOURCE:
+            case TYPE_D_SCCH_OUT_INFO_3_CALL_IN_PROGRESS_SOURCE:
+                return new CallInProgressSourceID(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_IN_INFO_2_CALL_IN_PROGRESS_DESTINATION:
+            case TYPE_D_SCCH_OUT_INFO_2_CALL_IN_PROGRESS_DESTINATION:
+                return new CallInProgressDestinationInfo2(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_IN_INFO_1_CALL_INFO:
+            case TYPE_D_SCCH_OUT_INFO_1_CALL_INFO:
+                return new CallInfo(message, timestamp, type, ran, lich);
+            case TYPE_D_SCCH_IN_INFO_1_INITIALIZATION_VECTOR_PART1:
+            case TYPE_D_SCCH_OUT_INFO_1_INITIALIZATION_VECTOR_PART1:
+                return new InitializationVectorPart1(message, timestamp, type, ran, lich);
+        }
+
+        return new UnknownMessage(message, timestamp, type, ran, lich);
+    }
+}

@@ -1,29 +1,26 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
@@ -32,7 +29,6 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,8 +48,8 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
 
     private Identifier mRfss;
     private Identifier mSite;
-    private IChannelDescriptor mChannelA;
-    private IChannelDescriptor mChannelB;
+    private IBandChannelDescriptor mChannelA;
+    private IBandChannelDescriptor mChannelB;
     private SystemServiceClass mSystemServiceClassA;
     private SystemServiceClass mSystemServiceClassB;
     private List<Identifier> mIdentifiers;
@@ -102,7 +98,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
         return mSite;
     }
 
-    public IChannelDescriptor getChannelA()
+    public IBandChannelDescriptor getChannelA()
     {
         if(mChannelA == null)
         {
@@ -128,7 +124,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
             getMessage().getInt(SYSTEM_SERVICE_CLASS_B) != 0;
     }
 
-    public IChannelDescriptor getChannelB()
+    public IBandChannelDescriptor getChannelB()
     {
         if(hasChannelB() && mChannelB == null)
         {
@@ -162,9 +158,9 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
+        List<IBandChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
 
         if(hasChannelB())

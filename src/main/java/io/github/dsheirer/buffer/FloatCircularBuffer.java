@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,6 +92,33 @@ public class FloatCircularBuffer
             if(bufferPointer >= mBuffer.length)
             {
                 bufferPointer = 0;
+            }
+        }
+
+        return values;
+    }
+
+    /**
+     * Gets all sample values in reverse order.
+     */
+    public float[] getAllReversed()
+    {
+        int valuePointer = 0;
+        float[] values = new float[mBuffer.length];
+        int bufferPointer = mBufferPointer - 1;
+
+        if(bufferPointer < 0)
+        {
+            bufferPointer = mBuffer.length - 1;
+        }
+
+        while(valuePointer < values.length)
+        {
+            values[valuePointer++] = mBuffer[bufferPointer--];
+
+            if(bufferPointer < 0)
+            {
+                bufferPointer = mBuffer.length - 1;
             }
         }
 

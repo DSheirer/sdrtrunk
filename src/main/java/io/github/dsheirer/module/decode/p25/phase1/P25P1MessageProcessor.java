@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.message.AbstractMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.P25FrequencyBandPreloadDataContent;
@@ -310,9 +310,9 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         {
             IFrequencyBandReceiver receiver = (IFrequencyBandReceiver)message;
 
-            List<IChannelDescriptor> channels = receiver.getChannels();
+            List<IBandChannelDescriptor> channels = receiver.getChannels();
 
-            for(IChannelDescriptor channel : channels)
+            for(IBandChannelDescriptor channel : channels)
             {
                 int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
 
@@ -330,14 +330,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
         if(message instanceof IFrequencyBand)
         {
             IFrequencyBand bandIdentifier = (IFrequencyBand)message;
-
-            //Only store the frequency band if it's new so we don't hold on to more than one instance of the
-            //frequency band message.  Otherwise, we'll hold on to several instances of each message as they get
-            //injected into other messages with channel information.
-            if(!mFrequencyBandMap.containsKey(bandIdentifier.getIdentifier()))
-            {
-                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
-            }
+            mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
         }
     }
 

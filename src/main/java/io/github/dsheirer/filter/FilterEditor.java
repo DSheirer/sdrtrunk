@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@ public class FilterEditor<T> extends JFrame
         setLayout(new MigLayout("", "[grow,fill]", "[grow,fill][]"));
         mEditorPanel = new FilterEditorPanel<>(filterSet);
         JScrollPane scroller = new JScrollPane(mEditorPanel);
+        scroller.getVerticalScrollBar().setUnitIncrement(16);
         scroller.setViewportView(mEditorPanel);
         add(scroller, "wrap");
         JButton close = new JButton("Close");

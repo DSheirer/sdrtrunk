@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase1;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
@@ -79,7 +79,7 @@ public class P25P1NetworkConfigurationMonitor
     private LCRFSSStatusBroadcastExplicit mLCRFSSStatusBroadcastExplicit;
 
     //Current Site Secondary Control Channels
-    private Map<String,IChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
+    private Map<String, IBandChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
 
     //Current Site Data Channel(s)
     private SNDCPDataChannelAnnouncementExplicit mSNDCPDataChannel;
@@ -148,7 +148,7 @@ public class P25P1NetworkConfigurationMonitor
                 {
                     SecondaryControlChannelBroadcast sccb = (SecondaryControlChannelBroadcast)tsbk;
 
-                    for(IChannelDescriptor secondaryControlChannel : sccb.getChannels())
+                    for(IBandChannelDescriptor secondaryControlChannel : sccb.getChannels())
                     {
                         mSecondaryControlChannels.put(secondaryControlChannel.toString(), secondaryControlChannel);
                     }
@@ -158,7 +158,7 @@ public class P25P1NetworkConfigurationMonitor
                 if(tsbk instanceof SecondaryControlChannelBroadcastExplicit)
                 {
                     SecondaryControlChannelBroadcastExplicit sccbe = (SecondaryControlChannelBroadcastExplicit)tsbk;
-                    IChannelDescriptor channel = sccbe.getChannel();
+                    IBandChannelDescriptor channel = sccbe.getChannel();
                     mSecondaryControlChannels.put(channel.toString(), channel);
                 }
                 break;
@@ -280,7 +280,7 @@ public class P25P1NetworkConfigurationMonitor
                     {
                         LCSecondaryControlChannelBroadcast sccb = (LCSecondaryControlChannelBroadcast)lcw;
 
-                        for(IChannelDescriptor channel : sccb.getChannels())
+                        for(IBandChannelDescriptor channel : sccb.getChannels())
                         {
                             mSecondaryControlChannels.put(channel.toString(), channel);
                         }
@@ -290,7 +290,7 @@ public class P25P1NetworkConfigurationMonitor
                     if(lcw instanceof LCSecondaryControlChannelBroadcastExplicit)
                     {
                         LCSecondaryControlChannelBroadcastExplicit sccb = (LCSecondaryControlChannelBroadcastExplicit)lcw;
-                        for(IChannelDescriptor channel : sccb.getChannels())
+                        for(IBandChannelDescriptor channel : sccb.getChannels())
                         {
                             mSecondaryControlChannels.put(channel.toString(), channel);
                         }

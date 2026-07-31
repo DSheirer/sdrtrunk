@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.mpt1327;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.protocol.Protocol;
@@ -52,7 +52,7 @@ public class MPT1327ChannelGrantEvent extends MPT1327DecodeEvent
         protected long mDuration;
         protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
-        protected IChannelDescriptor mChannelDescriptor;
+        protected IBandChannelDescriptor mChannelDescriptor;
         protected String mDetails;
 
         /**
@@ -90,7 +90,7 @@ public class MPT1327ChannelGrantEvent extends MPT1327DecodeEvent
          * Sets the channel descriptor for this event
          * @param channelDescriptor
          */
-        public MPT1327ChannelGrantDecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
+        public MPT1327ChannelGrantDecodeEventBuilder channel(IBandChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
             return this;

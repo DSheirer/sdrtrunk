@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 package io.github.dsheirer.module.decode.p25.phase1.message;
 
 
-import io.github.dsheirer.channel.IChannelDescriptor;
-
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import java.util.List;
 
 /**
@@ -36,5 +35,5 @@ public interface IFrequencyBandReceiver
      *
      * @return list of channels
      */
-    List<IChannelDescriptor> getChannels();
+    List<IBandChannelDescriptor> getChannels();
 }

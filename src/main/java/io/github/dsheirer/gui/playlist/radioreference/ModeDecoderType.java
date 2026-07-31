@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@ public enum ModeDecoderType
     DSTAR("d-star", null),
     FM("fm", DecoderType.NBFM),
     FMN("fmn", DecoderType.NBFM),
-    NXDN("nxdn", null),
+    NXDN48("nxdn48", DecoderType.NXDN),
+    NXDN96("nxdn96", DecoderType.NXDN),
     TELM("telm", null),
     USB("usb", null),
     LSB("lsb", null),
@@ -70,6 +71,7 @@ public enum ModeDecoderType
 
     /**
      * Lookup the entry that matches the mode
+     *
      * @param mode to match
      * @return matching entry or UNKNOWN
      */

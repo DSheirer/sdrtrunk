@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,14 +55,16 @@ public class ChannelConfigurationEditorFactory
                 return new AMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case DMR:
                 return new DMRConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
-            case NBFM:
-                return new NBFMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case LTR_NET:
                 return new LTRNetConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case LTR:
                 return new LTRConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case MPT1327:
                 return new MPT1327ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+            case NBFM:
+                return new NBFMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+            case NXDN:
+                return new NXDNConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case PASSPORT:
                 return new PassportConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case P25_PHASE1:

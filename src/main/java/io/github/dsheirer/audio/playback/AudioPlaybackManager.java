@@ -189,28 +189,31 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
                 else if(audioSegment.isLinked())
                 {
-                    mAudioChannelsLock.lock();
-
-                    try
+                    if(mAudioOutput != null)
                     {
-                        for(AudioChannel audioOutput: mAudioOutput.getAudioProvider().getAudioChannels())
+                        mAudioChannelsLock.lock();
+
+                        try
                         {
-                            if(audioOutput.isLinkedTo(audioSegment))
+                            for(AudioChannel audioOutput: mAudioOutput.getAudioProvider().getAudioChannels())
                             {
-                                it.remove();
-                                audioOutput.play(audioSegment);
+                                if(audioOutput.isLinkedTo(audioSegment))
+                                {
+                                    it.remove();
+                                    audioOutput.play(audioSegment);
+                                }
                             }
                         }
-                    }
-                    finally
-                    {
-                        mAudioChannelsLock.unlock();
+                        finally
+                        {
+                            mAudioChannelsLock.unlock();
+                        }
                     }
                 }
             }
 
             //Sort audio segments by playback priority and assign to empty audio outputs
-            if(!mAudioSegments.isEmpty())
+            if(!mAudioSegments.isEmpty() && mAudioOutput != null)
             {
                 mAudioSegments.sort(mAudioSegmentPrioritySorter);
                 mAudioChannelsLock.lock();

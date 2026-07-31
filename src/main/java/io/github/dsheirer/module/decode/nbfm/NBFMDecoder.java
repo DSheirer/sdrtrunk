@@ -84,8 +84,18 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         //Send squelch controlled audio to the resampler and notify the decoder state that the call continues.
         mNoiseSquelch.setAudioListener(audio -> {
-            mResampler.resample(audio);
-            notifyCallContinuation();
+            // if squelch is closing (it hasn't propagated yet to mute the audio)
+            //  call the resampler with lastBatch set to true. This will zero pad the input buffer and ensure
+            //  the output buffer gets emptied.
+            if(mNoiseSquelch.isSquelched())
+            {
+                mResampler.resample(audio, true);
+            }
+            else
+            {
+                mResampler.resample(audio);     // this method will set lastBatch to false
+                notifyCallContinuation();
+            }
         });
 
         //Notify the decoder state of call starts and ends

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceEventListenerToProcessorAdapter;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.frequency.ChannelFrequencyErrorManager;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +34,12 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
     protected static final long HEARTBEAT_INTERVAL_MS = 100;
-    private SourceEventListenerToProcessorAdapter mConsumerSourceEventListenerAdapter;
+    private final SourceEventListenerToProcessorAdapter mConsumerSourceEventListenerAdapter;
     protected TunerChannel mTunerChannel;
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
     protected String mThreadName;
+    private final ChannelFrequencyErrorManager mChannelFrequencyErrorManager;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -47,13 +50,25 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * @param threadName for the channel's dispatcher
      */
     public TunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
-                              String threadName)
+                              String threadName, TunerFrequencyErrorManager tunerErrorManager)
     {
         mProducerSourceEventListener = producerSourceEventListener;
         mTunerChannel = tunerChannel;
         mConsumerSourceEventListenerAdapter = new SourceEventListenerToProcessorAdapter(this);
         mThreadName = threadName;
+        mChannelFrequencyErrorManager = new ChannelFrequencyErrorManager(this, tunerErrorManager);
     }
+
+    /**
+     * Sets a frequency correction value as requested by the downstream channel consumer.  This is normally going to be
+     * the ChannelFrequencyCorrectionManager using correction measurements provided by the FeedbackDecoder.  The
+     * correction process is implemented separately in each subclass extension to this base class.
+     *
+     * Note: this value is in addition to the PPM correction being applied at the tuner level.
+     *
+     * @param correction requested by the downstream processors.
+     */
+    public abstract void setFrequencyCorrection(long correction);
 
     @Override
     public long getFrequency()
@@ -101,6 +116,8 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      */
     public void start()
     {
+        mChannelFrequencyErrorManager.start();
+
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(this, getFrequency(), "Startup"));
         broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
@@ -112,6 +129,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      */
     public void stop()
     {
+        mChannelFrequencyErrorManager.stop();
         broadcastProducerSourceEvent(SourceEvent.stopSampleStreamRequest(this));
     }
 
@@ -156,14 +174,20 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
                 setSampleRate(sourceEvent.getValue().doubleValue());
                 break;
             case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
-                //Ignore these raw frequency measurement errors.  We're only interested in the measurements
-                //that occur when the channel state indicates that we're sync-locked.
+                //Ignore
                 break;
-            case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
+            case REQUEST_FREQUENCY_CORRECTION:
                 //Rebroadcast this measurement event so the producer can process it
+
+                if(mChannelFrequencyErrorManager != null)
+                {
+                    mChannelFrequencyErrorManager.receive(sourceEvent);
+                }
+
                 sourceEvent.setSource(this);
                 broadcastProducerSourceEvent(sourceEvent);
                 break;
+            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_STATUS:
             case NOTIFICATION_FREQUENCY_ROTATION_FAILURE:
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
             case NOTIFICATION_CHANNEL_POWER:

@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.alias.id.radio;
@@ -38,10 +35,11 @@ public enum RadioFormat
         "<html>APCO25 valid range is 0 to 16,777,215"),
     DMR("********", 0, 0xFFFFFF, "0 to 16,777,215",
         "<html>DMR unit id valid range is 0 to 16,777,215"),
+    NXDN("*****", 1, 0xFFFF, "1 to 65,535", "NXDN valid range is 1 to 65,535"),
     PASSPORT("********", 0, 0x7FFFFF, "0 to 8,388,607",
         "<html>PASSPORT valid range is 0 to 8,388,607"),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
-        "Unknown protocol valid value range is 1-16,777,215");
+        "<html>Unknown protocol valid value range is 1-16,777,215");
 
     private String mMask;
     private int mMinimumValue;
@@ -116,6 +114,8 @@ public enum RadioFormat
                 return APCO25;
             case DMR:
                 return DMR;
+            case NXDN:
+                return NXDN;
             case PASSPORT:
                 return PASSPORT;
             default:

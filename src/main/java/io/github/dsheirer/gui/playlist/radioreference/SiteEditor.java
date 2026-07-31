@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,9 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.Modulation;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
@@ -90,7 +93,6 @@ public class SiteEditor extends GridPane
     private static final String PRIMARY_CONTROL_CHANNEL = "d";
     private static final String TOGGLE_BUTTON_CONTROL = "Control";
     private static final String TOGGLE_BUTTON_P25_VOICE = "All P25 Voice";
-    private static final String PHASE_2_TDMA_MODULATION = "TDMA";
     private static final String PHASE_2_FLAVOR = "Phase II";
 
     private UserPreferences mUserPreferences;
@@ -250,6 +252,39 @@ public class SiteEditor extends GridPane
                     .getTimeslotFrequencies(systemInformation, site);
                 dmr.setTimeslotMap(timeslotFrequencies);
                 return dmr;
+            case NXDN:
+                Flavor flavor = mRadioReferenceDecoder.getFlavor(systemInformation);
+
+                TransmissionMode mode = TransmissionMode.M4800;
+
+                /**
+                 * 9600 bps Flavors
+                 * ----------------------------
+                 * 29 - NEXEDGE 9600
+                 * 45 - Conventional Networked
+                 *
+                 * 4800 bps Flavors
+                 * ---------------------------
+                 * 11 - Narrowband Networked
+                 * 42 - NEXEDGE 4800
+                 * 44 - Icom IDAS Type C
+                 *
+                 * Type-D (also 4800 bps)  Flavors
+                 * ---------------------------
+                 * 36 - Icom IDAS Type D
+                 * 47 - Kenwood Type D
+                 */
+                mode = switch(flavor.getName())
+                {
+                    case "NEXEDGE 9600", "Conventional Networked" -> TransmissionMode.M9600;
+                    case "Icom IDAS Type D", "Kenwood Type D" -> TransmissionMode.TYPE_D;
+                    default -> TransmissionMode.M4800;
+                };
+
+                DecodeConfigNXDN nxdn = new DecodeConfigNXDN(mode);
+                List<ChannelFrequency> channelMap = mRadioReferenceDecoder.getChannelMap(systemInformation, site);
+                nxdn.setChannelMap(channelMap);
+                return nxdn;
             case P25_PHASE1:
                 DecodeConfiguration p1config = DecoderFactory.getDecodeConfiguration(decoderType);
 
@@ -399,7 +434,7 @@ public class SiteEditor extends GridPane
                 getCreateChannelConfigurationButton().setVisible(true);
                 getGoToChannelEditorCheckBox().setVisible(true);
                 getSystemTextField().setText(system.getName());
-                getSiteTextField().setText(mCurrentSite.getCountyName());
+                getSiteTextField().setText(mCurrentSite.getDescription());
                 getNameTextField().setText("Control");
 
                 if(!siteFrequencies.isEmpty())

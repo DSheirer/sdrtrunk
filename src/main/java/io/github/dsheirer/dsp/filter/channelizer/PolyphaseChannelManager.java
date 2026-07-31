@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.INativeBufferProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -73,7 +72,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private static final int POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL = 9;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
-    private INativeBufferProvider mNativeBufferProvider;
+    private TunerController mTunerController;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelCalculator mChannelCalculator;
     private SynthesisFilterManager mFilterManager = new SynthesisFilterManager();
@@ -85,23 +84,20 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private boolean mRunning = true;
 
     /**
-     * Creates a polyphase channel manager instance.
+     * Creates a polyphase channel manager for the tuner controller
      *
-     * @param nativeBufferProvider (ie tuner) that supports register/deregister for reusable baseband sample buffer
-     * streams
-     * @param frequency of the baseband complex buffer sample stream (ie center frequency)
-     * @param sampleRate of the baseband complex buffer sample stream
+     * @param tunerController for a tuner that provides a baseband complex buffer stream.
      */
-    public PolyphaseChannelManager(INativeBufferProvider nativeBufferProvider, long frequency, double sampleRate)
+    public PolyphaseChannelManager(TunerController tunerController)
     {
-        if(nativeBufferProvider == null)
+        if(tunerController == null)
         {
             throw new IllegalArgumentException("Complex buffer provider argument cannot be null");
         }
 
-        mNativeBufferProvider = nativeBufferProvider;
+        mTunerController = tunerController;
 
-        int channelCount = (int)(sampleRate / MINIMUM_CHANNEL_BANDWIDTH);
+        int channelCount = (int)(tunerController.getSampleRate() / MINIMUM_CHANNEL_BANDWIDTH);
 
         //Ensure channel count is an even integer since we're using a 2x oversampling polyphase channelizer
         if(channelCount % 2 != 0)
@@ -109,19 +105,10 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             channelCount--;
         }
 
-        mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
+        mChannelCalculator = new ChannelCalculator(tunerController.getSampleRate(), channelCount,
+                tunerController.getFrequency(), CHANNEL_OVERSAMPLING);
         mBufferDispatcher = new Dispatcher("sdrtrunk polyphase buffer processor", 10);
         mBufferDispatcher.setListener(mNativeBufferReceiver);
-    }
-
-    /**
-     * Creates a polyphase channel manager for the tuner controller
-     *
-     * @param tunerController for a tuner that provides a baseband complex buffer stream.
-     */
-    public PolyphaseChannelManager(TunerController tunerController)
-    {
-        this(tunerController, tunerController.getFrequency(), tunerController.getSampleRate());
     }
 
     /**
@@ -201,7 +188,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             try
             {
                 channelSource = new PolyphaseChannelSource(tunerChannel, mChannelCalculator, mFilterManager,
-                        mChannelSourceEventListener, threadName);
+                        mChannelSourceEventListener, threadName, mTunerController.getTunerFrequencyErrorManager());
 
                 mChannelSources.add(channelSource);
             }
@@ -234,7 +221,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             //If this is the first channel, register to start the sample buffers flowing
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {
-                mNativeBufferProvider.addBufferListener(mBufferDispatcher);
+                mTunerController.addBufferListener(mBufferDispatcher);
                 mPolyphaseChannelizer.start();
                 mBufferDispatcher.start();
             }
@@ -263,7 +250,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             //If this is the last/only channel, deregister to stop the sample buffers
             if(mPolyphaseChannelizer != null && mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
             {
-                mNativeBufferProvider.removeBufferListener(mBufferDispatcher);
+                mTunerController.removeBufferListener(mBufferDispatcher);
                 mBufferDispatcher.stop();
                 mPolyphaseChannelizer.stop();
             }
@@ -303,6 +290,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
             case NOTIFICATION_RECORDING_FILE_LOADED:
+            case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                 //no-op
                 break;
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
@@ -456,9 +444,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                             (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
                     }
                     break;
-                case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
-                    //Rebroadcast so that the tuner source can process this event
-                    mSourceEventBroadcaster.broadcast(sourceEvent);
+                case REQUEST_FREQUENCY_CORRECTION:
+                case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
+                    //Ignore
                     break;
                 default:
                     mLog.error("Received unrecognized source event from polyphase channel source [" +

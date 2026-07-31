@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -523,19 +523,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                             FrequencyConfigurationIdentifier.create(frequency), IdentifierUpdateNotification.Operation.SILENT_ADD, timeslot));
                     }
 
-                    break;
-                case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
-                    //Rebroadcast frequency error measurements to external listener if we're currently
-                    //in an active (ie sync locked) state.
-                    for(int timeslot: mTimeslots)
-                    {
-                        if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(mStateMachineMap.get(timeslot).getState()))
-                        {
-                            broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
-                                getChannel().getChannelType().name()));
-                            return;
-                        }
-                    }
                     break;
             }
         }

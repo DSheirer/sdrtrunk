@@ -42,6 +42,7 @@ import io.github.dsheirer.vector.calibrate.sample.PackedSampleConverterCalibrati
 import io.github.dsheirer.vector.calibrate.sample.UnpackedInterleavedSampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.sample.UnpackedSampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
+import io.github.dsheirer.vector.calibrate.sync.NXDNSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
 import java.util.ArrayList;
@@ -114,6 +115,7 @@ public class CalibrationManager
             sInstance.add(new FmDemodulatorCalibration());
             sInstance.add(new InterpolatorCalibration());
             sInstance.add(new MagnitudeCalibration());
+            sInstance.add(new NXDNSoftSyncCalibration());
             sInstance.add(new P25P1SoftSyncCalibration());
             sInstance.add(new RealDcRemovalCalibration());
             sInstance.add(new RealHalfBand11TapFilterCalibration());

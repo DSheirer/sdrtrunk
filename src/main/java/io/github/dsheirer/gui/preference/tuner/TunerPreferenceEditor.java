@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -115,6 +115,7 @@ public class TunerPreferenceEditor extends HBox
                 Label label = new Label("Please restart the application for this change to take effect");
                 label.setWrapText(true);
                 Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setHeaderText("Restart Required");
                 alert.getDialogPane().setContent(label);
                 alert.initOwner(((Node)getChannelizerTypeChoiceBox()).getScene().getWindow());
                 alert.show();
@@ -183,6 +184,7 @@ public class TunerPreferenceEditor extends HBox
                 Label label = new Label("Please restart the application for this change to take effect");
                 label.setWrapText(true);
                 Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setHeaderText("Restart Required");
                 alert.getDialogPane().setContent(label);
                 alert.initOwner(((Node)getRspDuoTunerModeChoiceBox()).getScene().getWindow());
                 alert.show();

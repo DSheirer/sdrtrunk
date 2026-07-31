@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,19 @@ import io.github.dsheirer.source.SourceEvent;
  */
 public abstract class FeedbackDecoder extends PrimaryDecoder implements ISourceEventProvider
 {
+    private static final double TWO_PI = 2 * Math.PI;
     private Listener<SourceEvent> mSourceEventListener;
     private Listener<Float> mSymbolListener;
+    private double mSampleRate;
+
+    /**
+     * Sets the decimated final sample rate that will be used for reporting decoder PLL errors.
+     * @param rate in Hertz
+     */
+    protected void setDecimatedSampleRate(double rate)
+    {
+        mSampleRate = rate;
+    }
 
     /**
      * Protocol description suitable for display in the user interface
@@ -68,13 +79,19 @@ public abstract class FeedbackDecoder extends PrimaryDecoder implements ISourceE
     }
 
     /**
-     * Processes the current phase-locked loop (PLL) measurement and sends to the parent tuner for self correction.
-     * @param pllError as measured in the decoder.
+     * Processes the current phase-locked loop (PLL) measurement and sends to the channel frequency error manager to
+     * correct the error by mixing the incoming sample stream to remove the error.
+     *
+     * Note: this source event error measurement is rebroadcast by the ProcessingChain and received by the
+     * ChannelFrequencyErrorManager that lives within the TunerChannelSource where it adjusts the channel's mixer to
+     * incrementally correct and drive the error toward zero in concert with the parent tuner's auto PPM correction.
+     *
+     * @param pllError as measured in the decoder, in Radians.
      */
-    public void processPLLError(float pllError, int baudRate)
+    public void processPLLError(float pllError)
     {
-        long frequencyError = (long)(baudRate / 2.0 * (pllError / Math.PI));
-        broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(frequencyError, "Decoder measured error sync locked"));
+        long correctionRequestHertz = (long)(mSampleRate / TWO_PI * pllError);
+        broadcast(SourceEvent.frequencyCorrectionRequest(correctionRequestHertz));
     }
 
     /**

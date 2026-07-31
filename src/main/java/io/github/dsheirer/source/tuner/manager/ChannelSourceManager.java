@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.SortedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +90,12 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      * @param errorMessage describing the error state
      */
     public abstract void setErrorMessage(String errorMessage);
+
+    /**
+     * Access the tuner's frequency error manager to insert into each allocated tuner channel source to receive
+     * feedback from the channel's decoder about measured signal error.
+     */
+    public abstract TunerFrequencyErrorManager getTunerFrequencyErrorManager();
 
     /**
      * Adds a listener to receive source events

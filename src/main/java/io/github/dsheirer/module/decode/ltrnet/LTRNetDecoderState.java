@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.module.decode.ltrnet;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -97,7 +97,7 @@ public class LTRNetDecoderState extends DecoderState
     }
 
     @Override
-    protected IChannelDescriptor getCurrentChannel()
+    protected IBandChannelDescriptor getCurrentChannel()
     {
         if(mCurrentChannelNumber > 0)
         {

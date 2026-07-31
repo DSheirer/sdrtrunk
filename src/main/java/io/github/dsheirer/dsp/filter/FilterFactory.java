@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -608,6 +608,22 @@ public class FilterFactory
     }
 
     /**
+     * Creates a Root Raised Cosine filter.
+     * @param samplesPerSymbol
+     * @param symbolCount
+     * @param alpha
+     * @return
+     */
+    public static float[] getRRC(double samplesPerSymbol, int symbolCount, float alpha)
+    {
+        //TODO:  this wraps the existing method which is reducing the samples per symbol value x2 internally and is likely
+        // a mistake.  This method is used by NXDN to correct that error until the DMR and P25 decoders can be updated to
+        // ensure that the correction doesn't impact those decoders.  Once the cleanup is complete, this method can be
+        // deleted and the NXDN implementation can revert to using the future corrected version.
+        return getRootRaisedCosine(samplesPerSymbol * 2, symbolCount, alpha);
+    }
+
+    /**
      * Creates root raised cosine filter coefficients with a tap count equal to the symbols x samplesPerSymbol + 1.
      *
      * Symbol count should be an even integer.
@@ -963,11 +979,11 @@ public class FilterFactory
      * @return filter coefficients.
      * @throws FilterDesignException if the requested length is not odd
      */
-    public static float[] getSinc(double cutoff, int length, WindowType windowType) throws FilterDesignException
+    public static float[] getSinc(double cutoff, int length, WindowType windowType)
     {
         if(length % 2 == 0)
         {
-            throw new FilterDesignException("Sinc filters must be odd-length");
+            throw new IllegalArgumentException("Sinc filters must be odd-length");
         }
 
         float[] coefficients = new float[length];
@@ -983,7 +999,46 @@ public class FilterFactory
         for(int x = 1; x <= half; x++)
         {
             double a = piScalor * x;
-            double coefficient = scalor * FastMath.sin(a) / a;
+            double coefficient = scalor * (FastMath.sin(a) / a);
+
+            coefficient *= window[half + x];
+            coefficients[half + x] = (float)coefficient;
+            coefficients[half - x] = (float)coefficient;
+        }
+
+        return coefficients;
+    }
+
+    /**
+     * Creates a windowed-sync (Nyquist) filter.
+     *
+     * @param cutoff frequency (0.0 <> 0.5)
+     * @param length of the filter - must be odd-length
+     * @param windowType to use in designing the filter
+     * @return filter coefficients.
+     * @throws FilterDesignException if the requested length is not odd
+     */
+    public static float[] getInverseSync(double cutoff, int length, WindowType windowType)
+    {
+        if(length % 2 == 0)
+        {
+            throw new IllegalArgumentException("Sinc filters must be odd-length");
+        }
+
+        float[] coefficients = new float[length];
+        int half = length / 2;
+
+        float[] window = WindowFactory.getWindow(windowType, length);
+
+        double scalor = 2.0 * cutoff;
+        double piScalor = FastMath.PI * scalor;
+
+        coefficients[half] = (float)(1.0 * scalor * window[half]);
+
+        for(int x = 1; x <= half; x++)
+        {
+            double a = piScalor * x;
+            double coefficient = scalor * (a / FastMath.sin(a));
 
             coefficient *= window[half + x];
             coefficients[half + x] = (float)coefficient;

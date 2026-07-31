@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,7 +67,6 @@ public class DMRSoftSymbolProcessor
     private static final int BUFFER_PROTECTED_REGION_DIBITS = 92;
     private static final int BUFFER_WORKSPACE_LENGTH_DIBITS = 25; //This can be adjusted for efficiency
     private static final int BUFFER_LENGTH_DIBITS = BUFFER_PROTECTED_REGION_DIBITS + BUFFER_WORKSPACE_LENGTH_DIBITS;
-    private static final int SYMBOL_RATE = 4800;
     private static final float EQUALIZER_LOOP_GAIN = 0.15f;
     private static final float MAXIMUM_EQUALIZER_BALANCE = (float)(Math.PI / 3.0);
     private static final float MAXIMUM_EQUALIZER_GAIN = 1.25f;
@@ -565,7 +564,7 @@ public class DMRSoftSymbolProcessor
         mEqualizerBalance = Math.min(mEqualizerBalance, MAXIMUM_EQUALIZER_BALANCE);
         mEqualizerBalance = Math.max(mEqualizerBalance, -MAXIMUM_EQUALIZER_BALANCE);
 
-        mFeedbackDecoder.processPLLError(mEqualizerBalance, SYMBOL_RATE);
+        mFeedbackDecoder.processPLLError(mEqualizerBalance);
 
         //Constrain gain between 1.0f and 1.35f
         mEqualizerGain = Math.min(mEqualizerGain, MAXIMUM_EQUALIZER_GAIN);

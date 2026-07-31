@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -331,7 +331,7 @@ public class FrequencyController
     /**
      * Broadcast a frequency error/correction value change
      */
-    protected void broadcastFrequencyCorrectionChange() throws SourceException
+    public void broadcastFrequencyCorrectionChange() throws SourceException
     {
         broadcast(SourceEvent.frequencyCorrectionChange((int)mFrequencyCorrection));
     }

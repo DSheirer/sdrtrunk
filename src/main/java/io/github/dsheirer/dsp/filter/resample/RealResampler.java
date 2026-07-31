@@ -21,8 +21,6 @@ package io.github.dsheirer.dsp.filter.resample;
 import com.laszlosystems.libresample4j.Resampler;
 import com.laszlosystems.libresample4j.SampleBuffers;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -34,7 +32,6 @@ import java.util.List;
  */
 public class RealResampler
 {
-    protected static final Logger mLog = LoggerFactory.getLogger(RealResampler.class);
 
     private Resampler mResampler;
     private Listener<float[]> mResampledListener;
@@ -109,6 +106,19 @@ public class RealResampler
     {
         mBufferManager.load(samples);
         mResampler.process(mResampleFactor, mBufferManager, lastBatch);
+
+        if(lastBatch)
+        {
+            mBufferManager.flushPartialOutput();
+        }
+    }
+
+    /**
+     * Flushes any buffered resampler output for the current stream.
+     */
+    public void flush()
+    {
+        resample(new float[0], true);
     }
 
     /**
@@ -181,19 +191,46 @@ public class RealResampler
         public void consumeOutput(float[] samples, int offset, int length)
         {
             mOutputBuffer.put(samples, offset, length);
+            dispatchFullOutputBuffers();
+        }
 
+        /**
+         * Dispatches any complete resampled output buffers.
+         */
+        private void dispatchFullOutputBuffers()
+        {
             while(mOutputBuffer.position() > mOutputArrayLength)
             {
-                float[] resampled = new float[mOutputArrayLength];
+                dispatchOutputBuffer(mOutputArrayLength);
+            }
+        }
 
-                mOutputBuffer.flip();
-                mOutputBuffer.get(resampled);
-                mOutputBuffer.compact();
+        /**
+         * Flushes any remaining partial output by zero-padding to a full output buffer length.
+         */
+        public void flushPartialOutput()
+        {
+            if(mOutputBuffer.position() > 0)
+            {
+                dispatchOutputBuffer(mOutputBuffer.position());
+            }
+        }
 
-                if(mResampledListener != null)
-                {
-                    mResampledListener.receive(resampled);
-                }
+        /**
+         * Dispatches the requested number of queued output samples, zero-padding the remainder of the fixed-size
+         * output block when fewer than {@code mOutputArrayLength} samples are available.
+         */
+        private void dispatchOutputBuffer(int sampleCount)
+        {
+            float[] resampled = new float[mOutputArrayLength];
+
+            mOutputBuffer.flip();
+            mOutputBuffer.get(resampled, 0, sampleCount);
+            mOutputBuffer.compact();
+
+            if(mResampledListener != null)
+            {
+                mResampledListener.receive(resampled);
             }
         }
     }

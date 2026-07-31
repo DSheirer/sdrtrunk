@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -31,22 +30,20 @@ import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
-import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import java.nio.ByteBuffer;
 
 /**
  * Base P25 Phase 2 Decoder
  */
-public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEventListener, ISourceEventProvider,
+public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEventListener,
         IComplexSamplesListener, Listener<ComplexSamples>, IByteBufferProvider
 {
     private double mSampleRate;
-    private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
-    private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
-    private P25P2MessageProcessor mMessageProcessor;
+    private final Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
+    private final DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
+    private final P25P2MessageProcessor mMessageProcessor;
     private double mSymbolRate;
-    protected PowerMonitor mPowerMonitor = new PowerMonitor();
 
     public P25P2Decoder(double symbolRate)
     {
@@ -72,20 +69,6 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
     public void process(P25FrequencyBandPreloadDataContent preLoadDataContent)
     {
         mMessageProcessor.preload(preLoadDataContent);
-    }
-
-    @Override
-    public void setSourceEventListener(Listener<SourceEvent> listener )
-    {
-        super.setSourceEventListener(listener);
-        mPowerMonitor.setSourceEventListener(listener);
-    }
-
-    @Override
-    public void removeSourceEventListener()
-    {
-        super.removeSourceEventListener();
-        mPowerMonitor.setSourceEventListener(null);
     }
 
     /**
@@ -147,7 +130,6 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
                 getSymbolRate() + " symbol rate)");
         }
 
-        mPowerMonitor.setSampleRate((int)sampleRate);
         mSampleRate = sampleRate;
     }
 
@@ -162,20 +144,13 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {
-        return new Listener<SourceEvent>()
-        {
-            @Override
-            public void receive(SourceEvent sourceEvent)
-            {
-                process(sourceEvent);
-            }
-        };
+        return this::process;
     }
 
     /**
      * Sub-class processing of received source events
      *
-     * @param sourceEvent
+     * @param sourceEvent to process
      */
     protected abstract void process(SourceEvent sourceEvent);
 

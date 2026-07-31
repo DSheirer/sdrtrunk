@@ -16,13 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.gui.playlist.alias.identifier;
 
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.module.decode.dcs.DCSCode;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +57,17 @@ public class DcsEditor extends IdentifierEditor<Dcs>
     public void setItem(Dcs item)
     {
         super.setItem(item);
+
         if(item.isValid())
         {
             getDCSCodeComboBox().getSelectionModel().select(item.getDCSCode());
         }
+        else
+        {
+            // Clear selection for new/invalid items - shows placeholder
+            getDCSCodeComboBox().getSelectionModel().clearSelection();
+        }
+
         modifiedProperty().set(false);
     }
 
@@ -78,7 +85,7 @@ public class DcsEditor extends IdentifierEditor<Dcs>
 
     /**
      * Combo-box loaded with DCS codes
-     * @return
+     * @return combo box
      */
     private ComboBox<DCSCode> getDCSCodeComboBox()
     {
@@ -87,9 +94,34 @@ public class DcsEditor extends IdentifierEditor<Dcs>
             mDCSCodeComboBox = new ComboBox<>();
             mDCSCodeComboBox.getItems().addAll(DCSCode.STANDARD_CODES);
             mDCSCodeComboBox.getItems().addAll(DCSCode.INVERTED_CODES);
+
+            // Set prompt text shown when nothing is selected
+            mDCSCodeComboBox.setPromptText("Select Code...");
+
+            // Custom cell factory to handle display
+            mDCSCodeComboBox.setButtonCell(new ListCell<DCSCode>()
+            {
+                @Override
+                protected void updateItem(DCSCode item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+                    if(empty || item == null)
+                    {
+                        setText("Select Code...");
+                    }
+                    else
+                    {
+                        setText(item.toString());
+                    }
+                }
+            });
+
             mDCSCodeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-                getItem().setDCSCode(getDCSCodeComboBox().getSelectionModel().getSelectedItem());
-                modifiedProperty().set(true);
+                if(newValue != null)
+                {
+                    getItem().setDCSCode(newValue);
+                    modifiedProperty().set(true);
+                }
             });
         }
 

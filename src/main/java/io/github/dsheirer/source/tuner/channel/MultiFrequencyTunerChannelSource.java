@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,13 +62,23 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
                                             List<Long> frequencies, ChannelSpecification channelSpecification,
                                             String preferredTuner, String threadName)
     {
-        super(null, tunerChannelSource.getTunerChannel(), threadName);
+        super(null, tunerChannelSource.getTunerChannel(), threadName, null);
         mTunerManager = tunerManager;
         mTunerChannelSource = tunerChannelSource;
         mTunerChannelSource.setSourceEventListener(mConsumerSourceEventAdapter);
         mFrequencies = frequencies;
         mChannelSpecification = channelSpecification;
         mPreferredTuner = preferredTuner;
+    }
+
+    /**
+     * Applies the channel decoder requested frequency correction.
+     * @param correction requested by the downstream processors.
+     */
+    @Override
+    public void setFrequencyCorrection(long correction)
+    {
+        mTunerChannelSource.setFrequencyCorrection(correction);
     }
 
     /**

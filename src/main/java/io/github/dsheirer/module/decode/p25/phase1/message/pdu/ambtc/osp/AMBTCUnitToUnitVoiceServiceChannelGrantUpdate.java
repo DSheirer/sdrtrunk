@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
@@ -57,7 +57,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
     private APCO25FullyQualifiedRadioIdentifier mTargetAddress;
     private List<Identifier> mIdentifiers;
     private APCO25Channel mChannel;
-    private List<IChannelDescriptor> mChannels;
+    private List<IBandChannelDescriptor> mChannels;
 
     public AMBTCUnitToUnitVoiceServiceChannelGrantUpdate(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -187,7 +187,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
     }
 
     @Override
-    public List<IChannelDescriptor> getChannels()
+    public List<IBandChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

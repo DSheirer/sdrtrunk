@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package io.github.dsheirer.dsp.symbol;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferProvider
 {
-    private final static Logger mLog = LoggerFactory.getLogger(DibitToByteBufferAssembler.class);
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(DibitToByteBufferAssembler.class);
     private ByteBuffer mCurrentBuffer;
     private int mBufferSize;
     private byte mCurrentByte;
@@ -54,13 +54,20 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferP
      */
     private void getNextBuffer()
     {
+        closeAndBroadcast();
+        mCurrentBuffer = ByteBuffer.allocate(mBufferSize);
+    }
+
+    /**
+     * Closes the current buffer and broadcasts it to an optionally registered listener
+     */
+    private void closeAndBroadcast()
+    {
         if(mCurrentBuffer != null && mBufferListener != null)
         {
             mCurrentBuffer.flip();
             mBufferListener.receive(mCurrentBuffer);
         }
-
-        mCurrentBuffer = ByteBuffer.allocate(mBufferSize);
     }
 
     @Override
@@ -88,15 +95,31 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferP
 
         if(mDibitCount >= 4)
         {
-            mCurrentBuffer.put(mCurrentByte);
-            mCurrentByte = 0x00;
-            mDibitCount = 0;
-
             if(!mCurrentBuffer.hasRemaining())
             {
                 getNextBuffer();
             }
+
+            try
+            {
+                mCurrentBuffer.put(mCurrentByte);
+            }
+            catch (BufferOverflowException e)
+            {
+                //This shouldn't happen.
+                LOGGER.info("Detected buffer overflow in dibit buffer assembler - continuing");
+            }
+            mCurrentByte = 0x00;
+            mDibitCount = 0;
         }
+    }
+
+    /**
+     * Flush any buffered bits to the registered listener.
+     */
+    public void flush()
+    {
+        closeAndBroadcast();
     }
 
     /**

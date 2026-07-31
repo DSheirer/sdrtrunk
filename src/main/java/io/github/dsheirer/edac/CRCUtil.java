@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2025 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,7 +139,7 @@ public class CRCUtil
             BinaryMessage polySet = new BinaryMessage(crcSize + i + 1);
             polySet.load(i, crcSize + 1, polynomial);
             message.xor(polySet);
-            System.out.println(message.toString());
+//            System.out.println(message.toString());
         }
 
         return message;
@@ -183,29 +183,29 @@ public class CRCUtil
 
             if(!integerArray)
             {
-                element.append("l");
+                element.append("L");
             }
 
             element.append(", ");
 
-            if(row.length() + element.length() <= 80)
+            if(row.length() + element.length() <= 120)
             {
-                row.append(element.toString());
+                row.append(element);
             }
             else
             {
-                sb.append(row.toString());
+                sb.append(row);
                 sb.append("\n");
                 row = new StringBuilder();
                 row.append("    ");
 
-                row.append(element.toString());
+                row.append(element);
             }
         }
 
         if(row.length() > 4)
         {
-            sb.append(row.toString());
+            sb.append(row);
             sb.append("\n");
         }
 
