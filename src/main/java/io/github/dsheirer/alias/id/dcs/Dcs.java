@@ -22,7 +22,7 @@ package io.github.dsheirer.alias.id.dcs;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
 
 /**
  * Digital Coded Squelch (DCS) tone identifier

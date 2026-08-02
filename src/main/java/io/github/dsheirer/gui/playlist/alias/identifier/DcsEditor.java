@@ -19,7 +19,7 @@
 package io.github.dsheirer.gui.playlist.alias.identifier;
 
 import io.github.dsheirer.alias.id.dcs.Dcs;
-import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;

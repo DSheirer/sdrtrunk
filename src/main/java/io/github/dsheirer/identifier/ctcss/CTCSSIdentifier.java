@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,25 +17,25 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.identifier.dcs;
+package io.github.dsheirer.identifier.ctcss;
 
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.ctcss.CTCSSCode;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
- * Digital Coded Squelch code identifier.  This is decoded from the transmitted signal and represents the FROM role.
+ * Continuous Tone Coded Squelch code identifier.  This is decoded from the transmitted signal and represents the FROM role.
  */
-public class DCSIdentifier extends Identifier<DCSCode>
+public class CTCSSIdentifier extends Identifier<CTCSSCode>
 {
     /**
      * Constructs an instance.
      * @param code detected.
      */
-    public DCSIdentifier(DCSCode code)
+    public CTCSSIdentifier(CTCSSCode code)
     {
         super(code, IdentifierClass.USER, Form.TONE, Role.FROM);
     }
@@ -43,6 +43,6 @@ public class DCSIdentifier extends Identifier<DCSCode>
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.DCS;
+        return Protocol.CTCSS;
     }
 }

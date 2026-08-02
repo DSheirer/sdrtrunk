@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,32 +17,28 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.identifier.dcs;
+package io.github.dsheirer.audio;
 
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.dsp.gain.AudioGainAndDcFilter;
 
 /**
- * Digital Coded Squelch code identifier.  This is decoded from the transmitted signal and represents the FROM role.
+ * This is a wrapper for the AudioGainAndDcFilter class so it can be used with the AudioModule filter list.
+ * Usually instantiated in the DecoderFactory
  */
-public class DCSIdentifier extends Identifier<DCSCode>
+public class AudioGainFilter extends AbstractAudioFilter
 {
-    /**
-     * Constructs an instance.
-     * @param code detected.
-     */
-    public DCSIdentifier(DCSCode code)
+    AudioGainAndDcFilter mAudioGain;
+
+    public AudioGainFilter(float minGain, float maxGain, float objectiveAmplitude)
     {
-        super(code, IdentifierClass.USER, Form.TONE, Role.FROM);
+        mAudioGain = new AudioGainAndDcFilter(minGain, maxGain, objectiveAmplitude);
+        mAudioGain.setDecayRate(2);     // to remove pumping effect
+        mAudioGain.reset();
     }
 
     @Override
-    public Protocol getProtocol()
+    public float[] filter(float[] audio)
     {
-        return Protocol.DCS;
+        return mAudioGain.process(audio);
     }
 }

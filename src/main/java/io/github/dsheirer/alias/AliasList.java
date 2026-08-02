@@ -47,7 +47,7 @@ import io.github.dsheirer.identifier.talkgroup.FullyQualifiedTalkgroupIdentifier
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.identifier.tone.ToneIdentifier;
 import io.github.dsheirer.identifier.tone.ToneSequence;
-import io.github.dsheirer.module.decode.dcs.DCSCode;
+import io.github.dsheirer.module.decode.squelchDecoder.dcs.DCSCode;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.Collection;
