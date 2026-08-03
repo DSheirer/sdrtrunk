@@ -48,8 +48,10 @@ import io.github.dsheirer.util.ThreadPool;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -75,7 +77,9 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     private final TunerConfigurationManager mTunerConfigurationManager;
     private final HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
     private final Context mLibUsbApplicationContext = new Context();
-    private boolean mLibUsbInitialized = false;
+    private final Object mDelayedFuncubeStartLock = new Object();
+    private final Map<String, ScheduledFuture<?>> mDelayedFuncubeStarts = new HashMap<>();
+    private volatile boolean mLibUsbInitialized = false;
     private SDRplay mSDRplay;
 
     /**
@@ -177,6 +181,20 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     public void stop()
     {
+        boolean libUsbInitialized;
+
+        synchronized(mDelayedFuncubeStartLock)
+        {
+            libUsbInitialized = mLibUsbInitialized;
+
+            if(libUsbInitialized)
+            {
+                mLibUsbInitialized = false;
+                cancelDelayedFuncubeStarts();
+                mHotplugEventSupport.stop();
+            }
+        }
+
         //Stop all tuners
         mDiscoveredTunerModel.releaseDiscoveredTuners();
 
@@ -188,11 +206,9 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         //Shutdown LibUsb
-        if(mLibUsbInitialized)
+        if(libUsbInitialized)
         {
-            mHotplugEventSupport.stop();
             LibUsb.exit(mLibUsbApplicationContext);
-            mLibUsbInitialized = false;
         }
     }
 
@@ -325,6 +341,98 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     private DiscoveredTuner removeUsbTuner(int bus, String portAddress)
     {
         return mDiscoveredTunerModel.removeUsbTuner(bus, portAddress);
+    }
+
+    /**
+     * Schedules delayed Funcube startup and ties it to this manager's libusb lifecycle.
+     */
+    private void scheduleFuncubeTunerStart(DiscoveredUSBTuner discoveredUSBTuner)
+    {
+        String deviceKey = getUsbDeviceKey(discoveredUSBTuner.getBus(), discoveredUSBTuner.getPortAddress());
+
+        synchronized(mDelayedFuncubeStartLock)
+        {
+            if(!mLibUsbInitialized)
+            {
+                return;
+            }
+
+            ScheduledFuture<?> existing = mDelayedFuncubeStarts.remove(deviceKey);
+
+            if(existing != null)
+            {
+                existing.cancel(false);
+            }
+
+            DelayedFuncubeTunerStart delayedStart = new DelayedFuncubeTunerStart(deviceKey, discoveredUSBTuner);
+            ScheduledFuture<?> future = ThreadPool.SCHEDULED.schedule(delayedStart, 2, TimeUnit.SECONDS);
+            delayedStart.setFuture(future);
+            mDelayedFuncubeStarts.put(deviceKey, future);
+        }
+    }
+
+    /**
+     * Cancels a delayed Funcube startup for a USB device that has been unplugged.
+     */
+    private void cancelDelayedFuncubeStart(int bus, String portAddress)
+    {
+        synchronized(mDelayedFuncubeStartLock)
+        {
+            ScheduledFuture<?> future = mDelayedFuncubeStarts.remove(getUsbDeviceKey(bus, portAddress));
+
+            if(future != null)
+            {
+                future.cancel(false);
+            }
+        }
+    }
+
+    /**
+     * Cancels all delayed Funcube startups before the shared libusb context is released.
+     */
+    private void cancelDelayedFuncubeStarts()
+    {
+        for(ScheduledFuture<?> future: mDelayedFuncubeStarts.values())
+        {
+            future.cancel(false);
+        }
+
+        mDelayedFuncubeStarts.clear();
+    }
+
+    private String getUsbDeviceKey(int bus, String portAddress)
+    {
+        return bus + ":" + portAddress;
+    }
+
+    private class DelayedFuncubeTunerStart implements Runnable
+    {
+        private final String mDeviceKey;
+        private final DiscoveredUSBTuner mDiscoveredUSBTuner;
+        private ScheduledFuture<?> mFuture;
+
+        private DelayedFuncubeTunerStart(String deviceKey, DiscoveredUSBTuner discoveredUSBTuner)
+        {
+            mDeviceKey = deviceKey;
+            mDiscoveredUSBTuner = discoveredUSBTuner;
+        }
+
+        private void setFuture(ScheduledFuture<?> future)
+        {
+            mFuture = future;
+        }
+
+        @Override
+        public void run()
+        {
+            synchronized(mDelayedFuncubeStartLock)
+            {
+                if(mLibUsbInitialized && mDelayedFuncubeStarts.remove(mDeviceKey, mFuture))
+                {
+                    addUsbTuner(mDiscoveredUSBTuner);
+                }
+            }
+        }
     }
 
     /**
@@ -715,6 +823,11 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         @Override
         public int processEvent(Context context, Device device, int event, Object userData)
         {
+            if(!mLibUsbInitialized)
+            {
+                return HOTPLUG_CONTINUE_EVENT_SUPPORT;
+            }
+
             int bus = LibUsb.getBusNumber(device);
             int port = LibUsb.getPortNumber(device);
             String portAddress = getPortAddress(device);
@@ -740,12 +853,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
 
                             if(tunerClass.isFuncubeTuner())
                             {
-                                //Funcube tuners take a few moments to init the sound card interface.  Delay adding
-                                //the tuner so that it can be started correctly.
-                                ThreadPool.SCHEDULED.schedule(() ->
-                                {
-                                    addUsbTuner(discoveredUSBTuner);
-                                }, 2, TimeUnit.SECONDS);
+                                //Funcube tuners take a few moments to init the sound card interface.
+                                scheduleFuncubeTunerStart(discoveredUSBTuner);
                             }
                             else
                             {
@@ -755,7 +864,14 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                     }
                     break;
                 case LibUsb.HOTPLUG_EVENT_DEVICE_LEFT:
-                    DiscoveredTuner removed = removeUsbTuner(bus, portAddress);
+                    cancelDelayedFuncubeStart(bus, portAddress);
+
+                    DiscoveredTuner removed = null;
+
+                    if(mDiscoveredTunerModel.hasUsbTuner(bus, portAddress))
+                    {
+                        removed = removeUsbTuner(bus, portAddress);
+                    }
 
                     if(removed != null)
                     {

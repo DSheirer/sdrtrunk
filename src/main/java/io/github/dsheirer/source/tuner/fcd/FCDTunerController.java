@@ -191,37 +191,50 @@ public abstract class FCDTunerController extends TunerController
         DeviceList deviceList = new DeviceList();
         int count = LibUsb.getDeviceList(mDeviceContext, deviceList);
 
-        if(count >= 0)
+        try
         {
-            for(Device device: deviceList)
+            if(count >= 0)
             {
-                int bus = LibUsb.getBusNumber(device);
-                int port = LibUsb.getPortNumber(device);
-
-                String portAddress = TunerManager.getPortAddress(device);
-
-                if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
+                for(Device device: deviceList)
                 {
-                    foundDevice = device;
-                }
-                else
-                {
-                    LibUsb.unrefDevice(device);
+                    int bus = LibUsb.getBusNumber(device);
+                    int port = LibUsb.getPortNumber(device);
+
+                    String portAddress = TunerManager.getPortAddress(device);
+
+                    if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
+                    {
+                        if(foundDevice != null)
+                        {
+                            LibUsb.unrefDevice(foundDevice);
+                        }
+
+                        foundDevice = device;
+                    }
+                    else
+                    {
+                        LibUsb.unrefDevice(device);
+                    }
                 }
             }
-        }
-        else
-        {
-            throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPortAddress +
-                    "] from device list" + (count < 0 ? " - error: " + LibUsb.errorName(count) : ""));
-        }
+            else
+            {
+                throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPortAddress +
+                        "] from device list" + (count < 0 ? " - error: " + LibUsb.errorName(count) : ""));
+            }
 
-        if(foundDevice == null)
-        {
-            throw new SourceException("LibUsb couldn't find the matching USB device");
-        }
+            if(foundDevice == null)
+            {
+                throw new SourceException("LibUsb couldn't find the matching USB device");
+            }
 
-        return foundDevice;
+            return foundDevice;
+        }
+        finally
+        {
+            // Individual device references are released during iteration; retain only the matching device for open().
+            LibUsb.freeDeviceList(deviceList, false);
+        }
     }
 
     /**
@@ -244,15 +257,26 @@ public abstract class FCDTunerController extends TunerController
 
         if(status != LibUsb.SUCCESS)
         {
+            LibUsb.unrefDevice(mDevice);
+            mDevice = null;
             mDeviceDescriptor = null;
             throw new SourceException("Can't obtain tuner's device descriptor - " + LibUsb.errorName(status));
         }
 
         mDeviceHandle = new DeviceHandle();
-        status = LibUsb.open(mDevice, mDeviceHandle);
+        try
+        {
+            status = LibUsb.open(mDevice, mDeviceHandle);
+        }
+        finally
+        {
+            // open() retains its own device reference when successful.
+            LibUsb.unrefDevice(mDevice);
+        }
 
         if(status != LibUsb.SUCCESS)
         {
+            mDevice = null;
             mDeviceHandle = null;
             mDeviceDescriptor = null;
 
