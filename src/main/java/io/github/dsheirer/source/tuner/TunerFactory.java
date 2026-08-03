@@ -345,35 +345,24 @@ public class TunerFactory
     }
 
     /**
-     * Create a USB tuner
+     * Create a USB tuner using the application-owned libusb context.
      * @param tunerClass to instantiate
      * @param portAddress usb
      * @param bus usb
      * @param tunerErrorListener to listen for errors from the tuner
      * @param channelizerType for the tuner
-     * @return instantiated tuner
-     * @throws SourceException if the tuner class is unrecognized
-     */
-    public static Tuner getUsbTuner(TunerClass tunerClass, String portAddress, int bus, ITunerErrorListener tunerErrorListener,
-                                    ChannelizerType channelizerType) throws SourceException
-    {
-        return getUsbTuner(tunerClass, portAddress, bus, tunerErrorListener, channelizerType, null);
-    }
-
-    /**
-     * Create a USB tuner, optionally sharing an existing libusb context.
-     * @param tunerClass to instantiate
-     * @param portAddress usb
-     * @param bus usb
-     * @param tunerErrorListener to listen for errors from the tuner
-     * @param channelizerType for the tuner
-     * @param sharedContext existing libusb context to reuse, or null to create a new one
+     * @param sharedContext application-owned libusb context to reuse
      * @return instantiated tuner
      * @throws SourceException if the tuner class is unrecognized
      */
     public static Tuner getUsbTuner(TunerClass tunerClass, String portAddress, int bus, ITunerErrorListener tunerErrorListener,
                                     ChannelizerType channelizerType, Context sharedContext) throws SourceException
     {
+        if(sharedContext == null)
+        {
+            throw new SourceException("Shared libusb context is required for USB tuner [" + tunerClass + "]");
+        }
+
         switch(tunerClass)
         {
             case AIRSPY:
@@ -394,6 +383,7 @@ public class TunerFactory
                 if(tdl1 != null)
                 {
                     FCD1TunerController controller = new FCD1TunerController(tdl1, bus, portAddress, tunerErrorListener);
+                    controller.setSharedContext(sharedContext);
                     return new FCDTuner(controller, tunerErrorListener);
                 }
                 throw new SourceException("Unable to find matching tuner sound card mixer");
@@ -404,6 +394,7 @@ public class TunerFactory
                 if(tdl2 != null)
                 {
                     FCD2TunerController controller = new FCD2TunerController(tdl2, bus, portAddress, tunerErrorListener);
+                    controller.setSharedContext(sharedContext);
                     return new FCDTuner(controller, tunerErrorListener);
                 }
                 throw new SourceException("Unable to find matching tuner sound card mixer");
@@ -432,14 +423,10 @@ public class TunerFactory
     }
 
     private static <T extends USBTunerController> T configureUsbTunerController(T controller, TunerClass tunerClass,
-                                                                                 Context sharedContext)
+                                                                                 Context sharedContext) throws SourceException
     {
         controller.setTunerClass(tunerClass);
-
-        if(sharedContext != null)
-        {
-            controller.setSharedContext(sharedContext);
-        }
+        controller.setSharedContext(sharedContext);
 
         return controller;
     }

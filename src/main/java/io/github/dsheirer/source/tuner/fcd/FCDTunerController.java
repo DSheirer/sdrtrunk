@@ -58,7 +58,7 @@ public abstract class FCDTunerController extends TunerController
 
     private int mBus;
     private String mPortAddress;
-    private Context mDeviceContext = new Context();
+    private Context mDeviceContext;
     private Device mDevice;
     private DeviceDescriptor mDeviceDescriptor = new DeviceDescriptor();
     private DeviceHandle mDeviceHandle = new DeviceHandle();
@@ -102,6 +102,15 @@ public abstract class FCDTunerController extends TunerController
                 new ComplexShortAdapter());
         mComplexMixer.setBufferSampleCount(getBufferSampleCount());
         mComplexMixer.setBufferListener(mNativeBufferBroadcaster);
+    }
+
+    /**
+     * Sets the application-owned libusb context from TunerManager.
+     * Must be called before start().
+     */
+    public void setSharedContext(Context context)
+    {
+        mDeviceContext = context;
     }
 
     @Override
@@ -225,16 +234,10 @@ public abstract class FCDTunerController extends TunerController
     {
         if(mDeviceContext == null)
         {
-            throw new SourceException("Device cannot be reused once it has been shutdown");
+            throw new SourceException("Shared libusb context is required before starting USB tuner");
         }
 
-        int status = LibUsb.init(mDeviceContext);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-        }
-
+        int status;
         mDevice = findDevice();
         mDeviceDescriptor = new DeviceDescriptor();
         status = LibUsb.getDeviceDescriptor(mDevice, mDeviceDescriptor);
@@ -331,7 +334,6 @@ public abstract class FCDTunerController extends TunerController
         mDeviceDescriptor = null;
         mDeviceHandle = null;
         mDevice = null;
-        LibUsb.exit(mDeviceContext);
         mDeviceContext = null;
     }
 

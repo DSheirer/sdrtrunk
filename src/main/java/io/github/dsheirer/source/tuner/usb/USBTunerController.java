@@ -61,8 +61,7 @@ public abstract class USBTunerController extends TunerController
     protected int mBus;
     protected String mPortAddress;
     private TunerClass mTunerClass = TunerClass.UNKNOWN;
-    private Context mDeviceContext = new Context();
-    private boolean mOwnsDeviceContext = true; //false when context is shared from TunerManager
+    private Context mDeviceContext;
     private Device mDevice;
     private DeviceHandle mDeviceHandle;
     private DeviceDescriptor mDeviceDescriptor;
@@ -110,15 +109,12 @@ public abstract class USBTunerController extends TunerController
     }
 
     /**
-     * Sets a shared libusb context from TunerManager instead of creating a new one.
-     * Using a shared context avoids dual-context interference on macOS where the first context
-     * caches device handles that block the second context from fully opening the device.
+     * Sets the application-owned libusb context from TunerManager.
      * Must be called before start().
      */
     public void setSharedContext(Context context)
     {
         mDeviceContext = context;
-        mOwnsDeviceContext = false;
     }
 
     /**
@@ -172,21 +168,11 @@ public abstract class USBTunerController extends TunerController
     {
         if(mDeviceContext == null)
         {
-            throw new SourceException("Device cannot be reused once it has been shutdown");
+            throw new SourceException("Shared libusb context is required before starting USB tuner");
         }
 
         boolean isMacOS = System.getProperty("os.name", "").contains("Mac");
         int status = LibUsb.SUCCESS;
-
-        if(mOwnsDeviceContext)
-        {
-            status = LibUsb.init(mDeviceContext);
-
-            if(status != LibUsb.SUCCESS)
-            {
-                throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-            }
-        }
 
         mDevice = findDevice();
 
@@ -368,10 +354,6 @@ public abstract class USBTunerController extends TunerController
             mDeviceDescriptor = null;
         }
 
-        if(mOwnsDeviceContext)
-        {
-            LibUsb.exit(mDeviceContext);
-        }
         mDeviceContext = null;
     }
 
