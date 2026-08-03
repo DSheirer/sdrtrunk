@@ -25,6 +25,7 @@ import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Context;
 
 /**
  * A USB tuner that is discovered during the USB device traversal process that has a VID and PID that match a known
@@ -37,6 +38,7 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
     private int mBus;
     private String mPortAddress;
     private ChannelizerType mChannelizerType;
+    private Context mSharedLibUsbContext;
 
     /**
      * Constructs an instance
@@ -50,6 +52,14 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
         mBus = bus;
         mPortAddress = portAddress;
         mChannelizerType = channelizerType;
+    }
+
+    /**
+     * Sets the shared libusb context from TunerManager to avoid dual-context interference on macOS.
+     */
+    public void setSharedLibUsbContext(Context context)
+    {
+        mSharedLibUsbContext = context;
     }
 
     /**
@@ -104,7 +114,7 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
         {
             try
             {
-                mTuner = TunerFactory.getUsbTuner(getTunerClass(), getPortAddress(), getBus(), this, mChannelizerType);
+                mTuner = TunerFactory.getUsbTuner(getTunerClass(), getPortAddress(), getBus(), this, mChannelizerType, mSharedLibUsbContext);
                 mTuner.start();
             }
             catch(SourceException se)
