@@ -42,6 +42,7 @@ public class DecodeConfigDMR extends DecodeConfiguration
     private boolean mIgnoreCRCChecksums = false;
     private boolean mUseCompressedTalkgroups = false;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
+    private String mEncryptionKey;
 
     @JsonIgnore
     private DecodeEvent mChannelGrantEvent;
@@ -192,6 +193,37 @@ public class DecodeConfigDMR extends DecodeConfiguration
     public void addTimeslotFrequency(TimeslotFrequency timeslotFrequency)
     {
         mTimeslotMap.add(timeslotFrequency);
+    }
+
+    /**
+     * RC4 encryption key (hexadecimal) used to decrypt MotoTRBO Basic Privacy (ARC4) encrypted data PDUs
+     * (e.g. LRRP, ARS) on this channel/frequency.
+     *
+     * Note: this channel is assumed to always use a single, fixed key ID and key value.
+     * @return key in hexadecimal format, or null/empty if not configured.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "encryption_key")
+    public String getEncryptionKey()
+    {
+        return mEncryptionKey;
+    }
+
+    /**
+     * Sets the RC4 encryption key (hexadecimal) for this channel.
+     * @param encryptionKey in hexadecimal format.
+     */
+    public void setEncryptionKey(String encryptionKey)
+    {
+        mEncryptionKey = encryptionKey;
+    }
+
+    /**
+     * Indicates if this configuration has a usable (non-empty) encryption key configured.
+     */
+    @JsonIgnore
+    public boolean hasEncryptionKey()
+    {
+        return mEncryptionKey != null && !mEncryptionKey.isBlank();
     }
 
     @JsonIgnore

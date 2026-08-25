@@ -56,6 +56,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -91,6 +92,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     private Button mAddTimeslotFrequencyButton;
     private Button mDeleteTimeslotFrequencyButton;
     private Spinner<Integer> mChannelRotationDelaySpinner;
+    private TextField mEncryptionKeyField;
 
     /**
      * Constructs an instance
@@ -172,7 +174,19 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(useCompressedTalkgroupsLabel, 7, row);
             gridPane.getChildren().add(useCompressedTalkgroupsLabel);
 
-            Label timeslotTableLabel = new Label("Logical Channel Number (LCN) to Frequency Map. Required for: Connect Plus and Tier-III systems that don't use absolute frequencies.  LSN = Logical Slot Number");
+            row++;
+
+            Label encryptionKeyLabel = new Label("RC4 Encryption Key (hex)");
+            GridPane.setHalignment(encryptionKeyLabel, HPos.RIGHT);
+            GridPane.setConstraints(encryptionKeyLabel, 0, row);
+            gridPane.getChildren().add(encryptionKeyLabel);
+
+            GridPane.setConstraints(getEncryptionKeyField(), 1, row, 3, 1);
+            gridPane.getChildren().add(getEncryptionKeyField());
+
+            row++;
+
+            Label timeslotTableLabel = new Label("Logical Channel Number (LCN) to Frequency Map. Required for: Connect Plus and Tier-III systems that don't use absolute frequencies.  LSN = Logical Slot Number.");
             GridPane.setHalignment(timeslotTableLabel, HPos.LEFT);
             GridPane.setConstraints(timeslotTableLabel, 0, ++row, 6, 1);
             gridPane.getChildren().add(timeslotTableLabel);
@@ -536,6 +550,28 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         return mUseCompressedTalkgroupsToggle;
     }
 
+    /**
+     * RC4 encryption key text field.  Accepts a hexadecimal string used to decrypt MotoTRBO Basic Privacy (ARC4)
+     * encrypted data PDUs (e.g. LRRP, ARS) transmitted on this channel/frequency.
+     * @return text field
+     */
+    private TextField getEncryptionKeyField()
+    {
+        if(mEncryptionKeyField == null)
+        {
+            mEncryptionKeyField = new TextField();
+            mEncryptionKeyField.setDisable(true);
+            mEncryptionKeyField.setPrefWidth(200);
+            mEncryptionKeyField.setTooltip(new Tooltip(
+                "RC4 encryption key in hexadecimal (e.g. 0011223344).  Used to decrypt MotoTRBO Basic Privacy " +
+                "(ARC4) encrypted data PDUs such as LRRP and ARS on this channel."));
+            mEncryptionKeyField.textProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mEncryptionKeyField;
+    }
+
     private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
     {
         if(mTrafficChannelPoolSizeSpinner == null)
@@ -615,6 +651,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 //        getUplinkFrequencyField().set(0);
 //        getUplinkFrequencyField().setDisable(true);
         getChannelRotationDelaySpinner().setDisable(config == null);
+        getEncryptionKeyField().setDisable(config == null);
 
         if(config instanceof DecodeConfigDMR)
         {
@@ -624,6 +661,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             getIgnoreCRCChecksumsButton().setSelected(decodeConfig.getIgnoreCRCChecksums());
             getUseCompressedTalkgroupsToggle().setSelected(decodeConfig.isUseCompressedTalkgroups());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
+            getEncryptionKeyField().setText(decodeConfig.getEncryptionKey());
 
             for(TimeslotFrequency timeslotFrequency: decodeConfig.getTimeslotMap())
             {
@@ -637,6 +675,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             getUseCompressedTalkgroupsToggle().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getChannelRotationDelaySpinner().getValueFactory().setValue(200);
+            getEncryptionKeyField().setText(null);
         }
     }
 
@@ -659,6 +698,10 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setUseCompressedTalkgroups(getUseCompressedTalkgroupsToggle().isSelected());
         config.setTimeslotMap(new ArrayList<>(getTimeslotTable().getItems()));
+
+        String encryptionKey = getEncryptionKeyField().getText();
+        config.setEncryptionKey((encryptionKey != null && !encryptionKey.isBlank()) ? encryptionKey.trim() : null);
+
         getItem().setDecodeConfiguration(config);
     }
 
