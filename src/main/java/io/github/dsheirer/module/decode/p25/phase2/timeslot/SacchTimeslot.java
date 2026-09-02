@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.edac.ReedSolomon_63_35_29_P25;
+import io.github.dsheirer.edac.ReedSolomon_63_ErasureDecoder;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
@@ -36,6 +36,8 @@ import java.util.List;
 public class SacchTimeslot extends AbstractSignalingTimeslot
 {
     private static final int MAX_OCTET_INDEX = 168; //180-12 = message length minus CRC-12 checksum.
+    private static final ReedSolomon_63_ErasureDecoder REED_SOLOMON = new ReedSolomon_63_ErasureDecoder(35);
+    private static final int[] PUNCTURED_PARITY = {0, 1, 2, 3, 4, 5};
 
     private static final IntField INFO_1 = IntField.range(2, 7);
     private static final IntField INFO_2 = IntField.range(8, 13);
@@ -91,6 +93,7 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
     private static final IntField PARITY_22 = IntField.range(312, 317);
 
     private List<MacMessage> mMacMessages;
+    private boolean mReedSolomonValid;
 
     /**
      * Constructs a scrambled SACCH timeslot
@@ -214,13 +217,14 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
 //            input[61] = 0; //Shortened
 //            input[62] = 0; //Shortened
 
-            ReedSolomon_63_35_29_P25 reedSolomon_63_35_29 = new ReedSolomon_63_35_29_P25();
 
             boolean irrecoverableErrors;
 
             try
             {
-                irrecoverableErrors = reedSolomon_63_35_29.decode(input, output);
+                //The SACCH parity is punctured: input[0..5] were never transmitted.  Decoding them as erasures rather
+                //than as zero-valued symbols roughly doubles the number of correctable symbol errors.
+                irrecoverableErrors = REED_SOLOMON.decode(input, output, PUNCTURED_PARITY);
             }
             catch(Exception e)
             {
@@ -228,6 +232,7 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
                 irrecoverableErrors = true;
             }
 
+            mReedSolomonValid = !irrecoverableErrors;
             CorrectedBinaryMessage binaryMessage = new CorrectedBinaryMessage(180);
 
             int pointer = 0;
@@ -268,5 +273,15 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
         }
 
         return mMacMessages;
+    }
+
+    /**
+     * Indicates if the outer Reed-Solomon code closed on this timeslot's MAC PDU (as opposed to the PDU only
+     * passing its CRC).  Evaluated by getMacMessages().
+     */
+    public boolean isReedSolomonValid()
+    {
+        getMacMessages();
+        return mReedSolomonValid;
     }
 }
