@@ -16,12 +16,14 @@ public class NetworkTunerConfiguration extends TunerConfiguration {
   private static final Logger mLog = LoggerFactory.getLogger(NetworkTunerConfiguration.class);
   private String mHost;
   private short mPort;
+  private boolean mBiasTEnabled = false;
+  private int mGain = 0;
 
   /**
    * Jackson constructor
    */
   public NetworkTunerConfiguration() {
-    super(0, Long.MAX_VALUE);
+    super(52000000, 2200000000l);
   }
 
   /**
