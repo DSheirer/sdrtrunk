@@ -32,12 +32,12 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
 
   @Override
   public long getMinimumTunableFrequency() {
-    return 0;
+    return 52000000;
   }
 
   @Override
   public long getMaximumTunableFrequency() {
-    return Long.MAX_VALUE;
+    return 2200000000l;
   }
 
   @Override
