@@ -11,18 +11,16 @@ import io.github.dsheirer.source.tuner.TunerType;
 
 public class NetworkTuner extends Tuner {
   private final static Logger mLog = LoggerFactory.getLogger(NetworkTuner.class);
-  private static int mInstanceCounter = 1;
-  private final int mInstanceID = mInstanceCounter++;
 
   public NetworkTuner(UserPreferences userPreferences, ITunerErrorListener tunerErrorListener,
       NetworkTunerConfiguration config) {
-    super(new NetworkTunerController(tunerErrorListener, config.getHost(), config.getPort(), config.getFrequency()),
-        tunerErrorListener, userPreferences.getTunerPreference().getChannelizerType());
+    super(new NetworkTunerController(tunerErrorListener, config), tunerErrorListener,
+        userPreferences.getTunerPreference().getChannelizerType());
   }
 
   @Override
   public String getPreferredName() {
-    return "Network Tuner #" + mInstanceID;
+    return "RTL TCP " + getTunerController().getHost() + ":" + getTunerController().getPort();
   }
 
   public NetworkTunerController getTunerController() {

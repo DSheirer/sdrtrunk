@@ -61,6 +61,7 @@ import io.github.dsheirer.source.tuner.limesdr.LimeSdrTunerEditor;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
+import io.github.dsheirer.source.tuner.network.NetworkTunerDisabledEditor;
 import io.github.dsheirer.source.tuner.network.NetworkTunerEditor;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerEditor;
@@ -453,7 +454,11 @@ public class TunerFactory
             case RECORDING_TUNER:
                 return new RecordingTunerEditor(userPreferences, tunerManager, discoveredTuner);
             case NETWORK_TUNER:
-                return new NetworkTunerEditor(userPreferences, tunerManager, discoveredTuner);           
+                if(discoveredTuner.hasTuner())
+                {
+                    return new NetworkTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                }
+                return new NetworkTunerDisabledEditor(userPreferences, tunerManager, discoveredTuner);
             case RTL2832:
                 if(discoveredTuner.hasTuner())
                 {

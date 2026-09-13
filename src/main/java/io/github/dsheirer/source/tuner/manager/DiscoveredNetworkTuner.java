@@ -4,7 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerClass;
+import io.github.dsheirer.source.tuner.network.NetworkTuner;
 import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
 
 public class DiscoveredNetworkTuner extends DiscoveredTuner {
@@ -30,17 +32,24 @@ public class DiscoveredNetworkTuner extends DiscoveredTuner {
 
   @Override
   public String getId() {
-    return getNetworkTunerConfiguration().getHost();
+    return "RTL TCP " + getNetworkTunerConfiguration().getHost() + ":" + getNetworkTunerConfiguration().getPort();
   }
 
   @Override
   public void start() {
+    if (!hasTuner()) {
+      mTuner = new NetworkTuner(mUserPreferences, this, getNetworkTunerConfiguration());
 
+      try {
+        mTuner.start();
+      } catch (SourceException se) {
+        setErrorMessage("Error - " + se.getMessage());
+      }
+    }
   }
 
   @Override
   public String toString() {
-    return "Network [" + getNetworkTunerConfiguration().getHost() + ":" + getNetworkTunerConfiguration().getPort()
-        + "]";
+    return getId();
   }
 }
