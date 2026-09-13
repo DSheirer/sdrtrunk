@@ -18,6 +18,9 @@ public class NetworkTunerConfiguration extends TunerConfiguration {
   private short mPort;
   private boolean mBiasTEnabled = false;
   private int mGain = 0;
+  private boolean mGainAuto = true;
+  private long mSampleRate = 2_048_000;
+  private boolean mAutoReconnect = false;
 
   /**
    * Jackson constructor
@@ -58,6 +61,51 @@ public class NetworkTunerConfiguration extends TunerConfiguration {
 
   public void setPort(short port) {
     mPort = port;
+  }
+
+  @JacksonXmlProperty(isAttribute = true, localName = "bias_t_enabled")
+  public boolean isBiasTEnabled() {
+    return mBiasTEnabled;
+  }
+
+  public void setBiasTEnabled(boolean enabled) {
+    mBiasTEnabled = enabled;
+  }
+
+  @JacksonXmlProperty(isAttribute = true, localName = "gain_auto")
+  public boolean isGainAuto() {
+    return mGainAuto;
+  }
+
+  public void setGainAuto(boolean gainAuto) {
+    mGainAuto = gainAuto;
+  }
+
+  @JacksonXmlProperty(isAttribute = true, localName = "gain")
+  public int getGain() {
+    return mGain;
+  }
+
+  public void setGain(int gain) {
+    mGain = gain;
+  }
+
+  @JacksonXmlProperty(isAttribute = true, localName = "sample_rate")
+  public long getSampleRate() {
+    return mSampleRate;
+  }
+
+  public void setSampleRate(long sampleRate) {
+    mSampleRate = sampleRate;
+  }
+
+  @JacksonXmlProperty(isAttribute = true, localName = "auto_reconnect")
+  public boolean isAutoReconnect() {
+    return mAutoReconnect;
+  }
+
+  public void setAutoReconnect(boolean autoReconnect) {
+    mAutoReconnect = autoReconnect;
   }
 
   public static NetworkTunerConfiguration create() {
