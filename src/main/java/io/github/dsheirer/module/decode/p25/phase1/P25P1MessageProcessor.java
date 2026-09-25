@@ -326,12 +326,33 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             }
         }
 
-        //Store band identifiers so that they can be injected into channel type messages
-        if(message instanceof IFrequencyBand)
+        //Store band identifiers so that they can be injected into channel type messages.  Only a message that passed
+        //its CRC may define a band: receive() dispatches invalid messages too, and a failed IDEN_UPDATE still parses,
+        //with a corrupt base and spacing.  Stored, it resolves every channel granted under that identifier to a
+        //phantom frequency (GHz values, #2298) until the next valid IDEN_UPDATE replaces it.
+        if(message instanceof IFrequencyBand bandIdentifier && isValidBandSource(message))
         {
-            IFrequencyBand bandIdentifier = (IFrequencyBand)message;
             mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
         }
+    }
+
+    /**
+     * Indicates if a band-plan-carrying message passed its error checks.  TSBK and AMBTC band updates are IMessages
+     * and link control words carry their own CRC result.  Any other type keeps the previous (accepting) behavior.
+     */
+    private static boolean isValidBandSource(AbstractMessage message)
+    {
+        if(message instanceof IMessage iMessage)
+        {
+            return iMessage.isValid();
+        }
+
+        if(message instanceof LinkControlWord linkControlWord)
+        {
+            return linkControlWord.isValid();
+        }
+
+        return true;
     }
 
     /**
