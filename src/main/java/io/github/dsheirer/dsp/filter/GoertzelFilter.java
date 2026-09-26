@@ -24,7 +24,7 @@ import org.apache.commons.math3.util.FastMath;
 /**
  * Implements the Goertzel Filter as described in
  * http://en.wikipedia.org/wiki/Goertzel_algorithm
- * <p>
+ *
  * Calculates the magnitude of a specific frequency component within a window of
  * samples, using a Goertzel Filter (ie an optimized DFT).
  */
@@ -101,9 +101,10 @@ public class GoertzelFilter
         //power = s_prev2 * s_prev2 + s_prev * s_prev - coeff * s_prev * s_prev2 ;
 
         double magnitude = (s_prev2 * s_prev2) + (s_prev * s_prev) - (mCoefficient * s_prev * s_prev2);
-        int binZero = getBinZeroPower(samples);
-
-        int power = (int)(20 * FastMath.log10(magnitude / binZero));
+        // Removed because bin(0) is likely to be (int) zero on audio samples
+        //int binZero = getBinZeroPower(samples);
+        //int power = (int)(20 * FastMath.log10(magnitude / binZero));
+        int power = (int)(20 * FastMath.log10(magnitude));
 
         return power;
     }
@@ -119,7 +120,6 @@ public class GoertzelFilter
         {
             retVal += sample;
         }
-
         return retVal;
     }
 
