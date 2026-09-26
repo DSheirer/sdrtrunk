@@ -50,6 +50,13 @@ public class FrequencyBandUpdate extends MacStructure implements IFrequencyBand
         super(message, offset);
     }
 
+    @Override
+    public boolean isValid()
+    {
+        //Note: this message is only created when the parent passes CRC, therefore it should be valid.
+        return true;
+    }
+
     /**
      * Textual representation of this message
      */
