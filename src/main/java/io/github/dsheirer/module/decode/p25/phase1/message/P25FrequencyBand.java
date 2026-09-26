@@ -35,6 +35,12 @@ public class P25FrequencyBand implements IFrequencyBand
     }
 
     @Override
+    public boolean isValid()
+    {
+        return true;
+    }
+
+    @Override
     public int getIdentifier()
     {
         return mIdentifier;

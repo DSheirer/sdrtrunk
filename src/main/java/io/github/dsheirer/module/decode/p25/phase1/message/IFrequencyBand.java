@@ -19,43 +19,49 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1.message;
 
+/**
+ * P25 frequency band provider interface.
+ */
 public interface IFrequencyBand
 {
     /**
+     * Indicates if the band is valid and passes CRC checks.
+     */
+    boolean isValid();
+    /**
      * (Band) Identifier
      */
-    public abstract int getIdentifier();
+    int getIdentifier();
 
     /**
      * Channel spacing in hertz
      */
-    public abstract long getChannelSpacing();
+    long getChannelSpacing();
 
     /**
      * Base frequency in hertz
      */
-    public abstract long getBaseFrequency();
-
+    long getBaseFrequency();
 
     /**
      * Channel bandwidth in hertz
      */
-    public abstract int getBandwidth();
+    int getBandwidth();
 
     /**
      * Transmit offset in hertz
      */
-    public abstract long getTransmitOffset();
+    long getTransmitOffset();
 
     /**
      * Downlink (tower to mobile) Frequency for the specified channel
      */
-    public abstract long getDownlinkFrequency(int channelNumber);
+    long getDownlinkFrequency(int channelNumber);
 
     /**
      * Uplink (mobile to tower) Frequency for the specified channel
      */
-    public abstract long getUplinkFrequency(int channelNumber);
+    long getUplinkFrequency(int channelNumber);
 
     /**
      * Indicates if this band is an FDMA (false) or TDMA (true) band
