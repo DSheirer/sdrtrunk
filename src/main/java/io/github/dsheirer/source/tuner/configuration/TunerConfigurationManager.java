@@ -168,7 +168,8 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
             {
                 TunerType tunerType = discoveredTuner.getTuner().getTunerType();
 
-                if(tunerType != TunerType.RECORDING)
+                //Recording and network tuners' getId() doesn't match the configuration's uniqueID scheme
+                if(tunerType != TunerType.RECORDING && tunerType != TunerType.RTL_TCP)
                 {
                     TunerConfiguration tunerConfiguration = getTunerConfiguration(tunerType, discoveredTuner.getId());
 
@@ -193,7 +194,8 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
         {
             TunerType tunerType = discoveredTuner.getTuner().getTunerType();
 
-            if(tunerType != TunerType.RECORDING)
+            //See note in tunerStatusUpdated()
+            if(tunerType != TunerType.RECORDING && tunerType != TunerType.RTL_TCP)
             {
                 TunerConfiguration tunerConfiguration = getTunerConfiguration(tunerType, discoveredTuner.getId());
 

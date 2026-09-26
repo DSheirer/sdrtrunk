@@ -57,10 +57,11 @@ public class ByteNativeBuffer extends AbstractNativeBuffer
     public ByteNativeBuffer(byte[] samples, long timestamp, float averageDc, float samplesPerMillisecond)
     {
         super(timestamp, samplesPerMillisecond);
-        //Ensure we're an even multiple of the fragment size.  Typically, this will be 64k or 128k
-        if(samples.length % FRAGMENT_SIZE != 0)
+        //Ensure we're an even multiple of the fragment size in bytes (2 bytes per I/Q sample).  Typically, this
+        //will be 64k or 128k
+        if(samples.length % (FRAGMENT_SIZE * 2) != 0)
         {
-            throw new IllegalArgumentException("Samples byte[] length [" + samples.length + "] must be an even multiple of " + FRAGMENT_SIZE);
+            throw new IllegalArgumentException("Samples byte[] length [" + samples.length + "] must be an even multiple of " + (FRAGMENT_SIZE * 2));
         }
 
         mSamples = samples;
