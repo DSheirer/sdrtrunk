@@ -55,6 +55,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
     private static final long CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS = 5000; // 5 seconds
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
     private static final String HTTP_1_0_OK_HEX_DUMP = "48 54 54 50 2F 31 2E 30 20 32 30 30 20 4F 4B";
+    private static final String HTTP_1_1_CONTINUE_HEX_DUMP = "48 54 54 50 2F 31 2E 31 20 31 30 30";
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
@@ -262,6 +263,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
             {
                 mHTTPHeaders = new HashMap<>();
                 mHTTPHeaders.put(IcecastHeader.ACCEPT.getValue(), "*/*");
+                mHTTPHeaders.put(IcecastHeader.EXPECT.getValue(), "100-continue");
                 mHTTPHeaders.put(IcecastHeader.CONTENT_TYPE.getValue(), getConfiguration().getBroadcastFormat().getValue());
                 mHTTPHeaders.put(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
                 mHTTPHeaders.put(IcecastHeader.AUTHORIZATION.getValue(), getConfiguration().getBase64EncodedCredentials());
@@ -350,7 +352,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 {
                     String hexDump = ((ProtocolDecoderException)throwable).getHexdump();
 
-                    if(hexDump.startsWith(HTTP_1_0_OK_HEX_DUMP))
+                    if(hexDump.startsWith(HTTP_1_0_OK_HEX_DUMP) || hexDump.startsWith(HTTP_1_1_CONTINUE_HEX_DUMP))
                     {
                         setBroadcastState(BroadcastState.CONNECTED);
 						mConnectionFailureLogged.set(false);
@@ -432,6 +434,10 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 switch(response.getStatus())
                 {
                     case INFORMATIONAL_CONTINUE:
+                        //Icecast 2.5+ signals that we can start sending audio with 100-continue
+                        setBroadcastState(BroadcastState.CONNECTED);
+                        mConnecting.set(false);
+                        mConnectionFailureLogged.set(false);
                         break;
                     case SUCCESS_OK:
                         setBroadcastState(BroadcastState.CONNECTED);
@@ -500,7 +506,8 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 
             mMessage = new String(bytes);
 
-            Pattern pattern = Pattern.compile("HTTP/1.0 (\\d{3})");
+            //Icecast 2.4+ responds with HTTP/1.0 and Icecast 2.5+ responds with HTTP/1.1
+            Pattern pattern = Pattern.compile("HTTP/1\\.[01] (\\d{3})");
             Matcher m = pattern.matcher(mMessage);
 
             if(m.find())
