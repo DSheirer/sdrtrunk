@@ -322,7 +322,7 @@ public class SuperFrameFragment implements IMessage
             return getIISCH1().getIschSequence().getTimeslotOffset();
         }
 
-        if(getIISCH1().isValid())
+        if(getIISCH2().isValid())
         {
             return getIISCH2().getIschSequence().getTimeslotOffset();
         }
