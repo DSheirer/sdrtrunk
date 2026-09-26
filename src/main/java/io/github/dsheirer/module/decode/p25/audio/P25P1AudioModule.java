@@ -24,6 +24,8 @@ import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
@@ -41,10 +43,25 @@ public class P25P1AudioModule extends ImbeAudioModule
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private List<LDUMessage> mCachedLDUMessages = new ArrayList<>();
+    private Integer mNacFilter = null;
 
     public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
         super(userPreferences, aliasList);
+    }
+
+    /**
+     * Sets the NAC filter value. When set to a positive value, voice/header frames whose decoded NAC does not match
+     * are dropped before audio decoding, so that co-channel traffic with a different NAC is not voiced into this
+     * call's audio segment. This mirrors the NAC filter applied in P25P1DecoderState, but is required separately here
+     * because the audio module receives the message stream in parallel with the decoder state - the decoder-state
+     * filter alone does not gate the audio path.
+     *
+     * @param nacFilter to match, or null/zero to disable audio-path NAC filtering.
+     */
+    public void setNacFilter(Integer nacFilter)
+    {
+        mNacFilter = nacFilter;
     }
 
     @Override
@@ -79,6 +96,18 @@ public class P25P1AudioModule extends ImbeAudioModule
      */
     public void receive(IMessage message)
     {
+        //NAC gate: when a NAC filter is configured, drop voice/header frames whose decoded NAC does not match so
+        //that co-channel traffic with a different NAC is not decoded into this call's audio. Frames whose NID did
+        //not cleanly decode to a NAC (interferer collisions, deep fades) fall through and are passed, matching the
+        //decoder-state filter semantics, to avoid choppy audio on a legitimate single-transmitter call.
+        if(mNacFilter != null && mNacFilter > 0 && message instanceof P25P1Message p25Message)
+        {
+            if(p25Message.getNAC() instanceof APCO25Nac nac && nac.getValue() != mNacFilter.intValue())
+            {
+                return;
+            }
+        }
+
         if(hasAudioCodec())
         {
             if(mEncryptedCallStateEstablished)
