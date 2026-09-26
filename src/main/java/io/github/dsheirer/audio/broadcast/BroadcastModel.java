@@ -62,11 +62,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     public static final int COLUMN_BROADCASTER_STATUS = 2;
     public static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
     public static final int COLUMN_BROADCASTER_STREAMED_COUNT = 4;
-    public static final int COLUMN_BROADCASTER_AGED_OFF_COUNT = 5;
-    public static final int COLUMN_BROADCASTER_ERROR_COUNT = 6;
+    public static final int COLUMN_BROADCASTER_DUPLICATE_REJECTED_COUNT = 5;
+    public static final int COLUMN_BROADCASTER_AGED_OFF_COUNT = 6;
+    public static final int COLUMN_BROADCASTER_ERROR_COUNT = 7;
 
     public static final String[] COLUMN_NAMES = new String[]
-        {"Stream Type", "Name", "Status", "Queued", "Streamed/Uploaded", "Aged Off", "Upload Error"};
+        {"Stream Type", "Name", "Status", "Queued", "Streamed/Uploaded", "Duplicate Rejected", "Aged Off", "Upload Error"};
 
     private ObservableList<ConfiguredBroadcast> mConfiguredBroadcasts =
         FXCollections.observableArrayList(ConfiguredBroadcast.extractor());
@@ -531,6 +532,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                         fireTableCellUpdated(row, COLUMN_BROADCASTER_STREAMED_COUNT);
                     }
                     break;
+                case BROADCASTER_DUPLICATE_REJECTED_COUNT_CHANGE:
+                    if(row >= 0)
+                    {
+                        fireTableCellUpdated(row, COLUMN_BROADCASTER_DUPLICATE_REJECTED_COUNT);
+                    }
+                    break;
                 case BROADCASTER_AGED_OFF_COUNT_CHANGE:
                     if(row >= 0)
                     {
@@ -607,6 +614,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                                 return configuredBroadcast.getAudioBroadcaster().getStreamedAudioCount();
                             }
                             break;
+                        case COLUMN_BROADCASTER_DUPLICATE_REJECTED_COUNT:
+                            if(configuredBroadcast.hasAudioBroadcaster())
+                            {
+                                return configuredBroadcast.getAudioBroadcaster().getDuplicateRejectedAudioCount();
+                            }
+                            break;
                         case COLUMN_BROADCASTER_AGED_OFF_COUNT:
                             if(configuredBroadcast.hasAudioBroadcaster())
                             {
@@ -643,6 +656,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             case COLUMN_BROADCASTER_AGED_OFF_COUNT:
             case COLUMN_BROADCASTER_QUEUE_SIZE:
             case COLUMN_BROADCASTER_STREAMED_COUNT:
+            case COLUMN_BROADCASTER_DUPLICATE_REJECTED_COUNT:
             case COLUMN_BROADCASTER_ERROR_COUNT:
                 return Integer.class;
             case COLUMN_BROADCAST_SERVER_TYPE:

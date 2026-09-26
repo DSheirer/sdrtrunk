@@ -370,6 +370,9 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                                 else if(urlResponse.startsWith("1 SKIPPED"))
                                 {
                                     //Broadcastify is telling us to skip audio upload - someone already uploaded it
+                                    incrementDuplicateRejectedAudioCount();
+                                    broadcast(new BroadcastEvent(BroadcastifyCallBroadcaster.this,
+                                        BroadcastEvent.Event.BROADCASTER_DUPLICATE_REJECTED_COUNT_CHANGE));
                                     audioRecording.removePendingReplay();
                                 }
                                 else
