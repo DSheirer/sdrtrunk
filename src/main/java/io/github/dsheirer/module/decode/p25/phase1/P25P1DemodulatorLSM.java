@@ -24,9 +24,13 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.gui.viewer.symbol.SymbolViewerFX;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
+import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetector;
+import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetectorFactory;
 import io.github.dsheirer.sample.Listener;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Demodulates filtered LSM I/Q samples to feed message framer for sync detection and framing.
@@ -35,12 +39,34 @@ public class P25P1DemodulatorLSM
 {
     private static final float HALF_PI = (float)(Math.PI / 2.0);
     private static final float TWO_PI = (float)(Math.PI * 2.0);
-    private static final float MAX_PLL = (float)(Math.PI / 3.0); //+/- 800 Hz
+    private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DemodulatorLSM.class);
+
+    /**
+     * Maximum PLL correction per symbol: +/- 5/6 PI = +/- 2000 Hz.  The decision-directed PLL can only resolve the
+     * carrier offset modulo 90 degrees per symbol (1200 Hz), so beyond ~+/-600 Hz it can settle on a false lock point
+     * that is 90 degrees from the true offset.  Those false locks are detected via rotated sync pattern detection and
+     * corrected below, which allows the wider PLL range.
+     */
+    private static final float MAX_PLL = (float)(Math.PI * 5.0 / 6.0);
+
+    /**
+     * Rotated sync detection.  When the PLL settles on a false lock point, the sync pattern appears rotated by +/-90
+     * degrees and the normal sync correlation drops (~60 of max ~133) while one of the rotated correlations is near max.
+     * Require a strong rotated correlation that clearly exceeds the normal correlation before correcting the PLL.
+     */
+    private static final float ROTATED_SYNC_THRESHOLD = 90.0f;
+    private static final float ROTATED_SYNC_MARGIN = 30.0f;
+    private static final int ROTATED_SYNC_LOCKOUT_SYMBOLS = 48;
+    private static final long ROTATION_LOG_INTERVAL_MS = 10000;
     private static final float OBJECTIVE_MAGNITUDE = 1.0f;
 
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     private final FeedbackDecoder mFeedbackDecoder;
     private final P25P1MessageFramer mMessageFramer;
+    private final P25P1SoftSyncDetector mSyncDetectorPlus90 = P25P1SoftSyncDetectorFactory.getDetector();
+    private final P25P1SoftSyncDetector mSyncDetectorMinus90 = P25P1SoftSyncDetectorFactory.getDetector();
+    private int mSymbolsSinceRotationCorrection = 0;
+    private long mLastRotationLogTimestamp = 0;
     private SymbolViewerFX mDebugSymbolViewer;
     private double mSamplePoint;
     private double mSamplesPerSymbol;
@@ -70,6 +96,9 @@ public class P25P1DemodulatorLSM
     public void resetPLL()
     {
         mPLL = 0f;
+        mSyncDetectorPlus90.reset();
+        mSyncDetectorMinus90.reset();
+        mSymbolsSinceRotationCorrection = 0;
     }
 
     /**
@@ -222,6 +251,9 @@ public class P25P1DemodulatorLSM
                     mFeedbackDecoder.processPLLError(pll);
                 }
 
+                //Detect sync patterns rotated by +/-90 degrees, indicating a PLL false lock, and correct the PLL.
+                pll = checkRotatedSync(softSymbol, pll);
+
                 mDibitAssembler.receive(hardSymbol);
                 mFeedbackDecoder.broadcast(softSymbol);
 
@@ -278,6 +310,70 @@ public class P25P1DemodulatorLSM
         mPreviousSymbolQ = previousSymbolQ;
         mSampleGain = sampleGain;
         mSamplePoint = samplePoint;
+    }
+
+    /**
+     * Feeds the soft symbol rotated by +/-90 degrees to the rotated sync detectors and applies a +/-90 degree
+     * correction to the PLL when a rotated sync pattern is detected with a correlation that clearly exceeds the normal
+     * sync pattern correlation.  This recovers from the PLL settling on a false lock point when the carrier offset
+     * exceeds ~600 Hz, which otherwise leaves the channel in a permanent sync loss state because PLL error measurements
+     * are only reported to the tuner (auto-PPM) when a valid sync and NID are detected.
+     *
+     * @param softSymbol demodulated soft symbol (radians)
+     * @param pll current PLL value
+     * @return PLL value, corrected if a rotated sync pattern was detected
+     */
+    private float checkRotatedSync(float softSymbol, float pll)
+    {
+        float plus90 = mSyncDetectorPlus90.process(normalize(softSymbol + HALF_PI));
+        float minus90 = mSyncDetectorMinus90.process(normalize(softSymbol - HALF_PI));
+
+        if(mSymbolsSinceRotationCorrection < ROTATED_SYNC_LOCKOUT_SYMBOLS)
+        {
+            mSymbolsSinceRotationCorrection++;
+            return pll;
+        }
+
+        float normal = mMessageFramer.getSoftSyncScore();
+        float correction;
+
+        if(plus90 > ROTATED_SYNC_THRESHOLD && (plus90 - normal) > ROTATED_SYNC_MARGIN)
+        {
+            correction = HALF_PI;
+        }
+        else if(minus90 > ROTATED_SYNC_THRESHOLD && (minus90 - normal) > ROTATED_SYNC_MARGIN)
+        {
+            correction = -HALF_PI;
+        }
+        else
+        {
+            return pll;
+        }
+
+        float corrected = pll + correction;
+
+        //Ignore a correction that would push the PLL beyond its range.  Wrapping it to the opposite side would report
+        //a carrier offset with the wrong sign to the tuner's auto-PPM correction.
+        if(Math.abs(corrected) > MAX_PLL)
+        {
+            return pll;
+        }
+
+        mSyncDetectorPlus90.reset();
+        mSyncDetectorMinus90.reset();
+        mSymbolsSinceRotationCorrection = 0;
+
+        long now = System.currentTimeMillis();
+
+        if(now - mLastRotationLogTimestamp > ROTATION_LOG_INTERVAL_MS)
+        {
+            mLastRotationLogTimestamp = now;
+            LOGGER.info("P25P1 LSM rotated sync detected - correcting PLL from [" +
+                    Math.round(pll * SYMBOL_RATE / TWO_PI) + "] to [" + Math.round(corrected * SYMBOL_RATE / TWO_PI) +
+                    "] Hz");
+        }
+
+        return corrected;
     }
 
     /**
