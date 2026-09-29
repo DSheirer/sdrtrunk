@@ -53,11 +53,19 @@ public class P25P1DemodulatorLSM
      * Rotated sync detection.  When the PLL settles on a false lock point, the sync pattern appears rotated by +/-90
      * degrees and the normal sync correlation drops (~60 of max ~133) while one of the rotated correlations is near max.
      * Require a strong rotated correlation that clearly exceeds the normal correlation before correcting the PLL.
+     *
+     * Rotated detections can occur spuriously (e.g. during startup transients), so corrections are only applied when
+     * the decoder has not produced a valid NID for at least 1 second (also true for the first second after startup)
+     * and only after two rotated detections in the same direction that are at least one TSBK frame apart and within
+     * 2 seconds of each other.
      */
     private static final float ROTATED_SYNC_THRESHOLD = 90.0f;
     private static final float ROTATED_SYNC_MARGIN = 30.0f;
     private static final int ROTATED_SYNC_LOCKOUT_SYMBOLS = 48;
-    private static final long ROTATION_LOG_INTERVAL_MS = 10000;
+    private static final int ROTATED_SYNC_NO_NID_SYMBOLS = 4800; //1 second
+    private static final int ROTATED_SYNC_CONFIRM_MIN_SYMBOLS = 300;
+    private static final int ROTATED_SYNC_CONFIRM_MAX_SYMBOLS = 9600; //2 seconds
+    private static final long ROTATION_LOG_INTERVAL_MS = 1000;
     private static final float OBJECTIVE_MAGNITUDE = 1.0f;
 
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
@@ -66,6 +74,9 @@ public class P25P1DemodulatorLSM
     private final P25P1SoftSyncDetector mSyncDetectorPlus90 = P25P1SoftSyncDetectorFactory.getDetector();
     private final P25P1SoftSyncDetector mSyncDetectorMinus90 = P25P1SoftSyncDetectorFactory.getDetector();
     private int mSymbolsSinceRotationCorrection = 0;
+    private int mSymbolsSinceValidNID = 0;
+    private int mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
+    private float mPendingRotationCorrection = 0;
     private long mLastRotationLogTimestamp = 0;
     private SymbolViewerFX mDebugSymbolViewer;
     private double mSamplePoint;
@@ -99,6 +110,9 @@ public class P25P1DemodulatorLSM
         mSyncDetectorPlus90.reset();
         mSyncDetectorMinus90.reset();
         mSymbolsSinceRotationCorrection = 0;
+        mSymbolsSinceValidNID = 0;
+        mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
+        mPendingRotationCorrection = 0;
     }
 
     /**
@@ -249,6 +263,11 @@ public class P25P1DemodulatorLSM
                 if(mMessageFramer.processWithSoftSyncDetect(softSymbol, hardSymbol))
                 {
                     mFeedbackDecoder.processPLLError(pll);
+                    mSymbolsSinceValidNID = 0;
+                }
+                else if(mSymbolsSinceValidNID < Integer.MAX_VALUE)
+                {
+                    mSymbolsSinceValidNID++;
                 }
 
                 //Detect sync patterns rotated by +/-90 degrees, indicating a PLL false lock, and correct the PLL.
@@ -328,9 +347,21 @@ public class P25P1DemodulatorLSM
         float plus90 = mSyncDetectorPlus90.process(normalize(softSymbol + HALF_PI));
         float minus90 = mSyncDetectorMinus90.process(normalize(softSymbol - HALF_PI));
 
+        if(mSymbolsSinceRotatedDetection < Integer.MAX_VALUE)
+        {
+            mSymbolsSinceRotatedDetection++;
+        }
+
         if(mSymbolsSinceRotationCorrection < ROTATED_SYNC_LOCKOUT_SYMBOLS)
         {
             mSymbolsSinceRotationCorrection++;
+            return pll;
+        }
+
+        //Only attempt correction when we're not decoding valid NIDs, i.e. the PLL may be in a false lock.
+        if(mSymbolsSinceValidNID < ROTATED_SYNC_NO_NID_SYMBOLS)
+        {
+            mPendingRotationCorrection = 0;
             return pll;
         }
 
@@ -349,6 +380,24 @@ public class P25P1DemodulatorLSM
         {
             return pll;
         }
+
+        //Require a second rotated detection in the same direction on a later frame to confirm before correcting.
+        if(mPendingRotationCorrection != correction ||
+                mSymbolsSinceRotatedDetection > ROTATED_SYNC_CONFIRM_MAX_SYMBOLS)
+        {
+            mPendingRotationCorrection = correction;
+            mSymbolsSinceRotatedDetection = 0;
+            return pll;
+        }
+
+        if(mSymbolsSinceRotatedDetection < ROTATED_SYNC_CONFIRM_MIN_SYMBOLS)
+        {
+            //Same sync pattern (or too close) - keep waiting for a detection on a later frame.
+            return pll;
+        }
+
+        mPendingRotationCorrection = 0;
+        mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
 
         float corrected = pll + correction;
 
