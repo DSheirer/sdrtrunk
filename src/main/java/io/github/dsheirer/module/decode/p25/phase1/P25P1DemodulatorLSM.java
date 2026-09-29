@@ -66,6 +66,19 @@ public class P25P1DemodulatorLSM
     private static final int ROTATED_SYNC_CONFIRM_MIN_SYMBOLS = 300;
     private static final int ROTATED_SYNC_CONFIRM_MAX_SYMBOLS = 9600; //2 seconds
     private static final long ROTATION_LOG_INTERVAL_MS = 1000;
+
+    /**
+     * PLL clamp watchdog.  After a deep fade the AGC amplifies noise and the PLL can random-walk to the +/-MAX_PLL clamp,
+     * where the loop keeps pushing against the clamp and cannot recover.  If the PLL stays pinned near the clamp with no
+     * valid NID for 2 seconds, reset it to zero so that normal tracking and rotated sync correction can reacquire.
+     */
+    private static final float PLL_CLAMP_WATCHDOG_THRESHOLD = MAX_PLL * 0.95f;
+    private static final int PLL_CLAMP_WATCHDOG_SYMBOLS = 9600; //2 seconds
+
+    private static final int ROTATION_NONE = 0;
+    private static final int ROTATION_PLUS_90 = 1;
+    private static final int ROTATION_MINUS_90 = 2;
+    private static final int ROTATION_180 = 3;
     private static final float OBJECTIVE_MAGNITUDE = 1.0f;
 
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
@@ -73,10 +86,12 @@ public class P25P1DemodulatorLSM
     private final P25P1MessageFramer mMessageFramer;
     private final P25P1SoftSyncDetector mSyncDetectorPlus90 = P25P1SoftSyncDetectorFactory.getDetector();
     private final P25P1SoftSyncDetector mSyncDetectorMinus90 = P25P1SoftSyncDetectorFactory.getDetector();
+    private final P25P1SoftSyncDetector mSyncDetector180 = P25P1SoftSyncDetectorFactory.getDetector();
+    private int mSymbolsAtPLLClamp = 0;
     private int mSymbolsSinceRotationCorrection = 0;
     private int mSymbolsSinceValidNID = 0;
     private int mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
-    private float mPendingRotationCorrection = 0;
+    private int mPendingRotation = ROTATION_NONE;
     private long mLastRotationLogTimestamp = 0;
     private SymbolViewerFX mDebugSymbolViewer;
     private double mSamplePoint;
@@ -107,12 +122,19 @@ public class P25P1DemodulatorLSM
     public void resetPLL()
     {
         mPLL = 0f;
-        mSyncDetectorPlus90.reset();
-        mSyncDetectorMinus90.reset();
+        resetRotatedSyncDetectors();
         mSymbolsSinceRotationCorrection = 0;
         mSymbolsSinceValidNID = 0;
         mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
-        mPendingRotationCorrection = 0;
+        mPendingRotation = ROTATION_NONE;
+        mSymbolsAtPLLClamp = 0;
+    }
+
+    private void resetRotatedSyncDetectors()
+    {
+        mSyncDetectorPlus90.reset();
+        mSyncDetectorMinus90.reset();
+        mSyncDetector180.reset();
     }
 
     /**
@@ -332,11 +354,12 @@ public class P25P1DemodulatorLSM
     }
 
     /**
-     * Feeds the soft symbol rotated by +/-90 degrees to the rotated sync detectors and applies a +/-90 degree
+     * Feeds the soft symbol rotated by +/-90 and 180 degrees to the rotated sync detectors and applies a corresponding
      * correction to the PLL when a rotated sync pattern is detected with a correlation that clearly exceeds the normal
-     * sync pattern correlation.  This recovers from the PLL settling on a false lock point when the carrier offset
-     * exceeds ~600 Hz, which otherwise leaves the channel in a permanent sync loss state because PLL error measurements
-     * are only reported to the tuner (auto-PPM) when a valid sync and NID are detected.
+     * sync pattern correlation.  This recovers from the PLL settling on a false lock point (the decision-directed loop
+     * has stable points every 90 degrees per symbol = 1200 Hz), which otherwise leaves the channel in a permanent sync
+     * loss state because PLL error measurements are only reported to the tuner (auto-PPM) when a valid sync and NID are
+     * detected.  Also resets the PLL when it is pinned at the clamp with no valid NIDs (see clamp watchdog).
      *
      * @param softSymbol demodulated soft symbol (radians)
      * @param pll current PLL value
@@ -346,10 +369,26 @@ public class P25P1DemodulatorLSM
     {
         float plus90 = mSyncDetectorPlus90.process(normalize(softSymbol + HALF_PI));
         float minus90 = mSyncDetectorMinus90.process(normalize(softSymbol - HALF_PI));
+        float rotated180 = mSyncDetector180.process(normalize(softSymbol + (float)Math.PI));
 
         if(mSymbolsSinceRotatedDetection < Integer.MAX_VALUE)
         {
             mSymbolsSinceRotatedDetection++;
+        }
+
+        //Clamp watchdog
+        if(Math.abs(pll) >= PLL_CLAMP_WATCHDOG_THRESHOLD && mSymbolsSinceValidNID >= ROTATED_SYNC_NO_NID_SYMBOLS)
+        {
+            mSymbolsAtPLLClamp++;
+
+            if(mSymbolsAtPLLClamp > PLL_CLAMP_WATCHDOG_SYMBOLS)
+            {
+                return applyCorrection(pll, 0.0f, "PLL pinned at clamp with no sync");
+            }
+        }
+        else
+        {
+            mSymbolsAtPLLClamp = 0;
         }
 
         if(mSymbolsSinceRotationCorrection < ROTATED_SYNC_LOCKOUT_SYMBOLS)
@@ -361,31 +400,38 @@ public class P25P1DemodulatorLSM
         //Only attempt correction when we're not decoding valid NIDs, i.e. the PLL may be in a false lock.
         if(mSymbolsSinceValidNID < ROTATED_SYNC_NO_NID_SYMBOLS)
         {
-            mPendingRotationCorrection = 0;
+            mPendingRotation = ROTATION_NONE;
             return pll;
         }
 
         float normal = mMessageFramer.getSoftSyncScore();
-        float correction;
+        int rotation = ROTATION_NONE;
+        float best = ROTATED_SYNC_THRESHOLD;
 
-        if(plus90 > ROTATED_SYNC_THRESHOLD && (plus90 - normal) > ROTATED_SYNC_MARGIN)
+        if(plus90 > best && (plus90 - normal) > ROTATED_SYNC_MARGIN)
         {
-            correction = HALF_PI;
+            rotation = ROTATION_PLUS_90;
+            best = plus90;
         }
-        else if(minus90 > ROTATED_SYNC_THRESHOLD && (minus90 - normal) > ROTATED_SYNC_MARGIN)
+        if(minus90 > best && (minus90 - normal) > ROTATED_SYNC_MARGIN)
         {
-            correction = -HALF_PI;
+            rotation = ROTATION_MINUS_90;
+            best = minus90;
         }
-        else
+        if(rotated180 > best && (rotated180 - normal) > ROTATED_SYNC_MARGIN)
+        {
+            rotation = ROTATION_180;
+        }
+
+        if(rotation == ROTATION_NONE)
         {
             return pll;
         }
 
         //Require a second rotated detection in the same direction on a later frame to confirm before correcting.
-        if(mPendingRotationCorrection != correction ||
-                mSymbolsSinceRotatedDetection > ROTATED_SYNC_CONFIRM_MAX_SYMBOLS)
+        if(mPendingRotation != rotation || mSymbolsSinceRotatedDetection > ROTATED_SYNC_CONFIRM_MAX_SYMBOLS)
         {
-            mPendingRotationCorrection = correction;
+            mPendingRotation = rotation;
             mSymbolsSinceRotatedDetection = 0;
             return pll;
         }
@@ -396,10 +442,16 @@ public class P25P1DemodulatorLSM
             return pll;
         }
 
-        mPendingRotationCorrection = 0;
+        mPendingRotation = ROTATION_NONE;
         mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
 
-        float corrected = pll + correction;
+        float corrected = switch(rotation)
+        {
+            case ROTATION_PLUS_90 -> pll + HALF_PI;
+            case ROTATION_MINUS_90 -> pll - HALF_PI;
+            //A 180 degree correction can go either way - use the direction that stays within the PLL range.
+            default -> pll >= 0 ? pll - (float)Math.PI : pll + (float)Math.PI;
+        };
 
         //Ignore a correction that would push the PLL beyond its range.  Wrapping it to the opposite side would report
         //a carrier offset with the wrong sign to the tuner's auto-PPM correction.
@@ -408,16 +460,26 @@ public class P25P1DemodulatorLSM
             return pll;
         }
 
-        mSyncDetectorPlus90.reset();
-        mSyncDetectorMinus90.reset();
+        return applyCorrection(pll, corrected, "rotated sync detected");
+    }
+
+    /**
+     * Applies a PLL correction, resets rotated sync detection state and logs the change (rate limited).
+     */
+    private float applyCorrection(float pll, float corrected, String reason)
+    {
+        resetRotatedSyncDetectors();
         mSymbolsSinceRotationCorrection = 0;
+        mSymbolsAtPLLClamp = 0;
+        mPendingRotation = ROTATION_NONE;
+        mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
 
         long now = System.currentTimeMillis();
 
         if(now - mLastRotationLogTimestamp > ROTATION_LOG_INTERVAL_MS)
         {
             mLastRotationLogTimestamp = now;
-            LOGGER.info("P25P1 LSM rotated sync detected - correcting PLL from [" +
+            LOGGER.info("P25P1 LSM " + reason + " - correcting PLL from [" +
                     Math.round(pll * SYMBOL_RATE / TWO_PI) + "] to [" + Math.round(corrected * SYMBOL_RATE / TWO_PI) +
                     "] Hz");
         }
