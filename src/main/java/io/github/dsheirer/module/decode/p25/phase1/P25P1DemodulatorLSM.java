@@ -75,11 +75,18 @@ public class P25P1DemodulatorLSM
     private static final float PLL_CLAMP_WATCHDOG_THRESHOLD = MAX_PLL * 0.95f;
     private static final int PLL_CLAMP_WATCHDOG_SYMBOLS = 9600; //2 seconds
 
+    /**
+     * PLL leak toward zero while no valid NIDs are decoded for longer than one LDU/TSBK frame spacing.
+     */
+    private static final int PLL_LEAK_NO_NID_SYMBOLS = 1200; //250 ms
+    private static final float PLL_LEAK_FACTOR = 0.998f;
+
     private static final int ROTATION_NONE = 0;
     private static final int ROTATION_PLUS_90 = 1;
     private static final int ROTATION_MINUS_90 = 2;
     private static final int ROTATION_180 = 3;
     private static final float OBJECTIVE_MAGNITUDE = 1.0f;
+    private static final int SYMBOL_RATE = 4800;
 
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     private final FeedbackDecoder mFeedbackDecoder;
@@ -88,6 +95,7 @@ public class P25P1DemodulatorLSM
     private final P25P1SoftSyncDetector mSyncDetectorMinus90 = P25P1SoftSyncDetectorFactory.getDetector();
     private final P25P1SoftSyncDetector mSyncDetector180 = P25P1SoftSyncDetectorFactory.getDetector();
     private int mSymbolsAtPLLClamp = 0;
+    private float mLastValidPLL = 0;
     private int mSymbolsSinceRotationCorrection = 0;
     private int mSymbolsSinceValidNID = 0;
     private int mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
@@ -128,6 +136,7 @@ public class P25P1DemodulatorLSM
         mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
         mPendingRotation = ROTATION_NONE;
         mSymbolsAtPLLClamp = 0;
+        mLastValidPLL = 0;
     }
 
     private void resetRotatedSyncDetectors()
@@ -272,6 +281,17 @@ public class P25P1DemodulatorLSM
                     hardSymbol = toDibit(softSymbol);
                     phaseError = constrain(softSymbol - hardSymbol.getIdealPhase(), .3f);
                     pll -= (phaseError * pllGain);
+
+                    //While no valid NIDs are being decoded (e.g. a traffic channel waiting for the transmitter to key
+                    //up) the PLL random-walks on AGC-amplified noise and can settle on a false lock point when the
+                    //signal arrives.  Apply a weak leak toward the last PLL value measured with a valid NID (zero on
+                    //a fresh channel, where the tuner is already auto-PPM corrected) so that the PLL stays near the
+                    //expected offset.  The loop gain dominates the leak whenever a real signal is present.
+                    if(mSymbolsSinceValidNID > PLL_LEAK_NO_NID_SYMBOLS)
+                    {
+                        pll = mLastValidPLL + (pll - mLastValidPLL) * PLL_LEAK_FACTOR;
+                    }
+
                     pll = constrain(pll, MAX_PLL);
                 }
                 else
@@ -286,6 +306,7 @@ public class P25P1DemodulatorLSM
                 {
                     mFeedbackDecoder.processPLLError(pll);
                     mSymbolsSinceValidNID = 0;
+                    mLastValidPLL = pll;
                 }
                 else if(mSymbolsSinceValidNID < Integer.MAX_VALUE)
                 {
@@ -473,6 +494,7 @@ public class P25P1DemodulatorLSM
         mSymbolsAtPLLClamp = 0;
         mPendingRotation = ROTATION_NONE;
         mSymbolsSinceRotatedDetection = Integer.MAX_VALUE;
+        mLastValidPLL = corrected; //Best estimate of the true offset - the no-NID PLL leak now targets this value
 
         long now = System.currentTimeMillis();
 
