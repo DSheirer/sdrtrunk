@@ -855,6 +855,11 @@ public class P25P1MessageFramer
         //flag it as invalid NID when this happens.  The NAC tracker will give us a value of 0 until it has enough
         //observations of a valid NID value.
         mNACTracker.track(nac);
+
+        if(trackedNAC > 0 && trackedNAC != nac)
+        {
+            return false;
+        }
 //        System.out.println("\t\t" + mDebugSymbolCount + " VALID NID - NAC:" + nac + " DUID:" + duid);
         nidDetected(nac, duid, nid.getCorrectedBitCount());
         return true;
