@@ -22,6 +22,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.*;
+import io.github.dsheirer.audio.codec.mbe.JmbeAudioModule;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
@@ -40,6 +41,7 @@ import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.AMDecoderState;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
+import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DeemphasisMode;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSDecoder;
@@ -116,6 +118,7 @@ import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
 import java.util.ArrayList;
 import java.util.List;
+import jmbe.iface.IAudioCodecV2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -256,8 +259,16 @@ public class DecoderFactory
         decoderState2.setCurrentChannel(channelDescriptor);
         modules.add(decoderState1);
         modules.add(decoderState2);
-        modules.add(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList));
-        modules.add(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList));
+
+        if(channel.getDecodeConfiguration() instanceof  DecodeConfigP25Phase2 configP25P2)
+        {
+            P25P2AudioModule audioModule1 = new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList);
+            P25P2AudioModule audioModule2 = new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList);
+            configureJMBEAudioModule(audioModule1, configP25P2);
+            configureJMBEAudioModule(audioModule2, configP25P2);
+            modules.add(audioModule1);
+            modules.add(audioModule2);
+        }
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
@@ -280,9 +291,9 @@ public class DecoderFactory
                                          AliasList aliasList, TrafficChannelManager trafficChannelManager,
                                          IChannelDescriptor channelDescriptor)
     {
-        if(channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 p1)
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 configP25P1)
         {
-            switch(p1.getModulation())
+            switch(configP25P1.getModulation())
             {
                 case C4FM:
                     modules.add(new P25P1DecoderC4FM());
@@ -291,36 +302,38 @@ public class DecoderFactory
                     modules.add(new P25P1DecoderLSM());
                     break;
                 default:
-                    throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + p1.getModulation() + "]");
+                    throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + configP25P1.getModulation() + "]");
             }
-        }
 
-        if(channel.getChannelType() == ChannelType.STANDARD)
-        {
-            P25TrafficChannelManager primaryTCM = new P25TrafficChannelManager(channel);
-            modules.add(primaryTCM);
-            modules.add(new P25P1DecoderState(channel, primaryTCM));
-        }
-        else if(trafficChannelManager instanceof P25TrafficChannelManager parentTCM)
-        {
-            P25P1DecoderState decoderState = new P25P1DecoderState(channel, parentTCM);
-            decoderState.setCurrentChannel(channelDescriptor);
-            modules.add(decoderState);
-        }
-        else
-        {
-            mLog.warn("Expected non-null traffic channel manager for channel " + channel.getName());
-        }
+            if(channel.getChannelType() == ChannelType.STANDARD)
+            {
+                P25TrafficChannelManager primaryTCM = new P25TrafficChannelManager(channel);
+                modules.add(primaryTCM);
+                modules.add(new P25P1DecoderState(channel, primaryTCM));
+            }
+            else if(trafficChannelManager instanceof P25TrafficChannelManager parentTCM)
+            {
+                P25P1DecoderState decoderState = new P25P1DecoderState(channel, parentTCM);
+                decoderState.setCurrentChannel(channelDescriptor);
+                modules.add(decoderState);
+            }
+            else
+            {
+                mLog.warn("Expected non-null traffic channel manager for channel " + channel.getName());
+            }
 
-        modules.add(new P25P1AudioModule(userPreferences, aliasList));
+            P25P1AudioModule audioModule = new P25P1AudioModule(userPreferences, aliasList);
+            configureJMBEAudioModule(audioModule, configP25P1);
+            modules.add(audioModule);
 
-        //Add a channel rotation monitor when we have multiple control channel frequencies specified
-        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
-            sctmf.hasMultipleFrequencies())
-        {
-            List<State> activeStates = new ArrayList<>();
-            activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
+            //Add a channel rotation monitor when we have multiple control channel frequencies specified
+            if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
+                    sctmf.hasMultipleFrequencies())
+            {
+                List<State> activeStates = new ArrayList<>();
+                activeStates.add(State.CONTROL);
+                modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
+            }
         }
     }
 
@@ -520,7 +533,10 @@ public class DecoderFactory
             }
 
             modules.add(new NXDNDecoder(configNXDN));
-            modules.add(new NXDNAudioModule(userPreferences, aliasList));
+
+            NXDNAudioModule audioModule = new NXDNAudioModule(userPreferences, aliasList);
+            configureJMBEAudioModule(audioModule, configNXDN);
+            modules.add(audioModule);
 
             if(channel.getChannelType() == ChannelType.STANDARD)
             {
@@ -543,6 +559,31 @@ public class DecoderFactory
         else
         {
             throw new IllegalArgumentException("Can't create NXDN decoder - unrecognized config: " + decodeConfig);
+        }
+    }
+
+    /**
+     * Configures the JMBE audio module with library version 2.0+ features.
+     * @param audioModule with optional supported features
+     * @param config with JMBE feature values
+     */
+    private static void configureJMBEAudioModule(JmbeAudioModule audioModule, DecodeConfigJMBE config)
+    {
+        List<String> features = audioModule.getFeatures();
+
+        if(features.contains(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL))
+        {
+            audioModule.setFeature(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL, config.isAGC());
+        }
+
+        if(features.contains(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN))
+        {
+            audioModule.setFeature(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN, config.getNoiseGain());
+        }
+
+        if(features.contains(IAudioCodecV2.FEATURE_TONE_GENERATOR_GAIN))
+        {
+            audioModule.setFeature(IAudioCodecV2.FEATURE_TONE_GENERATOR_GAIN, config.getToneGain());
         }
     }
 
@@ -638,8 +679,13 @@ public class DecoderFactory
 
         modules.add(state1);
         modules.add(state2);
-        modules.add(new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_1));
-        modules.add(new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_2));
+
+        DMRAudioModule audioModule1 = new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_1);
+        DMRAudioModule audioModule2 = new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_2);
+        configureJMBEAudioModule(audioModule1, decodeConfig);
+        configureJMBEAudioModule(audioModule2, decodeConfig);
+        modules.add(audioModule1);
+        modules.add(audioModule2);
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
         if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&

@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.Encoding;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * NXDN decoder configuration
  */
-public class DecodeConfigNXDN extends DecodeConfiguration
+public class DecodeConfigNXDN extends DecodeConfigJMBE
 {
     public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
     public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;

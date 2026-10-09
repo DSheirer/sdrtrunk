@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.dmr;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
@@ -32,7 +33,7 @@ import java.util.List;
 /**
  * DMR Decoder Configuration
  */
-public class DecodeConfigDMR extends DecodeConfiguration
+public class DecodeConfigDMR extends DecodeConfigJMBE
 {
     public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
     public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
