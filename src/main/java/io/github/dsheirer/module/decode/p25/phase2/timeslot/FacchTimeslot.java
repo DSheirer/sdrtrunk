@@ -42,6 +42,7 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
     private static final int MAX_OCTET_INDEX = 144; //156-12 = message length minus CRC-12 checksum.
     private static final ReedSolomon_63_ErasureDecoder REED_SOLOMON = new ReedSolomon_63_ErasureDecoder(35);
     private static final int[] PUNCTURED_PARITY = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    private static final int FIRST_SHORTENED = 54;
 
     private static final IntField INFO_1 = IntField.range(2, 7);
     private static final IntField INFO_2 = IntField.range(8, 13);
@@ -214,7 +215,7 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
             {
                 //The FACCH parity is punctured: input[0..8] were never transmitted.  Decoding them as erasures rather
                 //than as zero-valued symbols roughly doubles the number of correctable symbol errors.
-                irrecoverableErrors = REED_SOLOMON.decode(input, output, PUNCTURED_PARITY);
+                irrecoverableErrors = REED_SOLOMON.decode(input, output, PUNCTURED_PARITY, FIRST_SHORTENED);
             }
             catch(Exception e)
             {

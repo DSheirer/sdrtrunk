@@ -206,4 +206,40 @@ public class ReedSolomon_63_ErasureDecoderTest
         assertArrayEquals(codeword, output);
         assertEquals(codeword[0], output[0]);
     }
+
+    /**
+     * A constant block in the received FACCH positions decodes, under the full-length code, to the constant
+     * codeword by "correcting" the nine shortened symbols - 9 errors plus 9 erasures is exactly the budget.  The
+     * shortened code cannot contain that codeword, so the shortened decode must refuse it.
+     */
+    @Test
+    public void miscorrectionIntoShortenedSymbolsIsRejected()
+    {
+        int[] received = new int[63];
+
+        for(int i = 9; i <= 53; i++)
+        {
+            received[i] = 63;
+        }
+
+        int[] output = new int[63];
+        ReedSolomon_63_ErasureDecoder decoder = new ReedSolomon_63_ErasureDecoder(35);
+
+        assertFalse(decoder.decode(received, output, FACCH_PUNCTURED), "full-length decode reaches the constant codeword");
+        assertEquals(63, output[54]);
+
+        assertTrue(decoder.decode(received, output, FACCH_PUNCTURED, 54));
+        assertArrayEquals(received, output);
+    }
+
+    @Test
+    public void shortenedDecodeStillCorrectsGenuineErrors()
+    {
+        int[] sent = codeword(11, 9);
+        int[] received = damage(sent, FACCH_PUNCTURED, 9, 12);
+        int[] output = new int[63];
+
+        assertFalse(new ReedSolomon_63_ErasureDecoder(35).decode(received, output, FACCH_PUNCTURED, 54));
+        assertArrayEquals(sent, output);
+    }
 }
