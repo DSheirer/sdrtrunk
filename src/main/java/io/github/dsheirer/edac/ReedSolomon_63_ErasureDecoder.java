@@ -230,16 +230,38 @@ public class ReedSolomon_63_ErasureDecoder
     }
 
     /**
-     * Decodes the codeword.
+     * Decodes a full-length (unshortened) codeword.
      *
-     * @param input codeword, input[i] being the coefficient of x^i (BerlekempMassey convention). Erased and
-     * shortened positions may hold any value.
+     * @param input codeword, input[i] being the coefficient of x^i (BerlekempMassey convention). Erased positions
+     * may hold any value.
      * @param output receives the corrected codeword in the same convention, or a copy of the input when the
      * codeword is not correctable.
      * @param erasurePositions indices into input of the symbols that were not received (punctured parity).
      * @return true when the codeword could NOT be corrected (matches BerlekempMassey.decode()'s return convention).
      */
     public boolean decode(int[] input, int[] output, int[] erasurePositions)
+    {
+        return decode(input, output, erasurePositions, N);
+    }
+
+    /**
+     * Decodes a shortened codeword.
+     *
+     * The shortened symbols, input[firstShortenedPosition] and above, are zero in every codeword of the shortened
+     * code.  A decode that would make any of them non-zero has found a codeword of the full-length code that the
+     * transmitter cannot have sent, so it is a miscorrection and is reported as uncorrectable.  This matters most
+     * for structured garbage: a constant block is close to the constant codeword of the full-length code, and
+     * reaches it by "correcting" the shortened symbols.
+     *
+     * @param input codeword, input[i] being the coefficient of x^i (BerlekempMassey convention). Erased positions
+     * may hold any value; shortened positions are expected to be zero.
+     * @param output receives the corrected codeword in the same convention, or a copy of the input when the
+     * codeword is not correctable.
+     * @param erasurePositions indices into input of the symbols that were not received (punctured parity).
+     * @param firstShortenedPosition index of the lowest shortened symbol, or 63 when the code is not shortened.
+     * @return true when the codeword could NOT be corrected (matches BerlekempMassey.decode()'s return convention).
+     */
+    public boolean decode(int[] input, int[] output, int[] erasurePositions, int firstShortenedPosition)
     {
         int erasureCount = erasurePositions.length;
 
@@ -338,6 +360,16 @@ public class ReedSolomon_63_ErasureDecoder
         for(int s : syndromes(cw))
         {
             if(s != 0)
+            {
+                System.arraycopy(input, 0, output, 0, N);
+                return true;
+            }
+        }
+
+        //cw is highest-degree first, so input[i] is cw[N - 1 - i]
+        for(int i = firstShortenedPosition; i < N; i++)
+        {
+            if(cw[N - 1 - i] != 0)
             {
                 System.arraycopy(input, 0, output, 0, N);
                 return true;
