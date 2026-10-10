@@ -53,6 +53,18 @@
 {
     -fx-background-color: #3c3f41, #4a4d4f, #3c3f41, #3c3f41;
     -fx-text-fill: #ececec;
+    -fx-thumb-color: #ececec;
+}
+
+.slider .thumb
+{
+    -fx-base: #ececec;
+    -fx-background: #ececec;
+}
+
+.slider .track
+{
+    -fx-background: #888888;
 }
 
 .button:hover, .toggle-button:hover, .menu-button:hover

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 public abstract class DecodeConfigJMBE extends DecodeConfiguration
 {
-    private boolean mAGC;
+    private boolean mAGC = true;
     private float mToneGain = 1.0f;
     private float mNoiseGain = 1.0f;
 

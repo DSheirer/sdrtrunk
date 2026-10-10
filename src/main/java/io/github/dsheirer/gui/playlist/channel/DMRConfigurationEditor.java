@@ -52,6 +52,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
@@ -61,6 +62,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
@@ -87,10 +89,12 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     private TableView<TimeslotFrequency> mTimeslotFrequencyTable;
     private IntegerTextField mLogicalChannelNumberField;
     private FrequencyField mDownlinkFrequencyField;
-//    private FrequencyField mUplinkFrequencyField;
     private Button mAddTimeslotFrequencyButton;
     private Button mDeleteTimeslotFrequencyButton;
     private Spinner<Integer> mChannelRotationDelaySpinner;
+    private ToggleSwitch mJmbeAGCButton;
+    private Slider mJmbeToneGainSlider;
+    private Slider mJmbeNoiseGainSlider;
 
     /**
      * Constructs an instance
@@ -203,6 +207,24 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(editorBox, 0, row, 4, 1);
             gridPane.getChildren().add(editorBox);
+
+            row++;
+            Label jmbeLabel = new Label("AMBE Audio");
+            GridPane.setHalignment(jmbeLabel, HPos.LEFT);
+            gridPane.add(jmbeLabel, 0, row);
+
+            GridPane.setHalignment(getJmbeAGCButton(), HPos.LEFT);
+            gridPane.add(getJmbeAGCButton(), 1, row);
+
+            gridPane.add(new Label("Tone Volume:"), 2, row);
+
+            GridPane.setHgrow(getJmbeToneGainSlider(), Priority.ALWAYS);
+            gridPane.add(getJmbeToneGainSlider(), 3, row);
+
+            gridPane.add(new Label("Comfort Noise Volume:"), 4, row);
+
+            GridPane.setHgrow(getJmbeNoiseGainSlider(), Priority.ALWAYS);
+            gridPane.add(getJmbeNoiseGainSlider(), 5, row);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -554,6 +576,45 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         return mTrafficChannelPoolSizeSpinner;
     }
 
+    public ToggleSwitch getJmbeAGCButton()
+    {
+        if(mJmbeAGCButton == null)
+        {
+            mJmbeAGCButton = new ToggleSwitch("AGC:");
+            mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
+            mJmbeAGCButton.setDisable(true);
+            mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeAGCButton;
+    }
+
+    public Slider getJmbeToneGainSlider()
+    {
+        if(mJmbeToneGainSlider == null)
+        {
+            mJmbeToneGainSlider = new Slider(0.0, 1.0, 1.0);
+            mJmbeToneGainSlider.setTooltip(new Tooltip("Tone generation volume: 0.0 (no tones) to 1.0 (default)"));
+            mJmbeToneGainSlider.setDisable(true);
+            mJmbeToneGainSlider.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeToneGainSlider;
+    }
+
+    public Slider getJmbeNoiseGainSlider()
+    {
+        if(mJmbeNoiseGainSlider == null)
+        {
+            mJmbeNoiseGainSlider = new Slider(0.0, 1.0, 1.0);
+            mJmbeNoiseGainSlider.setTooltip(new Tooltip("Comfort noise insertion volume: 0.0 (no noise) to 1.0 (default)"));
+            mJmbeNoiseGainSlider.setDisable(true);
+            mJmbeNoiseGainSlider.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeNoiseGainSlider;
+    }
+
     /**
      * Channel rotation monitor delay value.  This dictates how long the decoder will remain on each frequency before
      * rotating to the next frequency in the list
@@ -600,21 +661,23 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
-        getIgnoreCRCChecksumsButton().setDisable(config == null);
-        getIgnoreDataCallsButton().setDisable(config == null);
-        getUseCompressedTalkgroupsToggle().setDisable(config == null);
-        getTrafficChannelPoolSizeSpinner().setDisable(config == null);
+        boolean disable = config == null;
+        getIgnoreCRCChecksumsButton().setDisable(disable);
+        getIgnoreDataCallsButton().setDisable(disable);
+        getUseCompressedTalkgroupsToggle().setDisable(disable);
+        getTrafficChannelPoolSizeSpinner().setDisable(disable);
         getTimeslotTable().getItems().clear();
-        getTimeslotTable().setDisable(config == null);
-        getAddTimeslotFrequencyButton().setDisable(config == null);
+        getTimeslotTable().setDisable(disable);
+        getAddTimeslotFrequencyButton().setDisable(disable);
         getDeleteTimeslotFrequencyButton().setDisable(true);
         getLogicalChannelNumberField().set(0);
         getLogicalChannelNumberField().setDisable(true);
         getDownlinkFrequencyField().set(0);
         getDownlinkFrequencyField().setDisable(true);
-//        getUplinkFrequencyField().set(0);
-//        getUplinkFrequencyField().setDisable(true);
-        getChannelRotationDelaySpinner().setDisable(config == null);
+        getChannelRotationDelaySpinner().setDisable(disable);
+        getJmbeAGCButton().setDisable(disable);
+        getJmbeNoiseGainSlider().setDisable(disable);
+        getJmbeToneGainSlider().setDisable(disable);
 
         if(config instanceof DecodeConfigDMR)
         {
@@ -629,6 +692,10 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             {
                 getTimeslotTable().getItems().add(timeslotFrequency.copy());
             }
+
+            getJmbeAGCButton().setSelected(decodeConfig.isAGC());
+            getJmbeNoiseGainSlider().setValue(decodeConfig.getNoiseGain());
+            getJmbeToneGainSlider().setValue(decodeConfig.getToneGain());
         }
         else
         {
@@ -637,6 +704,9 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             getUseCompressedTalkgroupsToggle().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getChannelRotationDelaySpinner().getValueFactory().setValue(200);
+            getJmbeAGCButton().setSelected(false);
+            getJmbeNoiseGainSlider().setValue(0);
+            getJmbeToneGainSlider().setValue(0);
         }
     }
 
@@ -659,6 +729,9 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setUseCompressedTalkgroups(getUseCompressedTalkgroupsToggle().isSelected());
         config.setTimeslotMap(new ArrayList<>(getTimeslotTable().getItems()));
+        config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
+        config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
+        config.setToneGain((float)getJmbeToneGainSlider().getValue());
         getItem().setDecodeConfiguration(config);
     }
 
@@ -723,61 +796,4 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         SourceConfiguration sourceConfiguration = getSourceConfigurationEditor().getSourceConfiguration();
         getItem().setSourceConfiguration(sourceConfiguration);
     }
-
-    /**
-     * Channel tuner channel source frequencies value factory
-     */
-    public class FrequencyCellValueFactory implements Callback<TableColumn.CellDataFeatures<TimeslotFrequency, String>,
-            ObservableValue<String>>
-    {
-        private SimpleStringProperty mFrequency = new SimpleStringProperty();
-        private boolean mIsDownlink;
-
-        public FrequencyCellValueFactory(boolean isDownlink)
-        {
-            mIsDownlink = isDownlink;
-        }
-
-        @Override
-        public ObservableValue<String> call(TableColumn.CellDataFeatures<TimeslotFrequency, String> param)
-        {
-            if(param.getValue() != null)
-            {
-                long frequency = (mIsDownlink ? param.getValue().getDownlinkFrequency() : param.getValue().getUplinkFrequency());
-                mFrequency.set(String.valueOf(frequency / 1E6));
-            }
-            else
-            {
-                mFrequency.set(null);
-            }
-
-            return mFrequency;
-        }
-    }
-
-    public class DownlinkPropertyValueFactory extends PropertyValueFactory<TimeslotFrequency,String>
-    {
-        private StringProperty mStringProperty = new SimpleStringProperty();
-
-        public DownlinkPropertyValueFactory()
-        {
-            super("downlinkFrequency");
-        }
-
-        @Override
-        public ObservableValue<String> call(TableColumn.CellDataFeatures<TimeslotFrequency,String> param)
-        {
-            if(param.getValue() != null)
-            {
-                mStringProperty.set(String.valueOf(param.getValue().getDownlinkFrequency() / 1E6));
-            }
-            else
-            {
-                mStringProperty.setValue(null);
-            }
-
-            return mStringProperty;
-        }
-    }
-
 }

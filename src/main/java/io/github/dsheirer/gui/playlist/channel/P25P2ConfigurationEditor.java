@@ -42,11 +42,13 @@ import java.util.List;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
@@ -70,6 +72,9 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     private IntegerTextField mNacTextField;
     private ToggleSwitch mIgnoreDataCallsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
+    private ToggleSwitch mJmbeAGCButton;
+    private Slider mJmbeToneGainSlider;
+    private Slider mJmbeNoiseGainSlider;
 
     /**
      * Constructs an instance
@@ -164,11 +169,68 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(noteLabel, 1, ++row, 6, 1);
             gridPane.getChildren().add(noteLabel);
 
+            row++;
+            Label jmbeLabel = new Label("AMBE Audio");
+            GridPane.setHalignment(jmbeLabel, HPos.LEFT);
+            gridPane.add(jmbeLabel, 0, row);
+
+            GridPane.setHalignment(getJmbeAGCButton(), HPos.LEFT);
+            gridPane.add(getJmbeAGCButton(), 1, row);
+
+            gridPane.add(new Label("Tone Volume:"), 2, row);
+
+            GridPane.setHgrow(getJmbeToneGainSlider(), Priority.ALWAYS);
+            gridPane.add(getJmbeToneGainSlider(), 3, row);
+
+            gridPane.add(new Label("Comfort Noise Volume:"), 4, row);
+
+            GridPane.setHgrow(getJmbeNoiseGainSlider(), Priority.ALWAYS);
+            gridPane.add(getJmbeNoiseGainSlider(), 5, row);
+
 
             mDecoderPane.setContent(gridPane);
         }
 
         return mDecoderPane;
+    }
+
+    public ToggleSwitch getJmbeAGCButton()
+    {
+        if(mJmbeAGCButton == null)
+        {
+            mJmbeAGCButton = new ToggleSwitch("AGC:");
+            mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
+            mJmbeAGCButton.setDisable(true);
+            mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeAGCButton;
+    }
+
+    public Slider getJmbeToneGainSlider()
+    {
+        if(mJmbeToneGainSlider == null)
+        {
+            mJmbeToneGainSlider = new Slider(0.0, 1.0, 1.0);
+            mJmbeToneGainSlider.setTooltip(new Tooltip("Tone generation volume: 0.0 (no tones) to 1.0 (default)"));
+            mJmbeToneGainSlider.setDisable(true);
+            mJmbeToneGainSlider.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeToneGainSlider;
+    }
+
+    public Slider getJmbeNoiseGainSlider()
+    {
+        if(mJmbeNoiseGainSlider == null)
+        {
+            mJmbeNoiseGainSlider = new Slider(0.0, 1.0, 1.0);
+            mJmbeNoiseGainSlider.setTooltip(new Tooltip("Comfort noise insertion volume: 0.0 (no noise) to 1.0 (default)"));
+            mJmbeNoiseGainSlider.setDisable(true);
+            mJmbeNoiseGainSlider.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeNoiseGainSlider;
     }
 
     private TitledPane getEventLogPane()
@@ -327,6 +389,9 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getWacnTextField().setDisable(false);
             getSystemTextField().setDisable(false);
             getNacTextField().setDisable(false);
+            getJmbeAGCButton().setDisable(false);
+            getJmbeNoiseGainSlider().setDisable(false);
+            getJmbeToneGainSlider().setDisable(false);
 
             ScrambleParameters scrambleParameters = decodeConfig.getScrambleParameters();
 
@@ -347,6 +412,9 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getTrafficChannelPoolSizeSpinner().setDisable(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
+            getJmbeAGCButton().setSelected(decodeConfig.isAGC());
+            getJmbeNoiseGainSlider().setValue(decodeConfig.getNoiseGain());
+            getJmbeToneGainSlider().setValue(decodeConfig.getToneGain());
         }
         else
         {
@@ -358,6 +426,12 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getNacTextField().setDisable(true);
             getIgnoreDataCallsButton().setDisable(true);
             getTrafficChannelPoolSizeSpinner().setDisable(true);
+            getJmbeAGCButton().setDisable(true);
+            getJmbeNoiseGainSlider().setDisable(true);
+            getJmbeToneGainSlider().setDisable(true);
+            getJmbeAGCButton().setSelected(false);
+            getJmbeNoiseGainSlider().setValue(0);
+            getJmbeToneGainSlider().setValue(0);
         }
     }
 
@@ -382,7 +456,9 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
-
+        config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
+        config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
+        config.setToneGain((float)getJmbeToneGainSlider().getValue());
         getItem().setDecodeConfiguration(config);
     }
 

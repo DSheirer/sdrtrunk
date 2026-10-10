@@ -43,6 +43,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
@@ -50,6 +51,7 @@ import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.ToggleSwitch;
@@ -74,6 +76,9 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private SegmentedButton mModulationSegmentedButton;
     private ToggleButton mC4FMToggleButton;
     private ToggleButton mLSMToggleButton;
+    private ToggleSwitch mJmbeAGCButton;
+    private Slider mJmbeToneGainSlider;
+    private Slider mJmbeNoiseGainSlider;
 
     /**
      * Constructs an instance
@@ -121,33 +126,56 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
+            int row = 0;
+
             Label modulationLabel = new Label("Modulation");
             GridPane.setHalignment(modulationLabel, HPos.RIGHT);
-            GridPane.setConstraints(modulationLabel, 0, 0);
+            GridPane.setConstraints(modulationLabel, 0, row);
             gridPane.getChildren().add(modulationLabel);
 
-            GridPane.setConstraints(getModulationSegmentedButton(), 1, 0);
+            GridPane.setConstraints(getModulationSegmentedButton(), 1, row);
             gridPane.getChildren().addAll(getModulationSegmentedButton());
 
             Label poolSizeLabel = new Label("Max Traffic Channels");
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
-            GridPane.setConstraints(poolSizeLabel, 2, 0);
+            GridPane.setConstraints(poolSizeLabel, 2, row);
             gridPane.getChildren().add(poolSizeLabel);
 
-            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 3, 0);
+            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 3, row);
             gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
 
-            GridPane.setConstraints(getIgnoreDataCallsButton(), 4, 0);
+            GridPane.setConstraints(getIgnoreDataCallsButton(), 4, row);
             gridPane.getChildren().add(getIgnoreDataCallsButton());
 
             Label directionLabel = new Label("Ignore Data Calls");
             GridPane.setHalignment(directionLabel, HPos.LEFT);
-            GridPane.setConstraints(directionLabel, 5, 0);
+            GridPane.setConstraints(directionLabel, 5, row);
             gridPane.getChildren().add(directionLabel);
 
+            row++;
+
             Label modulationHelpLabel = new Label("C4FM: repeaters and non-simulcast trunked systems.  LSM: simulcast trunked systems.");
-            GridPane.setConstraints(modulationHelpLabel, 0, 1, 6, 1);
+            GridPane.setConstraints(modulationHelpLabel, 0, row, 6, 1);
             gridPane.getChildren().add(modulationHelpLabel);
+
+            row++;
+
+            Label jmbeLabel = new Label("AMBE/IMBE Audio");
+            GridPane.setHalignment(jmbeLabel, HPos.LEFT);
+            gridPane.add(jmbeLabel, 0, row);
+
+            GridPane.setHalignment(getJmbeAGCButton(), HPos.LEFT);
+            gridPane.add(getJmbeAGCButton(), 1, row);
+
+            gridPane.add(new Label("Tone Volume:"), 2, row);
+
+            GridPane.setHgrow(getJmbeToneGainSlider(), Priority.ALWAYS);
+            gridPane.add(getJmbeToneGainSlider(), 3, row);
+
+            gridPane.add(new Label("Comfort Noise Volume:"), 4, row);
+
+            GridPane.setHgrow(getJmbeNoiseGainSlider(), Priority.ALWAYS);
+            gridPane.add(getJmbeNoiseGainSlider(), 5, row);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -250,6 +278,45 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         return mModulationSegmentedButton;
     }
 
+    public ToggleSwitch getJmbeAGCButton()
+    {
+        if(mJmbeAGCButton == null)
+        {
+            mJmbeAGCButton = new ToggleSwitch("AGC:");
+            mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
+            mJmbeAGCButton.setDisable(true);
+            mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeAGCButton;
+    }
+
+    public Slider getJmbeToneGainSlider()
+    {
+        if(mJmbeToneGainSlider == null)
+        {
+            mJmbeToneGainSlider = new Slider(0.0, 1.0, 1.0);
+            mJmbeToneGainSlider.setTooltip(new Tooltip("Tone generation volume: 0.0 (no tones) to 1.0 (default). Note: Phase 2 AMBE only"));
+            mJmbeToneGainSlider.setDisable(true);
+            mJmbeToneGainSlider.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeToneGainSlider;
+    }
+
+    public Slider getJmbeNoiseGainSlider()
+    {
+        if(mJmbeNoiseGainSlider == null)
+        {
+            mJmbeNoiseGainSlider = new Slider(0.0, 1.0, 1.0);
+            mJmbeNoiseGainSlider.setTooltip(new Tooltip("Comfort noise insertion volume: 0.0 (no noise) to 1.0 (default)"));
+            mJmbeNoiseGainSlider.setDisable(true);
+            mJmbeNoiseGainSlider.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mJmbeNoiseGainSlider;
+    }
+
     private ToggleButton getC4FMToggleButton()
     {
         if(mC4FMToggleButton == null)
@@ -327,9 +394,8 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         getIgnoreDataCallsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
 
-        if(config instanceof DecodeConfigP25Phase1)
+        if(config instanceof DecodeConfigP25Phase1 decodeConfig)
         {
-            DecodeConfigP25Phase1 decodeConfig = (DecodeConfigP25Phase1)config;
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             if(decodeConfig.getModulation() == Modulation.C4FM)
@@ -342,11 +408,24 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
                 getC4FMToggleButton().setSelected(false);
                 getLSMToggleButton().setSelected(true);
             }
+            getJmbeAGCButton().setDisable(false);
+            getJmbeNoiseGainSlider().setDisable(false);
+            getJmbeToneGainSlider().setDisable(false);
+            getJmbeAGCButton().setSelected(decodeConfig.isAGC());
+            getJmbeNoiseGainSlider().setValue(decodeConfig.getNoiseGain());
+            getJmbeToneGainSlider().setValue(decodeConfig.getToneGain());
+
         }
         else
         {
             getIgnoreDataCallsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
+            getJmbeAGCButton().setDisable(true);
+            getJmbeNoiseGainSlider().setDisable(true);
+            getJmbeToneGainSlider().setDisable(true);
+            getJmbeAGCButton().setSelected(false);
+            getJmbeNoiseGainSlider().setValue(0);
+            getJmbeToneGainSlider().setValue(0);
         }
     }
 
@@ -367,6 +446,9 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setModulation(getC4FMToggleButton().isSelected() ? Modulation.C4FM : Modulation.CQPSK);
+        config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
+        config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
+        config.setToneGain((float)getJmbeToneGainSlider().getValue());
         getItem().setDecodeConfiguration(config);
     }
 
