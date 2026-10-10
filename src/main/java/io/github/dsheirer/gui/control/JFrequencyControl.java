@@ -23,8 +23,11 @@ import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Insets;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -95,6 +98,15 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
                 add(digit);
 
                 digit.setFont(font);
+
+                //Size to fit a single character plus the look-and-feel's border insets, so digits aren't
+                //inflated by a wide default border (e.g. FlatLaf) or clipped by a fixed guess
+                FontMetrics metrics = digit.getFontMetrics(font);
+                Insets insets = digit.getInsets();
+                Dimension size = new Dimension(metrics.charWidth('0') + insets.left + insets.right + 2,
+                        metrics.getHeight() + insets.top + insets.bottom + 2);
+                digit.setPreferredSize(size);
+                digit.setMinimumSize(size);
 
                 if(x == 6)
                 {
