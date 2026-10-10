@@ -26,6 +26,7 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
 import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
@@ -72,6 +73,8 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     protected IRealFilter mIBasebandFilter;
     protected IRealFilter mQBasebandFilter;
+    protected IRealFilter mIMatchedFilter;
+    protected IRealFilter mQMatchedFilter;
     private DecodeConfigP25Phase2 mDecodeConfigP25Phase2;
     private FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
 
@@ -109,6 +112,12 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
 
         mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
         mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
+
+        //Root-raised-cosine matched filter, alpha 0.2, 8 symbols each side.  Note: getRootRaisedCosine() halves its
+        //samples-per-symbol argument, so pass twice the actual value to design the filter at the 6000 baud symbol rate.
+        float[] matchedFilterTaps = FilterFactory.getRootRaisedCosine(2.0 * getSampleRate() / getSymbolRate(), 16, 0.2f);
+        mIMatchedFilter = new RealFIRFilter(matchedFilterTaps);
+        mQMatchedFilter = new RealFIRFilter(matchedFilterTaps);
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
 
@@ -145,8 +154,8 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     @Override
     public void receive(ComplexSamples samples)
     {
-        float[] i = mIBasebandFilter.filter(samples.i());
-        float[] q = mQBasebandFilter.filter(samples.q());
+        float[] i = mIMatchedFilter.filter(mIBasebandFilter.filter(samples.i()));
+        float[] q = mQMatchedFilter.filter(mQBasebandFilter.filter(samples.q()));
 
         ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
