@@ -22,6 +22,7 @@ package io.github.dsheirer.jmbe;
 import io.github.dsheirer.jmbe.github.Asset;
 import io.github.dsheirer.jmbe.github.GitHub;
 import io.github.dsheirer.jmbe.github.Release;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.FileUtil;
 import io.github.dsheirer.util.OSType;
 import io.github.dsheirer.util.ThreadPool;
@@ -121,6 +122,15 @@ public class JmbeCreator
     public void execute()
     {
         final Asset asset = getJMBECreatorAsset(mRelease);
+        final OSType osType = OSType.getCurrentOSType();
+
+        String name = System.getProperty("os.name");
+        String arch = System.getProperty("os.arch");
+        String version = System.getProperty("os.version");
+        mLog.info("Executing JMBE creator for release [" + mRelease + "]");
+        mLog.info("Target OS [" + name + "/" + version + "/" + arch + "/" + osType + "] - selected asset [" + asset + "]");
+        String sdrtrunk = SystemProperties.getInstance().getApplicationName();
+        mLog.info("sdrtrunk version: " + sdrtrunk);
 
         if(asset != null)
         {
@@ -130,21 +140,19 @@ public class JmbeCreator
                 {
                     tempDirectory = Files.createTempDirectory("sdrtrunk-jmbe-creator");
                     printToConsole("Created: Temp Directory [" + tempDirectory.toString() + "]");
-                    printToConsole("Downloading: JMBE Creator [" + asset.toString() + "]");
+                    printToConsole("Downloading: JMBE Creator [" + asset + "]");
                     printToConsole("Please wait ...");
                     Path creator = GitHub.downloadArtifact(asset.getDownloadUrl(), tempDirectory);
 
                     if(creator != null)
                     {
-                        printToConsole("Downloaded: JMBE Creator [" + creator.toString() + "]");
+                        printToConsole("Downloaded: JMBE Creator [" + creator + "]");
                         Path unzipped = creator.getParent();
                         Archiver archiver = ArchiverFactory.createArchiver(ArchiveFormat.ZIP);
                         archiver.extract(creator.toFile(), unzipped.toFile());
-                        printToConsole("Unzipped: [" + unzipped.toString() + "]");
+                        printToConsole("Unzipped: [" + unzipped + "]");
 
                         Path script = null;
-
-                        OSType osType = OSType.getCurrentOSType();
 
                         if(osType.isLinux() || osType.isOsx())
                         {
@@ -154,7 +162,6 @@ public class JmbeCreator
                         {
                             script = FileUtil.findFile(unzipped, CREATOR_SCRIPT_WINDOWS);
                         }
-
 
                         if(script != null)
                         {
@@ -224,10 +231,11 @@ public class JmbeCreator
         {
             terminateWithErrors("Failed: Unable to identify correct JMBE creator utility from GitHub " +
                     "repository for this computer's operating system and architecture");
-            mLog.error("Unable to create JMBE library.  Can't find JMBE Creator for this OS and architecture");
+            mLog.error("Unable to create JMBE library.  Can't find JMBE Creator asset for OS ["  +
+                    System.getProperty("os.name") + "] arch [" + System.getProperty("os.arch") +
+                    "] version [" + System.getProperty("os.version") + "] maps to OS type [" + osType +
+                    "] for library release version [" + mRelease + "] and asset is null at this point");
         }
-
-
     }
 
 
