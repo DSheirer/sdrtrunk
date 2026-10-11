@@ -39,7 +39,6 @@ public class P25P1AudioModule extends ImbeAudioModule
     private boolean mEncryptedCallStateEstablished = false;
 
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-    private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private List<LDUMessage> mCachedLDUMessages = new ArrayList<>();
 
     public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
@@ -137,9 +136,7 @@ public class P25P1AudioModule extends ImbeAudioModule
         {
             for(byte[] frame : ldu.getIMBEFrames())
             {
-                float[] audio = getAudioCodec().getAudio(frame);
-                audio = mGain.apply(audio);
-                addAudio(audio);
+                addAudio(getAudioCodec().getAudio(frame));
             }
         }
         else
