@@ -43,6 +43,7 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
@@ -282,7 +283,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         LOGGER.info("Starting ...");
 
 //        String directory = "D:\\DQPSK Equalizer Research - P25\\"; //Windows
-        String directory = "/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
+        String directory = "/run/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
 
         String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
 //        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
@@ -366,10 +367,24 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
             source.start();
             decoder.setSampleRate(source.getSampleRate());
 
-            while(true)
+            boolean hasData = true;
+
+            while(hasData)
             {
-                source.next(2048, true);
+                try
+                {
+                    source.next(2048, true);
+                }
+                catch(IOException e)
+                {
+                    LOGGER.info("End of file: " + e.getLocalizedMessage());
+                    hasData = false;
+                }
             }
+        }
+        catch(FileNotFoundException e)
+        {
+            LOGGER.error("File not found: " + file);
         }
         catch(IOException ioe)
         {
