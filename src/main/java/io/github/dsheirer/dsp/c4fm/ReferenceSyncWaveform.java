@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer1.sync;
+package io.github.dsheirer.dsp.c4fm;
 
 /**
  * Waveform representing the ideal sync pattern, resampled at the sample rate.

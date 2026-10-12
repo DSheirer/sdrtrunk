@@ -19,18 +19,15 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.sync;
 
-import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.c4fm.ISoftC4FMSyncDetector;
 import java.util.Arrays;
 
 /**
  * P25P1 Sync Detector.  Uses soft demodulated symbols to detect sync patterns in the demodulated symbol stream.
  */
-public abstract class P25P1SoftSyncDetector extends P25P1SyncDetector
+public abstract class P25P1SoftSyncDetector extends P25P1SyncDetector implements ISoftC4FMSyncDetector
 {
-    protected static final float MAX_POSITIVE = Dibit.D01_PLUS_3.getIdealPhase();
-    protected static final float MAX_NEGATIVE = Dibit.D11_MINUS_3.getIdealPhase();
-    protected static final float[] SYNC_PATTERN_SYMBOLS = syncPatternToSymbols();
-    protected float[] mSymbols = new float[48]; //2x longer than 48-bit/24-dibit DMR sync patterns.
+    protected float[] mSymbols = new float[48];
     protected int mSymbolPointer = 0;
 
     public P25P1SoftSyncDetector()

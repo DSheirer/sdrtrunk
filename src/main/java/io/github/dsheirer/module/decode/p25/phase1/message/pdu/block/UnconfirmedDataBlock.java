@@ -42,6 +42,15 @@ public class UnconfirmedDataBlock extends DataBlock
     }
 
     /**
+     * Constructs an unconfirmed data block using soft decision Viterbi decoding.
+     * @param deinterleavedSoftSymbols 98 deinterleaved soft symbols for the 196-bit data block.
+     */
+    public UnconfirmedDataBlock(float[] deinterleavedSoftSymbols)
+    {
+        mDecodedMessage = VITERBI_HALF_RATE_DECODER.decodeSoft(deinterleavedSoftSymbols);
+    }
+
+    /**
      * Message payload
      */
     @Override

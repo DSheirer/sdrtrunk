@@ -124,6 +124,24 @@ public class P25P1Interleave
      * @param interleaved bitset from the original message
      * @return binary message with length equal to the pattern size
      */
+    /**
+     * Deinterleaves the soft symbols for a 196-bit (98 dibit) data block (TSBK, PDU header, unconfirmed data block).
+     * @param interleaved 98 soft symbols in transmitted order
+     * @return 98 soft symbols in deinterleaved order.
+     */
+    public static float[] deinterleaveDataSoftSymbols(float[] interleaved)
+    {
+        //The data interleave pattern moves 4-bit groups, so each dibit (bit pair) maps to a dibit position
+        float[] deinterleaved = new float[DATA_DEINTERLEAVE.length / 2];
+
+        for(int dibit = 0; dibit < deinterleaved.length; dibit++)
+        {
+            deinterleaved[DATA_DEINTERLEAVE[2 * dibit] / 2] = interleaved[dibit];
+        }
+
+        return deinterleaved;
+    }
+
     public static CorrectedBinaryMessage deinterleaveChunk(int[] pattern, BitSet interleaved)
     {
         CorrectedBinaryMessage deinterleaved = new CorrectedBinaryMessage(pattern.length);

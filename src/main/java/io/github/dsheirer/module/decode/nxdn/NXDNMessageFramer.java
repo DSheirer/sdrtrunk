@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
@@ -39,13 +40,17 @@ import java.util.Arrays;
  * uncertain message to assemble and then we'll inspect before and after data unit IDs and the quantity of captured
  * dibits to make a best guess on what the assembled message represents.
  */
-public class NXDNMessageFramer
+public class NXDNMessageFramer extends C4FMMessageFramer
 {
     private static final int FRAME_LENGTH = 192;
     private static final int SYNC_LENGTH = 10;
     private static final int PAYLOAD_LENGTH = FRAME_LENGTH - SYNC_LENGTH;
     private static final int SYNC_DETECTION_BIT_ERROR_THRESHOLD = 8;
     private final Dibit[] mDibitBuffer = new Dibit[192];
+    //Soft symbols (radians) parallel to the dibit buffer, or NaN when the soft symbol wasn't provided
+    private final float[] mSoftSymbolBuffer = new float[192];
+    private float mCurrentSoftSymbol = Float.NaN;
+    private static final float SOFT_SYMBOL_SCALE = (float)(4.0 / Math.PI); //Radians to symbol units (+/-1, +/-3)
     private final LICHTracker mLICHTracker;
     private final Listener<IMessage> mMessageListener;
     private final NXDNHardSyncDetector mHardSyncDetector = new NXDNHardSyncDetector();
@@ -69,6 +74,7 @@ public class NXDNMessageFramer
         mSymbolsPerSecond = transmissionMode.getSymbolRate();
         mCoarseSyncLossThreshold = mSymbolsPerSecond + FRAME_LENGTH;
         Arrays.fill(mDibitBuffer, Dibit.D00_PLUS_1);
+        Arrays.fill(mSoftSymbolBuffer, Float.NaN);
     }
 
     /**
@@ -90,7 +96,7 @@ public class NXDNMessageFramer
     {
         if(mReferenceTimestamp > 0)
         {
-            return mReferenceTimestamp + (long)(1000.0 * mDibitSinceTimestampCounter / 4800);
+            return mReferenceTimestamp + (long)(1000.0 * mDibitSinceTimestampCounter / mSymbolsPerSecond);
         }
         else
         {
@@ -100,12 +106,32 @@ public class NXDNMessageFramer
     }
 
     /**
+     * Converts the soft symbol into a pair of soft bit values using max-log likelihood ratios for the Gray mapped
+     * 4-level symbol (D01=+3, D00=+1, D10=-1, D11=-3), where a positive soft bit value favors a 1 bit.
+     * @param softSymbol in radians
+     * @param softBits array to receive the two soft bit values
+     * @param index for the first bit (sign bit), followed by the second (magnitude) bit
+     */
+    private static void setSoftBits(float softSymbol, float[] softBits, int index)
+    {
+        float u = softSymbol * SOFT_SYMBOL_SCALE;
+        float magnitude = Math.abs(u);
+        //First bit is 1 for negative symbols
+        float favorZero = magnitude <= 2.0f ? 4.0f * u : 8.0f * u - 8.0f * Math.signum(u);
+        softBits[index] = -favorZero;
+        //Second bit is 1 for the outer (+/-3) symbols
+        softBits[index + 1] = 4.0f * (magnitude - 2.0f);
+    }
+
+    /**
      * Dispatches a currently assembling message once it's complete.
      * @return true if any of the messages from the frame are valid.
      */
     private boolean dispatchMessage()
     {
         CorrectedBinaryMessage cbm = new CorrectedBinaryMessage(PAYLOAD_LENGTH * 2);
+        float[] softBits = new float[PAYLOAD_LENGTH * 2];
+        boolean softAvailable = true;
         //The buffer pointer is the next symbol after the completed message, ie start of sync
         int bufferDibitPointer = mDibitBufferPointer + SYNC_LENGTH;
         bufferDibitPointer %= FRAME_LENGTH;
@@ -114,14 +140,25 @@ public class NXDNMessageFramer
         Dibit dibit;
         while(messageDibitPointer < PAYLOAD_LENGTH)
         {
+            float softSymbol = mSoftSymbolBuffer[bufferDibitPointer];
             dibit = mDibitBuffer[bufferDibitPointer++];
             cbm.add(dibit.getBit1(), dibit.getBit2());
+
+            if(Float.isNaN(softSymbol))
+            {
+                softAvailable = false;
+            }
+            else
+            {
+                setSoftBits(softSymbol, softBits, messageDibitPointer * 2);
+            }
+
             bufferDibitPointer %= FRAME_LENGTH;
             messageDibitPointer++;
         }
 
         boolean validMessage = false;
-        Frame frame = new Frame(cbm, getTimestamp(), mLICHTracker);
+        Frame frame = new Frame(cbm, softAvailable ? softBits : null, getTimestamp(), mLICHTracker);
 
         for(NXDNMessage message: frame.getMessages())
         {
@@ -159,7 +196,7 @@ public class NXDNMessageFramer
             dibitBufferPointer %= FRAME_LENGTH;
         }
 
-        return Long.bitCount(value ^ NXDNSyncDetector.SYNC_PATTERN);
+        return Long.bitCount(value ^ mHardSyncDetector.getPattern());
     }
 
     /**
@@ -203,8 +240,22 @@ public class NXDNMessageFramer
      * Process symbol decision without sync detection.
      * @param symbol that was demodulated.
      */
+    @Override
+    public boolean process(Dibit symbol, float softSymbol)
+    {
+        mCurrentSoftSymbol = softSymbol;
+        return process(symbol);
+    }
+
+    /**
+     * Process symbol decision without sync detection or soft symbol.
+     * @param symbol that was demodulated.
+     */
     public boolean process(Dibit symbol)
     {
+        mSoftSymbolBuffer[mDibitBufferPointer] = mCurrentSoftSymbol;
+        mCurrentSoftSymbol = Float.NaN;
+
         //Check when we didn't get a sync detect, and count-wise, we're at the next frame's end-sync location
         if(!mSyncDetected && mDibitsSinceLastMessage == SYNC_LENGTH)
         {

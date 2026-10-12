@@ -44,7 +44,7 @@ public class P25P1HardSyncDetector extends P25P1SyncDetector
      */
     public boolean process(Dibit dibit)
     {
-        mValue = (Long.rotateLeft(mValue, 2) & SYNC_MASK) + dibit.getValue();
-        return Long.bitCount(mValue ^ SYNC_PATTERN) <= MAXIMUM_BIT_ERROR;
+        mValue = (Long.rotateLeft(mValue, 2) & getMask()) + dibit.getValue();
+        return Long.bitCount(mValue ^ getPattern()) <= MAXIMUM_BIT_ERROR;
     }
 }

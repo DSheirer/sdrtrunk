@@ -36,8 +36,9 @@ import java.util.concurrent.TimeUnit;
 public class ChannelFrequencyErrorManager implements ISourceEventListener, Listener<SourceEvent>
 {
     private static final long MAXIMUM_CHANNEL_ERROR_CORRECTION_PER_INTERVAL = 10; //Hertz
-    private static final long TIMER_INTERVAL_MILLISECONDS = 500;
-    private final FloatAveragingBuffer mRequestedCorrectAveragingBuffer = new FloatAveragingBuffer(6, 2);
+    private static final long TIMER_INTERVAL_MILLISECONDS = 1000;
+    private static final float ERROR_PROCESSING_GAIN = 0.3f;
+    private final FloatAveragingBuffer mRequestedCorrectAveragingBuffer = new FloatAveragingBuffer(12, 2);
     private final TunerChannelSource mTunerChannelSource;
     private final TunerFrequencyErrorManager mParent;
     private ScheduledFuture<?> mScheduledFuture;
@@ -135,7 +136,7 @@ public class ChannelFrequencyErrorManager implements ISourceEventListener, Liste
 
             if(partialCorrection != 0)
             {
-                mAppliedFrequencyCorrection += partialCorrection;
+                mAppliedFrequencyCorrection += (long)(partialCorrection * ERROR_PROCESSING_GAIN);
                 mTunerChannelSource.setFrequencyCorrection(mAppliedFrequencyCorrection);
                 mRequestedCorrectAveragingBuffer.reset();
             }

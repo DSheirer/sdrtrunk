@@ -46,6 +46,9 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     private CorrectedBinaryMessage mMessage;
     private P25P1DataUnitID mDataUnitID;
     private int mNac;
+    //Soft symbols (radians) for each assembled dibit, in received order, or NaN when not provided.
+    private float[] mSoftSymbols = new float[256];
+    private int mSoftSymbolCount = 0;
 
     /**
      * Constructs an instance
@@ -138,7 +141,7 @@ public class P25P1MessageAssembler implements Listener<Dibit>
                         if(length >= 195)
                         {
                             //Determine if this is a TSBK or an AMBTC PDU
-                            CorrectedBinaryMessage candidate = TSBKMessageFactory.deinterleaveViterbiAndCrc(getMessage().getSubMessage(0, 195));
+                            CorrectedBinaryMessage candidate = TSBKMessageFactory.deinterleaveViterbiAndCrc(getMessage().getSubMessage(0, 196));
 
                             if(candidate != null && candidate.getCorrectedBitCount() >= 0)
                             {
@@ -218,6 +221,17 @@ public class P25P1MessageAssembler implements Listener<Dibit>
      */
     public void receive(Dibit dibit)
     {
+        receive(dibit, Float.NaN);
+    }
+
+    /**
+     * Primary input method for demodulated dibits/symbols and their soft symbol values to be appended to the message
+     * under assembly.  Soft symbols support soft decision decoding.
+     * @param dibit to add to the message.
+     * @param softSymbol the dibit was decided from (radians) or NaN if unavailable.
+     */
+    public void receive(Dibit dibit, float softSymbol)
+    {
         if(mMessage.isFull())
         {
             LOGGING_SUPPRESSOR.error("P25P1-Full", 3, "P25 Phase 1 message under assembly is " +
@@ -226,7 +240,43 @@ public class P25P1MessageAssembler implements Listener<Dibit>
         else
         {
             mMessage.add(dibit.getBit1(), dibit.getBit2());
+
+            if(mSoftSymbolCount >= mSoftSymbols.length)
+            {
+                mSoftSymbols = java.util.Arrays.copyOf(mSoftSymbols, mSoftSymbols.length * 2);
+            }
+
+            mSoftSymbols[mSoftSymbolCount++] = softSymbol;
         }
+    }
+
+    /**
+     * Soft symbols for the assembled message bit range.
+     * @param startBit of the range (must be even/dibit aligned)
+     * @param endBit of the range, exclusive
+     * @return soft symbols for the range or null if the range isn't fully assembled or any soft symbol is unavailable.
+     */
+    public float[] getSoftSymbols(int startBit, int endBit)
+    {
+        int startDibit = startBit / 2;
+        int endDibit = endBit / 2;
+
+        if(startBit % 2 != 0 || endBit % 2 != 0 || startDibit < 0 || endDibit > mSoftSymbolCount || endDibit <= startDibit)
+        {
+            return null;
+        }
+
+        float[] softSymbols = java.util.Arrays.copyOfRange(mSoftSymbols, startDibit, endDibit);
+
+        for(float softSymbol : softSymbols)
+        {
+            if(Float.isNaN(softSymbol))
+            {
+                return null;
+            }
+        }
+
+        return softSymbols;
     }
 
     /**

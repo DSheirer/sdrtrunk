@@ -36,9 +36,6 @@ import java.util.List;
  */
 public class DecodeConfigNXDN extends DecodeConfigJMBE
 {
-    public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
-    public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
-    public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
     private boolean mIgnoreEncryptedCalls = false;

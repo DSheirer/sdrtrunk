@@ -116,6 +116,32 @@ public abstract class PunctureProvider
     }
 
     /**
+     * De-punctures the punctured soft bit values, inserting zero-valued (erasure) soft bits at the punctured positions.
+     * Mirrors the depuncture(CorrectedBinaryMessage) bit placement.
+     * @param punctured soft bit values to be de-punctured
+     * @return de-punctured soft bit values
+     */
+    public float[] depuncture(float[] punctured)
+    {
+        float[] depunctured = new float[calculateDepuncturedLength(punctured.length)];
+
+        int depuncturedPointer = 0;
+
+        for(int puncturedPointer = 0; puncturedPointer < punctured.length && depuncturedPointer < depunctured.length;
+            puncturedPointer++)
+        {
+            depunctured[depuncturedPointer++] = punctured[puncturedPointer];
+
+            if(isPunctured(depuncturedPointer))
+            {
+                depuncturedPointer++;
+            }
+        }
+
+        return depunctured;
+    }
+
+    /**
      * Calculates the length of punctured message from the original depunctured length.
      * @param depunctured message length
      * @return punctured message length.

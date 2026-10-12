@@ -101,9 +101,38 @@ public class PDUMessageFactory
      * @param message containing an interleaved, viterbi encoded message
      * @return header or null.
      */
+    /**
+     * Creates a PDU header message using soft decision Viterbi decoding when soft symbols are provided.
+     * @param message containing an interleaved, viterbi encoded message
+     * @param softSymbols for the 98 interleaved dibits of the header, or null.
+     * @return header or null.
+     */
+    public static PDUHeader createHeader(CorrectedBinaryMessage message, float[] softSymbols)
+    {
+        if(softSymbols == null)
+        {
+            return createHeader(message);
+        }
+
+        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 196),
+                softSymbols);
+
+        if(decoded != null)
+        {
+            return PDUHeaderFactory.getPDUHeader(decoded);
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a PDU header message
+     * @param message containing an interleaved, viterbi encoded message
+     * @return header or null.
+     */
     public static PDUHeader createHeader(CorrectedBinaryMessage message)
     {
-        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 195));
+        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 196));
 
         if(decoded != null)
         {
@@ -148,6 +177,21 @@ public class PDUMessageFactory
     /**
      * Creates an unconfirmed data block for a packet sequence
      */
+    /**
+     * Creates an unconfirmed data block using soft decision Viterbi decoding when soft symbols are provided.
+     * @param interleaved data block
+     * @param softSymbols for the 98 interleaved dibits of the block, or null.
+     */
+    public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved, float[] softSymbols)
+    {
+        if(softSymbols == null || softSymbols.length != P25P1Interleave.DATA_DEINTERLEAVE.length / 2)
+        {
+            return createUnconfirmedDataBlock(interleaved);
+        }
+
+        return new UnconfirmedDataBlock(P25P1Interleave.deinterleaveDataSoftSymbols(softSymbols));
+    }
+
     public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved)
     {
         CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
