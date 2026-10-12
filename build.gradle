@@ -27,8 +27,8 @@ import java.text.SimpleDateFormat
  * Instructions for building/compiling the sdrtrunk application.
  *
  * Prerequisites:
- * Install and configure an OpenJDK version 26+ that includes the JavaFX modules (e.g. Bellsoft Liberica JDK)
- * - Optional: install and configure Gradle 9.6+
+ * Install and configure an OpenJDK version 27+ that includes the JavaFX modules (e.g. Bellsoft Liberica JDK)
+ * - Optional: install and configure Gradle 9.8+
  *
  * Scenario 1: run the application via gradle command line from the source code root directory:
  * command: ./gradlew run
@@ -55,10 +55,10 @@ plugins {
 //Version is defined in gradle.properties so that we can CLI override it for nightly builds.
 version = project.findProperty('projectVersion')
 
-//Java 26 is required for this version of the Project Panama preview/incubator feature
+//Java 27 is required for this version of the Project Panama preview/incubator feature
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(26)
+        languageVersion = JavaLanguageVersion.of(27)
         vendor = JvmVendorSpec.BELLSOFT
     }
 }
@@ -121,7 +121,7 @@ dependencies {
 def os = DefaultNativePlatform.currentOperatingSystem
 
 /**
- * This is needed for the JDK23 vector API ... until it moves out of incubation or preview
+ * This is needed for the JDK23+ vector API ... until it moves out of incubation or preview
  */
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add("--enable-preview") //Project Panama Vector API is still in incubator
@@ -139,7 +139,6 @@ def jvmArgsWindows =
          '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
          '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
-         '-XX:+UseCompactObjectHeaders',   //JDK25 - use compact object headers
          '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //SDRPlay API library path
 
 /**
@@ -150,7 +149,6 @@ def jvmArgsLinux =
          '--add-modules=jdk.incubator.vector',   //Project Panama vector API is still in incubator
          '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
          '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
-         '-XX:+UseCompactObjectHeaders',   //JDK25 - use compact object headers
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
          '--enable-native-access=ALL-UNNAMED'] //SDRPlay API library path
 
@@ -224,7 +222,7 @@ String jdk_windows_aarch64 = jdk_base + 'windows-arm64/jdk-25.0.1-full'
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
-def jdk_download_base = "https://download.bell-sw.com/java/26.0.2+13/bellsoft-jdk26.0.2+13-"
+def jdk_download_base = "https://download.bell-sw.com/java/27+36/bellsoft-jdk27+36-"
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
 def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix
