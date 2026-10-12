@@ -31,6 +31,7 @@ import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
+import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -58,6 +59,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private static final Logger LOGGER = LoggerFactory.getLogger(NXDNDecoder.class);
     private static final Map<String,float[]> BASEBAND_FILTERS = new HashMap<>();
     private final DecodeConfigNXDN mConfig;
+//    private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNMessageProcessor mMessageProcessor;
@@ -84,7 +86,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         mMessageProcessor = new NXDNMessageProcessor(config);
         mMessageProcessor.setMessageListener(getMessageListener());
         mMessageFramer = new NXDNMessageFramer(mMessageProcessor, config.getTransmissionMode());
-        mSymbolProcessor = new NXDNSymbolProcessor(mMessageFramer, this);
+        mSymbolProcessor = new NXDNSymbolProcessor(this, mMessageFramer);
     }
 
     /**
@@ -137,10 +139,15 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         //Set the decimated sample rate to use for PLL error reporting.
         setDecimatedSampleRate(decimatedSampleRate);
 
-        int symbolLength = 26;
-        float rrcAlpha = 0.2f;
-        float[] rrcTaps = FilterFactory.getRRC(samplesPerSymbol, symbolLength, rrcAlpha);
-        mPulseShapingFilter = new RealFIRFilter(rrcTaps);
+        int rrcSymbolSpan = 12;
+        int inverseSyncSymbolSpan = 4;
+        //Create an RRC pulse shaping filter convolved with an inverse sync (ie restoration) filter.
+        float[] taps = NXDNFilterDesigner.designNXDN(decimatedSampleRate, mConfig.getTransmissionMode().getSymbolRate(),
+                rrcSymbolSpan, inverseSyncSymbolSpan);
+//        int symbolLength = 26;
+//        float rrcAlpha = 0.2f;
+//        taps = FilterFactory.getRRC(samplesPerSymbol, symbolLength, rrcAlpha);
+        mPulseShapingFilter = new RealFIRFilter(taps);
         float[] basebandTaps = getBasebandFilter(decimatedSampleRate, mConfig);
         mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
         mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
@@ -342,7 +349,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         config = new DecodeConfigNXDN(TransmissionMode.M4800);
 //        String file = directory + "20251128_052514_150845000_MobileTech-NXDN-48_Fulton_Control_47_baseband.wav";
         //Lower SNR recordings
-        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
+//        String file = directory + "20260430_023716_150867500_Mobiletech-Communications-(NXDN)_Pulaski_Pulaski_11_baseband.wav";
 //        String file = directory + "20260430_023556_152982500_Mobiletech-Communications-(NXDN)_Manlius_Manlius_15_baseband.wav";
 
         //This traffic channel sample Has Sync Detects between 1,096,430 - 1,111,430 samples (decimated sample rate: 12,500 Hz)
@@ -350,7 +357,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 //        String file = directory + "20260104_065240_153582500_Mobiletech-Communications-(NXDN)_Fulton_LCN-3_50_baseband.wav";
 //        String file = directory + "AceVentura Sample 1/20260122_071724_154987500_SCFR_SITE_null_1_baseband.wav";
 //        String file = directory + "AceVentura Sample 2/20260122_073239_154987500_SCFR_SITE_null_1_baseband.wav";
-//        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
+        String file = directory + "20260322_063443_150845000_Mobiletech-Communications-(NXDN)_Fulton_Fulton_2_baseband.wav";
 
 
         //Type-D Channels
