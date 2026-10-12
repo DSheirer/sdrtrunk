@@ -159,7 +159,7 @@ public class NXDNMessageFramer
             dibitBufferPointer %= FRAME_LENGTH;
         }
 
-        return Long.bitCount(value ^ NXDNSyncDetector.SYNC_PATTERN);
+        return Long.bitCount(value ^ mHardSyncDetector.getPattern());
     }
 
     /**

@@ -31,7 +31,12 @@ public class NXDNSoftSyncDetectorVector512 extends NXDNSoftSyncDetector
 {
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_512;
     //Extend the symbols out to 16x using zero padding after the 10th symbol
-    private static final float[] SYNC_EXTENDED = Arrays.copyOf(SYMBOLS, 16);
+    private static float[] SYNC_EXTENDED;
+
+    public NXDNSoftSyncDetectorVector512()
+    {
+        SYNC_EXTENDED = Arrays.copyOf(getSymbols(), 16);;
+    }
 
     /**
      * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft

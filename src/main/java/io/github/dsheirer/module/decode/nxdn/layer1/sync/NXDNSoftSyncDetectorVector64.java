@@ -40,9 +40,9 @@ public class NXDNSoftSyncDetectorVector64 extends NXDNSoftSyncDetector
     {
         FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
 
-        for(int x = 0; x < SYNC_DIBIT_LENGTH; x += VECTOR_SPECIES.length())
+        for(int x = 0; x < getDibitLength(); x += VECTOR_SPECIES.length())
         {
-            accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, x)
+            accumulator = FloatVector.fromArray(VECTOR_SPECIES, getSymbols(), x)
                     .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + x), accumulator);
         }
 

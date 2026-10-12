@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.sync;
 
-import io.github.dsheirer.dsp.symbol.Dibit;
 import java.util.Arrays;
 
 /**
@@ -27,10 +26,7 @@ import java.util.Arrays;
  */
 public abstract class P25P1SoftSyncDetector extends P25P1SyncDetector
 {
-    protected static final float MAX_POSITIVE = Dibit.D01_PLUS_3.getIdealPhase();
-    protected static final float MAX_NEGATIVE = Dibit.D11_MINUS_3.getIdealPhase();
-    protected static final float[] SYNC_PATTERN_SYMBOLS = syncPatternToSymbols();
-    protected float[] mSymbols = new float[48]; //2x longer than 48-bit/24-dibit DMR sync patterns.
+    protected float[] mSymbols = new float[48];
     protected int mSymbolPointer = 0;
 
     public P25P1SoftSyncDetector()

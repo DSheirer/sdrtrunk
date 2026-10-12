@@ -42,7 +42,7 @@ public class P25P1SoftSyncDetectorVector256 extends P25P1SoftSyncDetector
 
         for(int x = 0; x < 24; x += VECTOR_SPECIES.length())
         {
-            accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYNC_PATTERN_SYMBOLS, x)
+            accumulator = FloatVector.fromArray(VECTOR_SPECIES, getSymbols(), x)
                     .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + x), accumulator);
         }
 

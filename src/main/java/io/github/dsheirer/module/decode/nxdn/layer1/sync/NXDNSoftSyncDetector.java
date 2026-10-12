@@ -27,7 +27,7 @@ import java.util.Arrays;
 public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
 {
     //symbol buffer is extended by 6x to support SIMD 512 calculations
-    protected float[] mSymbols = new float[SYNC_DIBIT_LENGTH * 2 + 6];
+    protected float[] mSymbols = new float[getDibitLength() * 2 + 6];
     protected int mSymbolPointer = 0;
 
     /**
@@ -63,9 +63,9 @@ public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
     public float process(float dibitSymbol)
     {
         mSymbols[mSymbolPointer] = dibitSymbol;
-        mSymbols[mSymbolPointer + SYNC_DIBIT_LENGTH] = dibitSymbol;
+        mSymbols[mSymbolPointer + getDibitLength()] = dibitSymbol;
         mSymbolPointer++;
-        mSymbolPointer %= SYNC_DIBIT_LENGTH;
+        mSymbolPointer %= getDibitLength();
         return calculate();
     }
 }

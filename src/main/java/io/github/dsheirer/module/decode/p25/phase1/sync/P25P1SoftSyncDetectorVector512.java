@@ -47,9 +47,9 @@ public class P25P1SoftSyncDetectorVector512 extends P25P1SoftSyncDetector
         VectorMask<Float> mask = VectorMask.fromArray(VECTOR_SPECIES, VECTOR_MASK, 0);
         FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
         accumulator = FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer)
-                .fma(FloatVector.fromArray(VECTOR_SPECIES, SYNC_PATTERN_SYMBOLS, 0), accumulator);
+                .fma(FloatVector.fromArray(VECTOR_SPECIES, getSymbols(), 0), accumulator);
         accumulator = FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 8, mask)
-                .fma(FloatVector.fromArray(VECTOR_SPECIES, SYNC_PATTERN_SYMBOLS, 8), accumulator);
+                .fma(FloatVector.fromArray(VECTOR_SPECIES, getSymbols(), 8), accumulator);
         return accumulator.reduceLanes(VectorOperators.ADD);
     }
 }

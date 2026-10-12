@@ -38,7 +38,7 @@ public class P25P1SoftSyncDetectorScalar extends P25P1SoftSyncDetector
         for(int x = 0; x < 24; x++)
         {
             symbol = mSymbols[mSymbolPointer + x];
-            score += SYNC_PATTERN_SYMBOLS[x] * symbol;
+            score += getSymbols()[x] * symbol;
         }
 
         return score;

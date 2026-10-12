@@ -32,12 +32,6 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
-import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
-import io.github.dsheirer.module.decode.dmr.message.data.DataMessageWithLinkControl;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.preference.UserPreferences;
@@ -336,23 +330,9 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
                         mValidMessageCounter++;
                     }
                 }
-                else if(iMessage instanceof LCMessage lcw)
-                {
-                    mTotalMessageCounter++;
-                    errors = lcw.getMessage().getCorrectedBitCount();
-                    if(lcw.isValid())
-                    {
-                        mBitErrorCounter += errors;
-                        mValidMessageCounter++;
-                    }
-                }
 
                 double bitErrorRate = (double)mBitErrorCounter / (double)mBitCounter * 100.0;
-
                 boolean logEverything = true;
-                boolean logFLC = true;
-                boolean logSLC = true;
-                boolean logCACH = true;
                 boolean logIdles = true;
 
                 if(logEverything)
@@ -365,32 +345,6 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
                 }
                 else
                 {
-                    if (logFLC)
-                    {
-                        if(iMessage instanceof FullLCMessage)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                        else if(iMessage instanceof Terminator terminator)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                        else if(iMessage instanceof DataMessageWithLinkControl)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                    }
-
-                    if(logCACH && iMessage instanceof DMRBurst burst && burst.hasCACH())
-                    {
-                        System.out.println("CACH:" + burst.getCACH());
-                    }
-
-                    if(logSLC && iMessage instanceof ShortLCMessage)
-                    {
-                        System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                    }
-
                     if(logIdles && iMessage instanceof SyncLossMessage)
                     {
                         System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");

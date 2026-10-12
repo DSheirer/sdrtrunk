@@ -44,8 +44,8 @@ public class NXDNHardSyncDetector extends NXDNSyncDetector
      */
     public boolean process(Dibit dibit)
     {
-        mValue = (Long.rotateLeft(mValue, 2) & SYNC_MASK) + dibit.getValue();
-        return Long.bitCount(mValue ^ SYNC_PATTERN) <= MAXIMUM_BIT_ERROR;
+        mValue = (Long.rotateLeft(mValue, 2) & getMask()) + dibit.getValue();
+        return Long.bitCount(mValue ^ getPattern()) <= MAXIMUM_BIT_ERROR;
     }
 
 
@@ -54,6 +54,6 @@ public class NXDNHardSyncDetector extends NXDNSyncDetector
      */
     public int getCurrentBitErrors()
     {
-        return Long.bitCount(mValue ^ SYNC_PATTERN);
+        return Long.bitCount(mValue ^ getPattern());
     }
 }

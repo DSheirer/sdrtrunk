@@ -35,10 +35,10 @@ public class NXDNSoftSyncDetectorScalar extends NXDNSoftSyncDetector
         float symbol;
         float score = 0;
 
-        for(int x = 0; x < SYNC_DIBIT_LENGTH; x++)
+        for(int x = 0; x < getDibitLength(); x++)
         {
             symbol = mSymbols[mSymbolPointer + x];
-            score += SYMBOLS[x] * symbol;
+            score += getSymbols()[x] * symbol;
         }
 
         return score;

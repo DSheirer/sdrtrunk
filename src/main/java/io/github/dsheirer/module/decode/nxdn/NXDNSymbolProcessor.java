@@ -25,7 +25,6 @@ import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.nxdn.layer1.C4FMEqualizer;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSoftSyncDetector;
-import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetector;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.NXDNSyncDetectorFactory;
 import io.github.dsheirer.module.decode.nxdn.layer1.sync.ReferenceSyncWaveform;
 import io.github.dsheirer.sample.Listener;
@@ -42,13 +41,10 @@ public class NXDNSymbolProcessor
     private static final float SYNC_THRESHOLD_DETECTION = 37;
     private static final float SYNC_THRESHOLD_OPTIMIZED = 40;
     private static final float SYNC_THRESHOLD_EQUALIZED = 40;
-    private static final float[] SYNC_SYMBOLS = NXDNSyncDetector.SYMBOLS;
     private static final int BUFFER_WORKSPACE_LENGTH = 1024;
     private static final int DIBIT_LENGTH_NID = 33; //32 dibits (64 bits) +1 status
-    private static final int DIBIT_LENGTH_SYNC = 10;
     private static final Correction INVALID_SYNC_DETECTION = new Correction(0d, Double.MAX_VALUE, 0f, 0f, 0f, 0f, 0);
     private static final DecimalFormat DF = new DecimalFormat("00.000");
-    private static final Dibit[] SYNC_DIBITS = NXDNSyncDetector.DIBITS;
     private final DibitToByteBufferAssembler mDibitAssembler = new DibitToByteBufferAssembler(300);
     private final FeedbackDecoder mFeedbackDecoder;
     private final NXDNMessageFramer mMessageFramer;
@@ -85,7 +81,7 @@ public class NXDNSymbolProcessor
     {
         mMessageFramer = messageFramer;
         mFeedbackDecoder = feedbackDecoder;
-        mSymbolEqualizer = new C4FMEqualizer(mSyncDetector.getSyncSymbols(), 9, 192 * 3, 10);
+        mSymbolEqualizer = new C4FMEqualizer(mSyncDetector.getSymbols(), 9, 192 * 3, 10);
         DF.setPositivePrefix(" ");
     }
 
@@ -253,7 +249,7 @@ public class NXDNSymbolProcessor
                         // need to prime that buffer with aligned samples prior to sync detection training.
                         if(!mSymbolEqualizer.isEnabled())
                         {
-                            int symbols = mSyncDetector.getSyncSymbols().length + mSymbolEqualizer.getLength() - mSymbolEqualizer.getDelaySymbolCount();
+                            int symbols = mSyncDetector.getSymbols().length + mSymbolEqualizer.getLength() - mSymbolEqualizer.getDelaySymbolCount();
                             double offset = bufferPointer + samplePoint - ((symbols - 1) * samplesPerSymbol) - mLaggingSyncOffset;
 
                             float mid, sym;
@@ -367,7 +363,7 @@ public class NXDNSymbolProcessor
         mNoiseStandardDeviationThreshold = .2;
         mOptimizeFineIncrement = samplesPerSymbol / 200.0f;
         mLaggingSyncOffset = samplesPerSymbol / 2.0f;
-        int bufferLength = BUFFER_WORKSPACE_LENGTH + (int)(Math.ceil((DIBIT_LENGTH_SYNC + DIBIT_LENGTH_NID + 2) * samplesPerSymbol));
+        int bufferLength = BUFFER_WORKSPACE_LENGTH + (int)(Math.ceil((mSyncDetector.getDibitLength() + DIBIT_LENGTH_NID + 2) * samplesPerSymbol));
         mBuffer = new float[bufferLength];
         mBufferReloadThreshold = mBuffer.length - (int)Math.ceil(samplesPerSymbol * (DIBIT_LENGTH_NID + 1));
         mBufferPointer = mBufferReloadThreshold;
@@ -902,7 +898,7 @@ public class NXDNSymbolProcessor
                     softSymbol = 0.0f;
                 }
 
-                idealSymbol = SYNC_SYMBOLS[x];
+                idealSymbol = mSyncDetector.getSymbols()[x];
 
                 //Constrain the contribution of the soft symbol to +/- the ideal symbol value.
                 if(idealSymbol > 0)
@@ -977,12 +973,12 @@ public class NXDNSymbolProcessor
             {
                 if(resampleStartIntegral >= 0)
                 {
-                    symbol = SYNC_SYMBOLS[x];
+                    symbol = mSyncDetector.getSymbols()[x];
                     resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
                             mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
                     resampledSoftSymbol = resampledSoftSymbol * mGain + balanceCorrection;
                     resampledDibit = Dibit.fromSample(resampledSoftSymbol);
-                    bitErrorCount += SYNC_DIBITS[x].getBitErrorFrom(resampledDibit);
+                    bitErrorCount += mSyncDetector.getDibits()[x].getBitErrorFrom(resampledDibit);
                     gainAccumulator += Math.abs(symbol) - Math.abs(resampledSoftSymbol);
                 }
 

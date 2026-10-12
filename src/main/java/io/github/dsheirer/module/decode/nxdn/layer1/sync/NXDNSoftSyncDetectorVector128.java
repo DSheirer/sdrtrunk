@@ -34,8 +34,8 @@ public class NXDNSoftSyncDetectorVector128 extends NXDNSoftSyncDetector
     public NXDNSoftSyncDetectorVector128()
     {
         //Create an array of 4x elements containing the final 2x symbols for SIMD loading.
-        SYNC_EXTENDED[2] = SYMBOLS[8];
-        SYNC_EXTENDED[3] = SYMBOLS[9];
+        SYNC_EXTENDED[2] = getSymbols()[8];
+        SYNC_EXTENDED[3] = getSymbols()[9];
     }
 
     /**
@@ -47,9 +47,9 @@ public class NXDNSoftSyncDetectorVector128 extends NXDNSoftSyncDetector
     public float calculate()
     {
         FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 0)
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, getSymbols(), 0)
                 .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer), accumulator);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYMBOLS, 4)
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, getSymbols(), 4)
                 .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 4), accumulator);
         accumulator = FloatVector.fromArray(VECTOR_SPECIES, SYNC_EXTENDED, 0)
                 .fma(FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 6), accumulator);
