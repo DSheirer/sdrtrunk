@@ -59,6 +59,7 @@ public class P25P1MessageFramer
     private final P25P1SoftSyncDetector mSoftSyncDetector = P25P1SoftSyncDetectorFactory.getDetector();
     private final P25P1HardSyncDetector mHardSyncDetector = new P25P1HardSyncDetector();
     private boolean mSyncDetected = false;
+    private float mSoftSyncScore = 0;
 
     private static final double MILLISECONDS_PER_SYMBOL = 1.0 / 4800.0 / 1000.0;
     private Listener<IMessage> mMessageListener;
@@ -93,13 +94,23 @@ public class P25P1MessageFramer
     public boolean processWithSoftSyncDetect(float softSymbol, Dibit symbol)
     {
         boolean validNIDDetected = process(symbol);
+        mSoftSyncScore = mSoftSyncDetector.process(softSymbol);
 
-        if(mSoftSyncDetector.process(softSymbol) > SYNC_DETECTION_THRESHOLD)
+        if(mSoftSyncScore > SYNC_DETECTION_THRESHOLD)
         {
             syncDetected();
         }
 
         return validNIDDetected;
+    }
+
+    /**
+     * Sync pattern correlation score calculated for the most recent soft symbol processed via
+     * processWithSoftSyncDetect().  Allows the demodulator to compare against phase-rotated sync pattern scores.
+     */
+    public float getSoftSyncScore()
+    {
+        return mSoftSyncScore;
     }
 
     /**
@@ -844,6 +855,11 @@ public class P25P1MessageFramer
         //flag it as invalid NID when this happens.  The NAC tracker will give us a value of 0 until it has enough
         //observations of a valid NID value.
         mNACTracker.track(nac);
+
+        if(trackedNAC > 0 && trackedNAC != nac)
+        {
+            return false;
+        }
 //        System.out.println("\t\t" + mDebugSymbolCount + " VALID NID - NAC:" + nac + " DUID:" + duid);
         nidDetected(nac, duid, nid.getCorrectedBitCount());
         return true;
