@@ -26,6 +26,10 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.isch.IISCH;
 import io.github.dsheirer.module.decode.p25.phase2.message.isch.ISCHDecoder;
 import io.github.dsheirer.module.decode.p25.phase2.message.isch.SISCH;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.FacchTimeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.SacchTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.ScramblingSequence;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.TimeslotFactory;
@@ -66,6 +70,7 @@ public class SuperFrameFragment implements IMessage
     private Timeslot mTimeslotD;
     private List<Timeslot> mTimeslots;
     private ScramblingSequence mScramblingSequence;
+    private Integer mTimeslotOffset;
 
 
     /**
@@ -175,6 +180,7 @@ public class SuperFrameFragment implements IMessage
     public void resetTimeslots()
     {
         mTimeslots = null;
+        mTimeslotOffset = null;
         mTimeslotA = null;
         mTimeslotB = null;
         mTimeslotC = null;
@@ -313,9 +319,9 @@ public class SuperFrameFragment implements IMessage
     }
 
     /**
-     * Indicates the timeslot (index) offset to apply to each of the timeslots in this fragment
+     * Timeslot offset reported by the I-ISCH, or -1 when neither I-ISCH decodes.
      */
-    private int getTimeslotOffset()
+    private int getIschTimeslotOffset()
     {
         if(getIISCH1().isValid())
         {
@@ -327,7 +333,82 @@ public class SuperFrameFragment implements IMessage
             return getIISCH2().getIschSequence().getTimeslotOffset();
         }
 
-        return 0;
+        return -1;
+    }
+
+    /**
+     * Scores a candidate timeslot offset by decoding the signalling timeslots under it: each MAC PDU whose outer
+     * Reed-Solomon code closes counts 4 and each that only passes its CRC counts 1.
+     */
+    private int scoreTimeslotOffset(int offset)
+    {
+        int[][] spans = {{TIMESLOT_A_START, CHANNEL_B_ISCH_START}, {TIMESLOT_B_START, CHANNEL_C_ISCH_START},
+            {TIMESLOT_C_START, CHANNEL_D_ISCH_START}, {TIMESLOT_D_START, TIMESLOT_D_END}};
+        int score = 0;
+
+        for(int index = 0; index < spans.length; index++)
+        {
+            CorrectedBinaryMessage message = getMessage().getSubMessage(spans[index][0], spans[index][1]);
+            BinaryMessage sequence = mScramblingSequence.getTimeslotSequence(offset + index);
+            Timeslot timeslot = TimeslotFactory.getTimeslot(message, sequence, 1, getTimestamp());
+
+            if(timeslot instanceof AbstractSignalingTimeslot signalingTimeslot)
+            {
+                int weight = 1;
+
+                if(timeslot instanceof FacchTimeslot facch)
+                {
+                    weight = facch.isReedSolomonValid() ? 4 : 1;
+                }
+                else if(timeslot instanceof SacchTimeslot sacch)
+                {
+                    weight = sacch.isReedSolomonValid() ? 4 : 1;
+                }
+
+                for(MacMessage macMessage : signalingTimeslot.getMacMessages())
+                {
+                    if(macMessage.isValid())
+                    {
+                        score += weight;
+                    }
+                }
+            }
+        }
+
+        return score;
+    }
+
+    /**
+     * Timeslot offset (0, 4 or 8) of this fragment within the superframe, which selects the scrambling phase.
+     *
+     * The I-ISCH carries this, but it is a 40-bit codeword with two bits of correction and it fails on a large
+     * share of fragments on a weak signal.  So the offset is resolved by decoding the signalling timeslots under
+     * each candidate and keeping the one whose MAC PDUs check out, with the I-ISCH value breaking ties.  A fragment
+     * with nothing to vote with (voice only) falls back to the I-ISCH, or to offset 0 when that failed too.
+     */
+    private int getTimeslotOffset()
+    {
+        if(mTimeslotOffset == null)
+        {
+            int ischOffset = getIschTimeslotOffset();
+            int best = ischOffset < 0 ? 0 : ischOffset;
+            int bestScore = 0;
+
+            for(int candidate : new int[]{0, 4, 8})
+            {
+                int score = scoreTimeslotOffset(candidate);
+
+                if(score > bestScore || (score == bestScore && score > 0 && candidate == ischOffset))
+                {
+                    best = candidate;
+                    bestScore = score;
+                }
+            }
+
+            mTimeslotOffset = best;
+        }
+
+        return mTimeslotOffset;
     }
 
     /**
