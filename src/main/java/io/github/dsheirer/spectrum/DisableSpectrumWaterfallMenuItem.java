@@ -20,7 +20,7 @@ package io.github.dsheirer.spectrum;
 
 import io.github.dsheirer.properties.SystemProperties;
 import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
+import io.github.dsheirer.gui.theme.ThemedFontIcon;
 
 import javax.swing.JMenuItem;
 
@@ -38,7 +38,7 @@ public class DisableSpectrumWaterfallMenuItem extends JMenuItem
     public DisableSpectrumWaterfallMenuItem(SpectralDisplayPanel spectralDisplayPanel)
     {
         super("Disable Spectrum & Waterfall");
-        setIcon(IconFontSwing.buildIcon(FontAwesome.EYE_SLASH, 12));
+        setIcon(new ThemedFontIcon(FontAwesome.EYE_SLASH, 12));
 
         mSpectralDisplayPanel = spectralDisplayPanel;
 
