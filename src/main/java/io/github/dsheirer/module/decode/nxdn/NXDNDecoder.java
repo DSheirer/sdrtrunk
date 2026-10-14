@@ -58,6 +58,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private static final Logger LOGGER = LoggerFactory.getLogger(NXDNDecoder.class);
     private static final Map<String,float[]> BASEBAND_FILTERS = new HashMap<>();
     private final DecodeConfigNXDN mConfig;
+//    private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNMessageFramer mMessageFramer;
     private final NXDNMessageProcessor mMessageProcessor;
@@ -84,7 +85,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         mMessageProcessor = new NXDNMessageProcessor(config);
         mMessageProcessor.setMessageListener(getMessageListener());
         mMessageFramer = new NXDNMessageFramer(mMessageProcessor, config.getTransmissionMode());
-        mSymbolProcessor = new NXDNSymbolProcessor(mMessageFramer, this);
+        mSymbolProcessor = new NXDNSymbolProcessor(this, mMessageFramer);
     }
 
     /**

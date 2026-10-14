@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.sync;
 
-import io.github.dsheirer.bits.DibitSyncDetector;
+import io.github.dsheirer.dsp.c4fm.DibitSyncDetector;
 
 /**
  * Base implementation of P25 Phase 1 sync detector.

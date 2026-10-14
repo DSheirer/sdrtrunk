@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.nxdn.layer1;
+package io.github.dsheirer.dsp.c4fm;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
 import java.text.DecimalFormat;
@@ -56,11 +56,10 @@ public class C4FMEqualizer
      * Constructs an instance
      *
      * @param syncSymbols sync pattern that will be used to train the equalizer on sync detections
-     * @param symbolLength for the equalizer - will be made to odd length, increasing by one if necessary (5-11)
      * @param tapUpdateSymbolCount symbol count following sync detection and training to continue tap updates.
      * @param maxSkipTrainingCount maximum number of consecutive sync detections and skipped trainings that can occur without retraining.
      */
-    public C4FMEqualizer(float[] syncSymbols, int symbolLength, int tapUpdateSymbolCount, int maxSkipTrainingCount)
+    public C4FMEqualizer(float[] syncSymbols, int tapUpdateSymbolCount, int maxSkipTrainingCount)
     {
         //Store the sync pattern in reverse order
         mReversedSyncSymbols = new float[syncSymbols.length];
@@ -70,7 +69,7 @@ public class C4FMEqualizer
         }
 
         //Make the symbol count odd length for equal delay on either side of the center tap
-        symbolLength += (symbolLength % 2 == 0) ? 1 : 0;
+        int symbolLength = (syncSymbols.length % 2 == 0) ? syncSymbols.length - 1 : syncSymbols.length;
         mCenterTap = symbolLength; //This works since we're going to double the buffer length
         mDelaySymbolCount = symbolLength / 2; //Delay until new symbol is aligned to center tap
         mTaps = new float[symbolLength * 2];

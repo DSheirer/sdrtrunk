@@ -1,7 +1,6 @@
-package io.github.dsheirer.bits;
+package io.github.dsheirer.dsp.c4fm;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.module.decode.nxdn.layer1.sync.ReferenceSyncWaveform;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
@@ -17,7 +16,7 @@ public class DibitSyncDetector
     private final int mDibitLength;
     private Dibit[] mDibits;
     private float[] mSymbols;
-    private final Map<Integer,ReferenceSyncWaveform> mReferenceWaveformMap = new TreeMap<>();
+    private final Map<Integer, ReferenceSyncWaveform> mReferenceWaveformMap = new TreeMap<>();
 
     /*
      * Constructs an instance.
