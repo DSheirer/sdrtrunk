@@ -147,29 +147,11 @@ public class RTL2832TunerController extends USBTunerController
     @Override
     protected void deviceStart() throws SourceException
     {
-        //Perform dummy write to see if device needs reset
-        boolean resetRequired = false;
-
-        try
+        //Perform dummy write to see if device needs reset (skip on macOS - device is always fresh after start())
+        boolean isMacOS = System.getProperty("os.name", "").contains("Mac");
+        if(!isMacOS)
         {
-            writeRegister(Block.USB, Address.USB_SYSCTL, 0x09, 1);
-        }
-        catch(LibUsbException lue)
-        {
-            if(lue.getErrorCode() < 0)
-            {
-                resetRequired = true;
-            }
-            else
-            {
-                mLog.error("Error performing test write to RTL2832 device - " + LibUsb.errorName(lue.getErrorCode()));
-            }
-        }
-
-        if(resetRequired)
-        {
-            int status = LibUsb.resetDevice(getDeviceHandle());
-            mLog.info("Resetting device - status: " + LibUsb.errorName(status));
+            boolean resetRequired = false;
 
             try
             {
@@ -177,12 +159,36 @@ public class RTL2832TunerController extends USBTunerController
             }
             catch(LibUsbException lue)
             {
-                mLog.error("Couldnt' reset RTL2832 device - setting error");
-                throw new SourceException("unable to reset USB device - " + LibUsb.errorName(status));
+                if(lue.getErrorCode() < 0)
+                {
+                    resetRequired = true;
+                }
+                else
+                {
+                    mLog.error("Error performing test write to RTL2832 device - " + LibUsb.errorName(lue.getErrorCode()));
+                }
+            }
+
+            if(resetRequired)
+            {
+                int status = LibUsb.resetDevice(getDeviceHandle());
+                mLog.info("Resetting device - status: " + LibUsb.errorName(status));
+
+                try
+                {
+                    writeRegister(Block.USB, Address.USB_SYSCTL, 0x09, 1);
+                }
+                catch(LibUsbException lue)
+                {
+                    mLog.error("Couldnt' reset RTL2832 device - setting error");
+                    throw new SourceException("unable to reset USB device - " + LibUsb.errorName(status));
+                }
             }
         }
 
+        initBaseband();
 
+        //Read EEPROM after initBaseband() - the I2C bus must be initialized before EEPROM register writes succeed.
         byte[] eeprom = null;
 
         try
@@ -209,8 +215,6 @@ public class RTL2832TunerController extends USBTunerController
             mLog.error("error while constructing device descriptor using descriptor byte array " +
                 (eeprom == null ? "[null]" : Arrays.toString(eeprom)), e);
         }
-
-        initBaseband();
 
         TunerType tunerType = identifyTunerType();
 
@@ -1333,7 +1337,7 @@ public class RTL2832TunerController extends USBTunerController
 
         public String getVendorLabel()
         {
-            return mLabels.get(0);
+            return mLabels.size() > 0 ? mLabels.get(0) : "";
         }
 
         public String getProductID()
@@ -1344,7 +1348,7 @@ public class RTL2832TunerController extends USBTunerController
 
         public String getProductLabel()
         {
-            return mLabels.get(1);
+            return mLabels.size() > 1 ? mLabels.get(1) : "";
         }
 
         public boolean hasSerial()
@@ -1491,7 +1495,8 @@ public class RTL2832TunerController extends USBTunerController
          */
         public boolean isV4Dongle()
         {
-            return mController.getDescriptor().isRtlSdrV4();
+            Descriptor d = mController.getDescriptor();
+            return d != null && d.isRtlSdrV4();
         }
 
         /**

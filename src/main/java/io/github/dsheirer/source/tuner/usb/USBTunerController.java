@@ -23,11 +23,13 @@ import io.github.dsheirer.buffer.INativeBufferFactory;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
+import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
@@ -58,7 +60,8 @@ public abstract class USBTunerController extends TunerController
 
     protected int mBus;
     protected String mPortAddress;
-    private Context mDeviceContext = new Context();
+    private TunerClass mTunerClass = TunerClass.UNKNOWN;
+    private Context mDeviceContext;
     private Device mDevice;
     private DeviceHandle mDeviceHandle;
     private DeviceDescriptor mDeviceDescriptor;
@@ -106,6 +109,24 @@ public abstract class USBTunerController extends TunerController
     }
 
     /**
+     * Sets the application-owned libusb context from TunerManager.
+     * Must be called before start().
+     */
+    public void setSharedContext(Context context)
+    {
+        mDeviceContext = context;
+    }
+
+    /**
+     * Sets the tuner class expected for this controller so that device matching can validate the
+     * descriptor when a platform reports incomplete USB topology information.
+     */
+    public void setTunerClass(TunerClass tunerClass)
+    {
+        mTunerClass = tunerClass != null ? tunerClass : TunerClass.UNKNOWN;
+    }
+
+    /**
      * Tuner type for this USB controller
      */
     public abstract TunerType getTunerType();
@@ -147,15 +168,11 @@ public abstract class USBTunerController extends TunerController
     {
         if(mDeviceContext == null)
         {
-            throw new SourceException("Device cannot be reused once it has been shutdown");
+            throw new SourceException("Shared libusb context is required before starting USB tuner");
         }
 
-        int status = LibUsb.init(mDeviceContext);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-        }
+        boolean isMacOS = System.getProperty("os.name", "").contains("Mac");
+        int status = LibUsb.SUCCESS;
 
         mDevice = findDevice();
 
@@ -198,6 +215,13 @@ public abstract class USBTunerController extends TunerController
         }
 
         //Detach the kernel driver if active and detach is supported.  Otherwise, let the claim interface fail.
+        //Note: do NOT call setAutoDetachKernelDriver on macOS — it enables USBInterfaceOpenSeize which
+        //causes LIBUSB_ERROR_ACCESS when no kernel driver holds the interface (macOS-specific IOKit behavior).
+        if(!isMacOS)
+        {
+            LibUsb.setAutoDetachKernelDriver(mDeviceHandle, true);
+        }
+
         status = LibUsb.kernelDriverActive(mDeviceHandle, USB_INTERFACE);
 
         if(status == 1) //kernel driver is attached and detach operation is supported
@@ -213,40 +237,67 @@ public abstract class USBTunerController extends TunerController
             }
         }
 
-        //Set the configuration which also invokes a soft reset on the device
-        status = LibUsb.setConfiguration(mDeviceHandle, USB_CONFIGURATION);
-
-        if(status == LibUsb.ERROR_BUSY)
+        //Set the configuration which also invokes a soft reset on the device.
+        //On macOS: skip setConfiguration if the device is already in the desired configuration.
+        //Calling setConfiguration(1) on macOS even when already configured causes IOKit to re-enumerate
+        //the device, which leaves endpoint 0 stalled and causes subsequent control transfers to fail
+        //with LIBUSB_ERROR_PIPE. librtlsdr uses the same check-then-set pattern.
+        boolean skipSetConfiguration = false;
+        if(isMacOS)
         {
-            mLog.error("Unable to set USB configuration on tuner - device is busy (in use by another application)");
-            mDeviceHandle = null;
-            mDeviceDescriptor = null;
-            throw new SourceException("USB tuner is in-use by another application");
-        }
-        else if(status != LibUsb.SUCCESS)
-        {
-            mDeviceHandle = null;
-            mDeviceDescriptor = null;
-            throw new SourceException("Can't set configuration (ie reset) on the USB tuner - " + LibUsb.errorName(status));
+            IntBuffer currentConfig = IntBuffer.allocate(1);
+            int getConfigStatus = LibUsb.getConfiguration(mDeviceHandle, currentConfig);
+            if(getConfigStatus == LibUsb.SUCCESS && currentConfig.get(0) == USB_CONFIGURATION)
+            {
+                mLog.debug("setConfiguration: device already in config {} on macOS - skipping", USB_CONFIGURATION);
+                skipSetConfiguration = true;
+            }
         }
 
-        //Claim the interface
+        if(!skipSetConfiguration)
+        {
+            status = LibUsb.setConfiguration(mDeviceHandle, USB_CONFIGURATION);
+
+            if(status == LibUsb.ERROR_BUSY)
+            {
+                mLog.debug("setConfiguration: device already in use - continuing");
+            }
+            else if(status == LibUsb.ERROR_NO_DEVICE)
+            {
+                mLog.debug("setConfiguration: device re-enumerating (macOS normal) - continuing");
+            }
+            else if(status != LibUsb.SUCCESS)
+            {
+                mDeviceHandle = null;
+                mDeviceDescriptor = null;
+                throw new SourceException("Can't set configuration (ie reset) on the USB tuner - " + LibUsb.errorName(status));
+            }
+        }
+
         status = LibUsb.claimInterface(mDeviceHandle, USB_INTERFACE);
 
-        if(status == LibUsb.ERROR_BUSY)
+        if(status == LibUsb.ERROR_ACCESS)
         {
+            mLog.error("Can't claim interface on USB tuner - LIBUSB_ERROR_ACCESS (try replugging the device)");
             mDeviceHandle = null;
             mDeviceDescriptor = null;
-            throw new SourceException("USB tuner is in-use by another application");
+            throw new SourceException("Can't claim interface on USB tuner - " + LibUsb.errorName(status));
+        }
+        else if(status == LibUsb.ERROR_BUSY)
+        {
+            mLog.error("USB tuner interface is in-use by another application");
+            mDeviceHandle = null;
+            mDeviceDescriptor = null;
+            throw new SourceException("USB tuner interface is in-use by another application");
         }
         else if(status != LibUsb.SUCCESS)
         {
+            mLog.error("Can't claim interface on USB tuner - " + LibUsb.errorName(status));
             mDeviceHandle = null;
             mDeviceDescriptor = null;
             throw new SourceException("Can't claim interface on USB tuner - " + LibUsb.errorName(status));
         }
 
-        //Set running true for deviceStart() operations that require it.
         mRunning = true;
 
         try
@@ -303,7 +354,6 @@ public abstract class USBTunerController extends TunerController
             mDeviceDescriptor = null;
         }
 
-        LibUsb.exit(mDeviceContext);
         mDeviceContext = null;
     }
 
@@ -387,13 +437,32 @@ public abstract class USBTunerController extends TunerController
                 int bus = LibUsb.getBusNumber(device);
                 int port = LibUsb.getPortNumber(device);
 
-                if(port > 0)
+                if(port >= 0)
                 {
                     String portAddress = TunerManager.getPortAddress(device);
 
                     if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
                     {
-                        foundDevice = device;
+                        //When port addresses are unavailable (all empty on macOS), verify the tuner class too
+                        //so that multiple USB devices on the same bus don't match the wrong controller.
+                        if(mTunerClass != TunerClass.UNKNOWN)
+                        {
+                            DeviceDescriptor desc = new DeviceDescriptor();
+                            int descStatus = LibUsb.getDeviceDescriptor(device, desc);
+                            if(descStatus == LibUsb.SUCCESS &&
+                                    TunerClass.lookup(desc.idVendor(), desc.idProduct()) == mTunerClass)
+                            {
+                                foundDevice = device;
+                            }
+                            else
+                            {
+                                LibUsb.unrefDevice(device);
+                            }
+                        }
+                        else
+                        {
+                            foundDevice = device;
+                        }
                     }
                     else
                     {
