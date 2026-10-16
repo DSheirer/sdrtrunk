@@ -4,9 +4,9 @@ This repository is Rob Gwi's experimental fork of [DSheirer's sdrtrunk](https://
 
 > This is a beta fork and is not an official upstream sdrtrunk release. Back up your playlist before testing it.
 
-## Current release: 0.7.1-beta4
+## Current development version: 0.7.1-beta5 (not yet published)
 
-- [Latest downloadable release: Raspberry Pi ARM64 or Linux x86_64 0.7.1 beta 4](https://github.com/robgwi/sdrtrunk/releases/tag/sdrtrunk-v0.7.1-beta4)
+- [Latest downloadable release: Linux, Windows, and macOS 0.7.1 beta 4](https://github.com/robgwi/sdrtrunk/releases/tag/sdrtrunk-v0.7.1-beta4)
 - [Raspberry Pi installation guide](RASPBERRY_PI.md)
 - [Linux x86_64 installation guide](LINUX_X86_64.md)
 - [Local Whisper setup guide](WHISPER_SETUP.md)
@@ -124,8 +124,8 @@ This build requires a Raspberry Pi 4 or 5 running a 64-bit operating system. Con
 sudo apt update
 sudo apt install libusb-1.0-0 unzip
 
-unzip sdr-trunk-linux-aarch64-v0.7.1-beta4.zip
-cd sdr-trunk-linux-aarch64-v0.7.1-beta4
+unzip sdr-trunk-linux-aarch64-v0.7.1-beta5.zip
+cd sdr-trunk-linux-aarch64-v0.7.1-beta5
 bin/sdr-trunk
 ```
 
@@ -143,6 +143,13 @@ bin/sdr-trunk
 Environment variables override saved GUI password settings. The older `SDRTRUNK_WEB_TOKEN` name remains a compatibility fallback. Do not commit real passwords, keys, or tokens to this repository.
 
 ## Release history
+
+### 0.7.1-beta5 (in development)
+
+- Fixed packaged runtimes failing at startup with `NoClassDefFoundError: javafx/embed/swing/JFXPanel` by explicitly
+  including and resolving the JavaFX base, graphics, controls, media, and Swing modules in every platform image.
+- Runtime packaging now fails immediately when Gradle is running on a Java version older than 27, preventing dependency
+  analysis from silently omitting JavaFX modules from an otherwise successful-looking archive.
 
 ### 0.7.1-beta4
 
