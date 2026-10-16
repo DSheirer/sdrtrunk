@@ -784,8 +784,8 @@ public abstract class C4FMSymbolProcessor
                 }
                 else
                 {
-                    //Gradually return balance back to the optimized point
-                    mBalance += (mBalanceOptimized - mBalance) * EQUALIZER_LOOP_GAIN;
+                    //If symbols are too noisy, gradually restore balance to optimized level
+                    mBalance += (mBalanceOptimized - mBalance) * DYNAMIC_BALANCE_GAIN;
                 }
             }
 
@@ -846,8 +846,11 @@ public abstract class C4FMSymbolProcessor
         {
             mGainInitial = (float)samplesPerSymbol;
             mGain = mGainInitial;
-            mGainMax = mGain + 0.5f;
-            mGainMin = mGain - 0.5f;
+
+            //Allow the gain to float up/down at 10% of SPS
+            float tolerance = (float)(samplesPerSymbol / 10.0);
+            mGainMax = mGain + tolerance;
+            mGainMin = mGain - tolerance;
         }
 
         /**
