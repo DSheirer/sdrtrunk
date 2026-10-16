@@ -19,12 +19,13 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.sync;
 
+import io.github.dsheirer.dsp.c4fm.ISoftC4FMSyncDetector;
 import java.util.Arrays;
 
 /**
  * P25P1 Sync Detector.  Uses soft demodulated symbols to detect sync patterns in the demodulated symbol stream.
  */
-public abstract class P25P1SoftSyncDetector extends P25P1SyncDetector
+public abstract class P25P1SoftSyncDetector extends P25P1SyncDetector implements ISoftC4FMSyncDetector
 {
     protected float[] mSymbols = new float[48];
     protected int mSymbolPointer = 0;

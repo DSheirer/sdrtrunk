@@ -26,8 +26,8 @@ import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -71,16 +71,15 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     private static final int SYMBOL_RATE = 4800;
     private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
 
-    private final P25P1DemodulatorC4FM mSymbolProcessor;
+    private final P25P1SymbolProcessorC4FM mSymbolProcessor;
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
-    private DifferentialDemodulatorFloat mDemodulator;
+    private IDemodulator mDemodulator;
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
-    private IRealFilter mPulseShapingFilterI;
-    private IRealFilter mPulseShapingFilterQ;
+    private IRealFilter mIADFilter;
 
     @Override
     public DecoderType getDecoderType()
@@ -91,7 +90,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     public P25P1DecoderC4FM()
     {
         mMessageProcessor.setMessageListener(getMessageListener());
-        mSymbolProcessor = new P25P1DemodulatorC4FM(mMessageFramer, this);
+        mSymbolProcessor = new P25P1SymbolProcessorC4FM(this, mMessageFramer);
     }
 
     @Override
@@ -106,18 +105,20 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
      */
     public void setSampleRate(double sampleRate)
     {
-        if(sampleRate <= SYMBOL_RATE * 2)
+        float samplesPerSymbol = (float)sampleRate / SYMBOL_RATE;
+
+        if(samplesPerSymbol <= 4.0f)
         {
-            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " +
-                    SYMBOL_RATE + " symbol rate)");
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be at least " + (SYMBOL_RATE * 4) + " Hz");
         }
 
         int decimation = 1;
 
-        //Identify decimation that gets us as close to 4.0 Samples Per Symbol as possible (19.2 kHz)
-        while((sampleRate / decimation) >= 38400)
+        //Identify decimation that gets us as close to 5.0 Samples Per Symbol as possible
+        while(samplesPerSymbol >= 10.0)
         {
             decimation *= 2;
+            samplesPerSymbol /= 2;
         }
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
@@ -128,19 +129,18 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         //Set the decimated sample rate to use for PLL error reporting.
         setDecimatedSampleRate(decimatedSampleRate);
 
-        int symbolLength = 16;
-        float rrcAlpha = 0.2f;
-
-        float[] taps = FilterFactory.getRootRaisedCosine(decimatedSampleRate / SYMBOL_RATE,
-                symbolLength, rrcAlpha);
-        mPulseShapingFilterI = new RealFIRFilter(taps);
-        mPulseShapingFilterQ = new RealFIRFilter(taps);
+        float[] integrateAndDumpTaps = FilterFactory.getIntegrateAndDump(decimatedSampleRate, SYMBOL_RATE);
+        mIADFilter = new RealFIRFilter(integrateAndDumpTaps);
 
         mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
         mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mDemodulator = DifferentialDemodulatorFactory.getFloatDemodulator(decimatedSampleRate, SYMBOL_RATE);
-        mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
+
+        mDemodulator = FmDemodulatorFactory.getFmDemodulator();
+        mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
+
+        //TODO: update P25 message Framer and Processor like we do in NXDN constructor
         mMessageFramer.setListener(mMessageProcessor);
+
         mMessageProcessor.setMessageListener(getMessageListener());
     }
 
@@ -160,11 +160,8 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         i = mBasebandFilterI.filter(i);
         q = mBasebandFilterQ.filter(q);
 
-        i = mPulseShapingFilterI.filter(i);
-        q = mPulseShapingFilterQ.filter(q);
-
-        // PI/4 DQPSK differential demodulation
         float[] demodulated = mDemodulator.demodulate(i, q);
+        demodulated = mIADFilter.filter(demodulated);
 
         //Process demodulated samples into symbols and apply message sync detection and framing.
         mSymbolProcessor.process(demodulated);
@@ -264,7 +261,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                mSymbolProcessor.resetPLL();
+                mSymbolProcessor.resetBalance();
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
@@ -285,8 +282,8 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
 //        String directory = "D:\\DQPSK Equalizer Research - P25\\"; //Windows
         String directory = "/run/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
 
-        String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
-//        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
+//        String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
+        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
 
         boolean autoReplay = false;
 
