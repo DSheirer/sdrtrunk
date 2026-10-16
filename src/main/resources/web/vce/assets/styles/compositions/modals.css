@@ -1,0 +1,282 @@
+body.modal-open {
+  overflow: hidden;
+}
+
+.ui-popover {
+  position: fixed;
+  inset: auto;
+  max-height: var(--ui-popover-max-height, calc(100dvh - 16px));
+  margin: 0;
+  padding: var(--ui-popover-padding, var(--space-3));
+  overflow: auto;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-dark);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
+}
+
+.ui-popover::backdrop {
+  background: transparent;
+}
+
+.ui-popover.ui-icon-action-tooltip {
+  --ui-popover-padding: var(--space-1);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-raised);
+}
+
+.ui-popover.ui-icon-action-tooltip:popover-open {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--modal-viewport-gap);
+  background: var(--modal-backdrop);
+}
+
+.read-only-modal {
+  width: min(var(--modal-size-wide), 96vw);
+  max-height: min(900px, calc(100vh - var(--modal-viewport-inset)));
+  max-height: min(900px, calc(100dvh - var(--modal-viewport-inset)));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-modal);
+  box-shadow: var(--shadow-modal);
+}
+
+.read-only-modal.admin-modal {
+  width: min(var(--modal-size-small), 96vw);
+}
+
+.read-only-modal.modal-size-small {
+  width: min(var(--modal-size-small), 96vw);
+}
+
+.read-only-modal.frequency-action-modal {
+  width: min(var(--modal-size-small), 96vw);
+}
+
+.read-only-modal.tuner-frequency-lookup-modal {
+  width: min(800px, 96vw);
+}
+
+.read-only-modal.ui-confirmation-modal {
+  width: min(var(--modal-size-small), 96vw);
+}
+
+.modal-header {
+  min-height: 60px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h2 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-dialog-title);
+  font-weight: var(--font-weight-heading);
+  line-height: 1.25;
+}
+
+.modal-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.modal-heading > .ui-button {
+  flex: 0 0 auto;
+}
+
+.modal-content {
+  --ui-modal-footer-inset: var(--modal-content-padding);
+  min-height: 0;
+  padding: var(--modal-content-padding);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Editors share a sticky action row aligned with the body inset. */
+.ui-modal-footer,
+.read-only-modal .settings-form-footer {
+  width: auto;
+  position: sticky;
+  bottom: calc(-1 * var(--ui-modal-footer-inset, var(--space-4)));
+  z-index: 2;
+  margin: var(--space-3) calc(-1 * var(--ui-modal-footer-inset, var(--space-4)))
+    calc(-1 * var(--ui-modal-footer-inset, var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.ui-modal-footer-flush {
+  --ui-modal-footer-inset: 0px;
+  margin: 0;
+}
+
+.ui-modal-footer-spacer { flex: 1 1 auto; }
+
+.modal-content:has(.ui-modal-footer) {
+  scroll-padding-bottom: calc(var(--control-height-comfortable) + var(--space-3) * 2 + var(--space-4));
+}
+
+.ui-confirmation-content {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ui-confirmation-message {
+  margin: 0;
+  line-height: var(--line-height-body);
+}
+
+.ui-confirmation-content > .ui-modal-footer {
+  margin-top: 0;
+}
+
+/* Anchored guidance keeps the actual toolbar actions in place and accessible. */
+.modal-backdrop.ui-setup-guide-backdrop {
+  display: block;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.ui-setup-guide-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ui-setup-guide-dimmer {
+  fill: var(--modal-backdrop-strong);
+  pointer-events: fill;
+}
+
+.ui-setup-guide-highlight {
+  fill: none;
+  stroke: var(--header-ink);
+  stroke-width: var(--setup-guide-outline-width);
+  rx: var(--radius-control);
+  pointer-events: none;
+}
+
+.ui-setup-guide-highlight[hidden] { display: none; }
+
+.read-only-modal.ui-setup-guide {
+  position: fixed;
+  width: min(var(--modal-size-small), calc(100vw - var(--space-4) * 2));
+  height: auto;
+  max-height: calc(100dvh - var(--space-4) * 2);
+  gap: var(--space-4);
+  color: var(--header-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+.ui-setup-guide .modal-header {
+  min-height: var(--control-height-comfortable);
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.ui-setup-guide .modal-close {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  color: var(--header-ink);
+  background: transparent;
+  border-color: transparent;
+}
+
+.ui-setup-guide .modal-content {
+  padding: 0;
+}
+
+.ui-setup-guide-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.ui-setup-guide-choice {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-setup-guide-description {
+  margin: 0;
+  line-height: var(--line-height-body);
+}
+
+@media (max-width: 560px) {
+  .ui-setup-guide-choices { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .ui-setup-guide-choices { grid-template-columns: minmax(0, 1fr); }
+  .modal-backdrop {
+    padding: 0;
+  }
+
+  .read-only-modal {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .read-only-modal.modal-size-small {
+    width: 100vw;
+  }
+
+  .modal-backdrop {
+    --modal-content-padding: var(--space-2);
+  }
+
+  .ui-modal-footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ui-modal-footer > .ui-button { width: 100%; }
+  .ui-modal-footer > .ui-button:only-child { grid-column: 1 / -1; }
+  .ui-modal-footer-primary-row > .ui-button-primary { grid-column: 1 / -1; }
+  .modal-content:has(.ui-modal-footer-primary-row) {
+    scroll-padding-bottom: calc(var(--control-height-comfortable) * 2 + var(--space-3) * 2 + var(--space-2) + var(--space-4));
+  }
+  .ui-modal-footer > .ui-modal-footer-spacer { display: none; }
+  .read-only-modal .settings-form-footer .ui-action-row > .ui-button { width: 100%; }
+}

@@ -37,6 +37,8 @@ import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.NXDNChannelRestartRequest;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
@@ -93,6 +95,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private UserPreferences mUserPreferences;
     private List<Long> mLoggedFrequencies = new ArrayList<>();
     private List<ScheduledFuture<?>> mDelayedChannelStartTasks = new ArrayList<>();
+    private Map<Channel,Integer> mNXDNRestartAttempts = new ConcurrentHashMap<>();
 
     /**
      * Constructs the channel processing manager
@@ -281,6 +284,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             case NOTIFICATION_DELETE:
                 if(channel != null)
                 {
+                    mNXDNRestartAttempts.remove(channel);
+
                     try
                     {
                         stopProcessing(channel);
@@ -364,6 +369,54 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 mLog.error("Error stopping channel [" + channel + "]", ce);
             }
         }
+    }
+
+    /**
+     * Restarts a standard NXDN channel only after its source heartbeat has stopped. The failed chain remains in the
+     * map during the backoff delay, allowing an explicit user disable to remove it and cancel this recovery attempt.
+     */
+    @Subscribe
+    public void restartNXDNChannel(NXDNChannelRestartRequest request)
+    {
+        Channel channel = request.getChannel();
+
+        if(channel == null || !channel.isStandardChannel() ||
+            !(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN))
+        {
+            return;
+        }
+
+        ProcessingChain failedChain = mProcessingChainsMap.get(channel);
+
+        if(failedChain == null)
+        {
+            return;
+        }
+
+        int attempt = mNXDNRestartAttempts.merge(channel, 1, Integer::sum);
+        long delaySeconds = Math.min(60L, 1L << Math.min(attempt - 1, 6));
+        mLog.error("NXDN channel [{}] recovery attempt {} in {} second(s): {} ({})", channel.getName(), attempt,
+            delaySeconds, request.getReason(), request.getDiagnostics());
+
+        ScheduledFuture<?> future = ThreadPool.SCHEDULED.schedule(() -> {
+            if(mProcessingChainsMap.get(channel) != failedChain)
+            {
+                return;
+            }
+
+            try
+            {
+                stopProcessing(channel);
+                ChannelStartProcessingRequest restart = new ChannelStartProcessingRequest(channel);
+                restart.setPersistentAttempt(true);
+                startChannelRequest(restart);
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error during controlled NXDN channel restart [{}]", channel.getName(), t);
+            }
+        }, delaySeconds, TimeUnit.SECONDS);
+        mDelayedChannelStartTasks.add(future);
     }
 
     /**

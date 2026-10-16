@@ -28,6 +28,7 @@ import io.github.dsheirer.gui.playlist.channel.ChannelTabRequest;
 import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
+import io.github.dsheirer.gui.playlist.web.WebInterfaceEditor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -75,6 +76,7 @@ public class PlaylistEditor extends BorderPane
     private Tab mAliasesTab;
     private Tab mRadioReferenceTab;
     private Tab mStreamingTab;
+    private Tab mWebInterfaceTab;
     private AliasEditor mAliasEditor;
     private ChannelEditor mChannelEditor;
 
@@ -202,7 +204,7 @@ public class PlaylistEditor extends BorderPane
             mTabPane = new TabPane();
             mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
             mTabPane.getTabs().addAll(getPlaylistsTab(), getChannelsTab(), getAliasesTab(), getStreamingTab(),
-                getRadioReferenceTab());
+                getWebInterfaceTab(), getRadioReferenceTab());
         }
 
         return mTabPane;
@@ -281,5 +283,15 @@ public class PlaylistEditor extends BorderPane
         }
 
         return mStreamingTab;
+    }
+
+    private Tab getWebInterfaceTab()
+    {
+        if(mWebInterfaceTab == null)
+        {
+            mWebInterfaceTab = new Tab("Web Interface");
+            mWebInterfaceTab.setContent(new WebInterfaceEditor());
+        }
+        return mWebInterfaceTab;
     }
 }

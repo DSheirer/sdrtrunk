@@ -1,0 +1,22 @@
+.exact-time {
+  display: inline-block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.encrypted {
+  color: var(--danger);
+  font-weight: var(--font-weight-control);
+}
+
+.ui-muted { color: var(--muted); }
+.ui-label { font-size: var(--font-size-label); }
+
+a.ui-link-text {
+  color: inherit;
+}

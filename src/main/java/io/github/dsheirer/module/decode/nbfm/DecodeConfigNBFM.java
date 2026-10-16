@@ -262,7 +262,18 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     {
         List<SquelchDecoderConfig> decoders = getSquelchDecoders();
         // TODO right now only looking at first and only decoder, need to fix when multiple decoders are possible
-        return !decoders.isEmpty() && decoders.getFirst().getSquelchType() != SquelchDecoderConfig.SquelchType.NONE;
+        return !decoders.isEmpty() && (decoders.getFirst().getSquelchType() == SquelchDecoderConfig.SquelchType.CTCSS ||
+            decoders.getFirst().getSquelchType() == SquelchDecoderConfig.SquelchType.DCS);
+    }
+
+    /**
+     * Indicates that the channel should identify any standard CTCSS tone while leaving carrier squelch in control.
+     */
+    @JsonIgnore
+    public boolean isCTCSSSearchEnabled()
+    {
+        return getSquelchDecoders().stream().anyMatch(decoder ->
+            decoder.getSquelchType() == SquelchDecoderConfig.SquelchType.CTCSS_SEARCH);
     }
 
     /**

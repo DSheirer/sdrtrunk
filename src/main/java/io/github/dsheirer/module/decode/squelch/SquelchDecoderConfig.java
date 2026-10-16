@@ -38,9 +38,10 @@ public class SquelchDecoderConfig
 
     public enum SquelchType
     {
-        NONE("None"),
+        NONE("Carrier Squelch"),
         CTCSS("CTCSS"),
-        DCS("DCS");
+        DCS("DCS"),
+        CTCSS_SEARCH("CTCSS Tone Search");
 
         public static final Set<SquelchType> SQUELCH_TYPE ;
         static
@@ -84,7 +85,7 @@ public class SquelchDecoderConfig
     }
 
     /**
-     * Squelch filter type (None, CTCSS, DCS)
+     * Squelch mode (carrier, CTCSS, DCS, or CTCSS tone search)
      */
     @JacksonXmlProperty(isAttribute = true, localName = "squelchType")
     public SquelchType getSquelchType()
@@ -172,6 +173,7 @@ public class SquelchDecoderConfig
         {
             case CTCSS -> getCTCSSCode() != null && getCTCSSCode() != CTCSSCode.UNKNOWNH;
             case DCS -> getDCSCode() != null;
+            case CTCSS_SEARCH -> true;
             case NONE -> false;
         };
     }
@@ -195,8 +197,11 @@ public class SquelchDecoderConfig
                 DCSCode dcs = getDCSCode();
                 sb.append(dcs != null ? dcs.toString() : mValue);
                 break;
+            case CTCSS_SEARCH:
+                sb.append("Detect any standard CTCSS tone without muting carrier-squelch audio.");
+                break;
             case NONE:
-                sb.append("No squelch filter configured.");
+                sb.append("Open on carrier/noise squelch.");
                 break;
         }
         return sb.toString();

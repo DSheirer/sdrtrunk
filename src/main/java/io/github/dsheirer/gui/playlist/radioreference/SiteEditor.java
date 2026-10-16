@@ -30,6 +30,7 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.NXDNChannelMode;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
@@ -282,6 +283,7 @@ public class SiteEditor extends GridPane
                 };
 
                 DecodeConfigNXDN nxdn = new DecodeConfigNXDN(mode);
+                nxdn.setChannelMode(NXDNChannelMode.TRUNKED);
                 List<ChannelFrequency> channelMap = mRadioReferenceDecoder.getChannelMap(systemInformation, site);
                 nxdn.setChannelMap(channelMap);
                 return nxdn;

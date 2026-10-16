@@ -19,13 +19,11 @@
 
 package io.github.dsheirer.module.decode.am;
 
-import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.string.SimpleStringIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.AnalogDecoderState;
+import io.github.dsheirer.protocol.Protocol;
 
 /**
  * AM decoder state
@@ -44,7 +42,7 @@ public class AMDecoderState extends AnalogDecoderState
     public AMDecoderState(String channelName, DecodeConfigAM decodeConfig)
     {
         mChannelName = (channelName != null && !channelName.isEmpty()) ? channelName : "AM CHANNEL";
-        mChannelNameIdentifier = new SimpleStringIdentifier(mChannelName, IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
+        mChannelNameIdentifier = DecoderLogicalChannelNameIdentifier.create(mChannelName, Protocol.AM);
         mTalkgroupIdentifier = new AMTalkgroup(decodeConfig.getTalkgroup());
     }
 

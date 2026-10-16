@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 72" role="img" aria-labelledby="title">
+  <title id="title">SDR-Trunk</title>
+  <g fill="none" stroke="#71d7ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+    <path d="M17 47h15l8-27 12 40 10-30 8 17h16"/>
+    <path d="M13 57h77" opacity=".45"/>
+  </g>
+  <text x="105" y="49" fill="#f4f8fb" font-family="Inter,Arial,sans-serif" font-size="37" font-weight="700" letter-spacing=".5">SDR-Trunk</text>
+</svg>

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
+import io.github.dsheirer.audio.broadcast.remote.RemoteApiConfiguration;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
@@ -49,6 +50,7 @@ import java.net.SocketAddress;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = BroadcastifyCallConfiguration.class, name="broadcastifyCallConfiguration"),
     @JsonSubTypes.Type(value = RdioScannerConfiguration.class, name="RdioScannerConfiguration"),
+    @JsonSubTypes.Type(value = RemoteApiConfiguration.class, name="RemoteApiConfiguration"),
     @JsonSubTypes.Type(value = OpenMHzConfiguration.class, name="OpenMHzConfiguration"),
     @JsonSubTypes.Type(value = IcecastConfiguration.class, name="icecastConfiguration"),
     @JsonSubTypes.Type(value = ShoutcastV1Configuration.class, name="shoutcastV1Configuration"),
@@ -90,6 +92,17 @@ public abstract class BroadcastConfiguration
      * Creates a copy/clone of the configuration
      */
     public abstract BroadcastConfiguration copyOf();
+
+    /**
+     * Creates a complete copy that is safe to edit as a newly cloned destination.  Keeping a clone disabled prevents
+     * it from sending duplicate audio to the same endpoint before the user has changed its name or URL.
+     */
+    public BroadcastConfiguration copyOfDisabled()
+    {
+        BroadcastConfiguration copy = copyOf();
+        copy.setEnabled(false);
+        return copy;
+    }
 
     /**
      * Broadcast audio streaming configuration.  Describes the streaming server and configuration details.

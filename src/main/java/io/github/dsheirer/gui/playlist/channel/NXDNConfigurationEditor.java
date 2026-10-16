@@ -28,8 +28,8 @@ import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.NXDNChannelMode;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.channel.ObservableChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.Encoding;
@@ -92,9 +92,11 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     private Button mDeleteButton;
     private Spinner<Integer> mChannelRotationDelaySpinner;
     private SegmentedButton mTransmissionModeButton;
+    private ComboBox<NXDNChannelMode> mChannelModeComboBox;
     private ComboBox<Encoding> mEncodingComboBox;
     private ToggleSwitch mIgnoreDataCallsToggle;
     private ToggleSwitch mIgnoreEncryptedCallsToggle;
+    private ToggleSwitch mRecordUnknownSimplexCallsToggle;
     private ToggleSwitch mJmbeAGCButton;
     private Slider mJmbeToneGainSlider;
     private Slider mJmbeNoiseGainSlider;
@@ -147,40 +149,56 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
 
             int row = 0;
 
+            Label channelMode = new Label("Channel Type:");
+            GridPane.setHalignment(channelMode, HPos.RIGHT);
+            GridPane.setConstraints(channelMode, 0, row);
+            gridPane.getChildren().add(channelMode);
+
+            GridPane.setConstraints(getChannelModeComboBox(), 1, row);
+            gridPane.getChildren().add(getChannelModeComboBox());
+
             Label mode = new Label("Mode:");
             GridPane.setHalignment(mode, HPos.RIGHT);
-            GridPane.setConstraints(mode, 0, row);
+            GridPane.setConstraints(mode, 2, row);
             gridPane.getChildren().add(mode);
 
-            GridPane.setConstraints(getTransmissionModeButton(), 1, row);
+            GridPane.setConstraints(getTransmissionModeButton(), 3, row);
             gridPane.getChildren().add(getTransmissionModeButton());
 
             Label encoding = new Label("Talker Alias Encoding:");
             GridPane.setHalignment(encoding, HPos.RIGHT);
-            GridPane.setConstraints(encoding, 2, row);
+            GridPane.setConstraints(encoding, 4, row);
             gridPane.getChildren().add(encoding);
 
-            GridPane.setConstraints(getEncodingComboBox(), 3, row);
+            GridPane.setConstraints(getEncodingComboBox(), 5, row);
             gridPane.getChildren().add(getEncodingComboBox());
 
             Label poolSizeLabel = new Label("Max Traffic Channels");
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
-            GridPane.setConstraints(poolSizeLabel, 4, row);
+            GridPane.setConstraints(poolSizeLabel, 0, ++row);
             gridPane.getChildren().add(poolSizeLabel);
 
-            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 5, row);
+            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 1, row);
             gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
 
             Label ignoreLabel = new Label("Ignore:");
             GridPane.setHalignment(ignoreLabel, HPos.RIGHT);
-            GridPane.setConstraints(ignoreLabel, 0, ++row);
+            GridPane.setConstraints(ignoreLabel, 2, row);
             gridPane.getChildren().add(ignoreLabel);
 
-            GridPane.setConstraints(getIgnoreDataCallsToggle(), 1, row);
+            GridPane.setConstraints(getIgnoreDataCallsToggle(), 3, row);
             gridPane.getChildren().add(getIgnoreDataCallsToggle());
 
-            GridPane.setConstraints(getIgnoreEncryptedCallsToggle(), 2, row, 2, 1);
+            GridPane.setConstraints(getIgnoreEncryptedCallsToggle(), 4, row, 2, 1);
             gridPane.getChildren().add(getIgnoreEncryptedCallsToggle());
+
+            Label recordLabel = new Label("Record:");
+            GridPane.setHalignment(recordLabel, HPos.RIGHT);
+            GridPane.setConstraints(recordLabel, 0, ++row);
+            gridPane.getChildren().add(recordLabel);
+
+            GridPane.setConstraints(getRecordUnknownSimplexCallsToggle(), 1, row, 4, 1);
+            gridPane.getChildren().add(getRecordUnknownSimplexCallsToggle());
 
             Label channelMapTableLabel = new Label("Optional Channel Number (LCN) to Frequency Map for Channel-Mode systems.  Ignore for Direct Frequency Access (DFA) systems.");
             GridPane.setHalignment(channelMapTableLabel, HPos.LEFT);
@@ -274,9 +292,9 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         if(mSourceConfigurationEditor == null)
         {
             mSourceConfigurationEditor = new FrequencyEditor(mTunerManager,
-                DecodeConfigDMR.CHANNEL_ROTATION_DELAY_MINIMUM_MS,
-                DecodeConfigDMR.CHANNEL_ROTATION_DELAY_MAXIMUM_MS,
-                DecodeConfigDMR.CHANNEL_ROTATION_DELAY_DEFAULT_MS);
+                DecodeConfigNXDN.CHANNEL_ROTATION_DELAY_MINIMUM_MS,
+                DecodeConfigNXDN.CHANNEL_ROTATION_DELAY_MAXIMUM_MS,
+                DecodeConfigNXDN.CHANNEL_ROTATION_DELAY_DEFAULT_MS);
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()
@@ -319,6 +337,44 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mEncodingComboBox;
+    }
+
+    /**
+     * Conventional/trunked channel mode selection.
+     */
+    private ComboBox<NXDNChannelMode> getChannelModeComboBox()
+    {
+        if(mChannelModeComboBox == null)
+        {
+            mChannelModeComboBox = new ComboBox<>(FXCollections.observableArrayList(NXDNChannelMode.values()));
+            mChannelModeComboBox.setDisable(true);
+            mChannelModeComboBox.setMaxWidth(Double.MAX_VALUE);
+            mChannelModeComboBox.setTooltip(new Tooltip(
+                "Conventional decodes activity on the configured frequency. Trunked follows channel grants."));
+            mChannelModeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+                updateTrunkingControls(getItem() != null && getItem().getDecodeConfiguration() != null);
+                modifiedProperty().set(true);
+            });
+        }
+
+        return mChannelModeComboBox;
+    }
+
+    /**
+     * Enables trunk-only settings without clearing their dormant values.
+     */
+    private void updateTrunkingControls(boolean hasConfiguration)
+    {
+        boolean trunked = hasConfiguration && getChannelModeComboBox().getValue() == NXDNChannelMode.TRUNKED;
+        getTrafficChannelPoolSizeSpinner().setDisable(!trunked);
+        getIgnoreDataCallsToggle().setDisable(!trunked);
+        getIgnoreEncryptedCallsToggle().setDisable(!trunked);
+        getChannelMapTable().setDisable(!trunked);
+        getAddTimeslotFrequencyButton().setDisable(!trunked);
+        ObservableChannelFrequency selected = getChannelMapTable().getSelectionModel().getSelectedItem();
+        getDeleteButton().setDisable(!trunked || selected == null);
+        getChannelField().setDisable(!trunked || selected == null);
+        getDownlinkFrequencyField().setDisable(!trunked || selected == null);
     }
 
     private TableView<ObservableChannelFrequency> getChannelMapTable()
@@ -391,10 +447,11 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     {
         //Preserve the current modified flag state since setting values in the editor will change it.
         boolean modified = modifiedProperty().get();
+        boolean trunked = getChannelModeComboBox().getValue() == NXDNChannelMode.TRUNKED;
 
-        getChannelField().setDisable(channelFrequency == null);
-        getDownlinkFrequencyField().setDisable(channelFrequency == null);
-        getDeleteButton().setDisable(channelFrequency == null);
+        getChannelField().setDisable(!trunked || channelFrequency == null);
+        getDownlinkFrequencyField().setDisable(!trunked || channelFrequency == null);
+        getDeleteButton().setDisable(!trunked || channelFrequency == null);
 
         if(channelFrequency != null)
         {
@@ -596,6 +653,24 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     }
 
     /**
+     * Toggle switch for recording conventional simplex calls containing unaliased radio IDs.
+     */
+    private ToggleSwitch getRecordUnknownSimplexCallsToggle()
+    {
+        if(mRecordUnknownSimplexCallsToggle == null)
+        {
+            mRecordUnknownSimplexCallsToggle = new ToggleSwitch("Unknown Simplex Radio IDs");
+            mRecordUnknownSimplexCallsToggle.setDisable(true);
+            mRecordUnknownSimplexCallsToggle.setTooltip(new Tooltip(
+                "Record inbound NXDN conventional/simplex calls when a source or destination radio ID has no alias"));
+            mRecordUnknownSimplexCallsToggle.selectedProperty()
+                .addListener((o, ov, nv) -> modifiedProperty().set(true));
+        }
+
+        return mRecordUnknownSimplexCallsToggle;
+    }
+
+    /**
      * Channel rotation monitor delay value.  This dictates how long the decoder will remain on each frequency before
      * rotating to the next frequency in the list
      * @return spinner
@@ -642,25 +717,25 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
         boolean disable = config == null;
+        getChannelModeComboBox().setDisable(disable);
         getTransmissionModeButton().setDisable(disable);
-        getTrafficChannelPoolSizeSpinner().setDisable(disable);
+        getEncodingComboBox().setDisable(disable);
         getChannelMapTable().getItems().clear();
-        getChannelMapTable().setDisable(disable);
-        getAddTimeslotFrequencyButton().setDisable(disable);
         getDeleteButton().setDisable(true);
         getChannelField().set(0);
         getChannelField().setDisable(true);
         getDownlinkFrequencyField().set(0);
         getDownlinkFrequencyField().setDisable(true);
         getChannelRotationDelaySpinner().setDisable(disable);
-        getIgnoreDataCallsToggle().setDisable(disable);
-        getIgnoreEncryptedCallsToggle().setDisable(disable);
+        getRecordUnknownSimplexCallsToggle().setDisable(disable);
         getJmbeAGCButton().setDisable(disable);
         getJmbeNoiseGainSlider().setDisable(disable);
         getJmbeToneGainSlider().setDisable(disable);
 
         if(config instanceof DecodeConfigNXDN configNXDN)
         {
+            getChannelModeComboBox().setValue(configNXDN.getChannelMode());
+
             for(ToggleButton toggle: getTransmissionModeButton().getButtons())
             {
                 if(toggle.getUserData() == configNXDN.getTransmissionMode())
@@ -670,6 +745,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             }
 
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(configNXDN.getTrafficChannelPoolSize());
+            getEncodingComboBox().getSelectionModel().select(configNXDN.getEncoding());
 
             for(ChannelFrequency channelFrequency: configNXDN.getChannelMap())
             {
@@ -678,19 +754,25 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
 
             getIgnoreDataCallsToggle().setSelected(configNXDN.isIgnoreDataCalls());
             getIgnoreEncryptedCallsToggle().setSelected(configNXDN.isIgnoreEncryptedCalls());
+            getRecordUnknownSimplexCallsToggle().setSelected(configNXDN.isRecordUnknownSimplexCalls());
             getJmbeAGCButton().setSelected(configNXDN.isAGC());
             getJmbeNoiseGainSlider().setValue(configNXDN.getNoiseGain());
             getJmbeToneGainSlider().setValue(configNXDN.getToneGain());
+            updateTrunkingControls(true);
         }
         else
         {
+            getChannelModeComboBox().setValue(NXDNChannelMode.TRUNKED);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
+            getEncodingComboBox().getSelectionModel().select(Encoding.UTF8);
             getChannelRotationDelaySpinner().getValueFactory().setValue(200);
             getIgnoreDataCallsToggle().setSelected(false);
             getIgnoreEncryptedCallsToggle().setSelected(false);
+            getRecordUnknownSimplexCallsToggle().setSelected(false);
             getJmbeAGCButton().setSelected(false);
             getJmbeNoiseGainSlider().setValue(0);
             getJmbeToneGainSlider().setValue(0);
+            updateTrunkingControls(false);
         }
     }
 
@@ -708,8 +790,14 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             config = new DecodeConfigNXDN(TransmissionMode.M4800);
         }
 
-        TransmissionMode selected = (TransmissionMode)getTransmissionModeButton().getToggleGroup().selectedToggleProperty().get().getUserData();
-        config.setTransmissionMode(selected);
+        config.setChannelMode(getChannelModeComboBox().getValue());
+        config.setEncoding(getEncodingComboBox().getSelectionModel().getSelectedItem());
+        ToggleButton selectedToggle = (ToggleButton)getTransmissionModeButton().getToggleGroup().getSelectedToggle();
+
+        if(selectedToggle != null && selectedToggle.getUserData() instanceof TransmissionMode selected)
+        {
+            config.setTransmissionMode(selected);
+        }
 
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         
@@ -723,6 +811,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         config.setChannelMap(channelFrequencies);
         config.setIgnoreDataCalls(getIgnoreDataCallsToggle().isSelected());
         config.setIgnoreEncryptedCalls(getIgnoreEncryptedCallsToggle().isSelected());
+        config.setRecordUnknownSimplexCalls(getRecordUnknownSimplexCallsToggle().isSelected());
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
         config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
         config.setToneGain((float)getJmbeToneGainSlider().getValue());

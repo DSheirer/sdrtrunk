@@ -75,7 +75,7 @@ public class CTCSSDetector
      */
     public CTCSSDetector(List<CTCSSCode> targetCodes)
     {
-        mTargetCodes = targetCodes;
+        mTargetCodes = targetCodes != null ? List.copyOf(targetCodes) : List.of();
 
         // Detect all codes including one on each end of the spectrum (DETECTING_CODES)
         // We find the strongest tone across all frequencies, then check if it's in our allowed set.
@@ -110,7 +110,7 @@ public class CTCSSDetector
      */
     public CTCSSMessage process(float[] samples)
     {
-        CTCSSMessage ctcssMessage = new CTCSSMessage(mTargetCodes.getFirst());
+        CTCSSMessage ctcssMessage = new CTCSSMessage(mTargetCodes.isEmpty() ? null : mTargetCodes.getFirst());
         double[] distribution = new double[mDetectingFrequencies.length];
         double maxPower = 0;
         int maxIndex = -1;
@@ -209,7 +209,7 @@ public class CTCSSDetector
     {
         if (mMuted)
         {
-            if (newCode != null && mTargetCodes.contains(newCode))
+            if (isAccepted(newCode))
             {
                 if (mOpenCounter >= OPEN_THRESHOLD_COUNT)
                 {
@@ -278,7 +278,7 @@ public class CTCSSDetector
         }
         else    // unmuted and call is ongoing
         {
-            if (newCode != null && mTargetCodes.contains(newCode))
+            if (isAccepted(newCode))
             {
                 // all is good, call continues
                 mCloseCounter = 0;
@@ -321,6 +321,14 @@ public class CTCSSDetector
     }
 
     /**
+     * An empty target list is tone-search mode and accepts any standard detected tone.
+     */
+    private boolean isAccepted(CTCSSCode code)
+    {
+        return code != null && (mTargetCodes.isEmpty() || mTargetCodes.contains(code));
+    }
+
+    /**
      * Resets the detector state. Called when the noise squelch closes
      */
     public void reset()
@@ -333,4 +341,3 @@ public class CTCSSDetector
     }
 
 }
-

@@ -1,0 +1,689 @@
+.recordings-library,
+.recordings-admin {
+  min-width: 0;
+}
+
+.recordings-browser {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.recordings-results-panel {
+  min-width: 0;
+}
+
+.recordings-search-panel {
+  position: relative;
+  z-index: 5;
+  overflow: visible;
+}
+
+.recordings-search {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.recordings-admin-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.recordings-search-primary {
+  display: grid;
+  grid-template-columns: minmax(170px, 245px) minmax(0, 1fr) max-content;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.recordings-search-primary > .recordings-field {
+  min-width: 0;
+}
+
+.recordings-filter-count {
+  margin-left: var(--space-1);
+}
+
+.recordings-field input,
+.recordings-field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.recordings-field {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recordings-custom-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.recordings-search-advanced {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-3);
+}
+
+.recordings-clear-filters {
+  margin-top: var(--space-3);
+}
+
+.recordings-search-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.recordings-autocomplete {
+  position: relative;
+  min-width: 0;
+}
+
+.recordings-suggestions:not([hidden]) {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  display: block;
+  width: min(520px, calc(100vw - 2 * var(--space-4)));
+  max-height: min(340px, 50dvh);
+  overflow: auto;
+}
+
+.recordings-suggestion-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.recordings-suggestion-heading strong {
+  color: var(--ink);
+}
+
+.recordings-suggestion {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.recordings-suggestion + .recordings-suggestion {
+  margin-top: var(--space-1);
+}
+
+.recordings-suggestion-kind {
+  padding-top: 2px;
+  color: var(--accent);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-heading);
+  text-transform: uppercase;
+}
+
+.recordings-suggestion-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.recordings-suggestion-copy small {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.recordings-suggestion-feedback {
+  padding: var(--space-2);
+}
+
+.recordings-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.recordings-search-actions {
+  align-self: end;
+  flex-wrap: nowrap;
+}
+
+.recordings-mode-notice {
+  margin: 0 0 var(--space-3);
+}
+
+.recordings-library-empty {
+  min-height: 260px;
+}
+
+.recordings-empty-footnote {
+  font-size: var(--font-size-meta);
+}
+
+.recordings-selected-filters:not(:empty) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.recordings-selected-filters button {
+  min-height: var(--control-height-compact);
+}
+
+.recordings-results-body {
+  min-width: 0;
+}
+
+.recordings-shared:not(:empty) {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.recordings-shared-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+.recordings-shared-info {
+  margin-left: auto;
+}
+
+.recordings-shared-overline {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+.recordings-shared-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-3) 0 0;
+}
+.recordings-shared-fact {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(90px, 130px) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+.recordings-shared-fact dt {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+.recordings-shared-fact dd {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.recordings-selected {
+  margin: var(--space-3) var(--space-4);
+}
+
+.recordings-result-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.recordings-result-count[hidden] {
+  display: none;
+}
+
+.recordings-page-selection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.recordings-result-status:not(:empty) {
+  padding: var(--space-3) var(--space-4);
+}
+
+.recordings-call {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(84px, 110px) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  padding-right: calc(var(--space-4) + var(--icon-action-size));
+  border-bottom: 1px solid var(--table-rule);
+}
+
+.recordings-call:not(:has(.recordings-call-select)) {
+  grid-template-columns: minmax(84px, 110px) minmax(0, 1fr);
+}
+
+.recordings-call:last-child {
+  border-bottom: 0;
+}
+
+.recordings-call:hover {
+  background: var(--table-hover);
+}
+
+.recordings-call-time,
+.recordings-call-main {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.recordings-call-time > span,
+.recordings-call-id,
+.recordings-call-source,
+.recordings-call-meta {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.recordings-call-title {
+  width: fit-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
+  font-size: var(--font-size-body);
+}
+
+.recordings-call-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.recordings-call-heading .recordings-call-id {
+  flex: 0 0 auto;
+}
+.recordings-call-context.recordings-context-system {
+  max-width: 28ch;
+}
+.recordings-call-context.recordings-context-source {
+  max-width: 24ch;
+}
+.recordings-call-context.recordings-context-site {
+  max-width: 22ch;
+}
+.recordings-call-context + .recordings-call-context::before {
+  content: '·';
+  margin-right: var(--space-2);
+}
+
+.recordings-call-id {
+  font-weight: var(--font-weight-medium);
+}
+
+.recordings-call-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  gap: var(--space-3);
+}
+
+.recordings-card-play {
+  inset: 0;
+}
+.recordings-play-glyph {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-4);
+}
+.recordings-call-info {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-1);
+  z-index: 2;
+}
+.recordings-call-select, .recordings-call a {
+  position: relative;
+  z-index: 2;
+}
+.recordings-call-title {
+  font-weight: var(--font-weight-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recordings-call-context {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recordings-transcript-preview {
+  margin: var(--space-1) 0 0;
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.recordings-choice-options {
+  display: grid;
+  gap: var(--space-2);
+}
+.recordings-choice-option {
+  display: grid;
+  text-align: left;
+  justify-items: start;
+  gap: var(--space-1);
+  white-space: normal;
+}
+.read-only-modal.recordings-playback-modal {
+  width: min(100%, 480px);
+}
+
+.recordings-detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.recordings-detail-heading {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recordings-detail-heading h3 {
+  margin: 0;
+}
+
+.recordings-detail-heading span {
+  color: var(--muted);
+}
+
+.recordings-detail-facts {
+  gap: var(--space-2) var(--space-4);
+}
+
+.recordings-transcript {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.recordings-transcript h4,
+.recordings-transcript p {
+  margin: 0;
+}
+
+.recordings-transcript-status {
+  color: var(--muted);
+}
+
+.recordings-transcript-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.read-only-modal.recordings-detail-modal {
+  max-width: min(680px, calc(100vw - 2 * var(--modal-viewport-gap)));
+}
+
+.recordings-mode-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.recordings-mode-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-1) var(--space-2);
+  align-items: start;
+}
+
+.recordings-mode-choice > span {
+  grid-column: 2;
+  color: var(--muted);
+}
+
+.recordings-managed-folder,
+.recordings-admin-note {
+  margin: 0;
+}
+
+.recordings-transcription-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.recordings-transcription-wide {
+  grid-column: 1 / -1;
+}
+
+.recordings-transcription-progress {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.recordings-transcription-counts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.recordings-transcription-worker {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.recordings-transcription-worker-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.recordings-transcription-error {
+  display: grid;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.recordings-transcription-error p {
+  margin: 0;
+}
+
+.recordings-catalog-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.recordings-catalog-count {
+  min-width: 0;
+}
+
+.recordings-admin-note {
+  color: var(--muted);
+}
+
+.recordings-admin-body > button {
+  justify-self: start;
+}
+
+.recordings-admin-facts {
+  padding: 0;
+}
+
+.recordings-maintenance {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-3) 0 var(--space-4);
+}
+
+.recordings-maintenance-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.recordings-maintenance-warning {
+  margin: 0 0 var(--space-4);
+}
+
+.recordings-maintenance-note {
+  padding: 0 0 var(--space-4);
+}
+
+.recordings-admin-dialog-body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.recordings-admin-dialog-body > p {
+  margin: 0;
+}
+
+.recordings-form-status:empty {
+  display: none;
+}
+
+@media (min-width: 1151px) {
+  .recordings-browser {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  }
+
+  .recordings-search-primary,
+  .recordings-search-fields,
+  .recordings-custom-dates {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recordings-search-actions {
+    flex-wrap: wrap;
+  }
+
+  .recordings-suggestions:not([hidden]) {
+    width: 100%;
+  }
+
+  .recordings-suggestion {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}
+
+@media (max-width: 1150px) {
+  .recordings-search-primary {
+    grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) max-content;
+  }
+
+  .recordings-search-actions {
+    grid-column: auto;
+  }
+
+  .recordings-search-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 700px) {
+  .recordings-shared-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recordings-search-fields,
+  .recordings-custom-dates,
+  .recordings-mode-choices,
+  .recordings-transcription-fields,
+  .recordings-catalog-summary,
+  .recordings-maintenance-row,
+  .recordings-maintenance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recordings-search-primary {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+
+  .recordings-query-field {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .recordings-search-primary > .recordings-field:not(.recordings-query-field) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .recordings-search-actions {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .recordings-search-advanced {
+    display: none;
+  }
+
+  .recordings-search,
+  .recordings-admin-body {
+    padding: var(--space-3);
+  }
+
+  .recordings-call,
+  .recordings-call:not(:has(.recordings-call-select)) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-2);
+    margin: var(--space-2);
+    padding: var(--space-3);
+    padding-right: calc(var(--space-3) + var(--icon-action-size));
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+  }
+
+  .recordings-call:not(:has(.recordings-call-select)) .recordings-call-time,
+  .recordings-call:not(:has(.recordings-call-select)) .recordings-call-main {
+    grid-column: 1 / -1;
+  }
+
+  .recordings-call-time {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .recordings-call-main {
+    grid-column: 1 / -1;
+  }
+
+
+}
+
+@media (max-width: 340px) {
+  .recordings-search-primary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recordings-search-actions {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}

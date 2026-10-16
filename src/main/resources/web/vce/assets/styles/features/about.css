@@ -1,0 +1,30 @@
+/* Credits and licensing page. */
+.credits-copy {
+  max-width: 880px;
+  padding: var(--space-3) var(--space-4);
+  line-height: var(--line-height-body);
+}
+
+.credits-copy p {
+  margin: 0 0 var(--space-3);
+}
+
+.credits-copy p:last-child {
+  margin-bottom: 0;
+}
+
+.credits-list {
+  columns: 2;
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+.credits-list li {
+  margin: var(--space-1) 0;
+}
+
+@media (max-width: 560px) {
+  .credits-list {
+    columns: 1;
+  }
+}

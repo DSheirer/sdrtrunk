@@ -26,8 +26,10 @@ import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
@@ -46,6 +48,9 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
     private StringProperty mApiKey = new SimpleStringProperty();
     private BooleanProperty mTestEnabled= new SimpleBooleanProperty(false);
     private IntegerProperty mTestInterval = new SimpleIntegerProperty(15);
+    private ObjectProperty<TalkerAliasSource> mTalkerAliasSource =
+        new SimpleObjectProperty<>(TalkerAliasSource.OVER_THE_AIR);
+    private BooleanProperty mStoreTalkerAliases = new SimpleBooleanProperty(false);
 
     /**
      * Constructor for faster jackson
@@ -160,11 +165,50 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
         mTestInterval.set(interval);
     }
 
+    /**
+     * Selects which alias is uploaded in the Broadcastify Calls {@code srcId_alias} field.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "talker_alias_source")
+    public TalkerAliasSource getTalkerAliasSource()
+    {
+        return mTalkerAliasSource.get();
+    }
+
+    public void setTalkerAliasSource(TalkerAliasSource source)
+    {
+        mTalkerAliasSource.set(source != null ? source : TalkerAliasSource.OVER_THE_AIR);
+    }
+
+    /**
+     * Indicates if received OTA talker aliases should create or update radio aliases in the active playlist alias list.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "store_talker_aliases")
+    public boolean isStoreTalkerAliases()
+    {
+        return mStoreTalkerAliases.get();
+    }
+
+    public void setStoreTalkerAliases(boolean store)
+    {
+        mStoreTalkerAliases.set(store);
+    }
+
     @Override
     public BroadcastConfiguration copyOf()
     {
         BroadcastifyCallConfiguration copy = new BroadcastifyCallConfiguration();
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setDelay(getDelay());
+        copy.setMaximumRecordingAge(getMaximumRecordingAge());
+        copy.setEnabled(isEnabled());
         copy.setSystemID(getSystemID());
+        copy.setApiKey(getApiKey());
+        copy.setTestEnabled(isTestEnabled());
+        copy.setTestInterval(getTestInterval());
+        copy.setTalkerAliasSource(getTalkerAliasSource());
+        copy.setStoreTalkerAliases(isStoreTalkerAliases());
         return copy;
     }
 }

@@ -18,8 +18,13 @@
  */
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.audio.broadcast.remote.RemoteApiBroadcaster;
+import io.github.dsheirer.audio.broadcast.remote.RemoteApiConfiguration;
+import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
+import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
@@ -182,6 +187,35 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     }
 
     /**
+     * Creates a disabled clone of a streaming destination, assigns it a unique name, and duplicates all alias routing
+     * selections that referenced the original destination.
+     */
+    public ConfiguredBroadcast cloneBroadcastConfiguration(BroadcastConfiguration configuration)
+    {
+        if(configuration == null)
+        {
+            return null;
+        }
+
+        String sourceName = configuration.getName();
+        BroadcastConfiguration copy = configuration.copyOfDisabled();
+        ConfiguredBroadcast cloned = addBroadcastConfiguration(copy);
+
+        if(cloned != null && mAliasModel != null && sourceName != null && copy.getName() != null)
+        {
+            for(Alias alias: mAliasModel.getAliases())
+            {
+                if(alias.hasBroadcastChannel(sourceName) && !alias.hasBroadcastChannel(copy.getName()))
+                {
+                    alias.addAliasID(new BroadcastChannel(copy.getName()));
+                }
+            }
+        }
+
+        return cloned;
+    }
+
+    /**
      * Updates the configuration's name so that it is unique among all other broadcast configurations
      *
      * @param configuration
@@ -276,14 +310,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         {
             int index = mConfiguredBroadcasts.indexOf(configuredBroadcast);
 
+            deleteBroadcaster(configuredBroadcast, false);
             mConfiguredBroadcasts.remove(configuredBroadcast);
-
-            if(configuredBroadcast.hasAudioBroadcaster())
-            {
-                mBroadcasterMap.remove(broadcastConfiguration.getId());
-                configuredBroadcast.getAudioBroadcaster().stop();;
-                configuredBroadcast.setAudioBroadcaster(null);
-            }
 
             process(new BroadcastEvent(broadcastConfiguration, BroadcastEvent.Event.CONFIGURATION_DELETE));
 
@@ -342,7 +370,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         {
             if(configuredBroadcast.hasAudioBroadcaster())
             {
-                deleteBroadcaster(configuredBroadcast);
+                deleteBroadcaster(configuredBroadcast, true);
             }
 
             final AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration,
@@ -372,6 +400,15 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
      */
     private void deleteBroadcaster(ConfiguredBroadcast configuredBroadcast)
     {
+        deleteBroadcaster(configuredBroadcast, false);
+    }
+
+    /**
+     * Stops and removes a broadcaster.  Remote API calls are retained while a destination is edited, disabled, or
+     * restarted so that configuration changes cannot discard completed calls that have not uploaded yet.
+     */
+    private void deleteBroadcaster(ConfiguredBroadcast configuredBroadcast, boolean preserveRemoteQueue)
+    {
         if(configuredBroadcast != null && configuredBroadcast.hasAudioBroadcaster())
         {
             mBroadcasterMap.remove(configuredBroadcast.getBroadcastConfiguration().getId());
@@ -379,9 +416,19 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             AbstractAudioBroadcaster broadcaster = configuredBroadcast.getAudioBroadcaster();
             configuredBroadcast.setAudioBroadcaster(null);
 
-            broadcaster.stop();
+            if(preserveRemoteQueue && broadcaster instanceof RemoteApiBroadcaster remoteApiBroadcaster)
+            {
+                remoteApiBroadcaster.stopPreservingQueue();
+            }
+            else
+            {
+                broadcaster.stop();
+            }
             broadcaster.removeListener();
-            broadcaster.dispose();
+            if(!(preserveRemoteQueue && broadcaster instanceof RemoteApiBroadcaster))
+            {
+                broadcaster.dispose();
+            }
 
             int index = mConfiguredBroadcasts.indexOf(configuredBroadcast);
 
@@ -489,7 +536,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     ConfiguredBroadcast configuredBroadcast = getConfiguredBroadcast(broadcastConfiguration);
 
                     //Delete the broadcaster if it exists
-                    deleteBroadcaster(configuredBroadcast);
+                    deleteBroadcaster(configuredBroadcast, true);
 
                     //If the configuration is enabled, create a new broadcaster after a brief delay
                     if(broadcastConfiguration.isEnabled())
@@ -504,6 +551,11 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     break;
                 case CONFIGURATION_DELETE:
                     deleteBroadcaster(getConfiguredBroadcast(broadcastEvent.getBroadcastConfiguration()));
+                    if(broadcastEvent.getBroadcastConfiguration() instanceof RemoteApiConfiguration)
+                    {
+                        RemoteApiBroadcaster.discardPreservedQueue(
+                            broadcastEvent.getBroadcastConfiguration().getId());
+                    }
                     break;
             }
         }
@@ -606,6 +658,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                             if(configuredBroadcast.hasAudioBroadcaster())
                             {
                                 return configuredBroadcast.getAudioBroadcaster().getAudioQueueSize();
+                            }
+                            else if(configuredBroadcast.getBroadcastConfiguration() instanceof
+                                RdioScannerConfiguration rdio)
+                            {
+                                return RdioScannerBroadcaster.getPersistedQueueSize(rdio,
+                                    mUserPreferences.getDirectoryPreference().getDirectoryStreaming());
                             }
                             break;
                         case COLUMN_BROADCASTER_STREAMED_COUNT:

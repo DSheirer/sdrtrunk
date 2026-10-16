@@ -1,0 +1,1065 @@
+.tuners-workspace {
+  display: grid;
+  grid-template-columns: minmax(264px, 310px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.tuners-workspace > section,
+.tuners-main,
+.tuners-controls,
+.tuners-main > section,
+.tuners-controls > section {
+  min-width: 0;
+}
+
+.tuners-main {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.tuners-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.tuners-controls[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tuners-controls[data-count="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tuners-controls[data-count="0"] {
+  display: none;
+}
+
+.tuners-receivers,
+.tuners-main > section,
+.tuners-controls > section {
+  margin-bottom: 0;
+}
+
+.tuners-selected-section {
+  overflow: visible;
+}
+
+.tuners-receivers {
+  max-height: calc(100dvh - 150px);
+  position: sticky;
+  top: var(--space-3);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.tuners-sidebar-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.tuners-main > section[hidden],
+.tuners-controls > section[hidden],
+.tuners-controls[hidden],
+.tuners-spectrum[hidden],
+.tuners-readouts[hidden],
+.tuners-recovery[hidden],
+.tuners-messages[hidden],
+.tuners-setting-actions[hidden],
+.tuners-common-details[hidden] {
+  display: none;
+}
+
+.tuners-receivers > .section-title {
+  flex-wrap: wrap;
+}
+
+.tuners-receivers .section-title-actions {
+  margin-left: auto;
+}
+
+.tuners-sidebar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.tuners-sidebar-count {
+  color: var(--muted);
+  font-size: var(--font-size-label);
+}
+
+.tuners-list {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  overflow-y: auto;
+}
+
+.tuners-list-item {
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.tuners-list-item-main {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.tuners-list-item-main svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.tuners-list-item-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.tuners-list-item-name,
+.tuners-list-item-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tuners-list-item-meta {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-control);
+}
+
+.tuners-list-item-indicators {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.tuners-details {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+}
+
+.tuners-details > :is(.loading, .empty, .error) {
+  padding: var(--space-4);
+}
+
+.tuners-selected-header {
+  min-width: 0;
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+
+.tuners-detail-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tuners-detail-heading h2 {
+  margin: 0;
+  font-size: var(--font-size-section-title);
+  overflow-wrap: anywhere;
+}
+
+.tuners-detail-identity {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tuners-detail-identity small {
+  color: var(--muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-normal);
+}
+
+.tuners-header-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tuners-mode {
+  max-width: 100%;
+  flex-wrap: nowrap;
+}
+
+.tuners-mode > button {
+  min-width: 82px;
+}
+
+.tuners-mode > button[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+}
+
+.tuners-center-host {
+  min-width: 0;
+}
+
+.tuners-readouts {
+  --ui-summary-number-size: var(--font-size-title-small);
+  display: grid;
+  grid-template-columns: minmax(110px, .72fr) minmax(150px, 1fr) minmax(255px, 1.35fr) minmax(145px, .85fr);
+  border-top: 1px solid var(--line);
+}
+
+.tuners-readouts[data-count="3"] {
+  grid-template-columns: minmax(110px, .72fr) minmax(150px, 1fr) minmax(255px, 1.35fr);
+}
+
+.tuners-readouts[data-count="3"] .tuners-readout:nth-child(3) {
+  border-right: 0;
+}
+
+.tuners-readout {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-right: 1px solid var(--line);
+}
+
+.tuners-readout:last-child {
+  border-right: 0;
+}
+
+.tuners-readout[hidden] {
+  display: none;
+}
+
+.tuners-readout-label {
+  color: var(--muted);
+  font-size: var(--font-size-label);
+  line-height: 1.2;
+}
+
+.tuners-readout-value {
+  min-width: 0;
+  font-family: inherit;
+  font-size: var(--ui-summary-number-size);
+  font-weight: var(--font-weight-heading);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.tuners-readout select {
+  width: 100%;
+  min-height: var(--control-height-compact);
+}
+
+.tuners-readout .tuners-setting {
+  padding: 0;
+}
+
+.tuners-common-sample label > span:first-child {
+  color: var(--muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-normal);
+}
+
+.tuners-center-value {
+  min-width: 0;
+  min-height: var(--control-height-compact);
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--interactive-border);
+  border-radius: var(--radius-control);
+}
+
+.tuners-center-control-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tuners-center-value .tuners-frequency-digits {
+  flex: 1 1 auto;
+}
+
+.tuners-center-frequency[aria-disabled="true"] .tuners-center-value {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+.tuners-center-frequency[aria-disabled="true"] .tuners-frequency-digit {
+  color: var(--muted);
+}
+
+.tuners-center-help {
+  flex: 0 0 auto;
+}
+
+.tuners-readout .tuners-frequency-digit {
+  width: clamp(18px, 1.45vw, 24px);
+  height: var(--control-height-compact);
+}
+
+.tuners-readout .tuners-frequency-unit {
+  padding-bottom: 4px;
+}
+
+.tuners-readout .tuners-center-frequency.is-typing .tuners-center-value {
+  border-color: var(--focus-ring);
+}
+
+.tuners-readout .tuners-center-frequency > .tuners-setting-message:not(:empty) {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 2px);
+  left: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  border-radius: var(--radius-compact);
+}
+
+.tuners-center-host[hidden] {
+  display: none;
+}
+
+.tuners-center-frequency {
+  min-width: 0;
+  width: 100%;
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tuners-center-frequency:focus-visible {
+  outline: 0;
+}
+
+.tuners-center-frequency:focus-visible .tuners-center-value {
+  border-color: var(--focus-ring);
+  box-shadow: var(--shadow-focus);
+}
+
+.tuners-frequency-digits {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.tuners-frequency-digit {
+  width: clamp(22px, 2vw, 30px);
+  height: 44px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  font-size: var(--ui-summary-number-size);
+  font-weight: var(--font-weight-heading);
+  line-height: 1;
+  border-radius: var(--radius-compact);
+}
+
+.tuners-frequency-digit.is-active {
+  background: var(--accent-soft);
+}
+
+.tuners-frequency-step {
+  width: 100%;
+  height: 50%;
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.tuners-frequency-step::after {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--font-size-meta);
+  opacity: .45;
+}
+
+.tuners-frequency-step-up {
+  top: 0;
+}
+
+.tuners-frequency-step-up::after {
+  content: "▲";
+  top: 2px;
+}
+
+.tuners-frequency-step-down {
+  bottom: 0;
+}
+
+.tuners-frequency-step-down::after {
+  content: "▼";
+  bottom: 2px;
+}
+
+.tuners-frequency-step:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
+}
+
+.tuners-center-frequency:hover .tuners-frequency-step:not(:disabled),
+.tuners-center-frequency:focus-within .tuners-frequency-step:not(:disabled),
+.tuners-frequency-digit.is-active .tuners-frequency-step:not(:disabled) {
+  opacity: .7;
+}
+
+.tuners-frequency-step:disabled {
+  display: none;
+}
+
+.tuners-frequency-decimal {
+  align-self: end;
+  padding: 0 2px 6px;
+  font-size: var(--ui-summary-number-size);
+  font-weight: var(--font-weight-heading);
+}
+
+.tuners-frequency-unit {
+  align-self: end;
+  padding: 0 0 7px var(--space-1);
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.tuners-center-lock {
+  min-width: 0;
+}
+
+.tuners-center-lock .tuners-setting {
+  padding: 0;
+  border: 0;
+}
+
+.tuners-center-lock-field {
+  gap: var(--space-2);
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.tuners-detail-message {
+  margin: 0 var(--space-4) var(--space-4);
+}
+
+.tuners-messages {
+  min-width: 0;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.tuners-recovery:empty,
+.tuners-messages:empty {
+  display: none;
+}
+
+.tuners-recovery {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 var(--space-4) var(--space-4);
+  padding: var(--space-3);
+  color: var(--warning-ink);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-control);
+}
+
+.tuners-recovery-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tuners-messages {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tuners-messages .tuners-detail-message {
+  margin: 0;
+}
+
+.tuners-spectrum {
+  min-width: 0;
+  display: grid;
+  padding: 0;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-basic {
+  min-height: 0;
+  grid-template-rows: auto minmax(470px, 1fr);
+  gap: 0;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-basic .tuner-spectrum-canvas {
+  cursor: default;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-basic.tuner-spectrum-layout-cursor .tuner-spectrum-canvas {
+  cursor: crosshair;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-basic.tuner-spectrum-layout-viewport.zoomed .tuner-spectrum-canvas {
+  cursor: grab;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-basic.tuner-spectrum-layout-viewport .tuner-spectrum-canvas.dragging {
+  cursor: grabbing;
+}
+
+.tuners-spectrum .tuner-spectrum-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 0 var(--space-3);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tuners-spectrum .tuner-spectrum-selection {
+  min-height: calc(var(--control-height-comfortable) + var(--space-4));
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+}
+
+.tuners-spectrum-title {
+  font-size: var(--font-size-section-title);
+}
+
+.tuners-spectrum .tuner-spectrum-quality-control {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.tuners-spectrum .tuner-spectrum-quality-control > button {
+  min-width: 68px;
+}
+
+.tuners-spectrum .tuner-spectrum-toolbar > .tuner-spectrum-zoom-actions {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.tuners-spectrum .tuner-spectrum-toolbar-actions {
+  grid-column: 4;
+  grid-row: 1;
+  margin-right: var(--space-4);
+}
+
+.tuners-spectrum .tuner-spectrum-layout-basic .tuner-spectrum-visual-window {
+  grid-template-rows: minmax(105px, .23fr) minmax(330px, .77fr);
+  margin: var(--space-4);
+}
+
+.tuners-spectrum .tuner-spectrum-layout-inline-options .tuner-spectrum-options {
+  position: static;
+  z-index: auto;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-inline-options .tuner-spectrum-options-summary {
+  width: fit-content;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-inline-options .tuner-spectrum-options[open] .tuner-spectrum-options-panel {
+  width: 100%;
+  max-height: none;
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: var(--space-2);
+  overflow: visible;
+  box-shadow: none;
+}
+
+.tuners-spectrum .tuner-spectrum-layout-inline-options .tuner-spectrum-options-header {
+  grid-column: 1 / -1;
+  position: static;
+}
+
+.tuners-selected-section.tuners-signal-idle .tuner-spectrum-layout-basic {
+  grid-template-rows: auto minmax(250px, 1fr);
+}
+
+.tuners-selected-section.tuners-signal-idle .tuner-spectrum-layout-basic .tuner-spectrum-visual-window {
+  grid-template-rows: minmax(90px, .35fr) minmax(160px, .65fr);
+  max-height: 270px;
+}
+
+.tuners-setting-group-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+}
+
+.tuners-setting {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+}
+
+.tuners-setting-control-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tuners-setting-control-row > :first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.tuners-setting-control-row > .tuners-setting-help {
+  flex: 0 0 auto;
+}
+
+.tuners-setting-control-row-aligned {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+}
+
+.tuners-setting-control-row-aligned > :first-child {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  grid-template-rows: subgrid;
+}
+
+.tuners-setting-control-row-aligned > .tuners-setting-help {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+}
+
+.tuners-setting > :first-child {
+  min-width: 0;
+}
+
+.tuners-setting-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.tuners-setting-actions {
+  justify-content: flex-start;
+}
+
+.tuners-setting-message:not(:empty) {
+  color: var(--danger);
+  font-size: var(--font-size-meta);
+}
+
+.tuners-gain-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tuners-gain-field > span:first-child {
+  grid-column: 1 / -1;
+}
+
+.tuners-gain-slider {
+  width: 100%;
+  min-width: 0;
+}
+
+.tuners-gain-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+}
+
+.tuners-common-content {
+  display: grid;
+}
+
+.tuners-common-primary {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tuners-common-primary [data-setting-id="automatic_ppm"] {
+  gap: var(--space-2);
+}
+
+.tuners-auto-ppm-field {
+  display: contents;
+}
+
+.tuners-auto-ppm-copy strong {
+  font-weight: inherit;
+}
+
+.tuners-auto-ppm-control {
+  min-height: var(--control-height-comfortable);
+  justify-content: flex-end;
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--interactive-border);
+  border-radius: var(--radius-control);
+}
+
+.tuners-common-details {
+  border-top: 1px solid var(--line);
+}
+
+.tuners-common-details > summary {
+  padding: var(--space-3) var(--space-4);
+  color: var(--muted);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.tuners-common-details[open] > summary {
+  color: var(--ink);
+}
+
+.tuners-common-more {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.tuners-common-limits:empty,
+.tuners-common-sample:empty {
+  display: none;
+}
+
+.tuners-common-limits {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 0 var(--space-3);
+}
+
+.tuners-common-sample {
+  min-width: 0;
+  display: grid;
+}
+
+.tuners-common-limits .tuners-setting-action {
+  white-space: nowrap;
+}
+
+.tuners-recordings-body,
+.tuners-recordings-catalog,
+.tuners-recordings-form,
+.tuners-recordings-files,
+.tuners-channel-list {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tuners-recordings-hint {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tuners-recordings-files {
+  min-inline-size: 0;
+  max-height: min(380px, 45dvh);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  border: 0;
+}
+
+.tuners-channel-list {
+  max-height: min(520px, 60dvh);
+  overflow: auto;
+}
+
+.tuners-channel-group,
+.tuners-channel-group-heading {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tuners-channel-group {
+  padding: var(--space-3);
+}
+
+.tuners-channel-group-line {
+  padding-inline-start: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.tuners-recordings-file {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.tuners-recordings-file-copy {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.tuners-recordings-modal {
+  width: min(var(--modal-size-large), 96vw);
+}
+
+@media (max-width: 1280px) {
+  .tuners-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tuners-readouts,
+  .tuners-readouts[data-count="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tuners-readout:nth-child(2) {
+    border-right: 0;
+  }
+
+  .tuners-readout:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tuners-readout:nth-child(3) {
+    grid-column: 1 / -1;
+    border-right: 0;
+  }
+
+  .tuners-readout:nth-child(4) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 1120px) {
+  .tuners-spectrum .tuner-spectrum-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .tuners-spectrum .tuner-spectrum-quality-control {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--line);
+  }
+
+  .tuners-spectrum .tuner-spectrum-toolbar > .tuner-spectrum-zoom-actions {
+    grid-column: 2;
+  }
+
+  .tuners-spectrum .tuner-spectrum-toolbar-actions {
+    grid-column: 3;
+  }
+}
+
+@media (max-width: 900px) {
+  .tuners-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tuners-controls {
+    grid-column: 1;
+  }
+
+  .tuners-receivers {
+    max-height: none;
+    position: static;
+  }
+
+  .tuners-list {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+  }
+
+  .tuners-list-item {
+    flex: 0 0 min(340px, 84vw);
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .tuners-selected-header {
+    align-items: stretch;
+  }
+
+  .tuners-header-actions {
+    width: 100%;
+  }
+
+  .tuners-mode {
+    min-width: 0;
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .tuners-mode > button {
+    min-width: 0;
+    flex: 1;
+    padding-inline: var(--space-2);
+  }
+
+  .tuners-controls,
+  .tuners-controls[data-count="2"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tuners-readout {
+    padding-inline: var(--space-3);
+  }
+
+  .tuners-spectrum .tuner-spectrum-selection {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tuners-spectrum .tuner-spectrum-quality-control {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    padding-right: 0;
+    border-top: 0;
+  }
+
+  .tuners-spectrum .tuner-spectrum-toolbar > .tuner-spectrum-zoom-actions {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .tuners-spectrum .tuner-spectrum-toolbar-actions {
+    grid-row: 2;
+    width: auto;
+    display: flex;
+    margin-right: var(--space-3);
+  }
+
+  .tuners-spectrum .tuner-spectrum-options[open] .tuner-spectrum-options-panel {
+    width: min(430px, calc(100vw - 32px));
+    position: absolute;
+  }
+
+  .tuners-frequency-digit {
+    width: clamp(20px, 6vw, 25px);
+    height: 44px;
+  }
+
+  .tuners-frequency-decimal {
+    padding-bottom: 6px;
+  }
+
+  .tuners-frequency-unit {
+    padding-left: var(--space-1);
+    font-size: var(--font-size-meta);
+  }
+
+  .tuners-spectrum .tuner-spectrum-layout-inline-options .tuner-spectrum-options[open] .tuner-spectrum-options-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tuners-spectrum .tuner-spectrum-layout-basic {
+    grid-template-rows: auto minmax(390px, 1fr);
+  }
+
+  .tuners-selected-section.tuners-signal-idle .tuner-spectrum-layout-basic {
+    grid-template-rows: auto minmax(250px, 270px);
+  }
+
+  .tuners-spectrum .tuner-spectrum-layout-basic .tuner-spectrum-visual-window {
+    grid-template-rows: minmax(90px, .25fr) minmax(270px, .75fr);
+  }
+
+  .tuners-common-limits .tuners-setting-action {
+    justify-self: start;
+  }
+
+  .tuners-recordings-modal {
+    width: 100vw;
+  }
+
+}
+
+@media (max-width: 390px) {
+  .tuners-readouts,
+  .tuners-readouts[data-count="3"] {
+    grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  }
+
+  .tuners-readouts {
+    --ui-summary-number-size: var(--font-size-lead);
+  }
+
+  .tuners-spectrum .tuner-spectrum-quality-control > button {
+    min-width: 58px;
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (max-width: 360px) {
+  .tuners-readouts,
+  .tuners-readouts[data-count="3"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tuners-readout {
+    border-right: 0;
+  }
+}

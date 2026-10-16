@@ -64,6 +64,7 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.web.SdrTrunkWebServer;
 import java.awt.AWTException;
 import java.awt.Desktop;
 import java.awt.Dimension;
@@ -83,6 +84,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.prefs.Preferences;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
@@ -113,6 +115,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private static final String PREFERENCE_BROADCAST_STATUS_VISIBLE = "sdrtrunk.broadcast.status.visible";
     private static final String PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE = "sdrtrunk.now.playing.details.visible";
     private static final String PREFERENCE_RESOURCE_STATUS_VISIBLE = "sdrtrunk.resource.status.visible";
+    private static final String PREFERENCE_WEB_PASSWORD = "sdrtrunk.web.password";
+    private static final String PREFERENCE_WEB_ACCESS_TOKEN = "sdrtrunk.web.access.token";
     private static final String BASE_WINDOW_NAME = "sdrtrunk.main.window";
     private static final String CONTROLLER_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".control.panel";
     private static final String SPECTRAL_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".spectral.panel";
@@ -137,6 +141,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private TunerManager mTunerManager;
     private ApplicationLog mApplicationLog;
     private ResourceMonitor mResourceMonitor;
+    private SdrTrunkWebServer mWebServer;
+    private boolean mShutdown;
     private JFXPanel mResourceStatusPanel;
 
     private String mTitle;
@@ -163,6 +169,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         }
 
         mResourceMonitor = new ResourceMonitor(mUserPreferences);
+        mResourceMonitor.start();
 
         ThreadPool.logSettings();
 
@@ -185,6 +192,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, mIconModel);
 
         boolean headless = GraphicsEnvironment.isHeadless();
+        String webPassword = getOrCreateWebPassword(headless);
 
         mDiagnosticMonitor = new DiagnosticMonitor(mUserPreferences, mPlaylistManager.getChannelProcessingManager(),
                 mTunerManager, headless);
@@ -236,6 +244,32 @@ public class SDRTrunk implements Listener<TunerEvent>
         mTunerManager.getDiscoveredTunerModel().addListener(this);
 
         mPlaylistManager.init();
+
+        //The web interface is available alongside both the desktop GUI and headless operation.  It can be disabled
+        //explicitly for installations that do not want an HTTP listener.
+        boolean webEnabled = Boolean.parseBoolean(System.getProperty("sdrtrunk.web.enabled", "true"));
+        if(webEnabled)
+        {
+            try
+            {
+                mWebServer = new SdrTrunkWebServer(mPlaylistManager, mTunerManager, mResourceMonitor,
+                    mUserPreferences, webPassword);
+                mWebServer.start();
+                mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(
+                    mWebServer.getAudioSegmentListener());
+                mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(
+                    mWebServer.getDecodeEventListener());
+            }
+            catch(IOException e)
+            {
+                mLog.error("Unable to start sdrtrunk web interface", e);
+            }
+        }
+
+        if(headless)
+        {
+            Runtime.getRuntime().addShutdownHook(new Thread(this::processShutdown, "sdrtrunk-shutdown"));
+        }
 
         if(GraphicsEnvironment.isHeadless())
         {
@@ -292,6 +326,103 @@ public class SDRTrunk implements Listener<TunerEvent>
                 e.printStackTrace();
             }
         });
+    }
+
+    private String getOrCreateWebPassword(boolean headless)
+    {
+        String environmentToken = System.getenv("SDRTRUNK_WEB_PASSWORD");
+        if(environmentToken == null || environmentToken.isBlank())
+        {
+            environmentToken = System.getenv("SDRTRUNK_WEB_TOKEN");
+        }
+
+        if(environmentToken != null && !environmentToken.isBlank())
+        {
+            return environmentToken.trim();
+        }
+
+        String storedToken = mPreferences.get(PREFERENCE_WEB_PASSWORD, null);
+        if(storedToken == null || storedToken.isBlank())
+        {
+            storedToken = mPreferences.get(PREFERENCE_WEB_ACCESS_TOKEN, null);
+            if(storedToken != null && !storedToken.isBlank())
+            {
+                mPreferences.put(PREFERENCE_WEB_PASSWORD, storedToken);
+                mPreferences.remove(PREFERENCE_WEB_ACCESS_TOKEN);
+            }
+        }
+
+        if(storedToken != null && !storedToken.isBlank())
+        {
+            return storedToken;
+        }
+
+        String generatedToken = UUID.randomUUID().toString();
+
+        if(!headless)
+        {
+            String enteredToken = (String)JOptionPane.showInputDialog(mMainGui,
+                "Create a password for browsers connecting to the sdrtrunk web interface.",
+                "Web Console Password Setup", JOptionPane.QUESTION_MESSAGE, null, null, generatedToken);
+
+            if(enteredToken != null && !enteredToken.isBlank())
+            {
+                generatedToken = enteredToken.trim();
+            }
+        }
+
+        mPreferences.put(PREFERENCE_WEB_PASSWORD, generatedToken);
+        mPreferences.remove(PREFERENCE_WEB_ACCESS_TOKEN);
+
+        if(headless)
+        {
+            mLog.warn("Created first-run web console password: {}", generatedToken);
+            mLog.warn("Set SDRTRUNK_WEB_PASSWORD before launch to override the stored password");
+        }
+
+        return generatedToken;
+    }
+
+    private void editWebPassword()
+    {
+        String environmentToken = System.getenv("SDRTRUNK_WEB_PASSWORD");
+        String environmentName = "SDRTRUNK_WEB_PASSWORD";
+        if(environmentToken == null || environmentToken.isBlank())
+        {
+            environmentToken = System.getenv("SDRTRUNK_WEB_TOKEN");
+            environmentName = "SDRTRUNK_WEB_TOKEN";
+        }
+
+        if(environmentToken != null && !environmentToken.isBlank())
+        {
+            JOptionPane.showMessageDialog(mMainGui,
+                "The web password is currently controlled by the " + environmentName + " environment variable. " +
+                    "Remove or change that variable before launching sdrtrunk to use the saved GUI setting.",
+                "Web Console Password", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        String currentToken = mPreferences.get(PREFERENCE_WEB_PASSWORD,
+            mPreferences.get(PREFERENCE_WEB_ACCESS_TOKEN, ""));
+        String newToken = (String)JOptionPane.showInputDialog(mMainGui,
+            "Enter a replacement web console password:", "Web Console Password",
+            JOptionPane.QUESTION_MESSAGE, null, null, currentToken);
+
+        if(newToken != null && !newToken.isBlank())
+        {
+            newToken = newToken.trim();
+            mPreferences.put(PREFERENCE_WEB_PASSWORD, newToken);
+            mPreferences.remove(PREFERENCE_WEB_ACCESS_TOKEN);
+
+            if(mWebServer != null)
+            {
+                mWebServer.setPassword(newToken);
+            }
+
+            JOptionPane.showMessageDialog(mMainGui,
+                "The web console password was updated. Existing browser sessions have been signed out.",
+                "Web Console Password Updated", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     /**
@@ -401,7 +532,6 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mMainGui.add(mSplitPane, "cell 0 0,span,grow");
 
-        mResourceMonitor.start();
         mResourceStatusVisible = mPreferences.getBoolean(PREFERENCE_RESOURCE_STATUS_VISIBLE, true);
         if(mResourceStatusVisible)
         {
@@ -572,6 +702,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         preferencesItem.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest()));
         viewMenu.add(preferencesItem);
 
+        JMenuItem webAccessTokenItem = new JMenuItem("Web Console Password");
+        webAccessTokenItem.setIcon(IconFontSwing.buildIcon(FontAwesome.KEY, 12));
+        webAccessTokenItem.addActionListener(e -> editWebPassword());
+        viewMenu.add(webAccessTokenItem);
+
         viewMenu.add(new JSeparator());
         viewMenu.add(new TunersMenu());
         viewMenu.add(new JSeparator());
@@ -623,15 +758,36 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void processShutdown()
     {
+        if(mShutdown)
+        {
+            return;
+        }
+        mShutdown = true;
         mLog.info("Application shutdown started ...");
+        if(mWebServer != null)
+        {
+            mWebServer.stop();
+        }
         mDiagnosticMonitor.stop();
-        mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
-        mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
-        mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
-            (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
-        mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
-        mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
-        mJavaFxWindowManager.shutdown();
+        if(mMainGui != null)
+        {
+            mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
+            mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
+            mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
+                (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
+        }
+        if(mSpectralPanel != null)
+        {
+            mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
+        }
+        if(mControllerPanel != null)
+        {
+            mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
+        }
+        if(mJavaFxWindowManager != null)
+        {
+            mJavaFxWindowManager.shutdown();
+        }
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
         mAudioRecordingManager.stop();

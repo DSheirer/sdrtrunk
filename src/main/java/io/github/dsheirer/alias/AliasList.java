@@ -21,6 +21,7 @@ package io.github.dsheirer.alias;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
@@ -35,6 +36,7 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.ctcss.CTCSSIdentifier;
 import io.github.dsheirer.identifier.dcs.DCSIdentifier;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
@@ -47,6 +49,7 @@ import io.github.dsheirer.identifier.talkgroup.FullyQualifiedTalkgroupIdentifier
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.identifier.tone.ToneIdentifier;
 import io.github.dsheirer.identifier.tone.ToneSequence;
+import io.github.dsheirer.module.decode.squelch.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSCode;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
@@ -73,6 +76,7 @@ public class AliasList
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
     private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new EnumMap<>(Protocol.class);
     private Map<Protocol,RadioAliasList> mRadioProtocolMap = new EnumMap<>(Protocol.class);
+    private Map<CTCSSCode,Alias> mCTCSSCodeAliasMap = new EnumMap<>(CTCSSCode.class);
     private Map<DCSCode,Alias> mDCSCodeAliasMap = new EnumMap<>(DCSCode.class);
     private Map<String,Alias> mESNMap = new HashMap<>();
     private Map<Integer,Alias> mUnitStatusMap = new HashMap<>();
@@ -211,6 +215,12 @@ public class AliasList
 
                         radioRangeAliasList.add(radioRange, alias);
                         break;
+                    case CTCSS:
+                        if(id instanceof Ctcss ctcss)
+                        {
+                            mCTCSSCodeAliasMap.put(ctcss.getCTCSSCode(), alias);
+                        }
+                        break;
                     case DCS:
                         if(id instanceof Dcs dcs)
                         {
@@ -310,6 +320,8 @@ public class AliasList
         mRadioProtocolMap.values().stream().forEach(radioAliasList -> radioAliasList.remove(alias));
 
         Collection<Alias> collection = Collections.singleton(alias);
+        mCTCSSCodeAliasMap.values().removeAll(collection);
+        mDCSCodeAliasMap.values().removeAll(collection);
         mESNMap.values().removeAll(collection);
         mUnitStatusMap.values().removeAll(collection);
         mUserStatusMap.values().removeAll(collection);
@@ -508,6 +520,15 @@ public class AliasList
                                     return toList(entry.getValue());
                                 }
                             }
+                        }
+                    }
+                    else if(identifier instanceof CTCSSIdentifier ctcssIdentifier)
+                    {
+                        CTCSSCode ctcssCode = ctcssIdentifier.getValue();
+
+                        if(ctcssCode != null)
+                        {
+                            return toList(mCTCSSCodeAliasMap.get(ctcssCode));
                         }
                     }
                     else if(identifier instanceof DCSIdentifier dcsIdentifier)

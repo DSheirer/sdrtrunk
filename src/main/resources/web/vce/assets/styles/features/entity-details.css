@@ -1,0 +1,146 @@
+/* Shared modern presentation for radio systems, identities, radios, and channels. */
+.frequency-action-modal .tuner-frequency-action-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.frequency-action-modal .tuner-frequency-action {
+  min-height: var(--control-height-comfortable);
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .frequency-action-modal .tuner-frequency-action {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-1);
+  }
+}
+
+.entity-info-layout {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, .8fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.entity-info-column {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.entity-info-layout .section,
+.entity-info-column > .section {
+  margin-bottom: 0;
+}
+
+.activity-refresh-controls {
+  font-weight: var(--font-weight-normal);
+}
+
+.activity-refresh-countdown {
+  min-width: 82px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.activity-refresh-countdown.is-error {
+  color: var(--danger);
+}
+
+.channel-frequency-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.channel-frequency-layout.two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.channel-frequency-column,
+.channel-band-plan-column {
+  min-width: 0;
+}
+
+.channel-band-plan-column .async-section-content {
+  padding: 0;
+}
+
+.channel-frequency-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.entity-info-standalone {
+  max-width: 1060px;
+  margin: 0 auto var(--space-4);
+}
+
+.group-identity-history-section .section-title {
+  flex-wrap: wrap;
+}
+
+.group-identity-activity-chart {
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.group-identity-activity-chart .activity-series-legend {
+  gap: var(--space-2);
+  padding: 0 0 var(--space-3);
+}
+
+.group-identity-activity-chart .activity-series-button {
+  --ui-control-height: var(--control-height-compact);
+}
+
+.group-identity-activity-chart .activity-line-chart {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.group-identity-activity-chart .activity-line-svg {
+  min-width: 0;
+}
+
+.group-identity-activity-chart .activity-line-area {
+  opacity: .13;
+}
+
+.group-identity-activity-chart .activity-line-path {
+  stroke-width: 3;
+}
+
+.group-identity-activity-chart .activity-line-point {
+  fill: var(--surface-2);
+}
+
+@media (max-width: 900px) {
+  .entity-info-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .channel-frequency-layout.two-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .group-identity-history-section .section-title-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+}

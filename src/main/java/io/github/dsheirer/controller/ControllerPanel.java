@@ -27,6 +27,7 @@ import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.map.MapPanel;
 import io.github.dsheirer.map.MapService;
+import io.github.dsheirer.monitor.HostSystemPanel;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
@@ -102,6 +103,7 @@ public class ControllerPanel extends JPanel
         mTabbedPane.addTab("Now Playing", mNowPlayingPanel);
         mTabbedPane.addTab("Map", mMapPanel);
         mTabbedPane.addTab("Tuners", mTunerManagerPanel);
+        mTabbedPane.addTab("System", new HostSystemPanel());
 
         Icon playIcon = new ThemedFontIcon(FontAwesome.PLAY_CIRCLE_O, 20);
         mTabbedPane.addTab("Playlist Editor", playIcon, new JLabel("Show Playlist Manager"));

@@ -74,6 +74,7 @@ public class StreamingEditor extends SplitPane
     private final PlaylistManager mPlaylistManager;
     private TableView<ConfiguredBroadcast> mConfiguredBroadcastTableView;
     private MenuButton mNewButton;
+    private Button mCloneButton;
     private Button mDeleteButton;
     private Button mRefreshButton;
     private TabPane mTabPane;
@@ -102,7 +103,7 @@ public class StreamingEditor extends SplitPane
         refreshBroadcastifyStreams();
 
         VBox buttonsBox = new VBox();
-        buttonsBox.getChildren().addAll(getNewButton(), getDeleteButton(), getRefreshButton());
+        buttonsBox.getChildren().addAll(getNewButton(), getCloneButton(), getDeleteButton(), getRefreshButton());
         buttonsBox.setPadding(new Insets(0, 0, 0, 10));
         buttonsBox.setSpacing(10);
 
@@ -177,6 +178,7 @@ public class StreamingEditor extends SplitPane
         }
 
         getDeleteButton().setDisable(configuredBroadcast == null);
+        getCloneButton().setDisable(configuredBroadcast == null);
 
         if(configuredBroadcast == null)
         {
@@ -389,6 +391,35 @@ public class StreamingEditor extends SplitPane
         }
 
         return mDeleteButton;
+    }
+
+    private Button getCloneButton()
+    {
+        if(mCloneButton == null)
+        {
+            mCloneButton = new Button("Clone");
+            mCloneButton.setDisable(true);
+            mCloneButton.setMaxWidth(Double.MAX_VALUE);
+            mCloneButton.setTooltip(new Tooltip("Create a disabled copy of the selected streaming configuration"));
+            mCloneButton.setOnAction(event -> {
+                ConfiguredBroadcast selected = getConfiguredBroadcastTableView().getSelectionModel().getSelectedItem();
+
+                if(selected != null && selected.getBroadcastConfiguration() != null)
+                {
+                    if(getCurrentEditor().modifiedProperty().get())
+                    {
+                        getCurrentEditor().save();
+                    }
+
+                    ConfiguredBroadcast cloned = mPlaylistManager.getBroadcastModel()
+                        .cloneBroadcastConfiguration(selected.getBroadcastConfiguration());
+                    mPlaylistManager.schedulePlaylistSave();
+                    getConfiguredBroadcastTableView().getSelectionModel().select(cloned);
+                }
+            });
+        }
+
+        return mCloneButton;
     }
 
     private TableView<ConfiguredBroadcast> getConfiguredBroadcastTableView()
