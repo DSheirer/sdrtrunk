@@ -4,9 +4,9 @@ This repository is Rob Gwi's experimental fork of [DSheirer's sdrtrunk](https://
 
 > This is a beta fork and is not an official upstream sdrtrunk release. Back up your playlist before testing it.
 
-## Current development version: 0.7.1-beta5 (not yet published)
+## Current release: 0.7.1-beta5
 
-- [Latest downloadable release: Linux, Windows, and macOS 0.7.1 beta 4](https://github.com/robgwi/sdrtrunk/releases/tag/sdrtrunk-v0.7.1-beta4)
+- [Latest downloadable release: Linux, Windows, and macOS 0.7.1 beta 5](https://github.com/robgwi/sdrtrunk/releases/tag/sdrtrunk-v0.7.1-beta5)
 - [Raspberry Pi installation guide](RASPBERRY_PI.md)
 - [Linux x86_64 installation guide](LINUX_X86_64.md)
 - [Local Whisper setup guide](WHISPER_SETUP.md)
@@ -144,7 +144,7 @@ Environment variables override saved GUI password settings. The older `SDRTRUNK_
 
 ## Release history
 
-### 0.7.1-beta5 (in development)
+### 0.7.1-beta5
 
 - Fixed packaged runtimes failing at startup with `NoClassDefFoundError: javafx/embed/swing/JFXPanel` by explicitly
   including and resolving the JavaFX base, graphics, controls, media, and Swing modules in every platform image.
