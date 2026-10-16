@@ -1,0 +1,67 @@
+/* Final-layer accessibility overrides for the opt-in design system. */
+@media (prefers-reduced-motion: reduce) {
+  .ui-disclosure-button > svg,
+  .ui-disclosure-toggle::before {
+    transition: none;
+  }
+  .ui-data-table .activity-row-new > td {
+    background: var(--accent-soft);
+    animation: none;
+  }
+  .channel-catalog-table tbody tr.channel-order-row-moved > td {
+    background: var(--success-soft);
+    animation: none;
+  }
+
+  .primary-nav,
+  .playback-progress.ending {
+    transition: none;
+  }
+
+  .playback-progress {
+    transition: none;
+  }
+
+  .playback-progress-glow {
+    box-shadow: none;
+  }
+
+  .ui-select,
+  .ui-input,
+  .ui-textarea,
+  .ui-button,
+  .ui-selection-check,
+  .ui-selection-check::before,
+  .ui-choice-radio::before,
+  .ui-choice-card,
+  .ui-select-list-item,
+  .ui-toggle-track,
+  .ui-toggle-thumb,
+  .ui-section-summary::after,
+  .tuner-spectrum-options-summary::after,
+  .dashboard-activity-segment,
+  .channel-catalog-table tbody tr {
+    transition: none;
+  }
+
+  .radioreference-directory-branch-label::before {
+    transition: none;
+  }
+
+  .network-visualizer-label,
+  .network-visualizer-auto-focus {
+    transition: none;
+  }
+
+  .scanner-audio-wave i {
+    transition: none;
+  }
+
+  .ui-button:hover:not(:disabled, [aria-disabled="true"]) {
+    transform: none;
+  }
+
+  .ui-button:active:not(:disabled) {
+    transform: none;
+  }
+}

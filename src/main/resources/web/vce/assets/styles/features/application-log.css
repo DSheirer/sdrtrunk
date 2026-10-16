@@ -1,0 +1,124 @@
+/* Shared settings, controls and feedback own appearance. These rules place
+ * the loaded message window and its timestamp, severity, source and details. */
+.application-log-workspace {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.application-log-controls {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .55fr) minmax(0, .55fr) max-content;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.application-log-live-controls {
+  margin-top: calc(var(--font-size-label) * 1.45 + var(--space-2));
+}
+
+.application-log-actions,
+.application-log-heading,
+.application-log-footer {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.application-log-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.application-log-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height-compact);
+}
+
+.application-log-file {
+  overflow-wrap: anywhere;
+}
+
+.application-log-heading {
+  padding: var(--space-2) var(--space-4);
+}
+
+.application-log-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.application-log-viewport {
+  overflow: auto;
+  overflow-anchor: none;
+  max-height: min(60vh, calc(var(--space-5) * 25));
+  min-height: calc(var(--space-5) * 5);
+}
+
+.application-log-viewport:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.application-log-entry {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 11em 6em minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-body);
+}
+
+.application-log-entry:last-child { border-bottom: 0; }
+
+.application-log-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.application-log-body {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.application-log-source,
+.application-log-message,
+.application-log-trace {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.application-log-message,
+.application-log-trace {
+  font-family: var(--font-mono);
+}
+
+.application-log-trace {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3);
+  border-left: 2px solid var(--line);
+  font-size: inherit;
+}
+
+@media (max-width: 900px) {
+  .application-log-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .application-log-search { grid-column: 1 / -1; }
+  .application-log-live-controls { margin-top: 0; grid-column: 1 / -1; }
+}
+
+@media (max-width: 620px) {
+  .application-log-entry { grid-template-columns: minmax(0, 1fr) max-content; }
+  .application-log-body { grid-column: 1 / -1; }
+}

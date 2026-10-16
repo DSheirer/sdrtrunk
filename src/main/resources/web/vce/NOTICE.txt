@@ -1,0 +1,32 @@
+sdrtrunk-vce
+
+Copyright (C) 2014-2026 Dennis Sheirer and respective contributors.
+
+sdrtrunk-vce is a modified version of the SDRTrunk project created by Dennis Sheirer. This build also includes work
+from the wider SDRTrunk community and optimization and platform work associated with the W6BAZ experimental fork.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
+
+The complete GNU GPL version 3 license is provided in the LICENSE file distributed with this program.
+
+Source lineage:
+  https://github.com/DSheirer/sdrtrunk
+  https://github.com/bazineta/sdrtrunk
+  https://github.com/tylerwatt12/sdrtrunk-vce
+  https://github.com/robgwi/sdrtrunk
+
+The browser interface was created for sdrtrunk-vce by Tyler Watthanaphand (@tylerwatt12). This fork adapts that
+interface to its embedded Java web server and its channel, tuner, streaming, Remote Calls, recording, transcription,
+RadioReference, and web-administration APIs. Modified builds are not official sdrtrunk-vce releases.
+
+Third-party libraries and tools included with or used by this program remain copyright their respective authors and
+are distributed under their respective licenses.
+
+The Network Visualizer includes a locally bundled build of 3d-force-graph, Three.js, d3-force-3d, and their browser
+dependencies. Their copyright notices and license terms are provided in
+assets/vendor/network-visualizer-vendor.LICENSES.txt.

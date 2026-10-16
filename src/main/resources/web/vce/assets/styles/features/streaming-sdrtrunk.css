@@ -1,0 +1,46 @@
+.streaming-sdrtrunk-form {
+  min-width: min(58rem, 86vw);
+}
+
+.streaming-sdrtrunk-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(15rem, 1fr));
+  gap: var(--space-4);
+}
+
+.streaming-sdrtrunk-wide {
+  grid-column: 1 / -1;
+}
+
+.streaming-sdrtrunk-wide input {
+  width: 100%;
+}
+
+.streaming-sdrtrunk-toggles {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.streaming-sdrtrunk-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.streaming-sdrtrunk-facts {
+  margin-block: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .streaming-sdrtrunk-form {
+    min-width: 0;
+  }
+
+  .streaming-sdrtrunk-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .streaming-sdrtrunk-wide {
+    grid-column: auto;
+  }
+}

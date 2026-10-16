@@ -51,6 +51,15 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
     }
 
     /**
+     * NXDN group zero is a valid null-group destination used by some conventional/private call signaling.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return getValue() != null && (getValue() == 0 || super.isValid());
+    }
+
+    /**
      * Indicates if the identifier is for a Type-D system.
      */
     public boolean isTypeD()

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
@@ -168,7 +169,8 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
             {
                 TunerType tunerType = discoveredTuner.getTuner().getTunerType();
 
-                if(tunerType != TunerType.RECORDING)
+                //Recording and network tuners' getId() doesn't match the configuration's uniqueID scheme
+                if(tunerType != TunerType.RECORDING && tunerType != TunerType.RTL_TCP)
                 {
                     TunerConfiguration tunerConfiguration = getTunerConfiguration(tunerType, discoveredTuner.getId());
 
@@ -193,7 +195,8 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
         {
             TunerType tunerType = discoveredTuner.getTuner().getTunerType();
 
-            if(tunerType != TunerType.RECORDING)
+            //See note in tunerStatusUpdated()
+            if(tunerType != TunerType.RECORDING && tunerType != TunerType.RTL_TCP)
             {
                 TunerConfiguration tunerConfiguration = getTunerConfiguration(tunerType, discoveredTuner.getId());
 
@@ -232,13 +235,37 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
      * Removes the tuner from the disabled tuners list
      * @param discoveredTuner to remove
      */
-    private void removeDisabledTuner(DiscoveredTuner discoveredTuner)
+    public void removeDisabledTuner(DiscoveredTuner discoveredTuner)
     {
         mLock.lock();
 
         try
         {
             mDisabledTunerList.removeIf(tuner -> tuner.matches(discoveredTuner));
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        saveConfigurations();
+    }
+
+    /**
+     * Replaces the persisted identity for a disabled tuner whose editable address or path changed.
+     */
+    public void updateDisabledTunerIdentity(TunerClass tunerClass, String oldId, String newId)
+    {
+        mLock.lock();
+
+        try
+        {
+            boolean disabled = mDisabledTunerList.removeIf(tuner -> tuner.tunerClass() == tunerClass &&
+                tuner.id().equals(oldId));
+            if(disabled)
+            {
+                mDisabledTunerList.add(new DisabledTuner(tunerClass, newId));
+            }
         }
         finally
         {

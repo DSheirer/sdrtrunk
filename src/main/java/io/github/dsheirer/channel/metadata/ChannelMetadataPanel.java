@@ -246,20 +246,27 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 {
                     label.setText(Joiner.on(", ").skipNulls().join(aliases));
                     label.setIcon(mIconModel.getIcon(aliases.get(0).getIconName(), IconModel.DEFAULT_ICON_SIZE));
-                    label.setForeground(aliases.get(0).getDisplayColor());
+                    if(aliases.get(0).hasDisplayColor())
+                    {
+                        label.setForeground(aliases.get(0).getDisplayColor());
+                    }
+                    else
+                    {
+                        label.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+                    }
                 }
                 else
                 {
                     label.setText(null);
                     label.setIcon(null);
-                    label.setForeground(table.getForeground());
+                    label.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
                 }
             }
             else
             {
                 label.setText(null);
                 label.setIcon(null);
-                label.setForeground(table.getForeground());
+                label.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
             }
 
             return label;

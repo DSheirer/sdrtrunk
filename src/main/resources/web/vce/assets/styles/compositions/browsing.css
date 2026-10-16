@@ -1,0 +1,66 @@
+/* Shared browsing geometry; ui-* controls, surfaces and modal foundation own
+   appearance and lifecycle in both themes. */
+.ui-browse-pager {
+  justify-content: space-between;
+}
+
+.ui-browse-pager-count {
+  min-width: 0;
+  margin-right: auto;
+  overflow-wrap: anywhere;
+}
+
+.ui-browse-pager-actions {
+  margin-left: auto;
+}
+
+.ui-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ui-filter-panel[hidden] {
+  display: none;
+}
+
+.ui-filter-sheet .ui-filter-inline-actions {
+  display: none;
+}
+
+.ui-filter-sheet,
+.ui-filter-sheet-fields {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (max-width: 700px) {
+  .modal-backdrop:has(.ui-filter-modal) {
+    padding: 0;
+  }
+
+  .read-only-modal.ui-filter-modal {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .ui-filter-modal .modal-content {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .ui-filter-sheet-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}
+
+@media (max-width: 560px) {
+  .ui-browse-pager-count {
+    flex-basis: 100%;
+  }
+}

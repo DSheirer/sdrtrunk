@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.record;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
@@ -146,7 +148,8 @@ public class AudioRecordingManager implements Listener<AudioSegment>
             }
             else
             {
-                Path path = getAudioRecordingPath(audioSegment.getIdentifierCollection(), recordFormat);
+                Path path = getAudioRecordingPath(audioSegment.getIdentifierCollection(), audioSegment.getAliasList(),
+                    recordFormat);
 
                 try
                 {
@@ -177,7 +180,8 @@ public class AudioRecordingManager implements Listener<AudioSegment>
     /**
      * Provides a formatted audio recording filename to use as the final audio filename.
      */
-    private Path getAudioRecordingPath(IdentifierCollection identifierCollection, RecordFormat recordFormat)
+    private Path getAudioRecordingPath(IdentifierCollection identifierCollection, AliasList aliasList,
+                                       RecordFormat recordFormat)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -209,6 +213,7 @@ public class AudioRecordingManager implements Listener<AudioSegment>
             if(to != null)
             {
                 sb.append("_TO_").append(clean(to.toString()));
+                appendTalkgroupAlias(sb, aliasList, to);
             }
             else
             {
@@ -316,6 +321,24 @@ public class AudioRecordingManager implements Listener<AudioSegment>
         sbFinal.append(recordFormat.getExtension());
 
         return getRecordingBasePath().resolve(sbFinal.toString());
+    }
+
+    /** Adds the configured talkgroup name so recorded calls can be identified without opening the file. */
+    private static void appendTalkgroupAlias(StringBuilder filename, AliasList aliasList, Identifier talkgroup)
+    {
+        if(aliasList == null || talkgroup == null)
+        {
+            return;
+        }
+
+        String names = aliasList.getAliases(talkgroup).stream().map(Alias::getName)
+            .filter(name -> name != null && !name.isBlank()).distinct().map(AudioRecordingManager::clean)
+            .reduce((first, second) -> first + "+" + second).orElse(null);
+
+        if(names != null && !names.isBlank())
+        {
+            filename.append("_ALIAS_").append(names);
+        }
     }
 
 

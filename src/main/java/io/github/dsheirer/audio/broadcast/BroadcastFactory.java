@@ -25,6 +25,8 @@ import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfigura
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerFeedConfiguration;
+import io.github.dsheirer.audio.broadcast.remote.RemoteApiBroadcaster;
+import io.github.dsheirer.audio.broadcast.remote.RemoteApiConfiguration;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzFeedConfiguration;
@@ -69,7 +71,10 @@ public class BroadcastFactory
                             inputAudioFormat, mp3Setting, aliasModel);
                 case RDIOSCANNER_CALL:
                     return new RdioScannerBroadcaster((RdioScannerConfiguration)configuration,
-                            inputAudioFormat, mp3Setting, aliasModel);
+                            inputAudioFormat, mp3Setting, aliasModel,
+                            userPreferences.getDirectoryPreference().getDirectoryStreaming());
+                case REMOTE_CALL_API:
+                    return new RemoteApiBroadcaster((RemoteApiConfiguration)configuration);
                 case OPENMHZ:
                     return new OpenMHzBroadcaster((OpenMHzConfiguration)configuration,
                         inputAudioFormat, mp3Setting, aliasModel);
@@ -113,6 +118,8 @@ public class BroadcastFactory
                 return new BroadcastifyCallConfiguration(format);
             case RDIOSCANNER_CALL:
                 return new RdioScannerConfiguration(format);
+            case REMOTE_CALL_API:
+                return new RemoteApiConfiguration(format);
             case BROADCASTIFY:
                 return new BroadcastifyFeedConfiguration(format);
             case OPENMHZ:

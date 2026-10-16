@@ -42,6 +42,7 @@ import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.util.ThreadPool;
+import java.awt.GraphicsEnvironment;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -55,6 +56,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -255,6 +257,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                 float frequency = getFrequency(audioRecording);
 
                 String radioIdAlias = getFromAlias(audioRecording);
+                storeTalkerAlias(audioRecording);
 
                 BroadcastifyCallBuilder bodyBuilder = new BroadcastifyCallBuilder();
                 bodyBuilder.addPart(FormField.API_KEY, getBroadcastConfiguration().getApiKey())
@@ -458,11 +461,22 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     }
 
     /**
-     * Resolves the over-the-air talker alias for the FROM (source radio) identifier, acquired in real-time from RF
-     * (e.g. P25 Motorola Talker Alias or DMR Talker Alias). Returns null if no OTA alias was received for this call.
-     * This is sent as the srcId_alias field in Broadcastify uploads.
+     * Resolves the configured source for the Broadcastify Calls {@code srcId_alias} value.
      */
-    private static String getFromAlias(AudioRecording audioRecording)
+    private String getFromAlias(AudioRecording audioRecording)
+    {
+        if(getBroadcastConfiguration().getTalkerAliasSource() == TalkerAliasSource.PLAYLIST)
+        {
+            return getPlaylistFromAlias(audioRecording);
+        }
+
+        return getOverTheAirFromAlias(audioRecording);
+    }
+
+    /**
+     * Resolves the over-the-air alias carried with a completed recording.
+     */
+    static String getOverTheAirFromAlias(AudioRecording audioRecording)
     {
         for(Identifier identifier: audioRecording.getIdentifierCollection().getIdentifiers(Role.FROM))
         {
@@ -472,6 +486,75 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                 {
                     return talkerAliasIdentifier.getValue();
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolves the stored playlist alias for the source radio carried with a completed recording.
+     */
+    String getPlaylistFromAlias(AudioRecording audioRecording)
+    {
+        AliasListConfigurationIdentifier config = audioRecording.getIdentifierCollection().getAliasListConfiguration();
+        RadioIdentifier radioIdentifier = getFromRadio(audioRecording);
+
+        if(config != null && radioIdentifier != null)
+        {
+            AliasList aliasList = mAliasModel.getAliasList(config.getValue());
+
+            if(aliasList != null)
+            {
+                for(Alias alias: aliasList.getAliases(radioIdentifier))
+                {
+                    if(alias.getName() != null && !alias.getName().isBlank())
+                    {
+                        return alias.getName();
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Stores an OTA alias in the playlist when that opt-in setting is enabled for this destination.
+     */
+    private void storeTalkerAlias(AudioRecording audioRecording)
+    {
+        if(!getBroadcastConfiguration().isStoreTalkerAliases())
+        {
+            return;
+        }
+
+        String talkerAlias = getOverTheAirFromAlias(audioRecording);
+        RadioIdentifier radioIdentifier = getFromRadio(audioRecording);
+        AliasListConfigurationIdentifier config = audioRecording.getIdentifierCollection().getAliasListConfiguration();
+
+        if(config != null)
+        {
+            Runnable store = () -> mAliasModel.storeTalkerAlias(config.getValue(), radioIdentifier, talkerAlias);
+
+            if(!GraphicsEnvironment.isHeadless() && !Platform.isFxApplicationThread())
+            {
+                Platform.runLater(store);
+            }
+            else
+            {
+                store.run();
+            }
+        }
+    }
+
+    private static RadioIdentifier getFromRadio(AudioRecording audioRecording)
+    {
+        for(Identifier identifier: audioRecording.getIdentifierCollection().getIdentifiers(Role.FROM))
+        {
+            if(identifier instanceof RadioIdentifier radioIdentifier)
+            {
+                return radioIdentifier;
             }
         }
 

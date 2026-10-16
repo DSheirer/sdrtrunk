@@ -1,0 +1,43 @@
+* {
+  box-sizing: border-box;
+}
+
+.visually-hidden {
+  width: 1px;
+  height: 1px;
+  position: absolute !important;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  accent-color: var(--accent);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.app-shell :where(button, input, select, textarea),
+.modal-backdrop :where(button, input, select, textarea),
+.ui-popover :where(button, input, select, textarea),
+.access-landing :where(button, input, select, textarea) {
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

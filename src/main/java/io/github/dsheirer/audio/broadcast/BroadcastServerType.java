@@ -32,6 +32,7 @@ public enum BroadcastServerType
 
     ICECAST_HTTP("Icecast 2 (v2.4+)", "images/icecast.png"),
     RDIOSCANNER_CALL("Rdio Scanner", "images/rdioscanner.png"),
+    REMOTE_CALL_API("Remote Call API", null),
     OPENMHZ("OpenMHz", "images/openmhz.png"),
     ICECAST_TCP("Icecast (v2.3)", "images/icecast.png"),
     SHOUTCAST_V1("Shoutcast v1.x", "images/shoutcast.png"),

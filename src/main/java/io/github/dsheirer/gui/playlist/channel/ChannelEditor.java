@@ -24,6 +24,7 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -46,6 +47,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuButton;
@@ -85,6 +87,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
     private MenuButton mNewButton;
     private Button mDeleteButton;
     private Button mCloneButton;
+    private MenuButton mChangeProtocolButton;
     private VBox mButtonBox;
     private HBox mSearchAndViewBox;
     private TextField mSearchField;
@@ -186,6 +189,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
 
         getCloneButton().setDisable(channel == null);
         getDeleteButton().setDisable(channel == null);
+        getChangeProtocolButton().setDisable(channel == null || channel.isProcessing());
 
         if(channel == null)
         {
@@ -528,7 +532,8 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
         {
             mButtonBox = new VBox();
             mButtonBox.setSpacing(10);
-            mButtonBox.getChildren().addAll(getNewButton(), getCloneButton(), getDeleteButton());
+            mButtonBox.getChildren().addAll(getNewButton(), getChangeProtocolButton(), getCloneButton(),
+                getDeleteButton());
         }
 
         return mButtonBox;
@@ -605,6 +610,78 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
         return mDeleteButton;
     }
 
+    private MenuButton getChangeProtocolButton()
+    {
+        if(mChangeProtocolButton == null)
+        {
+            mChangeProtocolButton = new MenuButton("Change Protocol");
+            mChangeProtocolButton.setDisable(true);
+            mChangeProtocolButton.setMaxWidth(Double.MAX_VALUE);
+
+            for(DecoderType decoderType: DecoderType.PRIMARY_DECODERS)
+            {
+                MenuItem item = new MenuItem(decoderType.getDisplayString());
+                item.setOnAction(event -> changeProtocol(decoderType));
+                mChangeProtocolButton.getItems().add(item);
+            }
+        }
+
+        return mChangeProtocolButton;
+    }
+
+    private void changeProtocol(DecoderType decoderType)
+    {
+        Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
+
+        if(selected == null || selected.getDecodeConfiguration() == null ||
+            selected.getDecodeConfiguration().getDecoderType() == decoderType)
+        {
+            return;
+        }
+
+        if(selected.isProcessing())
+        {
+            Alert alert = new Alert(Alert.AlertType.WARNING,
+                "Stop this channel before changing its protocol.", ButtonType.OK);
+            alert.setTitle("Channel Is Running");
+            alert.setHeaderText("Protocol cannot be changed while processing");
+            alert.initOwner(((Node)getChangeProtocolButton()).getScene().getWindow());
+            alert.showAndWait();
+            return;
+        }
+
+        DecoderType oldDecoderType = selected.getDecodeConfiguration().getDecoderType();
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+            "Change protocol from " + oldDecoderType.getDisplayString() + " to " +
+                decoderType.getDisplayString() + "?\n\nChannel name, system, site, frequencies, aliases, recording, logging, and " +
+                "auto-start settings will be preserved. Protocol-specific decoder and auxiliary decoder settings " +
+                "will be reset.", ButtonType.CANCEL, ButtonType.OK);
+        alert.setTitle("Change Channel Protocol");
+        alert.setHeaderText("Replace protocol configuration");
+        alert.initOwner(((Node)getChangeProtocolButton()).getScene().getWindow());
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if(result.isPresent() && result.get() == ButtonType.OK)
+        {
+            if(getChannelConfigurationEditor().modifiedProperty().get())
+            {
+                getChannelConfigurationEditor().save();
+            }
+
+            selected.setDecodeConfiguration(DecoderFactory.getDecodeConfiguration(decoderType));
+            selected.setAuxDecodeConfiguration(new AuxDecodeConfiguration());
+
+            //Trigger the channel model configuration-change notification so the playlist is persisted.
+            String name = selected.getName();
+            selected.setName(" ");
+            selected.setName(name);
+
+            getChannelTableView().refresh();
+            setChannel(selected);
+        }
+    }
+
     private Button getCloneButton()
     {
         if(mCloneButton == null)
@@ -614,9 +691,35 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
             mCloneButton.setMaxWidth(Double.MAX_VALUE);
             mCloneButton.setOnAction(event -> {
                 Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
-                Channel copy = selected.copyOf();
-                mPlaylistManager.getChannelModel().addChannel(copy);
-                getChannelTableView().getSelectionModel().select(copy);
+
+                if(selected != null && selected.getDecodeConfiguration() != null)
+                {
+                    DecoderType currentDecoder = selected.getDecodeConfiguration().getDecoderType();
+                    ChoiceDialog<DecoderType> dialog = new ChoiceDialog<>(currentDecoder,
+                        DecoderType.PRIMARY_DECODERS);
+                    dialog.setTitle("Clone Channel");
+                    dialog.setHeaderText("Select the protocol for the cloned channel");
+                    dialog.setContentText("Protocol:");
+                    dialog.initOwner(((Node)getCloneButton()).getScene().getWindow());
+
+                    Optional<DecoderType> result = dialog.showAndWait();
+
+                    if(result.isPresent())
+                    {
+                        Channel copy = selected.copyOf();
+                        DecoderType selectedDecoder = result.get();
+
+                        if(selectedDecoder != currentDecoder)
+                        {
+                            copy.setDecodeConfiguration(DecoderFactory.getDecodeConfiguration(selectedDecoder));
+                            copy.setAuxDecodeConfiguration(new AuxDecodeConfiguration());
+                        }
+
+                        mPlaylistManager.getChannelModel().addChannel(copy);
+                        getChannelTableView().getSelectionModel().select(copy);
+                        getChannelTableView().scrollTo(copy);
+                    }
+                }
             });
         }
 

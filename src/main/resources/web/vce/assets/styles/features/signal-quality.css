@@ -1,0 +1,273 @@
+/* Signal health tiles and quality-history charts; shared chrome comes from ui-* primitives. */
+.signal-health {
+  min-width: 0;
+}
+
+.signal-current-panel,
+.site-signal-history {
+  min-width: 0;
+  padding: 10px;
+}
+
+.signal-current-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.signal-health-summary {
+  color: var(--muted);
+  font-size: var(--font-size-label);
+}
+
+.signal-current-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.signal-current-tile {
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.signal-current-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.signal-current-labels {
+  min-width: 0;
+}
+
+.signal-current-labels .identity-summary-primary,
+.signal-current-labels .identity-summary-context {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-current-system {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.signal-state {
+  flex: 0 0 auto;
+}
+
+.signal-current-power {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px;
+  margin: 8px 0 7px;
+}
+
+.signal-current-power strong {
+  font-size: var(--font-size-title-small);
+  font-weight: var(--metric-value-weight);
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-current-power span {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+  white-space: nowrap;
+}
+
+.signal-current-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-current-details span:first-child {
+  margin-right: auto;
+}
+
+.signal-range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.site-signal-history-section .section-title {
+  flex-wrap: wrap;
+}
+
+.site-signal-history-section .signal-range-controls {
+  min-width: 0;
+  margin-left: auto;
+}
+
+
+.signal-history-overview {
+  grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(0, 1fr));
+  margin-bottom: 4px;
+}
+
+.signal-history-overview.without-identity {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.signal-history-overview.without-identity.decode-only {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.signal-history-identity {
+  min-width: 0;
+  padding: var(--space-2);
+}
+
+.signal-history-identity a {
+  display: block;
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-history-identity span {
+  display: block;
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.quality-chart-stack {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.quality-chart-panel {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3) var(--space-1);
+}
+
+.quality-chart-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-bottom: 2px;
+}
+
+.quality-chart-heading strong {
+  font-size: var(--font-size-secondary);
+}
+
+.quality-chart-heading span {
+  color: var(--muted);
+  font-size: var(--font-size-micro);
+}
+
+.quality-chart {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.quality-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.quality-grid-line {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.quality-axis-label {
+  fill: var(--muted);
+  font-size: var(--font-size-micro);
+}
+
+.signal-range-path {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  stroke: none;
+}
+
+.signal-average-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.decode-quality-band.poor {
+  fill: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
+.decode-quality-band.degraded {
+  fill: color-mix(in srgb, var(--warning) 9%, transparent);
+}
+
+.decode-quality-band.healthy {
+  fill: color-mix(in srgb, var(--success) 8%, transparent);
+}
+
+.decode-threshold-line {
+  stroke: color-mix(in srgb, var(--muted) 38%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.decode-health-path {
+  fill: none;
+  stroke: var(--chart-decode);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.quality-chart-empty {
+  position: absolute;
+  inset: 42% 0 auto;
+  color: var(--muted);
+  text-align: center;
+}
+
+.signal-disabled {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .signal-current-grid,
+  .signal-history-overview,
+  .signal-history-overview.without-identity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .signal-history-identity {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .signal-current-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .signal-current-grid,
+  .signal-history-overview,
+  .signal-history-overview.without-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .signal-history-overview.without-identity.decode-only {
+    grid-template-columns: 1fr;
+  }
+}

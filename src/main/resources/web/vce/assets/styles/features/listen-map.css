@@ -1,0 +1,361 @@
+.listen-map-workspace {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.listen-map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.listen-map-status {
+  flex: 1 1 220px;
+  color: var(--muted);
+}
+
+.listen-map-layout {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.listen-map-panel,
+.listen-map-sidebar {
+  min-width: 0;
+}
+
+.listen-map-map-actions {
+  min-width: 0;
+}
+
+.listen-map-trail-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+}
+
+.listen-map-trail-select {
+  width: 64px;
+  min-height: var(--control-height-compact);
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.listen-map-viewport {
+  position: relative;
+  height: min(68vh, 680px);
+  min-height: 380px;
+  overflow: hidden;
+  background: var(--surface-2);
+  cursor: grab;
+  touch-action: none;
+  isolation: isolate;
+}
+
+.listen-map-viewport:active {
+  cursor: grabbing;
+}
+
+.listen-map-viewport:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+.listen-map-tiles,
+.listen-map-trails,
+.listen-map-markers {
+  position: absolute;
+  inset: 0;
+}
+
+.listen-map-tiles img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  max-width: none;
+  user-select: none;
+}
+
+.listen-map-trails,
+.listen-map-markers {
+  pointer-events: none;
+}
+
+.listen-map-trails path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.listen-map-trail {
+  stroke-width: 2;
+  opacity: .55;
+}
+
+.listen-map-trail-selected {
+  stroke-width: 4;
+}
+
+.listen-map-marker {
+  position: absolute;
+  z-index: 1;
+  width: 38px;
+  height: 38px;
+  padding: var(--space-1);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.listen-map-marker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.listen-map-zoom {
+  position: absolute;
+  z-index: 2;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.listen-map-attribution {
+  position: absolute;
+  z-index: 2;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-meta);
+}
+
+.listen-map-list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 260px;
+  padding: var(--space-3);
+  overflow: auto;
+}
+
+.listen-map-list-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.listen-map-list-item img {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.listen-map-list-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.listen-map-list-copy strong {
+  font-size: var(--font-size-control);
+}
+
+.listen-map-list-copy small {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.listen-map-list-item[aria-pressed="true"] .listen-map-list-copy small {
+  color: currentColor;
+}
+
+.listen-map-catalog-controls {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.listen-map-center-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+}
+
+.listen-map-follow-status {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  overflow: hidden;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-control);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listen-map-selected-actions {
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.listen-map-selected-actions .ui-button {
+  flex: 1 1 auto;
+}
+
+.listen-map-details {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.listen-map-details h3 {
+  margin: 0;
+  font-size: var(--font-size-section-title);
+  overflow-wrap: anywhere;
+}
+
+.listen-map-facts {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+}
+
+.listen-map-facts .ui-fact {
+  grid-template-columns: minmax(72px, .7fr) minmax(0, 1.3fr);
+  gap: var(--space-2);
+  padding: 5px 0;
+  background: transparent;
+  border: 0;
+}
+
+.listen-map-facts .ui-fact > dd {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.listen-map-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.listen-map-history-heading h4 {
+  margin: 0;
+  font-size: var(--font-size-label);
+}
+
+.listen-map-history-heading span {
+  color: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.listen-map-history-wrap {
+  max-height: 280px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  overflow: auto;
+}
+
+.listen-map-history {
+  width: 100%;
+  table-layout: fixed;
+  font-size: var(--font-size-meta);
+}
+
+.listen-map-history :is(th, td) {
+  padding: 6px 5px;
+}
+
+.listen-map-history :is(th, td):first-child {
+  width: 42%;
+}
+
+.listen-map-history :is(th, td):not(:first-child) {
+  width: 29%;
+}
+
+.listen-map-history-item {
+  cursor: pointer;
+}
+
+.listen-map-history-center {
+  width: 100%;
+  display: grid;
+  gap: 1px;
+  padding: 0;
+  color: var(--link);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.listen-map-history-center > span:last-child:not(:first-child) {
+  color: var(--muted);
+}
+
+.listen-map-history-center:hover {
+  text-decoration: underline;
+}
+
+.listen-map-history-center:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 800px) {
+  .listen-map-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .listen-map-viewport {
+    height: min(56vh, 500px);
+    min-height: 320px;
+  }
+
+  .listen-map-list {
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 620px) {
+  .listen-map-panel > .ui-section-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .listen-map-map-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .listen-map-trail-control {
+    margin-right: auto;
+  }
+
+  .listen-map-viewport {
+    min-height: 300px;
+  }
+}

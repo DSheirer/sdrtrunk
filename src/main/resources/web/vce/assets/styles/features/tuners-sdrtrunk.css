@@ -1,0 +1,36 @@
+.sdrtrunk-spectrum {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sdrtrunk-spectrum-toolbar {
+  align-items: end;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.sdrtrunk-spectrum-toolbar > .muted {
+  grid-column: 1 / -1;
+}
+
+.sdrtrunk-spectrum-range {
+  display: grid;
+  gap: var(--space-1);
+  grid-template-columns: 1fr 1fr;
+}
+
+.sdrtrunk-spectrum-range .ui-field-label {
+  grid-column: 1 / -1;
+}
+
+.sdrtrunk-spectrum-canvas,
+.sdrtrunk-waterfall-canvas {
+  width: 100%;
+  border: 1px solid var(--spectrum-canvas-line);
+  background: var(--spectrum-canvas);
+}
+
+.sdrtrunk-spectrum-canvas {
+  cursor: crosshair;
+}

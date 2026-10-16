@@ -1,0 +1,118 @@
+.p25-overrides-intro {
+  margin: 0;
+  padding: var(--space-4);
+}
+
+.read-only-modal.p25-override-editor-modal {
+  width: min(var(--modal-size-wide), 96vw);
+}
+
+.p25-overrides-workspace {
+  min-width: 0;
+  display: grid;
+  gap: 0;
+  padding: 0;
+}
+
+.p25-override-profile-list,
+.p25-override-editor-body,
+.p25-override-bands {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.p25-override-profile-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.p25-override-profile-header {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.p25-override-record-body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.p25-override-footer {
+  justify-content: space-between;
+}
+
+.p25-override-profile-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.p25-override-band-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.p25-override-band-record,
+.p25-override-band-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.p25-override-band-header,
+.p25-override-bands-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.p25-override-bands-heading {
+  justify-content: flex-start;
+}
+
+.p25-override-band-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.p25-override-identity {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.p25-override-band-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.p25-override-profile-actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 900px) {
+  .p25-override-band-records {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p25-override-band-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .p25-override-identity,
+  .p25-override-band-row,
+  .p25-override-band-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p25-override-profile-facts,
+  .p25-override-band-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

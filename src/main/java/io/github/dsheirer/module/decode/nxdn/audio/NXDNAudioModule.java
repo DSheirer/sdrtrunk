@@ -23,7 +23,10 @@ import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
@@ -40,9 +43,12 @@ import java.util.List;
  */
 public class NXDNAudioModule extends AmbeAudioModule
 {
+    static final int MAX_CACHED_AUDIO_MESSAGES = 12;
     private final SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private final NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private final List<Audio> mCachedAudioMessages = new ArrayList<>();
+    private final AliasList mAliasList;
+    private final boolean mRecordUnknownSimplexCalls;
     private boolean mEncryptedCall = false;
     private boolean mEncryptedCallStateEstablished = false;
     private AudioCodec mAudioCodec;
@@ -54,7 +60,20 @@ public class NXDNAudioModule extends AmbeAudioModule
      */
     public NXDNAudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
+        this(userPreferences, aliasList, false);
+    }
+
+    /**
+     * Constructs an instance.
+     * @param userPreferences component
+     * @param aliasList for the current channel
+     * @param recordUnknownSimplexCalls records conventional inbound calls when either radio ID is unaliased
+     */
+    public NXDNAudioModule(UserPreferences userPreferences, AliasList aliasList, boolean recordUnknownSimplexCalls)
+    {
         super(userPreferences, aliasList, 0);
+        mAliasList = aliasList;
+        mRecordUnknownSimplexCalls = recordUnknownSimplexCalls;
     }
 
     @Override
@@ -66,7 +85,12 @@ public class NXDNAudioModule extends AmbeAudioModule
     @Override
     public void reset()
     {
+        setRecordAudio(false);
         getIdentifierCollection().clear();
+        mEncryptedCallStateEstablished = false;
+        mEncryptedCall = false;
+        mAudioCodec = null;
+        mCachedAudioMessages.clear();
     }
 
     @Override
@@ -90,6 +114,11 @@ public class NXDNAudioModule extends AmbeAudioModule
                 else
                 {
                     //Cache audio until we can determine the encryption state
+                    if(mCachedAudioMessages.size() >= MAX_CACHED_AUDIO_MESSAGES)
+                    {
+                        mCachedAudioMessages.removeFirst();
+                    }
+
                     mCachedAudioMessages.add(audio);
                 }
             }
@@ -97,6 +126,7 @@ public class NXDNAudioModule extends AmbeAudioModule
             {
                 if(message instanceof VoiceCall voiceCall)
                 {
+                    setRecordAudio(mRecordUnknownSimplexCalls && isUnknownSimplexCall(voiceCall, mAliasList));
                     mEncryptedCall = voiceCall.getEncryptionKeyIdentifier().isEncrypted();
                     mEncryptedCallStateEstablished = true;
                     mAudioCodec = voiceCall.getCallOption().getCodec();
@@ -112,12 +142,36 @@ public class NXDNAudioModule extends AmbeAudioModule
                 else if(message instanceof Disconnect || message instanceof TransmissionRelease)
                 {
                     closeAudioSegment();
+                    setRecordAudio(false);
                     mCachedAudioMessages.clear();
                     mEncryptedCall = false;
                     mEncryptedCallStateEstablished = false;
                 }
             }
         }
+    }
+
+    /**
+     * Indicates if a voice call is conventional inbound/simplex and contains at least one radio ID that does not have
+     * an alias.  This deliberately does not override the recording choice for calls where every radio ID is known.
+     */
+    static boolean isUnknownSimplexCall(VoiceCall voiceCall, AliasList aliasList)
+    {
+        if(voiceCall == null || aliasList == null || voiceCall.getLICH().getRFChannel() != RFChannel.RDCH ||
+                voiceCall.getLICH().isOutbound())
+        {
+            return false;
+        }
+
+        for(Identifier identifier : voiceCall.getIdentifiers())
+        {
+            if(identifier instanceof RadioIdentifier && aliasList.getAliases(identifier).isEmpty())
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -166,6 +220,7 @@ public class NXDNAudioModule extends AmbeAudioModule
             if(event.getSquelchState() == SquelchState.SQUELCH)
             {
                 closeAudioSegment();
+                setRecordAudio(false);
                 mEncryptedCallStateEstablished = false;
                 mEncryptedCall = false;
                 mCachedAudioMessages.clear();

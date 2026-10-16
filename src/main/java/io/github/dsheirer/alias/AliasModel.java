@@ -21,8 +21,12 @@ package io.github.dsheirer.alias;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
+import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
+import io.github.dsheirer.identifier.radio.FullyQualifiedRadioIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -261,6 +265,74 @@ public class AliasModel
         }
 
         mAliases.add(alias);
+    }
+
+    /**
+     * Creates or updates an exact radio alias with a talker alias received over the air.  Radio ranges are never
+     * renamed because one observed radio must not change the label for an entire configured range.
+     *
+     * @param aliasListName playlist alias list associated with the decoded channel
+     * @param radioIdentifier source radio that transmitted the talker alias
+     * @param talkerAlias decoded talker alias text
+     * @return the created or updated alias, or null when the inputs are not usable
+     */
+    public synchronized Alias storeTalkerAlias(String aliasListName, RadioIdentifier radioIdentifier, String talkerAlias)
+    {
+        if(aliasListName == null || aliasListName.isBlank() || radioIdentifier == null ||
+            !radioIdentifier.isValid() || talkerAlias == null || talkerAlias.isBlank())
+        {
+            return null;
+        }
+
+        String name = talkerAlias.trim();
+
+        for(Alias alias: mAliases)
+        {
+            if(alias.hasList() && alias.getAliasListName().equalsIgnoreCase(aliasListName))
+            {
+                for(AliasID aliasID: alias.getAliasIdentifiers())
+                {
+                    if(matchesExactRadio(aliasID, radioIdentifier))
+                    {
+                        if(!name.equals(alias.getName()))
+                        {
+                            alias.setName(name);
+                        }
+
+                        return alias;
+                    }
+                }
+            }
+        }
+
+        Alias alias = new Alias(name);
+        alias.setAliasListName(aliasListName);
+
+        if(radioIdentifier instanceof FullyQualifiedRadioIdentifier fullyQualified)
+        {
+            alias.addAliasID(new P25FullyQualifiedRadio(fullyQualified.getWacn(), fullyQualified.getSystem(),
+                fullyQualified.getRadio()));
+        }
+        else
+        {
+            alias.addAliasID(new Radio(radioIdentifier.getProtocol(), radioIdentifier.getValue()));
+        }
+
+        addAlias(alias);
+        return alias;
+    }
+
+    private static boolean matchesExactRadio(AliasID aliasID, RadioIdentifier radioIdentifier)
+    {
+        if(radioIdentifier instanceof FullyQualifiedRadioIdentifier fullyQualified)
+        {
+            return aliasID instanceof P25FullyQualifiedRadio radio &&
+                radio.getWacn() == fullyQualified.getWacn() && radio.getSystem() == fullyQualified.getSystem() &&
+                radio.getValue() == fullyQualified.getRadio();
+        }
+
+        return aliasID instanceof Radio radio && !(radio instanceof P25FullyQualifiedRadio) &&
+            radio.getProtocol() == radioIdentifier.getProtocol() && radio.getValue() == radioIdentifier.getValue();
     }
 
     private boolean hasAliasList(String aliasListName)

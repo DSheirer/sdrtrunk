@@ -258,7 +258,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         {
             JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            Color color = mTable.getForeground();
+            Color color = isSelected ? table.getSelectionForeground() : table.getForeground();
             ImageIcon icon = null;
             String text = null;
 
@@ -285,7 +285,10 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                                     sb.append(",");
                                 }
                                 sb.append(Joiner.on(", ").skipNulls().join(aliases));
-                                color = aliases.getFirst().getDisplayColor();
+                                if(aliases.getFirst().hasDisplayColor())
+                                {
+                                    color = aliases.getFirst().getDisplayColor();
+                                }
                                 icon = mIconModel.getIcon(aliases.getFirst().getIconName(), IconModel.DEFAULT_ICON_SIZE);
                             }
                         }

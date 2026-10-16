@@ -77,6 +77,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private RealResampler mResampler;
     private final double mChannelBandwidth;
     private boolean mSquelchDecoderEnabled = false;
+    private boolean mCTCSSSearchEnabled = false;
     private List<CTCSSCode> mConfiguredCTCSSCodes = new ArrayList<>();
     private Set<DCSCode> mConfiguredDCSCodes = new HashSet<>();
     private CTCSSDetector mCTCSSDetector = null;
@@ -144,8 +145,9 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private void configureSquelchDecoders(DecodeConfigNBFM config)
     {
         mSquelchDecoderEnabled = config.isSquelchDecoderEnabled();
+        mCTCSSSearchEnabled = config.isCTCSSSearchEnabled() && !mSquelchDecoderEnabled;
 
-        if(mSquelchDecoderEnabled)
+        if(mSquelchDecoderEnabled || mCTCSSSearchEnabled)
         {
             // at the present time, only a single decoder per channel is configured, however the playlist and other
             //  storage allows for multiple decoders per channel
@@ -172,11 +174,19 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                             mConfiguredDCSCodes.add(dcs);
                         }
                         break;
+                    case CTCSS_SEARCH:
+                    case NONE:
+                        break;
                 }
             }
 
+            if(mCTCSSSearchEnabled)
+            {
+                //An empty target list causes the detector to report any standard CTCSS tone.
+                mCTCSSDetector = new CTCSSDetector(List.of());
+            }
             // If we configured tone filtering but have no valid tones, disable it
-            if(mConfiguredCTCSSCodes.isEmpty() && mConfiguredDCSCodes.isEmpty())
+            else if(mConfiguredCTCSSCodes.isEmpty() && mConfiguredDCSCodes.isEmpty())
             {
                 mLog.warn("Tone filtering enabled but no valid CTCSS/DCS codes configured — disabling tone filter");
                 mSquelchDecoderEnabled = false;
@@ -508,13 +518,19 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             if(mCTCSSDetector != null)
             {
                 CTCSSMessage ctcssMessage = mCTCSSDetector.process(resampled);
-                getMessageListener().receive(ctcssMessage);     // sending: one of the listeners is NBFMDecoderState
-                if(ctcssMessage.getCallEvent() != null)
+                if(ctcssMessage != null)
                 {
-                    // handles START, CONTINUATION, END.
-                    broadcast(new DecoderStateEvent(this, ctcssMessage.getCallEvent(), State.CALL, 0));
+                    getMessageListener().receive(ctcssMessage); // one of the listeners is NBFMDecoderState
+                    if(!mCTCSSSearchEnabled)
+                    {
+                        if(ctcssMessage.getCallEvent() != null)
+                        {
+                            // handles START, CONTINUATION, END.
+                            broadcast(new DecoderStateEvent(this, ctcssMessage.getCallEvent(), State.CALL, 0));
+                        }
+                        mMute = ctcssMessage.getMutedStatus();
+                    }
                 }
-                mMute = ctcssMessage.getMutedStatus();
             }
             /*
              * While the CTCSS decoder can determine a tone in a single buffer of resampled audio, the DCS decoder
@@ -544,13 +560,17 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             if(mCTCSSDetector != null)
             {
                 mCTCSSDetector.reset();
-                CTCSSMessage message = new CTCSSMessage(mConfiguredCTCSSCodes.getFirst(),
+                CTCSSMessage message = new CTCSSMessage(mConfiguredCTCSSCodes.isEmpty() ? null :
+                        mConfiguredCTCSSCodes.getFirst(),
                         "Noise squelch closed.",
                         DecoderStateEvent.Event.END,
                         SquelchCodeState.LOST);
                 getMessageListener().receive(message);     // sending: one of the listeners is NBFMDecoderState
-                notifyCallEnd();
-                mMute = true;
+                if(!mCTCSSSearchEnabled)
+                {
+                    notifyCallEnd();
+                    mMute = true;
+                }
             }
             if(mDCSDetector != null)
             {

@@ -1,0 +1,93 @@
+name: Review Official sdrtrunk Changes
+
+on:
+  schedule:
+    - cron: '17 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-review
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out fork history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Fetch official repository
+        run: |
+          git remote add upstream https://github.com/DSheirer/sdrtrunk.git
+          git fetch upstream master --prune --no-tags
+
+      - name: Generate comparison report
+        id: comparison
+        run: |
+          scripts/upstream-report.sh upstream/master upstream-review.md HEAD
+          merge_base="$(git merge-base HEAD upstream/master)"
+          upstream_count="$(git rev-list --count "${merge_base}..upstream/master")"
+          echo "upstream_count=${upstream_count}" >> "${GITHUB_OUTPUT}"
+          cat upstream-review.md >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save comparison report
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-review
+          path: upstream-review.md
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or update review issue
+        uses: actions/github-script@v9
+        env:
+          UPSTREAM_COUNT: ${{ steps.comparison.outputs.upstream_count }}
+        with:
+          script: |
+            const fs = require('fs');
+            const title = 'Official sdrtrunk changes available for review';
+            const count = Number(process.env.UPSTREAM_COUNT || '0');
+            const fullReport = fs.readFileSync('upstream-review.md', 'utf8');
+            const report = fullReport.length > 60000
+              ? `${fullReport.slice(0, 59000)}\n\n_Report shortened for the GitHub issue. Download the workflow artifact for the complete report._`
+              : fullReport;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `${report}\n\n---\n[Scheduled review run](${runUrl})`;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
+
+            if (count > 0 && existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body
+              });
+            } else if (count > 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body
+              });
+            } else if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+                body
+              });
+            }

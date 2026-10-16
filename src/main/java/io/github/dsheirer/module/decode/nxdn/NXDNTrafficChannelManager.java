@@ -39,6 +39,7 @@ import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannel;
 import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelFake;
+import io.github.dsheirer.module.decode.nxdn.channel.NXDNChannelLookup;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkerAliasIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.DataCallAssignment;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
@@ -185,6 +186,29 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     }
 
     /**
+     * Resolves the key used to correlate control and traffic channel observations for one call.  A resolved channel
+     * uses its downlink frequency.  Channel-mode systems without a configured channel map still need distinct event
+     * trackers, so their logical channel number is encoded as a negative key.  Negative keys cannot collide with
+     * valid RF frequencies and, unlike a shared zero key, do not merge simultaneous calls on different channels.
+     */
+    static long getTrackerKey(IChannelDescriptor channel)
+    {
+        long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
+
+        if(frequency > 0)
+        {
+            return frequency;
+        }
+
+        if(channel instanceof NXDNChannelLookup lookup)
+        {
+            return -(lookup.getChannelNumber() + 1L);
+        }
+
+        return 0;
+    }
+
+    /**
      * Broadcasts the decode event from the tracker.
      *
      * @param tracker containing a decode event.
@@ -249,15 +273,13 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     private NXDNChannelEventTracker createTracker(DecodeEventType eventType, IdentifierCollection ic,
                                                   NXDNChannel channel, long timestamp)
     {
-        long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
-
         DecodeEvent event = NXDNDecodeEvent.builder(eventType, timestamp)
                 .timeslot(0)
                 .channel(channel)
                 .identifiers(ic)
                 .build();
         NXDNChannelEventTracker tracker = new NXDNChannelEventTracker(event);
-        mEventTrackerMap.put(frequency, tracker);
+        mEventTrackerMap.put(getTrackerKey(channel), tracker);
         return tracker;
     }
 
@@ -268,7 +290,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      */
     public void processDataCallAssignment(DataCallAssignment dca)
     {
-        if(dca.hasChannel() && dca.getChannel().getDownlinkFrequency() > 0)
+        if(dca.hasChannel())
         {
             DecodeEventType eventType = dca.getEncryptionKeyIdentifier().isEncrypted() ?
                     DecodeEventType.DATA_CALL_ENCRYPTED : DecodeEventType.DATA_CALL;
@@ -285,13 +307,14 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     private void processDataCall(List<Identifier> identifiers, NXDNChannel channel, DecodeEventType eventType,
                                  long timestamp, DataCallOption dco, CallTimer callTimer)
     {
-        if(channel.getDownlinkFrequency() > 0)
+        if(channel != null)
         {
             mLock.lock();
 
             try
             {
-                NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(channel.getDownlinkFrequency(), timestamp);
+                long trackerKey = getTrackerKey(channel);
+                NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(trackerKey, timestamp);
                 MutableIdentifierCollection ic = new MutableIdentifierCollection(identifiers);
                 if(tracker != null)
                 {
@@ -302,7 +325,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                     }
                     else
                     {
-                        removeTracker(channel.getDownlinkFrequency());
+                        removeTracker(trackerKey);
                         tracker = null;
                     }
                 }
@@ -355,7 +378,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      */
     public void processVoiceCallAssignment(VoiceCallAssignment vca)
     {
-        if(vca.hasChannel() && vca.getChannel().getDownlinkFrequency() > 0)
+        if(vca.hasChannel())
         {
             processVoiceCall(vca.getIdentifiers(), vca.getChannel(), vca.getCallType(), vca.getEncryptionKeyIdentifier(),
                     vca.getTimestamp(), vca.getCallOption(), vca.getCallTimer());
@@ -371,9 +394,9 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     {
         NXDNChannel channel = vca.getChannel();
 
-        if(channel == null || channel.getDownlinkFrequency() == 0)
+        if(channel == null)
         {
-            //If the channel is null or not configured, use the talkgroup value so we can track the call event
+            //If the channel is absent, use the talkgroup value so we can track the call event.
             channel = new NXDNChannelFake(vca.getDestination().getValue());
         }
 
@@ -411,8 +434,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
         try
         {
-            long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
-            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
+            long trackerKey = getTrackerKey(channel);
+            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(trackerKey, timestamp);
 
             if(tracker != null)
             {
@@ -437,8 +460,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         mLock.lock();
         try
         {
-            long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
-            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
+            long trackerKey = getTrackerKey(channel);
+            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(trackerKey, timestamp);
 
             if(tracker != null)
             {
@@ -463,14 +486,17 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
         try
         {
-            long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
-            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
+            long trackerKey = getTrackerKey(channel);
+            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(trackerKey, timestamp);
 
             if(tracker != null)
             {
                 tracker.completeTraffic(timestamp);
                 broadcast(tracker);
-                removeTracker(frequency);
+                //Retain the completed tracker briefly.  NXDN control channels can repeat the same assignment after
+                //the traffic channel sends its release, and deleting it here creates multiple sub-second events and
+                //can immediately allocate a second traffic channel for the residual grant.  Normal staleness cleanup
+                //removes it after the duplicate-suppression window.
             }
         }
         finally
@@ -484,17 +510,18 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param identifiers for the call
      * @param channel for the call
      */
-    private void processVoiceCall(List<Identifier> identifiers, NXDNChannel channel, CallType callType,
-                                  EncryptionKeyIdentifier encryption, long timestamp, VoiceCallOption vco,
-                                  CallTimer callTimer)
+    void processVoiceCall(List<Identifier> identifiers, NXDNChannel channel, CallType callType,
+                          EncryptionKeyIdentifier encryption, long timestamp, VoiceCallOption vco,
+                          CallTimer callTimer)
     {
         mLock.lock();
 
         long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
+        long trackerKey = getTrackerKey(channel);
 
         try
         {
-            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
+            NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(trackerKey, timestamp);
             MutableIdentifierCollection ic = new MutableIdentifierCollection(identifiers);
             mTalkerAliasManager.enrich(ic);
             if(tracker != null)
@@ -505,7 +532,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                 }
                 else
                 {
-                    removeTracker(frequency);
+                    removeTracker(trackerKey);
                     tracker = null;
                 }
             }
@@ -583,8 +610,10 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             ChannelStartProcessingRequest startChannelRequest = new ChannelStartProcessingRequest(trafficChannel,
                     nxdnChannel, ic, this);
             startChannelRequest.addPreloadDataContent(new NXDNChannelInfoPreloadData(mChannelAccessInformation, mChannelFrequencies));
-            getInterModuleEventBus().post(startChannelRequest);
+            //The event bus is synchronous. Mark this allocated before posting so an immediate start rejection cannot
+            //be overwritten after the rejection handler returns the channel to the available pool.
             tracker.setTrafficChannelAllocated(true);
+            getInterModuleEventBus().post(startChannelRequest);
         }
         else
         {
