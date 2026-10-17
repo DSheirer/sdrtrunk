@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.ctcss.Ctcss;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
@@ -55,6 +56,7 @@ import javafx.util.Callback;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = BroadcastChannel.class, name = "broadcastChannel"),
+    @JsonSubTypes.Type(value = Ctcss.class, name = "ctcss"),
     @JsonSubTypes.Type(value = Dcs.class, name = "dcs"),
     @JsonSubTypes.Type(value = Esn.class, name = "esn"),
     @JsonSubTypes.Type(value = FleetsyncID.class, name = "fleetsyncID"),

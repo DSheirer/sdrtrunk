@@ -1,0 +1,129 @@
+.streaming-sdrtrunk-form {
+  min-width: min(72rem, 90vw);
+  width: min(78rem, 92vw);
+}
+
+.streaming-sdrtrunk-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(20rem, 1fr));
+  gap: var(--space-4);
+}
+
+.streaming-sdrtrunk-wide {
+  grid-column: 1 / -1;
+}
+
+.streaming-sdrtrunk-wide input {
+  width: 100%;
+}
+
+.streaming-sdrtrunk-toggles {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.streaming-sdrtrunk-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.streaming-sdrtrunk-facts {
+  margin-block: var(--space-4);
+}
+
+.streaming-page {
+  min-width: 0;
+}
+
+.streaming-page-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.streaming-page-toolbar .ui-action-row,
+.streaming-destination-actions {
+  flex-wrap: wrap;
+}
+
+.streaming-page .streaming-destination-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
+}
+
+.streaming-page .streaming-destination-card,
+.streaming-page .streaming-identity {
+  min-width: 0;
+}
+
+.streaming-page .streaming-destination-header {
+  align-items: start;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.streaming-sdrtrunk-endpoint {
+  display: block;
+  margin-top: var(--space-1);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.streaming-page .ui-metric-grid {
+  grid-template-columns: repeat(4, minmax(6.5rem, 1fr));
+}
+
+.streaming-page .streaming-metrics-compact {
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.streaming-page .streaming-metrics-compact .ui-metric {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.streaming-page .streaming-metrics-compact .ui-metric-value {
+  font-size: var(--metric-value-compact-size);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-body);
+}
+
+.streaming-page .ui-metric-value,
+.streaming-sdrtrunk-facts dd {
+  overflow-wrap: anywhere;
+}
+
+.streaming-editor-modal {
+  max-width: 96vw;
+}
+
+@media (max-width: 720px) {
+  .streaming-sdrtrunk-form {
+    min-width: 0;
+  }
+
+  .streaming-sdrtrunk-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .streaming-sdrtrunk-wide {
+    grid-column: auto;
+  }
+
+  .streaming-page .ui-metric-grid {
+    grid-template-columns: repeat(2, minmax(7rem, 1fr));
+  }
+
+  .streaming-page .streaming-destination-header {
+    display: grid;
+  }
+}

@@ -30,6 +30,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.controlsfx.control.ToggleSwitch;
 
 /**
  * RdioScanner calls API configuration editor
@@ -42,6 +43,9 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
     private IntegerTextField mMaxAgeTextField;
     private TextField mApiKeyTextField;
     private TextField mHostTextField;
+    private ToggleSwitch mHeartbeatEnabledToggleSwitch;
+    private IntegerTextField mHeartbeatIntervalTextField;
+    private TextField mHeartbeatUrlTextField;
     private GridPane mEditorPane;
 
     /**
@@ -62,20 +66,19 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         getApiKeyTextField().setDisable(item == null);
         getHostTextField().setDisable(item == null);
         getMaxAgeTextField().setDisable(item == null);
+        getHeartbeatEnabledToggleSwitch().setDisable(item == null);
+        getHeartbeatIntervalTextField().setDisable(item == null);
+        getHeartbeatUrlTextField().setDisable(item == null);
 
         if(item != null)
         {
             getSystemIdTextField().set(item.getSystemID());
             getApiKeyTextField().setText(item.getApiKey());
-            String url = item.getHost();
-
-            if(url != null)
-            {
-                url = url.replace(API_PATH, "");
-            }
-
-            getHostTextField().setText(url);
+            getHostTextField().setText(item.getHost());
             getMaxAgeTextField().set((int)(item.getMaximumRecordingAge() / 1000));
+            getHeartbeatEnabledToggleSwitch().setSelected(item.isHeartbeatEnabled());
+            getHeartbeatIntervalTextField().set(item.getHeartbeatIntervalSeconds());
+            getHeartbeatUrlTextField().setText(item.getHeartbeatUrl());
         }
         else
         {
@@ -83,6 +86,9 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             getApiKeyTextField().setText(null);
             getHostTextField().setText(null);
             getMaxAgeTextField().set(0);
+            getHeartbeatEnabledToggleSwitch().setSelected(false);
+            getHeartbeatIntervalTextField().set(60);
+            getHeartbeatUrlTextField().setText(null);
         }
 
         modifiedProperty().set(false);
@@ -109,6 +115,10 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             }
             getItem().setApiKey(getApiKeyTextField().getText());
             getItem().setMaximumRecordingAge(getMaxAgeTextField().get() * 1000);
+            getItem().setHeartbeatEnabled(getHeartbeatEnabledToggleSwitch().isSelected());
+            Integer heartbeatInterval = getHeartbeatIntervalTextField().get();
+            getItem().setHeartbeatIntervalSeconds(heartbeatInterval != null ? heartbeatInterval : 60);
+            getItem().setHeartbeatUrl(getHeartbeatUrlTextField().getText());
         }
 
         super.save();
@@ -159,6 +169,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(apiKeyLabel, 0, ++row);
             mEditorPane.getChildren().add(apiKeyLabel);
 
+            GridPane.setColumnSpan(getApiKeyTextField(), 3);
             GridPane.setConstraints(getApiKeyTextField(), 1, row);
             mEditorPane.getChildren().add(getApiKeyTextField());
 
@@ -175,13 +186,9 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(hostLabel, 0, ++row);
             mEditorPane.getChildren().add(hostLabel);
 
+            GridPane.setColumnSpan(getHostTextField(), 3);
             GridPane.setConstraints(getHostTextField(), 1, row);
             mEditorPane.getChildren().add(getHostTextField());
-
-            Label apiPath = new Label("/api/call-upload");
-            GridPane.setHalignment(apiPath, HPos.LEFT);
-            GridPane.setConstraints(apiPath, 2, row);
-            mEditorPane.getChildren().add(apiPath);
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
@@ -190,6 +197,32 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
 
             GridPane.setConstraints(getMaxAgeTextField(), 1, row);
             mEditorPane.getChildren().add(getMaxAgeTextField());
+
+            Label heartbeatEnabledLabel = new Label("Send Heartbeat");
+            GridPane.setHalignment(heartbeatEnabledLabel, HPos.RIGHT);
+            GridPane.setConstraints(heartbeatEnabledLabel, 0, ++row);
+            mEditorPane.getChildren().add(heartbeatEnabledLabel);
+
+            GridPane.setConstraints(getHeartbeatEnabledToggleSwitch(), 1, row);
+            mEditorPane.getChildren().add(getHeartbeatEnabledToggleSwitch());
+
+            Label heartbeatIntervalLabel = new Label("Heartbeat Interval (seconds)");
+            GridPane.setHalignment(heartbeatIntervalLabel, HPos.RIGHT);
+            GridPane.setConstraints(heartbeatIntervalLabel, 2, row);
+            mEditorPane.getChildren().add(heartbeatIntervalLabel);
+
+            GridPane.setConstraints(getHeartbeatIntervalTextField(), 3, row);
+            mEditorPane.getChildren().add(getHeartbeatIntervalTextField());
+
+            Label heartbeatUrlLabel = new Label("Heartbeat URL");
+            GridPane.setHalignment(heartbeatUrlLabel, HPos.RIGHT);
+            GridPane.setConstraints(heartbeatUrlLabel, 0, ++row);
+            mEditorPane.getChildren().add(heartbeatUrlLabel);
+
+            getHeartbeatUrlTextField().setPromptText("Blank uses <Rdio URL>/api/heartbeat");
+            GridPane.setColumnSpan(getHeartbeatUrlTextField(), 3);
+            GridPane.setConstraints(getHeartbeatUrlTextField(), 1, row);
+            mEditorPane.getChildren().add(getHeartbeatUrlTextField());
 
         }
 
@@ -213,6 +246,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         if(mHostTextField == null)
         {
             mHostTextField = new TextField();
+            mHostTextField.setPrefColumnCount(45);
             mHostTextField.setDisable(true);
             mHostTextField.textProperty().addListener(mEditorModificationListener);
         }
@@ -225,6 +259,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         if(mApiKeyTextField == null)
         {
             mApiKeyTextField = new TextField();
+            mApiKeyTextField.setPrefColumnCount(45);
             mApiKeyTextField.setDisable(true);
             mApiKeyTextField.textProperty().addListener(mEditorModificationListener);
         }
@@ -242,6 +277,40 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         }
 
         return mSystemIdTextField;
+    }
+
+    private ToggleSwitch getHeartbeatEnabledToggleSwitch()
+    {
+        if(mHeartbeatEnabledToggleSwitch == null)
+        {
+            mHeartbeatEnabledToggleSwitch = new ToggleSwitch();
+            mHeartbeatEnabledToggleSwitch.setDisable(true);
+            mHeartbeatEnabledToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+        return mHeartbeatEnabledToggleSwitch;
+    }
+
+    private IntegerTextField getHeartbeatIntervalTextField()
+    {
+        if(mHeartbeatIntervalTextField == null)
+        {
+            mHeartbeatIntervalTextField = new IntegerTextField();
+            mHeartbeatIntervalTextField.setDisable(true);
+            mHeartbeatIntervalTextField.textProperty().addListener(mEditorModificationListener);
+        }
+        return mHeartbeatIntervalTextField;
+    }
+
+    private TextField getHeartbeatUrlTextField()
+    {
+        if(mHeartbeatUrlTextField == null)
+        {
+            mHeartbeatUrlTextField = new TextField();
+            mHeartbeatUrlTextField.setDisable(true);
+            mHeartbeatUrlTextField.textProperty().addListener(mEditorModificationListener);
+        }
+        return mHeartbeatUrlTextField;
     }
 
 

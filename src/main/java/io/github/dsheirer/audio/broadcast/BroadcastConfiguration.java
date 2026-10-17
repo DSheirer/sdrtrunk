@@ -25,6 +25,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
+import io.github.dsheirer.audio.broadcast.remote.RemoteApiConfiguration;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
@@ -44,11 +45,14 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = BroadcastifyCallConfiguration.class, name="broadcastifyCallConfiguration"),
     @JsonSubTypes.Type(value = RdioScannerConfiguration.class, name="RdioScannerConfiguration"),
+    @JsonSubTypes.Type(value = RemoteApiConfiguration.class, name="RemoteApiConfiguration"),
     @JsonSubTypes.Type(value = OpenMHzConfiguration.class, name="OpenMHzConfiguration"),
     @JsonSubTypes.Type(value = IcecastConfiguration.class, name="icecastConfiguration"),
     @JsonSubTypes.Type(value = ShoutcastV1Configuration.class, name="shoutcastV1Configuration"),
@@ -87,9 +91,32 @@ public abstract class BroadcastConfiguration
     }
 
     /**
+     * Stable identity used for restart-safe operational counters.  Specialized call-upload destinations can
+     * override this with their durable queue identity.
+     */
+    @JsonIgnore
+    public String getPersistentStatisticsKey()
+    {
+        String identity = getBroadcastServerType().name() + "\u0000" + String.valueOf(getName()) + "\u0000" +
+            String.valueOf(getHost()) + "\u0000" + getPort();
+        return UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+    /**
      * Creates a copy/clone of the configuration
      */
     public abstract BroadcastConfiguration copyOf();
+
+    /**
+     * Creates a complete copy that is safe to edit as a newly cloned destination.  Keeping a clone disabled prevents
+     * it from sending duplicate audio to the same endpoint before the user has changed its name or URL.
+     */
+    public BroadcastConfiguration copyOfDisabled()
+    {
+        BroadcastConfiguration copy = copyOf();
+        copy.setEnabled(false);
+        return copy;
+    }
 
     /**
      * Broadcast audio streaming configuration.  Describes the streaming server and configuration details.

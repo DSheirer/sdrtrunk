@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallBroadcaster;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
+import io.github.dsheirer.audio.broadcast.broadcastify.TalkerAliasSource;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
@@ -29,6 +30,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
@@ -50,6 +52,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
     private GridPane mEditorPane;
     private ToggleSwitch mTestEnabledToggleSwitch;
     private IntegerTextField mTestIntervalTextField;
+    private ComboBox<TalkerAliasSource> mTalkerAliasSourceComboBox;
+    private ToggleSwitch mStoreTalkerAliasesToggleSwitch;
 
     /**
      * Constructs an instance
@@ -71,6 +75,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         getMaxAgeTextField().setDisable(item == null);
         getTestEnabledToggleSwitch().setDisable(item == null);
         getTestIntervalTextField().setDisable(item == null);
+        getTalkerAliasSourceComboBox().setDisable(item == null);
+        getStoreTalkerAliasesToggleSwitch().setDisable(item == null);
 
         if(item != null)
         {
@@ -80,6 +86,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getMaxAgeTextField().set((int)(item.getMaximumRecordingAge() / 1000));
             getTestEnabledToggleSwitch().setSelected(item.isTestEnabled());
             getTestIntervalTextField().set(item.getTestInterval());
+            getTalkerAliasSourceComboBox().getSelectionModel().select(item.getTalkerAliasSource());
+            getStoreTalkerAliasesToggleSwitch().setSelected(item.isStoreTalkerAliases());
         }
         else
         {
@@ -89,6 +97,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getMaxAgeTextField().set(0);
             getTestEnabledToggleSwitch().setSelected(false);
             getTestIntervalTextField().set(15);
+            getTalkerAliasSourceComboBox().getSelectionModel().select(TalkerAliasSource.OVER_THE_AIR);
+            getStoreTalkerAliasesToggleSwitch().setSelected(false);
         }
 
         modifiedProperty().set(false);
@@ -111,6 +121,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getItem().setMaximumRecordingAge(getMaxAgeTextField().get() * 1000);
             getItem().setTestEnabled(getTestEnabledToggleSwitch().isSelected());
             getItem().setTestInterval(getTestIntervalTextField().get());
+            getItem().setTalkerAliasSource(getTalkerAliasSourceComboBox().getValue());
+            getItem().setStoreTalkerAliases(getStoreTalkerAliasesToggleSwitch().isSelected());
         }
 
         super.save();
@@ -161,6 +173,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             GridPane.setConstraints(apiKeyLabel, 0, ++row);
             mEditorPane.getChildren().add(apiKeyLabel);
 
+            GridPane.setColumnSpan(getApiKeyTextField(), 4);
             GridPane.setConstraints(getApiKeyTextField(), 1, row);
             mEditorPane.getChildren().add(getApiKeyTextField());
 
@@ -204,6 +217,23 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             GridPane.setConstraints(getTestIntervalTextField(), 4, row);
             mEditorPane.getChildren().add(getTestIntervalTextField());
 
+            Label talkerAliasSourceLabel = new Label("Talker Alias Source");
+            GridPane.setHalignment(talkerAliasSourceLabel, HPos.RIGHT);
+            GridPane.setConstraints(talkerAliasSourceLabel, 0, ++row);
+            mEditorPane.getChildren().add(talkerAliasSourceLabel);
+
+            GridPane.setColumnSpan(getTalkerAliasSourceComboBox(), 2);
+            GridPane.setConstraints(getTalkerAliasSourceComboBox(), 1, row);
+            mEditorPane.getChildren().add(getTalkerAliasSourceComboBox());
+
+            Label storeTalkerAliasesLabel = new Label("Store OTA Aliases in Playlist");
+            GridPane.setHalignment(storeTalkerAliasesLabel, HPos.RIGHT);
+            GridPane.setConstraints(storeTalkerAliasesLabel, 0, ++row);
+            mEditorPane.getChildren().add(storeTalkerAliasesLabel);
+
+            GridPane.setConstraints(getStoreTalkerAliasesToggleSwitch(), 1, row);
+            mEditorPane.getChildren().add(getStoreTalkerAliasesToggleSwitch());
+
             GridPane.setConstraints(getTestButton(), 1, ++row);
             mEditorPane.getChildren().add(getTestButton());
         }
@@ -240,6 +270,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         if(mApiKeyTextField == null)
         {
             mApiKeyTextField = new TextField();
+            mApiKeyTextField.setPrefColumnCount(45);
             mApiKeyTextField.setDisable(true);
             mApiKeyTextField.textProperty().addListener(mEditorModificationListener);
         }
@@ -282,6 +313,34 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         }
 
         return mTestIntervalTextField;
+    }
+
+    private ComboBox<TalkerAliasSource> getTalkerAliasSourceComboBox()
+    {
+        if(mTalkerAliasSourceComboBox == null)
+        {
+            mTalkerAliasSourceComboBox = new ComboBox<>();
+            mTalkerAliasSourceComboBox.getItems().addAll(TalkerAliasSource.values());
+            mTalkerAliasSourceComboBox.getSelectionModel().select(TalkerAliasSource.OVER_THE_AIR);
+            mTalkerAliasSourceComboBox.setDisable(true);
+            mTalkerAliasSourceComboBox.valueProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mTalkerAliasSourceComboBox;
+    }
+
+    private ToggleSwitch getStoreTalkerAliasesToggleSwitch()
+    {
+        if(mStoreTalkerAliasesToggleSwitch == null)
+        {
+            mStoreTalkerAliasesToggleSwitch = new ToggleSwitch();
+            mStoreTalkerAliasesToggleSwitch.setDisable(true);
+            mStoreTalkerAliasesToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mStoreTalkerAliasesToggleSwitch;
     }
 
     private Button getTestButton()

@@ -345,6 +345,16 @@ public class Alias
     }
 
     /**
+     * Indicates if this alias has an explicitly configured display color.  A zero value is the legacy playlist
+     * sentinel for no color; an explicitly selected black color is stored as opaque ARGB and is therefore non-zero.
+     */
+    @JsonIgnore
+    public boolean hasDisplayColor()
+    {
+        return getColor() != 0;
+    }
+
+    /**
      * Icon name of the icon to use for this alias.
      */
     @JacksonXmlProperty(isAttribute = true, localName = "iconName")

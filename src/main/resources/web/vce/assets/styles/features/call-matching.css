@@ -1,0 +1,128 @@
+.call-matching-workspace {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.call-matching-live-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.call-matching-status-content,
+.call-matching-metric-group {
+  min-width: 0;
+}
+
+.call-matching-metric-group {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  gap: var(--space-2);
+}
+
+.call-matching-metric-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  grid-template-rows: auto auto auto;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-4);
+}
+
+.call-matching-metric-group-heading {
+  margin: 0;
+}
+
+.call-matching-current-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.call-matching-session-counts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.call-matching-current-counts,
+.call-matching-session-counts {
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+}
+
+.call-matching-history-pagination:empty {
+  display: none;
+}
+
+/* The default order forms an identity row and a facts row. Saved field orders
+   use the same compact grid without overriding the user's arrangement. */
+.call-matching-history-list tbody > tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, .9fr);
+}
+
+.call-matching-field-action { justify-self: end; }
+
+.call-matching-output-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.call-matching-comparison {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.call-matching-comparison-intro {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.call-matching-comparison-table {
+  min-width: 650px;
+}
+
+.call-matching-comparison-table th:first-child {
+  min-width: 155px;
+}
+
+.call-matching-comparison-table thead th:not(:first-child) {
+  min-width: 220px;
+}
+
+.call-matching-comparison-table thead th:not(:first-child) > :where(strong, small) {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+.call-matching-comparison-hint {
+  display: none;
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .call-matching-metric-groups {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-4);
+  }
+}
+
+@media (max-width: 760px) {
+  .call-matching-live-status {
+    justify-content: flex-start;
+  }
+
+  .call-matching-comparison-hint {
+    display: block;
+  }
+}
+
+@media (max-width: 1100px) {
+  .call-matching-history-list tbody > tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .call-matching-field-match,
+  .call-matching-field-outputs {
+    grid-column: 1 / -1;
+  }
+}

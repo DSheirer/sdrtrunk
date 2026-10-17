@@ -134,7 +134,7 @@ tasks.withType(JavaCompile).configureEach {
 def jvmArgsWindows =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED', //windows users for JIDE
-         '--add-modules=jdk.incubator.vector',   //Project Panama vector API is still in incubator
+         '--add-modules=jdk.incubator.vector,javafx.controls,javafx.swing', //Vector API and JavaFX UI modules
          '--enable-preview', //Project Panama Vector API is still in incubator
          '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
@@ -146,7 +146,7 @@ def jvmArgsWindows =
  */
 def jvmArgsLinux =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
-         '--add-modules=jdk.incubator.vector',   //Project Panama vector API is still in incubator
+         '--add-modules=jdk.incubator.vector,javafx.controls,javafx.swing', //Vector API and JavaFX UI modules
          '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
          '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
@@ -222,6 +222,7 @@ String jdk_windows_aarch64 = jdk_base + 'windows-arm64/jdk-25.0.1-full'
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
+//Keep cross-platform JDK builds exactly aligned. jlink rejects target modules produced by a different JDK build.
 def jdk_download_base = "https://download.bell-sw.com/java/27+36/bellsoft-jdk27+36-"
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
@@ -246,8 +247,10 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.crypto.ec - needed for HTTPS connections (broadcastify calls & map tile server)
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
-    //java.management for JVM resource monitoring
-    rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management')
+    //java.management and jdk.management for JVM and host resource monitoring
+    rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility',
+        'java.management', 'jdk.management', 'jdk.httpserver', 'javafx.base', 'javafx.graphics', 'javafx.controls',
+        'javafx.media', 'javafx.swing')
 
     //Use auto-detected modules and 'add' any specified modules.
     rt.extension.additive.set(true)
@@ -258,6 +261,15 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //Runtime images have auto appended version in image zip name.  Override to include version in single target image.
 //    rt.extension.imageDir=layout.buildDirectory.dir('image')
     rt.extension.imageZip.set(file(layout.buildDirectory.dir('image').get().file('sdr-trunk.zip')))
+}
+
+//The runtime plugin performs dependency analysis in prerequisite tasks with the JVM running Gradle.  Check the task
+//graph before anything executes: a Java 26 Gradle process can fail to scan Java 27 classes and silently omit JavaFX.
+gradle.taskGraph.whenReady {taskGraph ->
+    if(taskGraph.allTasks.any {it instanceof RuntimeZipTask} && Runtime.version().feature() < 27) {
+        throw new GradleException("Runtime packaging requires Gradle to run on Java 27 or newer. " +
+            "Current Gradle JVM: ${Runtime.version()}")
+    }
 }
 
 /**
@@ -385,4 +397,46 @@ tasks.register('runtimeZipOthers', RuntimeZipTask) {rt ->
     }
 
     configure(rt, jvmArgsLinux)
+}
+
+/**
+ * Creates a self-contained Linux aarch64 distribution for 64-bit Raspberry Pi OS.
+ * The bundled runtime includes JavaFX because parts of the existing application model still depend on JavaFX types,
+ * even when no desktop is present. The web server listens on all interfaces and requires the saved web-console
+ * password or SDRTRUNK_WEB_PASSWORD from the launch environment.
+ *
+ * Usage: ./gradlew runtimeZipRaspberryPi
+ * Output: build/image/sdr-trunk-linux-aarch64-v<version>.zip
+ */
+tasks.register('runtimeZipRaspberryPi', RuntimeZipTask) {rt ->
+    if(file(jdk_linux_aarch64).exists()) {
+        rt.extension.targetPlatform(targetLinuxAarch64, jdk_linux_aarch64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetLinuxAarch64) {
+            jdkHome = jdkDownload(jdk_download_linux_aarch64)
+        }
+    }
+
+    configure(rt, jvmArgsLinux + ['-Dsdrtrunk.web.enabled=true', '-Dsdrtrunk.web.defaultBind=0.0.0.0'])
+}
+
+/**
+ * Creates a self-contained Linux x86-64 distribution with the same web-enabled defaults as the Raspberry Pi build.
+ * This package is intended for 64-bit Intel/AMD Linux desktops, mini PCs, and headless servers.
+ *
+ * Usage: ./gradlew runtimeZipLinuxX86_64
+ * Output: build/image/sdr-trunk-linux-x86_64-v<version>.zip
+ */
+tasks.register('runtimeZipLinuxX86_64', RuntimeZipTask) {rt ->
+    if(file(jdk_linux_x86_64).exists()) {
+        rt.extension.targetPlatform(targetLinuxX86_64, jdk_linux_x86_64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetLinuxX86_64) {
+            jdkHome = jdkDownload(jdk_download_linux_x86_64)
+        }
+    }
+
+    configure(rt, jvmArgsLinux + ['-Dsdrtrunk.web.enabled=true', '-Dsdrtrunk.web.defaultBind=0.0.0.0'])
 }

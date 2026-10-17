@@ -22,6 +22,7 @@ package io.github.dsheirer.audio.broadcast;
 import io.github.dsheirer.sample.Listener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,10 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
     protected int mDuplicateRejectedAudioCount = 0;
     protected int mErrorAudioCount = 0;
     protected int mAgedOffAudioCount = 0;
+    private volatile boolean mStatisticsLoaded;
+    private Preferences mStatistics;
+
+    public record BroadcastStatistics(int streamed, int duplicateRejected, int errors, int agedOff) {}
 
     /**
      * Constructs an instance
@@ -153,15 +158,18 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
      */
     public int getStreamedAudioCount()
     {
+        loadStatistics();
         return mStreamedAudioCount;
     }
 
     /**
      * Increments the streamed or uploaded audio count by one
      */
-    public void incrementStreamedAudioCount()
+    public synchronized void incrementStreamedAudioCount()
     {
+        loadStatistics();
         mStreamedAudioCount++;
+        persistStatistics();
     }
 
     /**
@@ -169,15 +177,18 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
      */
     public int getDuplicateRejectedAudioCount()
     {
+        loadStatistics();
         return mDuplicateRejectedAudioCount;
     }
 
     /**
      * Increments the duplicate-rejected audio count by one.
      */
-    public void incrementDuplicateRejectedAudioCount()
+    public synchronized void incrementDuplicateRejectedAudioCount()
     {
+        loadStatistics();
         mDuplicateRejectedAudioCount++;
+        persistStatistics();
     }
 
     /**
@@ -185,15 +196,18 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
      */
     public int getAgedOffAudioCount()
     {
+        loadStatistics();
         return mAgedOffAudioCount;
     }
 
     /**
      * Increments the aged-off audio count by one
      */
-    public void incrementAgedOffAudioCount()
+    public synchronized void incrementAgedOffAudioCount()
     {
+        loadStatistics();
         mAgedOffAudioCount++;
+        persistStatistics();
     }
 
     /**
@@ -206,14 +220,52 @@ public abstract class AbstractAudioBroadcaster<T extends BroadcastConfiguration>
      */
     public int getAudioErrorCount()
     {
+        loadStatistics();
         return mErrorAudioCount;
     }
 
     /**
      * Increments the error audio count by one
      */
-    public void incrementErrorAudioCount()
+    public synchronized void incrementErrorAudioCount()
     {
+        loadStatistics();
         mErrorAudioCount++;
+        persistStatistics();
+    }
+
+    public static BroadcastStatistics getPersistedStatistics(BroadcastConfiguration configuration)
+    {
+        Preferences preferences = statisticsNode(configuration);
+        return new BroadcastStatistics(preferences.getInt("streamed", 0),
+            preferences.getInt("duplicates", 0), preferences.getInt("errors", 0),
+            preferences.getInt("agedOff", 0));
+    }
+
+    private synchronized void loadStatistics()
+    {
+        if(mStatisticsLoaded) { return; }
+        mStatistics = statisticsNode(getBroadcastConfiguration());
+        BroadcastStatistics saved = getPersistedStatistics(getBroadcastConfiguration());
+        mStreamedAudioCount = saved.streamed();
+        mDuplicateRejectedAudioCount = saved.duplicateRejected();
+        mErrorAudioCount = saved.errors();
+        mAgedOffAudioCount = saved.agedOff();
+        mStatisticsLoaded = true;
+    }
+
+    private void persistStatistics()
+    {
+        if(mStatistics == null) { return; }
+        mStatistics.putInt("streamed", mStreamedAudioCount);
+        mStatistics.putInt("duplicates", mDuplicateRejectedAudioCount);
+        mStatistics.putInt("errors", mErrorAudioCount);
+        mStatistics.putInt("agedOff", mAgedOffAudioCount);
+    }
+
+    private static Preferences statisticsNode(BroadcastConfiguration configuration)
+    {
+        return Preferences.userNodeForPackage(AbstractAudioBroadcaster.class).node("statistics")
+            .node(configuration.getPersistentStatisticsKey());
     }
 }

@@ -180,7 +180,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getTalkgroupField());
 
             // Squelch Decoder type
-            Label typeLabel = new Label("Squelch Decoder Type");
+            Label typeLabel = new Label("NBFM Squelch: Carrier / CTCSS / DCS");
             GridPane.setHalignment(typeLabel, HPos.RIGHT);
             GridPane.setConstraints(typeLabel, 2, 2);
             gridPane.getChildren().add(typeLabel);
@@ -262,6 +262,10 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
                 break;
             case SquelchDecoderConfig.SquelchType.CTCSS:
                 mCtcssCodeCombo.setVisible(true);
+                mDcsCodeCombo.setVisible(false);
+                break;
+            case SquelchDecoderConfig.SquelchType.CTCSS_SEARCH:
+                mCtcssCodeCombo.setVisible(false);
                 mDcsCodeCombo.setVisible(false);
                 break;
             case SquelchDecoderConfig.SquelchType.DCS:
@@ -661,6 +665,10 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             {
                 squelchDecoders.add(new SquelchDecoderConfig(selectedType, code.name()));
             }
+        }
+        if(selectedType == SquelchDecoderConfig.SquelchType.CTCSS_SEARCH)
+        {
+            squelchDecoders.add(new SquelchDecoderConfig(selectedType, null));
         }
         if(selectedType == SquelchDecoderConfig.SquelchType.NONE)
         {

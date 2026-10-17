@@ -85,6 +85,7 @@ import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderState;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.NXDNChannelHealthMonitor;
 import io.github.dsheirer.module.decode.nxdn.NXDNDecoder;
 import io.github.dsheirer.module.decode.nxdn.NXDNDecoderState;
 import io.github.dsheirer.module.decode.nxdn.NXDNTrafficChannelManager;
@@ -107,6 +108,7 @@ import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderState;
 import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
+import io.github.dsheirer.module.decode.squelch.SquelchDecoderConfig;
 import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
 import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
 import io.github.dsheirer.module.decode.tait.Tait1200MessageFilter;
@@ -527,22 +529,29 @@ public class DecoderFactory
             if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
                     sctmf.hasMultipleFrequencies())
             {
-                List<State> activeStates = new ArrayList<>();
-                activeStates.add(State.CONTROL);
-                modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
+                modules.add(new ChannelRotationMonitor(nxdnRotationActiveStates(configNXDN),
+                    sctmf.getFrequencyRotationDelay(), userPreferences));
             }
 
             modules.add(new NXDNDecoder(configNXDN));
-
-            NXDNAudioModule audioModule = new NXDNAudioModule(userPreferences, aliasList);
+            modules.add(new NXDNChannelHealthMonitor(channel));
+            NXDNAudioModule audioModule = new NXDNAudioModule(userPreferences, aliasList,
+                    configNXDN.isRecordUnknownSimplexCalls());
             configureJMBEAudioModule(audioModule, configNXDN);
             modules.add(audioModule);
 
             if(channel.getChannelType() == ChannelType.STANDARD)
             {
-                NXDNTrafficChannelManager primaryTCM = new NXDNTrafficChannelManager(channel);
-                modules.add(primaryTCM);
-                modules.add(new NXDNDecoderState(channel, primaryTCM));
+                if(configNXDN.isTrunked())
+                {
+                    NXDNTrafficChannelManager primaryTCM = new NXDNTrafficChannelManager(channel);
+                    modules.add(primaryTCM);
+                    modules.add(new NXDNDecoderState(channel, primaryTCM));
+                }
+                else
+                {
+                    modules.add(new NXDNDecoderState(channel, null));
+                }
             }
             else if(trafficChannelManager instanceof NXDNTrafficChannelManager parentTCM)
             {
@@ -560,6 +569,12 @@ public class DecoderFactory
         {
             throw new IllegalArgumentException("Can't create NXDN decoder - unrecognized config: " + decodeConfig);
         }
+    }
+
+    static List<State> nxdnRotationActiveStates(DecodeConfigNXDN decodeConfig)
+    {
+        return decodeConfig != null && decodeConfig.isConventional() ?
+            List.of(State.CALL, State.ENCRYPTED, State.DATA) : List.of(State.CONTROL);
     }
 
     /**
@@ -895,19 +910,33 @@ public class DecoderFactory
                     DecodeConfigNBFM origNBFM = (DecodeConfigNBFM)config;
                     DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
                     copyNBFM.setAudioFilter(origNBFM.isAudioFilter());
+                    copyNBFM.setAudioALC(origNBFM.isAudioALC());
                     copyNBFM.setBandwidth(origNBFM.getBandwidth());
+                    copyNBFM.setDeemphasis(origNBFM.getDeemphasis());
                     copyNBFM.setSquelchHysteresisCloseThreshold(origNBFM.getSquelchHysteresisCloseThreshold());
                     copyNBFM.setSquelchHysteresisOpenThreshold(origNBFM.getSquelchHysteresisOpenThreshold());
                     copyNBFM.setSquelchNoiseOpenThreshold(origNBFM.getSquelchNoiseOpenThreshold());
                     copyNBFM.setSquelchNoiseCloseThreshold(origNBFM.getSquelchNoiseCloseThreshold());
+                    List<SquelchDecoderConfig> squelchDecoderCopies = new ArrayList<>();
+                    for(SquelchDecoderConfig squelchDecoder: origNBFM.getSquelchDecoders())
+                    {
+                        squelchDecoderCopies.add(new SquelchDecoderConfig(squelchDecoder.getSquelchType(),
+                            squelchDecoder.getValue()));
+                    }
+                    copyNBFM.setSquelchDecoders(squelchDecoderCopies);
                     copyNBFM.setTalkgroup(origNBFM.getTalkgroup());
                     return copyNBFM;
                 case NXDN:
                     DecodeConfigNXDN origNXDN = (DecodeConfigNXDN)config;
                     DecodeConfigNXDN copyNXDN = new DecodeConfigNXDN();
+                    copyNXDN.setChannelMode(origNXDN.getChannelMode());
                     copyNXDN.setChannelMap(origNXDN.getChannelMap());
                     copyNXDN.setTransmissionMode(origNXDN.getTransmissionMode());
                     copyNXDN.setTrafficChannelPoolSize(origNXDN.getTrafficChannelPoolSize());
+                    copyNXDN.setIgnoreDataCalls(origNXDN.isIgnoreDataCalls());
+                    copyNXDN.setIgnoreEncryptedCalls(origNXDN.isIgnoreEncryptedCalls());
+                    copyNXDN.setEncoding(origNXDN.getEncoding());
+                    copyNXDN.setRecordUnknownSimplexCalls(origNXDN.isRecordUnknownSimplexCalls());
                     return copyNXDN;
                 case P25_PHASE1:
                     DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;

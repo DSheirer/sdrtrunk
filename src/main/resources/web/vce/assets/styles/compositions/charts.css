@@ -1,0 +1,124 @@
+.activity-line-chart {
+  position: relative;
+  width: 100%;
+  min-height: 270px;
+  padding: 8px 10px 2px;
+  overflow-x: auto;
+}
+
+.activity-line-svg {
+  display: block;
+  width: 100%;
+  min-width: 680px;
+  height: 270px;
+}
+
+.chart-grid-line {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  fill: var(--muted);
+  font-size: var(--font-size-meta);
+}
+
+.activity-line-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.activity-line-point {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.activity-series-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 2px 10px 6px;
+}
+
+.activity-series-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.62;
+}
+
+.activity-series-button.active {
+  opacity: 1;
+}
+
+.activity-series-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.activity-series-total {
+  color: inherit;
+  font-weight: var(--font-weight-control);
+  font-variant-numeric: tabular-nums;
+  opacity: .88;
+}
+
+.activity-series-status {
+  color: inherit;
+  font-size: var(--font-size-micro);
+  opacity: .8;
+}
+
+.activity-series-button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  background: var(--surface);
+  border-color: var(--line);
+  opacity: .72;
+}
+
+/* Reusable hover affordances for time-series charts. */
+.chart-hover-surface {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.chart-hover-guide {
+  stroke: color-mix(in srgb, var(--muted) 52%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+.chart-hover-point {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: min(240px, calc(100% - 8px));
+  padding: 7px 9px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--line-dark) 28%, transparent);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-surface);
+  font-size: var(--font-size-meta);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+.chart-tooltip[hidden] {
+  display: none;
+}

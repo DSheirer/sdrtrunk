@@ -1,0 +1,189 @@
+.receiver-health-indicator.receiver-health-healthy {
+  color: color-mix(in srgb, var(--success) 48%, var(--status-header-ink));
+  background: color-mix(in srgb, var(--success) 24%, var(--status-header));
+  border-color: color-mix(in srgb, var(--success) 58%, var(--status-header-line));
+}
+
+.receiver-health-indicator.receiver-health-warning {
+  color: color-mix(in srgb, var(--warning) 52%, var(--status-header-ink));
+  background: color-mix(in srgb, var(--warning) 24%, var(--status-header));
+  border-color: color-mix(in srgb, var(--warning) 58%, var(--status-header-line));
+}
+
+.receiver-health-indicator.receiver-health-critical {
+  color: color-mix(in srgb, var(--danger) 52%, var(--status-header-ink));
+  background: color-mix(in srgb, var(--danger) 24%, var(--status-header));
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--status-header-line));
+}
+
+.receiver-health-indicator.receiver-health-neutral,
+.receiver-health-indicator.receiver-health-stale,
+.receiver-health-indicator.receiver-health-loading {
+  color: var(--header-muted);
+  background: color-mix(in srgb, var(--status-header) 82%, var(--surface));
+  border-color: var(--status-header-line);
+}
+
+/* Receiver geometry uses shared sections, metrics, records, and feedback. */
+.receiver-health-page {
+  min-width: 0;
+}
+
+.receiver-health-section-body[hidden] {
+  display: none;
+}
+
+.receiver-health-overview {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.receiver-health-overview-footer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+}
+
+.receiver-health-timing {
+  min-width: 0;
+  align-content: start;
+}
+
+.receiver-health-account-setting {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.receiver-health-resource-bars {
+  min-width: 0;
+}
+
+.receiver-health-issues-grid,
+.receiver-health-diagnostics-grid {
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.receiver-health-diagnostics {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.receiver-health-issues-grid-active > .receiver-health-section:not(.collapsed),
+.receiver-health-diagnostics-grid > .receiver-health-section:not(.collapsed) {
+  grid-column: 1 / -1;
+}
+
+.receiver-health-diagnostics-heading {
+  padding-inline: var(--space-1);
+}
+
+.receiver-health-incident-list {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.receiver-health-incident {
+  min-width: 0;
+}
+
+.receiver-health-incident-heading {
+  align-items: start;
+}
+
+.receiver-health-incident-body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.receiver-health-incident-guidance {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.receiver-health-resolved-sort {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.receiver-health-resolved-select {
+  --ui-control-height: var(--control-height-compact);
+}
+
+.receiver-health-measurement-row {
+  min-width: 0;
+}
+
+.receiver-health-measurement-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .55fr) max-content;
+  align-items: center;
+}
+
+.receiver-health-measurement-value {
+  min-width: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.receiver-health-measurement-detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.read-only-modal.health-alert-settings-modal {
+  width: min(960px, 96vw);
+}
+
+.health-alert-settings-card .settings-card-body {
+  align-content: start;
+}
+
+@media (max-width: 900px) {
+  .receiver-health-issues-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .receiver-health-diagnostics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .receiver-health-overview,
+  .receiver-health-incident-guidance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .receiver-health-overview-footer,
+  .receiver-health-account-setting {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .receiver-health-measurement-heading {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+
+  .receiver-health-measurement-value {
+    grid-column: 1;
+    grid-row: 2;
+    text-align: start;
+  }
+}

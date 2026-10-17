@@ -1,0 +1,1087 @@
+.radioreference-page,
+.radioreference-connected-page,
+.radioreference-browser {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.radioreference-login-gate {
+  width: min(560px, 100%);
+  margin: var(--space-5) auto 0;
+  padding: clamp(var(--space-4), 4vw, var(--space-5));
+  display: grid;
+  gap: var(--space-2);
+}
+
+.radioreference-login-gate[hidden],
+.radioreference-connected-page[hidden] {
+  display: none;
+}
+
+.radioreference-login-gate :where(h2, p) {
+  margin: 0;
+}
+
+.radioreference-login-gate h2 {
+  font-size: var(--font-size-page-title);
+  line-height: 1.2;
+}
+
+.radioreference-gate-eyebrow {
+  color: var(--accent);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.radioreference-account-form {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.radioreference-account-form > .admin-toggle-control {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.radioreference-account-form > .admin-form-message:empty {
+  display: none;
+}
+
+.radioreference-account-form > .admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.radioreference-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.read-only-modal.radioreference-settings-modal {
+  width: min(640px, 96vw);
+}
+
+.radioreference-settings-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.radioreference-account-details > summary {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3);
+  cursor: pointer;
+}
+
+.radioreference-account-details[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.radioreference-account-details > .radioreference-account-form {
+  margin: 0;
+  padding: var(--space-3);
+}
+
+.radioreference-settings-modal .settings-card {
+  height: auto;
+}
+
+.radioreference-settings-modal .admin-settings-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.radioreference-settings-modal .admin-form-actions {
+  flex-wrap: wrap;
+}
+
+.radioreference-import-workspace {
+  min-width: 0;
+}
+
+.radioreference-browse-form {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.radioreference-browse-fields,
+.radioreference-form-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.radioreference-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.radioreference-browse-fields .admin-form-field,
+.radioreference-form-grid .admin-form-field,
+.radioreference-talkgroup-toolbar .admin-form-field,
+.radioreference-conventional-toolbar .admin-form-field {
+  min-width: 0;
+}
+
+.radioreference-workbench-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(290px, 26%) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.radioreference-directory-results,
+.radioreference-import-detail {
+  min-width: 0;
+  min-height: 0;
+}
+
+.radioreference-directory-results {
+  display: flex;
+  flex-direction: column;
+}
+
+.radioreference-directory-tabs {
+  flex: none;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.radioreference-directory-filters:not(:empty) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.radioreference-directory-filters .admin-form-field {
+  min-width: 0;
+}
+
+.radioreference-directory-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.radioreference-directory-state {
+  padding: var(--space-3);
+}
+
+.radioreference-directory-group {
+  padding: var(--space-2) var(--space-3);
+  color: var(--muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  font-weight: var(--font-weight-control);
+}
+
+.radioreference-directory-branch {
+  border-bottom: 1px solid var(--line);
+}
+
+.radioreference-directory-branch > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: var(--font-weight-control);
+  cursor: pointer;
+  list-style: none;
+}
+
+.radioreference-directory-branch > summary::-webkit-details-marker {
+  display: none;
+}
+
+.radioreference-directory-branch-label::before {
+  content: '›';
+  display: inline-block;
+  width: 20px;
+  color: var(--muted);
+  font-size: var(--font-size-title-small);
+  line-height: 0;
+  transform-origin: 6px center;
+  transition: transform 120ms ease;
+}
+
+.radioreference-directory-branch[open] > summary .radioreference-directory-branch-label::before {
+  transform: rotate(90deg);
+}
+
+.radioreference-directory-branch > summary:hover,
+.radioreference-directory-branch > summary:focus-visible {
+  background: var(--section-header);
+}
+
+.radioreference-directory-branch-content {
+  border-top: 1px solid var(--line);
+}
+
+.radioreference-directory-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.radioreference-directory-item.is-active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+.radioreference-result-open {
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  text-align: left;
+}
+
+.radioreference-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.radioreference-frequency-groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.radioreference-frequency-group {
+  min-width: 0;
+}
+
+.radioreference-frequency-group h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-body);
+}
+
+.radioreference-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-3);
+}
+
+.radioreference-result-card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.radioreference-result-card-header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.radioreference-result-card :is(h4, h5) {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.radioreference-result-card h4 {
+  font-size: var(--font-size-section-title);
+}
+
+.radioreference-result-card h5 {
+  font-size: var(--font-size-secondary);
+}
+
+.radioreference-result-type {
+  flex: 0 0 auto;
+}
+
+.radioreference-result-status {
+  margin: 0;
+}
+
+.radioreference-result-status:empty {
+  display: none;
+}
+
+.radioreference-result-actions .ui-button {
+  flex: 1 1 150px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.radioreference-directory-item .radioreference-row-identity {
+  width: 100%;
+}
+
+.radioreference-directory-item .radioreference-row-identity > :where(strong, small) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.radioreference-directory-item .radioreference-row-identity > strong {
+  line-height: 1.3;
+}
+
+.radioreference-system-workspace {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.radioreference-detail-header,
+.radioreference-talkgroup-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.radioreference-detail-header {
+  justify-content: space-between;
+}
+
+.radioreference-detail-header {
+  flex: none;
+  padding: var(--space-4);
+}
+
+.radioreference-detail-header > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.radioreference-detail-header :where(h2, p) {
+  margin: 0;
+}
+
+.radioreference-detail-header h2 {
+  margin-block: 2px;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-title-small);
+}
+
+.radioreference-detail-header .radioreference-back {
+  display: none;
+}
+
+.radioreference-system-tabs {
+  flex: none;
+  width: fit-content;
+  max-width: calc(100% - 2 * var(--space-4));
+  margin: var(--space-3) var(--space-4) 0;
+}
+
+.radioreference-system-body {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.radioreference-system-body:has(> .radioreference-sites-list > .table-wrap),
+.radioreference-system-body:has(> .radioreference-talkgroup-table > .table-wrap),
+.radioreference-system-body:has(> .table-wrap) {
+  padding-inline: 0;
+  padding-bottom: 0;
+}
+
+.radioreference-system-body:has(> .table-wrap) {
+  gap: 0;
+}
+
+.radioreference-system-body:has(.table-wrap) > :not(.radioreference-sites-list):not(.radioreference-talkgroup-table):not(.table-wrap):not(.radioreference-pager) {
+  margin-inline: var(--space-4);
+}
+
+.radioreference-sites-toolbar,
+.radioreference-conventional-toolbar {
+  flex: none;
+  display: flex;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.radioreference-sites-toolbar > .admin-form-field:first-child {
+  flex: 1 1 auto;
+}
+
+.radioreference-sites-toolbar > .admin-form-field:nth-child(2) {
+  width: min(190px, 35%);
+}
+
+.radioreference-sites-list,
+.radioreference-talkgroup-table {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.radioreference-sites-list > .ui-feedback-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.radioreference-sites-list > .table-wrap,
+.radioreference-talkgroup-table > .table-wrap,
+.radioreference-system-body > .table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.data-table[data-table-type^="radioreference-"][data-mobile-cards="true"] {
+  min-width: max(100%, var(--table-content-min-width));
+}
+
+.radioreference-pager {
+  flex: none;
+}
+
+.radioreference-sites-list > .radioreference-pager,
+.radioreference-talkgroup-table > .radioreference-pager,
+.radioreference-system-body > .radioreference-pager {
+  margin: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.radioreference-row-identity {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.radioreference-row-identity > :where(strong, small) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radioreference-row-identity > .link-button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.radioreference-talkgroup-toolbar {
+  flex: none;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.radioreference-talkgroup-alias-field {
+  flex: 1 1 270px;
+}
+
+.radioreference-category-field {
+  flex: 1 1 230px;
+}
+
+.radioreference-talkgroup-search-field {
+  flex: 1.2 1 320px;
+}
+
+.radioreference-talkgroup-search {
+  min-width: 0;
+  width: 100%;
+}
+
+.radioreference-talkgroup-command-row {
+  min-width: 0;
+  flex: 1 0 100%;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.radioreference-talkgroup-status-control {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+.radioreference-status-filter {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.radioreference-talkgroup-command-tools,
+.radioreference-talkgroup-table-tools {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.radioreference-talkgroup-command-tools {
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.radioreference-system-body > .admin-form-message {
+  padding: 0 var(--space-3);
+}
+
+.radioreference-category-field {
+  min-width: 0;
+  display: flex;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.radioreference-category-field > .admin-form-field {
+  flex: 1 1 auto;
+}
+
+.radioreference-category-star {
+  flex: none;
+}
+
+.radioreference-talkgroup-actions {
+  grid-column: 1 / -1;
+}
+
+.radioreference-talkgroup-actions {
+  justify-content: flex-end;
+}
+
+.radioreference-talkgroup-actions[hidden] {
+  display: none;
+}
+
+.radioreference-selection-badge {
+  margin-right: auto;
+}
+
+.radioreference-conventional-toolbar .admin-form-field {
+  width: min(460px, 100%);
+}
+
+.read-only-modal.radioreference-import-modal {
+  width: min(var(--modal-size-editor), 96vw);
+}
+
+.read-only-modal.radioreference-import-modal-complete {
+  width: min(520px, 96vw);
+}
+
+.radioreference-site-form,
+.radioreference-conventional-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.radioreference-modal-intro {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.radioreference-frequency-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.radioreference-frequency-mode {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 2px var(--space-2);
+}
+
+.radioreference-frequency-mode > input {
+  grid-row: 1 / span 2;
+}
+
+.radioreference-frequency-mode small {
+  line-height: 1.35;
+}
+
+.radioreference-selected-frequencies {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.radioreference-frequency-choices {
+  max-height: 230px;
+  display: grid;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.radioreference-frequency-choice {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.radioreference-frequency-choice:last-child {
+  border-bottom: 0;
+}
+
+.radioreference-detection {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.radioreference-site-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0;
+}
+
+.radioreference-site-fact-wide {
+  grid-column: span 2;
+}
+
+.radioreference-detection-help {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.radioreference-preview-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.radioreference-talkgroup-status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.radioreference-talkgroup-changes {
+  display: grid;
+  gap: var(--space-2);
+  padding: 11px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.radioreference-talkgroup-changes dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px var(--space-3);
+  margin: 0;
+}
+
+.radioreference-talkgroup-changes :where(dt, dd) {
+  min-width: 0;
+  margin: 0;
+}
+
+.radioreference-talkgroup-changes dt {
+  color: var(--muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-control);
+}
+
+.radioreference-talkgroup-changes dd {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+
+.radioreference-preview-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 1px var(--space-4);
+  margin: 0;
+  overflow: hidden;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.radioreference-preview-facts :where(dt, dd) {
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.radioreference-preview-facts dt {
+  color: var(--muted);
+  font-weight: var(--font-weight-control);
+}
+
+.radioreference-import-complete {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+
+.radioreference-import-complete :where(h3, p) {
+  max-width: 540px;
+  margin: 0;
+}
+
+.radioreference-completion-icon {
+  width: 52px;
+  height: 52px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  border-radius: 50%;
+}
+
+.radioreference-completion-icon > svg {
+  width: 24px;
+  height: 24px;
+}
+
+.radioreference-completion-actions {
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .radioreference-workbench-grid {
+    height: auto;
+    min-height: 0;
+    display: block;
+  }
+
+  .radioreference-import-detail {
+    display: none;
+  }
+
+  .radioreference-detail-open .radioreference-directory-results {
+    display: none;
+  }
+
+  .radioreference-detail-open .radioreference-import-detail {
+    display: block;
+  }
+
+  .radioreference-system-workspace {
+    min-height: 0;
+  }
+
+  .radioreference-browse-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .radioreference-site-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .radioreference-directory-filters:not(:empty) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .radioreference-browse-form,
+  .radioreference-sites-toolbar,
+  .radioreference-conventional-toolbar,
+  .radioreference-talkgroup-toolbar {
+    padding: var(--space-3);
+  }
+
+  .radioreference-system-body {
+    padding: var(--space-3);
+  }
+
+  .radioreference-system-body:has(> .radioreference-sites-list > .table-wrap),
+  .radioreference-system-body:has(> .radioreference-talkgroup-table > .table-wrap),
+  .radioreference-system-body:has(> .table-wrap) {
+    padding-inline: 0;
+    padding-bottom: 0;
+  }
+
+  .radioreference-system-body:has(.table-wrap) > :not(.radioreference-sites-list):not(.radioreference-talkgroup-table):not(.table-wrap):not(.radioreference-pager) {
+    margin-inline: var(--space-3);
+  }
+
+  .radioreference-browse-fields,
+  .radioreference-form-grid,
+  .radioreference-frequency-modes,
+  .radioreference-preview-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .radioreference-talkgroup-alias-field,
+  .radioreference-category-field,
+  .radioreference-talkgroup-search-field {
+    flex-basis: 100%;
+  }
+
+  .radioreference-sites-toolbar > .admin-form-field:nth-child(2) {
+    width: 100%;
+  }
+
+  .radioreference-pager,
+  .radioreference-detail-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .radioreference-talkgroup-actions > button {
+    width: 100%;
+  }
+
+  .radioreference-detail-header .radioreference-back {
+    display: inline-flex;
+  }
+
+  .radioreference-talkgroup-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .radioreference-talkgroup-command-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .radioreference-talkgroup-status-control {
+    width: 100%;
+  }
+
+  .radioreference-talkgroup-command-tools {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .radioreference-talkgroup-command-tools .radioreference-import-all {
+    flex: 1 1 auto;
+  }
+
+  .radioreference-selection-badge {
+    grid-column: 1 / -1;
+    margin-right: 0;
+  }
+
+  .radioreference-system-tabs {
+    width: calc(100% - 2 * var(--space-3));
+    max-width: none;
+    margin-inline: var(--space-3);
+  }
+
+  .radioreference-system-tabs > button {
+    flex: 1 1 50%;
+  }
+
+  .radioreference-frequency-choice {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .radioreference-frequency-choice small {
+    grid-column: 2;
+  }
+
+  .radioreference-preview-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .radioreference-site-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .radioreference-site-fact-wide {
+    grid-column: auto;
+  }
+
+  .radioreference-preview-facts dt {
+    padding-bottom: 0;
+  }
+
+  .radioreference-preview-facts dd {
+    padding-top: 3px;
+  }
+
+  .radioreference-talkgroup-changes dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+
+  .radioreference-row-identity > :where(strong, small) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .data-table[data-table-type^="radioreference-"][data-mobile-cards="true"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+    background: transparent;
+  }
+
+  .data-table[data-table-type^="radioreference-"] :where(colgroup, thead) {
+    display: none;
+  }
+
+  .data-table[data-table-type^="radioreference-"] tbody {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .data-table[data-table-type^="radioreference-"] tbody > tr {
+    min-width: 0;
+    display: grid;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+  }
+
+  .data-table[data-table-type^="radioreference-"] tbody td {
+    width: auto;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(108px, 35%) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2);
+    padding: 9px 11px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .data-table[data-table-type^="radioreference-"] tbody td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: var(--font-size-meta);
+    font-weight: var(--font-weight-heading);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .data-table[data-table-type^="radioreference-"] tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .data-table[data-table-type^="radioreference-"] td.empty {
+    display: block;
+  }
+
+  .data-table[data-table-type^="radioreference-"] td.empty::before {
+    display: none;
+  }
+
+  .data-table[data-table-type="radioreference-directory"] tbody > tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="System or agency"] {
+    grid-column: 1 / -1;
+    display: block;
+    padding: 12px;
+  }
+
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="Type"],
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="Actions"] {
+    display: flex;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+  }
+
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="Actions"] {
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="Type"] {
+    grid-column: 1;
+  }
+
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="System or agency"]::before,
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="Type"]::before,
+  .data-table[data-table-type="radioreference-directory"] tbody td[data-label="Actions"]::before,
+  .data-table[data-table-type="radioreference-sites"] tbody td[data-label="Site"]::before,
+  .data-table[data-table-type="radioreference-conventional"] tbody td[data-label="Alpha tag"]::before {
+    display: none;
+  }
+
+  .data-table[data-table-type="radioreference-sites"] tbody td[data-label="Site"] {
+    display: block;
+    padding: 12px;
+  }
+
+  .data-table[data-table-type="radioreference-conventional"] tbody td[data-label="Alpha tag"] {
+    display: block;
+    padding: 11px;
+  }
+
+  .data-table[data-table-type="radioreference-talkgroups"] tbody > tr {
+    position: relative;
+  }
+
+  .data-table[data-table-type="radioreference-talkgroups"] tbody td[data-label=""] {
+    position: absolute;
+    z-index: 1;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    padding: 4px;
+    border: 0;
+  }
+
+  .data-table[data-table-type="radioreference-talkgroups"] tbody td[data-label=""]::before {
+    display: none;
+  }
+
+  .data-table[data-table-type="radioreference-talkgroups"] tbody td[data-label="Talkgroup"] {
+    padding-right: 52px;
+  }
+
+  .data-table[data-table-type^="radioreference-"] .ui-button {
+    white-space: nowrap;
+  }
+}

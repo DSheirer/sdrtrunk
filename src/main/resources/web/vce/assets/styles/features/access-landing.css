@@ -1,0 +1,226 @@
+/* Show a neutral status only when session lookup outlasts a normal page load. */
+.access-pending {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  animation: access-pending-reveal 1ms var(--access-pending-delay) forwards;
+}
+
+@keyframes access-pending-reveal {
+  to { opacity: 1; }
+}
+
+/* Full-screen public entry, with the same dark scene in either app theme. */
+.access-landing,
+.access-login-modal {
+  --ink: var(--access-ink);
+  --muted: var(--access-muted);
+  --surface: var(--access-field-surface);
+  --surface-2: var(--access-field-hover);
+  --line: var(--access-panel-border);
+  --interactive-border: var(--access-field-border);
+  --accent: var(--access-accent);
+  --accent-soft: var(--access-accent-soft);
+  --focus-ring: var(--access-accent-hover);
+  --danger: var(--access-error);
+  --primary-control: var(--access-accent);
+  --primary-control-hover: var(--access-accent-hover);
+  --primary-control-ink: var(--access-accent-ink);
+  --shadow-focus: var(--access-focus-shadow);
+  --shadow-button: var(--access-button-shadow);
+  --shadow-button-hover: var(--access-button-hover-shadow);
+  --shadow-modal: var(--access-panel-shadow);
+  --ui-control-height: var(--access-control-height);
+  --ui-control-radius: var(--access-control-radius);
+  --ui-surface-radius: var(--access-panel-radius);
+  --ui-surface-shadow: var(--access-panel-shadow);
+  --font-weight-control: 600;
+  color: var(--ink);
+  color-scheme: dark;
+}
+
+.access-landing {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  isolation: isolate;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--access-scene-background);
+}
+
+.access-scene-canvas,
+.access-scene-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.access-scene-canvas {
+  display: block;
+}
+
+.access-scene-scrim {
+  background: var(--access-scene-scrim);
+}
+
+.access-landing-layout {
+  position: relative;
+  z-index: 1;
+  width: min(100%, var(--access-layout-width));
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--access-panel-width);
+  align-items: center;
+  gap: var(--access-layout-gap);
+  margin: auto;
+  padding: var(--access-layout-padding-block) var(--access-layout-padding-inline);
+}
+
+.access-landing-brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-7px);
+}
+
+.access-landing-wordmark {
+  display: block;
+  width: min(100%, var(--access-wordmark-width));
+  height: auto;
+  filter: var(--access-wordmark-glow);
+}
+
+.access-landing-card {
+  position: relative;
+  width: 100%;
+  padding: var(--access-panel-padding);
+  background-image: var(--access-panel-background);
+  backdrop-filter: blur(24px);
+}
+
+.access-landing-card::before,
+.access-login-modal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--access-panel-padding);
+  width: var(--access-accent-rule-width);
+  height: 2px;
+  background: var(--access-accent);
+  box-shadow: var(--access-accent-glow);
+}
+
+.access-landing-card > h1 {
+  margin: 0 0 var(--access-heading-gap);
+  color: var(--access-ink);
+  font-size: var(--access-heading-size);
+  font-weight: var(--access-heading-weight);
+  letter-spacing: var(--access-heading-spacing);
+  line-height: 1.1;
+}
+
+.access-login-form {
+  display: grid;
+  gap: var(--access-form-gap);
+  margin: 0;
+}
+
+.access-login-form > .admin-form-message:empty {
+  display: none;
+}
+
+.access-login-form > .admin-form-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: var(--space-2);
+}
+
+.access-login-modal {
+  position: relative;
+  width: min(var(--access-dialog-width), 96vw);
+  border-color: var(--access-panel-border);
+  background-image: var(--access-panel-background);
+  overflow: hidden;
+}
+
+.access-login-modal .modal-content {
+  padding: 0;
+}
+
+.access-login-scene {
+  position: relative;
+  isolation: isolate;
+  min-height: 330px;
+  display: grid;
+  align-content: center;
+  gap: var(--space-5);
+  padding: var(--access-dialog-padding);
+  overflow: hidden;
+  background: var(--access-scene-background);
+}
+
+.access-login-wordmark {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(100%, var(--access-dialog-logo-width));
+  height: auto;
+  justify-self: center;
+  filter: var(--access-wordmark-glow);
+}
+
+.access-login-scene > .access-login-form {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 730px) {
+  .access-landing-layout {
+    min-height: max(100dvh, var(--access-mobile-min-height));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--access-mobile-layout-gap);
+    padding: var(--access-mobile-padding-block) var(--access-mobile-padding-inline);
+  }
+
+  .access-landing-brand {
+    width: min(78%, var(--access-mobile-wordmark-width));
+    transform: none;
+  }
+
+  .access-landing-card {
+    width: min(100%, var(--access-mobile-panel-width));
+    padding: var(--access-mobile-panel-padding);
+  }
+
+  .access-scene-scrim {
+    background: var(--access-scene-scrim-mobile);
+  }
+}
+
+@media (max-width: 560px) {
+  .access-login-modal {
+    width: 100vw;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .access-login-modal .modal-content {
+    flex: 1 1 auto;
+  }
+
+  .access-login-scene {
+    min-height: 100%;
+  }
+}

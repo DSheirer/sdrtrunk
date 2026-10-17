@@ -38,6 +38,7 @@ import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
+import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventDuplicateDetector;
@@ -139,14 +140,30 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             mIgnoreDataCalls = phase1.getIgnoreDataCalls();
             createPhase1TrafficChannels(phase1.getTrafficChannelPoolSize(), phase1);
-            createPhase2TrafficChannels(phase1.getTrafficChannelPoolSize(), new DecodeConfigP25Phase2());
+            DecodeConfigP25Phase2 phase2TrafficConfiguration = new DecodeConfigP25Phase2();
+            copyJMBEAudioSettings(phase1, phase2TrafficConfiguration);
+            createPhase2TrafficChannels(phase1.getTrafficChannelPoolSize(), phase2TrafficConfiguration);
         }
         else if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase2 phase2)
         {
             mIgnoreDataCalls = phase2.getIgnoreDataCalls();
-            createPhase1TrafficChannels(phase2.getTrafficChannelPoolSize(), new DecodeConfigP25Phase1());
+            DecodeConfigP25Phase1 phase1TrafficConfiguration = new DecodeConfigP25Phase1();
+            copyJMBEAudioSettings(phase2, phase1TrafficConfiguration);
+            createPhase1TrafficChannels(phase2.getTrafficChannelPoolSize(), phase1TrafficConfiguration);
             createPhase2TrafficChannels(phase2.getTrafficChannelPoolSize(), phase2);
         }
+    }
+
+    /**
+     * Copies the JMBE audio features shared by Phase 1 and Phase 2 configurations.  Traffic channels created with a
+     * decoder phase that differs from the parent control channel otherwise receive the defaults and ignore the
+     * parent's AGC, tone-volume, and comfort-noise settings.
+     */
+    private static void copyJMBEAudioSettings(DecodeConfigJMBE source, DecodeConfigJMBE target)
+    {
+        target.setAGC(source.isAGC());
+        target.setToneGain(source.getToneGain());
+        target.setNoiseGain(source.getNoiseGain());
     }
 
     /**

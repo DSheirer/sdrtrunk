@@ -21,9 +21,7 @@ package io.github.dsheirer.module.decode.nbfm;
 
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.string.SimpleStringIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.AnalogDecoderState;
@@ -32,6 +30,7 @@ import io.github.dsheirer.module.decode.squelch.dcs.DCSMessage;
 import io.github.dsheirer.module.decode.squelch.SquelchDecoderConfig;
 import io.github.dsheirer.module.decode.squelch.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSCode;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,6 +48,7 @@ public class NBFMDecoderState extends AnalogDecoderState
 
     // Tone filter configuration (from DecodeConfigNBFM)
     private boolean mSquelchDecoderEnabled = false;
+    private boolean mCTCSSSearchEnabled = false;
     private List<SquelchDecoderConfig> mConfiguredSquelchDecoders = new ArrayList<>();
 
     // Current status
@@ -65,11 +65,12 @@ public class NBFMDecoderState extends AnalogDecoderState
     public NBFMDecoderState(String channelName, DecodeConfigNBFM decodeConfig)
     {
         mChannelName = (channelName != null && !channelName.isEmpty()) ? channelName : "NBFM CHANNEL";
-        mChannelNameIdentifier = new SimpleStringIdentifier(mChannelName, IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
+        mChannelNameIdentifier = DecoderLogicalChannelNameIdentifier.create(mChannelName, Protocol.NBFM);
         mTalkgroupIdentifier = new NBFMTalkgroup(decodeConfig.getTalkgroup());
 
         mSquelchDecoderEnabled = decodeConfig.isSquelchDecoderEnabled();
-        if(mSquelchDecoderEnabled && decodeConfig.getSquelchDecoders() != null)
+        mCTCSSSearchEnabled = decodeConfig.isCTCSSSearchEnabled();
+        if((mSquelchDecoderEnabled || mCTCSSSearchEnabled) && decodeConfig.getSquelchDecoders() != null)
         {
             mConfiguredSquelchDecoders.addAll(decodeConfig.getSquelchDecoders());
         }
@@ -100,7 +101,8 @@ public class NBFMDecoderState extends AnalogDecoderState
     {
         if(code != null)
         {
-            mToneStatus = "CTCSS: " + code.getDisplayString() + " [ALLOWED]";
+            mToneStatus = "CTCSS: " + code.getDisplayString() +
+                (mCTCSSSearchEnabled ? " [DETECTED]" : " [ALLOWED]");
             incrementCount(code.getDisplayString(), true);
         }
     }
@@ -182,7 +184,12 @@ public class NBFMDecoderState extends AnalogDecoderState
         sb.append("Activity Summary - Decoder:NBFM\n");
 
         sb.append("\n\nSquelch Decoder: ");
-        if(mSquelchDecoderEnabled)
+        if(mCTCSSSearchEnabled)
+        {
+            sb.append("CTCSS TONE SEARCH\n");
+            sb.append("Carrier squelch audio remains enabled while standard tones are identified.\n");
+        }
+        else if(mSquelchDecoderEnabled)
         {
             sb.append("ENABLED\n");
             sb.append("Configured decoder: ");

@@ -37,6 +37,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
+import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
@@ -170,6 +171,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         discoverRecordingTuners();
+        discoverNetworkTuners();
     }
 
     /**
@@ -439,6 +441,82 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
             }
         }
+    }
+
+    /**
+     * Discover network (e.g. rtl_tcp) based tuners
+     */
+    private void discoverNetworkTuners()
+    {
+        List<TunerConfiguration> tunerConfigurations = getTunerConfigurationManager().getTunerConfigurations(TunerType.RTL_TCP);
+
+        if(tunerConfigurations.size() > 0)
+        {
+            mLog.info("Discovered [" + tunerConfigurations.size() + "] network tuners");
+        }
+
+        for(TunerConfiguration tunerConfiguration: tunerConfigurations)
+        {
+            if(tunerConfiguration instanceof NetworkTunerConfiguration networkTunerConfiguration)
+            {
+                addNetworkTuner(networkTunerConfiguration, false);
+            }
+        }
+    }
+
+    /**
+     * Adds and starts an rtl_tcp network tuner. The configuration is persisted before the tuner is exposed to the
+     * desktop and web interfaces. A previously disabled tuner remains disabled across application restarts.
+     */
+    public DiscoveredNetworkTuner addNetworkTuner(NetworkTunerConfiguration configuration)
+    {
+        return addNetworkTuner(configuration, true);
+    }
+
+    private DiscoveredNetworkTuner addNetworkTuner(NetworkTunerConfiguration configuration, boolean persist)
+    {
+        if(configuration == null)
+        {
+            throw new IllegalArgumentException("Network tuner configuration cannot be null");
+        }
+
+        DiscoveredTuner existing = mDiscoveredTunerModel.getDiscoveredTuner(
+                "RTL TCP " + configuration.getHost() + ":" + configuration.getPort());
+
+        if(existing instanceof DiscoveredNetworkTuner networkTuner)
+        {
+            return networkTuner;
+        }
+
+        if(persist)
+        {
+            mTunerConfigurationManager.addTunerConfiguration(configuration);
+        }
+
+        DiscoveredNetworkTuner discoveredNetworkTuner =
+                new DiscoveredNetworkTuner(mUserPreferences, configuration);
+        startAndConfigureTuner(discoveredNetworkTuner);
+        mLog.info("Network tuner added: " + discoveredNetworkTuner);
+        return discoveredNetworkTuner;
+    }
+
+    /**
+     * Stops and permanently removes an rtl_tcp network tuner and its saved configuration.
+     */
+    public boolean removeNetworkTuner(String id)
+    {
+        DiscoveredTuner discoveredTuner = mDiscoveredTunerModel.getDiscoveredTuner(id);
+
+        if(discoveredTuner instanceof DiscoveredNetworkTuner)
+        {
+            discoveredTuner.stop();
+            mTunerConfigurationManager.removeDisabledTuner(discoveredTuner);
+            mTunerConfigurationManager.removeTunerConfiguration(discoveredTuner.getTunerConfiguration());
+            mDiscoveredTunerModel.removeDiscoveredTuner(discoveredTuner);
+            return true;
+        }
+
+        return false;
     }
 
     /**

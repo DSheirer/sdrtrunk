@@ -130,10 +130,17 @@
      }
 
      @Override
-     public BroadcastConfiguration copyOf()
-     {
-         OpenMHzConfiguration copy = new OpenMHzConfiguration();
-         copy.setSystemName(getSystemName());
-         return copy;
-     }
+    public BroadcastConfiguration copyOf()
+    {
+        OpenMHzConfiguration copy = new OpenMHzConfiguration();
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setDelay(getDelay());
+        copy.setMaximumRecordingAge(getMaximumRecordingAge());
+        copy.setEnabled(isEnabled());
+        copy.setSystemName(getSystemName());
+        copy.setApiKey(getApiKey());
+        return copy;
+    }
  }

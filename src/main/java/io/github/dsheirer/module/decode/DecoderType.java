@@ -39,7 +39,7 @@ public enum DecoderType
     P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),
 
     //Auxiliary Decoders
-    DCS("Digital Coded Squelch (DCS)", "DCS", Protocol.DCS),
+    DCS("DCS Monitor / Code Search", "DCS Search", Protocol.DCS),
     CTCSS("Continuous Tone Squelch", "CTCSS", Protocol.CTCSS),
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
     LJ_1200("LJ1200 173.075", "LJ1200", Protocol.LOJACK),
