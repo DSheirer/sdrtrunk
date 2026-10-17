@@ -21,6 +21,8 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 /**
  * Configuration for a generic completed-call HTTP multipart destination.
@@ -48,6 +50,7 @@ public class RemoteApiConfiguration extends BroadcastConfiguration
         new SimpleStringProperty(DEFAULT_OPENAI_KEY_ENVIRONMENT_VARIABLE);
     private final StringProperty mLocalWhisperExecutable = new SimpleStringProperty();
     private final StringProperty mLocalWhisperModel = new SimpleStringProperty();
+    private String mQueueId;
 
     public RemoteApiConfiguration()
     {
@@ -122,6 +125,22 @@ public class RemoteApiConfiguration extends BroadcastConfiguration
     public String getLocalWhisperModel() { return mLocalWhisperModel.get(); }
     public void setLocalWhisperModel(String value) { mLocalWhisperModel.set(value); }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "queue_id")
+    public String getQueueId()
+    {
+        if(mQueueId == null || mQueueId.isBlank())
+        {
+            String identity = String.valueOf(getName()) + "\u0000" + String.valueOf(getHost());
+            mQueueId = UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
+        }
+        return mQueueId;
+    }
+
+    public void setQueueId(String value) { mQueueId = value; }
+
+    @Override
+    public String getPersistentStatisticsKey() { return getQueueId(); }
+
     public String resolveApiKey()
     {
         String environmentName = getApiKeyEnvironmentVariable();
@@ -158,6 +177,7 @@ public class RemoteApiConfiguration extends BroadcastConfiguration
         copy.setOpenAiKeyEnvironmentVariable(getOpenAiKeyEnvironmentVariable());
         copy.setLocalWhisperExecutable(getLocalWhisperExecutable());
         copy.setLocalWhisperModel(getLocalWhisperModel());
+        //Do not copy the queue identity; cloned destinations keep independent counters and pending work.
         return copy;
     }
 }

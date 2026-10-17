@@ -4,9 +4,9 @@ This repository is Rob Gwi's experimental fork of [DSheirer's sdrtrunk](https://
 
 > This is a beta fork and is not an official upstream sdrtrunk release. Back up your playlist before testing it.
 
-## Current release: 0.7.1-beta5
+## Current release: 0.7.1-beta11
 
-- [Latest downloadable release: Linux, Windows, and macOS 0.7.1 beta 5](https://github.com/robgwi/sdrtrunk/releases/tag/sdrtrunk-v0.7.1-beta5)
+- [Latest downloadable release: Linux, Windows, and macOS 0.7.1 beta 11](https://github.com/robgwi/sdrtrunk/releases/tag/sdrtrunk-v0.7.1-beta11)
 - [Raspberry Pi installation guide](RASPBERRY_PI.md)
 - [Linux x86_64 installation guide](LINUX_X86_64.md)
 - [Local Whisper setup guide](WHISPER_SETUP.md)
@@ -21,27 +21,29 @@ The Raspberry Pi archive contains its own ARM64 Java and JavaFX runtime. A separ
 
 ## Fork features
 
-### Scanner-style web console
+### VCE web console
 
 - Runs alongside both the desktop and headless application.
 - Uses the responsive interface from [tylerwatt12/sdrtrunk-vce](https://github.com/tylerwatt12/sdrtrunk-vce), adapted to this fork's embedded Java server and existing playlist model.
-- Keeps the main page focused on the live police-scanner display; management tools use the VCE top navigation and responsive workspaces.
-- Shows scanning/receiving state, talkgroup ID and configured alias/name, source radio, protocol, frequency, and recent decoded activity.
-- Clears the previous talkgroup, alias, frequency, source, signal, and level as soon as the receiver returns to scanning.
+- Uses VCE's original branding, navigation, responsive application shell, Main workspace, signal-quality tiles, and Administration settings layout.
+- Removes this fork's former custom live-scanner dashboard instead of presenting a second, visually unrelated interface.
+- Adds working SDRTrunk playlist, streaming, RadioReference, tuner, spectrum, recording, transcription, web-listener, and account controls inside the VCE application shell.
 - Starts and stops configured channels remotely.
 - Queues completed live calls in order and plays every call to completion before applying the configurable between-call hold time.
 - Shows the current call metadata, measured audio level, and number of waiting calls in the top scanner panel.
 - Lists and plays MP3/WAV recordings from the configured recording directory.
 - Shows actual host CPU and memory usage, tuner/channel status, and streaming-destination state.
 - Provides a selectable live tuner spectrum and waterfall without interrupting active channel decoders.
-- Uses a password login and private browser session cookie; API clients can continue using `Authorization: Bearer <web-password>`.
+- Uses named administrator/operator accounts and private browser session cookies. The built-in administrator password
+  remains available for recovery and API clients can continue using `Authorization: Bearer <web-password>`.
+- Shows the active bind interface and port, supports saved custom ports, and can listen on `0.0.0.0` for LAN access.
 - Enables, disables, and restarts configured streaming destinations from the Streaming window.
 
 Version 0.7.1 Beta 1 replaces the previous inline browser dashboard instead of keeping a theme selector. Supported VCE pages are
-backed by this fork's live APIs for the scanner dashboard, browser call queue, transcripts, channels and talkgroups,
+backed by this fork's live APIs for the VCE Main workspace, browser call queue, transcripts, channels and talkgroups,
 RadioReference import, streaming and Remote Calls, tuners, spectrum/waterfall, recordings, Whisper, host metrics, and
-web-password administration. VCE features that require its separate SQLite history/account subsystem—multi-user
-roles, scan lists, historical analytics, managed recording catalog, and P25 network visualization—remain hidden until
+web-password administration. This fork now provides its own persistent multi-user administrator/operator account store;
+VCE features that still require its separate SQLite history subsystem—scan lists, historical analytics, managed recording catalog, and P25 network visualization—remain hidden until
 equivalent backend support is implemented. See [VCE_WEB_INTERFACE.md](VCE_WEB_INTERFACE.md) for the endpoint map.
 
 Signal strength is displayed as unavailable when a tuner does not expose calibrated RSSI through sdrtrunk's shared tuner interface. The dashboard does not fabricate a signal value.
@@ -76,7 +78,8 @@ Other advanced protocol-specific decoder fields, site/channel creation, conventi
 - Use **NBFM Squelch: Carrier / CTCSS / DCS** to select carrier squelch, a fixed CTCSS tone, a fixed DCS code, or CTCSS tone search.
 - Add CTCSS tones as first-class alias identifiers from the NBFM alias menu; tones survive playlist saves and alias cloning and resolve against decoded CTCSS identifiers.
 - Use **DCS Monitor / Code Search** from Additional Decoders when searching for an unknown DCS code.
-- Manage the web console password and restart the embedded web server from **Playlist Editor > Web Interface**.
+- Manage the web console password, bind address, port, active listening interface, service restart, and additional
+  administrator/operator accounts from **Playlist Editor > Web Interface**.
 - View host CPU, host memory, and sdrtrunk JVM memory in the desktop **System** tab.
 
 ### rtl_tcp network tuners
@@ -124,8 +127,8 @@ This build requires a Raspberry Pi 4 or 5 running a 64-bit operating system. Con
 sudo apt update
 sudo apt install libusb-1.0-0 unzip
 
-unzip sdr-trunk-linux-aarch64-v0.7.1-beta5.zip
-cd sdr-trunk-linux-aarch64-v0.7.1-beta5
+unzip sdr-trunk-linux-aarch64-v0.7.1-beta11.zip
+cd sdr-trunk-linux-aarch64-v0.7.1-beta11
 bin/sdr-trunk
 ```
 
@@ -143,6 +146,89 @@ bin/sdr-trunk
 Environment variables override saved GUI password settings. The older `SDRTRUNK_WEB_TOKEN` name remains a compatibility fallback. Do not commit real passwords, keys, or tokens to this repository.
 
 ## Release history
+
+### 0.7.1-beta11
+
+- Expanded the web Playlist Channel editor into Channel, Source, Decoder, Event Logging, and Recording sections.
+  It can now edit frequency, preferred tuner, decoder type, NXDN conventional/trunked channel type, NXDN air-interface
+  mode, maximum traffic channels, ignored data/encrypted calls, talker-alias encoding, auxiliary monitoring, all event
+  logger choices, and supported baseband/bitstream/MBE recorder types.
+- Replaced the fragile Java Preferences storage for VCE personal settings with atomic
+  `<application-root>/web_preferences.json` persistence, added optimistic revision checks, and migrated to preference
+  schema 12 so incompatible older profiles no longer cause the repeating `My Settings are unavailable` banner.
+- The desktop application now restores the main spectrum/controller/streaming split-divider positions in addition to
+  its existing frame and panel dimensions, and ignores saved frame positions that are no longer on a connected monitor.
+
+### 0.7.1-beta10 (development)
+
+- Corrected Main signal-quality tiles so a running but idle decoder reports `Idle` and `Waiting for sync`, rather
+  than the misleading `No signal`. Tiles now show the configured or active frequency and identify a recently active
+  talkgroup, alias, and source while SDRTrunk is decoding it.
+- Clearly distinguishes unavailable RF dBFS/decode-health measurements from a failed or disconnected SDR. This
+  embedded API does not invent signal or decode percentages that SDRTrunk's decode-event path does not expose.
+- Populated the Calls workspace activity chart, conventional-channel totals, top destinations, and top source radios
+  from the persistent 24-hour web activity records.
+- Populated Radio Activity action totals and source-radio drill-down tables, including observation counts, aliases,
+  systems/channels, and last-seen timestamps.
+- Reduced the size of Main saved-activity/streaming summary cards and Streaming destination counters, with improved
+  spacing between counter labels and values.
+- Expanded VCE About and notice attribution to retain Tyler Watthanaphand's original web-interface credit while
+  identifying Rob Gwi (`@robgwi`) for this fork's web integration, GUI improvements, APIs, and management features.
+
+### 0.7.1-beta9 (development)
+
+- Added restart-safe web activity storage at `<application-root>/web_activity.json`, with atomic writes, duplicate call-update
+  replacement, and retention of the newest 5,000 configured calls.
+- Replaced the VCE dashboard's hard-coded zero call totals with retained 24-hour call and recording totals.
+- Fixed Main activity filtering so configured, monitored calls appear even when their alias is not marked Record;
+  unconfigured and Do Not Monitor traffic remains excluded, and Recorded is counted separately.
+- Added a five-second-refreshing Saved Activity and Streaming section to Main, including recent calls, channel,
+  talkgroup, alias, source, protocol, duration, and per-destination connection state.
+- Persisted uploaded, duplicate, error, and aged-off counters per streaming destination so operational totals survive
+  application and broadcaster restarts. Rdio Scanner's existing durable pending-call queue continues to supply the
+  restored current queue depth.
+- Added a disk-backed Remote Call API queue under the configured streaming directory. Its audio and metadata now
+  survive application restart, destination disable/re-enable, connection recovery, and ordinary configuration edits;
+  deleting the destination explicitly removes its retained queue.
+- Added dashboard totals for retained uploads, current queued calls, and retained upload errors across active streaming
+  and Remote Call API destinations.
+
+### 0.7.1-beta8 (development)
+
+- Fixed the desktop Web Interface editor duplicating a previously formatted listener host in the active-binding label.
+- Repaired older saved VCE preference profiles by filling newly introduced settings and dropping stale keys, preventing
+  the `My Settings are unavailable` warning after sign-in.
+- Added the complete offset-pagination contract to current signal-quality responses, fixing the Main page's
+  `page limit value is invalid` error.
+- Split Playlist Channels and Talkgroups/Aliases into their own Manage pages, with filtering, sticky desktop table
+  headings, responsive action areas, and mobile card layouts.
+- Widened and reflowed Streaming destination cards and editors so long URLs, API configuration, metrics, and controls
+  remain readable without narrow-column wrapping.
+- Upgraded the browser spectrum and waterfall canvases to device-pixel-aware rendering with responsive aspect ratios,
+  sharper grids and traces, and full-resolution waterfall rows on high-density displays.
+
+### 0.7.1-beta7 (development)
+
+- Restored the original VCE wordmark, browser title, Main/dashboard renderer, signal-quality layout, navigation, and
+  Administration settings shell from VCE commit `ba099dc469298cebcac37e172a3db8ef647bcfec`.
+- Removed the fork's replacement live-scanner dashboard JavaScript, stylesheet, and SDRTrunk-specific wordmark so the
+  browser no longer switches to a visually unrelated home page.
+- Mounted the fork's working channel, RadioReference, streaming, tuner, spectrum, recording/transcription, listener,
+  Whisper, user-management, and logging controls inside the VCE application shell.
+- Added VCE-compatible current-channel quality, dashboard-summary, and activity-summary endpoints so the restored Main
+  workspace loads cleanly without requiring VCE's separate SQLite history service.
+
+### 0.7.1-beta6 (development)
+
+- Added persistent web-interface bind-address and port settings instead of relying only on JVM startup properties.
+  The Playlist Editor and browser Administration page now show both configured and active bindings and explain when
+  `127.0.0.1` is local-only or `0.0.0.0` permits access through all IPv4 interfaces.
+- Added secure named web-console accounts with PBKDF2 password hashing, enable/disable controls, and administrator or
+  operator roles. Accounts can be created, edited, and deleted from both the desktop Playlist Editor and the web console.
+- Changed the Raspberry Pi and Linux-server launcher defaults from an authoritative bind override to an editable
+  `0.0.0.0` initial default, so saved interface changes now take effect after a web-service restart.
+- Preserved the built-in `admin` password, automatic legacy-token migration, session cookies, environment override,
+  and bearer-password API authentication for existing installations and integrations.
 
 ### 0.7.1-beta5
 

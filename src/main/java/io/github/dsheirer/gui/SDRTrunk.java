@@ -121,6 +121,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private static final String CONTROLLER_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".control.panel";
     private static final String SPECTRAL_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".spectral.panel";
     private static final String WINDOW_FRAME_IDENTIFIER = BASE_WINDOW_NAME + ".frame";
+    private static final String SPLIT_DIVIDER_ONE_IDENTIFIER = BASE_WINDOW_NAME + ".divider.one";
+    private static final String SPLIT_DIVIDER_TWO_IDENTIFIER = BASE_WINDOW_NAME + ".divider.two";
 
     private boolean mBroadcastStatusVisible;
     private boolean mResourceStatusVisible;
@@ -290,6 +292,7 @@ public class SDRTrunk implements Listener<TunerEvent>
                 if(!GraphicsEnvironment.isHeadless())
                 {
                     mMainGui.setVisible(true);
+                    restoreMainDividerLocations();
                     Tuner tuner = tunerSpectralDisplayManager.showFirstTuner();
 
                     if(tuner != null)
@@ -784,6 +787,18 @@ public class SDRTrunk implements Listener<TunerEvent>
         {
             mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
         }
+        if(mSplitPane != null)
+        {
+            int[] dividers = mSplitPane.getDividerLocations();
+            if(dividers.length > 0)
+            {
+                mUserPreferences.getSwingPreference().setInt(SPLIT_DIVIDER_ONE_IDENTIFIER, dividers[0]);
+            }
+            if(dividers.length > 1)
+            {
+                mUserPreferences.getSwingPreference().setInt(SPLIT_DIVIDER_TWO_IDENTIFIER, dividers[1]);
+            }
+        }
         if(mJavaFxWindowManager != null)
         {
             mJavaFxWindowManager.shutdown();
@@ -799,6 +814,18 @@ public class SDRTrunk implements Listener<TunerEvent>
         mTunerManager.stop();
         mLog.info("Shutdown complete.");
         mApplicationLog.stop();
+    }
+
+    /** Restores the user's resized spectrum/controller/streaming sections after the frame has been realized. */
+    private void restoreMainDividerLocations()
+    {
+        if(mSplitPane == null) { return; }
+        int first = mUserPreferences.getSwingPreference().getInt(SPLIT_DIVIDER_ONE_IDENTIFIER, -1);
+        int second = mUserPreferences.getSwingPreference().getInt(SPLIT_DIVIDER_TWO_IDENTIFIER, -1);
+        int[] current = mSplitPane.getDividerLocations();
+        if(first > 0 && current.length > 0) { current[0] = first; }
+        if(second > first && current.length > 1) { current[1] = second; }
+        if(current.length > 0) { mSplitPane.setDividerLocations(current); }
     }
 
     /**

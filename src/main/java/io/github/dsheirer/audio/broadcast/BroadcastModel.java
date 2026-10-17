@@ -554,7 +554,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     if(broadcastEvent.getBroadcastConfiguration() instanceof RemoteApiConfiguration)
                     {
                         RemoteApiBroadcaster.discardPreservedQueue(
-                            broadcastEvent.getBroadcastConfiguration().getId());
+                            ((RemoteApiConfiguration)broadcastEvent.getBroadcastConfiguration()).getQueueId());
                     }
                     break;
             }

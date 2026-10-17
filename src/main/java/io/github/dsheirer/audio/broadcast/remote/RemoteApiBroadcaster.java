@@ -5,7 +5,9 @@ import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.AudioRecording;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.URI;
@@ -13,6 +15,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -20,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -37,9 +46,11 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
 {
     private static final Logger mLog = LoggerFactory.getLogger(RemoteApiBroadcaster.class);
     private static final Gson GSON = new Gson();
-    private static final Map<Integer,PendingQueue> PENDING_QUEUES = new ConcurrentHashMap<>();
+    private static final String QUEUE_DIRECTORY = "remote_api_queue";
+    private static final Map<String,PendingQueue> PENDING_QUEUES = new ConcurrentHashMap<>();
     private final PendingQueue mPendingQueue;
     private final Queue<QueuedCall> mQueue;
+    private final Path mQueuePath;
     private final Duration mRequestTimeout;
     private final Object mConnectionLock = new Object();
     private volatile HttpClient mHttpClient;
@@ -69,9 +80,18 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
 
     public RemoteApiBroadcaster(RemoteApiConfiguration configuration)
     {
+        this(configuration, SystemProperties.getInstance().getApplicationFolder("streaming"));
+    }
+
+    /** Constructor with an explicit queue root, used by restart-safety tests. */
+    RemoteApiBroadcaster(RemoteApiConfiguration configuration, Path streamingDirectory)
+    {
         super(configuration);
-        mPendingQueue = PENDING_QUEUES.computeIfAbsent(configuration.getId(), ignored -> new PendingQueue());
+        String queueId = configuration.getQueueId();
+        Path queuePath = streamingDirectory.resolve(QUEUE_DIRECTORY).resolve(queueId);
+        mPendingQueue = PENDING_QUEUES.computeIfAbsent(queueId, ignored -> new PendingQueue(queuePath));
         mQueue = mPendingQueue.queue();
+        mQueuePath = mPendingQueue.path();
         mRequestTimeout = Duration.ofSeconds(configuration.getRequestTimeoutSeconds());
         mHttpClient = createHttpClient();
         mUploadSlots = new Semaphore(configuration.getMaximumConcurrentUploads());
@@ -118,7 +138,9 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
     @Override
     public void stop()
     {
-        stop(false);
+        //Stopping, disabling and application shutdown preserve pending calls.  Destination deletion explicitly
+        //removes the durable queue through discardPreservedQueue().
+        stop(true);
     }
 
     /** Stops this instance while retaining queued and in-flight calls for its replacement instance. */
@@ -165,29 +187,33 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
         }
     }
 
-    private void discardQueue()
-    {
-        if(mPendingQueue.discard())
-        {
-            PENDING_QUEUES.remove(getBroadcastConfiguration().getId(), mPendingQueue);
-        }
-    }
-
     /** Releases calls retained while a disabled or edited destination was waiting to restart. */
-    public static void discardPreservedQueue(int configurationId)
+    public static void discardPreservedQueue(String queueId)
     {
-        PendingQueue queue = PENDING_QUEUES.remove(configurationId);
+        PendingQueue queue = PENDING_QUEUES.remove(queueId);
         if(queue != null)
         {
             queue.discard();
         }
+        else
+        {
+            discardDirectory(defaultQueuePath(queueId));
+        }
     }
 
     /** Returns calls retained for a disabled destination that does not currently have a broadcaster instance. */
-    public static int getPreservedQueueSize(int configurationId)
+    public static int getPreservedQueueSize(RemoteApiConfiguration configuration)
     {
-        PendingQueue queue = PENDING_QUEUES.get(configurationId);
-        return queue != null ? queue.size() : 0;
+        PendingQueue queue = PENDING_QUEUES.get(configuration.getQueueId());
+        return queue != null ? queue.size() : persistedQueueSize(defaultQueuePath(configuration.getQueueId()));
+    }
+
+    private void discardQueue()
+    {
+        if(mPendingQueue.discard())
+        {
+            PENDING_QUEUES.remove(getBroadcastConfiguration().getQueueId(), mPendingQueue);
+        }
     }
 
     private void cancelActiveUploads(boolean retryImmediately)
@@ -206,19 +232,23 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
         int queued = mQueue.size();
         for(int x = 0; x < queued && (call = mQueue.poll()) != null; x++)
         {
-            mPendingQueue.offer(new QueuedCall(call.recording(), call.attempt(), now));
+            call.setNextAttempt(now);
+            persistMetadataQuietly(call);
+            mPendingQueue.offer(call);
         }
         queueChanged();
     }
 
     private void releaseQueuedCall(QueuedCall call)
     {
-        call.recording().removePendingReplay();
+        complete(call);
     }
 
     private void requeueImmediately(QueuedCall call)
     {
-        mPendingQueue.offer(new QueuedCall(call.recording(), call.attempt(), System.currentTimeMillis()));
+        call.setNextAttempt(System.currentTimeMillis());
+        persistMetadataQuietly(call);
+        mPendingQueue.offer(call);
     }
 
     @Override
@@ -232,8 +262,24 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
     @Override
     public void receive(AudioRecording recording)
     {
-        mPendingQueue.offer(new QueuedCall(recording, 0, System.currentTimeMillis()));
-        queueChanged();
+        if(recording == null)
+        {
+            return;
+        }
+
+        try
+        {
+            mPendingQueue.offer(persist(recording));
+            recording.removePendingReplay();
+            queueChanged();
+        }
+        catch(Exception e)
+        {
+            incrementErrorAudioCount();
+            recording.removePendingReplay();
+            broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_ERROR_COUNT_CHANGE));
+            mLog.error("Unable to save Remote API call to the durable queue", e);
+        }
     }
 
     private void processQueue()
@@ -243,7 +289,7 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
             while(mRunning.get() && mUploadSlots.tryAcquire())
             {
                 QueuedCall call = mQueue.peek();
-                if(call == null || call.nextAttempt() > System.currentTimeMillis())
+                if(call == null || call.getNextAttempt() > System.currentTimeMillis())
                 {
                     mUploadSlots.release();
                     return;
@@ -251,10 +297,10 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
                 mQueue.poll();
                 queueChanged();
                 if(!getBroadcastConfiguration().isRetryIndefinitely() &&
-                    System.currentTimeMillis() - call.recording().getStartTime() >
+                    System.currentTimeMillis() - call.getMetadata().getTimestamp() >
                     getBroadcastConfiguration().getMaximumRecordingAge())
                 {
-                    call.recording().removePendingReplay();
+                    complete(call);
                     incrementAgedOffAudioCount();
                     broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_AGED_OFF_COUNT_CHANGE));
                     mUploadSlots.release();
@@ -296,7 +342,7 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
                             connectionSucceeded();
                             incrementStreamedAudioCount();
                             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STREAMED_COUNT_CHANGE));
-                            call.recording().removePendingReplay();
+                            complete(call);
                         }
                         else
                         {
@@ -326,9 +372,9 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
 
     private CompletableFuture<Void> upload(QueuedCall call)
     {
-        AudioRecording recording = call.recording();
-        CompletedCallMetadata metadata = CompletedCallMetadata.from(recording);
-        return mSpeechProcessor.process(recording.getPath()).exceptionally(error ->
+        Path audioPath = mQueuePath.resolve(call.getAudioFile());
+        CompletedCallMetadata metadata = call.getMetadata();
+        return mSpeechProcessor.process(audioPath).exceptionally(error ->
         {
             mLog.warn("Speech processing failed; uploading call without transcript: {}", error.getMessage());
             return CallTranscription.none();
@@ -337,10 +383,10 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
             try
             {
                 metadata.setTranscription(transcription);
-                byte[] audio = Files.readAllBytes(recording.getPath());
+                byte[] audio = Files.readAllBytes(audioPath);
                 MultipartBody body = new MultipartBody()
                     .text("metadata", GSON.toJson(metadata))
-                    .file("audio", recording.getPath().getFileName().toString(), "audio/mpeg", audio);
+                    .file("audio", call.getAudioName(), "audio/mpeg", audio);
                 HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(getBroadcastConfiguration().getHost()))
                     .timeout(mRequestTimeout)
                     .header("Content-Type", "multipart/form-data; boundary=" + body.boundary())
@@ -662,7 +708,7 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
     {
         mLastCallError = rootMessage(error);
         recoverConnection(mLastCallError);
-        int nextAttempt = call.attempt() + 1;
+        int nextAttempt = call.getAttempt() + 1;
         if(mRunning.get() && (getBroadcastConfiguration().isRetryIndefinitely() ||
             nextAttempt <= getBroadcastConfiguration().getMaximumRetries()))
         {
@@ -670,8 +716,10 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
                 nextAttempt > getBroadcastConfiguration().getMaximumRetries() ? 300_000L :
                 Math.min(300_000L, 1_000L << Math.min(nextAttempt - 1, 18));
             long jitter = (long)(Math.random() * Math.max(1, delay / 4));
-            mPendingQueue.offer(new QueuedCall(call.recording(), nextAttempt,
-                System.currentTimeMillis() + delay + jitter));
+            call.setAttempt(nextAttempt);
+            call.setNextAttempt(System.currentTimeMillis() + delay + jitter);
+            persistMetadataQuietly(call);
+            mPendingQueue.offer(call);
             String retryLimit = getBroadcastConfiguration().isRetryIndefinitely() ? "unlimited" :
                 Integer.toString(getBroadcastConfiguration().getMaximumRetries());
             mLog.warn("Remote call upload failed; retry {}/{} scheduled: {}", nextAttempt, retryLimit,
@@ -681,7 +729,7 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
         {
             incrementErrorAudioCount();
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_ERROR_COUNT_CHANGE));
-            call.recording().removePendingReplay();
+            complete(call);
             mLog.error("Remote call upload permanently failed after {} attempts", nextAttempt, error);
         }
     }
@@ -691,7 +739,153 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
         broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
     }
 
-    private record QueuedCall(AudioRecording recording, int attempt, long nextAttempt) {}
+    private QueuedCall persist(AudioRecording recording) throws IOException
+    {
+        Files.createDirectories(mQueuePath);
+        String id = UUID.randomUUID().toString();
+        String extension = extension(recording.getPath());
+        String audioFile = id + extension;
+        Path temporaryAudio = mQueuePath.resolve(audioFile + ".tmp");
+        Path durableAudio = mQueuePath.resolve(audioFile);
+        Files.copy(recording.getPath(), temporaryAudio, StandardCopyOption.REPLACE_EXISTING);
+        moveAtomically(temporaryAudio, durableAudio);
+        QueuedCall call = new QueuedCall(id, audioFile, recording.getPath().getFileName().toString(),
+            CompletedCallMetadata.from(recording), 0, System.currentTimeMillis());
+        persistMetadata(call);
+        return call;
+    }
+
+    private void complete(QueuedCall call)
+    {
+        try
+        {
+            Files.deleteIfExists(mQueuePath.resolve(call.getAudioFile()));
+            Files.deleteIfExists(metadataPath(call));
+        }
+        catch(IOException e)
+        {
+            //The stable call id makes retrying a leftover item safe for receivers that honor idempotency keys.
+            mLog.warn("Unable to remove completed Remote API queue item [{}]", call.getId(), e);
+        }
+    }
+
+    private void persistMetadata(QueuedCall call) throws IOException
+    {
+        Files.createDirectories(mQueuePath);
+        Path temporary = mQueuePath.resolve(call.getId() + ".json.tmp");
+        Files.writeString(temporary, GSON.toJson(call), StandardCharsets.UTF_8);
+        moveAtomically(temporary, metadataPath(call));
+    }
+
+    private void persistMetadataQuietly(QueuedCall call)
+    {
+        try
+        {
+            persistMetadata(call);
+        }
+        catch(IOException e)
+        {
+            mLog.error("Unable to update Remote API durable queue item [{}]", call.getId(), e);
+        }
+    }
+
+    private Path metadataPath(QueuedCall call)
+    {
+        return mQueuePath.resolve(call.getId() + ".json");
+    }
+
+    private static void moveAtomically(Path source, Path destination) throws IOException
+    {
+        try
+        {
+            Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch(AtomicMoveNotSupportedException e)
+        {
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static String extension(Path path)
+    {
+        String name = path.getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        return dot >= 0 ? name.substring(dot) : ".mp3";
+    }
+
+    private static Path defaultQueuePath(String queueId)
+    {
+        return SystemProperties.getInstance().getApplicationFolder("streaming")
+            .resolve(QUEUE_DIRECTORY).resolve(queueId);
+    }
+
+    private static int persistedQueueSize(Path queuePath)
+    {
+        if(!Files.isDirectory(queuePath))
+        {
+            return 0;
+        }
+        try(DirectoryStream<Path> stream = Files.newDirectoryStream(queuePath, "*.json"))
+        {
+            int count = 0;
+            for(Path ignored: stream) { count++; }
+            return count;
+        }
+        catch(IOException e)
+        {
+            return 0;
+        }
+    }
+
+    private static void discardDirectory(Path queuePath)
+    {
+        if(!Files.isDirectory(queuePath))
+        {
+            return;
+        }
+        try(DirectoryStream<Path> stream = Files.newDirectoryStream(queuePath))
+        {
+            for(Path path: stream) { Files.deleteIfExists(path); }
+            Files.deleteIfExists(queuePath);
+        }
+        catch(IOException e)
+        {
+            mLog.warn("Unable to discard Remote API durable queue [{}]", queuePath, e);
+        }
+    }
+
+    private static class QueuedCall
+    {
+        private String mId;
+        private String mAudioFile;
+        private String mAudioName;
+        private CompletedCallMetadata mMetadata;
+        private int mAttempt;
+        private long mNextAttempt;
+
+        @SuppressWarnings("unused")
+        private QueuedCall() {}
+
+        private QueuedCall(String id, String audioFile, String audioName, CompletedCallMetadata metadata,
+                           int attempt, long nextAttempt)
+        {
+            mId = id;
+            mAudioFile = audioFile;
+            mAudioName = audioName;
+            mMetadata = metadata;
+            mAttempt = attempt;
+            mNextAttempt = nextAttempt;
+        }
+
+        private String getId() { return mId; }
+        private String getAudioFile() { return mAudioFile; }
+        private String getAudioName() { return mAudioName; }
+        private CompletedCallMetadata getMetadata() { return mMetadata; }
+        private int getAttempt() { return mAttempt; }
+        private void setAttempt(int value) { mAttempt = value; }
+        private long getNextAttempt() { return mNextAttempt; }
+        private void setNextAttempt(long value) { mNextAttempt = value; }
+    }
 
     private static class ActiveUpload
     {
@@ -711,17 +905,24 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
     private static class PendingQueue
     {
         private final Queue<QueuedCall> mQueue = new PriorityBlockingQueue<>(32,
-            Comparator.comparingLong(QueuedCall::nextAttempt));
+            Comparator.comparingLong(QueuedCall::getNextAttempt));
         private final AtomicBoolean mDiscarded = new AtomicBoolean();
+        private final Path mPath;
+
+        private PendingQueue(Path path)
+        {
+            mPath = path;
+            load();
+        }
 
         private Queue<QueuedCall> queue() { return mQueue; }
+        private Path path() { return mPath; }
         private int size() { return mQueue.size(); }
 
         private synchronized boolean offer(QueuedCall call)
         {
             if(mDiscarded.get())
             {
-                call.recording().removePendingReplay();
                 return false;
             }
             mQueue.offer(call);
@@ -737,9 +938,58 @@ public class RemoteApiBroadcaster extends AbstractAudioBroadcaster<RemoteApiConf
             QueuedCall call;
             while((call = mQueue.poll()) != null)
             {
-                call.recording().removePendingReplay();
+                try
+                {
+                    Files.deleteIfExists(mPath.resolve(call.getAudioFile()));
+                    Files.deleteIfExists(mPath.resolve(call.getId() + ".json"));
+                }
+                catch(IOException e)
+                {
+                    mLog.warn("Unable to discard Remote API queue item [{}]", call.getId(), e);
+                }
             }
+            discardDirectory(mPath);
             return true;
+        }
+
+        private void load()
+        {
+            try
+            {
+                Files.createDirectories(mPath);
+                try(DirectoryStream<Path> stream = Files.newDirectoryStream(mPath, "*.json"))
+                {
+                    for(Path metadataPath: stream)
+                    {
+                        try
+                        {
+                            QueuedCall call = GSON.fromJson(
+                                Files.readString(metadataPath, StandardCharsets.UTF_8), QueuedCall.class);
+                            if(call != null && call.getId() != null && call.getAudioFile() != null &&
+                                call.getMetadata() != null && Files.isRegularFile(mPath.resolve(call.getAudioFile())))
+                            {
+                                mQueue.offer(call);
+                            }
+                            else
+                            {
+                                Files.deleteIfExists(metadataPath);
+                            }
+                        }
+                        catch(Exception e)
+                        {
+                            mLog.error("Unable to load Remote API queue metadata [{}]", metadataPath, e);
+                        }
+                    }
+                }
+                if(!mQueue.isEmpty())
+                {
+                    mLog.info("Restored [{}] pending Remote API calls from [{}]", mQueue.size(), mPath);
+                }
+            }
+            catch(IOException e)
+            {
+                mLog.error("Unable to initialize Remote API durable queue [{}]", mPath, e);
+            }
         }
     }
 }

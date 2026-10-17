@@ -181,6 +181,12 @@ public class RdioScannerConfiguration extends BroadcastConfiguration
         mQueueId = queueId;
     }
 
+    @Override
+    public String getPersistentStatisticsKey()
+    {
+        return getQueueId();
+    }
+
     /** Uses an explicit heartbeat URL or derives /api/heartbeat from the configured call-upload URL. */
     public String resolveHeartbeatUrl()
     {

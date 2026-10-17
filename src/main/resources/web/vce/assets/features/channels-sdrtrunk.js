@@ -61,7 +61,7 @@ function mhz(value) {
 }
 
 export function createSdrTrunkChannelWorkspace(deps) {
-  const { node, openReadOnlyModal, signal } = deps;
+  const { node, openReadOnlyModal, signal, page = 'channels' } = deps;
   const host = node('div', 'data-workspace sdrtrunk-channel-workspace');
   const status = node('div');
   status.setAttribute('role', 'status');
@@ -81,11 +81,19 @@ export function createSdrTrunkChannelWorkspace(deps) {
     node('p', 'muted', 'Edit talkgroups, CTCSS identifiers, recording, and streaming destination routing.'));
   const aliasBody = node('div', 'ui-table-scroll');
   aliasSection.append(aliasHeader, aliasBody);
-  host.append(status, channelSection, aliasSection);
+  host.append(status, page === 'aliases' ? aliasSection : channelSection);
+  const channelSearch = node('input', 'ui-input sdrtrunk-table-search');
+  channelSearch.type = 'search';
+  channelSearch.placeholder = 'Filter channels';
+  channelSearch.setAttribute('aria-label', 'Filter playlist channels');
+  const aliasSearch = node('input', 'ui-input sdrtrunk-table-search');
+  aliasSearch.type = 'search';
+  aliasSearch.placeholder = 'Filter talkgroups and aliases';
+  aliasSearch.setAttribute('aria-label', 'Filter talkgroups and aliases');
   let channels = [];
   let aliases = [];
   let destinations = [];
-  let options = { nbfmBandwidths: [], nbfmDeemphasis: [], ctcss: [], dcs: [] };
+  let options = { nbfmBandwidths: [], nbfmDeemphasis: [], ctcss: [], dcs: [], preferredTuners: [] };
   let stopped = false;
 
   function setStatus(message, danger = false) {
@@ -94,7 +102,7 @@ export function createSdrTrunkChannelWorkspace(deps) {
   }
 
   function table(headers, rows) {
-    const table = node('table', 'ui-table');
+    const table = node('table', 'ui-table sdrtrunk-data-table');
     const thead = node('thead');
     const tr = node('tr');
     headers.forEach((header) => tr.append(node('th', '', header)));
@@ -102,8 +110,9 @@ export function createSdrTrunkChannelWorkspace(deps) {
     const tbody = node('tbody');
     rows.forEach((cells) => {
       const row = node('tr');
-      cells.forEach((cell) => {
+      cells.forEach((cell, index) => {
         const td = node('td');
+        td.dataset.label = headers[index] || '';
         if (cell instanceof Node) td.append(cell); else td.textContent = String(cell ?? '');
         row.append(td);
       });
@@ -114,8 +123,12 @@ export function createSdrTrunkChannelWorkspace(deps) {
   }
 
   function draw() {
+    const channelTerm = channelSearch.value.trim().toLocaleLowerCase();
+    const visibleChannels = channels.filter((channel) => !channelTerm ||
+      [channel.system, channel.site, channel.name, channel.decoder, mhz(channel.frequency)]
+        .some((value) => String(value || '').toLocaleLowerCase().includes(channelTerm)));
     channelBody.replaceChildren(table(['System', 'Site', 'Name', 'Protocol', 'Frequency', 'State', 'Actions'],
-      channels.map((channel) => {
+      visibleChannels.map((channel) => {
         const actions = node('div', 'ui-action-row');
         actions.append(button(node, channel.processing ? 'Stop' : 'Start', async () => {
           try {
@@ -128,13 +141,19 @@ export function createSdrTrunkChannelWorkspace(deps) {
         return [channel.system, channel.site, channel.name, channel.decoder, mhz(channel.frequency),
           channel.processing ? 'Active' : 'Stopped', actions];
       })));
+    channelSection.querySelector('h2').textContent = `Playlist Channels (${visibleChannels.length})`;
+    const aliasTerm = aliasSearch.value.trim().toLocaleLowerCase();
+    const visibleAliases = aliases.filter((alias) => !aliasTerm ||
+      [alias.aliasList, alias.talkgroup, alias.name, alias.group, alias.protocol, alias.ctcssLabel,
+        ...(alias.remoteCalls || [])].some((value) => String(value || '').toLocaleLowerCase().includes(aliasTerm)));
     aliasBody.replaceChildren(table(['Alias List', 'Talkgroup', 'Name', 'Group', 'Protocol', 'CTCSS', 'Record', 'Destinations', 'Actions'],
-      aliases.map((alias) => {
+      visibleAliases.map((alias) => {
         const actions = node('div', 'ui-action-row');
         actions.append(button(node, 'Edit', () => openAlias(alias)));
         return [alias.aliasList, alias.talkgroup, alias.name, alias.group, alias.protocol, alias.ctcssLabel || '',
           alias.record ? 'Yes' : 'No', (alias.remoteCalls || []).join(', '), actions];
       })));
+    aliasSection.querySelector('h2').textContent = `Talkgroups and Aliases (${visibleAliases.length})`;
   }
 
   async function refresh() {
@@ -158,22 +177,50 @@ export function createSdrTrunkChannelWorkspace(deps) {
 
   function openChannel(existing = null) {
     const form = node('form', 'admin-form');
-    const grid = node('div', 'ui-settings-grid sdrtrunk-editor-grid');
     const controls = {};
-    const add = (created) => { grid.append(created.host); controls[created.input.name] = created.input; };
-    add(inputField(node, 'Name', 'name', existing?.name));
-    add(inputField(node, 'System', 'system', existing?.system));
-    add(inputField(node, 'Site', 'site', existing?.site));
-    add(inputField(node, 'Frequency (Hz)', 'frequency', existing?.frequency || '', 'number'));
-    add(selectField(node, 'Protocol', 'decoder',
+    const section = (legend) => {
+      const host = node('fieldset', 'ui-fieldset');
+      const grid = node('div', 'ui-settings-grid sdrtrunk-editor-grid');
+      host.append(node('legend', '', legend), grid);
+      return { host, grid };
+    };
+    const add = (grid, created) => { grid.append(created.host); controls[created.input.name] = created.input; };
+    const identity = section('Channel');
+    add(identity.grid, inputField(node, 'Name', 'name', existing?.name));
+    add(identity.grid, inputField(node, 'System', 'system', existing?.system));
+    add(identity.grid, inputField(node, 'Site', 'site', existing?.site));
+    add(identity.grid, inputField(node, 'Alias List', 'aliasList', existing?.aliasList));
+    const source = section('Source');
+    add(source.grid, inputField(node, 'Frequency (Hz)', 'frequency', existing?.frequency || '', 'number'));
+    const preferredChoices = [{ value: '', label: 'Automatic (any compatible tuner)' },
+      ...(options.preferredTuners || []).map((value) => ({ value, label: value }))];
+    if (existing?.preferredTuner && !(options.preferredTuners || []).includes(existing.preferredTuner)) {
+      preferredChoices.push({ value: existing.preferredTuner, label: existing.preferredTuner });
+    }
+    add(source.grid, selectField(node, 'Preferred tuner', 'preferredTuner', preferredChoices,
+      existing?.preferredTuner || ''));
+    const decoder = section('Decoder');
+    add(decoder.grid, selectField(node, 'Decoder type', 'decoder',
       ['AM', 'DMR', 'LTR', 'LTR_NET', 'MPT1327', 'NBFM', 'NXDN', 'PASSPORT', 'P25_PHASE1', 'P25_PHASE2'],
       existing?.decoder || 'NBFM'));
-    add(selectField(node, 'NXDN channel type', 'nxdnChannelMode', [
+    add(decoder.grid, selectField(node, 'Channel type', 'nxdnChannelMode', [
       { value: 'CONVENTIONAL', label: 'Conventional' }, { value: 'TRUNKED', label: 'Trunked' }
     ], existing?.nxdnChannelMode || 'TRUNKED'));
-    add(inputField(node, 'Alias List', 'aliasList', existing?.aliasList));
+    add(decoder.grid, selectField(node, 'NXDN mode', 'nxdnTransmissionMode', [
+      { value: 'M4800', label: '4800 baud' }, { value: 'M9600', label: '9600 baud' },
+      { value: 'TYPE_D', label: 'Type-D (4800 baud)' }
+    ], existing?.nxdnTransmissionMode || 'M4800'));
+    add(decoder.grid, inputField(node, 'Maximum traffic channels', 'trafficChannelPoolSize',
+      existing?.trafficChannelPoolSize ?? 20, 'number'));
+    controls.trafficChannelPoolSize.min = '0';
+    controls.trafficChannelPoolSize.max = '100';
+    add(decoder.grid, selectField(node, 'Talker alias encoding', 'nxdnEncoding', [
+      { value: 'UTF8', label: 'Latin / English (UTF-8)' }, { value: 'BIG5', label: 'Taiwan / China (BIG5)' }
+    ], existing?.nxdnEncoding || 'UTF8'));
     const toggles = node('div', 'ui-action-row sdrtrunk-editor-toggles');
     [['Auto start', 'autoStart', existing?.autoStart],
+      ['Ignore data calls', 'ignoreDataCalls', existing?.ignoreDataCalls],
+      ['Ignore encrypted calls', 'ignoreEncryptedCalls', existing?.ignoreEncryptedCalls],
       ['Record unknown NXDN simplex radio IDs', 'recordUnknownSimplexCalls', existing?.recordUnknownSimplexCalls],
       ['DCS Monitor / Code Search', 'dcsMonitor', existing?.dcsMonitor]].forEach(([label, name, checked]) => {
       const created = toggle(node, label, name, checked);
@@ -209,9 +256,31 @@ export function createSdrTrunkChannelWorkspace(deps) {
         eventLogControls.push({ value, input: created.input });
         eventLogs.append(created.host);
       });
-    const updateNbfm = () => {
+    const recordings = node('fieldset', 'ui-fieldset');
+    recordings.append(node('legend', '', 'Recording options'));
+    const recorderControls = [];
+    [['BASEBAND', 'Baseband I/Q (.wav)'], ['DEMODULATED_BIT_STREAM', 'Demodulated bitstream (.bits)'],
+      ['MBE_CALL_SEQUENCE', 'MBE audio codec frames (.mbe)'],
+      ['TRAFFIC_BASEBAND', 'Traffic channel baseband I/Q (.wav)'],
+      ['TRAFFIC_DEMODULATED_BIT_STREAM', 'Traffic channel demodulated bitstream (.bits)'],
+      ['TRAFFIC_MBE_CALL_SEQUENCE', 'Traffic channel MBE audio codec frames (.mbe)']]
+      .forEach(([value, label]) => {
+        const created = toggle(node, label, `recorder-${value}`, (existing?.recorders || []).includes(value));
+        recorderControls.push({ value, input: created.input });
+        recordings.append(created.host);
+      });
+    const updateDecoder = () => {
       nbfm.hidden = controls.decoder.value !== 'NBFM';
-      controls.nxdnChannelMode.closest('.ui-field').hidden = controls.decoder.value !== 'NXDN';
+      const isNxdn = controls.decoder.value === 'NXDN';
+      const hasTrafficPool = ['DMR', 'MPT1327', 'NXDN', 'P25_PHASE1', 'P25_PHASE2'].includes(controls.decoder.value);
+      const canIgnoreData = ['DMR', 'NXDN', 'P25_PHASE1', 'P25_PHASE2'].includes(controls.decoder.value);
+      controls.nxdnChannelMode.closest('.ui-field').hidden = !isNxdn;
+      controls.nxdnTransmissionMode.closest('.ui-field').hidden = !isNxdn;
+      controls.nxdnEncoding.closest('.ui-field').hidden = !isNxdn;
+      controls.trafficChannelPoolSize.closest('.ui-field').hidden = !hasTrafficPool;
+      controls.ignoreDataCalls.closest('.ui-toggle').hidden = !canIgnoreData;
+      controls.ignoreEncryptedCalls.closest('.ui-toggle').hidden = !isNxdn;
+      controls.recordUnknownSimplexCalls.closest('.ui-toggle').hidden = !isNxdn;
       const type = controls.nbfmSquelchType.value;
       const choices = type === 'CTCSS' ? options.ctcss : type === 'DCS' ? options.dcs : [];
       const selected = existing?.nbfmSquelchValue || '';
@@ -223,8 +292,8 @@ export function createSdrTrunkChannelWorkspace(deps) {
       controls.nbfmSquelchValue.value = selected;
       controls.nbfmSquelchValue.closest('.ui-field').hidden = !['CTCSS', 'DCS'].includes(type);
     };
-    controls.decoder.addEventListener('change', updateNbfm);
-    controls.nbfmSquelchType.addEventListener('change', updateNbfm);
+    controls.decoder.addEventListener('change', updateDecoder);
+    controls.nbfmSquelchType.addEventListener('change', updateDecoder);
     const result = node('div');
     const cancel = button(node, 'Cancel');
     const remove = button(node, 'Delete');
@@ -234,7 +303,7 @@ export function createSdrTrunkChannelWorkspace(deps) {
     const footer = node('footer', 'ui-modal-footer ui-action-row');
     if (existing) footer.append(remove);
     footer.append(cancel, save);
-    form.append(grid, toggles, nbfm, eventLogs, result, footer);
+    form.append(identity.host, source.host, decoder.host, toggles, nbfm, eventLogs, recordings, result, footer);
     const modal = openReadOnlyModal(existing ? 'Edit Playlist Channel' : 'Add Playlist Channel', form,
       { id: 'sdrtrunk-channel-editor', className: 'modal-size-large' });
     if (!modal) return;
@@ -253,11 +322,18 @@ export function createSdrTrunkChannelWorkspace(deps) {
       const body = { action: existing ? 'update' : 'create', id: existing?.id,
         name: controls.name.value, system: controls.system.value, site: controls.site.value,
         frequency: Number(controls.frequency.value), decoder: controls.decoder.value,
+        preferredTuner: controls.preferredTuner.value,
         aliasList: controls.aliasList.value, autoStart: controls.autoStart.checked,
         nxdnChannelMode: controls.nxdnChannelMode.value,
+        nxdnTransmissionMode: controls.nxdnTransmissionMode.value,
+        nxdnEncoding: controls.nxdnEncoding.value,
+        trafficChannelPoolSize: Number(controls.trafficChannelPoolSize.value),
+        ignoreDataCalls: controls.ignoreDataCalls.checked,
+        ignoreEncryptedCalls: controls.ignoreEncryptedCalls.checked,
         recordUnknownSimplexCalls: controls.recordUnknownSimplexCalls.checked,
         dcsMonitor: controls.dcsMonitor.checked,
-        eventLoggers: eventLogControls.filter((item) => item.input.checked).map((item) => item.value) };
+        eventLoggers: eventLogControls.filter((item) => item.input.checked).map((item) => item.value),
+        recorders: recorderControls.filter((item) => item.input.checked).map((item) => item.value) };
       if (controls.decoder.value === 'NBFM') Object.assign(body, {
         nbfmBandwidth: controls.nbfmBandwidth.value, nbfmTalkgroup: Number(controls.nbfmTalkgroup.value),
         nbfmDeemphasis: controls.nbfmDeemphasis.value, nbfmSquelchType: controls.nbfmSquelchType.value,
@@ -269,7 +345,7 @@ export function createSdrTrunkChannelWorkspace(deps) {
         modal.setBusy(false); modal.close(); await refresh();
       } catch (cause) { modal.setBusy(false); result.textContent = cause.message; }
     });
-    updateNbfm();
+    updateDecoder();
   }
 
   function openAlias(existing = null) {
@@ -339,8 +415,12 @@ export function createSdrTrunkChannelWorkspace(deps) {
     });
   }
 
-  channelActions.append(button(node, 'Refresh', refresh), button(node, 'Add Channel', () => openChannel(), true));
-  aliasActions.append(button(node, 'Add Talkgroup', () => openAlias(), true));
+  channelSearch.addEventListener('input', draw);
+  aliasSearch.addEventListener('input', draw);
+  channelActions.append(channelSearch, button(node, 'Refresh', refresh),
+    button(node, 'Add Channel', () => openChannel(), true));
+  aliasActions.append(aliasSearch, button(node, 'Refresh', refresh),
+    button(node, 'Add Talkgroup', () => openAlias(), true));
   signal?.addEventListener('abort', () => { stopped = true; }, { once: true });
   void refresh();
   return { element: host, close: () => { stopped = true; } };

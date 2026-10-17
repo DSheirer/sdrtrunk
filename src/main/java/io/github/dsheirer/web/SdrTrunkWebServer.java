@@ -1,6 +1,7 @@
 package io.github.dsheirer.web;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -55,15 +56,22 @@ import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.DeemphasisMode;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.NXDNChannelMode;
+import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.Encoding;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25;
 import io.github.dsheirer.module.decode.squelch.SquelchDecoderConfig;
 import io.github.dsheirer.module.decode.squelch.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSCode;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
+import io.github.dsheirer.record.RecorderType;
+import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.monitor.HostSystemMetrics;
@@ -83,8 +91,10 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.rtl.r8x.R8xEmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.r8x.R8xTunerConfiguration;
+import io.github.dsheirer.util.ThreadPool;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
@@ -94,6 +104,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.net.URLDecoder;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
@@ -104,18 +115,25 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.prefs.Preferences;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,12 +146,21 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     private static final long STARTED = System.currentTimeMillis();
     private static final String PASSWORD_KEY = "sdrtrunk.web.password";
     private static final String LEGACY_TOKEN_KEY = "sdrtrunk.web.access.token";
+    private static final String BIND_KEY = "sdrtrunk.web.bind";
+    private static final String DEFAULT_BIND_KEY = "sdrtrunk.web.defaultBind";
+    private static final String PORT_KEY = "sdrtrunk.web.port";
+    private static final String USERS_KEY = "sdrtrunk.web.users";
+    private static final String DEFAULT_BIND_ADDRESS = "127.0.0.1";
     private static final String VCE_PREFERENCES_KEY = "sdrtrunk.web.vce.preferences";
     private static final String SESSION_COOKIE = "SDRTRUNK_SESSION";
-    private static final String VCE_WEB_REVISION = "376-0.7.1-beta4";
+    private static final String VCE_WEB_REVISION = "382-0.7.1-beta11";
     private static final long SESSION_LIFETIME_MS = 12L * 60L * 60L * 1000L;
     private static final int LOG_TAIL_BYTES = 1024 * 1024;
     private static final int LOG_ENTRY_LIMIT = 500;
+    private static final int ACTIVITY_LIMIT = 5000;
+    private static final long QUALITY_ACTIVE_WINDOW_MS = 10_000;
+    private static final long DASHBOARD_BUCKET_MS = 60L * 60L * 1000L;
+    private static final String ACTIVITY_FILE = "web_activity.json";
     private static final Pattern APPLICATION_LOG_LINE = Pattern.compile(
         "^(\\d{8} \\d{6}\\.\\d{3}) \\[([^]]+)]\\s+(\\w+)\\s+([^ ]+) - (.*)$");
     private static final DateTimeFormatter APPLICATION_LOG_TIME = DateTimeFormatter.ofPattern("yyyyMMdd HHmmss.SSS");
@@ -145,7 +172,7 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     private final WebTranscriptionService mTranscriptionService = new WebTranscriptionService();
     private volatile boolean mRadioReferenceInitialized;
     private volatile String mPassword;
-    private final ConcurrentHashMap<String,Long> mSessions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,WebSession> mSessions = new ConcurrentHashMap<>();
     private final SecureRandom mSecureRandom = new SecureRandom();
     private final Object mVcePreferenceLock = new Object();
     private JsonObject mVcePreferences;
@@ -156,7 +183,20 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     private static final int LIVE_AUDIO_QUEUE_LIMIT = 200;
     private final ConcurrentLinkedDeque<LiveAudioCall> mLiveAudioQueue = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<Map<String,Object>> mActivity = new ConcurrentLinkedDeque<>();
+    private final AtomicBoolean mActivityWriteScheduled = new AtomicBoolean();
+    private final Object mActivityFileLock = new Object();
+    private final Path mActivityFile;
+    private final Path mVcePreferenceFile;
     private HttpServer mServer;
+    private ExecutorService mServerExecutor;
+    private volatile String mBoundAddress;
+    private volatile int mBoundPort;
+
+    public record WebUser(String id, String username, String role, boolean enabled, long createdAt, long updatedAt) {}
+    private record StoredWebUser(String id, String username, String passwordHash, String passwordSalt,
+                                 String role, boolean enabled, long createdAt, long updatedAt) {}
+    private record WebIdentity(String username, String role, boolean primary) {}
+    private record WebSession(WebIdentity identity, long expiresAt) {}
 
     public SdrTrunkWebServer(PlaylistManager playlistManager, TunerManager tunerManager,
                              ResourceMonitor resourceMonitor, UserPreferences userPreferences, String password)
@@ -166,7 +206,12 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         mResourceMonitor = resourceMonitor;
         mUserPreferences = userPreferences;
         mPassword = password;
+        mActivityFile = userPreferences != null ?
+            userPreferences.getDirectoryPreference().getDirectoryApplicationRoot().resolve(ACTIVITY_FILE) : null;
+        mVcePreferenceFile = userPreferences != null ?
+            userPreferences.getDirectoryPreference().getDirectoryApplicationRoot().resolve("web_preferences.json") : null;
         mVcePreferences = loadVcePreferences();
+        loadActivity();
         ACTIVE = this;
     }
 
@@ -206,6 +251,230 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     public static String getSavedToken() { return getSavedPassword(); }
     public static void saveToken(String token) { savePassword(token); }
 
+    public static String getSavedBindAddress()
+    {
+        return Preferences.userNodeForPackage(SDRTrunk.class).get(BIND_KEY,
+            System.getProperty(DEFAULT_BIND_KEY, DEFAULT_BIND_ADDRESS));
+    }
+
+    public static int getSavedPort()
+    {
+        int port = Preferences.userNodeForPackage(SDRTrunk.class).getInt(PORT_KEY, DEFAULT_PORT);
+        return port >= 1 && port <= 65535 ? port : DEFAULT_PORT;
+    }
+
+    public static String getEffectiveBindAddress()
+    {
+        return System.getProperty(BIND_KEY, getSavedBindAddress()).trim();
+    }
+
+    public static int getEffectivePort()
+    {
+        String override = System.getProperty(PORT_KEY);
+        if(override != null)
+        {
+            try { return validPort(Integer.parseInt(override)); }
+            catch(NumberFormatException e) { throw new IllegalArgumentException("Web interface port must be a number", e); }
+        }
+        return getSavedPort();
+    }
+
+    public static void saveNetworkSettings(String bindAddress, int port)
+    {
+        String bind = bindAddress == null ? "" : bindAddress.trim();
+        validateNetworkSettings(bind, port);
+        Preferences preferences = Preferences.userNodeForPackage(SDRTrunk.class);
+        preferences.put(BIND_KEY, bind);
+        preferences.putInt(PORT_KEY, port);
+    }
+
+    static void validateNetworkSettings(String bind, int port)
+    {
+        if(bind.isBlank()) { throw new IllegalArgumentException("Bind address cannot be empty"); }
+        if(bind.contains("://") || bind.contains("/") || bind.chars().anyMatch(Character::isWhitespace))
+        {
+            throw new IllegalArgumentException("Enter an interface address or host name, not a URL");
+        }
+        validPort(port);
+    }
+
+    private static int validPort(int port)
+    {
+        if(port < 1 || port > 65535) { throw new IllegalArgumentException("Port must be between 1 and 65535"); }
+        return port;
+    }
+
+    public static String getActualBindAddress()
+    {
+        return ACTIVE != null && ACTIVE.mServer != null ? ACTIVE.mBoundAddress : null;
+    }
+
+    public static int getActualPort()
+    {
+        return ACTIVE != null && ACTIVE.mServer != null ? ACTIVE.mBoundPort : 0;
+    }
+
+    public static synchronized List<WebUser> getWebUsers()
+    {
+        return loadStoredUsers().stream()
+            .sorted(Comparator.comparing(StoredWebUser::username, String.CASE_INSENSITIVE_ORDER))
+            .map(user -> new WebUser(user.id(), user.username(), user.role(), user.enabled(),
+                user.createdAt(), user.updatedAt())).toList();
+    }
+
+    public static synchronized WebUser saveWebUser(String id, String username, String password,
+                                                    String role, boolean enabled)
+    {
+        String normalizedUsername = username == null ? "" : username.trim();
+        if(!normalizedUsername.matches("[A-Za-z0-9._-]{1,64}"))
+        {
+            throw new IllegalArgumentException("Username must be 1-64 letters, numbers, dots, dashes, or underscores");
+        }
+        if("admin".equalsIgnoreCase(normalizedUsername))
+        {
+            throw new IllegalArgumentException("The built-in admin username is reserved");
+        }
+        String normalizedRole = normalizeRole(role);
+        List<StoredWebUser> users = new ArrayList<>(loadStoredUsers());
+        StoredWebUser existing = users.stream().filter(user -> user.id().equals(id)).findFirst().orElse(null);
+        if(users.stream().anyMatch(user -> !user.id().equals(id) &&
+            user.username().equalsIgnoreCase(normalizedUsername)))
+        {
+            throw new IllegalArgumentException("A user with that username already exists");
+        }
+        String requestedPassword = password == null ? "" : password;
+        if(existing == null && requestedPassword.isBlank())
+        {
+            throw new IllegalArgumentException("A password is required for a new user");
+        }
+        if(!requestedPassword.isBlank() && requestedPassword.length() < 8)
+        {
+            throw new IllegalArgumentException("Password must contain at least 8 characters");
+        }
+
+        long now = System.currentTimeMillis();
+        String userId = existing == null ? UUID.randomUUID().toString() : existing.id();
+        String salt = existing == null ? "" : existing.passwordSalt();
+        String hash = existing == null ? "" : existing.passwordHash();
+        if(!requestedPassword.isBlank())
+        {
+            byte[] saltBytes = new byte[16];
+            new SecureRandom().nextBytes(saltBytes);
+            salt = Base64.getEncoder().encodeToString(saltBytes);
+            hash = hashPassword(requestedPassword, saltBytes);
+        }
+        StoredWebUser saved = new StoredWebUser(userId, normalizedUsername, hash, salt, normalizedRole,
+            enabled, existing == null ? now : existing.createdAt(), now);
+        users.removeIf(user -> user.id().equals(userId));
+        users.add(saved);
+        storeUsers(users);
+        if(ACTIVE != null) { ACTIVE.invalidateUserSessions(existing != null ? existing.username() : normalizedUsername); }
+        return new WebUser(saved.id(), saved.username(), saved.role(), saved.enabled(), saved.createdAt(), saved.updatedAt());
+    }
+
+    public static synchronized void deleteWebUser(String id)
+    {
+        List<StoredWebUser> users = new ArrayList<>(loadStoredUsers());
+        StoredWebUser removed = users.stream().filter(user -> user.id().equals(id)).findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("User was not found"));
+        users.removeIf(user -> user.id().equals(id));
+        storeUsers(users);
+        if(ACTIVE != null) { ACTIVE.invalidateUserSessions(removed.username()); }
+    }
+
+    private static String normalizeRole(String role)
+    {
+        return "admin".equalsIgnoreCase(role) ? "admin" : "operator";
+    }
+
+    private static synchronized List<StoredWebUser> loadStoredUsers()
+    {
+        String saved = Preferences.userNodeForPackage(SDRTrunk.class).get(USERS_KEY, "[]");
+        List<StoredWebUser> users = new ArrayList<>();
+        try
+        {
+            JsonArray array = GSON.fromJson(saved, JsonArray.class);
+            if(array == null) { return users; }
+            for(var element: array)
+            {
+                JsonObject user = element.getAsJsonObject();
+                users.add(new StoredWebUser(stringValue(user, "id", ""), stringValue(user, "username", ""),
+                    stringValue(user, "passwordHash", ""), stringValue(user, "passwordSalt", ""),
+                    normalizeRole(stringValue(user, "role", "operator")), booleanValue(user, "enabled", true),
+                    longValue(user, "createdAt", 0), longValue(user, "updatedAt", 0)));
+            }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Unable to read web user accounts", e);
+        }
+        return users.stream().filter(user -> !user.id().isBlank() && !user.username().isBlank()).toList();
+    }
+
+    private static synchronized void storeUsers(List<StoredWebUser> users)
+    {
+        JsonArray array = new JsonArray();
+        for(StoredWebUser user: users)
+        {
+            JsonObject item = new JsonObject();
+            item.addProperty("id", user.id());
+            item.addProperty("username", user.username());
+            item.addProperty("passwordHash", user.passwordHash());
+            item.addProperty("passwordSalt", user.passwordSalt());
+            item.addProperty("role", user.role());
+            item.addProperty("enabled", user.enabled());
+            item.addProperty("createdAt", user.createdAt());
+            item.addProperty("updatedAt", user.updatedAt());
+            array.add(item);
+        }
+        Preferences.userNodeForPackage(SDRTrunk.class).put(USERS_KEY, GSON.toJson(array));
+    }
+
+    static String hashPassword(String password, byte[] salt)
+    {
+        PBEKeySpec specification = new PBEKeySpec(password.toCharArray(), salt, 120_000, 256);
+        try
+        {
+            return Base64.getEncoder().encodeToString(
+                SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(specification).getEncoded());
+        }
+        catch(Exception e)
+        {
+            throw new IllegalStateException("Unable to secure the web account password", e);
+        }
+        finally
+        {
+            specification.clearPassword();
+        }
+    }
+
+    private static boolean passwordMatches(StoredWebUser user, String candidate)
+    {
+        return passwordHashMatches(user.passwordHash(), user.passwordSalt(), candidate);
+    }
+
+    static boolean passwordHashMatches(String passwordHash, String passwordSalt, String candidate)
+    {
+        if(candidate == null || passwordSalt == null || passwordSalt.isBlank() ||
+            passwordHash == null || passwordHash.isBlank()) { return false; }
+        try
+        {
+            byte[] salt = Base64.getDecoder().decode(passwordSalt);
+            byte[] expected = Base64.getDecoder().decode(passwordHash);
+            byte[] actual = Base64.getDecoder().decode(hashPassword(candidate, salt));
+            return MessageDigest.isEqual(expected, actual);
+        }
+        catch(IllegalArgumentException e)
+        {
+            return false;
+        }
+    }
+
+    private void invalidateUserSessions(String username)
+    {
+        mSessions.entrySet().removeIf(entry -> entry.getValue().identity().username().equalsIgnoreCase(username));
+    }
+
     public static boolean isRunning()
     {
         return ACTIVE != null && ACTIVE.mServer != null;
@@ -220,10 +489,14 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
 
     public void start() throws IOException
     {
-        String bind = System.getProperty("sdrtrunk.web.bind", "127.0.0.1");
-        int port = Integer.getInteger("sdrtrunk.web.port", DEFAULT_PORT);
+        String bind = getEffectiveBindAddress();
+        int port = getEffectivePort();
         mServer = HttpServer.create(new InetSocketAddress(bind, port), 0);
-        mServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+        mBoundAddress = mServer.getAddress().getAddress() != null ?
+            mServer.getAddress().getAddress().getHostAddress() : bind;
+        mBoundPort = mServer.getAddress().getPort();
+        mServerExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        mServer.setExecutor(mServerExecutor);
         mServer.createContext("/api/v1/health", exchange -> json(exchange, 200, Map.of("status", "ok")));
         mServer.createContext("/api/v1/login", this::login);
         mServer.createContext("/api/v1/logout", authenticated(this::logout));
@@ -232,28 +505,33 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         mServer.createContext("/api/v1/auth/logout", this::vceLogout);
         mServer.createContext("/api/v1/me/preferences", authenticated(this::vcePreferences));
         mServer.createContext("/api/v1/status", authenticated(this::status));
-        mServer.createContext("/api/v1/channels", authenticated(this::channels));
-        mServer.createContext("/api/v1/channel-options", authenticated(this::channelOptions));
-        mServer.createContext("/api/v1/talkgroups", authenticated(this::talkgroups));
-        mServer.createContext("/api/v1/tuners", authenticated(this::tuners));
-        mServer.createContext("/api/v1/spectrum", authenticated(this::spectrum));
-        mServer.createContext("/api/v1/broadcasters", authenticated(this::broadcasters));
-        mServer.createContext("/api/v1/remote-destinations", authenticated(this::remoteDestinations));
-        mServer.createContext("/api/v1/channel-control", authenticated(this::channelControl));
+        mServer.createContext("/api/v1/quality", authenticated(this::vceQuality));
+        mServer.createContext("/api/v1/dashboard", authenticated(this::vceDashboard));
+        mServer.createContext("/api/v1/activity/actions", authenticated(this::vceActivityActions));
+        mServer.createContext("/api/v1/activity/radios", authenticated(this::vceActivityRadios));
+        mServer.createContext("/api/v1/channels", authenticatedWithAdminMutations(this::channels));
+        mServer.createContext("/api/v1/channel-options", administrator(this::channelOptions));
+        mServer.createContext("/api/v1/talkgroups", authenticatedWithAdminMutations(this::talkgroups));
+        mServer.createContext("/api/v1/tuners", authenticatedWithAdminMutations(this::tuners));
+        mServer.createContext("/api/v1/spectrum", authenticatedWithAdminMutations(this::spectrum));
+        mServer.createContext("/api/v1/broadcasters", administrator(this::broadcasters));
+        mServer.createContext("/api/v1/remote-destinations", administrator(this::remoteDestinations));
+        mServer.createContext("/api/v1/channel-control", administrator(this::channelControl));
         mServer.createContext("/api/v1/recordings", authenticated(this::recordings));
         mServer.createContext("/api/v1/recording-audio", authenticated(this::recordingAudio));
         mServer.createContext("/api/v1/live-audio", authenticated(this::liveAudio));
         mServer.createContext("/api/v1/live-status", authenticated(this::liveStatus));
         mServer.createContext("/api/v1/activity", authenticated(this::activity));
         mServer.createContext("/api/v1/transcripts", authenticated(this::transcripts));
-        mServer.createContext("/api/v1/whisper-settings", authenticated(this::whisperSettings));
-        mServer.createContext("/api/v1/web-settings", authenticated(this::webSettings));
-        mServer.createContext("/api/v1/application-log", authenticated(this::applicationLog));
-        mServer.createContext("/api/v1/event-logs", authenticated(this::eventLogs));
-        mServer.createContext("/api/v1/radioreference", authenticated(this::radioReference));
+        mServer.createContext("/api/v1/whisper-settings", administrator(this::whisperSettings));
+        mServer.createContext("/api/v1/web-settings", administrator(this::webSettings));
+        mServer.createContext("/api/v1/users", administrator(this::webUsers));
+        mServer.createContext("/api/v1/application-log", administrator(this::applicationLog));
+        mServer.createContext("/api/v1/event-logs", administrator(this::eventLogs));
+        mServer.createContext("/api/v1/radioreference", administrator(this::radioReference));
         mServer.createContext("/", this::dashboard);
         mServer.start();
-        mLog.info("sdrtrunk web interface listening at http://{}:{}", bind, port);
+        mLog.info("sdrtrunk web interface listening at http://{}:{}", mBoundAddress, mBoundPort);
         if(mPassword == null || mPassword.isBlank())
         {
             mLog.warn("Web interface password is empty; API requests will be denied");
@@ -262,10 +540,18 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
 
     public void stop()
     {
+        persistActivity();
         if(mServer != null)
         {
             mServer.stop(2);
             mServer = null;
+            if(mServerExecutor != null)
+            {
+                mServerExecutor.shutdownNow();
+                mServerExecutor = null;
+            }
+            mBoundAddress = null;
+            mBoundPort = 0;
         }
     }
 
@@ -275,11 +561,7 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         {
             try
             {
-                String authorization = exchange.getRequestHeaders().getFirst("Authorization");
-                boolean passwordMatch = authorization != null && authorization.startsWith("Bearer ") &&
-                    passwordMatches(authorization.substring(7));
-                boolean sessionMatch = validSession(exchange);
-                if(!sessionMatch && !passwordMatch)
+                if(requestIdentity(exchange) == null)
                 {
                     json(exchange, 401, Map.of("error", "authentication required"));
                     return;
@@ -303,24 +585,81 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         };
     }
 
+    private HttpHandler administrator(HttpHandler handler)
+    {
+        return exchange ->
+        {
+            try
+            {
+                WebIdentity identity = requestIdentity(exchange);
+                if(identity == null)
+                {
+                    json(exchange, 401, Map.of("error", "authentication required"));
+                    return;
+                }
+                if(!"admin".equals(identity.role()))
+                {
+                    json(exchange, 403, Map.of("error", "administrator access required"));
+                    return;
+                }
+                handler.handle(exchange);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Web administration request failed: {} {}", exchange.getRequestMethod(),
+                    exchange.getRequestURI(), e);
+                try { json(exchange, 500, Map.of("error", errorMessage(e))); }
+                catch(Exception responseError) { exchange.close(); }
+            }
+        };
+    }
+
+    private HttpHandler authenticatedWithAdminMutations(HttpHandler handler)
+    {
+        return exchange ->
+        {
+            try
+            {
+                WebIdentity identity = requestIdentity(exchange);
+                if(identity == null)
+                {
+                    json(exchange, 401, Map.of("error", "authentication required"));
+                    return;
+                }
+                boolean readOnly = "GET".equalsIgnoreCase(exchange.getRequestMethod()) ||
+                    "HEAD".equalsIgnoreCase(exchange.getRequestMethod());
+                if(!readOnly && !"admin".equals(identity.role()))
+                {
+                    json(exchange, 403, Map.of("error", "administrator access required"));
+                    return;
+                }
+                handler.handle(exchange);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Web API request failed: {} {}", exchange.getRequestMethod(), exchange.getRequestURI(), e);
+                try { json(exchange, 500, Map.of("error", errorMessage(e))); }
+                catch(Exception responseError) { exchange.close(); }
+            }
+        };
+    }
+
     private void login(HttpExchange exchange) throws IOException
     {
         if(!"POST".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
         JsonObject request = GSON.fromJson(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8),
             JsonObject.class);
+        String username = request != null && request.has("username") ? request.get("username").getAsString() : "";
         String password = request != null && request.has("password") ? request.get("password").getAsString() : "";
-        if(!passwordMatches(password))
+        WebIdentity identity = authenticate(username, password);
+        if(identity == null)
         {
-            json(exchange, 401, Map.of("error", "incorrect password"));
+            json(exchange, 401, Map.of("error", "incorrect username or password"));
             return;
         }
-        byte[] random = new byte[32];
-        mSecureRandom.nextBytes(random);
-        String session = Base64.getUrlEncoder().withoutPadding().encodeToString(random);
-        mSessions.put(session, System.currentTimeMillis() + SESSION_LIFETIME_MS);
-        exchange.getResponseHeaders().add("Set-Cookie", SESSION_COOKIE + "=" + session +
-            "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + (SESSION_LIFETIME_MS / 1000));
-        json(exchange, 200, Map.of("authenticated", true));
+        setSessionCookie(exchange, createSession(identity));
+        json(exchange, 200, Map.of("authenticated", true, "username", identity.username(),
+            "role", identity.role()));
     }
 
     private void logout(HttpExchange exchange) throws IOException
@@ -337,33 +676,24 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     private void vceSession(HttpExchange exchange) throws IOException
     {
         if(!"GET".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
-        vceJson(exchange, 200, vceSessionResponse(validSession(exchange)));
+        vceJson(exchange, 200, vceSessionResponse(requestIdentity(exchange)));
     }
 
-    /**
-     * The existing sdrtrunk web console uses one administrator password.  VCE normally supports multiple users;
-     * until that account store is ported, its username field is accepted as a presentation-only value and the
-     * configured sdrtrunk web password remains authoritative.
-     */
     private void vceLogin(HttpExchange exchange) throws IOException
     {
         if(!"POST".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
         JsonObject request = GSON.fromJson(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8),
             JsonObject.class);
+        String username = request != null && request.has("username") ? request.get("username").getAsString() : "";
         String password = request != null && request.has("password") ? request.get("password").getAsString() : "";
-        if(!passwordMatches(password))
+        WebIdentity identity = authenticate(username, password);
+        if(identity == null)
         {
-            vceError(exchange, 401, "invalid_credentials", "The password is invalid");
+            vceError(exchange, 401, "invalid_credentials", "The username or password is invalid");
             return;
         }
-
-        byte[] random = new byte[32];
-        mSecureRandom.nextBytes(random);
-        String session = Base64.getUrlEncoder().withoutPadding().encodeToString(random);
-        mSessions.put(session, System.currentTimeMillis() + SESSION_LIFETIME_MS);
-        exchange.getResponseHeaders().add("Set-Cookie", SESSION_COOKIE + "=" + session +
-            "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + (SESSION_LIFETIME_MS / 1000));
-        vceJson(exchange, 200, vceSessionResponse(true));
+        setSessionCookie(exchange, createSession(identity));
+        vceJson(exchange, 200, vceSessionResponse(identity));
     }
 
     private void vceLogout(HttpExchange exchange) throws IOException
@@ -373,17 +703,19 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         if(session != null) { mSessions.remove(session); }
         exchange.getResponseHeaders().add("Set-Cookie", SESSION_COOKIE +
             "=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
-        vceJson(exchange, 200, vceSessionResponse(false));
+        vceJson(exchange, 200, vceSessionResponse(null));
     }
 
-    private Map<String,Object> vceSessionResponse(boolean authenticated)
+    private Map<String,Object> vceSessionResponse(WebIdentity identity)
     {
+        boolean authenticated = identity != null;
+        boolean administrator = authenticated && "admin".equals(identity.role());
         Map<String,Boolean> capabilities = new LinkedHashMap<>();
         capabilities.put("web-access", authenticated);
         capabilities.put("dashboard", authenticated);
         capabilities.put("live", false);
         capabilities.put("tuner-spectrum", authenticated);
-        capabilities.put("admin-tuners", authenticated);
+        capabilities.put("admin-tuners", administrator);
         capabilities.put("radio", false);
         capabilities.put("credits", authenticated);
         capabilities.put("csv-export", false);
@@ -391,25 +723,25 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         capabilities.put("recordings", authenticated);
         capabilities.put("admin-recordings", false);
         capabilities.put("receiver-health", false);
-        capabilities.put("admin-aliases", false);
-        capabilities.put("admin-channels", authenticated);
-        capabilities.put("admin-streaming", authenticated);
-        capabilities.put("admin-settings", authenticated);
-        capabilities.put("admin-radioreference", authenticated);
-        capabilities.put("admin-users", false);
-        capabilities.put("admin-access", false);
+        capabilities.put("admin-aliases", administrator);
+        capabilities.put("admin-channels", administrator);
+        capabilities.put("admin-streaming", administrator);
+        capabilities.put("admin-settings", administrator);
+        capabilities.put("admin-radioreference", administrator);
+        capabilities.put("admin-users", administrator);
+        capabilities.put("admin-access", administrator);
         capabilities.put("user-settings", authenticated);
 
         Map<String,Object> response = new LinkedHashMap<>();
         response.put("configured", mPassword != null && !mPassword.isBlank());
         response.put("authenticated", authenticated);
-        response.put("tier", authenticated ? "admin" : "public");
+        response.put("tier", authenticated ? (administrator ? "admin" : "user") : "public");
         response.put("capabilities", capabilities);
         if(authenticated)
         {
-            response.put("username", "admin");
-            response.put("primary", true);
-            response.put("guide_dismissal_scope", "sdrtrunk-0.7.1-beta4-admin");
+            response.put("username", identity.username());
+            response.put("primary", identity.primary());
+            response.put("guide_dismissal_scope", "sdrtrunk-0.7.1-beta11-" + identity.username());
             response.put("csrf_token", "sdrtrunk-session");
         }
         return response;
@@ -427,24 +759,22 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             }
             if("PUT".equals(exchange.getRequestMethod()))
             {
+                String ifMatch = exchange.getRequestHeaders().getFirst("If-Match");
+                if(ifMatch != null && !ifMatch.replace("\"", "").equals(String.valueOf(mVcePreferenceRevision)))
+                {
+                    vceError(exchange, 409, "preference_conflict", "The preference profile changed");
+                    return;
+                }
                 JsonObject request = GSON.fromJson(new String(exchange.getRequestBody().readAllBytes(),
                     StandardCharsets.UTF_8), JsonObject.class);
-                if(request == null || !request.has("version"))
+                if(request == null || !request.has("version") || request.get("version").getAsInt() != 12)
                 {
                     vceError(exchange, 400, "invalid_preferences", "The preference profile is invalid");
                     return;
                 }
-                mVcePreferences = request.deepCopy();
+                mVcePreferences = mergeVcePreferences(defaultVcePreferences(), request, "");
                 mVcePreferenceRevision++;
-                try
-                {
-                    Preferences.userNodeForPackage(SDRTrunk.class).put(VCE_PREFERENCES_KEY,
-                        GSON.toJson(mVcePreferences));
-                }
-                catch(IllegalArgumentException e)
-                {
-                    mLog.warn("VCE web preferences are too large to persist; retaining them for this session");
-                }
+                persistVcePreferences();
                 json(exchange, 200, Map.of("revision", mVcePreferenceRevision,
                     "preferences", mVcePreferences));
                 return;
@@ -453,22 +783,127 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         methodNotAllowed(exchange);
     }
 
-    private static JsonObject loadVcePreferences()
+    private static JsonObject defaultVcePreferences()
     {
-        String saved = Preferences.userNodeForPackage(SDRTrunk.class).get(VCE_PREFERENCES_KEY, "");
+        return GSON.fromJson(VCE_DEFAULT_PREFERENCES, JsonObject.class);
+    }
+
+    private JsonObject loadVcePreferences()
+    {
+        JsonObject defaults = defaultVcePreferences();
+        String saved = "";
+        if(mVcePreferenceFile != null && Files.isRegularFile(mVcePreferenceFile))
+        {
+            try { saved = Files.readString(mVcePreferenceFile, StandardCharsets.UTF_8); }
+            catch(IOException e) { mLog.warn("Unable to read saved VCE web preferences; using defaults", e); }
+        }
+        if(saved.isBlank())
+        {
+            saved = Preferences.userNodeForPackage(SDRTrunk.class).get(VCE_PREFERENCES_KEY, "");
+        }
         if(!saved.isBlank())
         {
             try
             {
                 JsonObject parsed = GSON.fromJson(saved, JsonObject.class);
-                if(parsed != null && parsed.has("version")) { return parsed; }
+                if(parsed != null && parsed.has("version") && parsed.get("version").getAsInt() == 12)
+                {
+                    return mergeVcePreferences(defaults, parsed, "");
+                }
+                mLog.info("Resetting an older VCE web preference profile to the current schema");
             }
             catch(Exception e)
             {
                 mLog.warn("Unable to load saved VCE web preferences; using defaults", e);
             }
         }
-        return GSON.fromJson(VCE_DEFAULT_PREFERENCES, JsonObject.class);
+        return defaults;
+    }
+
+    private void persistVcePreferences()
+    {
+        String json = GSON.toJson(mVcePreferences);
+        if(mVcePreferenceFile != null)
+        {
+            Path temporary = mVcePreferenceFile.resolveSibling(mVcePreferenceFile.getFileName() + ".tmp");
+            try
+            {
+                Files.createDirectories(mVcePreferenceFile.getParent());
+                Files.writeString(temporary, json, StandardCharsets.UTF_8);
+                try
+                {
+                    Files.move(temporary, mVcePreferenceFile, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+                }
+                catch(AtomicMoveNotSupportedException e)
+                {
+                    Files.move(temporary, mVcePreferenceFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+                Preferences.userNodeForPackage(SDRTrunk.class).remove(VCE_PREFERENCES_KEY);
+                return;
+            }
+            catch(IOException e)
+            {
+                mLog.warn("Unable to save VCE web preferences [{}]", mVcePreferenceFile, e);
+            }
+        }
+        try { Preferences.userNodeForPackage(SDRTrunk.class).put(VCE_PREFERENCES_KEY, json); }
+        catch(IllegalArgumentException e)
+        {
+            mLog.warn("VCE web preferences are too large to persist; retaining them for this session");
+        }
+    }
+
+    /** Fills newly introduced settings and removes stale keys while preserving compatible user choices. */
+    private static JsonObject mergeVcePreferences(JsonObject defaults, JsonObject saved, String path)
+    {
+        JsonObject merged = defaults.deepCopy();
+        for(String key: defaults.keySet())
+        {
+            if(!saved.has(key) || saved.get(key).isJsonNull()) { continue; }
+            var expected = defaults.get(key);
+            var actual = saved.get(key);
+            String childPath = path.isBlank() ? key : path + "." + key;
+            if("tables".equals(childPath) && actual.isJsonObject())
+            {
+                merged.add(key, normalizeVceTablePreferences(actual.getAsJsonObject()));
+            }
+            else if(expected.isJsonObject() && actual.isJsonObject())
+            {
+                merged.add(key, mergeVcePreferences(expected.getAsJsonObject(), actual.getAsJsonObject(), childPath));
+            }
+            else if(expected.isJsonArray() == actual.isJsonArray() && expected.isJsonPrimitive() == actual.isJsonPrimitive())
+            {
+                merged.add(key, actual.deepCopy());
+            }
+        }
+        return merged;
+    }
+
+    private static JsonObject normalizeVceTablePreferences(JsonObject savedTables)
+    {
+        JsonObject normalized = new JsonObject();
+        for(String tableId: savedTables.keySet())
+        {
+            if(!savedTables.get(tableId).isJsonObject()) { continue; }
+            JsonObject saved = savedTables.getAsJsonObject(tableId);
+            if(!saved.has("schema") || !saved.get("schema").isJsonArray() ||
+                !saved.has("column_order") || !saved.get("column_order").isJsonArray() ||
+                !saved.has("column_widths") || !saved.get("column_widths").isJsonObject() ||
+                !saved.has("hidden_columns") || !saved.get("hidden_columns").isJsonArray())
+            {
+                continue;
+            }
+            JsonObject table = new JsonObject();
+            table.add("schema", saved.get("schema").deepCopy());
+            table.add("column_order", saved.get("column_order").deepCopy());
+            table.add("column_widths", saved.get("column_widths").deepCopy());
+            table.add("hidden_columns", saved.get("hidden_columns").deepCopy());
+            table.add("collapsed_groups", saved.has("collapsed_groups") && saved.get("collapsed_groups").isJsonArray() ?
+                saved.get("collapsed_groups").deepCopy() : new JsonArray());
+            normalized.add(tableId, table);
+        }
+        return normalized;
     }
 
     private boolean passwordMatches(String candidate)
@@ -478,17 +913,60 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
                 candidate.getBytes(StandardCharsets.UTF_8));
     }
 
-    private boolean validSession(HttpExchange exchange)
+    private WebIdentity requestIdentity(HttpExchange exchange)
     {
-        String session = cookie(exchange, SESSION_COOKIE);
-        if(session == null) { return false; }
-        Long expires = mSessions.get(session);
-        if(expires == null || expires < System.currentTimeMillis())
+        String authorization = exchange.getRequestHeaders().getFirst("Authorization");
+        if(authorization != null && authorization.startsWith("Bearer ") &&
+            passwordMatches(authorization.substring(7)))
         {
-            mSessions.remove(session);
-            return false;
+            return new WebIdentity("admin", "admin", true);
         }
-        return true;
+        return sessionIdentity(exchange);
+    }
+
+    private WebIdentity sessionIdentity(HttpExchange exchange)
+    {
+        String token = cookie(exchange, SESSION_COOKIE);
+        if(token == null) { return null; }
+        WebSession session = mSessions.get(token);
+        if(session == null || session.expiresAt() < System.currentTimeMillis())
+        {
+            mSessions.remove(token);
+            return null;
+        }
+        return session.identity();
+    }
+
+    private WebIdentity authenticate(String username, String password)
+    {
+        String normalized = username == null ? "" : username.trim();
+        if((normalized.isBlank() || "admin".equalsIgnoreCase(normalized)) && passwordMatches(password))
+        {
+            return new WebIdentity("admin", "admin", true);
+        }
+        for(StoredWebUser user: loadStoredUsers())
+        {
+            if(user.enabled() && user.username().equalsIgnoreCase(normalized) && passwordMatches(user, password))
+            {
+                return new WebIdentity(user.username(), user.role(), false);
+            }
+        }
+        return null;
+    }
+
+    private String createSession(WebIdentity identity)
+    {
+        byte[] random = new byte[32];
+        mSecureRandom.nextBytes(random);
+        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+        mSessions.put(token, new WebSession(identity, System.currentTimeMillis() + SESSION_LIFETIME_MS));
+        return token;
+    }
+
+    private static void setSessionCookie(HttpExchange exchange, String token)
+    {
+        exchange.getResponseHeaders().add("Set-Cookie", SESSION_COOKIE + "=" + token +
+            "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + (SESSION_LIFETIME_MS / 1000));
     }
 
     private static String cookie(HttpExchange exchange, String name)
@@ -522,7 +1000,463 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         result.put("operatingSystem", metrics.operatingSystem());
         result.put("recordingsSize", mResourceMonitor.fileSizeRecordingsProperty().get());
         result.put("eventLogsSize", mResourceMonitor.fileSizeEventLogsProperty().get());
+        result.put("stats_logging", Map.of("summary_configured", true, "detailed_history_configured", false,
+            "summary_active", true, "detailed_history_active", false, "state", "RUNNING"));
+        result.put("database", Map.of("stats_logging_enabled", true, "detailed_history_enabled", false,
+            "detailed_history_available", false));
         json(exchange, 200, result);
+    }
+
+    /** Supplies the current channel tiles used by the unmodified VCE Main workspace. */
+    private void vceQuality(HttpExchange exchange) throws IOException
+    {
+        if(!"GET".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
+        long now = System.currentTimeMillis();
+        List<Map<String,Object>> rows = new ArrayList<>();
+        List<Channel> channels = mPlaylistManager != null ?
+            new ArrayList<>(mPlaylistManager.getChannelModel().getChannels()) : List.of();
+        for(Channel channel: channels)
+        {
+            if(!channel.isProcessing()) { continue; }
+            Map<String,Object> row = new LinkedHashMap<>();
+            row.put("configuration_id", UUID.nameUUIDFromBytes(("sdrtrunk-channel:" + channel.getChannelID())
+                .getBytes(StandardCharsets.UTF_8)).toString());
+            row.put("channel_name", valueOrEmpty(channel.getName()));
+            row.put("name", valueOrEmpty(channel.getName()));
+            row.put("radio_system_name", valueOrEmpty(channel.getSystem()));
+            row.put("site_name", valueOrEmpty(channel.getSite()));
+            row.put("protocol", channel.getDecodeConfiguration() != null ?
+                channel.getDecodeConfiguration().getDecoderType().name() : "");
+            row.put("channel_kind", channelKind(channel));
+            row.put("processing", true);
+            row.put("last_observed_ms", now);
+            if(channel.getSourceConfiguration() instanceof SourceConfigTuner source)
+            {
+                row.put("frequency_hz", source.getFrequency());
+                row.put("quality_frequency_hz", source.getFrequency());
+            }
+            Map<String,Object> activity = latestChannelActivity(channel);
+            long activityTime = activityEndTime(activity);
+            boolean active = !activity.isEmpty() && now - activityTime <= QUALITY_ACTIVE_WINDOW_MS;
+            row.put("receiver_state", active ? "ACTIVE" : "IDLE");
+            row.put("decode_status", active ? "ACTIVE" : "WAITING_FOR_SYNC");
+            row.put("rf_signal_available", false);
+            row.put("decode_health_available", false);
+            if(!activity.isEmpty())
+            {
+                row.put("last_activity_ms", activityTime);
+                if(active)
+                {
+                    row.put("active_alias", activity.getOrDefault("alias", ""));
+                    row.put("active_talkgroup", activity.getOrDefault("talkgroup", ""));
+                    row.put("active_source", activity.getOrDefault("source", ""));
+                    long activityFrequency = numberValue(activity.get("frequency"));
+                    if(activityFrequency > 0) { row.put("quality_frequency_hz", activityFrequency); }
+                }
+            }
+            rows.add(row);
+        }
+        int limit = (int)Math.max(1, Math.min(500, longQueryValue(exchange, "limit", 100)));
+        int offset = (int)Math.max(0, Math.min(rows.size(), longQueryValue(exchange, "offset", 0)));
+        int end = Math.min(rows.size(), offset + limit);
+        boolean hasMore = end < rows.size();
+        Map<String,Object> response = new LinkedHashMap<>();
+        response.put("rows", rows.subList(offset, end));
+        response.put("limit", limit);
+        response.put("offset", offset);
+        response.put("total_count", rows.size());
+        response.put("has_more", hasMore);
+        response.put("next_offset", hasMore ? end : null);
+        response.put("range", "current");
+        vceJson(exchange, 200, response);
+    }
+
+    /** Retained call activity and restart-safe streaming totals for VCE's Main and Calls workspaces. */
+    private void vceDashboard(HttpExchange exchange) throws IOException
+    {
+        if(!"GET".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
+        long now = System.currentTimeMillis();
+        Object lastActivityTime = mActivity.isEmpty() ? null : mActivity.peekFirst().get("time");
+        long lastSeen = lastActivityTime instanceof Number number ? number.longValue() : 0;
+        long cutoff = now - TimeUnit.HOURS.toMillis(24);
+        long from = cutoff - Math.floorMod(cutoff, DASHBOARD_BUCKET_MS);
+        long to = now + (DASHBOARD_BUCKET_MS - Math.floorMod(now, DASHBOARD_BUCKET_MS));
+        List<Map<String,Object>> recent = new ArrayList<>();
+        Set<String> callIds = new HashSet<>();
+        int recorded = 0;
+        Map<String,Map<String,Object>> series = new HashMap<>();
+        Map<String,Map<String,Object>> sourceActivity = new HashMap<>();
+        Map<String,Map<String,Object>> destinations = new HashMap<>();
+        Map<String,Map<String,Object>> sources = new HashMap<>();
+        for(Map<String,Object> item: mActivity)
+        {
+            long time = numberValue(item.get("time"));
+            if(time < cutoff || !isCallActivity(item))
+            {
+                continue;
+            }
+            String id = String.valueOf(item.getOrDefault("id", activityId(item)));
+            if(!callIds.add(id)) { continue; }
+            boolean wasRecorded = Boolean.TRUE.equals(item.getOrDefault("recorded", true));
+            if(wasRecorded) { recorded++; }
+            if(recent.size() < 25) { recent.add(item); }
+
+            String protocol = activityProtocol(item);
+            String kind = activityChannelKind(item);
+            long bucket = time - Math.floorMod(time, DASHBOARD_BUCKET_MS);
+            Map<String,Object> seriesRow = series.computeIfAbsent(bucket + "\u0000" + protocol + "\u0000" + kind,
+                ignored -> dashboardCountRow(protocol, kind));
+            seriesRow.put("time_ms", bucket);
+            increment(seriesRow, "logical_call_count");
+            if(wasRecorded) { increment(seriesRow, "recorded_logical_call_count"); }
+
+            String system = activitySystem(item);
+            String channel = String.valueOf(item.getOrDefault("channel", ""));
+            long frequency = numberValue(item.get("frequency"));
+            if("CONVENTIONAL".equals(kind))
+            {
+                String key = protocol + "\u0000" + system + "\u0000" + channel + "\u0000" + frequency;
+                Map<String,Object> sourceRow = sourceActivity.computeIfAbsent(key, ignored ->
+                    dashboardCountRow(protocol, kind));
+                sourceRow.put("name", !channel.isBlank() ? channel : "Configured receiver");
+                sourceRow.put("source_label", !channel.isBlank() ? channel : "Configured receiver");
+                sourceRow.put("radio_system_name", system);
+                if(frequency > 0) { sourceRow.put("frequency_hz", frequency); }
+                increment(sourceRow, "logical_call_count");
+                if(wasRecorded) { increment(sourceRow, "recorded_logical_call_count"); }
+            }
+
+            String destinationId = activityIdentity(item, "talkgroupId", "talkgroup");
+            if(!destinationId.isBlank())
+            {
+                String identityKind = String.valueOf(item.getOrDefault("destinationKind", "talkgroup"));
+                String key = protocol + "\u0000" + kind + "\u0000" + system + "\u0000" + channel +
+                    "\u0000" + identityKind + "\u0000" + destinationId;
+                Map<String,Object> destination = destinations.computeIfAbsent(key, ignored ->
+                    dashboardIdentityRow(item, protocol, kind, identityKind, destinationId));
+                increment(destination, "logical_call_count");
+                if(wasRecorded) { increment(destination, "recorded_logical_call_count"); }
+            }
+
+            String sourceId = activityIdentity(item, "sourceId", "source");
+            if(!sourceId.isBlank() && !"UNKNOWN".equalsIgnoreCase(sourceId))
+            {
+                String key = protocol + "\u0000" + kind + "\u0000" + system + "\u0000" + channel +
+                    "\u0000" + sourceId;
+                Map<String,Object> source = sources.computeIfAbsent(key, ignored ->
+                    dashboardIdentityRow(item, protocol, kind, "radio", sourceId));
+                source.put("alias_name", item.getOrDefault("sourceAlias", ""));
+                increment(source, "logical_call_count");
+                if(wasRecorded) { increment(source, "recorded_logical_call_count"); }
+            }
+        }
+        Map<String,Object> streaming = streamingDashboardSummary();
+        Map<String,Object> callActivity = new LinkedHashMap<>();
+        callActivity.put("totals", Map.of("logical_call_count", callIds.size(),
+            "recorded_logical_call_count", recorded, "stream_submitted_logical_call_count", 0));
+        //The broadcaster counters are retained lifetime totals, not a per-call last-24-hour association.  They are
+        //reported accurately in streaming_summary; mark this time-windowed metric unavailable instead of mixing scopes.
+        callActivity.put("metric_coverage", Map.of("stream_submitted_logical_call_count", "NOT_COLLECTED"));
+        callActivity.put("from_ms", from);
+        callActivity.put("to_ms", to);
+        callActivity.put("bucket_ms", DASHBOARD_BUCKET_MS);
+        callActivity.put("series", series.values().stream()
+            .sorted(Comparator.comparingLong(row -> numberValue(row.get("time_ms")))).toList());
+        callActivity.put("coverage", series.values().stream()
+            .map(row -> Map.<String,Object>of("protocol", row.get("protocol"),
+                "channel_kind", row.get("channel_kind"), "status", "COLLECTED",
+                "logical_call_count", "COLLECTED", "recorded_logical_call_count", "COLLECTED",
+                "stream_submitted_logical_call_count", "NOT_COLLECTED"))
+            .distinct().toList());
+        Map<String,Object> response = new LinkedHashMap<>();
+        response.put("last_seen_ms", lastSeen);
+        response.put("call_activity", callActivity);
+        response.put("recent_calls", recent);
+        response.put("streaming_summary", streaming);
+        response.put("source_activity_24h", rankedRows(sourceActivity));
+        response.put("top_destinations", rankedRows(destinations));
+        response.put("top_sources", rankedRows(sources));
+        vceJson(exchange, 200, response);
+    }
+
+    private Map<String,Object> streamingDashboardSummary()
+    {
+        List<Map<String,Object>> rows = new ArrayList<>();
+        int uploaded = 0;
+        int queued = 0;
+        int errors = 0;
+        if(mPlaylistManager != null)
+        {
+            for(BroadcastConfiguration configuration:
+                mPlaylistManager.getBroadcastModel().getBroadcastConfigurations())
+            {
+                Map<String,Object> row;
+                if(configuration instanceof RemoteApiConfiguration remote)
+                {
+                    row = remoteDestinationMap(remote);
+                    row.put("queue", row.getOrDefault("queuedCalls", 0));
+                }
+                else
+                {
+                    ConfiguredBroadcast configured = findConfiguredBroadcast(configuration);
+                    if(configured == null) { continue; }
+                    row = broadcasterMap(configured);
+                }
+                int rowUploaded = row.get("sent") instanceof Number number ? number.intValue() : 0;
+                int rowQueued = row.get("queue") instanceof Number number ? number.intValue() : 0;
+                int rowErrors = row.get("errors") instanceof Number number ? number.intValue() : 0;
+                uploaded += rowUploaded;
+                queued += rowQueued;
+                errors += rowErrors;
+                rows.add(row);
+            }
+        }
+        return Map.of("uploaded", uploaded, "queued", queued, "errors", errors, "destinations", rows);
+    }
+
+    private void vceActivityActions(HttpExchange exchange) throws IOException
+    {
+        if(!"GET".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
+        long cutoff = System.currentTimeMillis() - activityRangeMillis(queryValue(exchange, "range"));
+        Map<String,Integer> counts = new HashMap<>();
+        for(Map<String,Object> item: mActivity)
+        {
+            if(numberValue(item.get("time")) < cutoff) { continue; }
+            counts.merge(activityAction(item), 1, Integer::sum);
+        }
+        List<Map<String,Object>> rows = counts.entrySet().stream()
+            .sorted(Map.Entry.<String,Integer>comparingByValue().reversed())
+            .map(entry -> Map.<String,Object>of("action", entry.getKey(),
+                "observation_count", entry.getValue())).toList();
+        vceJson(exchange, 200, Map.of("rows", rows,
+            "total_count", counts.values().stream().mapToInt(Integer::intValue).sum()));
+    }
+
+    private void vceActivityRadios(HttpExchange exchange) throws IOException
+    {
+        if(!"GET".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
+        int limit = (int)Math.max(1, Math.min(100, longQueryValue(exchange, "limit", 100)));
+        int offset = (int)Math.max(0, longQueryValue(exchange, "offset", 0));
+        long cutoff = System.currentTimeMillis() - activityRangeMillis(queryValue(exchange, "range"));
+        String selectedAction = valueOrEmpty(queryValue(exchange, "action")).toUpperCase();
+        Map<String,Map<String,Object>> radios = new HashMap<>();
+        int retained = 0;
+        int identified = 0;
+        int unknown = 0;
+        for(Map<String,Object> item: mActivity)
+        {
+            if(numberValue(item.get("time")) < cutoff ||
+                (!selectedAction.isBlank() && !selectedAction.equals(activityAction(item))))
+            {
+                continue;
+            }
+            retained++;
+            String sourceId = activityIdentity(item, "sourceId", "source");
+            if(sourceId.isBlank() || "UNKNOWN".equalsIgnoreCase(sourceId))
+            {
+                unknown++;
+                continue;
+            }
+            identified++;
+            String system = activitySystem(item);
+            String channel = String.valueOf(item.getOrDefault("channel", ""));
+            String key = system + "\u0000" + channel + "\u0000" + sourceId;
+            Map<String,Object> row = radios.computeIfAbsent(key, ignored ->
+            {
+                Map<String,Object> created = new LinkedHashMap<>();
+                created.put("radio_id", sourceId);
+                created.put("native_id", sourceId);
+                created.put("alias_name", item.getOrDefault("sourceAlias", ""));
+                created.put("radio_system_name", system);
+                created.put("name", !system.isBlank() ? system : channel);
+                created.put("source_label", channel);
+                created.put("protocol", activityProtocol(item));
+                created.put("channel_kind", activityChannelKind(item));
+                created.put("observation_count", 0);
+                created.put("last_seen_ms", 0L);
+                return created;
+            });
+            increment(row, "observation_count");
+            row.put("last_seen_ms", Math.max(numberValue(row.get("last_seen_ms")), activityEndTime(item)));
+        }
+        List<Map<String,Object>> allRows = radios.values().stream()
+            .sorted(Comparator.<Map<String,Object>>comparingLong(row -> numberValue(row.get("observation_count")))
+                .reversed().thenComparing(Comparator.comparingLong(
+                    (Map<String,Object> row) -> numberValue(row.get("last_seen_ms"))).reversed()))
+            .toList();
+        int boundedOffset = Math.min(offset, allRows.size());
+        int end = Math.min(allRows.size(), boundedOffset + limit);
+        boolean hasMore = end < allRows.size();
+        Map<String,Object> response = new LinkedHashMap<>();
+        response.put("rows", allRows.subList(boundedOffset, end));
+        response.put("total_count", allRows.size());
+        response.put("limit", limit);
+        response.put("offset", boundedOffset);
+        response.put("has_more", hasMore);
+        response.put("next_offset", hasMore ? end : null);
+        response.put("action_observation_count", retained);
+        response.put("retained_observation_count", retained);
+        response.put("identified_observation_count", identified);
+        response.put("unknown_source_observation_count", unknown);
+        vceJson(exchange, 200, response);
+    }
+
+    private static Map<String,Object> dashboardCountRow(String protocol, String channelKind)
+    {
+        Map<String,Object> row = new LinkedHashMap<>();
+        row.put("protocol", protocol);
+        row.put("channel_kind", channelKind);
+        row.put("logical_call_count", 0);
+        row.put("recorded_logical_call_count", 0);
+        row.put("stream_submitted_logical_call_count", null);
+        return row;
+    }
+
+    private static Map<String,Object> dashboardIdentityRow(Map<String,Object> item, String protocol,
+                                                            String channelKind, String identityKind,
+                                                            String identityId)
+    {
+        Map<String,Object> row = dashboardCountRow(protocol, channelKind);
+        row.put("identity_kind", identityKind);
+        row.put("identity_id", identityId);
+        row.put("native_id", identityId);
+        row.put("alias_name", item.getOrDefault("alias", ""));
+        row.put("radio_system_name", activitySystem(item));
+        row.put("name", activitySystem(item));
+        row.put("source_label", item.getOrDefault("channel", ""));
+        return row;
+    }
+
+    private static List<Map<String,Object>> rankedRows(Map<String,Map<String,Object>> values)
+    {
+        return values.values().stream()
+            .sorted(Comparator.<Map<String,Object>>comparingLong(row -> numberValue(row.get("logical_call_count")))
+                .reversed())
+            .limit(50).toList();
+    }
+
+    private static void increment(Map<String,Object> row, String field)
+    {
+        row.put(field, numberValue(row.get(field)) + 1);
+    }
+
+    private static long numberValue(Object value)
+    {
+        if(value instanceof Number number) { return number.longValue(); }
+        try { return Long.parseLong(String.valueOf(value)); }
+        catch(Exception e) { return 0; }
+    }
+
+    private static long activityEndTime(Map<String,Object> item)
+    {
+        long end = numberValue(item.get("end"));
+        if(end > 0) { return end; }
+        return numberValue(item.get("time")) + Math.max(0, numberValue(item.get("duration")));
+    }
+
+    private static boolean isCallActivity(Map<String,Object> item)
+    {
+        return String.valueOf(item.getOrDefault("type", "")).toUpperCase().contains("CALL");
+    }
+
+    private static String activityProtocol(Map<String,Object> item)
+    {
+        String value = String.valueOf(item.getOrDefault("protocol", "Unknown")).trim();
+        return value.isBlank() ? "Unknown" : value;
+    }
+
+    private static String activitySystem(Map<String,Object> item)
+    {
+        String value = String.valueOf(item.getOrDefault("system", "")).trim();
+        return value.isBlank() ? String.valueOf(item.getOrDefault("channel", "")).trim() : value;
+    }
+
+    private static String activityChannelKind(Map<String,Object> item)
+    {
+        String value = String.valueOf(item.getOrDefault("channelKind", "")).toUpperCase();
+        if("TRUNKED".equals(value) || "CONVENTIONAL".equals(value)) { return value; }
+        String protocol = activityProtocol(item).toUpperCase();
+        return protocol.contains("NBFM") || protocol.equals("AM") ? "CONVENTIONAL" : "TRUNKED";
+    }
+
+    private static String activityIdentity(Map<String,Object> item, String preferredField, String fallbackField)
+    {
+        Object preferred = item.get(preferredField);
+        if(preferred != null && !String.valueOf(preferred).isBlank()) { return String.valueOf(preferred); }
+        return String.valueOf(item.getOrDefault(fallbackField, "")).trim();
+    }
+
+    private static String activityAction(Map<String,Object> item)
+    {
+        String type = String.valueOf(item.getOrDefault("type", "")).toUpperCase();
+        String details = String.valueOf(item.getOrDefault("details", "")).toUpperCase();
+        String combined = type + " " + details;
+        if(type.contains("CALL")) { return "ACTIVE"; }
+        if(combined.contains("EMERGENCY")) { return "EMERGENCY"; }
+        if(type.contains("AFFIL") || combined.contains("JOIN")) { return "JOIN"; }
+        if(type.contains("DEREGISTER") || combined.contains("LOGOUT")) { return "LOGOUT"; }
+        if(type.contains("REGISTER")) { return "REGISTER"; }
+        if(type.contains("DATA") || type.contains("PACKET") || type.contains("MESSAGE")) { return "DATA"; }
+        if(type.contains("GPS") || type.contains("LRRP") || type.contains("CELLOCATOR")) { return "GPS"; }
+        if(type.contains("ACKNOWLEDGE")) { return "ACKNOWLEDGE"; }
+        if(type.contains("RADIO CHECK") || type.contains("QUERY")) { return "CHECK"; }
+        if(type.contains("PAGE")) { return "PAGE"; }
+        if(type.contains("REGROUP") || combined.contains("PATCH")) { return "PATCH"; }
+        if(type.contains("REQUEST")) { return "REQUEST"; }
+        if(type.contains("STATUS")) { return "STATUS"; }
+        if(combined.contains("DENIED") || combined.contains("DENIAL")) { return "DENIAL"; }
+        if(combined.contains("BUSY")) { return "BUSY"; }
+        if(combined.contains("QUEUE")) { return "QUEUED"; }
+        return "UNKNOWN";
+    }
+
+    private static long activityRangeMillis(String range)
+    {
+        if("6h".equalsIgnoreCase(range)) { return TimeUnit.HOURS.toMillis(6); }
+        if("7d".equalsIgnoreCase(range)) { return TimeUnit.DAYS.toMillis(7); }
+        return TimeUnit.HOURS.toMillis(24);
+    }
+
+    private Map<String,Object> latestChannelActivity(Channel channel)
+    {
+        for(Map<String,Object> item: mActivity)
+        {
+            if(channelMatchesActivity(channel, item)) { return item; }
+        }
+        return Map.of();
+    }
+
+    private static boolean channelMatchesActivity(Channel channel, Map<String,Object> item)
+    {
+        String activityChannel = String.valueOf(item.getOrDefault("channel", ""));
+        if(!activityChannel.isBlank() && activityChannel.equalsIgnoreCase(valueOrEmpty(channel.getName())))
+        {
+            return true;
+        }
+        String activitySystem = String.valueOf(item.getOrDefault("system", ""));
+        String activitySite = String.valueOf(item.getOrDefault("site", ""));
+        if(!activitySystem.isBlank() && activitySystem.equalsIgnoreCase(valueOrEmpty(channel.getSystem())) &&
+            (activitySite.isBlank() || activitySite.equalsIgnoreCase(valueOrEmpty(channel.getSite()))))
+        {
+            if(channel.getSourceConfiguration() instanceof SourceConfigTuner source)
+            {
+                long eventFrequency = numberValue(item.get("frequency"));
+                return eventFrequency <= 0 || source.getFrequency() == eventFrequency;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static String channelKind(Channel channel)
+    {
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN nxdn)
+        {
+            return nxdn.isConventional() ? "CONVENTIONAL" : "TRUNKED";
+        }
+        DecoderType decoder = channel.getDecodeConfiguration() != null ?
+            channel.getDecodeConfiguration().getDecoderType() : null;
+        return decoder == DecoderType.AM || decoder == DecoderType.NBFM ? "CONVENTIONAL" : "TRUNKED";
     }
 
     private void channels(HttpExchange exchange) throws IOException
@@ -562,6 +1496,10 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             channel.getAuxDecodeConfiguration().getAuxDecoders().contains(DecoderType.DCS));
         value.put("eventLoggers", channel.getEventLogConfiguration() != null ?
             channel.getEventLogConfiguration().getLoggers().stream().map(EventLogType::name).toList() : List.of());
+        value.put("recorders", channel.getRecordConfiguration() != null ?
+            channel.getRecordConfiguration().getRecorders().stream().map(RecorderType::name).toList() : List.of());
+        value.put("trafficChannelPoolSize", trafficChannelPoolSize(channel));
+        value.put("ignoreDataCalls", ignoreDataCalls(channel));
         if(channel.getDecodeConfiguration() instanceof DecodeConfigNBFM nbfm)
         {
             value.put("nbfmBandwidth", nbfm.getBandwidth().name());
@@ -580,8 +1518,32 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         if(channel.getSourceConfiguration() instanceof SourceConfigTuner tunerSource)
         {
             value.put("frequency", tunerSource.getFrequency());
+            value.put("preferredTuner", valueOrEmpty(tunerSource.getPreferredTuner()));
+        }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN nxdn)
+        {
+            value.put("nxdnTransmissionMode", nxdn.getTransmissionMode().name());
+            value.put("nxdnEncoding", nxdn.getEncoding().name());
+            value.put("ignoreEncryptedCalls", nxdn.isIgnoreEncryptedCalls());
         }
         return value;
+    }
+
+    private static Integer trafficChannelPoolSize(Channel channel)
+    {
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN config) { return config.getTrafficChannelPoolSize(); }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR config) { return config.getTrafficChannelPoolSize(); }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigP25 config) { return config.getTrafficChannelPoolSize(); }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigMPT1327 config) { return config.getTrafficChannelPoolSize(); }
+        return null;
+    }
+
+    private static boolean ignoreDataCalls(Channel channel)
+    {
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN config) { return config.isIgnoreDataCalls(); }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR config) { return config.getIgnoreDataCalls(); }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigP25 config) { return config.getIgnoreDataCalls(); }
+        return false;
     }
 
     private void editChannel(HttpExchange exchange) throws IOException
@@ -648,6 +1610,11 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             source.setFrequency(request.get("frequency").getAsLong());
             channel.setSourceConfiguration(source);
         }
+        if(request.has("preferredTuner") && channel.getSourceConfiguration() instanceof SourceConfigTuner source)
+        {
+            String preferred = request.get("preferredTuner").getAsString().trim();
+            source.setPreferredTuner(preferred.isBlank() ? null : preferred);
+        }
         if(allowDecoderChange && request.has("decoder"))
         {
             DecoderType decoder = decoderValue(request);
@@ -661,6 +1628,23 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         {
             nxdn.setRecordUnknownSimplexCalls(request.get("recordUnknownSimplexCalls").getAsBoolean());
         }
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN nxdn)
+        {
+            if(request.has("nxdnTransmissionMode"))
+            {
+                nxdn.setTransmissionMode(TransmissionMode.valueOf(
+                    request.get("nxdnTransmissionMode").getAsString().trim().toUpperCase()));
+            }
+            if(request.has("nxdnEncoding"))
+            {
+                nxdn.setEncoding(Encoding.valueOf(request.get("nxdnEncoding").getAsString().trim().toUpperCase()));
+            }
+            if(request.has("ignoreEncryptedCalls"))
+            {
+                nxdn.setIgnoreEncryptedCalls(request.get("ignoreEncryptedCalls").getAsBoolean());
+            }
+        }
+        applyTrafficSettings(channel, request);
         if(request.has("nxdnChannelMode") && channel.getDecodeConfiguration() instanceof DecodeConfigNXDN nxdn)
         {
             try
@@ -707,9 +1691,55 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             }
             channel.setEventLogConfiguration(eventLogs.getLoggers().isEmpty() ? null : eventLogs);
         }
+        if(request.has("recorders") && request.get("recorders").isJsonArray())
+        {
+            RecordConfiguration recordings = new RecordConfiguration();
+            for(var element: request.getAsJsonArray("recorders"))
+            {
+                try
+                {
+                    RecorderType type = RecorderType.valueOf(element.getAsString());
+                    if(type != RecorderType.AUDIO && !recordings.getRecorders().contains(type))
+                    {
+                        recordings.addRecorder(type);
+                    }
+                }
+                catch(Exception e)
+                {
+                    throw new IllegalArgumentException("Unsupported recorder: " + element.getAsString());
+                }
+            }
+            channel.setRecordConfiguration(recordings);
+        }
         if(channel.getDecodeConfiguration() instanceof DecodeConfigNBFM nbfm)
         {
             applyNbfmSettings(nbfm, request);
+        }
+    }
+
+    static void applyTrafficSettings(Channel channel, JsonObject request)
+    {
+        Integer poolSize = request.has("trafficChannelPoolSize") ?
+            Math.max(0, Math.min(100, request.get("trafficChannelPoolSize").getAsInt())) : null;
+        Boolean ignoreData = request.has("ignoreDataCalls") ? request.get("ignoreDataCalls").getAsBoolean() : null;
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN config)
+        {
+            if(poolSize != null) { config.setTrafficChannelPoolSize(poolSize); }
+            if(ignoreData != null) { config.setIgnoreDataCalls(ignoreData); }
+        }
+        else if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR config)
+        {
+            if(poolSize != null) { config.setTrafficChannelPoolSize(poolSize); }
+            if(ignoreData != null) { config.setIgnoreDataCalls(ignoreData); }
+        }
+        else if(channel.getDecodeConfiguration() instanceof DecodeConfigP25 config)
+        {
+            if(poolSize != null) { config.setTrafficChannelPoolSize(poolSize); }
+            if(ignoreData != null) { config.setIgnoreDataCalls(ignoreData); }
+        }
+        else if(channel.getDecodeConfiguration() instanceof DecodeConfigMPT1327 config && poolSize != null)
+        {
+            config.setTrafficChannelPoolSize(poolSize);
         }
     }
 
@@ -794,6 +1824,16 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         result.put("nbfmDeemphasis", deemphasis);
         result.put("ctcss", ctcss);
         result.put("dcs", dcs);
+        List<String> preferredTuners = new ArrayList<>();
+        if(mTunerManager != null)
+        {
+            for(DiscoveredTuner discovered: mTunerManager.getDiscoveredTunerModel().getDiscoveredTuners())
+            {
+                if(discovered.hasTuner()) { preferredTuners.add(discovered.getTuner().getPreferredName()); }
+            }
+            preferredTuners.sort(String.CASE_INSENSITIVE_ORDER);
+        }
+        result.put("preferredTuners", preferredTuners);
         json(exchange, 200, result);
     }
 
@@ -1233,10 +2273,13 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
                 RdioScannerBroadcaster.getPersistedQueueSize(rdio,
                     mUserPreferences.getDirectoryPreference().getDirectoryStreaming()) : 0;
         value.put("queue", queued);
-        value.put("sent", broadcaster != null ? broadcaster.getStreamedAudioCount() : 0);
-        value.put("duplicateRejected", broadcaster != null ? broadcaster.getDuplicateRejectedAudioCount() : 0);
-        value.put("errors", broadcaster != null ? broadcaster.getAudioErrorCount() : 0);
-        value.put("agedOff", broadcaster != null ? broadcaster.getAgedOffAudioCount() : 0);
+        AbstractAudioBroadcaster.BroadcastStatistics saved = broadcaster == null ?
+            AbstractAudioBroadcaster.getPersistedStatistics(configuration) : null;
+        value.put("sent", broadcaster != null ? broadcaster.getStreamedAudioCount() : saved.streamed());
+        value.put("duplicateRejected", broadcaster != null ? broadcaster.getDuplicateRejectedAudioCount() :
+            saved.duplicateRejected());
+        value.put("errors", broadcaster != null ? broadcaster.getAudioErrorCount() : saved.errors());
+        value.put("agedOff", broadcaster != null ? broadcaster.getAgedOffAudioCount() : saved.agedOff());
 
         if(configuration instanceof RdioScannerConfiguration rdio)
         {
@@ -1543,6 +2586,8 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     {
         Map<String,Object> value = new LinkedHashMap<>();
         value.put("name", configuration.getName());
+        value.put("type", configuration.getBroadcastServerType().name());
+        value.put("typeLabel", configuration.getBroadcastServerType().toString());
         value.put("url", configuration.getHost());
         value.put("enabled", configuration.isEnabled());
         String resolvedApiKey = configuration.resolveApiKey();
@@ -1563,9 +2608,14 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         value.put("localWhisperExecutable", configuration.getLocalWhisperExecutable());
         value.put("localWhisperModel", configuration.getLocalWhisperModel());
         AbstractAudioBroadcaster broadcaster = mPlaylistManager.getBroadcastModel().getBroadcaster(configuration.getName());
+        AbstractAudioBroadcaster.BroadcastStatistics saved = broadcaster == null ?
+            AbstractAudioBroadcaster.getPersistedStatistics(configuration) : null;
         value.put("state", !configuration.isEnabled() ? "Disabled" : broadcaster != null ?
             broadcaster.getBroadcastState().toString() : "Starting");
-        value.put("queuedCalls", RemoteApiBroadcaster.getPreservedQueueSize(configuration.getId()));
+        value.put("sent", broadcaster != null ? broadcaster.getStreamedAudioCount() : saved.streamed());
+        value.put("errors", broadcaster != null ? broadcaster.getAudioErrorCount() : saved.errors());
+        value.put("agedOff", broadcaster != null ? broadcaster.getAgedOffAudioCount() : saved.agedOff());
+        value.put("queuedCalls", RemoteApiBroadcaster.getPreservedQueueSize(configuration));
         value.put("activeUploads", 0);
         if(broadcaster instanceof RemoteApiBroadcaster remote)
         {
@@ -1722,6 +2772,17 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     private static int integerValue(JsonObject object, String name, int defaultValue)
     {
         return object.has(name) ? object.get(name).getAsInt() : defaultValue;
+    }
+
+    private static long longValue(JsonObject object, String name, long defaultValue)
+    {
+        return object.has(name) ? object.get(name).getAsLong() : defaultValue;
+    }
+
+    private static String errorMessage(Throwable error)
+    {
+        return error.getMessage() != null && !error.getMessage().isBlank() ? error.getMessage() :
+            error.getClass().getSimpleName();
     }
 
     private void dashboard(HttpExchange exchange) throws IOException
@@ -1937,6 +2998,10 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     {
         return event ->
         {
+            if(event == null || event.getIdentifierCollection() == null)
+            {
+                return;
+            }
             Map<String,Object> item = new LinkedHashMap<>();
             item.put("time", event.getTimeStart());
             item.put("end", event.getTimeEnd());
@@ -1945,9 +3010,11 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             item.put("type", event.getEventType() != null ? event.getEventType().toString() : "Activity");
             Identifier talkgroup = event.getIdentifierCollection().getToIdentifier();
             AliasList aliasList = mPlaylistManager.getAliasModel().getAliasList(event.getIdentifierCollection());
-            List<Alias> talkgroupAliases = getRecordableTalkgroupAliases(aliasList, talkgroup);
+            List<Alias> talkgroupAliases = aliasList != null && talkgroup != null ?
+                aliasList.getAliases(talkgroup).stream().filter(alias -> alias != null).toList() : List.of();
 
-            //Keep the scanner display aligned with web audio: ignore unconfigured, non-recorded, and muted calls.
+            //Retain all configured, monitored calls for dashboard activity.  Recording is tracked separately so the
+            //Calls and Recorded totals remain meaningful while undefined and muted traffic stays excluded.
             if(talkgroupAliases.isEmpty() || talkgroupAliases.stream()
                 .anyMatch(alias -> alias.getPlaybackPriority() <= Priority.DO_NOT_MONITOR))
             {
@@ -1956,18 +3023,125 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
 
             List<String> aliases = talkgroupAliases.stream().map(Alias::getName)
                 .filter(name -> name != null && !name.isBlank()).toList();
+            Identifier source = event.getIdentifierCollection().getFromIdentifier();
+            List<String> sourceAliases = aliasList != null && source != null ? aliasList.getAliases(source).stream()
+                .map(Alias::getName).filter(name -> name != null && !name.isBlank()).toList() : List.of();
             item.put("talkgroup", talkgroup.toString());
+            item.put("talkgroupId", identifierValue(talkgroup));
+            item.put("destinationKind", switch(talkgroup.getForm())
+            {
+                case RADIO -> "radio";
+                case PATCH_GROUP -> "patch_group";
+                default -> "talkgroup";
+            });
             item.put("alias", aliases.isEmpty() ? "Configured Talkgroup" : String.join(", ", aliases));
             item.put("channel", channelName(event.getIdentifierCollection()));
-            item.put("source", event.getIdentifierCollection().getIdentifiers(Role.FROM).stream()
-                .map(Object::toString).findFirst().orElse(""));
+            item.put("system", configurationIdentifierValue(event.getIdentifierCollection(), Form.SYSTEM));
+            item.put("site", configurationIdentifierValue(event.getIdentifierCollection(), Form.SITE));
+            item.put("source", source != null ? source.toString() : "");
+            item.put("sourceId", identifierValue(source));
+            item.put("sourceAlias", String.join(", ", sourceAliases));
             item.put("details", event.getDetails());
             item.put("frequency", event.getChannelDescriptor() != null ?
                 event.getChannelDescriptor().getDownlinkFrequency() : 0);
+            Channel configuredChannel = configuredChannel(event.getIdentifierCollection(), item);
+            item.put("channelKind", configuredChannel != null ? channelKind(configuredChannel) :
+                activityChannelKind(item));
             item.put("signalAvailable", false);
-            mActivity.addFirst(item);
-            while(mActivity.size() > 100) { mActivity.pollLast(); }
+            item.put("recorded", talkgroupAliases.stream().anyMatch(Alias::isRecordable));
+            item.put("id", activityId(item));
+            recordActivity(item);
         };
+    }
+
+    private void recordActivity(Map<String,Object> item)
+    {
+        Object id = item.get("id");
+        if(id != null)
+        {
+            mActivity.removeIf(existing -> id.equals(existing.get("id")));
+        }
+        mActivity.addFirst(new LinkedHashMap<>(item));
+        while(mActivity.size() > ACTIVITY_LIMIT) { mActivity.pollLast(); }
+        scheduleActivityWrite();
+    }
+
+    private static String activityId(Map<String,Object> item)
+    {
+        String identity = String.valueOf(item.getOrDefault("time", 0)) + "\u0000" +
+            item.getOrDefault("talkgroup", "") + "\u0000" + item.getOrDefault("source", "") + "\u0000" +
+            item.getOrDefault("channel", "");
+        return UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+    private void scheduleActivityWrite()
+    {
+        if(mActivityFile != null && mActivityWriteScheduled.compareAndSet(false, true))
+        {
+            ThreadPool.SCHEDULED.schedule(() ->
+            {
+                mActivityWriteScheduled.set(false);
+                persistActivity();
+            }, 500, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void loadActivity()
+    {
+        if(mActivityFile == null || !Files.isRegularFile(mActivityFile)) { return; }
+        synchronized(mActivityFileLock)
+        {
+            try
+            {
+                JsonArray saved = GSON.fromJson(Files.readString(mActivityFile, StandardCharsets.UTF_8),
+                    JsonArray.class);
+                if(saved == null) { return; }
+                for(var element: saved)
+                {
+                    if(!element.isJsonObject()) { continue; }
+                    @SuppressWarnings("unchecked")
+                    Map<String,Object> item = GSON.fromJson(element, Map.class);
+                    if(item != null)
+                    {
+                        item.putIfAbsent("id", activityId(item));
+                        mActivity.addLast(new LinkedHashMap<>(item));
+                        if(mActivity.size() >= ACTIVITY_LIMIT) { break; }
+                    }
+                }
+                mLog.info("Restored [{}] saved web activity records", mActivity.size());
+            }
+            catch(Exception e)
+            {
+                mLog.warn("Unable to restore saved web activity [{}]", mActivityFile, e);
+            }
+        }
+    }
+
+    private void persistActivity()
+    {
+        if(mActivityFile == null) { return; }
+        synchronized(mActivityFileLock)
+        {
+            Path temporary = mActivityFile.resolveSibling(mActivityFile.getFileName() + ".tmp");
+            try
+            {
+                Files.createDirectories(mActivityFile.getParent());
+                Files.writeString(temporary, GSON.toJson(new ArrayList<>(mActivity)), StandardCharsets.UTF_8);
+                try
+                {
+                    Files.move(temporary, mActivityFile, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+                }
+                catch(AtomicMoveNotSupportedException e)
+                {
+                    Files.move(temporary, mActivityFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.warn("Unable to save web activity [{}]", mActivityFile, e);
+            }
+        }
     }
 
     private static String channelName(IdentifierCollection identifiers)
@@ -1980,10 +3154,40 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
         return channel != null ? channel.toString() : "";
     }
 
+    private static Object identifierValue(Identifier identifier)
+    {
+        return identifier != null && identifier.getValue() != null ? identifier.getValue() : "";
+    }
+
+    private static String configurationIdentifierValue(IdentifierCollection identifiers, Form form)
+    {
+        Identifier identifier = identifiers.getIdentifier(IdentifierClass.CONFIGURATION, form, Role.ANY);
+        return identifier != null && identifier.getValue() != null ? identifier.getValue().toString() : "";
+    }
+
+    private Channel configuredChannel(IdentifierCollection identifiers, Map<String,Object> item)
+    {
+        if(mPlaylistManager == null) { return null; }
+        String name = channelName(identifiers);
+        String system = String.valueOf(item.getOrDefault("system", ""));
+        String site = String.valueOf(item.getOrDefault("site", ""));
+        for(Channel channel: new ArrayList<>(mPlaylistManager.getChannelModel().getChannels()))
+        {
+            if(!name.isBlank() && name.equalsIgnoreCase(valueOrEmpty(channel.getName()))) { return channel; }
+            if(!system.isBlank() && system.equalsIgnoreCase(valueOrEmpty(channel.getSystem())) &&
+                (site.isBlank() || site.equalsIgnoreCase(valueOrEmpty(channel.getSite()))))
+            {
+                return channel;
+            }
+        }
+        return null;
+    }
+
     private void activity(HttpExchange exchange) throws IOException
     {
         if(!"GET".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
-        json(exchange, 200, new ArrayList<>(mActivity));
+        int limit = (int)Math.max(1, Math.min(ACTIVITY_LIMIT, longQueryValue(exchange, "limit", 100)));
+        json(exchange, 200, mActivity.stream().limit(limit).toList());
     }
 
     private void transcripts(HttpExchange exchange) throws IOException
@@ -2273,10 +3477,20 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
     {
         if("GET".equals(exchange.getRequestMethod()))
         {
-            json(exchange, 200, Map.of("running", isRunning(),
-                "passwordConfigured", mPassword != null && !mPassword.isBlank(),
-                "bind", System.getProperty("sdrtrunk.web.bind", "127.0.0.1"),
-                "port", Integer.getInteger("sdrtrunk.web.port", DEFAULT_PORT)));
+            Map<String,Object> settings = new LinkedHashMap<>();
+            settings.put("running", isRunning());
+            settings.put("passwordConfigured", mPassword != null && !mPassword.isBlank());
+            settings.put("bind", getEffectiveBindAddress());
+            settings.put("port", getEffectivePort());
+            settings.put("savedBind", getSavedBindAddress());
+            settings.put("savedPort", getSavedPort());
+            settings.put("actualBind", mBoundAddress);
+            settings.put("actualPort", mBoundPort);
+            settings.put("bindOverridden", System.getProperty(BIND_KEY) != null);
+            settings.put("portOverridden", System.getProperty(PORT_KEY) != null);
+            settings.put("remoteAccess", mServer != null && mServer.getAddress().getAddress() != null &&
+                mServer.getAddress().getAddress().isAnyLocalAddress());
+            json(exchange, 200, settings);
             return;
         }
         if(!"POST".equals(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
@@ -2299,6 +3513,24 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             json(exchange, 200, Map.of("saved", true, "sessionsInvalidated", true));
             return;
         }
+        if("network".equalsIgnoreCase(action))
+        {
+            try
+            {
+                String bind = requiredString(request, "bind");
+                int port = integerValue(request, "port", DEFAULT_PORT);
+                saveNetworkSettings(bind, port);
+                json(exchange, 200, Map.of("saved", true, "bind", bind.trim(), "port", port,
+                    "restartRequired", true,
+                    "bindOverridden", System.getProperty(BIND_KEY) != null,
+                    "portOverridden", System.getProperty(PORT_KEY) != null));
+            }
+            catch(IllegalArgumentException e)
+            {
+                json(exchange, 400, Map.of("error", errorMessage(e)));
+            }
+            return;
+        }
         if("restart".equalsIgnoreCase(action))
         {
             json(exchange, 202, Map.of("restarting", true));
@@ -2316,7 +3548,42 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
             });
             return;
         }
-        json(exchange, 400, Map.of("error", "action must be password or restart"));
+        json(exchange, 400, Map.of("error", "action must be password, network, or restart"));
+    }
+
+    private void webUsers(HttpExchange exchange) throws IOException
+    {
+        if("GET".equalsIgnoreCase(exchange.getRequestMethod()))
+        {
+            json(exchange, 200, Map.of("users", getWebUsers(), "builtInAdministrator", "admin"));
+            return;
+        }
+        if(!"POST".equalsIgnoreCase(exchange.getRequestMethod())) { methodNotAllowed(exchange); return; }
+        JsonObject request = GSON.fromJson(new String(exchange.getRequestBody().readAllBytes(),
+            StandardCharsets.UTF_8), JsonObject.class);
+        String action = stringValue(request, "action", "save");
+        try
+        {
+            if("delete".equalsIgnoreCase(action))
+            {
+                deleteWebUser(requiredString(request, "id"));
+                json(exchange, 200, Map.of("deleted", true));
+                return;
+            }
+            if("save".equalsIgnoreCase(action))
+            {
+                WebUser saved = saveWebUser(stringValue(request, "id", ""), requiredString(request, "username"),
+                    stringValue(request, "password", ""), stringValue(request, "role", "operator"),
+                    booleanValue(request, "enabled", true));
+                json(exchange, 200, Map.of("saved", true, "user", saved));
+                return;
+            }
+            json(exchange, 400, Map.of("error", "action must be save or delete"));
+        }
+        catch(IllegalArgumentException e)
+        {
+            json(exchange, 400, Map.of("error", errorMessage(e)));
+        }
     }
 
     private void applicationLog(HttpExchange exchange) throws IOException
@@ -2572,7 +3839,7 @@ public class SdrTrunkWebServer implements IAudioSegmentListener
 
     private static final String VCE_DEFAULT_PREFERENCES = """
         {
-          "version": 11,
+          "version": 12,
           "appearance": {"theme": "dark", "hue": null},
           "page_titles": {"prepend_playing_call": true},
           "playback": {"volume": 1.0, "selected_scan_list_ids": [], "target_grouping": true,

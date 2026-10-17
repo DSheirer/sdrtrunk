@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
@@ -86,6 +88,18 @@ public abstract class BroadcastConfiguration
     public int getId()
     {
         return mId;
+    }
+
+    /**
+     * Stable identity used for restart-safe operational counters.  Specialized call-upload destinations can
+     * override this with their durable queue identity.
+     */
+    @JsonIgnore
+    public String getPersistentStatisticsKey()
+    {
+        String identity = getBroadcastServerType().name() + "\u0000" + String.valueOf(getName()) + "\u0000" +
+            String.valueOf(getHost()) + "\u0000" + getPort();
+        return UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     /**

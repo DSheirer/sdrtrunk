@@ -32,7 +32,7 @@ export function createSdrTrunkAdministration(deps) {
   const status = node('div');
   const webSection = node('section', 'section ui-section');
   webSection.append(node('h2', '', 'Web Console Access'),
-    node('p', 'muted', 'Change the password or restart the embedded web service. Changing the password signs out every browser session.'));
+    node('p', 'muted', 'Manage the built-in administrator password, listening interface, port, and web console users.'));
   const passwordForm = node('form', 'admin-form');
   const password = field(node, 'New password', 'password', '', 'password');
   password.input.autocomplete = 'new-password'; password.input.required = true;
@@ -40,6 +40,45 @@ export function createSdrTrunkAdministration(deps) {
   const savePassword = node('button', 'ui-button ui-button-primary', 'Change password'); savePassword.type = 'submit';
   const restart = node('button', 'ui-button ui-button-secondary', 'Restart web interface'); restart.type = 'button';
   webActions.append(savePassword, restart); passwordForm.append(password.host, webActions); webSection.append(passwordForm);
+
+  const networkForm = node('form', 'admin-form');
+  const networkGrid = node('div', 'ui-settings-grid sdrtrunk-editor-grid');
+  const bind = field(node, 'Bind address', 'bind', '127.0.0.1');
+  bind.input.placeholder = '127.0.0.1 or 0.0.0.0';
+  const port = field(node, 'Port', 'port', '10000', 'number');
+  port.input.min = '1'; port.input.max = '65535';
+  networkGrid.append(bind.host, port.host);
+  const networkState = node('div', 'ui-notice');
+  const saveNetwork = node('button', 'ui-button ui-button-primary', 'Save network settings');
+  saveNetwork.type = 'submit';
+  networkForm.append(node('h3', '', 'Listening Interface'), networkGrid, networkState, saveNetwork);
+  webSection.append(networkForm);
+
+  const usersSection = node('section', 'section ui-section');
+  usersSection.append(node('h2', '', 'Web Console Users'),
+    node('p', 'muted', 'Additional administrators can manage settings. Operators can use scanner, spectrum, and playback features without administration access.'));
+  const userForm = node('form', 'admin-form');
+  const userSelectHost = node('label', 'ui-field');
+  const userSelect = node('select', 'ui-select');
+  userSelectHost.append(node('span', 'ui-field-label', 'Account'), userSelect);
+  const username = field(node, 'Username', 'username');
+  const userPassword = field(node, 'New password', 'userPassword', '', 'password');
+  userPassword.input.placeholder = 'Required for new users; blank keeps current password';
+  const roleHost = node('label', 'ui-field');
+  const role = node('select', 'ui-select'); role.name = 'role';
+  role.append(node('option', '', 'Operator'), node('option', '', 'Administrator'));
+  role.options[0].value = 'operator'; role.options[1].value = 'admin';
+  roleHost.append(node('span', 'ui-field-label', 'Role'), role);
+  const enabled = toggle(node, 'Enabled', 'enabled', true);
+  const userGrid = node('div', 'ui-settings-grid sdrtrunk-editor-grid');
+  userGrid.append(userSelectHost, username.host, userPassword.host, roleHost);
+  const userActions = node('div', 'ui-action-row');
+  const newUser = node('button', 'ui-button ui-button-secondary', 'New user'); newUser.type = 'button';
+  const saveUser = node('button', 'ui-button ui-button-primary', 'Save user'); saveUser.type = 'submit';
+  const deleteUser = node('button', 'ui-button ui-button-danger', 'Delete user'); deleteUser.type = 'button';
+  userActions.append(newUser, saveUser, deleteUser);
+  userForm.append(userGrid, enabled.host, userActions); usersSection.append(userForm);
+  let userRecords = [];
 
   const whisperSection = node('section', 'section ui-section');
   whisperSection.append(node('h2', '', 'Whisper Transcription'),
@@ -68,7 +107,7 @@ export function createSdrTrunkAdministration(deps) {
   const systemSection = node('section', 'section ui-section');
   systemSection.append(node('h2', '', 'Host Status'));
   const systemFacts = node('dl', 'ui-facts'); systemSection.append(systemFacts);
-  host.append(status, webSection, whisperSection, systemSection);
+  host.append(status, webSection, usersSection, whisperSection, systemSection);
 
   function show(message, danger = false) {
     status.className = message ? `ui-notice ${danger ? 'ui-notice-danger' : 'ui-notice-success'}` : '';
@@ -77,9 +116,17 @@ export function createSdrTrunkAdministration(deps) {
 
   async function load() {
     try {
-      const [whisper, web, system] = await Promise.all([
-        request('/api/v1/whisper-settings'), request('/api/v1/web-settings'), request('/api/v1/status')
+      const [whisper, web, users, system] = await Promise.all([
+        request('/api/v1/whisper-settings'), request('/api/v1/web-settings'), request('/api/v1/users'), request('/api/v1/status')
       ]);
+      bind.input.value = web.savedBind ?? web.bind ?? '127.0.0.1';
+      port.input.value = web.savedPort ?? web.port ?? 10000;
+      networkState.className = `ui-notice ${web.remoteAccess ? 'ui-notice-success' : 'ui-notice-warning'}`;
+      networkState.textContent = `${web.running ? 'Listening' : 'Stopped'} at ${web.actualBind || web.bind}:${web.actualPort || web.port}` +
+        (web.remoteAccess ? ' · available through network interfaces' : ' · local access only') +
+        (web.bindOverridden || web.portOverridden ? ' · JVM startup properties override saved values' : '');
+      userRecords = Array.isArray(users.users) ? users.users : [];
+      renderUsers();
       definitions.forEach(([, name]) => { controls[name].value = whisper[name] ?? ''; });
       ['enabled', 'normalize', 'redact'].forEach((name) => { controls[name].checked = whisper[name] === true; });
       whisperState.className = `ui-notice ${whisper.enabled && !whisper.available ? 'ui-notice-warning' : ''}`;
@@ -106,11 +153,21 @@ export function createSdrTrunkAdministration(deps) {
       window.setTimeout(() => window.location.reload(), 900);
     } catch (cause) { show(cause.message, true); }
   });
+  networkForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    try {
+      await request('/api/v1/web-settings', 'POST', { action: 'network', bind: bind.input.value, port: Number(port.input.value) });
+      show('Network settings saved. Restart the web interface to apply them.');
+      await load();
+    } catch (cause) { show(cause.message, true); }
+  });
   restart.addEventListener('click', async () => {
     try {
+      const destination = new URL(window.location.href);
+      destination.port = String(Number(port.input.value) || 10000);
       await request('/api/v1/web-settings', 'POST', { action: 'restart' });
       show('Web interface is restarting…');
-      window.setTimeout(() => window.location.reload(), 1500);
+      window.setTimeout(() => { window.location.href = destination.toString(); }, 1500);
     } catch (cause) { show(cause.message, true); }
   });
   whisperForm.addEventListener('submit', async (event) => {
@@ -122,6 +179,48 @@ export function createSdrTrunkAdministration(deps) {
       const saved = await request('/api/v1/whisper-settings', 'POST', body);
       show(saved.enabled && !saved.available ? `Settings saved · ${saved.configurationError}` : 'Whisper settings saved.');
       await load();
+    } catch (cause) { show(cause.message, true); }
+  });
+
+  function renderUsers(selectedId = '') {
+    userSelect.replaceChildren();
+    const create = node('option', '', 'Create a new user'); create.value = ''; userSelect.append(create);
+    userRecords.forEach((user) => {
+      const option = node('option', '', `${user.username} (${user.role}${user.enabled ? '' : ', disabled'})`);
+      option.value = user.id; userSelect.append(option);
+    });
+    userSelect.value = selectedId;
+    loadUserEditor();
+  }
+
+  function loadUserEditor() {
+    const user = userRecords.find((item) => item.id === userSelect.value);
+    username.input.value = user?.username || '';
+    userPassword.input.value = '';
+    role.value = user?.role || 'operator';
+    enabled.input.checked = user?.enabled !== false;
+    deleteUser.disabled = !user;
+  }
+
+  userSelect.addEventListener('change', loadUserEditor);
+  newUser.addEventListener('click', () => { userSelect.value = ''; loadUserEditor(); username.input.focus(); });
+  userForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    try {
+      const result = await request('/api/v1/users', 'POST', { action: 'save', id: userSelect.value,
+        username: username.input.value, password: userPassword.input.value, role: role.value,
+        enabled: enabled.input.checked });
+      show('Web user saved.');
+      const response = await request('/api/v1/users'); userRecords = response.users || [];
+      renderUsers(result.user?.id || '');
+    } catch (cause) { show(cause.message, true); }
+  });
+  deleteUser.addEventListener('click', async () => {
+    if (!userSelect.value || !window.confirm(`Delete ${username.input.value}?`)) return;
+    try {
+      await request('/api/v1/users', 'POST', { action: 'delete', id: userSelect.value });
+      show('Web user deleted.');
+      const response = await request('/api/v1/users'); userRecords = response.users || []; renderUsers();
     } catch (cause) { show(cause.message, true); }
   });
   signal?.addEventListener('abort', () => {}, { once: true });

@@ -1,6 +1,6 @@
 'use strict';
 
-  const PRODUCT = 'SDR-Trunk Web Console';
+  const PRODUCT = 'VCE';
 
   function safeText(value, fallback = '') {
     const clean = String(value ?? '').replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, ' ')

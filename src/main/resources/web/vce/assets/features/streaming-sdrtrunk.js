@@ -118,12 +118,14 @@ export function createStreamingWorkspace(deps) {
       const card = node('article', 'streaming-destination-card ui-surface');
       const heading = node('header', 'streaming-destination-header');
       const identity = node('div', 'streaming-identity');
-      identity.append(node('h3', 'streaming-destination-title', row.name || 'Unnamed destination'),
-        node('small', 'muted', `${row.type || 'Streaming'} · ${row.host || 'No URL configured'}`));
+      const endpoint = node('small', 'muted streaming-sdrtrunk-endpoint',
+        `${row.type || 'Streaming'} · ${row.host || 'No URL configured'}`);
+      endpoint.title = row.host || '';
+      identity.append(node('h3', 'streaming-destination-title', row.name || 'Unnamed destination'), endpoint);
       const state = node('span', `ui-status ${row.state === 'CONNECTED' ? 'ui-status-success' : 'ui-status-neutral'}`,
         row.enabled ? row.state || 'Starting' : 'Disabled');
       heading.append(identity, state);
-      const metrics = node('div', 'ui-metric-grid ui-metric-grid-4');
+      const metrics = node('div', 'ui-metric-grid ui-metric-grid-4 streaming-metrics-compact');
       metrics.append(metric('Queued', row.queue), metric('Sent', row.sent), metric('Aged off', row.agedOff),
         metric('Errors', row.errors));
       const controls = node('footer', 'ui-action-row streaming-destination-actions');
@@ -283,11 +285,12 @@ export function createStreamingWorkspace(deps) {
       const card = node('article', 'streaming-destination-card ui-surface');
       const heading = node('header', 'streaming-destination-header');
       const identity = node('div', 'streaming-identity');
-      identity.append(node('h3', 'streaming-destination-title', row.name || 'Unnamed destination'),
-        node('small', 'muted', row.url || 'No POST URL configured'));
+      const endpoint = node('small', 'muted streaming-sdrtrunk-endpoint', row.url || 'No POST URL configured');
+      endpoint.title = row.url || '';
+      identity.append(node('h3', 'streaming-destination-title', row.name || 'Unnamed destination'), endpoint);
       heading.append(identity, node('span', `ui-status ${String(row.state).toLowerCase().includes('connect') ?
         'ui-status-success' : 'ui-status-neutral'}`, row.state || 'Starting'));
-      const metrics = node('div', 'ui-metric-grid ui-metric-grid-4');
+      const metrics = node('div', 'ui-metric-grid ui-metric-grid-4 streaming-metrics-compact');
       metrics.append(metric('Queued calls', row.queuedCalls), metric('Active uploads', row.activeUploads),
         metric('Reconnects', row.reconnectCount), metric('Failures', row.consecutiveFailures));
       const facts = node('dl', 'ui-facts streaming-sdrtrunk-facts');

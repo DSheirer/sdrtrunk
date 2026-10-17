@@ -12,11 +12,11 @@ sudo apt install libusb-1.0-0
 
 ## Install and run
 
-Copy `sdr-trunk-linux-aarch64-v0.7.1-beta5.zip` to the Pi, then run:
+Copy `sdr-trunk-linux-aarch64-v0.7.1-beta11.zip` to the Pi, then run:
 
 ```bash
-unzip sdr-trunk-linux-aarch64-v0.7.1-beta5.zip
-cd sdr-trunk-linux-aarch64-v0.7.1-beta5
+unzip sdr-trunk-linux-aarch64-v0.7.1-beta11.zip
+cd sdr-trunk-linux-aarch64-v0.7.1-beta11
 export SDRTRUNK_WEB_PASSWORD='replace-with-a-long-random-password'
 bin/sdr-trunk
 ```
@@ -26,8 +26,10 @@ it. On the first headless launch, it creates and saves a random password and pri
 The saved password can be replaced while the desktop application is running from **View > Web Console Password**. An
 `SDRTRUNK_WEB_PASSWORD` environment variable overrides the saved GUI setting; `SDRTRUNK_WEB_TOKEN` remains a legacy fallback.
 
-The Playlist Editor also contains a **Web Interface** tab where you can save a replacement password and restart the web
-server without restarting sdrtrunk. The web dashboard queues completed live radio calls, plays each one fully in
+The Playlist Editor also contains a **Web Interface** tab where you can save a replacement password, choose the bind
+address and port, see the active listener, manage named administrator/operator accounts, and restart the web server
+without restarting sdrtrunk. The Raspberry Pi package initially listens on `0.0.0.0:10000`; unlike an explicit
+`-Dsdrtrunk.web.bind` override, that packaged default can be changed and saved in the interface. The web dashboard queues completed live radio calls, plays each one fully in
 order, and applies the selected hold time before the next call. It also lists
 the MP3/WAV files in the configured Audio Recordings directory for browser playback.  These audio endpoints require
 the same web console password as the rest of the remote API.
@@ -67,7 +69,7 @@ web interface runs at the same time.  When no graphical display is available, st
 JAVA_OPTS='-Djava.awt.headless=true' bin/sdr-trunk
 ```
 
-Open `http://<raspberry-pi-address>:10000/` from another computer. API clients must send the token as:
+Open `http://<raspberry-pi-address>:10000/` from another computer. API clients may send the built-in admin password as:
 
 ```text
 Authorization: Bearer replace-with-a-long-random-token

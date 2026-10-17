@@ -418,7 +418,7 @@ tasks.register('runtimeZipRaspberryPi', RuntimeZipTask) {rt ->
         }
     }
 
-    configure(rt, jvmArgsLinux + ['-Dsdrtrunk.web.enabled=true', '-Dsdrtrunk.web.bind=0.0.0.0'])
+    configure(rt, jvmArgsLinux + ['-Dsdrtrunk.web.enabled=true', '-Dsdrtrunk.web.defaultBind=0.0.0.0'])
 }
 
 /**
@@ -438,5 +438,5 @@ tasks.register('runtimeZipLinuxX86_64', RuntimeZipTask) {rt ->
         }
     }
 
-    configure(rt, jvmArgsLinux + ['-Dsdrtrunk.web.enabled=true', '-Dsdrtrunk.web.bind=0.0.0.0'])
+    configure(rt, jvmArgsLinux + ['-Dsdrtrunk.web.enabled=true', '-Dsdrtrunk.web.defaultBind=0.0.0.0'])
 }

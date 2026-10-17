@@ -26,11 +26,28 @@
 
 .sdrtrunk-spectrum-canvas,
 .sdrtrunk-waterfall-canvas {
+  display: block;
   width: 100%;
   border: 1px solid var(--spectrum-canvas-line);
   background: var(--spectrum-canvas);
+  image-rendering: auto;
 }
 
 .sdrtrunk-spectrum-canvas {
+  aspect-ratio: 15 / 4;
   cursor: crosshair;
+}
+
+.sdrtrunk-waterfall-canvas {
+  aspect-ratio: 4 / 1;
+}
+
+@media (max-width: 720px) {
+  .sdrtrunk-spectrum-canvas {
+    aspect-ratio: 2 / 1;
+  }
+
+  .sdrtrunk-waterfall-canvas {
+    aspect-ratio: 5 / 2;
+  }
 }

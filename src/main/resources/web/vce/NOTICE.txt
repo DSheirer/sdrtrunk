@@ -20,9 +20,11 @@ Source lineage:
   https://github.com/tylerwatt12/sdrtrunk-vce
   https://github.com/robgwi/sdrtrunk
 
-The browser interface was created for sdrtrunk-vce by Tyler Watthanaphand (@tylerwatt12). This fork adapts that
-interface to its embedded Java web server and its channel, tuner, streaming, Remote Calls, recording, transcription,
-RadioReference, and web-administration APIs. Modified builds are not official sdrtrunk-vce releases.
+The browser interface was created for sdrtrunk-vce by Tyler Watthanaphand (@tylerwatt12). Rob Gwi (@robgwi) and
+contributors adapted that interface to this fork's embedded Java web server and added GUI improvements plus channel,
+tuner, streaming, Remote Calls, recording, transcription, RadioReference, activity, and web-administration APIs.
+Those modifications are distributed under the same GNU GPL version 3-or-later terms. Modified builds are not official
+sdrtrunk-vce releases.
 
 Third-party libraries and tools included with or used by this program remain copyright their respective authors and
 are distributed under their respective licenses.

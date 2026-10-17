@@ -22,6 +22,25 @@
   border: 0;
 }
 
+.dashboard-summary-compact .summary-band {
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.dashboard-summary-compact .ui-metric {
+  min-height: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.dashboard-summary-compact .ui-metric-copy {
+  gap: var(--space-1);
+}
+
+.dashboard-summary-compact .ui-metric-copy > strong {
+  font-size: var(--metric-value-compact-size);
+}
+
 .dashboard-identity {
   min-width: 0;
   display: grid;

@@ -1,7 +1,7 @@
 'use strict';
 
   const definitions = Object.freeze([
-    { id: 'dashboard', label: 'Main', title: 'Main', parent: 'dashboard', capability: 'dashboard', databaseNotice: false },
+    { id: 'dashboard', label: 'Main', title: 'Main', parent: 'dashboard', capability: 'dashboard', databaseNotice: true },
     { id: 'live', label: 'Live', title: 'Live', parent: 'live', capability: 'live', databaseNotice: false },
     { id: 'recordings', label: 'Recordings', title: 'Recordings', parent: 'recordings', capability: 'recordings', databaseNotice: false },
     { id: 'map', label: 'Map', title: 'Map', parent: 'map', capability: 'call-audio', databaseNotice: false },

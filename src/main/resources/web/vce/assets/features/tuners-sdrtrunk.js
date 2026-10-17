@@ -301,6 +301,19 @@ export function createSdrTrunkSpectrum(deps) {
   let smoothedBins = [];
   let visibleMinimum = 0;
   let visibleMaximum = 0;
+  let lastValue = null;
+  let resizeFrame = null;
+
+  function resizeBackingStore(canvas) {
+    const bounds = canvas.getBoundingClientRect();
+    const density = Math.max(1, Math.min(2.5, Number(window.devicePixelRatio) || 1));
+    const width = Math.max(1, Math.round(bounds.width * density));
+    const height = Math.max(1, Math.round(bounds.height * density));
+    if (canvas.width === width && canvas.height === height) return false;
+    canvas.width = width;
+    canvas.height = height;
+    return true;
+  }
 
   function color(value) {
     const minimum = Number(floor.value); const maximum = Math.max(minimum + 1, Number(ceiling.value));
@@ -312,6 +325,9 @@ export function createSdrTrunkSpectrum(deps) {
   }
 
   function draw(value) {
+    lastValue = value;
+    resizeBackingStore(spectrum);
+    resizeBackingStore(waterfall);
     const incoming = value.bins || [];
     const alpha = 1 - Number(smoothing.value) / 100;
     if (smoothedBins.length !== incoming.length) smoothedBins = [...incoming];
@@ -324,21 +340,25 @@ export function createSdrTrunkSpectrum(deps) {
     visibleMinimum = center - rate / 2 + rate * start / Math.max(1, smoothedBins.length);
     visibleMaximum = visibleMinimum + rate * visibleCount / Math.max(1, smoothedBins.length);
     const context = spectrum.getContext('2d');
+    const density = Math.max(1, spectrum.width / Math.max(1, spectrum.getBoundingClientRect().width));
     context.fillStyle = '#07111d'; context.fillRect(0, 0, spectrum.width, spectrum.height);
-    context.strokeStyle = '#243849'; context.lineWidth = 1;
-    const left = 58; const right = spectrum.width - 12; const top = 10; const bottom = spectrum.height - 28;
+    context.strokeStyle = '#243849'; context.lineWidth = density;
+    const left = 58 * density; const right = spectrum.width - 12 * density;
+    const top = 10 * density; const bottom = spectrum.height - 28 * density;
     const minimum = Number(floor.value); const maximum = Math.max(minimum + 1, Number(ceiling.value));
-    context.font = '12px sans-serif'; context.fillStyle = '#9db0c0';
+    context.font = `${12 * density}px sans-serif`; context.fillStyle = '#9db0c0';
     for (let index = 0; index <= 5; index += 1) {
       const y = top + index * (bottom - top) / 5;
       context.beginPath(); context.moveTo(left, y); context.lineTo(right, y); context.stroke();
-      context.fillText(`${Math.round(maximum - index * (maximum - minimum) / 5)} dB`, 4, y + 4);
+      context.fillText(`${Math.round(maximum - index * (maximum - minimum) / 5)} dB`, 4 * density,
+        y + 4 * density);
     }
     for (let index = 0; index <= 8; index += 1) {
       const x = left + index * (right - left) / 8;
       context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke();
       const label = ((visibleMinimum + index * (visibleMaximum - visibleMinimum) / 8) / 1_000_000).toFixed(3);
-      context.fillText(label, Math.max(left, Math.min(right - 45, x - 22)), spectrum.height - 8);
+      context.fillText(label, Math.max(left, Math.min(right - 45 * density, x - 22 * density)),
+        spectrum.height - 8 * density);
     }
     if (bins.length) {
       (value.channels || []).forEach((channel) => {
@@ -347,10 +367,12 @@ export function createSdrTrunkSpectrum(deps) {
         if (high < visibleMinimum || low > visibleMaximum) return;
         const x1 = left + (Math.max(low, visibleMinimum) - visibleMinimum) / (visibleMaximum - visibleMinimum) * (right - left);
         const x2 = left + (Math.min(high, visibleMaximum) - visibleMinimum) / (visibleMaximum - visibleMinimum) * (right - left);
-        context.fillStyle = 'rgba(255, 196, 74, .18)'; context.fillRect(x1, top, Math.max(2, x2 - x1), bottom - top);
-        context.strokeStyle = 'rgba(255, 196, 74, .8)'; context.strokeRect(x1, top, Math.max(2, x2 - x1), bottom - top);
+        context.fillStyle = 'rgba(255, 196, 74, .18)';
+        context.fillRect(x1, top, Math.max(2 * density, x2 - x1), bottom - top);
+        context.strokeStyle = 'rgba(255, 196, 74, .8)';
+        context.strokeRect(x1, top, Math.max(2 * density, x2 - x1), bottom - top);
       });
-      context.strokeStyle = '#6ee7a5'; context.lineWidth = 1.5; context.beginPath();
+      context.strokeStyle = '#6ee7a5'; context.lineWidth = 1.5 * density; context.beginPath();
       bins.forEach((bin, index) => {
         const x = left + index * (right - left) / Math.max(1, bins.length - 1);
         const y = bottom - Math.max(0, Math.min(1, (Number(bin) - minimum) / (maximum - minimum))) * (bottom - top);
@@ -362,11 +384,15 @@ export function createSdrTrunkSpectrum(deps) {
         context.strokeStyle = '#ffcf66'; context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke();
       }
       const water = waterfall.getContext('2d');
-      water.drawImage(waterfall, 0, 0, waterfall.width, waterfall.height - 1,
-        0, 1, waterfall.width, waterfall.height - 1);
+      const waterfallDensity = Math.max(1,
+        waterfall.width / Math.max(1, waterfall.getBoundingClientRect().width));
+      const rowHeight = Math.max(1, Math.round(waterfallDensity));
+      water.drawImage(waterfall, 0, 0, waterfall.width, waterfall.height - rowHeight,
+        0, rowHeight, waterfall.width, waterfall.height - rowHeight);
       bins.forEach((bin, index) => {
         water.fillStyle = color(bin);
-        water.fillRect(index * waterfall.width / bins.length, 0, Math.ceil(waterfall.width / bins.length), 1);
+        water.fillRect(index * waterfall.width / bins.length, 0,
+          Math.ceil(waterfall.width / bins.length), rowHeight);
       });
     }
     status.textContent = value.available ?
@@ -390,7 +416,9 @@ export function createSdrTrunkSpectrum(deps) {
     if (!(visibleMaximum > visibleMinimum)) return;
     const bounds = spectrum.getBoundingClientRect();
     const x = (event.clientX - bounds.left) * spectrum.width / bounds.width;
-    const ratio = Math.max(0, Math.min(1, (x - 58) / (spectrum.width - 70)));
+    const density = Math.max(1, spectrum.width / Math.max(1, bounds.width));
+    const ratio = Math.max(0, Math.min(1,
+      (x - 58 * density) / (spectrum.width - 70 * density)));
     cursorFrequency = visibleMinimum + ratio * (visibleMaximum - visibleMinimum);
     tune.disabled = false;
   });
@@ -405,7 +433,18 @@ export function createSdrTrunkSpectrum(deps) {
     }));
     void poll();
   }).catch((cause) => { status.textContent = cause.message; });
-  const close = () => { stopped = true; window.clearTimeout(timer); };
+  const resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => {
+    window.cancelAnimationFrame(resizeFrame);
+    resizeFrame = window.requestAnimationFrame(() => { if (lastValue && !stopped) draw(lastValue); });
+  }) : null;
+  resizeObserver?.observe(spectrum);
+  resizeObserver?.observe(waterfall);
+  const close = () => {
+    stopped = true;
+    window.clearTimeout(timer);
+    window.cancelAnimationFrame(resizeFrame);
+    resizeObserver?.disconnect();
+  };
   signal?.addEventListener('abort', close, { once: true });
   return { element: host, close };
 }

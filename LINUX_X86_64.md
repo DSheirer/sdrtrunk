@@ -14,8 +14,8 @@ Java 27 and JavaFX runtime, so a separate Java installation is not required.
 ```bash
 sudo apt update
 sudo apt install libusb-1.0-0 unzip
-unzip sdr-trunk-linux-x86_64-v0.7.1-beta5.zip
-cd sdr-trunk-linux-x86_64-v0.7.1-beta5
+unzip sdr-trunk-linux-x86_64-v0.7.1-beta11.zip
+cd sdr-trunk-linux-x86_64-v0.7.1-beta11
 bin/sdr-trunk
 ```
 
@@ -27,7 +27,10 @@ When launched from a desktop or VNC terminal, the Java desktop application and w
 JAVA_OPTS='-Djava.awt.headless=true' bin/sdr-trunk
 ```
 
-The web console listens on port 10000. Open `http://<linux-computer-address>:10000/` from another computer.
+The web console initially listens on every IPv4 interface at `0.0.0.0:10000`. Open
+`http://<linux-computer-address>:10000/` from another computer. The desktop **Playlist Editor > Web Interface** tab
+and the browser **Administration** page show the active listener and can change the saved bind address, port, and
+administrator/operator accounts. Restart the web interface after changing its network settings.
 
 On the first headless launch, sdrtrunk creates a random web console password, saves it, and writes it once to the startup
 log. You can also provide one explicitly:

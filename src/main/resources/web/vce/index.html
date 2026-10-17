@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="sdrtrunk-web-revision" content="376-0.7.1-beta4">
+  <meta name="sdrtrunk-web-revision" content="382-0.7.1-beta11">
   <meta name="theme-color" content="#202a33" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#090e13" media="(prefers-color-scheme: dark)">
-  <title>SDR-Trunk Web Console</title>
+  <title>VCE</title>
   <link rel="icon" href="/assets/vce-favicon.svg?v=2" type="image/svg+xml">
   <link rel="icon" href="/assets/vce-icon-32.png?v=1" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/assets/vce-apple-touch-icon.png?v=1" sizes="180x180">
   <link rel="manifest" href="/assets/site.webmanifest?v=2">
-  <link rel="stylesheet" href="/assets/app.css?v=295">
+  <link rel="stylesheet" href="/assets/app.css?v=299">
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true">
@@ -95,11 +95,11 @@
   <div id="access-pending" class="access-pending" role="status" aria-label="Checking access">
     <span class="ui-feedback ui-feedback-loading" aria-hidden="true"></span>
   </div>
-  <section id="access-landing" class="access-landing" aria-label="SDR-Trunk Web Console sign in" hidden inert>
+  <section id="access-landing" class="access-landing" aria-label="VCE sign in" hidden inert>
     <canvas class="access-scene-canvas" aria-hidden="true"></canvas>
     <div class="access-scene-scrim" aria-hidden="true"></div>
     <div class="access-landing-layout">
-      <div class="access-landing-brand"><img class="access-landing-wordmark" src="/assets/sdrtrunk-wordmark.svg?v=1" alt="SDR-Trunk"></div>
+      <div class="access-landing-brand"><img class="access-landing-wordmark" src="/assets/vce-wordmark.svg?v=3" alt="VCE"></div>
       <div class="access-landing-card ui-surface">
         <h1>Sign In</h1>
         <div id="access-landing-form-host" aria-live="polite"></div>
@@ -110,7 +110,7 @@
     <div class="app-header">
       <header class="topbar" id="topbar">
         <button type="button" id="navigation-toggle" class="navigation-toggle icon-button ui-button ui-button-header" aria-controls="primary-navigation" aria-expanded="false" aria-label="Open navigation"><svg aria-hidden="true"><use href="#icon-menu"></use></svg></button>
-        <a class="brand" href="/?view=dashboard" aria-label="SDR-Trunk Web Console home"><img class="brand-logo" src="/assets/sdrtrunk-wordmark.svg?v=1" alt=""></a>
+        <a class="brand" href="/?view=dashboard" aria-label="VCE home"><img class="brand-logo" src="/assets/vce-wordmark.svg?v=3" alt=""></a>
         <nav id="primary-navigation" class="primary-nav" aria-label="Primary navigation">
           <details class="nav-group" data-nav-group="listen"><summary>Listen</summary><div class="nav-group-links">
             <a data-view="dashboard" href="/?view=dashboard"><svg class="nav-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg><span>Main</span><svg class="nav-lock" aria-label="Access required" hidden><use href="#icon-lock"></use></svg></a>
@@ -158,6 +158,6 @@
         </section>
       </div>
   </div>
-  <script type="module" src="/assets/app.js?v=448"></script>
+  <script type="module" src="/assets/app.js?v=454"></script>
 </body>
 </html>

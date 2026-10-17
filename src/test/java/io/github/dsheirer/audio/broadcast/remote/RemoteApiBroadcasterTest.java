@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.sun.net.httpserver.HttpServer;
 import io.github.dsheirer.audio.broadcast.AudioRecording;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -142,25 +144,49 @@ class RemoteApiBroadcasterTest
 
     @Test
     void preservesQueuedCallsAcrossDestinationRestart()
+        throws Exception
     {
         RemoteApiConfiguration configuration = new RemoteApiConfiguration();
         configuration.setName("Queue Preservation Test");
         configuration.setHost("http://127.0.0.1/calls");
-        AudioRecording recording = new AudioRecording(mTemporaryDirectory.resolve("call.mp3"),
-            Collections.emptyList(), null, System.currentTimeMillis(), 1_000L);
+        Path recordingPath = mTemporaryDirectory.resolve("call.mp3");
+        Files.writeString(recordingPath, "test audio");
+        AudioRecording recording = new AudioRecording(recordingPath,
+            Collections.emptyList(), new IdentifierCollection(), System.currentTimeMillis(), 1_000L);
         recording.addPendingReplay();
 
-        RemoteApiBroadcaster first = new RemoteApiBroadcaster(configuration);
+        RemoteApiBroadcaster first = new RemoteApiBroadcaster(configuration, mTemporaryDirectory);
         first.receive(recording);
         assertEquals(1, first.getAudioQueueSize());
+        assertFalse(recording.hasPendingReplays());
+        try(var files = Files.list(mTemporaryDirectory.resolve("remote_api_queue")
+            .resolve(configuration.getQueueId())))
+        {
+            assertEquals(2, files.count());
+        }
         first.stopPreservingQueue();
 
-        RemoteApiBroadcaster replacement = new RemoteApiBroadcaster(configuration);
+        RemoteApiBroadcaster replacement = new RemoteApiBroadcaster(configuration, mTemporaryDirectory);
         assertEquals(1, replacement.getAudioQueueSize());
-        assertTrue(recording.hasPendingReplays());
-
         replacement.stop();
-        assertFalse(recording.hasPendingReplays());
+        assertEquals(1, replacement.getAudioQueueSize());
+        RemoteApiBroadcaster.discardPreservedQueue(configuration.getQueueId());
+        assertEquals(0, replacement.getAudioQueueSize());
+    }
+
+    @Test
+    void retainsUploadStatisticsWhenBroadcasterIsRecreated()
+    {
+        RemoteApiConfiguration configuration = new RemoteApiConfiguration();
+        configuration.setName("Statistics " + System.nanoTime());
+        configuration.setHost("http://127.0.0.1/calls");
+        RemoteApiBroadcaster first = new RemoteApiBroadcaster(configuration, mTemporaryDirectory);
+        first.incrementStreamedAudioCount();
+        first.incrementErrorAudioCount();
+
+        RemoteApiBroadcaster replacement = new RemoteApiBroadcaster(configuration, mTemporaryDirectory);
+        assertEquals(1, replacement.getStreamedAudioCount());
+        assertEquals(1, replacement.getAudioErrorCount());
     }
 
     @Test

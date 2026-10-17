@@ -1,5 +1,5 @@
 import * as routeFoundation from './core/routes.js?v=11';
-import * as preferenceSchema from './core/preference-schema.js?v=7';
+import * as preferenceSchema from './core/preference-schema.js?v=8';
 import { formatSourceName } from './core/source-names.js?v=1';
 import { Controller as UserPreferenceController } from './core/user-preferences.js?v=1';
 import * as tableLayouts from './core/table-layout.js';
@@ -28,12 +28,11 @@ import {
   createAliasListPopupTrigger as buildAliasListPopupTrigger
 } from './features/alias-list-create.js?v=5';
 import { createRadioReferenceImportWorkspace, sortRadioReferenceCountries } from './features/radioreference-import.js?v=26';
-import { createStreamingWorkspace } from './features/streaming-sdrtrunk.js?v=2';
-import { createSdrTrunkDashboard } from './features/dashboard-sdrtrunk.js?v=3';
-import { createSdrTrunkChannelWorkspace } from './features/channels-sdrtrunk.js?v=1';
-import { createSdrTrunkSpectrum, createSdrTrunkTuners } from './features/tuners-sdrtrunk.js?v=2';
+import { createStreamingWorkspace } from './features/streaming-sdrtrunk.js?v=3';
+import { createSdrTrunkChannelWorkspace } from './features/channels-sdrtrunk.js?v=3';
+import { createSdrTrunkSpectrum, createSdrTrunkTuners } from './features/tuners-sdrtrunk.js?v=3';
 import { createSdrTrunkRecordings } from './features/recordings-sdrtrunk.js?v=1';
-import { createSdrTrunkAdministration } from './features/administration-sdrtrunk.js?v=1';
+import { createSdrTrunkAdministration } from './features/administration-sdrtrunk.js?v=2';
 import { createSdrTrunkRadioReference } from './features/radioreference-sdrtrunk.js?v=1';
 import { createRetainedStatisticsWorkspace } from './features/retained-statistics.js?v=9';
 import { createRemoteLinksWorkspace } from './features/remote-links.js?v=13';
@@ -881,7 +880,7 @@ function authenticationFailureMessage(error) {
 function createSignInForm(onSignedIn = () => {}) {
   const form = node('form', 'admin-form login-form access-login-form');
   const username = node('input');
-  username.type = 'hidden';
+  username.type = 'text';
   username.name = 'username';
   username.value = 'admin';
   username.autocomplete = 'username';
@@ -899,7 +898,7 @@ function createSignInForm(onSignedIn = () => {}) {
   const submit = node('button', 'ui-button ui-button-primary', 'Sign In');
   submit.type = 'submit';
   actions.append(submit);
-  form.append(username, formField('Administrator password', password), message, actions);
+  form.append(formField('Username', username), formField('Password', password), message, actions);
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submit.disabled) return;
@@ -1019,8 +1018,8 @@ function showLoginModal(returnFocusSelector = '#auth-action') {
   const scrim = node('div', 'access-scene-scrim');
   scrim.setAttribute('aria-hidden', 'true');
   const wordmark = node('img', 'access-login-wordmark');
-  wordmark.src = '/assets/sdrtrunk-wordmark.svg?v=1';
-  wordmark.alt = 'SDR-Trunk';
+  wordmark.src = '/assets/vce-wordmark.svg?v=3';
+  wordmark.alt = 'VCE';
   scene.append(canvas, scrim, wordmark, form);
   let stopVisual = () => {};
   modal = openReadOnlyModal('Sign In', scene, {
@@ -8194,7 +8193,8 @@ function countTimeSeriesChart(rows, configurations, options = {}) {
 
 function dashboardProtocolKey(row) {
   const value = String(protocolFamily(row) || row?.protocol || '').trim().toUpperCase();
-  if (value.startsWith('P25') || value.startsWith('APCO25')) return 'P25';
+  const compact = value.replace(/[^A-Z0-9]/g, '');
+  if (compact.startsWith('P25') || compact.startsWith('APCO25')) return 'P25';
   if (value.startsWith('DMR')) return 'DMR';
   if (value.startsWith('NXDN')) return 'NXDN';
   if (value === 'AM' || value.includes('AMPLITUDE MODULATION')) return 'AM';
@@ -8575,9 +8575,13 @@ function signalChannelState(channel, now = Date.now()) {
   if (!observed || now - observed > SIGNAL_OFFLINE_MILLISECONDS) {
     return { label: 'Offline', className: 'offline', rank: 0 };
   }
+  const receiverState = String(channel.receiver_state || '').toUpperCase();
+  if (receiverState === 'ACTIVE') {
+    return { label: 'Active', className: 'healthy', rank: 4 };
+  }
   const decode = optionalNumber(channel.decode_health_pct);
   if (!Number.isFinite(optionalNumber(channel.average_signal_dbfs))) {
-    return { label: 'No signal', className: 'poor', rank: 1 };
+    return { label: receiverState === 'IDLE' ? 'Idle' : 'Monitoring', className: 'unknown', rank: 2 };
   }
   if (!Number.isFinite(decode)) return { label: 'Monitoring', className: 'unknown', rank: 2 };
   if (decode >= DECODE_HEALTHY_MINIMUM_PERCENT) {
@@ -8776,18 +8780,30 @@ function updateSignalCurrentTile(tile, channel) {
       state.className === 'poor' ? 'ui-pill-danger' : '';
   header.append(labels, badge(state.label, `signal-state ${tone}`));
   const power = node('div', 'signal-current-power');
-  power.append(node('strong', '', signalNumber(channel.signal_dbfs)),
-    node('span', '', `30s avg ${signalNumber(channel.average_signal_dbfs)}`));
+  const hasRfLevel = Number.isFinite(optionalNumber(channel.signal_dbfs)) ||
+    Number.isFinite(optionalNumber(channel.average_signal_dbfs));
+  if (hasRfLevel) {
+    power.append(node('strong', '', signalNumber(channel.signal_dbfs)),
+      node('span', '', `30s avg ${signalNumber(channel.average_signal_dbfs)}`));
+  } else {
+    power.append(node('strong', '', state.label === 'Active' ? 'Receiving' : 'Waiting'),
+      node('span', '', 'RF dBFS is not exposed by this decoder'));
+  }
   const details = node('div', 'signal-current-details');
-  const qualityFrequency = channel.quality_frequency_hz || channel.current_control_hz;
+  const qualityFrequency = channel.quality_frequency_hz || channel.current_control_hz || channel.frequency_hz;
   const decode = optionalNumber(channel.decode_health_pct);
   const decodeClass = !Number.isFinite(decode) ? '' :
     (decode >= DECODE_HEALTHY_MINIMUM_PERCENT ? 'quality-good' :
       (decode >= DECODE_DEGRADED_MINIMUM_PERCENT ? 'quality-warn' : 'quality-bad'));
-  details.append(node('span', decodeClass,
-  `Decode ${percentNumber(channel.decode_health_pct)}`),
-  node('span', '', Number(qualityFrequency) ? `${frequency(qualityFrequency)} MHz` : 'Frequency unavailable'),
-  node('span', '', elapsedLabel(channel.last_observed_ms)));
+  const decodeLabel = Number.isFinite(decode) ? `Decode ${percentNumber(decode)}` :
+    (state.label === 'Active' ? 'Decode active' : 'Waiting for sync');
+  const activeIdentity = state.label === 'Active' ?
+    [channel.active_alias || channel.active_talkgroup, channel.active_source ? `From ${channel.active_source}` : '']
+      .filter(Boolean).join(' · ') : '';
+  details.append(node('span', decodeClass, decodeLabel),
+  node('span', '', Number(qualityFrequency) ? `${frequency(qualityFrequency)} MHz` : 'Frequency not configured'),
+  node('span', '', activeIdentity || (channel.last_activity_ms ?
+    `Last activity ${elapsedLabel(channel.last_activity_ms)}` : 'No decoded activity retained')));
   tile.dataset.configurationId = channel.configuration_id || '';
   tile.replaceChildren(header, power, details);
   return tile;
@@ -8881,20 +8897,31 @@ async function signalHealthSection() {
     const channels = sortSignalChannels((currentResponse?.rows || []).filter((channel) =>
       canonicalConfigurationId(channel?.configuration_id) &&
       now - Number(channel.last_observed_ms || 0) <= SIGNAL_OFFLINE_MILLISECONDS));
+    const active = channels.filter((channel) =>
+      String(channel.receiver_state || '').toUpperCase() === 'ACTIVE').length;
+    const idle = channels.filter((channel) =>
+      String(channel.receiver_state || '').toUpperCase() === 'IDLE').length;
     const healthy = channels.filter((channel) =>
+      String(channel.receiver_state || '').toUpperCase() !== 'ACTIVE' &&
       optionalNumber(channel.decode_health_pct) >= DECODE_HEALTHY_MINIMUM_PERCENT).length;
     const degraded = channels.filter((channel) => {
+      if (['ACTIVE', 'IDLE'].includes(String(channel.receiver_state || '').toUpperCase())) return false;
       const decode = optionalNumber(channel.decode_health_pct);
       return Number.isFinite(decode) && decode >= DECODE_DEGRADED_MINIMUM_PERCENT &&
         decode < DECODE_HEALTHY_MINIMUM_PERCENT;
     }).length;
     const poor = channels.filter((channel) => {
+      if (['ACTIVE', 'IDLE'].includes(String(channel.receiver_state || '').toUpperCase())) return false;
       const decode = optionalNumber(channel.decode_health_pct);
       return Number.isFinite(decode) && decode < DECODE_DEGRADED_MINIMUM_PERCENT;
     }).length;
-    const unknown = channels.length - healthy - degraded - poor;
-    summary.textContent = `${number(channels.length)} reporting · ${number(healthy)} healthy · ` +
-      `${number(degraded)} degraded · ${number(poor)} poor${unknown ? ` · ${number(unknown)} unknown` : ''}`;
+    const unknown = channels.length - active - idle - healthy - degraded - poor;
+    const states = [`${number(channels.length)} reporting`, `${number(active)} active`, `${number(idle)} idle`];
+    if (healthy) states.push(`${number(healthy)} healthy`);
+    if (degraded) states.push(`${number(degraded)} degraded`);
+    if (poor) states.push(`${number(poor)} poor`);
+    if (unknown) states.push(`${number(unknown)} monitoring`);
+    summary.textContent = states.join(' · ');
 
     const activeKeys = new Set();
     const orderedTiles = channels.map((channel) => {
@@ -12076,13 +12103,6 @@ async function renderDashboardActivity(renderContext) {
     radioTitle.textContent = 'Source radios';
     radioStatus.textContent = '';
     radioStatus.hidden = true;
-    const historyNotice = detailedHistoryNotice();
-    if (!detailedHistoryAvailable()) {
-      radioHost.setAttribute('aria-busy', 'false');
-      cleanupTableLayoutMenu(radioTableController);
-      radioHost.replaceChildren(historyNotice);
-      return;
-    }
     radioHost.setAttribute('aria-busy', 'false');
     cleanupTableLayoutMenu(radioTableController);
     radioHost.replaceChildren(node('div', 'empty', 'Select an activity type to list source radios.'));
@@ -12096,26 +12116,6 @@ async function renderDashboardActivity(renderContext) {
     const actionLabel = selectedActionLabel || semanticLabel(action);
     radioTitle.textContent = `${actionLabel} · Source radios`;
     radioStatus.hidden = false;
-    const historyNotice = detailedHistoryNotice();
-    if (!detailedHistoryAvailable()) {
-      radioStatus.textContent = 'Saved activity is unavailable.';
-      radioHost.setAttribute('aria-busy', 'false');
-      cleanupTableLayoutMenu(radioTableController);
-      radioHost.replaceChildren(historyNotice);
-      return;
-    }
-    if (!capabilityAllowed(ACCESS_CAPABILITIES.RADIO)) {
-      radioRequest?.controller.abort();
-      radioRequest?.unlink();
-      radioRequest = null;
-      radioStatus.textContent = '';
-      radioStatus.hidden = true;
-      radioHost.setAttribute('aria-busy', 'false');
-      cleanupTableLayoutMenu(radioTableController);
-      radioHost.replaceChildren(node('div', 'empty',
-        'Radio access is required to list source radios.'));
-      return;
-    }
     const request = nextRequest(radioRequest);
     radioRequest = request;
     radioStatus.textContent = '';
@@ -12136,7 +12136,6 @@ async function renderDashboardActivity(renderContext) {
       const result = node('div', 'dashboard-activity-radio-result');
       const pager = dashboardActivityRadioPager(page,
         (nextOffset) => void loadRadios(nextOffset, true));
-      if (historyNotice) result.append(historyNotice);
       result.append(dashboardActivityRadioNote(page, actionLabel),
         table(page.rows, dashboardActivityRadioColumns,
           `No source radios were identified in currently retained ${actionLabel.toLowerCase()} detail.`,
@@ -12314,8 +12313,6 @@ async function renderDashboard() {
     const signalHost = node('div', 'ui-feedback ui-feedback-loading', 'Loading signal quality…');
     content.append(signalHost);
     const signalPromise = signalHealthSection();
-    const directoryPromise = capabilityAllowed(ACCESS_CAPABILITIES.RADIO) ?
-      renderNestedRadioDirectory(renderContext) : Promise.resolve();
     try {
       const signalHealth = await signalPromise;
       if (renderIsCurrent(renderContext)) signalHost.replaceWith(signalHealth);
@@ -12323,7 +12320,21 @@ async function renderDashboard() {
       if (renderIsCurrent(renderContext)) signalHost.replaceWith(
         node('div', 'ui-feedback ui-feedback-error', error.message));
     }
-    await directoryPromise;
+    if (!renderIsCurrent(renderContext)) return;
+    const activityHost = node('div', 'ui-feedback ui-feedback-loading', 'Loading saved call activity…');
+    content.append(activityHost);
+    const loadActivity = async () => {
+      try {
+        const value = await api('/api/v1/dashboard');
+        if (renderIsCurrent(renderContext)) activityHost.replaceChildren(sdrTrunkMainActivity(value));
+      } catch (error) {
+        if (renderIsCurrent(renderContext)) activityHost.replaceChildren(
+          node('div', 'ui-feedback ui-feedback-error', error.message));
+      }
+    };
+    await loadActivity();
+    if (renderIsCurrent(renderContext)) pageInterval(loadActivity, 5_000);
+    if (capabilityAllowed(ACCESS_CAPABILITIES.RADIO)) await renderNestedRadioDirectory(renderContext);
     return;
   }
 
@@ -12356,21 +12367,23 @@ async function renderDashboard() {
   content.lastChild.append(destinations, sources);
 }
 
-function renderSdrTrunkDashboard() {
+function renderSdrTrunkChannels() {
   const renderContext = captureRenderContext();
-  const workspace = createSdrTrunkDashboard({ node, signal: renderContext.signal });
+  const workspace = createSdrTrunkChannelWorkspace({ node, openReadOnlyModal, signal: renderContext.signal,
+    page: 'channels' });
   if (!beginPage(renderContext,
-    pageHeader('SDR-Trunk Web Console', 'Live receiver traffic, call audio, transcription, and host status'),
+    pageHeader('Channels', 'Manage playlist channels, protocols, frequencies, and NBFM squelch'),
     workspace.element)) {
     workspace.close();
   }
 }
 
-function renderSdrTrunkChannels() {
+function renderSdrTrunkAliases() {
   const renderContext = captureRenderContext();
-  const workspace = createSdrTrunkChannelWorkspace({ node, openReadOnlyModal, signal: renderContext.signal });
+  const workspace = createSdrTrunkChannelWorkspace({ node, openReadOnlyModal, signal: renderContext.signal,
+    page: 'aliases' });
   if (!beginPage(renderContext,
-    pageHeader('Channels and Talkgroups', 'Manage playlist channels, NBFM squelch, aliases, and call routing'),
+    pageHeader('Talkgroups and Aliases', 'Manage talkgroup identities, recording, and streaming call routing'),
     workspace.element)) {
     workspace.close();
   }
@@ -12397,18 +12410,52 @@ function renderSdrTrunkRecordings() {
     workspace.element)) workspace.close();
 }
 
-function renderSdrTrunkAdministration() {
-  const renderContext = captureRenderContext();
-  const workspace = createSdrTrunkAdministration({ node, signal: renderContext.signal });
-  if (!beginPage(renderContext, pageHeader('Administration', 'Web access, Whisper transcription, and host status'),
-    workspace.element)) workspace.close();
-}
-
 function renderSdrTrunkRadioReference() {
   const renderContext = captureRenderContext();
   const workspace = createSdrTrunkRadioReference({ node, signal: renderContext.signal });
   if (!beginPage(renderContext, pageHeader('RadioReference', 'Sign in, browse systems, and import talkgroups'),
     workspace.element)) workspace.close();
+}
+
+const sdrTrunkRecentCallColumns = [
+  { id: 'time', label: 'Time', render: (row) => stackedDateTime(row.time),
+    sortValue: (row) => Number(row.time || 0), className: 'time-cell' },
+  { id: 'channel', label: 'Channel', render: (row) => row.channel || '—' },
+  { id: 'talkgroup', label: 'Talkgroup', render: (row) => row.talkgroup || '—' },
+  { id: 'alias', label: 'Alias', render: (row) => row.alias || 'Configured Talkgroup', className: 'alias-cell' },
+  { id: 'source', label: 'Source', render: (row) => row.source || '—' },
+  { id: 'protocol', label: 'Protocol', render: (row) => row.protocol || '—' },
+  { id: 'duration', label: 'Duration', render: (row) => liveEventDuration(row.duration), className: 'numeric' }
+];
+
+const sdrTrunkStreamStatusColumns = [
+  { id: 'name', label: 'Destination', render: (row) => row.name || 'Unnamed', className: 'alias-cell' },
+  { id: 'type', label: 'Type', render: (row) => row.typeLabel || row.type || 'Streaming' },
+  { id: 'state', label: 'State', render: (row) => row.state || (row.enabled ? 'Starting' : 'Disabled') },
+  { id: 'uploaded', label: 'Uploaded', render: (row) => number(row.sent || 0), className: 'numeric' },
+  { id: 'queued', label: 'Queued', render: (row) => number(row.queue || 0), className: 'numeric' },
+  { id: 'errors', label: 'Errors', render: (row) => number(row.errors || 0), className: 'numeric' }
+];
+
+function sdrTrunkMainActivity(value) {
+  const host = node('div', 'dashboard-sdrtrunk-activity');
+  const totals = value.call_activity?.totals || {};
+  const streaming = value.streaming_summary || {};
+  const summary = dashboardSummarySection('Saved Activity and Streaming', [
+    ['Calls · Last 24h', totals.logical_call_count || 0],
+    ['Recorded · Last 24h', totals.recorded_logical_call_count || 0],
+    ['Uploaded · Retained total', streaming.uploaded || 0],
+    ['Queued now', streaming.queued || 0],
+    ['Upload errors · Retained total', streaming.errors || 0]
+  ]);
+  summary.classList.add('dashboard-summary-compact');
+  host.append(summary);
+  host.append(tableSection('Recent Calls', value.recent_calls || [], sdrTrunkRecentCallColumns,
+    'No retained calls have been observed yet', { type: 'sdrtrunk-recent-calls', initialSort: 'time',
+      initialDirection: 'desc' }));
+  host.append(tableSection('Streaming Destinations', streaming.destinations || [], sdrTrunkStreamStatusColumns,
+    'No streaming destinations are configured', { type: 'sdrtrunk-stream-status' }));
+  return host;
 }
 
 const LIVE_DETAIL_SELECTION_KINDS = Object.freeze({ CONTROL: 'CONTROL', EXACT: 'EXACT', CONVENTIONAL: 'CONVENTIONAL' });
@@ -31431,6 +31478,8 @@ function adminSettingsGroups() {
         description: 'Configure P25 band plan overrides.' }
     ] },
     { label: 'Web interface', items: [
+      { id: 'sdrtrunk-console', label: 'SDRTrunk server', icon: 'admin', capability: ACCESS_CAPABILITIES.ADMIN_SETTINGS,
+        description: 'Manage the web listener, accounts, Whisper transcription, and host status.' },
       { id: 'display', label: 'Display settings', icon: 'display', capability: ACCESS_CAPABILITIES.ADMIN_SETTINGS,
         description: 'Set Live traffic timing and the country used for Spectrum frequency labels.' },
       { id: 'users', label: 'Web accounts', icon: 'users', capability: ACCESS_CAPABILITIES.ADMIN_USERS,
@@ -31438,7 +31487,8 @@ function adminSettingsGroups() {
       { id: 'access', label: 'Page access', icon: 'admin', capability: ACCESS_CAPABILITIES.ADMIN_ACCESS,
         description: 'Choose who can open the web interface and individual pages.' }
     ] }
-  ].map((group) => ({ ...group, items: group.items.filter((item) => allowed(item.capability)) }))
+  ].map((group) => ({ ...group, items: group.items.filter((item) => allowed(item.capability) &&
+    ['sdrtrunk-console', 'application-log', 'event-logs'].includes(item.id)) }))
     .filter((group) => group.items.length);
 }
 
@@ -31478,7 +31528,7 @@ async function renderAdmin() {
   const availableTabs = adminSettingsLeaves(groups);
   if (!availableTabs.length) throw Object.assign(new Error('Administrator access is unavailable.'),
     { status: 403 });
-  const requested = route.get('tab') || 'health';
+  const requested = route.get('tab') || 'sdrtrunk-console';
   const normalized = ['live-timing', 'spectrum'].includes(requested) ? 'display' : requested;
   const legacy = normalized === 'operations' && capabilityAllowed(ACCESS_CAPABILITIES.ADMIN_SETTINGS) ?
     { id: 'operations', label: 'Call output & activity',
@@ -31496,7 +31546,11 @@ async function renderAdmin() {
   shell.append(adminSettingsTree(groups, active), body);
   if (!beginPage(renderContext, shell)) return;
   pageTitleController.update({ pageTitle: current.label });
-  if (active === 'health') await renderAdminHealth();
+  if (active === 'sdrtrunk-console') {
+    const workspace = createSdrTrunkAdministration({ node, signal: renderContext.signal });
+    content.append(workspace.element);
+  }
+  else if (active === 'health') await renderAdminHealth();
   else if (active === 'call-matching') await renderAdminCallMatching(renderContext);
   else if (active === 'application-log') renderAdminApplicationLog(renderContext);
   else if (active === 'event-logs') {
@@ -31648,7 +31702,8 @@ function renderCredits() {
   const webInterface = node('p');
   webInterface.append('VCE web interface by Tyler Watthanaphand ',
     externalAnchor('@tylerwatt12', 'https://github.com/tylerwatt12'),
-    '; SDR-Trunk compatibility adapters and fork features by Rob Gwi and contributors.');
+    '; SDRTrunk web-console integration, expanded management and API features, GUI improvements, and fork ',
+    'maintenance by Rob Gwi ', externalAnchor('@robgwi', 'https://github.com/robgwi'), ' and contributors.');
   project.append(lineage, webInterface);
   content.append(section('Project', project));
 
@@ -31779,7 +31834,7 @@ async function loadStatus(refreshCurrentView = false) {
 }
 
 applicationRoutes = routeFoundation.createRegistry({
-  dashboard: renderSdrTrunkDashboard,
+  dashboard: renderDashboard,
   live: renderLive,
   recordings: renderSdrTrunkRecordings,
   map: renderListenMap,
@@ -31791,12 +31846,12 @@ applicationRoutes = routeFoundation.createRegistry({
   radio: renderRadio,
   'channel-setup': renderSdrTrunkChannels,
   channel: renderChannel,
-  aliases: renderAliases,
+  aliases: renderSdrTrunkAliases,
   'scan-lists': renderAdminScanLists,
   radioreference: renderSdrTrunkRadioReference,
   streaming: renderStreaming,
   tuners: renderSdrTrunkTuners,
-  admin: renderSdrTrunkAdministration,
+  admin: renderAdmin,
   settings: renderSettings,
   credits: renderCredits
 }, routeDefinitionAllowed);
@@ -31821,7 +31876,7 @@ const audioDock = createAudioDock({
   },
   getLivePlayer: () => webCallPlayer,
   access: () => ({ live: capabilityAllowed(ACCESS_CAPABILITIES.CALL_AUDIO),
-    recordings: false }),
+    recordings: capabilityAllowed(ACCESS_CAPABILITIES.RECORDINGS) }),
   entityRefHref, href, radioIdentifier: radioIdentifierText,
   canViewRadio: () => capabilityAllowed(ACCESS_CAPABILITIES.RADIO),
   getSourceNameDisplay: sourceNameDisplayMode,
