@@ -65,6 +65,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,24 +189,15 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             DecodeConfiguration decodeConfiguration = mParentChannel.getDecodeConfiguration();
             List<Channel> trafficChannelList = new ArrayList<>();
 
-            if(decodeConfiguration instanceof DecodeConfigDMR)
+            if(decodeConfiguration instanceof DecodeConfigDMR decodeConfig)
             {
-                DecodeConfigDMR decodeConfig = (DecodeConfigDMR)decodeConfiguration;
-
                 int maxTrafficChannels = decodeConfig.getTrafficChannelPoolSize();
 
                 if(maxTrafficChannels > 0)
                 {
                     for(int x = 0; x < maxTrafficChannels; x++)
                     {
-                        Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), ChannelType.TRAFFIC);
-                        trafficChannel.setAliasListName(mParentChannel.getAliasListName());
-                        trafficChannel.setSystem(mParentChannel.getSystem());
-                        trafficChannel.setSite(mParentChannel.getSite());
-                        trafficChannel.setDecodeConfiguration(decodeConfig);
-                        trafficChannel.setEventLogConfiguration(mParentChannel.getEventLogConfiguration());
-                        trafficChannel.setRecordConfiguration(mParentChannel.getRecordConfiguration());
-                        trafficChannelList.add(trafficChannel);
+                        trafficChannelList.add(createTrafficChannel(decodeConfig));
                     }
                 }
             }
@@ -216,6 +208,23 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             //is for a traffic channel owned by this traffic channel manager.
             mAllocatedTrafficChannels = Collections.unmodifiableList(trafficChannelList);
         }
+    }
+
+    /**
+     * Creates a child traffic channel that share's the same parent decode configuration
+     * @param decodeConfig from the parent
+     * @return traffic channel
+     */
+    private @NonNull Channel createTrafficChannel(DecodeConfigDMR decodeConfig)
+    {
+        Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), ChannelType.TRAFFIC);
+        trafficChannel.setAliasListName(mParentChannel.getAliasListName());
+        trafficChannel.setSystem(mParentChannel.getSystem());
+        trafficChannel.setSite(mParentChannel.getSite());
+        trafficChannel.setDecodeConfiguration(decodeConfig);
+        trafficChannel.setEventLogConfiguration(mParentChannel.getEventLogConfiguration());
+        trafficChannel.setRecordConfiguration(mParentChannel.getRecordConfiguration());
+        return trafficChannel;
     }
 
     /**
