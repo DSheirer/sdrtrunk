@@ -236,6 +236,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         private Digit(int position) throws ParseException
         {
             super("0");
+            setColumns(1);
 
             mPower = position;
             setToolTipText(getTooltip(mPower));
