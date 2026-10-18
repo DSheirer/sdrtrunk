@@ -64,6 +64,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,20 +148,30 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             {
                 for(int x = 0; x < trafficChannelPoolSize; x++)
                 {
-                    Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), Channel.ChannelType.TRAFFIC);
-                    trafficChannel.setAliasListName(mParentChannel.getAliasListName());
-                    trafficChannel.setSystem(mParentChannel.getSystem());
-                    trafficChannel.setSite(mParentChannel.getSite());
-                    trafficChannel.setDecodeConfiguration(decodeConfig);
-                    trafficChannel.setEventLogConfiguration(mParentChannel.getEventLogConfiguration());
-                    trafficChannel.setRecordConfiguration(mParentChannel.getRecordConfiguration());
-                    trafficChannelList.add(trafficChannel);
+                    trafficChannelList.add(createTrafficChannel(decodeConfig));
                 }
             }
 
             mAvailableTrafficChannelQueue.addAll(trafficChannelList);
             mManagedTrafficChannels = Collections.unmodifiableList(trafficChannelList);
         }
+    }
+
+    /**
+     * Creates a child traffic channel that share's the parent decode configuration
+     * @param decodeConfig from the parent
+     * @return traffic channel.
+     */
+    private @NonNull Channel createTrafficChannel(DecodeConfigNXDN decodeConfig)
+    {
+        Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), Channel.ChannelType.TRAFFIC);
+        trafficChannel.setAliasListName(mParentChannel.getAliasListName());
+        trafficChannel.setSystem(mParentChannel.getSystem());
+        trafficChannel.setSite(mParentChannel.getSite());
+        trafficChannel.setDecodeConfiguration(decodeConfig);
+        trafficChannel.setEventLogConfiguration(mParentChannel.getEventLogConfiguration());
+        trafficChannel.setRecordConfiguration(mParentChannel.getRecordConfiguration());
+        return trafficChannel;
     }
 
     /**

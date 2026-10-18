@@ -872,7 +872,10 @@ public class DecoderFactory
                     copyAM.setSquelchAutoTrack(origAM.isSquelchAutoTrack());
                     return copyAM;
                 case DMR:
-                    return new DecodeConfigDMR();
+                    DecodeConfigDMR originalDMR = (DecodeConfigDMR)config;
+                    DecodeConfigDMR copyDMR = new DecodeConfigDMR();
+                    transferJMBESettings(originalDMR, copyDMR);
+                    return copyDMR;
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
@@ -908,17 +911,20 @@ public class DecoderFactory
                     copyNXDN.setChannelMap(origNXDN.getChannelMap());
                     copyNXDN.setTransmissionMode(origNXDN.getTransmissionMode());
                     copyNXDN.setTrafficChannelPoolSize(origNXDN.getTrafficChannelPoolSize());
+                    transferJMBESettings(origNXDN, copyNXDN);
                     return copyNXDN;
                 case P25_PHASE1:
-                    DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;
-                    DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();
-                    copyP25.setIgnoreDataCalls(originalP25.getIgnoreDataCalls());
-                    copyP25.setModulation(originalP25.getModulation());
-                    copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
-                    return copyP25;
+                    DecodeConfigP25Phase1 originalP25P1 = (DecodeConfigP25Phase1)config;
+                    DecodeConfigP25Phase1 copyP25P1 = new DecodeConfigP25Phase1();
+                    copyP25P1.setIgnoreDataCalls(originalP25P1.getIgnoreDataCalls());
+                    copyP25P1.setModulation(originalP25P1.getModulation());
+                    copyP25P1.setTrafficChannelPoolSize(originalP25P1.getTrafficChannelPoolSize());
+                    transferJMBESettings(originalP25P1, copyP25P1);
+                    return copyP25P1;
                 case P25_PHASE2:
                     DecodeConfigP25Phase2 originalP25P2 = (DecodeConfigP25Phase2)config;
                     DecodeConfigP25Phase2 copyP25P2 = new DecodeConfigP25Phase2();
+                    transferJMBESettings(originalP25P2, copyP25P2);
 
                     if(originalP25P2.getScrambleParameters() != null)
                     {
@@ -933,5 +939,18 @@ public class DecoderFactory
         }
 
         return null;
+    }
+
+    /**
+     * Transfers the JMBE audio codec settings from one JMBE decode configuration to another.  This works both ways
+     * since both phase 1 and phase 2 decode configurations extend from a common JMBE decode configuration.
+     * @param from decode configuration
+     * @param to decode configuration
+     */
+    public static void transferJMBESettings(DecodeConfigJMBE from, DecodeConfigJMBE to)
+    {
+        to.setAGC(from.isAGC());
+        to.setNoiseGain(from.getNoiseGain());
+        to.setToneGain(from.getToneGain());
     }
 }
