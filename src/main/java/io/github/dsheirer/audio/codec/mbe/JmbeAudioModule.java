@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import jmbe.iface.IAudioCodec;
 import jmbe.iface.IAudioCodecLibrary;
+import jmbe.iface.IAudioCodecLibraryV2;
 import jmbe.iface.IAudioCodecV2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +177,14 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     URLClassLoader childClassLoader = new URLClassLoader(new URL[]{path.toUri().toURL()},
                             this.getClass().getClassLoader());
 
-                    sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
+                    try
+                    {
+                        sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibraryV2", true, childClassLoader);
+                    }
+                    catch(ClassNotFoundException legacyLibrary)
+                    {
+                        sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
+                    }
                 }
                 catch(IllegalArgumentException iae)
                 {
@@ -216,7 +224,19 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     if((library.getMajorVersion() == 1 && library.getMinorVersion() >= 0 &&
                             library.getBuildVersion() >= 0) || library.getMajorVersion() >= 1)
                     {
-                        audioConverter = library.getAudioConverter(getCodecName());
+                        audioConverter = library instanceof IAudioCodecLibraryV2 libraryV2 ?
+                            libraryV2.getAudioConverterV2(getCodecName()) :
+                            library.getAudioConverter(getCodecName());
+
+                        String codecStatusKey = JMBE_AUDIO_LIBRARY + ":codec:" + getCodecName();
+                        if(!mLibraryLoadStatusLogged.contains(codecStatusKey))
+                        {
+                            LOG.info("JMBE codec [" + getCodecName() + "] class [" +
+                                audioConverter.getClass().getName() + "] features [" +
+                                (audioConverter instanceof IAudioCodecV2 v2 ?
+                                    v2.getFeatures() : Collections.emptyList()) + "]");
+                            mLibraryLoadStatusLogged.add(codecStatusKey);
+                        }
 
                         if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
                         {
