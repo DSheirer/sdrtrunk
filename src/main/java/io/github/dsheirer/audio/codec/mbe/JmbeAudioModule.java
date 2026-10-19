@@ -183,7 +183,19 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     }
                     catch(ClassNotFoundException legacyLibrary)
                     {
-                        sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
+                        try
+                        {
+                            sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
+                        }
+                        catch(ClassNotFoundException missingLibrary)
+                        {
+                            if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
+                            {
+                                LOG.error("Couldn't load JMBE audio conversion library from [" + path +
+                                    "] - neither V2 nor V1 library class was found");
+                                mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
+                            }
+                        }
                     }
                 }
                 catch(IllegalArgumentException iae)
@@ -202,14 +214,7 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                         mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
                     }
                 }
-                catch(ClassNotFoundException e1)
-                {
-                    if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
-                    {
-                        LOG.error("Couldn't load JMBE audio conversion library - class not found");
-                        mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
-                    }
-                }
+
             }
         }
 
