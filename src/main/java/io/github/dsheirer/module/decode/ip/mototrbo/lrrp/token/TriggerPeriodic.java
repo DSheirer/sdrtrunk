@@ -22,18 +22,20 @@ package io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LRRP Trigger Periodic Token
+ * LRRP Periodic Trigger Token (request packets)
  *
- * Total Length: 2 bytes
+ * Start Token: 0x34 (in a response packet 0x34 is the Timestamp token)
+ * Total Length: 1 byte
+ *
+ * Flags a triggered location request as periodic.  The reporting interval, when present, follows in a separate
+ * Trigger Interval (0x31) token, and a Trigger Condition (0x4A) or Trigger Distance (0x78) token can follow instead.
  */
 public class TriggerPeriodic extends Token
 {
-    private static final int[] SECONDS = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
-
     /**
-     * Constructs an instance of a heading token.
+     * Constructs an instance of a periodic trigger token.
      *
-     * @param message containing the heading
+     * @param message containing the token
      * @param offset to the start of the token
      */
     public TriggerPeriodic(CorrectedBinaryMessage message, int offset)
@@ -44,20 +46,12 @@ public class TriggerPeriodic extends Token
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.TRIGGER_DISTANCE;
-    }
-
-    /**
-     * Seconds for trigger
-     */
-    public int getSeconds()
-    {
-        return getMessage().getInt(SECONDS, getOffset());
+        return TokenType.TRIGGER_PERIODIC;
     }
 
     @Override
     public String toString()
     {
-        return "TRIGGER EVERY:" + getSeconds() + " SECS";
+        return "PERIODIC";
     }
 }
