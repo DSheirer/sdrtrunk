@@ -571,6 +571,12 @@ public class DecoderFactory
     {
         List<String> features = audioModule.getFeatures();
 
+        String legacyToneFeature = "feature_legacy_tone_levels";
+        if(features.contains(legacyToneFeature))
+        {
+            audioModule.setFeature(legacyToneFeature, config.isLegacyToneLevels());
+        }
+
         if(features.contains(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL))
         {
             audioModule.setFeature(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL, config.isAGC());
@@ -952,5 +958,6 @@ public class DecoderFactory
         to.setAGC(from.isAGC());
         to.setNoiseGain(from.getNoiseGain());
         to.setToneGain(from.getToneGain());
+        to.setLegacyToneLevels(from.isLegacyToneLevels());
     }
 }

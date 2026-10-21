@@ -5,6 +5,22 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 public abstract class DecodeConfigJMBE extends DecodeConfiguration
 {
     private boolean mAGC = true;
+    private boolean mLegacyToneLevels;
+
+    /**
+     * Optional legacy AMBE tone amplitude mapping. Disabled by default.
+     * Requires a JMBE library supporting feature_legacy_tone_levels.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "jmbeLegacyToneLevels", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    public boolean isLegacyToneLevels()
+    {
+        return mLegacyToneLevels;
+    }
+
+    public void setLegacyToneLevels(boolean enabled)
+    {
+        mLegacyToneLevels = enabled;
+    }
     private float mToneGain = 1.0f;
     private float mNoiseGain = 1.0f;
 
