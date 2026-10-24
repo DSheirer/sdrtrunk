@@ -45,6 +45,7 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     private static final int MINIMUM_LDU_BIT_LENGTH = 1500; //actual length is 1568
     private CorrectedBinaryMessage mMessage;
     private P25P1DataUnitID mDataUnitID;
+    private int mElapsedDibitLength;
     private int mNac;
 
     /**
@@ -61,6 +62,7 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     {
         mNac = nac;
         mDataUnitID = duid;
+        mElapsedDibitLength = duid.getElapsedDibitLength();
         int length = duid.getMessageLength();
 
         if(length < 0)
@@ -80,15 +82,30 @@ public class P25P1MessageAssembler implements Listener<Dibit>
      */
     public void reconfigure(P25P1DataUnitID duid)
     {
+        reconfigure(duid, duid.getMessageLength(), duid.getElapsedDibitLength());
+    }
+
+    /**
+     * Reconfigure this assembler to continue assembling subsequent message blocks, using explicit message and elapsed
+     * dibit lengths for data units whose length is not fixed by the DUID (ie a PDU with a variable number of data
+     * blocks). The assembling message size is extended to the message length argument.
+     *
+     * @param duid for the subsequent message block to assemble.
+     * @param messageLength in bits for the message, including any trailing null bits.
+     * @param elapsedDibitLength from sync detection to the next sync detection, for the dibit counter adjustment.
+     */
+    public void reconfigure(P25P1DataUnitID duid, int messageLength, int elapsedDibitLength)
+    {
         mDataUnitID = duid;
+        mElapsedDibitLength = elapsedDibitLength;
 
         if(mMessage != null)
         {
-            mMessage.setSize(duid.getMessageLength());
+            mMessage.setSize(messageLength);
         }
         else
         {
-            mMessage = new CorrectedBinaryMessage(duid.getMessageLength());
+            mMessage = new CorrectedBinaryMessage(messageLength);
         }
     }
 
@@ -106,7 +123,9 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     {
 //        System.out.println("\n[_] FORCING COMPLETION - PREV:" + previous + " CURRENT:" + mDataUnitID + " NEXT:" + next + " RECEIVED BITS:" + getMessage().currentSize() + "/" + getMessage().size() + "\n");
 
-        if(mDataUnitID == P25P1DataUnitID.PLACE_HOLDER)
+        boolean placeHolder = mDataUnitID == P25P1DataUnitID.PLACE_HOLDER;
+
+        if(placeHolder)
         {
             int length = getMessage().currentSize();
 
@@ -190,7 +209,13 @@ public class P25P1MessageAssembler implements Listener<Dibit>
             mDataUnitID = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
         }
 
-        getMessage().setSize(mDataUnitID.getMessageLength());
+        //A message that was not a place holder is already sized for its data unit ID, or for the number of PDU data
+        //blocks when it was reconfigured with explicit lengths, so only resize a resolved place holder.
+        if(placeHolder)
+        {
+            setDataUnitID(mDataUnitID);
+        }
+
         return getMessage().size() - getMessage().currentSize();
     }
 
@@ -259,7 +284,18 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     public void setDataUnitID(P25P1DataUnitID dataUnitID)
     {
         mMessage.setSize(dataUnitID.getMessageLength());
+        mElapsedDibitLength = dataUnitID.getElapsedDibitLength();
         mDataUnitID = dataUnitID;
+    }
+
+    /**
+     * Elapsed dibit length from sync detection to the next sync detection for the message under assembly.  This is
+     * the data unit ID's elapsed dibit length unless the assembler was reconfigured with an explicit length.
+     * @return elapsed dibit length.
+     */
+    public int getElapsedDibitLength()
+    {
+        return mElapsedDibitLength;
     }
 
     @Override
