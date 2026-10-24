@@ -608,6 +608,63 @@ public class FilterFactory
     }
 
     /**
+     * Designs an integrate-and-dump filter.
+     *
+     * @param sampleRate in Hertz
+     * @param symbolRate in symbols per second (4800 for P25 Phase 1)
+     * @return filter taps, symmetric, summing to 1.0 (unity DC gain)
+     * @throws IllegalArgumentException if either rate is non-positive or the sample rate is below the symbol rate
+     */
+    public static float[] getIntegrateAndDump(double sampleRate, double symbolRate)
+    {
+        if(sampleRate <= 0 || symbolRate <= 0)
+        {
+            throw new IllegalArgumentException("Sample rate and symbol rate must be positive");
+        }
+
+        double samplesPerSymbol = sampleRate / symbolRate;
+
+        if(samplesPerSymbol < 1.0)
+        {
+            throw new IllegalArgumentException("Sample rate must be at least the symbol rate");
+        }
+
+        double halfWidth = samplesPerSymbol / 2.0;
+
+        //Candidate length: odd and long enough to span the window plus a partial tap on each edge
+        int length = 2 * (int)Math.ceil(halfWidth + 0.5) + 1;
+        double center = (length - 1) / 2.0;
+        double[] weights = new double[length];
+
+        for(int i = 0; i < length; i++)
+        {
+            //Each tap represents the unit interval [x - 0.5, x + 0.5] centered on its position
+            double x = i - center;
+            double low = Math.max(x - 0.5, -halfWidth);
+            double high = Math.min(x + 0.5, halfWidth);
+            weights[i] = Math.max(0.0, high - low);
+        }
+
+        //Trim zero-weight taps from the edges (symmetric, so trim equally)
+        final double epsilon = 1e-9;
+        int start = 0;
+        while(start < length / 2 && weights[start] < epsilon)
+        {
+            start++;
+        }
+        int end = length - start;
+
+        //Normalize to unity DC gain: the weights sum to samplesPerSymbol
+        float[] taps = new float[end - start];
+        for(int i = start; i < end; i++)
+        {
+            taps[i - start] = (float)(weights[i] / samplesPerSymbol);
+        }
+
+        return taps;
+    }
+
+    /**
      * Creates a Root Raised Cosine filter.
      * @param samplesPerSymbol
      * @param symbolCount

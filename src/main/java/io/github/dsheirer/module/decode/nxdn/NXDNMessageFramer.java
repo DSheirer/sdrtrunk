@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.nxdn;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
@@ -39,7 +40,7 @@ import java.util.Arrays;
  * uncertain message to assemble and then we'll inspect before and after data unit IDs and the quantity of captured
  * dibits to make a best guess on what the assembled message represents.
  */
-public class NXDNMessageFramer
+public class NXDNMessageFramer extends C4FMMessageFramer
 {
     private static final int FRAME_LENGTH = 192;
     private static final int SYNC_LENGTH = 10;
@@ -159,7 +160,7 @@ public class NXDNMessageFramer
             dibitBufferPointer %= FRAME_LENGTH;
         }
 
-        return Long.bitCount(value ^ NXDNSyncDetector.SYNC_PATTERN);
+        return Long.bitCount(value ^ mHardSyncDetector.getPattern());
     }
 
     /**

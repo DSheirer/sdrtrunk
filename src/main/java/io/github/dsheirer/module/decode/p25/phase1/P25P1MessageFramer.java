@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.edac.bch.BCH_63_16_23_P25;
 import io.github.dsheirer.message.DroppedSamplesMessage;
@@ -46,7 +47,7 @@ import io.github.dsheirer.sample.Listener;
  * uncertain message to assemble and then we'll inspect before and after data unit IDs and the quantity of captured
  * dibits to make a best guess on what the assembled message represents.
  */
-public class P25P1MessageFramer
+public class P25P1MessageFramer extends C4FMMessageFramer
 {
     private static final int DIBIT_LENGTH_NID = 33; //32 dibits (64 bits) +1 status
     private static final float SYNC_DETECTION_THRESHOLD = 60;
