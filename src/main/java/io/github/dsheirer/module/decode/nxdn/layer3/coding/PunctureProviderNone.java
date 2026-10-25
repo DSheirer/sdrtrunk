@@ -47,6 +47,12 @@ public class PunctureProviderNone extends PunctureProvider
     }
 
     @Override
+    public float[] depuncture(float[] punctured)
+    {
+        return punctured;
+    }
+
+    @Override
     public boolean isPreserved(int index)
     {
         return true;

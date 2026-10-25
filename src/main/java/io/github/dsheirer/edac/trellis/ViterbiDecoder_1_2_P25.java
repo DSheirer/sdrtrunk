@@ -20,6 +20,7 @@ package io.github.dsheirer.edac.trellis;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.dsp.symbol.Dibit;
 
 import java.util.List;
 
@@ -28,6 +29,12 @@ import java.util.List;
  */
 public class ViterbiDecoder_1_2_P25 extends ViterbiDecoder
 {
+    /**
+     * Maximum per-symbol error magnitude (radians) applied to the soft decision branch metric.  FM discriminator noise
+     * is impulsive (clicks), and an unbounded squared error lets a single corrupted symbol dominate the path metric.
+     * Noise injection testing against a P25 control channel recording found a peak at 1.75 - 2.0 radians.
+     */
+    private static final double SOFT_SYMBOL_ERROR_CLIP = 1.75;
     public ViterbiDecoder_1_2_P25()
     {
         super(2,4);
@@ -47,6 +54,143 @@ public class ViterbiDecoder_1_2_P25 extends ViterbiDecoder
         Path mostLikelyPath = decode(symbols);
 
         return getMessage(mostLikelyPath);
+    }
+
+    /**
+     * Soft decision Viterbi decoding of a deinterleaved 1/2 rate TCM encoded P25 block.  Each 4-bit trellis output
+     * value is transmitted as two dibits/symbols, so the branch metric is the squared Euclidean distance between the
+     * two received soft symbols and the ideal symbol phases for the branch output value.
+     *
+     * The corrected bit count on the returned message is the Hamming distance between the hard decisions of the
+     * received soft symbols and the re-encoded output of the decoded path, consistent with hard decision decoding.
+     *
+     * @param softSymbols 98 deinterleaved soft symbols (radians, ideal values +/- PI/4 and +/- 3*PI/4).
+     * @return decoded 96-bit message
+     */
+    public CorrectedBinaryMessage decodeSoft(float[] softSymbols)
+    {
+        if(softSymbols == null || softSymbols.length % 2 != 0 || softSymbols.length < 4)
+        {
+            throw new IllegalArgumentException("Soft symbols must contain an integral number of symbol pairs");
+        }
+
+        int steps = softSymbols.length / 2;
+        int states = getInputValueCount();
+        double[] metrics = new double[states];
+        double[] nextMetrics = new double[states];
+        int[][] previousState = new int[steps][states];
+        java.util.Arrays.fill(metrics, Double.MAX_VALUE);
+        metrics[0] = 0.0; //Encoder starts in state 0
+
+        //Branch metric for each of the 16 possible 4-bit output values at the current step
+        double[] branchMetrics = new double[getOutputValueCount()];
+
+        for(int step = 0; step < steps; step++)
+        {
+            float first = softSymbols[2 * step];
+            float second = softSymbols[2 * step + 1];
+
+            for(int output = 0; output < branchMetrics.length; output++)
+            {
+                double errorFirst = Math.min(Math.abs(first - getIdealPhase(output >> 2)), SOFT_SYMBOL_ERROR_CLIP);
+                double errorSecond = Math.min(Math.abs(second - getIdealPhase(output & 3)), SOFT_SYMBOL_ERROR_CLIP);
+                branchMetrics[output] = errorFirst * errorFirst + errorSecond * errorSecond;
+            }
+
+            java.util.Arrays.fill(nextMetrics, Double.MAX_VALUE);
+
+            //The final step is the flushing step where the encoder input is zero
+            int inputCount = (step == steps - 1) ? 1 : states;
+
+            for(int state = 0; state < states; state++)
+            {
+                if(metrics[state] == Double.MAX_VALUE)
+                {
+                    continue;
+                }
+
+                for(int input = 0; input < inputCount; input++)
+                {
+                    double metric = metrics[state] + branchMetrics[P25_1_2_Node.TRANSITION_MATRIX[state][input]];
+
+                    if(metric < nextMetrics[input])
+                    {
+                        nextMetrics[input] = metric;
+                        previousState[step][input] = state;
+                    }
+                }
+            }
+
+            double[] swap = metrics;
+            metrics = nextMetrics;
+            nextMetrics = swap;
+        }
+
+        //Trace back from the final (flushed) state 0.  The state after each step equals that step's input value.
+        int[] inputs = new int[steps];
+        int state = 0;
+
+        for(int step = steps - 1; step >= 0; step--)
+        {
+            inputs[step] = state;
+            state = previousState[step][state];
+        }
+
+        //Message bits are the inputs for all but the final flushing step
+        CorrectedBinaryMessage message = new CorrectedBinaryMessage((steps - 1) * getInputBitLength());
+        int bitErrors = 0;
+        int previous = 0;
+
+        for(int step = 0; step < steps; step++)
+        {
+            int input = inputs[step];
+
+            if(step < steps - 1)
+            {
+                int offset = step * getInputBitLength();
+
+                if((input & 2) == 2)
+                {
+                    message.set(offset);
+                }
+
+                if((input & 1) == 1)
+                {
+                    message.set(offset + 1);
+                }
+            }
+
+            int output = P25_1_2_Node.TRANSITION_MATRIX[previous][input];
+            int received = (getDibitValue(softSymbols[2 * step]) << 2) | getDibitValue(softSymbols[2 * step + 1]);
+            bitErrors += P25_1_2_Node.HAMMING_ERROR_COUNT[output ^ received];
+            previous = input;
+        }
+
+        message.setCorrectedBitCount(bitErrors);
+        return message;
+    }
+
+    /**
+     * Ideal soft symbol phase for a 2-bit dibit value where the MSB is the first transmitted bit.
+     */
+    private static float getIdealPhase(int dibitValue)
+    {
+        return switch(dibitValue)
+        {
+            case 0 -> Dibit.D00_PLUS_1.getIdealPhase();
+            case 1 -> Dibit.D01_PLUS_3.getIdealPhase();
+            case 2 -> Dibit.D10_MINUS_1.getIdealPhase();
+            default -> Dibit.D11_MINUS_3.getIdealPhase();
+        };
+    }
+
+    /**
+     * Hard decision 2-bit dibit value (MSB is the first transmitted bit) for the soft symbol.
+     */
+    private static int getDibitValue(float softSymbol)
+    {
+        Dibit dibit = Dibit.fromSample(softSymbol);
+        return (dibit.getBit1() ? 2 : 0) | (dibit.getBit2() ? 1 : 0);
     }
 
     /**

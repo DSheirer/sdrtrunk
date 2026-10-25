@@ -50,7 +50,7 @@ public class FMSyncVisualizer extends VBox implements ISyncResultsListener
     private final XYChart.Series<Number, Number> mSymbolSeriesMarker = new XYChart.Series<>();
     private final ScatterChart<Number, Number> mConstellationChart = new ScatterChart<>(mConstellationI, mConstellationQ);
     private final XYChart.Series<Number, Number> mConstellationSymbols = new XYChart.Series<>();
-    private static final int CONSTELLATION_SYMBOL_COUNT = 50;
+    private static final int CONSTELLATION_SYMBOL_COUNT = 24;
     private int mConstellationSymbolPointer = 0;
 
     private final LineChart<Number, Number> mSampleChart = new LineChart<>(mSampleTiming, mSamplePhase);

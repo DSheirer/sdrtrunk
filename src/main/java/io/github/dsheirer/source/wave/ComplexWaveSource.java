@@ -66,7 +66,7 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
     {
         if(file == null || !file.exists() || !supports(file))
         {
-            throw new IOException("Empty or null file");
+            throw new IOException("Empty or null file: " + file);
         }
 
         if(!supports(file))

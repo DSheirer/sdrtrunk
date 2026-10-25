@@ -145,11 +145,34 @@ public class TSBKMessageFactory
      */
     public static CorrectedBinaryMessage deinterleaveViterbiAndCrc(CorrectedBinaryMessage raw)
     {
-        //Get deinterleaved header chunk
-        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, raw);
+        return deinterleaveViterbiAndCrc(raw, null);
+    }
 
-        //Decode 1/2 rate trellis encoded PDU header
-        CorrectedBinaryMessage message = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
+    /**
+     * Performs deinterleave, Viterbi decoding, and applies the CRC-CCITT error detection/correction.  Uses soft
+     * decision Viterbi decoding when the soft symbols are provided, otherwise hard decision decoding.
+     * @param raw interleaved message
+     * @param softSymbols for the 98 interleaved dibits of the raw message, or null.
+     * @return null or the decoded message with CRC results set in the message where 0 or 1 bit errors is valid and
+     * 2 bit errors is invalid.
+     */
+    public static CorrectedBinaryMessage deinterleaveViterbiAndCrc(CorrectedBinaryMessage raw, float[] softSymbols)
+    {
+        CorrectedBinaryMessage message;
+
+        if(softSymbols != null && softSymbols.length == P25P1Interleave.DATA_DEINTERLEAVE.length / 2)
+        {
+            //Soft decision decode 1/2 rate trellis encoded block from the deinterleaved soft symbols
+            message = VITERBI_HALF_RATE_DECODER.decodeSoft(P25P1Interleave.deinterleaveDataSoftSymbols(softSymbols));
+        }
+        else
+        {
+            //Get deinterleaved header chunk
+            CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, raw);
+
+            //Decode 1/2 rate trellis encoded PDU header
+            message = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
+        }
 
         if(message == null)
         {
@@ -171,7 +194,18 @@ public class TSBKMessageFactory
     public static TSBKMessage create(Direction direction, P25P1DataUnitID dataUnitID,
                                      CorrectedBinaryMessage correctedBinaryMessage, int nac, long timestamp)
     {
-        CorrectedBinaryMessage message = deinterleaveViterbiAndCrc(correctedBinaryMessage);
+        return create(direction, dataUnitID, correctedBinaryMessage, null, nac, timestamp);
+    }
+
+    /**
+     * Creates a TSBK message, using soft decision Viterbi decoding when soft symbols are provided.
+     * @param softSymbols for the 98 interleaved dibits of the message, or null for hard decision decoding.
+     */
+    public static TSBKMessage create(Direction direction, P25P1DataUnitID dataUnitID,
+                                     CorrectedBinaryMessage correctedBinaryMessage, float[] softSymbols, int nac,
+                                     long timestamp)
+    {
+        CorrectedBinaryMessage message = deinterleaveViterbiAndCrc(correctedBinaryMessage, softSymbols);
 
         if(message == null)
         {

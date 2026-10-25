@@ -26,18 +26,12 @@ import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
-import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
-import io.github.dsheirer.module.decode.dmr.message.data.DataMessageWithLinkControl;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.preference.UserPreferences;
@@ -49,12 +43,13 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,18 +69,21 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderC4FM.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final int SYMBOL_RATE = 4800;
-    private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
+    //Band limited integrate and dump receive filter settings.  Noise injection testing against P25 C4FM recordings:
+    //stopband starts of 3300 - 4000 Hz perform similarly, a 5-symbol span is too short, and 12 symbols adds nothing.
+    private static final double RECEIVE_FILTER_STOP_BAND_START = 3600.0; //Hertz
+    private static final int RECEIVE_FILTER_SYMBOL_SPAN = 8;
+    private static final Map<Double,float[]> BASEBAND_FILTERS = new ConcurrentHashMap<>();
 
-    private final P25P1DemodulatorC4FM mSymbolProcessor;
+    private final P25P1SymbolProcessorC4FM mSymbolProcessor;
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
-    private DifferentialDemodulatorFloat mDemodulator;
+    private IDemodulator mDemodulator;
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
-    private IRealFilter mPulseShapingFilterI;
-    private IRealFilter mPulseShapingFilterQ;
+    private IRealFilter mReceiveFilter;
 
     @Override
     public DecoderType getDecoderType()
@@ -96,7 +94,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     public P25P1DecoderC4FM()
     {
         mMessageProcessor.setMessageListener(getMessageListener());
-        mSymbolProcessor = new P25P1DemodulatorC4FM(mMessageFramer, this);
+        mSymbolProcessor = new P25P1SymbolProcessorC4FM(this, mMessageFramer);
     }
 
     @Override
@@ -111,18 +109,20 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
      */
     public void setSampleRate(double sampleRate)
     {
-        if(sampleRate <= SYMBOL_RATE * 2)
+        float samplesPerSymbol = (float)sampleRate / SYMBOL_RATE;
+
+        if(samplesPerSymbol <= 4.0f)
         {
-            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " +
-                    SYMBOL_RATE + " symbol rate)");
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be at least " + (SYMBOL_RATE * 4) + " Hz");
         }
 
         int decimation = 1;
 
-        //Identify decimation that gets us as close to 4.0 Samples Per Symbol as possible (19.2 kHz)
-        while((sampleRate / decimation) >= 38400)
+        //Identify decimation that gets us as close to 5.0 Samples Per Symbol as possible
+        while(samplesPerSymbol >= 10.0)
         {
             decimation *= 2;
+            samplesPerSymbol /= 2;
         }
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
@@ -133,19 +133,21 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         //Set the decimated sample rate to use for PLL error reporting.
         setDecimatedSampleRate(decimatedSampleRate);
 
-        int symbolLength = 16;
-        float rrcAlpha = 0.2f;
-
-        float[] taps = FilterFactory.getRootRaisedCosine(decimatedSampleRate / SYMBOL_RATE,
-                symbolLength, rrcAlpha);
-        mPulseShapingFilterI = new RealFIRFilter(taps);
-        mPulseShapingFilterQ = new RealFIRFilter(taps);
+        //Receive filter: integrate and dump (sinc) response across the signal band with a stopband above the signal band
+        //to reject FM discriminator noise that an integrate and dump filter's sidelobes would otherwise pass.
+        float[] receiveFilterTaps = P25P1FilterDesigner.designReceiveFilter(decimatedSampleRate, SYMBOL_RATE,
+                RECEIVE_FILTER_STOP_BAND_START, RECEIVE_FILTER_SYMBOL_SPAN);
+        mReceiveFilter = new RealFIRFilter(receiveFilterTaps);
 
         mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
         mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mDemodulator = DifferentialDemodulatorFactory.getFloatDemodulator(decimatedSampleRate, SYMBOL_RATE);
-        mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
+
+        mDemodulator = FmDemodulatorFactory.getFmDemodulator();
+        mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
+
+        //TODO: update P25 message Framer and Processor like we do in NXDN constructor
         mMessageFramer.setListener(mMessageProcessor);
+
         mMessageProcessor.setMessageListener(getMessageListener());
     }
 
@@ -165,11 +167,8 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         i = mBasebandFilterI.filter(i);
         q = mBasebandFilterQ.filter(q);
 
-        i = mPulseShapingFilterI.filter(i);
-        q = mPulseShapingFilterQ.filter(q);
-
-        // PI/4 DQPSK differential demodulation
         float[] demodulated = mDemodulator.demodulate(i, q);
+        demodulated = mReceiveFilter.filter(demodulated);
 
         //Process demodulated samples into symbols and apply message sync detection and framing.
         mSymbolProcessor.process(demodulated);
@@ -180,9 +179,12 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
      */
     private float[] getBasebandFilter(double sampleRate)
     {
-        if(BASEBAND_FILTERS.containsKey(sampleRate))
+        //Filter cache is shared across decoder instances that may be started from different threads
+        float[] cached = BASEBAND_FILTERS.get(sampleRate);
+
+        if(cached != null)
         {
-            return BASEBAND_FILTERS.get(sampleRate);
+            return cached;
         }
 
         FIRFilterSpecification specification = FIRFilterSpecification
@@ -198,11 +200,15 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         try
         {
             coefficients = FilterFactory.getTaps(specification);
-            BASEBAND_FILTERS.put(sampleRate, coefficients);
+
+            if(coefficients != null)
+            {
+                BASEBAND_FILTERS.put(sampleRate, coefficients);
+            }
         }
-        catch(Exception fde) //FilterDesignException
+        catch(Exception e) //FilterDesignException or runtime failures from the Remez designer
         {
-            System.out.println("Error");
+            LOGGER.error("Error designing P25 Phase 1 C4FM baseband filter for sample rate [" + sampleRate + "]", e);
         }
 
         if(coefficients == null)
@@ -258,6 +264,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     {
         super.stop();
         mMessageFramer.stop();
+        mSymbolProcessor.dispose();
     }
 
     /**
@@ -269,7 +276,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                mSymbolProcessor.resetPLL();
+                mSymbolProcessor.resetBalance();
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
@@ -288,10 +295,11 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         LOGGER.info("Starting ...");
 
 //        String directory = "D:\\DQPSK Equalizer Research - P25\\"; //Windows
-        String directory = "/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
+        String directory = "/run/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
 
-        String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
-//        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
+        //Note: this file has lots of dropped sample periods across each burst, with otherwise high SNR good decodes
+//        String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
+        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
 
         boolean autoReplay = false;
 
@@ -336,23 +344,9 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
                         mValidMessageCounter++;
                     }
                 }
-                else if(iMessage instanceof LCMessage lcw)
-                {
-                    mTotalMessageCounter++;
-                    errors = lcw.getMessage().getCorrectedBitCount();
-                    if(lcw.isValid())
-                    {
-                        mBitErrorCounter += errors;
-                        mValidMessageCounter++;
-                    }
-                }
 
                 double bitErrorRate = (double)mBitErrorCounter / (double)mBitCounter * 100.0;
-
                 boolean logEverything = true;
-                boolean logFLC = true;
-                boolean logSLC = true;
-                boolean logCACH = true;
                 boolean logIdles = true;
 
                 if(logEverything)
@@ -365,32 +359,6 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
                 }
                 else
                 {
-                    if (logFLC)
-                    {
-                        if(iMessage instanceof FullLCMessage)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                        else if(iMessage instanceof Terminator terminator)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                        else if(iMessage instanceof DataMessageWithLinkControl)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                    }
-
-                    if(logCACH && iMessage instanceof DMRBurst burst && burst.hasCACH())
-                    {
-                        System.out.println("CACH:" + burst.getCACH());
-                    }
-
-                    if(logSLC && iMessage instanceof ShortLCMessage)
-                    {
-                        System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                    }
-
                     if(logIdles && iMessage instanceof SyncLossMessage)
                     {
                         System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
@@ -412,10 +380,24 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
             source.start();
             decoder.setSampleRate(source.getSampleRate());
 
-            while(true)
+            boolean hasData = true;
+
+            while(hasData)
             {
-                source.next(2048, true);
+                try
+                {
+                    source.next(2048, true);
+                }
+                catch(IOException e)
+                {
+                    LOGGER.info("End of file: " + e.getLocalizedMessage());
+                    hasData = false;
+                }
             }
+        }
+        catch(FileNotFoundException e)
+        {
+            LOGGER.error("File not found: " + file);
         }
         catch(IOException ioe)
         {

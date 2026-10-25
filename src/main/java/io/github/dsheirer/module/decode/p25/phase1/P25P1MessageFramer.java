@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
+import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.edac.bch.BCH_63_16_23_P25;
 import io.github.dsheirer.message.DroppedSamplesMessage;
@@ -46,7 +47,7 @@ import io.github.dsheirer.sample.Listener;
  * uncertain message to assemble and then we'll inspect before and after data unit IDs and the quantity of captured
  * dibits to make a best guess on what the assembled message represents.
  */
-public class P25P1MessageFramer
+public class P25P1MessageFramer extends C4FMMessageFramer
 {
     private static final int DIBIT_LENGTH_NID = 33; //32 dibits (64 bits) +1 status
     private static final float SYNC_DETECTION_THRESHOLD = 60;
@@ -55,12 +56,26 @@ public class P25P1MessageFramer
     private static final IntField DUID_FIELD = IntField.length4(12);
     private final NACTracker mNACTracker = new NACTracker();
     private Dibit[] mNIDBuffer = new Dibit[DIBIT_LENGTH_NID];
+    //Soft symbols (radians) for the NID dibits, or NaN when the soft symbol wasn't provided
+    private float[] mNIDSoftBuffer = new float[DIBIT_LENGTH_NID];
+    private float mCurrentSoftSymbol = Float.NaN;
+    //NID dibit index that carries the embedded status symbol
+    private static final int NID_STATUS_DIBIT_INDEX = 11;
+    //Soft decision NID decoding: maximum hard bit disagreements (of 63) allowed for the best candidate codeword.
+    //With 7 candidate codewords for the tracked NAC, a random word falls within 15 bits of one with probability
+    //~1.3e-4, lower than the NAC-assisted BCH decode (~4.6e-4).
+    private static final int SOFT_NID_MAX_BIT_ERRORS = 15;
+    //Valid data unit ID values used as soft decision NID candidates.
+    private static final int[] SOFT_NID_CANDIDATE_DUIDS = {0, 3, 5, 7, 10, 12, 15};
+    private final long[] mSoftNIDCandidateCodewords = new long[SOFT_NID_CANDIDATE_DUIDS.length];
+    private int mSoftNIDCandidateNAC = -1;
     private int mNIDPointer = 0;
     private final P25P1SoftSyncDetector mSoftSyncDetector = P25P1SoftSyncDetectorFactory.getDetector();
     private final P25P1HardSyncDetector mHardSyncDetector = new P25P1HardSyncDetector();
     private boolean mSyncDetected = false;
+    //Indicates the NID under capture follows a sync detected while a message was still assembling
+    private boolean mPreemptiveNIDCheck = false;
 
-    private static final double MILLISECONDS_PER_SYMBOL = 1.0 / 4800.0 / 1000.0;
     private Listener<IMessage> mMessageListener;
     private boolean mMessageAssemblyRequired = false;
     private boolean mRunning = false;
@@ -92,7 +107,7 @@ public class P25P1MessageFramer
      */
     public boolean processWithSoftSyncDetect(float softSymbol, Dibit symbol)
     {
-        boolean validNIDDetected = process(symbol);
+        boolean validNIDDetected = process(symbol, softSymbol);
 
         if(mSoftSyncDetector.process(softSymbol) > SYNC_DETECTION_THRESHOLD)
         {
@@ -123,12 +138,28 @@ public class P25P1MessageFramer
      */
     public void syncDetected()
     {
-        //Only allow sync detection processing if we're not currently assembling a message
-        if(mMessageAssembler == null)
-        {
-            mSyncDetected = true;
-            mNIDPointer = 0;
-        }
+        //When we're currently assembling a message, still capture the NID but only allow it to preempt the assembling
+        //message when it passes strict validation (see checkNID()) to avoid false sync detections in voice frames
+        //truncating the message under assembly (ie audio squeaks - #2305).  This allows a valid sync/NID to recover
+        //framing when a PLACEHOLDER (failed NID) assembly, or a message with incorrect length expectation, would
+        //otherwise cause the framer to ignore subsequent sync detections.
+        mPreemptiveNIDCheck = mMessageAssembler != null;
+        mSyncDetected = true;
+        mNIDPointer = 0;
+    }
+
+    /**
+     * Process symbol decision and the soft symbol it was decided from, without sync detection.  The soft symbol
+     * enables soft decision NID decoding.
+     * @param symbol that was demodulated.
+     * @param softSymbol equalized soft symbol in radians.
+     */
+    @Override
+    public boolean process(Dibit symbol, float softSymbol)
+    {
+        mCurrentSoftSymbol = softSymbol;
+        boolean validNIDDetected = process(symbol);
+        return validNIDDetected;
     }
 
     /**
@@ -138,6 +169,8 @@ public class P25P1MessageFramer
     public boolean process(Dibit symbol)
     {
         boolean validNIDDetected = false;
+        float softSymbol = mCurrentSoftSymbol;
+        mCurrentSoftSymbol = Float.NaN;
 
         mDebugSymbolCount++;
         mDibitSinceTimestampCounter++;
@@ -148,6 +181,7 @@ public class P25P1MessageFramer
 
         if(mSyncDetected)
         {
+            mNIDSoftBuffer[mNIDPointer] = softSymbol;
             mNIDBuffer[mNIDPointer++] = symbol;
 
             if(mNIDPointer >= DIBIT_LENGTH_NID)
@@ -181,12 +215,12 @@ public class P25P1MessageFramer
                 //If we still have an assembler, feed it the current dibit (e.g. TSBK and PDU continuation block assembly)
                 if(mMessageAssembler != null)
                 {
-                    mMessageAssembler.receive(symbol);
+                    mMessageAssembler.receive(symbol, softSymbol);
                 }
             }
             else
             {
-                mMessageAssembler.receive(symbol);
+                mMessageAssembler.receive(symbol, softSymbol);
             }
         }
         //Start a message assembler after ignoring 24x Sync, 32x NID, and 1x status dibits. Trigger assembler
@@ -372,7 +406,7 @@ public class P25P1MessageFramer
         {
             case TRUNKING_SIGNALING_BLOCK_1:
                 CorrectedBinaryMessage message1 = mMessageAssembler.getMessage().getSubMessage(0, 196);
-                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message1, mMessageAssembler.getNAC(), getTimestamp());
+                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message1, mMessageAssembler.getSoftSymbols(0, 196), mMessageAssembler.getNAC(), getTimestamp());
 
                 if(tsbk1 != null)
                 {
@@ -403,7 +437,7 @@ public class P25P1MessageFramer
                 break;
             case TRUNKING_SIGNALING_BLOCK_2:
                 CorrectedBinaryMessage message2 = mMessageAssembler.getMessage().getSubMessage(196, 392);
-                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message2, mMessageAssembler.getNAC(), getTimestamp());
+                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message2, mMessageAssembler.getSoftSymbols(196, 392), mMessageAssembler.getNAC(), getTimestamp());
 
                 if(tsbk2 != null)
                 {
@@ -432,7 +466,7 @@ public class P25P1MessageFramer
                 break;
             case TRUNKING_SIGNALING_BLOCK_3:
                 CorrectedBinaryMessage message3 = mMessageAssembler.getMessage().getSubMessage(392, 588);
-                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message3, mMessageAssembler.getNAC(), getTimestamp());
+                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message3, mMessageAssembler.getSoftSymbols(392, 588), mMessageAssembler.getNAC(), getTimestamp());
                 broadcast(tsbk3);
 
                 adjustDibitCounterFromMessageAssembler();
@@ -477,7 +511,7 @@ public class P25P1MessageFramer
         {
             case PACKET_DATA_UNIT:
                 CorrectedBinaryMessage message = mMessageAssembler.getMessage().getSubMessage(0, 196);
-                PDUHeader header = PDUMessageFactory.createHeader(message);
+                PDUHeader header = PDUMessageFactory.createHeader(message, mMessageAssembler.getSoftSymbols(0, 196));
 
                 if(header != null)
                 {
@@ -512,7 +546,7 @@ public class P25P1MessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB1));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB1, mMessageAssembler.getSoftSymbols(196, 392)));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -543,7 +577,7 @@ public class P25P1MessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB2));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB2, mMessageAssembler.getSoftSymbols(392, 588)));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -574,7 +608,7 @@ public class P25P1MessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB3));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB3, mMessageAssembler.getSoftSymbols(588, 784)));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -605,7 +639,7 @@ public class P25P1MessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB4));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB4, mMessageAssembler.getSoftSymbols(784, 980)));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -636,7 +670,7 @@ public class P25P1MessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB5));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB5, mMessageAssembler.getSoftSymbols(980, 1176)));
                     }
 
                     adjustDibitCounterFromMessageAssembler();
@@ -829,13 +863,37 @@ public class P25P1MessageFramer
 
 
         int trackedNAC = mNACTracker.getTrackedNAC();
-        mBCHDecoder.decode(nid, trackedNAC);
+        boolean preemptive = mPreemptiveNIDCheck;
+        mPreemptiveNIDCheck = false;
+
+        if(preemptive)
+        {
+            //Strict validation for a NID that would preempt a message under assembly.  Hard BCH(63,16,23) decoding
+            //accepts ~0.5% of random words and the NAC-assisted second attempt ~0.05%, so require an unassisted decode
+            //that also matches the tracked NAC (~1.3e-6 false acceptance) and a known data unit ID.
+            if(trackedNAC <= 0)
+            {
+                return false;
+            }
+
+            mBCHDecoder.decode(nid);
+        }
+        else
+        {
+            mBCHDecoder.decode(nid, trackedNAC);
+        }
 
         int nac = nid.getInt(NAC_FIELD);
         P25P1DataUnitID duid = P25P1DataUnitID.fromValue(nid.getInt(DUID_FIELD));
 
-        //If error correction fails, return the original correction candidate
+        //If error correction fails, attempt soft decision decoding against the tracked NAC.  Not used for a NID that
+        //would preempt a message under assembly, which requires the strict validation above.
         if(nid.getCorrectedBitCount() < 0)
+        {
+            return !preemptive && softDecodeNID(trackedNAC);
+        }
+
+        if(preemptive && (nac != trackedNAC || duid == P25P1DataUnitID.UNKNOWN))
         {
             return false;
         }
@@ -847,5 +905,129 @@ public class P25P1MessageFramer
 //        System.out.println("\t\t" + mDebugSymbolCount + " VALID NID - NAC:" + nac + " DUID:" + duid);
         nidDetected(nac, duid, nid.getCorrectedBitCount());
         return true;
+    }
+
+    /**
+     * Soft decision (maximum likelihood) NID decoding for a NID that failed hard decision BCH decoding.  With a known
+     * (tracked) NAC there are only a handful of valid NID codewords, one per data unit ID.  Selects the candidate
+     * codeword with the minimum squared Euclidean distance to the received soft symbols, and accepts it when it is the
+     * unique best candidate and it's within SOFT_NID_MAX_BIT_ERRORS of the hard symbol decisions.
+     *
+     * Note: the decoded NAC is not fed to the NAC tracker since the tracked NAC is an input to this decoder.
+     *
+     * @param trackedNAC currently tracked NAC value, or zero when no NAC has been tracked yet.
+     * @return true if a NID was decoded and nidDetected() was invoked.
+     */
+    private boolean softDecodeNID(int trackedNAC)
+    {
+        if(trackedNAC <= 0)
+        {
+            return false;
+        }
+
+        for(float softSymbol : mNIDSoftBuffer)
+        {
+            if(Float.isNaN(softSymbol))
+            {
+                return false;
+            }
+        }
+
+        if(mSoftNIDCandidateNAC != trackedNAC)
+        {
+            for(int x = 0; x < SOFT_NID_CANDIDATE_DUIDS.length; x++)
+            {
+                mSoftNIDCandidateCodewords[x] = BCH_63_16_23_P25.encode(trackedNAC, SOFT_NID_CANDIDATE_DUIDS[x]);
+            }
+
+            mSoftNIDCandidateNAC = trackedNAC;
+        }
+
+        int bestIndex = -1;
+        double bestDistance = Double.MAX_VALUE;
+        double secondBestDistance = Double.MAX_VALUE;
+        int bestBitErrors = 0;
+
+        for(int candidate = 0; candidate < mSoftNIDCandidateCodewords.length; candidate++)
+        {
+            long codeword = mSoftNIDCandidateCodewords[candidate];
+            double distance = 0.0;
+            int bitErrors = 0;
+            int bitIndex = 0; //Codeword bit index, where bit 0 is the first transmitted bit (codeword bit position 62)
+
+            for(int dibitIndex = 0; dibitIndex < DIBIT_LENGTH_NID; dibitIndex++)
+            {
+                if(dibitIndex == NID_STATUS_DIBIT_INDEX)
+                {
+                    continue;
+                }
+
+                boolean bit1 = ((codeword >> (62 - bitIndex)) & 1) == 1;
+                Dibit received = mNIDBuffer[dibitIndex];
+                float softSymbol = mNIDSoftBuffer[dibitIndex];
+
+                if(bit1 != received.getBit1())
+                {
+                    bitErrors++;
+                }
+
+                if(bitIndex + 1 <= 62)
+                {
+                    boolean bit2 = ((codeword >> (62 - bitIndex - 1)) & 1) == 1;
+                    double error = softSymbol - getIdealPhase(bit1, bit2);
+                    distance += error * error;
+
+                    if(bit2 != received.getBit2())
+                    {
+                        bitErrors++;
+                    }
+                }
+                else
+                {
+                    //The 64th NID bit is not part of the BCH codeword, so use the nearest symbol for the first bit
+                    double errorA = softSymbol - getIdealPhase(bit1, false);
+                    double errorB = softSymbol - getIdealPhase(bit1, true);
+                    distance += Math.min(errorA * errorA, errorB * errorB);
+                }
+
+                bitIndex += 2;
+            }
+
+            if(distance < bestDistance)
+            {
+                secondBestDistance = bestDistance;
+                bestDistance = distance;
+                bestIndex = candidate;
+                bestBitErrors = bitErrors;
+            }
+            else if(distance < secondBestDistance)
+            {
+                secondBestDistance = distance;
+            }
+        }
+
+        if(bestIndex < 0 || bestDistance >= secondBestDistance || bestBitErrors > SOFT_NID_MAX_BIT_ERRORS)
+        {
+            return false;
+        }
+
+        nidDetected(trackedNAC, P25P1DataUnitID.fromValue(SOFT_NID_CANDIDATE_DUIDS[bestIndex]), bestBitErrors);
+        return true;
+    }
+
+    /**
+     * Ideal soft symbol phase for the dibit bits.
+     * @param bit1 first (sign) bit
+     * @param bit2 second (magnitude) bit
+     * @return ideal phase in radians.
+     */
+    private static float getIdealPhase(boolean bit1, boolean bit2)
+    {
+        if(bit1)
+        {
+            return bit2 ? Dibit.D11_MINUS_3.getIdealPhase() : Dibit.D10_MINUS_1.getIdealPhase();
+        }
+
+        return bit2 ? Dibit.D01_PLUS_3.getIdealPhase() : Dibit.D00_PLUS_1.getIdealPhase();
     }
 }
