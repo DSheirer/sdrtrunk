@@ -18,7 +18,8 @@ jobs:
       - name: Set up JDK 27
         uses: actions/setup-java@v3
         with:
-          java-version: '27'
+          # Must match the JDK version downloaded in build.gradle (jdk_download_base) - jlink requires an exact version match
+          java-version: '27.0.0'
           distribution: 'liberica'
           java-package: 'jdk+fx'
 
