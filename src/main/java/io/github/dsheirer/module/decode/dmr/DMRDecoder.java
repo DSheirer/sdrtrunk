@@ -26,8 +26,8 @@ import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -40,6 +40,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
+import io.github.dsheirer.module.decode.nxdn.NXDNFilterDesigner;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -52,25 +53,24 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DMR DQPSK decoder.
+ * DMR 4FSK decoder.
  *
- * Processes the sample stream using an optimal (scalar or vector) DQPSK demodulator.  The demodulated sample stream
- * is processed by the DMRSoftSymbolProcessor at each symbol time interval using a primary and two lagging soft sync
- * detectors.  The sync detectors use correlation of the demodulated soft symbols with all known sync patterns to
- * detect the sync and align the symbol timing and symbol period to the optimal location and symbol period as
- * calculated across each detected burst.  Once the symbol processor has fingerprinted the channel type, it optimizes
- * sync detection for one of three detected modes (BASE, MOBILE or DIRECT) to reduce sync correlation workload.
+ * Processes the sample stream using an FM demodulator and a root raised cosine receive filter matched to the DMR
+ * transmit filter.  The demodulated sample stream is processed by the DMRSymbolProcessor (C4FM symbol processor)
+ * at each symbol time interval using a primary and a lagging soft sync detector.  The sync detectors use correlation
+ * of the demodulated soft symbols with all known sync patterns to detect the sync and align the symbol timing and
+ * constellation gain and balance.  Once the symbol processor has fingerprinted the channel type, it optimizes sync
+ * detection for one of three detected modes (BASE, MOBILE or DIRECT) to reduce sync correlation workload.
  *
- * The DMRSoftSymbolMessageFramer receives sync detections from the soft symbol processor and buffers symbols from the
- * start of the burst through the sync so that the symbols can be resampled when the sync is detected, ensuring that
- * the burst symbols are accurate using the symbol timing and period values calculated on the sync detection.
+ * The DMRMessageFramer receives sync detections from the soft symbol processor and buffers symbols from the start of
+ * the burst through the sync so that the full burst can be framed once the sync is detected.
  *
  * For Direct Mode where one timeslot is empty, the symbol message framer uses two message burst buffers that alternate
  * for each burst so that one buffer tracks the active timeslot and the other buffer tracks the empty timeslot to
@@ -85,18 +85,19 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     private static final Logger LOGGER = LoggerFactory.getLogger(DMRDecoder.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final int SYMBOL_RATE = 4800;
-    private static final float MAXIMUM_CARRIER_OFFSET = 5000.0f; //Threshold for retuning the signal.
-    private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
-    private DifferentialDemodulatorFloat mDemodulator;
+    //DMR transmit filter is a root raised cosine with 0.2 roll-off, so the receive filter is a matched RRC filter.
+    private static final double RECEIVE_FILTER_ALPHA = 0.2;
+    private static final int RECEIVE_FILTER_SYMBOL_SPAN = 12;
+    private static final Map<Double,float[]> BASEBAND_FILTERS = new ConcurrentHashMap<>();
+    private IDemodulator mDemodulator;
     private final DMRMessageFramer mMessageFramer;
-    private final DMRSoftSymbolProcessor mSymbolProcessor;
+    private final DMRSymbolProcessor mSymbolProcessor;
     private final DMRMessageProcessor mMessageProcessor;
-    private IRealFilter mIBasebandFilter;
-    private IRealFilter mQBasebandFilter;
+    private IRealFilter mBasebandFilterI;
+    private IRealFilter mBasebandFilterQ;
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
-    private RealFIRFilter mRRCFilterI;
-    private RealFIRFilter mRRCFilterQ;
+    private IRealFilter mReceiveFilter;
 
     /**
      * Constructs an instance
@@ -106,7 +107,7 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     {
         DMRCrcMaskManager crcMaskManager = new DMRCrcMaskManager(config.getIgnoreCRCChecksums());
         mMessageFramer = new DMRMessageFramer(crcMaskManager);
-        mSymbolProcessor = new DMRSoftSymbolProcessor(mMessageFramer, this);
+        mSymbolProcessor = new DMRSymbolProcessor(this, mMessageFramer);
         mMessageProcessor = new DMRMessageProcessor(config, crcMaskManager);
         mMessageProcessor.setMessageListener(getMessageListener());
         setSampleRate(25000.0);
@@ -129,21 +130,20 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
      */
     public void setSampleRate(double sampleRate)
     {
-        if(sampleRate <= SYMBOL_RATE * 2)
-        {
-            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " +
-                    SYMBOL_RATE + " symbol rate)");
-        }
+        float samplesPerSymbol = (float)sampleRate / SYMBOL_RATE;
 
-        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter(sampleRate));
-        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter(sampleRate));
+        if(samplesPerSymbol <= 4.0f)
+        {
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be at least " + (SYMBOL_RATE * 4) + " Hz");
+        }
 
         int decimation = 1;
 
-        //Identify decimation that gets us as close to 4.0 Samples Per Symbol as possible (19.2 kHz)
-        while((sampleRate / decimation) >= 38400)
+        //Identify decimation that gets us as close to 5.0 Samples Per Symbol as possible
+        while(samplesPerSymbol >= 10.0)
         {
             decimation *= 2;
+            samplesPerSymbol /= 2;
         }
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
@@ -154,21 +154,21 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         //Set the decimated sample rate to use for PLL error reporting.
         setDecimatedSampleRate(decimatedSampleRate);
 
-        float rrcAlpha = Math.abs((float)(5760.0 / decimatedSampleRate));
-        int symbolLength = (int)Math.floor((-44 * rrcAlpha) + 33);
-        symbolLength += symbolLength % 2; //Make the symbol length even
-
-        if(symbolLength < 0)
+        //Receive filter: root raised cosine matched to the DMR transmit filter, normalized to unity gain at DC.
+        double[] receiveFilterTaps = NXDNFilterDesigner.designRootRaisedCosine(decimatedSampleRate, SYMBOL_RATE,
+                RECEIVE_FILTER_ALPHA, RECEIVE_FILTER_SYMBOL_SPAN);
+        float[] taps = new float[receiveFilterTaps.length];
+        for(int x = 0; x < receiveFilterTaps.length; x++)
         {
-            symbolLength = 2;
+            taps[x] = (float)receiveFilterTaps[x];
         }
+        mReceiveFilter = new RealFIRFilter(taps);
 
-        float[] taps = FilterFactory.getRootRaisedCosine(decimatedSampleRate / SYMBOL_RATE, symbolLength, rrcAlpha);
-        mRRCFilterI = new RealFIRFilter(taps);
-        mRRCFilterQ = new RealFIRFilter(taps);
+        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
+        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
 
-        mDemodulator = DifferentialDemodulatorFactory.getFloatDemodulator(decimatedSampleRate, SYMBOL_RATE);
-        mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
+        mDemodulator = FmDemodulatorFactory.getFmDemodulator();
+        mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
         mMessageFramer.setListener(mMessageProcessor);
         mMessageProcessor.setMessageListener(getMessageListener());
     }
@@ -181,19 +181,20 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     public void receive(ComplexSamples samples)
     {
 
+        //Update the message framer with the timestamp from the incoming sample buffer.
         mMessageFramer.setTimestamp(samples.timestamp());
 
-        float[] i = mIBasebandFilter.filter(samples.i());
-        float[] q = mQBasebandFilter.filter(samples.q());
+        float[] i = mDecimationFilterI.decimateReal(samples.i());
+        float[] q = mDecimationFilterQ.decimateReal(samples.q());
 
-        i = mDecimationFilterI.decimateReal(i);
-        q = mDecimationFilterQ.decimateReal(q);
-
-        i = mRRCFilterI.filter(i);
-        q = mRRCFilterQ.filter(q);
+        i = mBasebandFilterI.filter(i);
+        q = mBasebandFilterQ.filter(q);
 
         float[] demodulated = mDemodulator.demodulate(i, q);
-        mSymbolProcessor.receive(demodulated);
+        demodulated = mReceiveFilter.filter(demodulated);
+
+        //Process demodulated samples into symbols and apply message sync detection and framing.
+        mSymbolProcessor.process(demodulated);
     }
 
     /**
@@ -201,9 +202,12 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
      */
     private float[] getBasebandFilter(double sampleRate)
     {
-        if(BASEBAND_FILTERS.containsKey(sampleRate))
+        //Filter cache is shared across decoder instances that may be started from different threads
+        float[] cached = BASEBAND_FILTERS.get(sampleRate);
+
+        if(cached != null)
         {
-            return BASEBAND_FILTERS.get(sampleRate);
+            return cached;
         }
 
         FIRFilterSpecification specification = FIRFilterSpecification
@@ -219,11 +223,15 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         try
         {
             coefficients = FilterFactory.getTaps(specification);
-            BASEBAND_FILTERS.put(sampleRate, coefficients);
+
+            if(coefficients != null)
+            {
+                BASEBAND_FILTERS.put(sampleRate, coefficients);
+            }
         }
-        catch(Exception fde) //FilterDesignException
+        catch(Exception e) //FilterDesignException or runtime failures from the Remez designer
         {
-            System.out.println("Error");
+            LOGGER.error("Error designing DMR baseband filter for sample rate [" + sampleRate + "]", e);
         }
 
         if(coefficients == null)
@@ -270,7 +278,7 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     @Override
     public String getProtocolDescription()
     {
-        return "DMR C4FM";
+        return "DMR";
     }
 
     @Override
@@ -285,6 +293,7 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     {
         super.stop();
         mMessageFramer.stop();
+        mSymbolProcessor.dispose();
     }
 
     /**
@@ -296,6 +305,10 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         {
             switch(sourceEvent.getEvent())
             {
+                case NOTIFICATION_FREQUENCY_CHANGE:
+                case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                    mSymbolProcessor.resetBalance();
+                    break;
                 case NOTIFICATION_SAMPLE_RATE_CHANGE:
                     setSampleRate(sourceEvent.getValue().doubleValue());
                     break;
@@ -314,8 +327,8 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         LOGGER.info("Starting ...");
 
         //        String directory = "D:\\DQPSK Equalizer Research\\"; //Windows
-        String directory = "/media/denny/T9/DQPSK Equalizer Research/"; //Linux
-        String file = directory + "DMR_1_CAPPLUS.wav";
+        String directory = "/run/media/denny/T9/DQPSK Equalizer Research/"; //Linux
+//        String file = directory + "DMR_1_CAPPLUS.wav";
 //        String file = directory + "DMR_2_CAPPLUS.wav";
 //        String file = directory + "DMR_3_CAPPLUS.wav";
 //        String file = directory + "20230819_064211_451250000_SaiaNet_Syracuse_Control_29_baseband.wav";
@@ -325,7 +338,7 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
 //        String file = directory + "DMR_6_20241217_031511_451425000_SaiaNet_Onondaga_SaiaNet_Control_50_baseband.wav";
 //        String file = directory + "DMR_7_20241217_031651_451250000_SaiaNet_Onondaga_SaiaNet_Control_50_baseband.wav";
 //        String file = directory + "DMR_8_20241217_031845_461662500_SaiaNet_(Tier_III)_Onondaga_Control_25_baseband.wav";
-//        String file = directory + "DMR_9_CAPPLUS_encrypted_American_Airlines_Maricopa_Control_29_baseband.wav";
+        String file = directory + "DMR_9_CAPPLUS_encrypted_American_Airlines_Maricopa_Control_29_baseband.wav";
 //        String file = directory + "DMR_10_CAP_ENCRYPTED_20241222_035408_935487500_American_Airlines_Maricopa_Control_1_baseband.wav";
 //        String file = directory + "DMR_12_20250420_061639_451250000_SaiaNet_Onondaga_SaiaNet-Control_1_baseband.wav";
 //        String file = directory + "DMR_17_20250516_053150_451425000_SaiaNet_Onondaga_SaiaNet-Control_1_baseband.wav";

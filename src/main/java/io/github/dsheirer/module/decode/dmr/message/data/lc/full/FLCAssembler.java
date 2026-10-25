@@ -33,6 +33,9 @@ import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
 public class FLCAssembler
 {
     private CorrectedBinaryMessage mAssemblingMessage;
+    //Soft bits parallel to the assembling message, or null when any fragment doesn't provide soft bits.
+    private float[] mAssemblingSoftBits;
+    private int mSoftBitsOffset;
     private int mFragmentCount = 0;
     private long mTimestamp;
     private final int mTimeslot;
@@ -54,6 +57,7 @@ public class FLCAssembler
     public void reset()
     {
         mAssemblingMessage = null;
+        mAssemblingSoftBits = null;
         mFragmentCount = 0;
     }
 
@@ -63,6 +67,19 @@ public class FLCAssembler
      */
     public FullLCMessage process(LCSS lcss, BinaryMessage fragment, long timestamp)
     {
+        return process(lcss, fragment, null, timestamp);
+    }
+
+    /**
+     * Processes the full link control fragment
+     * @param lcss link control start/stop for the fragment
+     * @param fragment of 32 bits
+     * @param softFragment soft bits for the fragment where a positive value favors a 1 bit, or null.
+     * @param timestamp of the fragment
+     * @return a full link control message or null if the message is not yet fully assembled
+     */
+    public FullLCMessage process(LCSS lcss, BinaryMessage fragment, float[] softFragment, long timestamp)
+    {
         mTimestamp = timestamp;
 
         FullLCMessage message = null;
@@ -71,24 +88,22 @@ public class FLCAssembler
         {
             case FIRST_FRAGMENT:
                 message = dispatch();
-                mAssemblingMessage = new CorrectedBinaryMessage(128);
-                add(fragment);
+                start(0);
+                add(fragment, softFragment);
                 break;
             case CONTINUATION_FRAGMENT:
                 if(mAssemblingMessage == null)
                 {
-                    mAssemblingMessage = new CorrectedBinaryMessage(128);
-                    mAssemblingMessage.setPointer(32);
+                    start(32);
                 }
-                add(fragment);
+                add(fragment, softFragment);
                 break;
             case LAST_FRAGMENT:
                 if(mAssemblingMessage == null)
                 {
-                    mAssemblingMessage = new CorrectedBinaryMessage(128);
-                    mAssemblingMessage.setPointer(96);
+                    start(96);
                 }
-                add(fragment);
+                add(fragment, softFragment);
                 message = dispatch();
                 break;
             case SINGLE_FRAGMENT:
@@ -103,6 +118,18 @@ public class FLCAssembler
     }
 
     /**
+     * Starts assembling a new message
+     * @param offset for the first fragment
+     */
+    private void start(int offset)
+    {
+        mAssemblingMessage = new CorrectedBinaryMessage(128);
+        mAssemblingMessage.setPointer(offset);
+        mAssemblingSoftBits = new float[128];
+        mSoftBitsOffset = offset;
+    }
+
+    /**
      * Dispatches a fully-received message
      */
     private FullLCMessage dispatch()
@@ -111,10 +138,11 @@ public class FLCAssembler
 
         if(mFragmentCount == 4)
         {
-            message = decode(mAssemblingMessage, mTimestamp, mTimeslot);
+            message = decode(mAssemblingMessage, mAssemblingSoftBits, mTimestamp, mTimeslot);
         }
 
         mAssemblingMessage = null;
+        mAssemblingSoftBits = null;
         mFragmentCount = 0;
         return message;
     }
@@ -122,11 +150,11 @@ public class FLCAssembler
     /**
      * Decodes an assembled FLC message, performs error detection and correction and returns a constructed FLC message
      */
-    private FullLCMessage decode(BinaryMessage message, long timestamp, int timeslot)
+    private FullLCMessage decode(BinaryMessage message, float[] softBits, long timestamp, int timeslot)
     {
         if(message != null)
         {
-            CorrectedBinaryMessage extractedMessage = mBPTC.extract(message);
+            CorrectedBinaryMessage extractedMessage = mBPTC.extract(message, softBits);
             FullLCMessage flco = mMessageFactory.createFull(extractedMessage, timestamp, timeslot, false);
 
             if(extractedMessage.getCorrectedBitCount() < 0)
@@ -141,9 +169,11 @@ public class FLCAssembler
     }
 
     /**
-     * Adds the cach payload to the currently assembling message
+     * Adds the embedded signalling fragment to the currently assembling message
+     * @param payload fragment bits
+     * @param softPayload fragment soft bits, or null
      */
-    private void add(BinaryMessage payload)
+    private void add(BinaryMessage payload, float[] softPayload)
     {
         if(payload == null || payload.size() != 32)
         {
@@ -151,6 +181,17 @@ public class FLCAssembler
         }
 
         mFragmentCount++;
+
+        if(mAssemblingSoftBits != null && softPayload != null && softPayload.length == 32 &&
+                mSoftBitsOffset + 32 <= mAssemblingSoftBits.length)
+        {
+            System.arraycopy(softPayload, 0, mAssemblingSoftBits, mSoftBitsOffset, 32);
+            mSoftBitsOffset += 32;
+        }
+        else
+        {
+            mAssemblingSoftBits = null;
+        }
 
         try
         {

@@ -60,11 +60,11 @@ public class DmrSoftSyncDetectorTest
             for(Dibit dibit: pattern.toDibits())
             {
                 symbol = toSymbol(dibit);
-                scalar.processAndCalculate(symbol);
-                vector64.processAndCalculate(symbol);
-                vector128.processAndCalculate(symbol);
-                vector256.processAndCalculate(symbol);
-                vector512.processAndCalculate(symbol);
+                scalar.process(symbol);
+                vector64.process(symbol);
+                vector128.process(symbol);
+                vector256.process(symbol);
+                vector512.process(symbol);
             }
 
             assertSame(scalar.getDetectedPattern(), pattern, "Scalar Detector Did Not Correctly Detect Pattern: " + pattern);

@@ -15,13 +15,14 @@ public interface ISoftC4FMSyncDetector
     float process(float softSymbol);
 
     /**
-     * Soft symbols that represent the sync pattern
+     * Soft symbols that represent the sync pattern.  For detectors that monitor multiple sync patterns (ie DMR), this
+     * is the sync pattern that produced the score from the most recent call to process().
      * @return soft symbols array
      */
     float[] getPatternSymbols();
 
     /**
-     * Array of dibits for the sync pattern
+     * Array of dibits for the sync pattern (or most recently detected sync pattern for multi-pattern detectors).
      * @return sync pattern dibit array
      */
     Dibit[] getPatternDibits();
@@ -32,7 +33,8 @@ public interface ISoftC4FMSyncDetector
     int getDibitLength();
 
     /**
-     * Provides a reference waveform that represents the sync pattern for sync detection validation
+     * Provides a reference waveform that represents the sync pattern (or most recently detected sync pattern for
+     * multi-pattern detectors) for sync detection validation
      * @param samplesPerSymbol for each symbol
      * @return reference waveform
      */

@@ -180,6 +180,27 @@ public class C4FMEqualizer
     }
 
     /**
+     * Notifies the equalizer that a sync pattern is detected and updates the sync pattern used for training.  This
+     * supports protocols (ie DMR) that employ multiple sync patterns of the same length.
+     * @param syncSymbols for the detected sync pattern, which must be the same length as the constructor sync pattern.
+     */
+    public void syncDetected(float[] syncSymbols)
+    {
+        if(syncSymbols.length != mReversedSyncSymbols.length)
+        {
+            throw new IllegalArgumentException("Sync symbols length [" + syncSymbols.length +
+                    "] must match the equalizer sync pattern length [" + mReversedSyncSymbols.length + "]");
+        }
+
+        for(int x = 0; x < syncSymbols.length; x++)
+        {
+            mReversedSyncSymbols[syncSymbols.length - x - 1] = syncSymbols[x];
+        }
+
+        syncDetected();
+    }
+
+    /**
      * Indicates that the sync patter is lost and the equalizer should reset.
      */
     public void syncLost()

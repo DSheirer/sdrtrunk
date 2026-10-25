@@ -88,6 +88,23 @@ public class DMRDataMessageFactory
     public DataMessage create(DMRSyncPattern pattern, CorrectedBinaryMessage message, CACH cach, long timestamp,
                               int timeslot)
     {
+        return create(pattern, message, null, cach, timestamp, timeslot);
+    }
+
+    /**
+     * Creates a data message class, using soft decision decoding for the BPTC(196,96) payload when the soft bits are
+     * provided.
+     * @param pattern for the DMR burst
+     * @param message DMR burst as transmitted
+     * @param softBits for the DMR burst (one per message bit) where a positive value favors a 1 bit, or null.
+     * @param cach from the DMR burst
+     * @param timestamp for the message
+     * @param timeslot for the message
+     * @return data message instance
+     */
+    public DataMessage create(DMRSyncPattern pattern, CorrectedBinaryMessage message, float[] softBits, CACH cach,
+                              long timestamp, int timeslot)
+    {
         SlotType slotType = SlotType.getSlotType(message);
 
         if(slotType.isValid())
@@ -101,181 +118,225 @@ public class DMRDataMessageFactory
             }
 
             //Get the BPTC(196,96) protected payload.  If the corrected bit count is -1, the payload/message is invalid
-            CorrectedBinaryMessage payload  = getPayload(message);
+            CorrectedBinaryMessage payload  = getPayload(message, softBits);
+            DataMessage dataMessage = createBPTCMessage(pattern, payload, cach, slotType, timestamp, timeslot);
 
-            switch(slotType.getDataType())
+            //The hard decision decoder can converge on an incorrect codeword (miscorrection) when the error count
+            //exceeds its correction capability, which then fails the message integrity (ie CRC) check.  Soft decision
+            //decoding is otherwise only applied when hard decision decoding fails, so retry with soft decision
+            //decoding and use the soft decision message if it passes the integrity check.
+            if(!dataMessage.isValid() && softBits != null && payload.getCorrectedBitCount() >= 0)
             {
-                case SLOT_IDLE:
-                    DataMessage idle = new IDLEMessage(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        idle.setValid(false);
-                    }
-                    return idle;
-                case CSBK:
-                    DataMessage csbk = CSBKMessageFactory.create(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        csbk.setValid(false);
-                    }
-                    return csbk;
-                case USB_DATA:
-                    DataMessage usb = new USBData(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        usb.setValid(false);
-                    }
-                    return usb;
-                case MBC_ENC_HEADER:
-                case MBC_HEADER:
-                    DataMessage mbc = new MBCHeader(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        mbc.setValid(false);
-                    }
-                    return mbc;
-                case CHANNEL_CONTROL_ENC_HEADER:
-                case PI_HEADER:
-                    LCMessage piLinkControl = mLinkControlMessageFactory.createFullEncryption(payload, timestamp,
+                CorrectedBinaryMessage softPayload = BPTC_196_96.extractSoft(extractSoftBits(softBits));
+
+                if(softPayload != null)
+                {
+                    DataMessage softDataMessage = createBPTCMessage(pattern, softPayload, cach, slotType, timestamp,
                             timeslot);
-                    DataMessage pi = new PiHeader(pattern, payload, cach, slotType, timestamp, timeslot, piLinkControl);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        pi.setValid(false);
-                    }
-                    return pi;
-                case VOICE_HEADER:
-                    LCMessage vhLinkControl = mLinkControlMessageFactory.createFull(payload, timestamp, timeslot, false);
-                    DataMessage voice = new VoiceHeader(pattern, payload, cach, slotType, timestamp, timeslot,
-                            vhLinkControl);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        voice.setValid(false);
-                    }
-                    return voice;
-                case DATA_ENC_HEADER:
-                case DATA_HEADER:
-                    int crcBitCount = CRCDMR.correctCCITT80(payload, 0, 80, 0xCCCC);
-                    boolean valid = crcBitCount < 2 && payload.getCorrectedBitCount() != -1;
-                    DataPacketFormat dpf = DataHeader.getDataPacketFormat(payload);
 
-                    switch(dpf)
+                    if(softDataMessage.isValid())
                     {
-                        case CONFIRMED_DATA_PACKET:
-                            ConfirmedDataHeader cdh = new ConfirmedDataHeader(pattern, payload, cach, slotType,
-                                    timestamp, timeslot);
-                            cdh.setValid(valid);
-                            return cdh;
-                        case PROPRIETARY_DATA_PACKET:
-                            Vendor vendor = ProprietaryDataHeader.getVendor(payload);
-
-                            switch(vendor)
-                            {
-                                case MOTOROLA_CAPACITY_PLUS:
-                                case MOTOROLA_CONNECT_PLUS:
-                                    ServiceAccessPoint sap = ProprietaryDataHeader.getServiceAccessPoint(payload);
-
-                                    if(sap == ServiceAccessPoint.SAP_1)
-                                    {
-                                        MNISProprietaryDataHeader mpdh = new MNISProprietaryDataHeader(pattern, payload,
-                                            cach, slotType, timestamp, timeslot);
-                                        mpdh.setValid(valid);
-                                        return mpdh;
-                                    }
-                                    else
-                                    {
-                                        MotorolaDataEncryptionHeader mprdh = new MotorolaDataEncryptionHeader(pattern,
-                                            payload, cach, slotType, timestamp, timeslot);
-                                        mprdh.setValid(valid);
-                                        return mprdh;
-                                    }
-                                case HYTERA_68:
-                                    HyteraDataEncryptionHeader hsdh = new HyteraDataEncryptionHeader(pattern, payload,
-                                            cach, slotType, timestamp, timeslot);
-                                    hsdh.setValid(valid);
-                                    return hsdh;
-                                default:
-                                    ProprietaryDataHeader pdh = new ProprietaryDataHeader(pattern, payload, cach,
-                                        slotType, timestamp, timeslot);
-                                    pdh.setValid(valid);
-                                    return pdh;
-                            }
-                        case RAW_OR_STATUS_SHORT_DATA:
-                            int appendedBlockCount = ShortDataHeader.getAppendedBlocks(payload);
-
-                            if(appendedBlockCount == 0)
-                            {
-                                StatusDataHeader sdh = new StatusDataHeader(pattern, payload, cach, slotType, timestamp,
-                                    timeslot);
-                                sdh.setValid(valid);
-                                return sdh;
-                            }
-                            else
-                            {
-                                RawShortDataHeader rsdh = new RawShortDataHeader(pattern, payload, cach, slotType,
-                                    timestamp, timeslot);
-                                rsdh.setValid(valid);
-                                return rsdh;
-                            }
-                        case RESPONSE_PACKET:
-                            ResponseDataHeader rdh = new ResponseDataHeader(pattern, payload, cach, slotType, timestamp,
-                                timeslot);
-                            rdh.setValid(valid);
-                            return rdh;
-                        case DEFINED_SHORT_DATA:
-                            DefinedShortDataHeader dsdh = new DefinedShortDataHeader(pattern, payload, cach,slotType,
-                                timestamp, timeslot);
-                            dsdh.setValid(valid);
-                            return dsdh;
-                        case UNCONFIRMED_DATA_PACKET:
-                            UnconfirmedDataHeader udh = new UnconfirmedDataHeader(pattern, payload, cach, slotType,
-                                timestamp, timeslot);
-                            udh.setValid(valid);
-                            return udh;
-                        case UNIFIED_DATA_TRANSPORT:
-                            //TODO: this will eventually need its own factory
-                            UDTHeader uh = new UDTHeader(pattern, payload, cach, slotType, timestamp, timeslot);
-                            uh.setValid(valid);
-                            return uh;
-                        default:
-                            DataHeader dh = new DataHeader(pattern, payload, cach, slotType, timestamp, timeslot);
-                            dh.setValid(valid);
-                            return dh;
+                        return softDataMessage;
                     }
-                case TLC:
-                    LCMessage tlcLinkControl = mLinkControlMessageFactory.createFull(payload, timestamp, timeslot, true);
-                    DataMessage tlc = new Terminator(pattern, payload, cach, slotType, timestamp, timeslot, tlcLinkControl);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        tlc.setValid(false);
-                    }
-                    return tlc;
-                case RATE_1_OF_2_DATA:
-                    DataMessage data = new DataBlock1_2Rate(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        data.setValid(false);
-                    }
-                    return data;
-                case MBC_BLOCK:
-                    DataMessage mbcBlock = new MBCContinuationBlock(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        mbcBlock.setValid(false);
-                    }
-                    return mbcBlock;
-                case RESERVED_15:
-                case UNKNOWN:
-                    DataMessage unk = new UnknownDataMessage(pattern, payload, cach, slotType, timestamp, timeslot);
-                    if(payload.getCorrectedBitCount() < 0)
-                    {
-                        unk.setValid(false);
-                    }
-                    return unk;
+                }
             }
+
+            return dataMessage;
         }
 
-        CorrectedBinaryMessage payload = getPayload(message);
+        CorrectedBinaryMessage payload = getPayload(message, softBits);
+        DataMessage unk = new UnknownDataMessage(pattern, payload, cach, slotType, timestamp, timeslot);
+        if(payload.getCorrectedBitCount() < 0)
+        {
+            unk.setValid(false);
+        }
+        return unk;
+    }
+
+    /**
+     * Creates a data message from the BPTC(196,96) protected payload according to the slot type data type.
+     * @param pattern for the DMR burst
+     * @param payload extracted from the BPTC(196,96) protected message
+     * @param cach from the DMR burst
+     * @param slotType for the DMR burst
+     * @param timestamp for the message
+     * @param timeslot for the message
+     * @return data message instance
+     */
+    private DataMessage createBPTCMessage(DMRSyncPattern pattern, CorrectedBinaryMessage payload, CACH cach,
+                                          SlotType slotType, long timestamp, int timeslot)
+    {
+        switch(slotType.getDataType())
+        {
+            case SLOT_IDLE:
+                DataMessage idle = new IDLEMessage(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    idle.setValid(false);
+                }
+                return idle;
+            case CSBK:
+                DataMessage csbk = CSBKMessageFactory.create(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    csbk.setValid(false);
+                }
+                return csbk;
+            case USB_DATA:
+                DataMessage usb = new USBData(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    usb.setValid(false);
+                }
+                return usb;
+            case MBC_ENC_HEADER:
+            case MBC_HEADER:
+                DataMessage mbc = new MBCHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    mbc.setValid(false);
+                }
+                return mbc;
+            case CHANNEL_CONTROL_ENC_HEADER:
+            case PI_HEADER:
+                LCMessage piLinkControl = mLinkControlMessageFactory.createFullEncryption(payload, timestamp,
+                        timeslot);
+                DataMessage pi = new PiHeader(pattern, payload, cach, slotType, timestamp, timeslot, piLinkControl);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    pi.setValid(false);
+                }
+                return pi;
+            case VOICE_HEADER:
+                LCMessage vhLinkControl = mLinkControlMessageFactory.createFull(payload, timestamp, timeslot, false);
+                DataMessage voice = new VoiceHeader(pattern, payload, cach, slotType, timestamp, timeslot,
+                        vhLinkControl);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    voice.setValid(false);
+                }
+                return voice;
+            case DATA_ENC_HEADER:
+            case DATA_HEADER:
+                int crcBitCount = CRCDMR.correctCCITT80(payload, 0, 80, 0xCCCC);
+                boolean valid = crcBitCount < 2 && payload.getCorrectedBitCount() != -1;
+                DataPacketFormat dpf = DataHeader.getDataPacketFormat(payload);
+
+                switch(dpf)
+                {
+                    case CONFIRMED_DATA_PACKET:
+                        ConfirmedDataHeader cdh = new ConfirmedDataHeader(pattern, payload, cach, slotType,
+                                timestamp, timeslot);
+                        cdh.setValid(valid);
+                        return cdh;
+                    case PROPRIETARY_DATA_PACKET:
+                        Vendor vendor = ProprietaryDataHeader.getVendor(payload);
+
+                        switch(vendor)
+                        {
+                            case MOTOROLA_CAPACITY_PLUS:
+                            case MOTOROLA_CONNECT_PLUS:
+                                ServiceAccessPoint sap = ProprietaryDataHeader.getServiceAccessPoint(payload);
+
+                                if(sap == ServiceAccessPoint.SAP_1)
+                                {
+                                    MNISProprietaryDataHeader mpdh = new MNISProprietaryDataHeader(pattern, payload,
+                                        cach, slotType, timestamp, timeslot);
+                                    mpdh.setValid(valid);
+                                    return mpdh;
+                                }
+                                else
+                                {
+                                    MotorolaDataEncryptionHeader mprdh = new MotorolaDataEncryptionHeader(pattern,
+                                        payload, cach, slotType, timestamp, timeslot);
+                                    mprdh.setValid(valid);
+                                    return mprdh;
+                                }
+                            case HYTERA_68:
+                                HyteraDataEncryptionHeader hsdh = new HyteraDataEncryptionHeader(pattern, payload,
+                                        cach, slotType, timestamp, timeslot);
+                                hsdh.setValid(valid);
+                                return hsdh;
+                            default:
+                                ProprietaryDataHeader pdh = new ProprietaryDataHeader(pattern, payload, cach,
+                                    slotType, timestamp, timeslot);
+                                pdh.setValid(valid);
+                                return pdh;
+                        }
+                    case RAW_OR_STATUS_SHORT_DATA:
+                        int appendedBlockCount = ShortDataHeader.getAppendedBlocks(payload);
+
+                        if(appendedBlockCount == 0)
+                        {
+                            StatusDataHeader sdh = new StatusDataHeader(pattern, payload, cach, slotType, timestamp,
+                                timeslot);
+                            sdh.setValid(valid);
+                            return sdh;
+                        }
+                        else
+                        {
+                            RawShortDataHeader rsdh = new RawShortDataHeader(pattern, payload, cach, slotType,
+                                timestamp, timeslot);
+                            rsdh.setValid(valid);
+                            return rsdh;
+                        }
+                    case RESPONSE_PACKET:
+                        ResponseDataHeader rdh = new ResponseDataHeader(pattern, payload, cach, slotType, timestamp,
+                            timeslot);
+                        rdh.setValid(valid);
+                        return rdh;
+                    case DEFINED_SHORT_DATA:
+                        DefinedShortDataHeader dsdh = new DefinedShortDataHeader(pattern, payload, cach,slotType,
+                            timestamp, timeslot);
+                        dsdh.setValid(valid);
+                        return dsdh;
+                    case UNCONFIRMED_DATA_PACKET:
+                        UnconfirmedDataHeader udh = new UnconfirmedDataHeader(pattern, payload, cach, slotType,
+                            timestamp, timeslot);
+                        udh.setValid(valid);
+                        return udh;
+                    case UNIFIED_DATA_TRANSPORT:
+                        //TODO: this will eventually need its own factory
+                        UDTHeader uh = new UDTHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                        uh.setValid(valid);
+                        return uh;
+                    default:
+                        DataHeader dh = new DataHeader(pattern, payload, cach, slotType, timestamp, timeslot);
+                        dh.setValid(valid);
+                        return dh;
+                }
+            case TLC:
+                LCMessage tlcLinkControl = mLinkControlMessageFactory.createFull(payload, timestamp, timeslot, true);
+                DataMessage tlc = new Terminator(pattern, payload, cach, slotType, timestamp, timeslot, tlcLinkControl);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    tlc.setValid(false);
+                }
+                return tlc;
+            case RATE_1_OF_2_DATA:
+                DataMessage data = new DataBlock1_2Rate(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    data.setValid(false);
+                }
+                return data;
+            case MBC_BLOCK:
+                DataMessage mbcBlock = new MBCContinuationBlock(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    mbcBlock.setValid(false);
+                }
+                return mbcBlock;
+            case RESERVED_15:
+            case UNKNOWN:
+                DataMessage unk = new UnknownDataMessage(pattern, payload, cach, slotType, timestamp, timeslot);
+                if(payload.getCorrectedBitCount() < 0)
+                {
+                    unk.setValid(false);
+                }
+                return unk;
+        }
+
         DataMessage unk = new UnknownDataMessage(pattern, payload, cach, slotType, timestamp, timeslot);
         if(payload.getCorrectedBitCount() < 0)
         {
@@ -299,11 +360,30 @@ public class DMRDataMessageFactory
      * De-scramble, decode and error check a BPTC protected raw message and return a 96-bit error corrected
      * payload or null.
      * @param message containing a payload
+     * @param softBits for the message, or null
      */
-    private static CorrectedBinaryMessage getPayload(CorrectedBinaryMessage message)
+    private static CorrectedBinaryMessage getPayload(CorrectedBinaryMessage message, float[] softBits)
     {
         CorrectedBinaryMessage extracted = extract(message);
-        return BPTC_196_96.extract(extracted);
+        return BPTC_196_96.extract(extracted, extractSoftBits(softBits));
+    }
+
+    /**
+     * Extracts the 196 soft bits of the message payload from the full DMR burst soft bits
+     * @param softBits for the DMR burst, or null
+     * @return extracted soft bits or null
+     */
+    private static float[] extractSoftBits(float[] softBits)
+    {
+        if(softBits == null)
+        {
+            return null;
+        }
+
+        float[] extracted = new float[196];
+        System.arraycopy(softBits, 24, extracted, 0, 98);
+        System.arraycopy(softBits, 190, extracted, 98, 98);
+        return extracted;
     }
 
     /**
