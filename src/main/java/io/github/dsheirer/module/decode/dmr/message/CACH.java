@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,6 +60,7 @@ public class CACH
 
     private CorrectedBinaryMessage mMessage;
     private boolean mValid;
+    private float[] mPayloadSoftBits;
 
     /**
      * Constructs an instance.  Note: constructor is private.  Use the getCACH() method to extract a CACH from a
@@ -170,6 +172,42 @@ public class CACH
     public BinaryMessage getPayload()
     {
         return mMessage.getSubMessage(PAYLOAD_START, PAYLOAD_END);
+    }
+
+    /**
+     * Soft bits for the 17-bit payload message fragment.
+     * @return soft bits where a positive value favors a 1 bit, or null if soft bits are not available.
+     */
+    public float[] getPayloadSoftBits()
+    {
+        return mPayloadSoftBits;
+    }
+
+    /**
+     * Utility method to create a CACH from a raw transmitted DMR burst frame.  Performs deinterleaving and error
+     * correction and retains the deinterleaved payload soft bits when the burst soft bits are provided.
+     *
+     * @param message containing the raw transmitted DMR burst
+     * @param softBits for the DMR burst (one per message bit) where a positive value favors a 1 bit, or null.
+     * @return constructed CACH message.
+     */
+    public static CACH getCACH(CorrectedBinaryMessage message, float[] softBits)
+    {
+        CACH cach = getCACH(message);
+
+        if(softBits != null && softBits.length >= CACH_MESSAGE_LENGTH)
+        {
+            float[] decodedSoftBits = new float[CACH_MESSAGE_LENGTH];
+
+            for(int x = 0; x < CACH_MESSAGE_LENGTH; x++)
+            {
+                decodedSoftBits[x] = softBits[INTERLEAVE_MATRIX[x]];
+            }
+
+            cach.mPayloadSoftBits = Arrays.copyOfRange(decodedSoftBits, PAYLOAD_START, PAYLOAD_END);
+        }
+
+        return cach;
     }
 
     /**

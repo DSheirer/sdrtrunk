@@ -22,6 +22,8 @@ package io.github.dsheirer.module.decode.dmr.bptc;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Hamming16;
+import io.github.dsheirer.edac.soft.SoftBlockCode;
+import io.github.dsheirer.edac.soft.SoftProductCodeDecoder;
 
 /**
  * Block product turbo code (BPTC) for decoding Full Link Control messages reassembled from the 32-bit payload fragments
@@ -29,6 +31,41 @@ import io.github.dsheirer.edac.Hamming16;
  */
 public class BPTC_128_77 extends BPTCBase
 {
+    private static final int LENGTH = 128;
+    private static final int ROW_COUNT = 8;
+    private static final int COLUMN_COUNT = 16;
+    //Maximum correction cost (sum of the normalized channel soft bit magnitudes for the corrected bits) for a soft
+    //decision result.  The embedded link control is only protected by a 5-bit checksum, so soft decisions that
+    //require correcting high reliability bits are rejected to avoid false decodes.  Noise injection testing: all
+    //soft decisions with a cost up to 3.0 were correct, whereas most of those with a higher cost were false decodes.
+    private static final float SOFT_MAX_CORRECTION_COST = 3.0f;
+    //Maximum corrected bit count for a hard decision result.  Hard decisions that correct more bits are treated as
+    //uncorrectable to avoid false decodes, given the weak 5-bit checksum.  Noise injection testing: all hard
+    //decisions with more than 6 corrected bits were false decodes.
+    private static final int HARD_MAX_CORRECTED_BITS = 6;
+    //Soft decision decoder for the Hamming(16,11,4) rows and even parity columns
+    private static final SoftProductCodeDecoder SOFT_DECODER = new SoftProductCodeDecoder(
+            SoftBlockCode.fromCodewordTest(COLUMN_COUNT, word -> Hamming16.getSyndrome(toMessage(word), 0) == 0),
+            ROW_COUNT, SOFT_MAX_CORRECTION_COST);
+
+    /**
+     * Creates a binary message from the word where bit i of the word is message bit i.
+     */
+    private static BinaryMessage toMessage(int word)
+    {
+        BinaryMessage message = new BinaryMessage(COLUMN_COUNT);
+
+        for(int i = 0; i < COLUMN_COUNT; i++)
+        {
+            if((word & (1 << i)) != 0)
+            {
+                message.set(i);
+            }
+        }
+
+        return message;
+    }
+
     public BPTC_128_77()
     {
         super(new Hamming16(), 16, 8);
@@ -50,8 +87,36 @@ public class BPTC_128_77 extends BPTCBase
      */
     public CorrectedBinaryMessage extract(BinaryMessage message)
     {
+        return extract(message, null);
+    }
+
+    /**
+     * Performs error detection and correction and extracts the payload from the BPTC encoded message.  Hard decision
+     * results that exceed the maximum corrected bit count are treated as uncorrectable.  When the hard decision
+     * decoder can't correct the message and soft bits are provided, applies iterative soft decision decoding.
+     * @param message with BPTC encoding.
+     * @param softBits for the 128 (interleaved) bits of the message where a positive value favors a 1 bit, or null.
+     * @return decoded message.
+     */
+    public CorrectedBinaryMessage extract(BinaryMessage message, float[] softBits)
+    {
         CorrectedBinaryMessage deinterleaved = deinterleave(message);
         correct(deinterleaved);
+
+        if(deinterleaved.getCorrectedBitCount() > HARD_MAX_CORRECTED_BITS)
+        {
+            deinterleaved.setCorrectedBitCount(ERRORS_NOT_CORRECTED);
+        }
+
+        if(softBits != null && softBits.length == LENGTH && deinterleaved.getCorrectedBitCount() < 0)
+        {
+            CorrectedBinaryMessage softDecoded = decodeSoft(deinterleave(softBits));
+
+            if(softDecoded != null)
+            {
+                deinterleaved = softDecoded;
+            }
+        }
 
         CorrectedBinaryMessage extractedMessage = new CorrectedBinaryMessage(77);
         int pointer = 0;
@@ -78,6 +143,38 @@ public class BPTC_128_77 extends BPTCBase
 
         extractedMessage.setCorrectedBitCount(deinterleaved.getCorrectedBitCount());
         return extractedMessage;
+    }
+
+    /**
+     * Deinterleaves the transmitted soft bits.
+     * @param interleaved soft bits
+     * @return deinterleaved soft bits.
+     */
+    public static float[] deinterleave(float[] interleaved)
+    {
+        float[] deinterleaved = new float[LENGTH];
+        deinterleaved[127] = interleaved[127];
+
+        for(int i = 0; i < 127; i++)
+        {
+            deinterleaved[i] = interleaved[(i * 8) % 127];
+        }
+
+        return deinterleaved;
+    }
+
+    /**
+     * Iterative soft decision decoding of the de-interleaved BPTC(128,77) soft bits.  Alternately decodes the
+     * Hamming(16,11,4) rows using Chase-Pyndiah decoding and the even parity columns using min-sum decoding,
+     * exchanging extrinsic soft information, until the decisions form a valid product codeword.  Rejects decisions
+     * where the correction cost exceeds the maximum.
+     * @param channel de-interleaved soft bits where a positive value favors a 1 bit.
+     * @return decoded message with the corrected bit count set, or null if decoding doesn't converge or the correction
+     * cost exceeds the maximum.
+     */
+    public CorrectedBinaryMessage decodeSoft(float[] channel)
+    {
+        return SOFT_DECODER.decode(channel);
     }
 
     /**

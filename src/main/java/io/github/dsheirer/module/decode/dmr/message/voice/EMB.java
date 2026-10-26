@@ -56,6 +56,8 @@ public class EMB
     private static final int[] COLOR_CODE = new int[]{0, 1, 2, 3};
     private static final int ENCRYPTION_PI = 4;
     private static final int[] LINK_CONTROL_START_STOP = new int[]{5, 6};
+    //Maximum bit errors between the hard decision and the soft decision (maximum likelihood) word for validity.
+    private static final int SOFT_DECISION_MAX_BIT_ERRORS = 2;
 
     private CorrectedBinaryMessage mMessage;
     private boolean mValid = true;
@@ -69,6 +71,68 @@ public class EMB
     {
         mMessage = message;
         checkCRC();
+    }
+
+    /**
+     * Constructs an instance using maximum likelihood soft decision decoding when the soft bits are provided.
+     *
+     * @param message with transmitted bits
+     * @param softBits for the 16 transmitted bits where a positive value favors a 1 bit, or null.
+     */
+    public EMB(CorrectedBinaryMessage message, float[] softBits)
+    {
+        mMessage = message;
+
+        if(softBits != null && softBits.length == WORD.length)
+        {
+            decodeSoft(softBits);
+        }
+        else
+        {
+            checkCRC();
+        }
+    }
+
+    /**
+     * Maximum likelihood soft decision decoding against all valid words.  Selects the valid word with the lowest sum
+     * of soft bit magnitudes for the bit positions where the valid word differs from the hard decision.
+     * @param softBits for the 16 transmitted bits.
+     */
+    private void decodeSoft(float[] softBits)
+    {
+        int word = getMessage().getInt(WORD);
+        int best = word;
+        float bestMetric = Float.MAX_VALUE;
+
+        for(int validWord: VALID_WORDS)
+        {
+            int difference = word ^ validWord;
+            float metric = 0.0f;
+
+            while(difference != 0)
+            {
+                int bit = Integer.numberOfTrailingZeros(difference);
+                //Word bit 15 is message bit 0
+                metric += Math.abs(softBits[15 - bit]);
+                difference &= difference - 1;
+            }
+
+            if(metric < bestMetric)
+            {
+                bestMetric = metric;
+                best = validWord;
+            }
+        }
+
+        int bitErrors = Integer.bitCount(word ^ best);
+
+        if(bitErrors > 0)
+        {
+            getMessage().setInt(best, WORD);
+            getMessage().setCorrectedBitCount(bitErrors);
+        }
+
+        mValid = bitErrors <= SOFT_DECISION_MAX_BIT_ERRORS;
     }
 
     /**

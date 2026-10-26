@@ -187,20 +187,21 @@ public class DMRMessageProcessor implements Listener<IMessage>
             if(message.getTimeslot() == 1)
             {
                 FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
-                    voice.getFLCFragment(), message.getTimestamp());
+                    voice.getFLCFragment(), voice.getFLCFragmentSoftBits(), message.getTimestamp());
                 receive(flco);
             }
             else
             {
                 FullLCMessage flco = mFLCAssemblerTimeslot2.process(voice.getEMB().getLCSS(),
-                    voice.getFLCFragment(), message.getTimestamp());
+                    voice.getFLCFragment(), voice.getFLCFragmentSoftBits(), message.getTimestamp());
                 receive(flco);
             }
 
             if(voice.hasCACH())
             {
                 CACH cach = voice.getCACH();
-                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
+                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(),
+                    cach.getPayloadSoftBits(), message.getTimestamp());
                 receive(slco);
             }
         }
@@ -210,7 +211,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
             if(dmrBurst.hasCACH())
             {
                 CACH cach = dmrBurst.getCACH();
-                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
+                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(),
+                    cach.getPayloadSoftBits(), message.getTimestamp());
                 receive(slco);
             }
 
