@@ -47,7 +47,20 @@ public class UnconfirmedDataBlock extends DataBlock
      */
     public UnconfirmedDataBlock(float[] deinterleavedSoftSymbols)
     {
-        mDecodedMessage = VITERBI_HALF_RATE_DECODER.decodeSoft(deinterleavedSoftSymbols);
+        this(deinterleavedSoftSymbols, null, false);
+    }
+
+    /**
+     * Constructs an unconfirmed data block using soft decision Viterbi decoding.
+     * @param deinterleavedSoftSymbols 98 deinterleaved soft symbols for the 196-bit data block.
+     * @param deinterleavedReliabilities for each deinterleaved soft symbol to weight the soft decision decoding, or null.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie P25 LSM).
+     */
+    public UnconfirmedDataBlock(float[] deinterleavedSoftSymbols, float[] deinterleavedReliabilities,
+                                boolean phaseWrapped)
+    {
+        mDecodedMessage = VITERBI_HALF_RATE_DECODER.decodeSoft(deinterleavedSoftSymbols, deinterleavedReliabilities,
+                phaseWrapped);
     }
 
     /**

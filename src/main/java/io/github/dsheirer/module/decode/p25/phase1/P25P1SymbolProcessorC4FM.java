@@ -2,7 +2,6 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.c4fm.C4FMSymbolProcessor;
-import io.github.dsheirer.dsp.filter.interpolator.LinearInterpolator;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SoftSyncDetectorFactory;
@@ -205,7 +204,7 @@ public class P25P1SymbolProcessorC4FM extends C4FMSymbolProcessor
         }
 
         //If we didn't find an optimal correlation score above the threshold, return a false sync.
-        if(scoreCenter < SYNC_THRESHOLD_OPTIMIZED)
+        if(scoreCenter < getSyncThresholdOptimized())
         {
             return INVALID_SYNC_DETECTION;
         }
@@ -265,8 +264,8 @@ public class P25P1SymbolProcessorC4FM extends C4FMSymbolProcessor
             if(resampleStartIntegral >= 0)
             {
                 symbol = patternSymbols[x];
-                resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
-                        mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+                resampledSoftSymbol = interpolate(mBuffer[resampleStartIntegral], mBuffer[resampleStartIntegral + 1],
+                        resampleStart - resampleStartIntegral);
                 resampledSoftSymbol = resampledSoftSymbol * mSampleEqualizer.gain() + mSampleEqualizer.balance();
                 resampledDibit = Dibit.fromSample(resampledSoftSymbol);
                 bitErrorCount += patternDibits[x].getBitErrorFrom(resampledDibit);
@@ -299,10 +298,11 @@ public class P25P1SymbolProcessorC4FM extends C4FMSymbolProcessor
         gainAccumulator = getGainAdjustment(mSyncDetector.getDibitLength() * Dibit.D01_PLUS_3.getIdealPhase(),
                 gainAccumulator);
 
-        //Recalculate the optimization score using the adjusted equalizer settings
+        //Recalculate the optimization score using the adjusted equalizer settings, at the same (detector and timing
+        //adjusted) offset where the sync symbols were resampled.
         if(!mSynchronized)
         {
-            optimizationScore = score(offset + timingCorrection, mSamplesPerSymbol,
+            optimizationScore = score(offset + additionalOffset + timingCorrection, mSamplesPerSymbol,
                     mSampleEqualizer.balance() + balanceCorrection, mSampleEqualizer.gain() + gainAccumulator);
         }
 

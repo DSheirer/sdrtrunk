@@ -75,10 +75,17 @@ public abstract class C4FMSymbolProcessor
     private static final double IDEAL_OUTER_SYMBOL_PHASE = 3.0 * Math.PI / 4.0;
     //Allowable gain deviation from the nominal gain, as a fraction of the nominal gain.
     private static final double SAMPLE_GAIN_TOLERANCE = 0.1;
+    //Reliability delay line length, which must exceed the symbol equalizer delay.
+    private static final int RELIABILITY_DELAY_LINE_LENGTH = 32;
     private double mNoiseStandardDeviationThreshold;
     private double mSamplePoint;
     protected double mSamplesPerSymbol;
     protected float[] mBuffer;
+    //Optional soft symbol reliabilities for each sample, parallel to the sample buffer (see process(float[], float[]))
+    private float[] mReliabilityBuffer;
+    //Delays the sampled reliabilities to align with the soft symbols emerging from the symbol equalizer delay line
+    private final float[] mReliabilityDelayLine = new float[RELIABILITY_DELAY_LINE_LENGTH];
+    private int mReliabilityDelayLinePointer = 0;
     private float mLaggingSyncOffset;
     protected float mOptimizeFineIncrement;
     private int mBufferPointer;
@@ -217,6 +224,16 @@ public abstract class C4FMSymbolProcessor
     public abstract float getSyncThresholdEqualized();
 
     /**
+     * Minimum correlation against the reference sync waveform, as a fraction of the ideal correlation score, for the
+     * first two sync detections following a sync loss (see validateSyncWaveform()).  Default is 85%.
+     * @return validation threshold as a fraction of the ideal correlation score.
+     */
+    public double getSyncWaveformValidationThreshold()
+    {
+        return 0.85;
+    }
+
+    /**
      * Notification that a sync detection was validated and the correction applied.  Subclasses can override this to
      * capture protocol specific details (ie the detected sync pattern) from the sync detector that triggered the
      * detection.  The message framer is notified of the sync detection once the final sync symbol emerges from the
@@ -270,12 +287,30 @@ public abstract class C4FMSymbolProcessor
      */
     public void process(float[] samples)
     {
+        process(samples, null);
+    }
+
+    /**
+     * Primary input method for receiving a stream of demodulated samples, with an optional parallel stream of soft
+     * symbol reliabilities (ie inverse of the soft symbol noise variance) for each sample, to process into symbols.
+     * When provided, each soft symbol's reliability is sampled at the symbol sampling instant and is provided to the
+     * message framer with the soft symbol to weight soft decision decoding.
+     * @param samples to process
+     * @param reliabilities for each sample, or null.
+     */
+    public void process(float[] samples, float[] reliabilities)
+    {
         //Establish buffer size based on incoming sample array length which should be consistent across decoder lifecycle
         if(mBuffer == null)
         {
             mBuffer = new float[mSyncWorkspaceLength + samples.length];
             mBufferReloadThreshold = mBuffer.length - mBufferReloadLength;
             mBufferPointer = mBufferReloadThreshold;
+        }
+
+        if(reliabilities != null && mReliabilityBuffer == null)
+        {
+            mReliabilityBuffer = new float[mBuffer.length];
         }
 
         //Create shadow copy of heap variables on stack
@@ -319,6 +354,22 @@ public abstract class C4FMSymbolProcessor
                 int copyLength = samples.length;
                 System.arraycopy(mBuffer, copyLength, mBuffer, 0, mBuffer.length - copyLength);
                 System.arraycopy(samples, samplesPointer, mBuffer, mBuffer.length - copyLength, copyLength);
+
+                if(mReliabilityBuffer != null)
+                {
+                    System.arraycopy(mReliabilityBuffer, copyLength, mReliabilityBuffer, 0, mBuffer.length - copyLength);
+
+                    if(reliabilities != null && reliabilities.length == samples.length)
+                    {
+                        System.arraycopy(reliabilities, samplesPointer, mReliabilityBuffer, mBuffer.length - copyLength,
+                                copyLength);
+                    }
+                    else
+                    {
+                        Arrays.fill(mReliabilityBuffer, mBuffer.length - copyLength, mBuffer.length, Float.NaN);
+                    }
+                }
+
                 samplesPointer += copyLength;
                 bufferPointer -= copyLength;
             }
@@ -351,6 +402,13 @@ public abstract class C4FMSymbolProcessor
 
                     softSymbol = mSampleEqualizer.getEqualizedSymbol(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], samplePoint);
                     float timingSymbol = softSymbol;
+
+                    if(mReliabilityBuffer != null)
+                    {
+                        mReliabilityDelayLinePointer = (mReliabilityDelayLinePointer + 1) % RELIABILITY_DELAY_LINE_LENGTH;
+                        mReliabilityDelayLine[mReliabilityDelayLinePointer] = (float)(mReliabilityBuffer[bufferPointer] +
+                                (mReliabilityBuffer[bufferPointer + 1] - mReliabilityBuffer[bufferPointer]) * samplePoint);
+                    }
 
                     //Process dynamic updates to the PLL when supported by the decoder
                     softSymbol = mSampleEqualizer.correct(softSymbol);
@@ -413,7 +471,21 @@ public abstract class C4FMSymbolProcessor
                     // 2 consecutive sync detections, send the current sample equalizer's balance value as a pseudo-PLL
                     // error measurement so the tuner can self adjust to correct PPM.  The balance is applied in the
                     // equalized symbol domain, so divide by gain to convert to radians per sample for the decoder.
-                    if(mMessageFramer.process(symbol, softSymbol) && mConsecutiveSyncPeriods > 1)
+                    boolean validMessage;
+
+                    if(mReliabilityBuffer != null)
+                    {
+                        int delay = Math.min(mSymbolEqualizer.getDelaySymbolCount(), RELIABILITY_DELAY_LINE_LENGTH - 1);
+                        float reliability = mReliabilityDelayLine[(mReliabilityDelayLinePointer - delay +
+                                RELIABILITY_DELAY_LINE_LENGTH) % RELIABILITY_DELAY_LINE_LENGTH];
+                        validMessage = mMessageFramer.process(symbol, softSymbol, reliability);
+                    }
+                    else
+                    {
+                        validMessage = mMessageFramer.process(symbol, softSymbol);
+                    }
+
+                    if(validMessage && mConsecutiveSyncPeriods > 1)
                     {
                         mFeedbackDecoder.processPLLError(mSampleEqualizer.balanceOptimized() / mSampleEqualizer.gain());
                     }
@@ -542,14 +614,14 @@ public abstract class C4FMSymbolProcessor
         for(int x = referenceSyncWaveform.samples().length - 1; x >= 0; x--)
         {
             index = integral + x;
-            float sample = LinearInterpolator.calculate(mBuffer[index], mBuffer[index + 1], mu);
+            float sample = interpolate(mBuffer[index], mBuffer[index + 1], mu);
             sample *= gain;
             sample += balance;
             sample = Math.clamp(sample, -referenceSyncWaveform.maxSample(), referenceSyncWaveform.maxSample());
             accumulator += referenceSyncWaveform.samples()[x] * sample;
         }
 
-        double threshold = referenceSyncWaveform.idealCorrelationScore() * 0.85; //85% of the ideal correlation score
+        double threshold = referenceSyncWaveform.idealCorrelationScore() * getSyncWaveformValidationThreshold();
 
         //Return the correction as valid if the correlation score exceeds the threshold, otherwise return the static
         // invalid sync detection to nullify the correction.
@@ -1145,7 +1217,7 @@ public abstract class C4FMSymbolProcessor
         }
 
         /**
-         * Equalizes both samples with optional phase wrap detection and returns the interpolated value at the mu offset.
+         * Interpolates between the samples at the mu offset and equalizes the interpolated value.
          *
          * @param sample1 of the sample stream
          * @param sample2 of the sample stream
@@ -1154,10 +1226,7 @@ public abstract class C4FMSymbolProcessor
          */
         public float getEqualizedSymbol(float sample1, float sample2, double mu)
         {
-            sample1 = equalize(sample1);
-            sample2 = equalize(sample2);
-            //Calculate interpolated sample and pass through the dynamic balance correction method.
-            return LinearInterpolator.calculate(sample1, sample2, mu);
+            return equalize(interpolate(sample1, sample2, mu));
         }
 
         /**
@@ -1177,6 +1246,21 @@ public abstract class C4FMSymbolProcessor
             return 0;
         }
 
+    }
+
+    /**
+     * Interpolates the (unequalized) sample value between two consecutive samples of the demodulated sample stream.
+     * Default implementation is linear interpolation.  Protocols with a phase wrapped sample stream (ie P25 LSM) can
+     * override this to interpolate across the phase wrap.
+     *
+     * @param sample1 of the sample stream
+     * @param sample2 of the sample stream
+     * @param mu interpolation point between sample 1 and sample 2, in the range 0.0 to 1.0
+     * @return interpolated sample
+     */
+    protected float interpolate(float sample1, float sample2, double mu)
+    {
+        return LinearInterpolator.calculate(sample1, sample2, mu);
     }
 
     /**
@@ -1209,16 +1293,13 @@ public abstract class C4FMSymbolProcessor
         double fractional = pointer - bufferPointer;
 
         float score = 0;
-        float sample1, sample2;
         float idealSymbol;
 
         for(int x = 0; x < patternSymbols.length; x++)
         {
             if(bufferPointer < maxPointer)
             {
-                sample1 = mBuffer[bufferPointer] * gain + balance;
-                sample2 = mBuffer[bufferPointer + 1] * gain + balance;
-                softSymbol = LinearInterpolator.calculate(sample1, sample2, fractional);
+                softSymbol = interpolate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional) * gain + balance;
             }
             else
             {
@@ -1309,8 +1390,8 @@ public abstract class C4FMSymbolProcessor
             if(resampleStartIntegral >= 0)
             {
                 symbol = patternSymbols[x];
-                resampledSoftSymbol = LinearInterpolator.calculate(mBuffer[resampleStartIntegral],
-                        mBuffer[resampleStartIntegral + 1], resampleStart - resampleStartIntegral);
+                resampledSoftSymbol = interpolate(mBuffer[resampleStartIntegral], mBuffer[resampleStartIntegral + 1],
+                        resampleStart - resampleStartIntegral);
                 resampledSoftSymbol = resampledSoftSymbol * mSampleEqualizer.mGain + measuredBalance;
                 resampledDibit = Dibit.fromSample(resampledSoftSymbol);
                 bitErrorCount += patternDibits[x].getBitErrorFrom(resampledDibit);

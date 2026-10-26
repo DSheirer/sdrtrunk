@@ -23,9 +23,9 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
+import io.github.dsheirer.dsp.fm.FMDiscriminatorReliability;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
 import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.message.IMessage;
@@ -48,8 +48,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * As a child of the FeedbackDecoder, this decoder provides periodic PLL measurements to the tuner for automatic PPM
  * correction.  It also provides a stream of demodulated soft symbols (in radians) for display to the user.
+ *
+ * Soft decision decoding is weighted by each soft symbol's reliability (see FMDiscriminatorReliability), calculated
+ * from the power of the complex samples spanned by the receive filter.
  */
 public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProvider, IComplexSamplesListener,
         ISourceEventListener, Listener<ComplexSamples>
@@ -69,11 +70,14 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderC4FM.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final int SYMBOL_RATE = 4800;
+    //TIA-102.BAAA C4FM transmit raised cosine filter roll-off
+    private static final double RECEIVE_FILTER_ALPHA = 0.2;
     //Band limited integrate and dump receive filter settings.  Noise injection testing against P25 C4FM recordings:
     //stopband starts of 3300 - 4000 Hz perform similarly, a 5-symbol span is too short, and 12 symbols adds nothing.
     private static final double RECEIVE_FILTER_STOP_BAND_START = 3600.0; //Hertz
     private static final int RECEIVE_FILTER_SYMBOL_SPAN = 8;
-    private static final Map<Double,float[]> BASEBAND_FILTERS = new ConcurrentHashMap<>();
+    private static final double BASEBAND_FILTER_PASS_BAND = 5200.0; //Hertz
+    private static final double BASEBAND_FILTER_STOP_BAND = 6500.0; //Hertz
 
     private final P25P1SymbolProcessorC4FM mSymbolProcessor;
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
@@ -84,6 +88,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
     private IRealFilter mReceiveFilter;
+    private FMDiscriminatorReliability mReliability;
 
     @Override
     public DecoderType getDecoderType()
@@ -135,12 +140,15 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
 
         //Receive filter: integrate and dump (sinc) response across the signal band with a stopband above the signal band
         //to reject FM discriminator noise that an integrate and dump filter's sidelobes would otherwise pass.
-        float[] receiveFilterTaps = P25P1FilterDesigner.designReceiveFilter(decimatedSampleRate, SYMBOL_RATE,
-                RECEIVE_FILTER_STOP_BAND_START, RECEIVE_FILTER_SYMBOL_SPAN);
+        float[] receiveFilterTaps = FilterFactory.getBandLimitedIntegrateAndDump(decimatedSampleRate, SYMBOL_RATE,
+                RECEIVE_FILTER_ALPHA, RECEIVE_FILTER_STOP_BAND_START, RECEIVE_FILTER_SYMBOL_SPAN);
         mReceiveFilter = new RealFIRFilter(receiveFilterTaps);
+        mReliability = new FMDiscriminatorReliability(receiveFilterTaps);
 
-        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
+        float[] basebandTaps = FilterFactory.getRemezLowPass(decimatedSampleRate, BASEBAND_FILTER_PASS_BAND,
+                BASEBAND_FILTER_STOP_BAND);
+        mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
+        mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
 
         mDemodulator = FmDemodulatorFactory.getFmDemodulator();
         mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
@@ -149,6 +157,24 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         mMessageFramer.setListener(mMessageProcessor);
 
         mMessageProcessor.setMessageListener(getMessageListener());
+    }
+
+    /**
+     * Converts the soft symbol reliabilities to soft decision decoding weights.  Noise injection testing against a P25
+     * C4FM control channel recording found that the square root of the reliability produced 1.6% more valid messages
+     * at 9 dB carrier to noise (in-band) than the reliability, and 6.3% more than unweighted decoding.  The P25 LSM
+     * decoder uses the reliability, which tested 5% better than the square root against LSM recordings.
+     * @param reliabilities to convert (modified in place)
+     * @return weights
+     */
+    private static float[] getWeights(float[] reliabilities)
+    {
+        for(int x = 0; x < reliabilities.length; x++)
+        {
+            reliabilities[x] = (float)Math.sqrt(reliabilities[x]);
+        }
+
+        return reliabilities;
     }
 
     /**
@@ -170,53 +196,9 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         float[] demodulated = mDemodulator.demodulate(i, q);
         demodulated = mReceiveFilter.filter(demodulated);
 
-        //Process demodulated samples into symbols and apply message sync detection and framing.
-        mSymbolProcessor.process(demodulated);
-    }
-
-    /**
-     * Constructs a baseband filter for this decoder using the current sample rate
-     */
-    private float[] getBasebandFilter(double sampleRate)
-    {
-        //Filter cache is shared across decoder instances that may be started from different threads
-        float[] cached = BASEBAND_FILTERS.get(sampleRate);
-
-        if(cached != null)
-        {
-            return cached;
-        }
-
-        FIRFilterSpecification specification = FIRFilterSpecification
-                .lowPassBuilder()
-                .sampleRate(sampleRate)
-                .passBandCutoff(5200)
-                .passBandAmplitude(1.0).passBandRipple(0.01) //.01
-                .stopBandAmplitude(0.0).stopBandStart(6500) //6500
-                .stopBandRipple(0.01).build();
-
-        float[] coefficients = null;
-
-        try
-        {
-            coefficients = FilterFactory.getTaps(specification);
-
-            if(coefficients != null)
-            {
-                BASEBAND_FILTERS.put(sampleRate, coefficients);
-            }
-        }
-        catch(Exception e) //FilterDesignException or runtime failures from the Remez designer
-        {
-            LOGGER.error("Error designing P25 Phase 1 C4FM baseband filter for sample rate [" + sampleRate + "]", e);
-        }
-
-        if(coefficients == null)
-        {
-            throw new IllegalStateException("Unable to design low pass filter for sample rate [" + sampleRate + "]");
-        }
-
-        return coefficients;
+        //Process demodulated samples into symbols and apply message sync detection and framing.  The soft symbol
+        //reliabilities weight the soft decision decoding.
+        mSymbolProcessor.process(demodulated, getWeights(mReliability.calculate(i, q)));
     }
 
     /**
@@ -275,8 +257,13 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         switch(sourceEvent.getEvent())
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                 mSymbolProcessor.resetBalance();
+                break;
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                //Tuner PPM changes are small (auto-PPM steps are <= 10 Hz) and the symbol processor balance tracks the
+                //change.  Resetting drops the symbol processor synchronization, and the symbol timing tracking with it,
+                //until the next sync detection, which costs messages on channels with long sync intervals (ie P25
+                //voice).
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());

@@ -82,7 +82,6 @@ public class FilterViewer extends Application
         }
 
         //        float[] taps = FilterFactory.getHighPass(8000, 3000, filterLength, windowType);
-//        float[] taps = FilterFactory.getRootRaisedCosine(50000.0 / 4800.0, 20, 0.2f);
 
 //        taps = HilbertTransform.HALF_BAND_FILTER_47_TAP;
 

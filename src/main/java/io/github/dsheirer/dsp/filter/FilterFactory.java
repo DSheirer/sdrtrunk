@@ -57,8 +57,11 @@ import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
 import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -72,6 +75,7 @@ public class FilterFactory
     private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
     private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5, 0.0)
     private static final double MARGIN_OF_ERROR = 0.0003;
+    private static final Map<LowPassSpecification,float[]> REMEZ_LOW_PASS_FILTERS = new ConcurrentHashMap<>();
 
     /**
      * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -665,111 +669,6 @@ public class FilterFactory
     }
 
     /**
-     * Creates a Root Raised Cosine filter.
-     * @param samplesPerSymbol
-     * @param symbolCount
-     * @param alpha
-     * @return
-     */
-    public static float[] getRRC(double samplesPerSymbol, int symbolCount, float alpha)
-    {
-        //TODO:  this wraps the existing method which is reducing the samples per symbol value x2 internally and is likely
-        // a mistake.  This method is used by NXDN to correct that error until the DMR and P25 decoders can be updated to
-        // ensure that the correction doesn't impact those decoders.  Once the cleanup is complete, this method can be
-        // deleted and the NXDN implementation can revert to using the future corrected version.
-        return getRootRaisedCosine(samplesPerSymbol * 2, symbolCount, alpha);
-    }
-
-    /**
-     * Creates root raised cosine filter coefficients with a tap count equal to the symbols x samplesPerSymbol + 1.
-     *
-     * Symbol count should be an even integer.
-     * Ported to java from gnuradio/filter/firdes.cc
-     *
-     * For 40db attenuation, calculate the number of symbols based on the following formula:
-     * Symbols = -44 * alpha + 33
-     *
-     * Polyphase Channelizer notes:
-     * -Set samples Per Symbol at 2 (or more) * number of channels
-     * -Set symbolCount to sufficient size to produce required attenuation
-     * -Set symbol rate in hertz
-     * -Set alpha = (desired channel bandwidth / (symbol rate * samples per symbol) - 1.0
-     * -Channel bandwidth must be larger than symbol rate * samples per symbol, in order for there to be a positive alpha
-     *
-     * @param samplesPerSymbol - number of samples per symbol
-     * @param symbolCount - number of symbol intervals for the filter.  This directly impacts the filter size
-     * @param alpha - roll-off factor.
-     * @param gain of the filter
-     * @return - filter coefficients
-     */
-    public static float[] getRootRaisedCosine(double samplesPerSymbol, int symbolCount, float alpha)
-    {
-        samplesPerSymbol /= 2;
-        int taps = (int)Math.round(samplesPerSymbol * symbolCount);
-
-        float scale = 0;
-
-        float[] coefficients = new float[taps];
-
-        for(int x = 0; x < taps; x++)
-        {
-            double index = x - (taps / 2.0f);
-
-            double x1 = FastMath.PI * index / samplesPerSymbol;
-            double x2 = 4.0 * alpha * index / samplesPerSymbol;
-            double x3 = x2 * x2 - 1.0;
-
-            double numerator, denominator;
-
-            if(FastMath.abs(x3) >= 0.000001)
-            {
-                if(x != taps / 2)
-                {
-                    numerator = FastMath.cos((1.0 + alpha) * x1) +
-                        FastMath.sin((1.0 - alpha) * x1) / (4.0 * alpha * index / samplesPerSymbol);
-                }
-                else
-                {
-                    numerator = FastMath.cos((1.0 + alpha) * x1) + (1.0 - alpha) * FastMath.PI / (4.0 * alpha);
-                }
-
-                denominator = x3 * FastMath.PI;
-            }
-            else
-            {
-                if(alpha == 1.0)
-                {
-                    coefficients[x] = -1.0f;
-                    continue;
-                }
-
-                x3 = (1.0 - alpha) * x1;
-                x2 = (1.0 + alpha) * x1;
-
-                numerator = (FastMath.sin(x2) * (1.0 + alpha) * FastMath.PI - FastMath.cos(x3) * ((1.0 - alpha) * FastMath.PI *
-                    samplesPerSymbol) / (4.0 * alpha * index) + FastMath.sin(x3) * samplesPerSymbol *
-                    samplesPerSymbol / (4.0 * alpha * index * index));
-
-                denominator = -32.0 * FastMath.PI * alpha * alpha * index / samplesPerSymbol;
-            }
-
-            coefficients[x] = (float)(4.0 * alpha * numerator / denominator);
-
-            scale += coefficients[x];
-        }
-
-        /**
-         * Normalize (scale) coefficients to 1.0 sum and apply gain
-         */
-        for(int x = 0; x < taps; x++)
-        {
-            coefficients[x] = coefficients[x] / scale;
-        }
-
-        return coefficients;
-    }
-
-    /**
      * Creates a filter from the filter specification using the remez exchange design algorithm
      *
      * @param specification
@@ -786,6 +685,572 @@ public class FilterFactory
         }
 
         return null;
+    }
+
+    /**
+     * Creates a low pass filter using the remez exchange design algorithm with 0.01 dB pass band and stop band ripple.
+     * See getRemezLowPass(double, double, double, double, double).
+     *
+     * @param sampleRate in Hertz
+     * @param passBandCutoff in Hertz
+     * @param stopBandStart in Hertz
+     * @return filter coefficients
+     * @throws IllegalStateException if the filter cannot be designed
+     */
+    public static float[] getRemezLowPass(double sampleRate, double passBandCutoff, double stopBandStart)
+    {
+        return getRemezLowPass(sampleRate, passBandCutoff, 0.01, stopBandStart, 0.01);
+    }
+
+    /**
+     * Creates a unity gain low pass filter using the remez exchange design algorithm.  Designed filters are cached and
+     * reused, since the design is computationally expensive and decoders request the same filters each time they start.
+     *
+     * @param sampleRate in Hertz
+     * @param passBandCutoff in Hertz
+     * @param passBandRipple in decibels
+     * @param stopBandStart in Hertz
+     * @param stopBandRipple in decibels
+     * @return filter coefficients, a copy that the caller can modify (ie RealFIRFilter reverses its coefficients)
+     * @throws IllegalStateException if the filter cannot be designed
+     */
+    public static float[] getRemezLowPass(double sampleRate, double passBandCutoff, double passBandRipple,
+                                          double stopBandStart, double stopBandRipple)
+    {
+        LowPassSpecification key = new LowPassSpecification(sampleRate, passBandCutoff, passBandRipple, stopBandStart,
+                stopBandRipple);
+
+        //Filter cache is shared across decoder instances that may be started from different threads
+        float[] coefficients = REMEZ_LOW_PASS_FILTERS.get(key);
+
+        if(coefficients == null)
+        {
+            FIRFilterSpecification specification = FIRFilterSpecification
+                    .lowPassBuilder()
+                    .sampleRate(sampleRate)
+                    .passBandCutoff(passBandCutoff)
+                    .passBandAmplitude(1.0).passBandRipple(passBandRipple)
+                    .stopBandAmplitude(0.0).stopBandStart(stopBandStart)
+                    .stopBandRipple(stopBandRipple).build();
+
+            try
+            {
+                coefficients = getTaps(specification);
+
+                if(coefficients != null)
+                {
+                    REMEZ_LOW_PASS_FILTERS.put(key, coefficients);
+                }
+            }
+            catch(Exception e) //FilterDesignException or runtime failures from the Remez designer
+            {
+                mLog.error("Error designing low pass filter for " + key, e);
+            }
+        }
+
+        if(coefficients == null)
+        {
+            throw new IllegalStateException("Unable to design low pass filter for " + key);
+        }
+
+        return Arrays.copyOf(coefficients, coefficients.length);
+    }
+
+    /**
+     * Remez low pass filter design parameters, used as the filter cache key.
+     */
+    private record LowPassSpecification(double sampleRate, double passBandCutoff, double passBandRipple,
+                                        double stopBandStart, double stopBandRipple)
+    {
+        @Override
+        public String toString()
+        {
+            return "sample rate [" + sampleRate + "] pass band [" + passBandCutoff + "] ripple [" + passBandRipple +
+                    "] stop band [" + stopBandStart + "] ripple [" + stopBandRipple + "]";
+        }
+    }
+
+    /**
+     * Designs an inverse sinc (x / sin(x)) filter that compensates for the sinc (integrate and dump) response of a
+     * transmitter's shaping filter (ie NXDN).  The response is inverse sinc up to the band edge of the companion root
+     * raised cosine filter at (1 + alpha) * symbolRate / 2, and is held at the band edge gain above it.
+     *
+     * @param sampleRate in Hertz
+     * @param symbolRate in symbols per second
+     * @param alpha roll-off factor of the companion RRC filter, defining the band edge (1 + alpha) * symbolRate / 2
+     * @param symbolSpan filter length in symbol periods
+     * @return filter taps, odd length (minimum 9), linear phase, unity gain at DC
+     */
+    public static float[] getInverseSincFilter(double sampleRate, double symbolRate, double alpha, int symbolSpan)
+    {
+        if(sampleRate <= 0 || symbolRate <= 0)
+        {
+            throw new IllegalArgumentException("Sample rate and symbol rate must be positive");
+        }
+
+        if(alpha < 0 || alpha > 1)
+        {
+            throw new IllegalArgumentException("Alpha must be in the range 0 - 1");
+        }
+
+        if(symbolSpan < 1)
+        {
+            throw new IllegalArgumentException("Symbol span must be at least 1");
+        }
+
+        double bandEdge = (1.0 + alpha) * symbolRate / 2.0;
+
+        if(bandEdge >= sampleRate / 2.0)
+        {
+            throw new IllegalArgumentException("Sample rate [" + sampleRate +
+                "] is too low for symbol rate [" + symbolRate + "] - band edge exceeds Nyquist");
+        }
+
+        int length = Math.max(getOddLength(symbolSpan * sampleRate / symbolRate), 9);
+        double symbolPeriod = 1.0 / symbolRate;
+        double edgeGain = inverseSinc(bandEdge * symbolPeriod);
+
+        //Least-squares weight applied beyond the band edge, relative to a weight of 1.0 in band.
+        double stopBandWeight = 0.01;
+
+        double[] taps = getLeastSquaresSymmetricTaps(sampleRate, length, frequency -> frequency <= bandEdge ?
+                new double[]{inverseSinc(frequency * symbolPeriod), 1.0} : new double[]{edgeGain, stopBandWeight});
+
+        return normalizeToUnityDC(taps);
+    }
+
+    /**
+     * Designs a root raised cosine filter from the closed form impulse response, normalized to unity gain at DC.
+     *
+     * @param sampleRate in Hertz
+     * @param symbolRate in symbols per second
+     * @param alpha roll-off factor (0 - 1]
+     * @param symbolSpan filter length in symbol periods
+     * @return filter taps, odd length, linear phase
+     */
+    public static float[] getRootRaisedCosineFilter(double sampleRate, double symbolRate, double alpha, int symbolSpan)
+    {
+        double[] taps = getRootRaisedCosineTaps(sampleRate, symbolRate, alpha, symbolSpan);
+        float[] output = new float[taps.length];
+
+        for(int n = 0; n < taps.length; n++)
+        {
+            output[n] = (float)taps[n];
+        }
+
+        return output;
+    }
+
+    /**
+     * Designs a receive filter that is a root raised cosine filter convolved with an inverse sinc filter (see
+     * getInverseSincFilter()).  Cascaded with a transmit filter that is a root raised cosine and sinc filter (ie NXDN),
+     * the overall response is a raised cosine Nyquist filter with no intersymbol interference at the symbol sampling
+     * instants.
+     *
+     * @param sampleRate in Hertz
+     * @param symbolRate in symbols per second
+     * @param alpha roll-off factor (0 - 1]
+     * @param rrcSymbolSpan root raised cosine filter length in symbol periods
+     * @param inverseSincSymbolSpan inverse sinc filter length in symbol periods
+     * @return filter taps, odd length (sum of both filter lengths - 1), linear phase, unity gain at DC
+     */
+    public static float[] getRootRaisedCosineInverseSincFilter(double sampleRate, double symbolRate, double alpha,
+                                                               int rrcSymbolSpan, int inverseSincSymbolSpan)
+    {
+        double[] rrc = getRootRaisedCosineTaps(sampleRate, symbolRate, alpha, rrcSymbolSpan);
+        float[] inverseSinc = getInverseSincFilter(sampleRate, symbolRate, alpha, inverseSincSymbolSpan);
+
+        //Full linear convolution - both filters are odd length and symmetric, so the result is too
+        double[] combined = new double[rrc.length + inverseSinc.length - 1];
+
+        for(int i = 0; i < rrc.length; i++)
+        {
+            for(int j = 0; j < inverseSinc.length; j++)
+            {
+                combined[i + j] += rrc[i] * inverseSinc[j];
+            }
+        }
+
+        //Normalize to unity gain at DC so the discriminator output keeps its deviation scaling
+        return normalizeToUnityDC(combined);
+    }
+
+    /**
+     * Designs a band limited integrate and dump receive filter for the FM discriminator output (ie P25 Phase 1 C4FM).
+     *
+     * TIA-102.BAAA specifies a raised cosine (alpha 0.2) Nyquist filter cascaded with an inverse sinc (x / sin(x))
+     * shaping filter at the transmitter, and an integrate and dump filter (sinc response) at the receiver, so that the
+     * overall response is the raised cosine with no intersymbol interference at the symbol sampling instants.
+     *
+     * The transmitted signal is band limited to (1 + alpha) * symbolRate / 2, but an integrate and dump filter has
+     * slowly decaying sidelobes that pass the FM discriminator noise above the signal band, where the discriminator
+     * noise power spectral density rises with the square of frequency.  This produces a linear phase FIR filter with
+     * the integrate and dump (sinc) response across the signal band and a stopband above it, which preserves the zero
+     * ISI property while rejecting the out of band noise.
+     *
+     * @param sampleRate in Hertz
+     * @param symbolRate in symbols per second
+     * @param alpha roll-off factor of the transmitter's raised cosine filter
+     * @param stopBandStart frequency in Hertz where the stopband starts.  The passband extends to the signal band
+     * edge of (1 + alpha) * symbolRate / 2 and the region between the passband edge and the stopband start is a
+     * transition band that is excluded from the fit.
+     * @param symbolSpan filter length in symbol periods
+     * @return filter taps, odd length, linear phase, unity gain at DC
+     */
+    public static float[] getBandLimitedIntegrateAndDump(double sampleRate, double symbolRate, double alpha,
+                                                         double stopBandStart, int symbolSpan)
+    {
+        if(sampleRate <= 0 || symbolRate <= 0)
+        {
+            throw new IllegalArgumentException("Sample rate and symbol rate must be positive");
+        }
+
+        if(symbolSpan < 1)
+        {
+            throw new IllegalArgumentException("Symbol span must be at least 1");
+        }
+
+        double nyquist = sampleRate / 2.0;
+        double passBandEdge = (1.0 + alpha) * symbolRate / 2.0;
+
+        if(stopBandStart <= passBandEdge || stopBandStart >= nyquist)
+        {
+            throw new IllegalArgumentException("Stop band start [" + stopBandStart + "] must be between the pass band " +
+                    "edge [" + passBandEdge + "] and Nyquist [" + nyquist + "]");
+        }
+
+        int length = getOddLength(symbolSpan * sampleRate / symbolRate);
+        double symbolPeriod = 1.0 / symbolRate;
+
+        //Least-squares weight applied in the stopband, relative to a weight of 1.0 in the passband.
+        double stopBandWeight = 1.0;
+
+        double[] taps = getLeastSquaresSymmetricTaps(sampleRate, length, frequency -> {
+            if(frequency <= passBandEdge)
+            {
+                return new double[]{sinc(frequency * symbolPeriod), 1.0};
+            }
+            else if(frequency >= stopBandStart)
+            {
+                return new double[]{0.0, stopBandWeight};
+            }
+
+            return null; //Transition band
+        });
+
+        return normalizeToUnityDC(taps);
+    }
+
+    /**
+     * Designs a one symbol period integrator (moving sum) for the FM discriminator output of a differentially encoded
+     * QPSK (ie P25 LSM / CQPSK) signal.  The FM discriminator produces the phase change between consecutive samples,
+     * so summing one symbol period of the discriminator output produces the (unwrapped) phase change across the symbol
+     * period, which is the differential demodulation of the symbol: arg(x[n] * conj(x[n - samplesPerSymbol])), modulo
+     * 2 * PI.
+     *
+     * A fractional samples per symbol value is handled by weighting the final tap with the fractional remainder, which
+     * is equivalent to linearly interpolating the delayed (unwrapped) phase.
+     *
+     * @param samplesPerSymbol must be at least 1.0
+     * @return filter taps scaled to unity gain at DC so the output is in radians per sample, like the C4FM receive
+     * filter output.
+     */
+    public static float[] getDifferentialIntegrator(double samplesPerSymbol)
+    {
+        if(samplesPerSymbol < 1.0)
+        {
+            throw new IllegalArgumentException("Samples per symbol [" + samplesPerSymbol + "] must be at least 1.0");
+        }
+
+        int integral = (int)Math.floor(samplesPerSymbol);
+        double fractional = samplesPerSymbol - integral;
+        float[] taps = new float[fractional > 0.0 ? integral + 1 : integral];
+        Arrays.fill(taps, 0, integral, (float)(1.0 / samplesPerSymbol));
+
+        if(fractional > 0.0)
+        {
+            taps[integral] = (float)(fractional / samplesPerSymbol);
+        }
+
+        return taps;
+    }
+
+    /**
+     * Root raised cosine filter taps in double precision, normalized to unity gain at DC.  See
+     * getRootRaisedCosineFilter().
+     */
+    private static double[] getRootRaisedCosineTaps(double sampleRate, double symbolRate, double alpha, int symbolSpan)
+    {
+        if(sampleRate <= 0 || symbolRate <= 0)
+        {
+            throw new IllegalArgumentException("Sample rate and symbol rate must be positive");
+        }
+
+        if(alpha <= 0 || alpha > 1)
+        {
+            throw new IllegalArgumentException("Alpha must be in the range (0 - 1]");
+        }
+
+        if(symbolSpan < 1)
+        {
+            throw new IllegalArgumentException("Symbol span must be at least 1");
+        }
+
+        int length = getOddLength(symbolSpan * sampleRate / symbolRate);
+        int middle = (length - 1) / 2;
+        double[] taps = new double[length];
+        double sum = 0.0;
+
+        for(int n = 0; n < length; n++)
+        {
+            //Time in symbol periods relative to the filter center
+            double t = (n - middle) * symbolRate / sampleRate;
+            double value;
+
+            if(Math.abs(t) < 1e-9)
+            {
+                value = 1.0 - alpha + 4.0 * alpha / Math.PI;
+            }
+            else if(Math.abs(Math.abs(t) - 1.0 / (4.0 * alpha)) < 1e-9)
+            {
+                //Limit at the singularity t = +/- T / (4 * alpha)
+                value = (alpha / Math.sqrt(2.0)) *
+                    ((1.0 + 2.0 / Math.PI) * Math.sin(Math.PI / (4.0 * alpha)) +
+                     (1.0 - 2.0 / Math.PI) * Math.cos(Math.PI / (4.0 * alpha)));
+            }
+            else
+            {
+                double numerator = Math.sin(Math.PI * t * (1.0 - alpha)) +
+                    4.0 * alpha * t * Math.cos(Math.PI * t * (1.0 + alpha));
+                double denominator = Math.PI * t * (1.0 - Math.pow(4.0 * alpha * t, 2.0));
+                value = numerator / denominator;
+            }
+
+            taps[n] = value;
+            sum += value;
+        }
+
+        for(int n = 0; n < length; n++)
+        {
+            taps[n] /= sum;
+        }
+
+        return taps;
+    }
+
+    /**
+     * Odd tap count that is at least the specified length, so the filter has an integer group delay of
+     * (length - 1) / 2 samples.
+     */
+    private static int getOddLength(double length)
+    {
+        int oddLength = (int)Math.ceil(length);
+
+        if(oddLength % 2 == 0)
+        {
+            oddLength++;
+        }
+
+        return oddLength;
+    }
+
+    /**
+     * Desired response and least-squares weight for each frequency grid point of getLeastSquaresSymmetricTaps().
+     */
+    private interface LeastSquaresObjective
+    {
+        /**
+         * @param frequency in Hertz
+         * @return {desired response, weight} at the frequency, or null to exclude it from the fit (ie transition band)
+         */
+        double[] evaluate(double frequency);
+    }
+
+    /**
+     * Designs a symmetric (linear phase) FIR filter whose response is a weighted least-squares fit to the objective.
+     *
+     * @param sampleRate in Hertz
+     * @param length of the filter, odd
+     * @param objective desired response and weight at each frequency
+     * @return filter taps, not normalized
+     */
+    private static double[] getLeastSquaresSymmetricTaps(double sampleRate, int length, LeastSquaresObjective objective)
+    {
+        double nyquist = sampleRate / 2.0;
+        int middle = (length - 1) / 2;
+        int coefficientCount = middle + 1;
+
+        //A symmetric filter has the zero-phase response A(f) = c[0] + sum(m=1..middle) c[m] * 2cos(2*pi*f*m/fs)
+        //where c[m] = h[middle - m] = h[middle + m]. Accumulate the weighted normal equations (B'WB)c = B'Wd over a
+        //dense frequency grid (16 points per coefficient) from DC to Nyquist.
+        double[][] normal = new double[coefficientCount][coefficientCount];
+        double[] rhs = new double[coefficientCount];
+        double[] basis = new double[coefficientCount];
+        int gridSize = 16 * coefficientCount;
+
+        for(int g = 0; g <= gridSize; g++)
+        {
+            double frequency = nyquist * g / gridSize;
+            double[] desiredAndWeight = objective.evaluate(frequency);
+
+            if(desiredAndWeight == null)
+            {
+                continue;
+            }
+
+            double desired = desiredAndWeight[0];
+            double weight = desiredAndWeight[1];
+            basis[0] = 1.0;
+
+            for(int m = 1; m < coefficientCount; m++)
+            {
+                basis[m] = 2.0 * Math.cos(2.0 * Math.PI * frequency * m / sampleRate);
+            }
+
+            for(int i = 0; i < coefficientCount; i++)
+            {
+                double weighted = weight * basis[i];
+                rhs[i] += weighted * desired;
+
+                for(int j = i; j < coefficientCount; j++)
+                {
+                    normal[i][j] += weighted * basis[j];
+                }
+            }
+        }
+
+        //Fill in the lower triangle of the symmetric normal matrix
+        for(int i = 0; i < coefficientCount; i++)
+        {
+            for(int j = 0; j < i; j++)
+            {
+                normal[i][j] = normal[j][i];
+            }
+        }
+
+        double[] coefficients = solve(normal, rhs);
+
+        //Expand to the full symmetric impulse response
+        double[] taps = new double[length];
+
+        for(int m = 0; m < coefficientCount; m++)
+        {
+            taps[middle - m] = coefficients[m];
+            taps[middle + m] = coefficients[m];
+        }
+
+        return taps;
+    }
+
+    /**
+     * Normalizes the filter taps to unity gain at DC.
+     * @param taps to normalize
+     * @return normalized taps
+     */
+    private static float[] normalizeToUnityDC(double[] taps)
+    {
+        double sum = 0.0;
+
+        for(double tap : taps)
+        {
+            sum += tap;
+        }
+
+        float[] output = new float[taps.length];
+
+        for(int n = 0; n < taps.length; n++)
+        {
+            output[n] = (float)(taps[n] / sum);
+        }
+
+        return output;
+    }
+
+    /**
+     * Sinc: sin(x) / x where x = pi * f * T, the frequency response of an integrate and dump filter of length T.
+     *
+     * @param normalizedFrequency f * T (frequency divided by the symbol rate)
+     */
+    private static double sinc(double normalizedFrequency)
+    {
+        if(normalizedFrequency == 0.0)
+        {
+            return 1.0;
+        }
+
+        double x = Math.PI * normalizedFrequency;
+        return Math.sin(x) / x;
+    }
+
+    /**
+     * Inverse sinc: x / sin(x) where x = pi * f * T.
+     *
+     * @param normalizedFrequency f * T (frequency divided by the symbol rate)
+     */
+    private static double inverseSinc(double normalizedFrequency)
+    {
+        if(normalizedFrequency == 0.0)
+        {
+            return 1.0;
+        }
+
+        double x = Math.PI * normalizedFrequency;
+        return x / Math.sin(x);
+    }
+
+    /**
+     * Solves Ax = b using Gaussian elimination with partial pivoting. A and b are modified.
+     */
+    private static double[] solve(double[][] a, double[] b)
+    {
+        int n = b.length;
+
+        for(int column = 0; column < n; column++)
+        {
+            int pivot = column;
+
+            for(int row = column + 1; row < n; row++)
+            {
+                if(Math.abs(a[row][column]) > Math.abs(a[pivot][column]))
+                {
+                    pivot = row;
+                }
+            }
+
+            double[] swapRow = a[column];
+            a[column] = a[pivot];
+            a[pivot] = swapRow;
+            double swapValue = b[column];
+            b[column] = b[pivot];
+            b[pivot] = swapValue;
+
+            for(int row = column + 1; row < n; row++)
+            {
+                double factor = a[row][column] / a[column][column];
+                b[row] -= factor * b[column];
+
+                for(int k = column; k < n; k++)
+                {
+                    a[row][k] -= factor * a[column][k];
+                }
+            }
+        }
+
+        double[] x = new double[n];
+
+        for(int row = n - 1; row >= 0; row--)
+        {
+            double sum = b[row];
+
+            for(int k = row + 1; k < n; k++)
+            {
+                sum -= a[row][k] * x[k];
+            }
+
+            x[row] = sum / a[row][row];
+        }
+
+        return x;
     }
 
     /**

@@ -48,6 +48,20 @@ public abstract class C4FMMessageFramer
     }
 
     /**
+     * Process the symbol decision along with the soft symbol it was decided from and the soft symbol reliability (ie
+     * inverse of the soft symbol noise variance).  Framers that can weight soft decision decoding override this method.
+     * Default implementation discards the reliability.
+     * @param symbol decision
+     * @param softSymbol equalized soft symbol in radians
+     * @param reliability of the soft symbol
+     * @return true if the framer emits a valid message that includes this symbol.
+     */
+    public boolean process(Dibit symbol, float softSymbol, float reliability)
+    {
+        return process(symbol, softSymbol);
+    }
+
+    /**
      * A sync pattern is detected
      */
     public abstract void syncDetected();

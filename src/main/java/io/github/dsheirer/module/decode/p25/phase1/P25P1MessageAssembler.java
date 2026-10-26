@@ -43,11 +43,19 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1MessageAssembler.class);
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LOGGER);
     private static final int MINIMUM_LDU_BIT_LENGTH = 1500; //actual length is 1568
+    //A place holder (failed NID) assembly also captures the sync (48 bits) and NID (64 bits) of the next frame, up to
+    //the point that the next frame's NID is decoded.
+    private static final int NEXT_FRAME_SYNC_NID_BIT_LENGTH = 112;
+    //Place holder length tolerance (bits) for identifying a missed TDU or TDULC frame.  Testing against P25 recordings
+    //found missed TDU and TDULC place holders 1-12 bits shorter than the nominal length.
+    private static final int MISSED_FRAME_BIT_LENGTH_TOLERANCE = 12;
     private CorrectedBinaryMessage mMessage;
     private P25P1DataUnitID mDataUnitID;
     private int mNac;
     //Soft symbols (radians) for each assembled dibit, in received order, or NaN when not provided.
     private float[] mSoftSymbols = new float[256];
+    //Soft symbol reliabilities for each assembled dibit, in received order, or NaN when not provided.
+    private float[] mReliabilities = new float[256];
     private int mSoftSymbolCount = 0;
 
     /**
@@ -96,11 +104,15 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     }
 
     /**
-     * Forces this assembler to complete assembly of the current message.  Attempts to identify
+     * Forces this assembler to complete assembly of the current message.  Attempts to identify the message by either
+     * retaining the existing data unit ID when there was a valid NID decoded, or updating the place holder data unit
+     * ID based on the quantity of bits assembled thus far and the previous and next data unit IDs.
      *
-     *
-     * ion by either retaining the existing data unit ID when there was a valid NID
-     * decoded, or updating the data unit ID based on the quantity of dibits assembled thus far.
+     * A place holder is identified as a TDU only when its length matches a single missed TDU frame.  A TDU has no
+     * error detection, so a TDU created from a place holder of any other length, ie inter-frame padding or a missed
+     * frame of another type, is always valid and falsely indicates the end of a call.  A place holder that matches a
+     * single missed TDULC frame is identified as a TDULC, which is validated by its own error correction.  A place
+     * holder that can't be identified remains a place holder, which is discarded.
      * @param previous data unit ID for the message prior to the currently assembled message
      * @param next data unit ID for the message that will be assembled next
      * @return number of bits that were dropped.
@@ -113,11 +125,9 @@ public class P25P1MessageAssembler implements Listener<Dibit>
         {
             int length = getMessage().currentSize();
 
-            if(length <= 28)
-            {
-                mDataUnitID = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
-            }
-            else
+            //A place holder that's shorter than the shortest (TDU) missed frame is inter-frame padding or timing slack
+            //ahead of the next sync, not a missed frame, so it's left as a place holder and discarded.
+            if(length >= getMissedFrameMinimumLength(P25P1DataUnitID.TERMINATOR_DATA_UNIT))
             {
                 switch(next)
                 {
@@ -186,15 +196,53 @@ public class P25P1MessageAssembler implements Listener<Dibit>
                         break;
                 }
             }
+
+            //If we're still PLACE_HOLDER, identify a single missed TDU or TDULC frame from the length
+            if(mDataUnitID == P25P1DataUnitID.PLACE_HOLDER)
+            {
+                if(isMissedFrame(length, P25P1DataUnitID.TERMINATOR_DATA_UNIT))
+                {
+                    mDataUnitID = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
+                }
+                else if(isMissedFrame(length, P25P1DataUnitID.TERMINATOR_DATA_UNIT_LINK_CONTROL))
+                {
+                    mDataUnitID = P25P1DataUnitID.TERMINATOR_DATA_UNIT_LINK_CONTROL;
+                }
+            }
         }
 
+        //An unidentified place holder is discarded, so there are no dropped bits to report.  The place holder bits
+        //are reported as sync loss.
         if(mDataUnitID == P25P1DataUnitID.PLACE_HOLDER)
         {
-            mDataUnitID = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
+            return 0;
         }
 
         getMessage().setSize(mDataUnitID.getMessageLength());
         return getMessage().size() - getMessage().currentSize();
+    }
+
+    /**
+     * Indicates if the place holder length matches a single missed frame of the data unit type: the message and null
+     * bits plus the sync and NID of the next frame.
+     * @param length of the place holder in bits
+     * @param dataUnitID of the missed frame
+     * @return true if the length is within tolerance of the missed frame length.
+     */
+    private static boolean isMissedFrame(int length, P25P1DataUnitID dataUnitID)
+    {
+        return length >= getMissedFrameMinimumLength(dataUnitID) &&
+                length <= dataUnitID.getMessageLength() + NEXT_FRAME_SYNC_NID_BIT_LENGTH;
+    }
+
+    /**
+     * Minimum place holder length for a single missed frame of the data unit type.
+     * @param dataUnitID of the missed frame
+     * @return minimum length in bits.
+     */
+    private static int getMissedFrameMinimumLength(P25P1DataUnitID dataUnitID)
+    {
+        return dataUnitID.getMessageLength() + NEXT_FRAME_SYNC_NID_BIT_LENGTH - MISSED_FRAME_BIT_LENGTH_TOLERANCE;
     }
 
     /**
@@ -232,6 +280,18 @@ public class P25P1MessageAssembler implements Listener<Dibit>
      */
     public void receive(Dibit dibit, float softSymbol)
     {
+        receive(dibit, softSymbol, Float.NaN);
+    }
+
+    /**
+     * Primary input method for demodulated dibits/symbols, their soft symbol values and the soft symbol reliabilities
+     * to be appended to the message under assembly.  Reliabilities weight the soft decision decoding.
+     * @param dibit to add to the message.
+     * @param softSymbol the dibit was decided from (radians) or NaN if unavailable.
+     * @param reliability of the soft symbol or NaN if unavailable.
+     */
+    public void receive(Dibit dibit, float softSymbol, float reliability)
+    {
         if(mMessage.isFull())
         {
             LOGGING_SUPPRESSOR.error("P25P1-Full", 3, "P25 Phase 1 message under assembly is " +
@@ -244,8 +304,10 @@ public class P25P1MessageAssembler implements Listener<Dibit>
             if(mSoftSymbolCount >= mSoftSymbols.length)
             {
                 mSoftSymbols = java.util.Arrays.copyOf(mSoftSymbols, mSoftSymbols.length * 2);
+                mReliabilities = java.util.Arrays.copyOf(mReliabilities, mReliabilities.length * 2);
             }
 
+            mReliabilities[mSoftSymbolCount] = reliability;
             mSoftSymbols[mSoftSymbolCount++] = softSymbol;
         }
     }
@@ -277,6 +339,35 @@ public class P25P1MessageAssembler implements Listener<Dibit>
         }
 
         return softSymbols;
+    }
+
+    /**
+     * Soft symbol reliabilities for the assembled message bit range.
+     * @param startBit of the range (must be even/dibit aligned)
+     * @param endBit of the range, exclusive
+     * @return reliabilities for the range or null if the range isn't fully assembled or any reliability is unavailable.
+     */
+    public float[] getReliabilities(int startBit, int endBit)
+    {
+        int startDibit = startBit / 2;
+        int endDibit = endBit / 2;
+
+        if(startBit % 2 != 0 || endBit % 2 != 0 || startDibit < 0 || endDibit > mSoftSymbolCount || endDibit <= startDibit)
+        {
+            return null;
+        }
+
+        float[] reliabilities = java.util.Arrays.copyOfRange(mReliabilities, startDibit, endDibit);
+
+        for(float reliability : reliabilities)
+        {
+            if(Float.isNaN(reliability))
+            {
+                return null;
+            }
+        }
+
+        return reliabilities;
     }
 
     /**

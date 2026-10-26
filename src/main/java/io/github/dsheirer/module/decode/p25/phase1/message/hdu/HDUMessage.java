@@ -88,6 +88,17 @@ public class HDUMessage extends P25P1Message
         return P25P1DataUnitID.HEADER_DATA_UNIT;
     }
 
+    /**
+     * Indicates if the header data passed Reed-Solomon error detection and correction.  Decodes the header data when
+     * it's not already decoded, since the decoding sets the message validity.
+     */
+    @Override
+    public boolean isValid()
+    {
+        getHeaderData();
+        return super.isValid();
+    }
+
     public HeaderData getHeaderData()
     {
         if(mHeaderData == null)

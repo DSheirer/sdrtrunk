@@ -158,12 +158,31 @@ public class TSBKMessageFactory
      */
     public static CorrectedBinaryMessage deinterleaveViterbiAndCrc(CorrectedBinaryMessage raw, float[] softSymbols)
     {
+        return deinterleaveViterbiAndCrc(raw, softSymbols, null, false);
+    }
+
+    /**
+     * Performs deinterleave, Viterbi decoding, and applies the CRC-CCITT error detection/correction.  Uses soft
+     * decision Viterbi decoding when the soft symbols are provided, otherwise hard decision decoding.
+     * @param raw interleaved message
+     * @param softSymbols for the 98 interleaved dibits of the raw message, or null.
+     * @param reliabilities for the 98 interleaved soft symbols to weight the soft decision decoding, or null.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie P25 LSM).
+     * @return null or the decoded message with CRC results set in the message where 0 or 1 bit errors is valid and
+     * 2 bit errors is invalid.
+     */
+    public static CorrectedBinaryMessage deinterleaveViterbiAndCrc(CorrectedBinaryMessage raw, float[] softSymbols,
+                                                                   float[] reliabilities, boolean phaseWrapped)
+    {
         CorrectedBinaryMessage message;
 
         if(softSymbols != null && softSymbols.length == P25P1Interleave.DATA_DEINTERLEAVE.length / 2)
         {
             //Soft decision decode 1/2 rate trellis encoded block from the deinterleaved soft symbols
-            message = VITERBI_HALF_RATE_DECODER.decodeSoft(P25P1Interleave.deinterleaveDataSoftSymbols(softSymbols));
+            float[] deinterleavedReliabilities = reliabilities != null && reliabilities.length == softSymbols.length ?
+                    P25P1Interleave.deinterleaveDataSoftSymbols(reliabilities) : null;
+            message = VITERBI_HALF_RATE_DECODER.decodeSoft(P25P1Interleave.deinterleaveDataSoftSymbols(softSymbols),
+                    deinterleavedReliabilities, phaseWrapped);
         }
         else
         {
@@ -205,7 +224,21 @@ public class TSBKMessageFactory
                                      CorrectedBinaryMessage correctedBinaryMessage, float[] softSymbols, int nac,
                                      long timestamp)
     {
-        CorrectedBinaryMessage message = deinterleaveViterbiAndCrc(correctedBinaryMessage, softSymbols);
+        return create(direction, dataUnitID, correctedBinaryMessage, softSymbols, null, false, nac, timestamp);
+    }
+
+    /**
+     * Creates a TSBK message, using soft decision Viterbi decoding when soft symbols are provided.
+     * @param softSymbols for the 98 interleaved dibits of the message, or null for hard decision decoding.
+     * @param reliabilities for the 98 interleaved soft symbols to weight the soft decision decoding, or null.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie P25 LSM).
+     */
+    public static TSBKMessage create(Direction direction, P25P1DataUnitID dataUnitID,
+                                     CorrectedBinaryMessage correctedBinaryMessage, float[] softSymbols,
+                                     float[] reliabilities, boolean phaseWrapped, int nac, long timestamp)
+    {
+        CorrectedBinaryMessage message = deinterleaveViterbiAndCrc(correctedBinaryMessage, softSymbols, reliabilities,
+                phaseWrapped);
 
         if(message == null)
         {

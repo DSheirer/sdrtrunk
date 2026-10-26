@@ -23,7 +23,6 @@ import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
@@ -45,8 +44,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +54,8 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         ISourceEventListener, Listener<ComplexSamples>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NXDNDecoder.class);
-    private static final Map<String,float[]> BASEBAND_FILTERS = new ConcurrentHashMap<>();
+    //NXDN transmit filter root raised cosine roll-off
+    private static final double RECEIVE_FILTER_ALPHA = 0.2;
     private final DecodeConfigNXDN mConfig;
     private final NXDNSymbolProcessor mSymbolProcessor;
     private final NXDNMessageFramer mMessageFramer;
@@ -141,13 +139,13 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         int rrcSymbolSpan = 12;
         int inverseSyncSymbolSpan = 4;
         //Create an RRC pulse shaping filter convolved with an inverse sync (ie restoration) filter.
-        float[] taps = NXDNFilterDesigner.designNXDN(decimatedSampleRate, mConfig.getTransmissionMode().getSymbolRate(),
-                rrcSymbolSpan, inverseSyncSymbolSpan);
-//        int symbolLength = 26;
-//        float rrcAlpha = 0.2f;
-//        taps = FilterFactory.getRRC(samplesPerSymbol, symbolLength, rrcAlpha);
+        float[] taps = FilterFactory.getRootRaisedCosineInverseSincFilter(decimatedSampleRate,
+                mConfig.getTransmissionMode().getSymbolRate(), RECEIVE_FILTER_ALPHA, rrcSymbolSpan,
+                inverseSyncSymbolSpan);
         mPulseShapingFilter = new RealFIRFilter(taps);
-        float[] basebandTaps = getBasebandFilter(decimatedSampleRate, mConfig);
+        ChannelSpecification channel = mConfig.getChannelSpecification();
+        float[] basebandTaps = FilterFactory.getRemezLowPass(decimatedSampleRate, channel.getPassFrequency(),
+                channel.getStopFrequency());
         mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
         mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
         mDemodulator = FmDemodulatorFactory.getFmDemodulator();
@@ -176,52 +174,6 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
 
         //Process demodulated samples into symbols and apply message sync detection and framing.
         mSymbolProcessor.process(demodulated);
-    }
-
-    /**
-     * Constructs a baseband filter for this decoder using the current sample rate
-     */
-    private float[] getBasebandFilter(double sampleRate, DecodeConfigNXDN config)
-    {
-        String mapKey = config.getTransmissionMode().name() + sampleRate;
-
-        //Filter cache is shared across decoder instances that may be started from different threads
-        float[] coefficients = BASEBAND_FILTERS.get(mapKey);
-
-        if(coefficients == null)
-        {
-            ChannelSpecification channel = config.getChannelSpecification();
-
-            FIRFilterSpecification specification = FIRFilterSpecification
-                    .lowPassBuilder()
-                    .sampleRate(sampleRate)
-                    .passBandCutoff(channel.getPassFrequency())
-                    .passBandAmplitude(1.0).passBandRipple(0.01)
-                    .stopBandAmplitude(0.0).stopBandStart(channel.getStopFrequency())
-                    .stopBandRipple(0.01).build();
-
-            try
-            {
-                coefficients = FilterFactory.getTaps(specification);
-
-                if(coefficients != null)
-                {
-                    BASEBAND_FILTERS.put(mapKey, coefficients);
-                }
-            }
-            catch(Exception e) //FilterDesignException or runtime failures from the Remez designer
-            {
-                LOGGER.error("Error designing NXDN " + config.getTransmissionMode() + " baseband filter for sample rate [" +
-                        sampleRate + "]", e);
-            }
-        }
-
-        if(coefficients == null)
-        {
-            throw new IllegalStateException("Unable to design low pass filter for sample rate [" + sampleRate + "]");
-        }
-
-        return coefficients;
     }
 
     /**
@@ -272,8 +224,13 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         switch(sourceEvent.getEvent())
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                 mSymbolProcessor.resetBalance();
+                break;
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                //Tuner PPM changes are small (auto-PPM steps are <= 10 Hz) and the symbol processor balance tracks the
+                //change.  Resetting drops the symbol processor synchronization, and the symbol timing tracking with it,
+                //until the next sync detection, which costs messages on channels with long sync intervals (ie P25
+                //voice).
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());

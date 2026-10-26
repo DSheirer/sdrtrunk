@@ -119,9 +119,12 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             //Reassemble extended source link control messages.
             if(message instanceof LDU1Message ldu1)
             {
-                LinkControlWord lcw = ldu1.getLinkControlWord();;
+                //The LDU1 message is valid for its voice frames, but the link control word that it carries is only used
+                //when it passes error correction.
+                LinkControlWord lcw = ldu1.getLinkControlWord();
+                boolean lcwValid = lcw.isValid();
 
-                if(lcw instanceof IExtendedSourceMessage esm)
+                if(lcwValid && lcw instanceof IExtendedSourceMessage esm)
                 {
                     if(lcw instanceof LCSourceIDExtension extension)
                     {
@@ -134,7 +137,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                         return;
                     }
                 }
-                else if(lcw instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
+                else if(lcwValid && lcw instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
                 {
                     //Send the LCW to the harris talker alias assembler
                     dispatch(mHarrisTalkerAliasAssembler.process(harrisTalkerAlias, ldu1.getTimestamp()));
@@ -146,12 +149,12 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                 dispatch(ldu1);
 
                 //Process Harris Talker GPS messages
-                if(lcw instanceof LCHarrisTalkerGPSBlock1 block1)
+                if(lcwValid && lcw instanceof LCHarrisTalkerGPSBlock1 block1)
                 {
                     mHeldHarrisGPSBlock1 = block1;
                     mHeldHarrisGPSBlock1Timestamp = ldu1.getTimestamp();
                 }
-                else if(lcw instanceof LCHarrisTalkerGPSBlock2 block2 && mHeldHarrisGPSBlock1 != null)
+                else if(lcwValid && lcw instanceof LCHarrisTalkerGPSBlock2 block2 && mHeldHarrisGPSBlock1 != null)
                 {
                     //Ensure block 1 and block 2 are within 2 seconds of each other
                     if(Math.abs(ldu1.getTimestamp() - mHeldHarrisGPSBlock1Timestamp) < 2000)
