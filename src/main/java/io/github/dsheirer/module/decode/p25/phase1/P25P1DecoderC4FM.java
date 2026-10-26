@@ -73,6 +73,13 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     //stopband starts of 3300 - 4000 Hz perform similarly, a 5-symbol span is too short, and 12 symbols adds nothing.
     private static final double RECEIVE_FILTER_STOP_BAND_START = 3600.0; //Hertz
     private static final int RECEIVE_FILTER_SYMBOL_SPAN = 8;
+    //Baseband (pre-demodulation) low pass filter settings.  Replaying recordings, including copies shifted by up to
+    //+/-1200 Hz and copies with added noise: a 3600 Hz passband decodes more than 5200 Hz on weak or impaired channels
+    //at every shift and noise level tested, with strong channels unchanged.  Note: the Remez designer can silently
+    //return an unusable filter for some cutoffs (e.g. 4000/5500 Hz at 37.4-39.05 kHz); these values design correctly
+    //at every sample rate from 24-48 kHz.
+    private static final int BASEBAND_FILTER_PASS_BAND_CUTOFF = 3600; //Hertz
+    private static final int BASEBAND_FILTER_STOP_BAND_START = 5000; //Hertz
     private static final Map<Double,float[]> BASEBAND_FILTERS = new ConcurrentHashMap<>();
 
     private final P25P1SymbolProcessorC4FM mSymbolProcessor;
@@ -190,9 +197,9 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         FIRFilterSpecification specification = FIRFilterSpecification
                 .lowPassBuilder()
                 .sampleRate(sampleRate)
-                .passBandCutoff(5200)
+                .passBandCutoff(BASEBAND_FILTER_PASS_BAND_CUTOFF)
                 .passBandAmplitude(1.0).passBandRipple(0.01) //.01
-                .stopBandAmplitude(0.0).stopBandStart(6500) //6500
+                .stopBandAmplitude(0.0).stopBandStart(BASEBAND_FILTER_STOP_BAND_START)
                 .stopBandRipple(0.01).build();
 
         float[] coefficients = null;
