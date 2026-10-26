@@ -302,7 +302,7 @@ public class P25P1SymbolProcessorC4FM extends C4FMSymbolProcessor
         //Recalculate the optimization score using the adjusted equalizer settings
         if(!mSynchronized)
         {
-            optimizationScore = score(offset + timingCorrection, mSamplesPerSymbol,
+            optimizationScore = score(offset + additionalOffset + timingCorrection, mSamplesPerSymbol,
                     mSampleEqualizer.balance() + balanceCorrection, mSampleEqualizer.gain() + gainAccumulator);
         }
 
