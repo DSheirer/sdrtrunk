@@ -64,7 +64,11 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 25000;
 
     /**
-     * Determines how many processed channel results to dispatch for threaded IFFT processing per batch
+     * Determines how many processed channel results to dispatch for threaded IFFT processing per batch.
+     *
+     * Note: this value must be even.  Each dispatched batch then starts on an even block index, which lets downstream
+     * channel output processors (e.g. TwoChannelOutputProcessor) derive the absolute block index parity from each
+     * result's position within the batch.
      */
     private static final int PROCESSED_CHANNEL_RESULTS_THRESHOLD = 1024;
 
@@ -404,6 +408,11 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
         mSamplesPerBlock = channelCount; //Same as subChannelCount / 2
         mTopBlockMap = getTopBlockMap(channelCount);
+        //The prototype filter group delay (taps per channel * channel count / 2 samples) rotates each channel k by
+        //PI * k * tapsPerChannel, so with an odd taps per channel count adjacent channel outputs are 180 degrees out of
+        //phase.  Starting with the middle block map applies an M/2 circular shift ahead of the IFFT, which multiplies
+        //channel k by (-1)^k and makes adjacent channels phase coherent for synthesis.
+        mTopBlockIndicator = (mTapsPerChannel % 2 == 0);
         mMiddleBlockMap = getMiddleBlockMap(channelCount);
         mInlineFilter = getAlignedFilter(coefficients, channelCount, mTapsPerChannel);
         mInlineSamples = new float[bufferLength];

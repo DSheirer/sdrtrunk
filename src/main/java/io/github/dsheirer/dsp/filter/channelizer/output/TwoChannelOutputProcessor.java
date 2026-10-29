@@ -110,10 +110,22 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     @Override
     public void process(List<float[]> channelResultsList)
     {
-        for(float[] channelResults : channelResultsList)
+        //Translate channel 2 up by FS/2 (multiply by (-1)^n) so that it sits adjacent to channel 1 for synthesis.  The
+        //channelizer dispatches even-sized batches, so the index within the batch carries the absolute block parity.
+        for(int x = 0; x < channelResultsList.size(); x++)
         {
-            mMixerAssembler.receive(channelResults[mChannelOffset1], channelResults[mChannelOffset1 + 1],
-                    channelResults[mChannelOffset2], channelResults[mChannelOffset2 + 1]);
+            float[] channelResults = channelResultsList.get(x);
+
+            if((x & 1) == 0)
+            {
+                mMixerAssembler.receive(channelResults[mChannelOffset1], channelResults[mChannelOffset1 + 1],
+                        channelResults[mChannelOffset2], channelResults[mChannelOffset2 + 1]);
+            }
+            else
+            {
+                mMixerAssembler.receive(channelResults[mChannelOffset1], channelResults[mChannelOffset1 + 1],
+                        -channelResults[mChannelOffset2], -channelResults[mChannelOffset2 + 1]);
+            }
 
             if(mMixerAssembler.hasBuffer())
             {
