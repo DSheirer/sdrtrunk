@@ -83,7 +83,6 @@ public class ThinlineRadioSettingsTest
         ThinlineRadioCoreConfiguration configuration = new ThinlineRadioCoreConfiguration();
         configuration.setName("Core");
         ArrayNode fields = ThinlineRadioSettings.describe(configuration, Set.of("name"), Set.of(), false);
-        System.out.println("stream fields: " + fields);
         assertFalse(fields.isEmpty());
 
         ObjectNode values = MAPPER.createObjectNode();
@@ -103,9 +102,8 @@ public class ThinlineRadioSettingsTest
             {
                 Object preference = method.invoke(preferences);
                 ArrayNode fields = ThinlineRadioSettings.describe(preference, Set.of(), Set.of("password"), true);
-                StringBuilder names = new StringBuilder();
-                fields.forEach(field -> names.append(field.path("name").asText()).append('=').append(field.path("kind").asText()).append(' '));
-                System.out.println("preference " + preference.getClass().getSimpleName() + ": " + names);
+                fields.forEach(field -> assertFalse(field.path("name").asText().toLowerCase().contains("password"),
+                    preference.getClass().getSimpleName() + " described a password field"));
             }
         }
     }
@@ -116,7 +114,6 @@ public class ThinlineRadioSettingsTest
         Channel channel = new Channel("Control");
         channel.setDecodeConfiguration(DecoderFactory.getDecodeConfiguration(DecoderType.P25_PHASE1));
         ArrayNode fields = ThinlineRadioSettings.describe(channel, Set.of("channelID"), Set.of(), false);
-        System.out.println("channel fields: " + fields);
         JsonNode decode = field(fields, "decodeConfiguration");
         assertEquals("object", decode.path("kind").asText());
         JsonNode loggers = field((ArrayNode)field(fields, "eventLogConfiguration").path("fields"), "loggers");
