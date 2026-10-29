@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 package io.github.dsheirer.module.decode.p25.phase1.sync;
 
 import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
@@ -29,27 +28,33 @@ import jdk.incubator.vector.VectorSpecies;
  */
 public class P25P1SoftSyncDetectorVector512 extends P25P1SoftSyncDetector
 {
-    private static final boolean[] VECTOR_MASK = new boolean[]{false, false, false, false, false, false, false, false,
-            true, true, true, true, true, true, true, true};
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_512;
+    //Final pattern symbols, zero padded to the vector length, for the final (overlapping) vector of symbols
+    private final float[] mTailPatternSymbols = new float[16];
 
     /**
-     * Processes the demodulated soft symbol value and returns a correlation value against the preceding 24 soft
-     * symbols that include this recent soft symbol.
+     * Constructs an instance
+     */
+    public P25P1SoftSyncDetectorVector512()
+    {
+        System.arraycopy(getPatternSymbols(), 16, mTailPatternSymbols, 8, 8);
+    }
+
+    /**
+     * Calculates the correlation of the preceding 24 soft symbols against the sync pattern.
      *
      * @return correlation score.
      */
+    @Override
     public float calculate()
     {
-        //There are 24 symbols that we load into 2x vectors of 16.  We load the first 16 symbols into vector 1 and the
-        //remaining 8 symbols into vector 2 using a vector mask that ignores the first 8 symbols and loads the second 8
-        // symbols.  This sets the first 8 symbols to zero and those values are ignored during calculations.
-        VectorMask<Float> mask = VectorMask.fromArray(VECTOR_SPECIES, VECTOR_MASK, 0);
-        FloatVector accumulator = FloatVector.zero(VECTOR_SPECIES);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer)
-                .fma(FloatVector.fromArray(VECTOR_SPECIES, getPatternSymbols(), 0), accumulator);
-        accumulator = FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 8, mask)
-                .fma(FloatVector.fromArray(VECTOR_SPECIES, getPatternSymbols(), 8), accumulator);
+        //There are 24 symbols that we load into 2x vectors of 16.  The second vector overlaps the first vector by 8
+        //symbols (8-15), so it is multiplied against the final 8 pattern symbols (16-23) zero padded in the first 8
+        //lanes.  Multiplying against zero is cheaper than a masked load.
+        FloatVector accumulator = FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer)
+                .mul(FloatVector.fromArray(VECTOR_SPECIES, getPatternSymbols(), 0));
+        accumulator = FloatVector.fromArray(VECTOR_SPECIES, mSymbols, mSymbolPointer + 8)
+                .fma(FloatVector.fromArray(VECTOR_SPECIES, mTailPatternSymbols, 0), accumulator);
         return accumulator.reduceLanes(VectorOperators.ADD);
     }
 }

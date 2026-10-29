@@ -17,15 +17,15 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25.phase1;
+package io.github.dsheirer.dsp.c4fm;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 
 /**
- * P25 Phase 1 LSM (CQPSK) differential demodulator that produces a real valued sample stream for the C4FM symbol
- * processor.  Each output sample is the phase change across the preceding symbol period, in radians per sample (ie
+ * Differential QPSK (ie P25 Phase 1 LSM/CQPSK and P25 Phase 2 HDQPSK) demodulator that produces a real valued sample
+ * stream for the C4FM symbol processor.  Each output sample is the phase change across the preceding symbol period, in radians per sample (ie
  * the symbol phase divided by the samples per symbol), which is the same domain as the C4FM decoder's FM demodulated
  * and receive filtered sample stream.
  *
@@ -44,8 +44,8 @@ import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
  * which isn't biased by the spectral tilt of a frequency selective (ie simulcast multipath) channel the way that a
  * spectral centroid (ie mean discriminator output) estimator is.
  *
- * The fourth power estimator is ambiguous modulo PI/2 radians per symbol (1200 Hz at 4800 baud), so the estimator only
- * resolves offsets within +/- 600 Hz.  When a signal is present (ie the fourth power coherence exceeds the noise
+ * The fourth power estimator is ambiguous modulo PI/2 radians per symbol (1200 Hz at 4800 baud, 1500 Hz at 6000 baud),
+ * so the estimator only resolves offsets within +/- 1/8 of the symbol rate (ie +/- 600 Hz at 4800 baud).  When a signal is present (ie the fourth power coherence exceeds the noise
  * threshold) but the symbol processor is unable to synchronize, the estimate is stepped by +/- PI/2 radians per symbol
  * to search the adjacent offset ranges.  An offset just beyond the range aliases to an estimate near the opposite edge
  * of the range (ie -650 Hz estimates as +550 Hz), so the search first steps toward the adjacent range nearest to the
@@ -53,10 +53,10 @@ import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
  * same at each ambiguous offset, so high coherence without synchronization indicates an incorrect offset range, while
  * low coherence indicates that there is no signal.  The search holds the current offset range while there is no signal
  * (ie between transmissions on a traffic channel) so that the next transmission starts with the offset range that last
- * synchronized.  Once an offset range is verified by a valid NID decode (see offsetVerified()), the search uses a
- * longer dwell period before stepping away from it.  Symbol processor synchronization alone doesn't verify the offset
- * range since a false sync detection in an incorrect offset range would otherwise hold the search in that range for the
- * longer dwell period.
+ * synchronized.  Once an offset range is verified by the decoder (ie a valid P25 Phase 1 NID or a valid P25 Phase 2
+ * MAC message, see offsetVerified()), the search uses a longer dwell period before stepping away from it.  Symbol
+ * processor synchronization alone doesn't verify the offset range since a false sync detection in an incorrect offset
+ * range would otherwise hold the search in that range for the longer dwell period.
  *
  * Soft symbol reliability: the demodulated phase change across the symbol period is the difference between the phases
  * of the samples at either end of the period, and the phase noise variance of each sample is inversely proportional to
@@ -71,7 +71,7 @@ import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
  * represents the residual offset.  Use getFrequencyOffset() to include the coarse offset when reporting the carrier
  * offset to the tuner.
  */
-public class P25P1DifferentialDemodulatorLSM
+public class DQPSKDifferentialDemodulator
 {
     private static final double TWO_PI = 2.0 * Math.PI;
     //Carrier offset ambiguity step of the fourth power estimator, in radians per symbol
@@ -118,7 +118,7 @@ public class P25P1DifferentialDemodulatorLSM
     private int mSearchIndex = 0;
     private int mSearchDirection = 1;
     private double mUnsynchronizedSignalSymbols = 0;
-    //Indicates the current search offset range was verified by a valid NID decode since it was selected
+    //Indicates the current search offset range was verified by the decoder since it was selected
     private boolean mSearchIndexVerified = false;
     private double mAverageCoherence = 0.0;
     //Block length in samples and the fourth power accumulation for the block under accumulation
@@ -130,7 +130,7 @@ public class P25P1DifferentialDemodulatorLSM
     /**
      * Constructs an instance
      */
-    public P25P1DifferentialDemodulatorLSM()
+    public DQPSKDifferentialDemodulator()
     {
     }
 
@@ -172,8 +172,8 @@ public class P25P1DifferentialDemodulatorLSM
     }
 
     /**
-     * Notification that a valid NID was decoded, verifying the current carrier offset range so that the ambiguity search
-     * uses the longer dwell period before stepping away from it.
+     * Notification that the decoder verified the current carrier offset range (ie a valid NID or MAC message was
+     * decoded) so that the ambiguity search uses the longer dwell period before stepping away from it.
      */
     public void offsetVerified()
     {

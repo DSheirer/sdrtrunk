@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.isch.IISCH;
 import io.github.dsheirer.module.decode.p25.phase2.message.isch.ISCHDecoder;
 import io.github.dsheirer.module.decode.p25.phase2.message.isch.SISCH;
@@ -31,6 +32,7 @@ import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.TimeslotFactory;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -56,6 +58,7 @@ public class SuperFrameFragment implements IMessage
     private static final ISCHDecoder ISCH_DECODER = new ISCHDecoder();
     private long mTimestamp;
     private CorrectedBinaryMessage mMessage;
+    private float[] mSoftSymbols;
     private IISCH mIISCH1;
     private IISCH mIISCH2;
     private SISCH mSISCH1;
@@ -66,6 +69,7 @@ public class SuperFrameFragment implements IMessage
     private Timeslot mTimeslotD;
     private List<Timeslot> mTimeslots;
     private ScramblingSequence mScramblingSequence;
+    private ISCHSequence mPredictedIschSequence = ISCHSequence.UNKNOWN;
 
 
     /**
@@ -76,7 +80,21 @@ public class SuperFrameFragment implements IMessage
      */
     public SuperFrameFragment(CorrectedBinaryMessage message, long timestamp, ScramblingSequence scramblingSequence)
     {
+        this(message, null, timestamp, scramblingSequence);
+    }
+
+    /**
+     * Constructs a fragment from the message and the soft symbols with the specified timestamp.
+     *
+     * @param message containing 1440-bit super-frame fragment (ie 1/3 of a superframe)
+     * @param softSymbols (radians) for each of the 720 dibits in the message, or null, for soft decision decoding
+     * @param timestamp of the final bit of this fragment
+     */
+    public SuperFrameFragment(CorrectedBinaryMessage message, float[] softSymbols, long timestamp,
+                              ScramblingSequence scramblingSequence)
+    {
         mMessage = message;
+        mSoftSymbols = softSymbols;
         mTimestamp = timestamp;
         mScramblingSequence = scramblingSequence;
     }
@@ -118,7 +136,6 @@ public class SuperFrameFragment implements IMessage
             CorrectedBinaryMessage message = ISCH_DECODER.decode(getMessage()
                     .getSubMessage(CHANNEL_A_ISCH_START, TIMESLOT_A_START), P25P2Message.TIMESLOT_1);
             mIISCH1 = new IISCH(message, 0, 1, getTimestamp());
-            mIISCH1.setValid(message.getCorrectedBitCount() < 3);
         }
 
         return mIISCH1;
@@ -134,7 +151,6 @@ public class SuperFrameFragment implements IMessage
             CorrectedBinaryMessage message = ISCH_DECODER.decode(getMessage()
                     .getSubMessage(CHANNEL_B_ISCH_START, TIMESLOT_B_START), P25P2Message.TIMESLOT_2);
             mIISCH2 = new IISCH(message, 0, 2, getTimestamp());
-            mIISCH2.setValid(message.getCorrectedBitCount() < 3);
         }
 
         return mIISCH2;
@@ -309,7 +325,46 @@ public class SuperFrameFragment implements IMessage
     {
         CorrectedBinaryMessage message = getMessage().getSubMessage(start, end);
         BinaryMessage timeslotSequence = mScramblingSequence.getTimeslotSequence(getTimeslotOffset() + index);
-        return TimeslotFactory.getTimeslot(message, timeslotSequence, timeslot, getTimestamp());
+        float[] softSymbols = mSoftSymbols != null ? Arrays.copyOfRange(mSoftSymbols, start / 2, end / 2) : null;
+        return TimeslotFactory.getTimeslot(message, softSymbols, timeslotSequence, timeslot, getTimestamp());
+    }
+
+    /**
+     * Sets the ISCH sequence predicted from the sequence of a preceding fragment, for use when neither of the I-ISCH
+     * in this fragment are valid.  This must be set before accessing the timeslots.
+     * @param predicted sequence
+     */
+    public void setPredictedIschSequence(ISCHSequence predicted)
+    {
+        mPredictedIschSequence = predicted;
+    }
+
+    /**
+     * Indicates if the ISCH sequence for this fragment was decoded from a valid I-ISCH.
+     */
+    public boolean hasDecodedIschSequence()
+    {
+        return getIISCH1().isValid() || getIISCH2().isValid();
+    }
+
+    /**
+     * ISCH sequence (ie fragment 1, 2 or 3 of the superframe) decoded from a valid I-ISCH, or the predicted sequence
+     * when neither of the I-ISCH are valid.
+     * @return sequence or UNKNOWN
+     */
+    public ISCHSequence getIschSequence()
+    {
+        if(getIISCH1().isValid())
+        {
+            return getIISCH1().getIschSequence();
+        }
+
+        if(getIISCH2().isValid())
+        {
+            return getIISCH2().getIschSequence();
+        }
+
+        return mPredictedIschSequence;
     }
 
     /**
@@ -317,37 +372,17 @@ public class SuperFrameFragment implements IMessage
      */
     private int getTimeslotOffset()
     {
-        if(getIISCH1().isValid())
-        {
-            return getIISCH1().getIschSequence().getTimeslotOffset();
-        }
-
-        if(getIISCH2().isValid())
-        {
-            return getIISCH2().getIschSequence().getTimeslotOffset();
-        }
-
-        return 0;
+        return getIschSequence().getTimeslotOffset();
     }
 
     /**
      * Indicates if this fragment is the final fragment (3 of 3) for a superframe which indicates that the final two
-     * timeslots are inverted.
+     * timeslots are inverted.  When the sequence can't be determined, the higher probability is that it's not the
+     * final fragment.
      */
     private boolean isFinalFragment()
     {
-        if(getIISCH1().isValid())
-        {
-            return getIISCH1().getIschSequence().isFinalFragment();
-        }
-
-        if(getIISCH2().isValid())
-        {
-            return getIISCH2().getIschSequence().isFinalFragment();
-        }
-
-        //Can't determine, so higher probability is that it's not the final fragment
-        return false;
+        return getIschSequence().isFinalFragment();
     }
 
     /**

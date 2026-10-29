@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -208,7 +208,7 @@ public class UnpackedSampleConverterCalibration extends Calibration
     private long testScalar(short[] samples, short[] residualI, short[] residualQ)
     {
         long start = System.currentTimeMillis();
-        long accumulator = 0;
+        double accumulator = 0.0;
         long count = 0;
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
@@ -223,13 +223,13 @@ public class UnpackedSampleConverterCalibration extends Calibration
             }
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 
     private long testVector64(short[] samples, short[] residualI, short[] residualQ)
     {
         long start = System.currentTimeMillis();
-        long accumulator = 0;
+        double accumulator = 0.0;
         long count = 0;
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
@@ -244,13 +244,13 @@ public class UnpackedSampleConverterCalibration extends Calibration
             }
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 
     private long testVector128(short[] samples, short[] residualI, short[] residualQ)
     {
         long start = System.currentTimeMillis();
-        long accumulator = 0;
+        double accumulator = 0.0;
         long count = 0;
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
@@ -264,13 +264,13 @@ public class UnpackedSampleConverterCalibration extends Calibration
             }
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 
     private long testVector256(short[] samples, short[] residualI, short[] residualQ)
     {
         long start = System.currentTimeMillis();
-        long accumulator = 0;
+        double accumulator = 0.0;
         long count = 0;
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
@@ -286,13 +286,13 @@ public class UnpackedSampleConverterCalibration extends Calibration
             }
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 
     private long testVector512(short[] samples, short[] residualI, short[] residualQ)
     {
         long start = System.currentTimeMillis();
-        long accumulator = 0;
+        double accumulator = 0.0;
         long count = 0;
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
@@ -308,6 +308,6 @@ public class UnpackedSampleConverterCalibration extends Calibration
             }
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ import io.github.dsheirer.vector.calibrate.sample.UnpackedSampleConverterCalibra
 import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.NXDNSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
+import io.github.dsheirer.vector.calibrate.sync.P25P2SoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -117,6 +118,7 @@ public class CalibrationManager
             sInstance.add(new MagnitudeCalibration());
             sInstance.add(new NXDNSoftSyncCalibration());
             sInstance.add(new P25P1SoftSyncCalibration());
+            sInstance.add(new P25P2SoftSyncCalibration());
             sInstance.add(new RealDcRemovalCalibration());
             sInstance.add(new RealHalfBand11TapFilterCalibration());
             sInstance.add(new RealHalfBand15TapFilterCalibration());

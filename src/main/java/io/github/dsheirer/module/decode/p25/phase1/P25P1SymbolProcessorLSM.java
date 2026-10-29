@@ -24,7 +24,7 @@ import io.github.dsheirer.module.decode.FeedbackDecoder;
 
 /**
  * P25 Phase 1 LSM implementation of the symbol processor.  Processes the differentially demodulated sample stream
- * produced by the P25P1DifferentialDemodulatorLSM, which is in the same radians per sample domain as the C4FM decoder's
+ * produced by the DQPSKDifferentialDemodulator, which is in the same radians per sample domain as the C4FM decoder's
  * sample stream, so this processor shares the P25 C4FM sync detection, optimization and tuning parameters.
  *
  * Note: testing against LSM recordings without injected noise showed no meaningful difference across equalizer spans
