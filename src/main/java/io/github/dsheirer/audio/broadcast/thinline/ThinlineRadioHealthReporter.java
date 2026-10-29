@@ -412,7 +412,7 @@ public class ThinlineRadioHealthReporter
      * Permission a remote command needs, or null when it only reads.  Turning the desktop or spectrum off is
      * always allowed.
      */
-    private static ThinlineRadioPreference.Remote requiredRemote(String name, JsonNode command)
+    static ThinlineRadioPreference.Remote requiredRemote(String name, JsonNode command)
     {
         return switch(name)
         {

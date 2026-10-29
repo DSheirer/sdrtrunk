@@ -38,6 +38,7 @@ public class ThinlineRadioPreference extends Preference
     private static final String ALERT_OVERFLOW = "thinline.health.alert.overflow";
     private static final String ALERT_OFFLINE = "thinline.health.alert.offline";
     private static final String REMOTE = "thinline.remote.";
+    private static final String REMOTE_SAVED = "thinline.remote.saved";
 
     /**
      * What the Thinline Radio admin page may do on this computer.  Viewing status is always allowed.
@@ -76,6 +77,33 @@ public class ThinlineRadioPreference extends Preference
     public ThinlineRadioPreference(Listener<PreferenceType> updateListener)
     {
         super(updateListener);
+        keepEarlierRemoteDefaults(mPreferences);
+    }
+
+    /**
+     * Remote control is off until the site owner allows it. Sites set up before that default existed had every
+     * remote permission on, so the first run after an update saves those permissions as on and an update never
+     * takes remote control away from a site that already had it.
+     */
+    static void keepEarlierRemoteDefaults(Preferences preferences)
+    {
+        if(preferences.getBoolean(REMOTE_SAVED, false))
+        {
+            return;
+        }
+
+        if(preferences.get(ENABLED, null) != null)
+        {
+            for(Remote remote: Remote.values())
+            {
+                if(preferences.get(REMOTE + remote.key(), null) == null)
+                {
+                    preferences.putBoolean(REMOTE + remote.key(), true);
+                }
+            }
+        }
+
+        preferences.putBoolean(REMOTE_SAVED, true);
     }
 
     @Override
@@ -174,7 +202,12 @@ public class ThinlineRadioPreference extends Preference
 
     public boolean isRemoteAllowed(Remote remote)
     {
-        return mPreferences.getBoolean(REMOTE + remote.key(), true);
+        return isRemoteAllowed(mPreferences, remote);
+    }
+
+    static boolean isRemoteAllowed(Preferences preferences, Remote remote)
+    {
+        return preferences.getBoolean(REMOTE + remote.key(), false);
     }
 
     public void setRemoteAllowed(Remote remote, boolean allowed)

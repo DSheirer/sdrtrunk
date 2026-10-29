@@ -139,7 +139,7 @@ public class ThinlineRadioPreferenceEditor extends HBox
             mEditorPane.add(check("SDRTrunk offline", mPreference.isAlertOffline(), mPreference::setAlertOffline), 1, ++row);
 
             mEditorPane.add(new Label("Let Thinline Radio admins"), 0, ++row, 2, 1);
-            Label remoteHint = new Label("Status and settings are always visible. Uncheck anything Thinline Radio must not change from the admin page.");
+            Label remoteHint = new Label("Status and settings are always visible. Thinline Radio can only change what is checked here; nothing is checked until you allow it.");
             remoteHint.setWrapText(true);
             mEditorPane.add(remoteHint, 1, ++row);
             for(ThinlineRadioPreference.Remote remote: ThinlineRadioPreference.Remote.values())
