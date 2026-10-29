@@ -32,9 +32,21 @@ public class ViterbiDecoder_1_2_P25 extends ViterbiDecoder
     /**
      * Maximum per-symbol error magnitude (radians) applied to the soft decision branch metric.  FM discriminator noise
      * is impulsive (clicks), and an unbounded squared error lets a single corrupted symbol dominate the path metric.
-     * Noise injection testing against a P25 control channel recording found a peak at 1.75 - 2.0 radians.
+     * Noise injection testing against a P25 control channel recording found a peak at 1.75 - 2.0 radians.  Noise
+     * injection testing against P25 LSM recordings (phase wrapped soft symbols) also found 1.75 performed best.
      */
     private static final double SOFT_SYMBOL_ERROR_CLIP = 1.75;
+    /**
+     * Per-symbol error magnitude clip applied when the branch metric of phase wrapped soft symbols (ie P25 LSM) is
+     * weighted by symbol reliabilities.  The reliability weighting de-emphasizes the corrupted (low envelope) symbols
+     * that the clip otherwise protects against, so the weighted metric doesn't clip (PI is the maximum phase wrapped
+     * error).  Noise injection testing against P25 LSM recordings found that no clip produced 1.6-7.0% more valid
+     * messages than the 1.75 clip.  Soft symbols that aren't phase wrapped (ie C4FM) can have errors beyond PI from FM
+     * discriminator clicks, so the weighted metric for those uses the SOFT_SYMBOL_ERROR_CLIP, which testing against a
+     * P25 C4FM recording found 4.5% better than no clip.
+     */
+    private static final double WEIGHTED_PHASE_WRAPPED_SOFT_SYMBOL_ERROR_CLIP = Math.PI;
+    private static final double TWO_PI = 2.0 * Math.PI;
     public ViterbiDecoder_1_2_P25()
     {
         super(2,4);
@@ -69,10 +81,46 @@ public class ViterbiDecoder_1_2_P25 extends ViterbiDecoder
      */
     public CorrectedBinaryMessage decodeSoft(float[] softSymbols)
     {
+        return decodeSoft(softSymbols, false);
+    }
+
+    /**
+     * Soft decision Viterbi decoding of a deinterleaved 1/2 rate TCM encoded P25 block.  See decodeSoft(float[]).
+     *
+     * @param softSymbols 98 deinterleaved soft symbols (radians, ideal values +/- PI/4 and +/- 3*PI/4).
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie differentially demodulated P25 LSM)
+     * where the soft symbol error is measured around the circle so that a soft symbol near +/- PI is near both the
+     * +3 and -3 symbols.  False for C4FM where soft symbols are not wrapped and a soft symbol beyond +/- PI favors the
+     * outer symbol of the same polarity.
+     * @return decoded 96-bit message
+     */
+    public CorrectedBinaryMessage decodeSoft(float[] softSymbols, boolean phaseWrapped)
+    {
+        return decodeSoft(softSymbols, null, phaseWrapped);
+    }
+
+    /**
+     * Soft decision Viterbi decoding of a deinterleaved 1/2 rate TCM encoded P25 block with each symbol's branch metric
+     * weighted by the symbol's reliability (ie the inverse of the soft symbol noise variance).  See decodeSoft(float[]).
+     *
+     * The weights only need to be proportional to the symbol reliabilities, since they're normalized to unity mean
+     * across the block.
+     *
+     * @param softSymbols 98 deinterleaved soft symbols (radians, ideal values +/- PI/4 and +/- 3*PI/4).
+     * @param reliabilities for each deinterleaved soft symbol, or null to decode without weighting.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie differentially demodulated P25 LSM)
+     * @return decoded 96-bit message
+     */
+    public CorrectedBinaryMessage decodeSoft(float[] softSymbols, float[] reliabilities, boolean phaseWrapped)
+    {
         if(softSymbols == null || softSymbols.length % 2 != 0 || softSymbols.length < 4)
         {
             throw new IllegalArgumentException("Soft symbols must contain an integral number of symbol pairs");
         }
+
+        double[] weights = getWeights(reliabilities, softSymbols.length);
+        double clip = weights != null && phaseWrapped ? WEIGHTED_PHASE_WRAPPED_SOFT_SYMBOL_ERROR_CLIP :
+                SOFT_SYMBOL_ERROR_CLIP;
 
         int steps = softSymbols.length / 2;
         int states = getInputValueCount();
@@ -92,9 +140,18 @@ public class ViterbiDecoder_1_2_P25 extends ViterbiDecoder
 
             for(int output = 0; output < branchMetrics.length; output++)
             {
-                double errorFirst = Math.min(Math.abs(first - getIdealPhase(output >> 2)), SOFT_SYMBOL_ERROR_CLIP);
-                double errorSecond = Math.min(Math.abs(second - getIdealPhase(output & 3)), SOFT_SYMBOL_ERROR_CLIP);
-                branchMetrics[output] = errorFirst * errorFirst + errorSecond * errorSecond;
+                double errorFirst = Math.min(getError(first, getIdealPhase(output >> 2), phaseWrapped), clip);
+                double errorSecond = Math.min(getError(second, getIdealPhase(output & 3), phaseWrapped), clip);
+
+                if(weights != null)
+                {
+                    branchMetrics[output] = weights[2 * step] * errorFirst * errorFirst +
+                            weights[2 * step + 1] * errorSecond * errorSecond;
+                }
+                else
+                {
+                    branchMetrics[output] = errorFirst * errorFirst + errorSecond * errorSecond;
+                }
             }
 
             java.util.Arrays.fill(nextMetrics, Double.MAX_VALUE);
@@ -168,6 +225,66 @@ public class ViterbiDecoder_1_2_P25 extends ViterbiDecoder
 
         message.setCorrectedBitCount(bitErrors);
         return message;
+    }
+
+    /**
+     * Absolute error between the soft symbol and the ideal symbol phase.
+     * @param softSymbol received (radians)
+     * @param idealPhase of the candidate symbol (radians)
+     * @param phaseWrapped to measure the error around the circle (+/- PI)
+     * @return absolute error in radians
+     */
+    private static double getError(float softSymbol, float idealPhase, boolean phaseWrapped)
+    {
+        double error = softSymbol - idealPhase;
+
+        if(phaseWrapped)
+        {
+            error -= TWO_PI * Math.round(error / TWO_PI);
+        }
+
+        return Math.abs(error);
+    }
+
+    /**
+     * Normalizes the symbol reliabilities to unity mean for use as branch metric weights.
+     * @param reliabilities for each soft symbol, or null.
+     * @param length of the soft symbol array.
+     * @return weights or null when the reliabilities are unavailable or unusable (ie all zero).
+     */
+    private static double[] getWeights(float[] reliabilities, int length)
+    {
+        if(reliabilities == null || reliabilities.length != length)
+        {
+            return null;
+        }
+
+        double sum = 0.0;
+
+        for(float reliability : reliabilities)
+        {
+            if(!(reliability >= 0.0f) || Float.isInfinite(reliability)) //Rejects NaN
+            {
+                return null;
+            }
+
+            sum += reliability;
+        }
+
+        if(sum <= 0.0)
+        {
+            return null;
+        }
+
+        double scale = length / sum;
+        double[] weights = new double[length];
+
+        for(int x = 0; x < length; x++)
+        {
+            weights[x] = reliabilities[x] * scale;
+        }
+
+        return weights;
     }
 
     /**

@@ -23,8 +23,6 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.state.MultiChannelState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
 import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
@@ -51,9 +49,7 @@ import io.github.dsheirer.source.wave.ComplexWaveSource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +65,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     protected CostasLoop mCostasLoop;
     protected P25P2MessageFramer mMessageFramer;
     protected IComplexGainControl mAGC = ComplexGainFactory.getComplexGainControl();
-    private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     protected IRealFilter mIBasebandFilter;
     protected IRealFilter mQBasebandFilter;
     private DecodeConfigP25Phase2 mDecodeConfigP25Phase2;
@@ -107,8 +102,10 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     {
         super.setSampleRate(sampleRate);
 
-        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
-        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
+        //Note: the baseband filter is designed for a 50 kHz sample rate, independent of the current sample rate.
+        float[] basebandTaps = FilterFactory.getRemezLowPass(50000.0, 6500, 0.005, 7200, 0.01);
+        mIBasebandFilter = FilterFactory.getRealFilter(basebandTaps);
+        mQBasebandFilter = FilterFactory.getRealFilter(basebandTaps);
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
 
@@ -150,48 +147,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
 
         ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
-    }
-
-    /**
-     * Constructs a baseband filter for this decoder using the current sample rate
-     */
-    private float[] getBasebandFilter()
-    {
-        //Attempt to reuse a cached (ie already-designed) filter if available
-        float[] filter = mBasebandFilters.get(getSampleRate());
-
-        if(filter == null)
-        {
-            FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                .sampleRate(50000.0)
-                .passBandCutoff(6500)
-                .passBandAmplitude(1.0)
-                .passBandRipple(0.005)
-                .stopBandAmplitude(0.0)
-                .stopBandStart(7200)
-                .stopBandRipple(0.01)
-                .build();
-
-            try
-            {
-                filter = FilterFactory.getTaps(specification);
-            }
-            catch(FilterDesignException fde)
-            {
-                mLog.error("Couldn't design low pass baseband filter for sample rate: " + getSampleRate());
-            }
-
-            if(filter != null)
-            {
-                mBasebandFilters.put(getSampleRate(), filter);
-            }
-            else
-            {
-                throw new IllegalStateException("Couldn't design a C4FM baseband filter for sample rate: " + getSampleRate());
-            }
-        }
-
-        return filter;
     }
 
     @Override

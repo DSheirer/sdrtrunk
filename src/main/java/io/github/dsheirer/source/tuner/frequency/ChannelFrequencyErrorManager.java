@@ -42,6 +42,7 @@ public class ChannelFrequencyErrorManager implements ISourceEventListener, Liste
     private final TunerChannelSource mTunerChannelSource;
     private final TunerFrequencyErrorManager mParent;
     private ScheduledFuture<?> mScheduledFuture;
+    //Guarded by this instance: updated by this manager's timer and by the tuner's PPM change notifications
     private long mAppliedFrequencyCorrection = 0;
     private long mAverageRequestedCorrection = 0;
     private boolean mCurrentForTunerProcessing = false;
@@ -73,7 +74,7 @@ public class ChannelFrequencyErrorManager implements ISourceEventListener, Liste
      * Snapshot of the current applied frequency correction for the channel.
      * @return total frequency error in Hertz.
      */
-    public long getFrequencyError()
+    public synchronized long getFrequencyError()
     {
         return mAppliedFrequencyCorrection;
     }
@@ -81,12 +82,22 @@ public class ChannelFrequencyErrorManager implements ISourceEventListener, Liste
     /**
      * Receive a notification from the parent tuner is updating the PPM and frequency correction change value.
      *
-     * Note: on receiving this change notification, the tuner manager will expose the current PPM and correction values.
+     * The tuner PPM change shifts every channel by the change: a positive PPM change lowers the tuned frequency, which
+     * raises each channel's signal frequency by the change, the same as a positive channel frequency correction.  The
+     * tuner absorbs the change from the average of the channel corrections, so remove the change from this channel's
+     * applied correction to keep the channel's net correction (and the decoder's view of the signal) unchanged.
+     * Otherwise, each PPM change appears to the decoder as a sudden carrier offset step that the channel correction
+     * removes over the following correction intervals, while the tuner continues to absorb the stale channel
+     * correction.
+     *
+     * Note: invoked by the tuner's frequency error manager while holding the tuner controller lock, so this method
+     * must not call back into the tuner.
      * @param change in Hertz resulting from the tuner's PPM update.
      */
-    public void receive(long change)
+    public synchronized void receive(long change)
     {
-        //The TunerFrequencyErrorManager notifies this channel of the correction applied at the tuner
+        mAppliedFrequencyCorrection -= change;
+        mTunerChannelSource.setFrequencyCorrection(mAppliedFrequencyCorrection);
     }
 
     /**
@@ -133,16 +144,25 @@ public class ChannelFrequencyErrorManager implements ISourceEventListener, Liste
         if(mCurrentForChannelProcessing)
         {
             long partialCorrection = Math.clamp(mAverageRequestedCorrection, -MAXIMUM_CHANNEL_ERROR_CORRECTION_PER_INTERVAL, MAXIMUM_CHANNEL_ERROR_CORRECTION_PER_INTERVAL);
+            long appliedFrequencyCorrection;
 
-            if(partialCorrection != 0)
+            //receive(long change) holds the tuner controller lock while it locks this instance, so the status
+            //notification below, which calls into the tuner, is created outside of this block to avoid a lock order
+            //inversion.
+            synchronized(this)
             {
-                mAppliedFrequencyCorrection += (long)(partialCorrection * ERROR_PROCESSING_GAIN);
-                mTunerChannelSource.setFrequencyCorrection(mAppliedFrequencyCorrection);
-                mRequestedCorrectAveragingBuffer.reset();
+                if(partialCorrection != 0)
+                {
+                    mAppliedFrequencyCorrection += (long)(partialCorrection * ERROR_PROCESSING_GAIN);
+                    mTunerChannelSource.setFrequencyCorrection(mAppliedFrequencyCorrection);
+                    mRequestedCorrectAveragingBuffer.reset();
+                }
+
+                appliedFrequencyCorrection = mAppliedFrequencyCorrection;
             }
 
             ChannelFrequencyCorrectionStatusNotification notification = ChannelFrequencyCorrectionStatusNotification
-                    .create(mTunerChannelSource, mAverageRequestedCorrection, mAppliedFrequencyCorrection, mParent.getTunerPPM(),
+                    .create(mTunerChannelSource, mAverageRequestedCorrection, appliedFrequencyCorrection, mParent.getTunerPPM(),
                             mParent.getTunerFrequencyCorrection(), mParent.isEnabled());
             mTunerChannelSource.broadcastConsumerSourceEvent(notification);
             mAverageRequestedCorrection = 0;
@@ -152,7 +172,7 @@ public class ChannelFrequencyErrorManager implements ISourceEventListener, Liste
         else
         {
             ChannelFrequencyCorrectionStatusNotification notification = ChannelFrequencyCorrectionStatusNotification
-                    .create(mTunerChannelSource, 0, mAppliedFrequencyCorrection, mParent.getTunerPPM(),
+                    .create(mTunerChannelSource, 0, getFrequencyError(), mParent.getTunerPPM(),
                             mParent.getTunerFrequencyCorrection(), mParent.isEnabled());
             mTunerChannelSource.broadcastConsumerSourceEvent(notification);
         }

@@ -74,6 +74,16 @@ public class TDULCMessage extends P25P1Message implements IFrequencyBandReceiver
         return P25P1DataUnitID.TERMINATOR_DATA_UNIT_LINK_CONTROL;
     }
 
+    /**
+     * Indicates if the link control word passed Reed-Solomon error detection and correction.  Decodes the link control
+     * word when it's not already decoded.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return getLinkControlWord().isValid();
+    }
+
     public LinkControlWord getLinkControlWord()
     {
         if(mLinkControlWord == null)

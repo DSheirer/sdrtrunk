@@ -59,6 +59,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
     //Soft symbols (radians) for the NID dibits, or NaN when the soft symbol wasn't provided
     private float[] mNIDSoftBuffer = new float[DIBIT_LENGTH_NID];
     private float mCurrentSoftSymbol = Float.NaN;
+    private float mCurrentReliability = Float.NaN;
     //NID dibit index that carries the embedded status symbol
     private static final int NID_STATUS_DIBIT_INDEX = 11;
     //Soft decision NID decoding: maximum hard bit disagreements (of 63) allowed for the best candidate codeword.
@@ -76,6 +77,8 @@ public class P25P1MessageFramer extends C4FMMessageFramer
     //Indicates the NID under capture follows a sync detected while a message was still assembling
     private boolean mPreemptiveNIDCheck = false;
 
+    //Indicates soft symbols are phase wrapped to +/- PI (ie P25 LSM) for soft decision decoding
+    private boolean mPhaseWrappedSoftSymbols = false;
     private Listener<IMessage> mMessageListener;
     private boolean mMessageAssemblyRequired = false;
     private boolean mRunning = false;
@@ -97,6 +100,16 @@ public class P25P1MessageFramer extends C4FMMessageFramer
      */
     public P25P1MessageFramer()
     {
+    }
+
+    /**
+     * Sets the soft symbol domain for soft decision decoding.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie differentially demodulated P25 LSM)
+     * or false (default) for C4FM soft symbols that are not phase wrapped.
+     */
+    public void setPhaseWrappedSoftSymbols(boolean phaseWrapped)
+    {
+        mPhaseWrappedSoftSymbols = phaseWrapped;
     }
 
     /**
@@ -163,6 +176,20 @@ public class P25P1MessageFramer extends C4FMMessageFramer
     }
 
     /**
+     * Process symbol decision, the soft symbol it was decided from and the soft symbol reliability, without sync
+     * detection.  The reliability weights the soft decision decoding.
+     * @param symbol that was demodulated.
+     * @param softSymbol equalized soft symbol in radians.
+     * @param reliability of the soft symbol.
+     */
+    @Override
+    public boolean process(Dibit symbol, float softSymbol, float reliability)
+    {
+        mCurrentReliability = reliability;
+        return process(symbol, softSymbol);
+    }
+
+    /**
      * Process hard symbol decision without sync detection.
      * @param symbol that was demodulated.
      */
@@ -171,6 +198,8 @@ public class P25P1MessageFramer extends C4FMMessageFramer
         boolean validNIDDetected = false;
         float softSymbol = mCurrentSoftSymbol;
         mCurrentSoftSymbol = Float.NaN;
+        float reliability = mCurrentReliability;
+        mCurrentReliability = Float.NaN;
 
         mDebugSymbolCount++;
         mDibitSinceTimestampCounter++;
@@ -215,12 +244,12 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                 //If we still have an assembler, feed it the current dibit (e.g. TSBK and PDU continuation block assembly)
                 if(mMessageAssembler != null)
                 {
-                    mMessageAssembler.receive(symbol, softSymbol);
+                    mMessageAssembler.receive(symbol, softSymbol, reliability);
                 }
             }
             else
             {
-                mMessageAssembler.receive(symbol, softSymbol);
+                mMessageAssembler.receive(symbol, softSymbol, reliability);
             }
         }
         //Start a message assembler after ignoring 24x Sync, 32x NID, and 1x status dibits. Trigger assembler
@@ -406,7 +435,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
         {
             case TRUNKING_SIGNALING_BLOCK_1:
                 CorrectedBinaryMessage message1 = mMessageAssembler.getMessage().getSubMessage(0, 196);
-                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message1, mMessageAssembler.getSoftSymbols(0, 196), mMessageAssembler.getNAC(), getTimestamp());
+                TSBKMessage tsbk1 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message1, mMessageAssembler.getSoftSymbols(0, 196), mMessageAssembler.getReliabilities(0, 196), mPhaseWrappedSoftSymbols, mMessageAssembler.getNAC(), getTimestamp());
 
                 if(tsbk1 != null)
                 {
@@ -437,7 +466,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                 break;
             case TRUNKING_SIGNALING_BLOCK_2:
                 CorrectedBinaryMessage message2 = mMessageAssembler.getMessage().getSubMessage(196, 392);
-                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message2, mMessageAssembler.getSoftSymbols(196, 392), mMessageAssembler.getNAC(), getTimestamp());
+                TSBKMessage tsbk2 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message2, mMessageAssembler.getSoftSymbols(196, 392), mMessageAssembler.getReliabilities(196, 392), mPhaseWrappedSoftSymbols, mMessageAssembler.getNAC(), getTimestamp());
 
                 if(tsbk2 != null)
                 {
@@ -466,7 +495,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                 break;
             case TRUNKING_SIGNALING_BLOCK_3:
                 CorrectedBinaryMessage message3 = mMessageAssembler.getMessage().getSubMessage(392, 588);
-                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message3, mMessageAssembler.getSoftSymbols(392, 588), mMessageAssembler.getNAC(), getTimestamp());
+                TSBKMessage tsbk3 = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(), mMessageAssembler.getDataUnitID(), message3, mMessageAssembler.getSoftSymbols(392, 588), mMessageAssembler.getReliabilities(392, 588), mPhaseWrappedSoftSymbols, mMessageAssembler.getNAC(), getTimestamp());
                 broadcast(tsbk3);
 
                 adjustDibitCounterFromMessageAssembler();
@@ -511,7 +540,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
         {
             case PACKET_DATA_UNIT:
                 CorrectedBinaryMessage message = mMessageAssembler.getMessage().getSubMessage(0, 196);
-                PDUHeader header = PDUMessageFactory.createHeader(message, mMessageAssembler.getSoftSymbols(0, 196));
+                PDUHeader header = PDUMessageFactory.createHeader(message, mMessageAssembler.getSoftSymbols(0, 196), mMessageAssembler.getReliabilities(0, 196), mPhaseWrappedSoftSymbols);
 
                 if(header != null)
                 {
@@ -546,7 +575,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB1, mMessageAssembler.getSoftSymbols(196, 392)));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB1, mMessageAssembler.getSoftSymbols(196, 392), mMessageAssembler.getReliabilities(196, 392), mPhaseWrappedSoftSymbols));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -577,7 +606,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB2, mMessageAssembler.getSoftSymbols(392, 588)));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB2, mMessageAssembler.getSoftSymbols(392, 588), mMessageAssembler.getReliabilities(392, 588), mPhaseWrappedSoftSymbols));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -608,7 +637,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB3, mMessageAssembler.getSoftSymbols(588, 784)));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB3, mMessageAssembler.getSoftSymbols(588, 784), mMessageAssembler.getReliabilities(588, 784), mPhaseWrappedSoftSymbols));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -639,7 +668,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB4, mMessageAssembler.getSoftSymbols(784, 980)));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB4, mMessageAssembler.getSoftSymbols(784, 980), mMessageAssembler.getReliabilities(784, 980), mPhaseWrappedSoftSymbols));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -670,7 +699,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB5, mMessageAssembler.getSoftSymbols(980, 1176)));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB5, mMessageAssembler.getSoftSymbols(980, 1176), mMessageAssembler.getReliabilities(980, 1176), mPhaseWrappedSoftSymbols));
                     }
 
                     adjustDibitCounterFromMessageAssembler();

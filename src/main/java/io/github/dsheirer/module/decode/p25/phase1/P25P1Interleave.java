@@ -126,6 +126,7 @@ public class P25P1Interleave
      */
     /**
      * Deinterleaves the soft symbols for a 196-bit (98 dibit) data block (TSBK, PDU header, unconfirmed data block).
+     * Also deinterleaves any other per-dibit values, such as the soft symbol reliabilities.
      * @param interleaved 98 soft symbols in transmitted order
      * @return 98 soft symbols in deinterleaved order.
      */

@@ -23,7 +23,6 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
@@ -40,7 +39,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
-import io.github.dsheirer.module.decode.nxdn.NXDNFilterDesigner;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
@@ -54,8 +52,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +84,8 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     //DMR transmit filter is a root raised cosine with 0.2 roll-off, so the receive filter is a matched RRC filter.
     private static final double RECEIVE_FILTER_ALPHA = 0.2;
     private static final int RECEIVE_FILTER_SYMBOL_SPAN = 12;
-    private static final Map<Double,float[]> BASEBAND_FILTERS = new ConcurrentHashMap<>();
+    private static final double BASEBAND_FILTER_PASS_BAND = 5100.0; //Hertz
+    private static final double BASEBAND_FILTER_STOP_BAND = 6500.0; //Hertz
     private IDemodulator mDemodulator;
     private final DMRMessageFramer mMessageFramer;
     private final DMRSymbolProcessor mSymbolProcessor;
@@ -155,17 +152,13 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         setDecimatedSampleRate(decimatedSampleRate);
 
         //Receive filter: root raised cosine matched to the DMR transmit filter, normalized to unity gain at DC.
-        double[] receiveFilterTaps = NXDNFilterDesigner.designRootRaisedCosine(decimatedSampleRate, SYMBOL_RATE,
-                RECEIVE_FILTER_ALPHA, RECEIVE_FILTER_SYMBOL_SPAN);
-        float[] taps = new float[receiveFilterTaps.length];
-        for(int x = 0; x < receiveFilterTaps.length; x++)
-        {
-            taps[x] = (float)receiveFilterTaps[x];
-        }
-        mReceiveFilter = new RealFIRFilter(taps);
+        mReceiveFilter = new RealFIRFilter(FilterFactory.getRootRaisedCosineFilter(decimatedSampleRate, SYMBOL_RATE,
+                RECEIVE_FILTER_ALPHA, RECEIVE_FILTER_SYMBOL_SPAN));
 
-        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
+        float[] basebandTaps = FilterFactory.getRemezLowPass(decimatedSampleRate, BASEBAND_FILTER_PASS_BAND,
+                BASEBAND_FILTER_STOP_BAND);
+        mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
+        mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
 
         mDemodulator = FmDemodulatorFactory.getFmDemodulator();
         mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
@@ -195,51 +188,6 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
 
         //Process demodulated samples into symbols and apply message sync detection and framing.
         mSymbolProcessor.process(demodulated);
-    }
-
-    /**
-     * Constructs a baseband filter for this decoder using the current sample rate
-     */
-    private float[] getBasebandFilter(double sampleRate)
-    {
-        //Filter cache is shared across decoder instances that may be started from different threads
-        float[] cached = BASEBAND_FILTERS.get(sampleRate);
-
-        if(cached != null)
-        {
-            return cached;
-        }
-
-        FIRFilterSpecification specification = FIRFilterSpecification
-                .lowPassBuilder()
-                .sampleRate(sampleRate)
-                .passBandCutoff(5100)
-                .passBandAmplitude(1.0).passBandRipple(0.01) //.01
-                .stopBandAmplitude(0.0).stopBandStart(6500) //6500
-                .stopBandRipple(0.01).build();
-
-        float[] coefficients = null;
-
-        try
-        {
-            coefficients = FilterFactory.getTaps(specification);
-
-            if(coefficients != null)
-            {
-                BASEBAND_FILTERS.put(sampleRate, coefficients);
-            }
-        }
-        catch(Exception e) //FilterDesignException or runtime failures from the Remez designer
-        {
-            LOGGER.error("Error designing DMR baseband filter for sample rate [" + sampleRate + "]", e);
-        }
-
-        if(coefficients == null)
-        {
-            throw new IllegalStateException("Unable to design low pass filter for sample rate [" + sampleRate + "]");
-        }
-
-        return coefficients;
     }
 
     /**
@@ -306,8 +254,13 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
             switch(sourceEvent.getEvent())
             {
                 case NOTIFICATION_FREQUENCY_CHANGE:
-                case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                     mSymbolProcessor.resetBalance();
+                    break;
+                case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                    //Tuner PPM changes are small (auto-PPM steps are <= 10 Hz) and the symbol processor balance tracks
+                    //the change.  Resetting drops the symbol processor synchronization, and the symbol timing tracking
+                    //with it, until the next sync detection, which costs messages on channels with long sync intervals
+                    //(ie P25 voice).
                     break;
                 case NOTIFICATION_SAMPLE_RATE_CHANGE:
                     setSampleRate(sourceEvent.getValue().doubleValue());

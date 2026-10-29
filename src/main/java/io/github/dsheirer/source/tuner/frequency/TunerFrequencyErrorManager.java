@@ -132,6 +132,13 @@ public class TunerFrequencyErrorManager implements ISourceEventProcessor
                     }
                 }
 
+                //Skip the update when no channel has reported a measurement since the last update.  A divide by zero
+                //exception would cancel all subsequent executions of this scheduled task.
+                if(count == 0)
+                {
+                    return;
+                }
+
                 requestedChangeHz /= count;
                 mTunerController.setMeasuredFrequencyError((int)requestedChangeHz);
 
