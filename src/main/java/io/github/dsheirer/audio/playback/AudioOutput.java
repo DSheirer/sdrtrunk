@@ -49,6 +49,21 @@ import javax.sound.sampled.SourceDataLine;
  */
 public class AudioOutput implements LineListener
 {
+    /**
+     * Receives a copy of the PCM written to the speakers while a remote desktop session is open.
+     */
+    public interface RemoteListener
+    {
+        void onPlayback(byte[] littleEndianPcm, int channels, int sampleRate);
+    }
+
+    private static volatile RemoteListener sRemoteListener;
+
+    public static void setRemoteListener(RemoteListener listener)
+    {
+        sRemoteListener = listener;
+    }
+
     private static final Logger mLog = LoggerFactory.getLogger(AudioOutput.class);
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(mLog);
     private static final int BUFFER_SIZE_SAMPLES = 1000; //At 8 kHz audio
@@ -242,6 +257,20 @@ public class AudioOutput implements LineListener
 
         if(buffer != null)
         {
+            RemoteListener listener = sRemoteListener;
+            if(listener != null)
+            {
+                try
+                {
+                    byte[] pcm = Arrays.copyOf(buffer.array(), buffer.array().length);
+                    listener.onPlayback(pcm, mAudioProvider.getAudioFormat().getChannels(),
+                        Math.round(mAudioProvider.getAudioFormat().getSampleRate()));
+                }
+                catch(Exception ignored)
+                {
+                }
+            }
+
             //This is a blocking method call.
             int wrote = mSourceDataLine.write(buffer.array(), 0, buffer.array().length);
 

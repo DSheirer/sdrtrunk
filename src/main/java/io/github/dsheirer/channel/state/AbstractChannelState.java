@@ -110,6 +110,11 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
      */
     public abstract boolean isTeardownState();
 
+    /**
+     * Current decoder state for each timeslot. Single-channel decoders return one state.
+     */
+    public abstract List<State> getStates();
+
     public abstract List<ChannelMetadata> getChannelMetadata();
 
     public abstract void updateChannelStateIdentifiers(IdentifierUpdateNotification notification);

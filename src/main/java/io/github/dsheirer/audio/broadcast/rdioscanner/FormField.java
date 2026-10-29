@@ -28,6 +28,8 @@ public enum FormField
     AUDIO_NAME("audioName"),
     AUDIO_TYPE("audioType"),
     DATE_TIME("dateTime"),
+    DURATION("duration"),
+    RECORDING_ID("recordingId"),
     FREQUENCIES("frequencies"),
     FREQUENCY("frequency"),
     KEY("key"),
