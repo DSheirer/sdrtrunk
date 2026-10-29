@@ -264,6 +264,7 @@ public class SynthesizerViewer extends JFrame
         private TwoChannelSynthesizerM2 mSynthesizer;
         private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
         private int mSamplesPerCycle = CHANNEL_SAMPLE_RATE / DATA_GENERATOR_FRAME_RATE;
+        private boolean mOddSample = false;
 
         public DataGenerationManager()
         {
@@ -284,7 +285,23 @@ public class SynthesizerViewer extends JFrame
             ComplexSamples channel1Buffer = getChannel1ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle, 0l);
             ComplexSamples channel2Buffer = getChannel2ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle, 0l);
 
-            ComplexSamples synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
+            //Translate channel 2 by FS/2 so that it sits adjacent to channel 1 for synthesis
+            float[] i2 = channel2Buffer.i().clone();
+            float[] q2 = channel2Buffer.q().clone();
+
+            for(int x = 0; x < i2.length; x++)
+            {
+                if(mOddSample)
+                {
+                    i2[x] = -i2[x];
+                    q2[x] = -q2[x];
+                }
+
+                mOddSample = !mOddSample;
+            }
+
+            ComplexSamples synthesizedBuffer = mSynthesizer.process(channel1Buffer,
+                    new ComplexSamples(i2, q2, channel2Buffer.timestamp()));
             getChannel1Panel().receive(new FloatNativeBuffer(channel1Buffer));
 
             getChannel2Panel().receive(new FloatNativeBuffer(channel2Buffer));
