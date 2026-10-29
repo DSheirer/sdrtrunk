@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.ReedSolomon_44_16_29_P25;
+import io.github.dsheirer.edac.ReedSolomonErasureDecoder;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice2Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice4Timeslot;
@@ -42,6 +42,10 @@ import org.slf4j.LoggerFactory;
 public class EncryptionSynchronizationSequenceProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(EncryptionSynchronizationSequenceProcessor.class);
+    /**
+     * RS(44,16,29) shortened from RS(63,35,29).  The decoder has no mutable state.
+     */
+    private static final ReedSolomonErasureDecoder REED_SOLOMON = ReedSolomonErasureDecoder.p25_63_35_29();
 
     private BinaryMessage mESSA;
     private BinaryMessage mESSB1;
@@ -114,70 +118,51 @@ public class EncryptionSynchronizationSequenceProcessor
     public EncryptionSynchronizationSequence getSequence()
     {
         //We need a minimum of ESS-A and at least one of the ESS-B sequences before we can decode.  The Reed Solomon
-        //code can correct up to 14 symbol errors across the 16 info symbols provided by ESS-B and the 28 parity symbols
-        //provided by ESS-A
+        //code can correct v symbol errors and e erasures, where 2v + e <= 28, across the 16 info symbols provided by
+        //ESS-B and the 28 parity symbols provided by ESS-A.  The symbols for any missing ESS-B fragments are first
+        //decoded as zero valued symbols, which are correct for unencrypted calls (ie zero key ID and message
+        //indicator), and then as erasures, which supports encrypted calls.
         if(mESSA != null && (mESSB1 != null || mESSB2 != null || mESSB3 != null || mESSB4 != null))
         {
             //We have to reverse the order of the information hexbits and the RS parity hexbits in the array for
             //the RS algorithm.
             int[] input = new int[63];
-
-            int inputPointer = 0;
+            int[] erasures = new int[12];
+            int erasureCount = 0;
 
             for(int x = 27; x >= 0; x--)
             {
-                input[inputPointer++] = mESSA.getInt(x * 6, x * 6 + 5);
+                input[27 - x] = mESSA.getInt(x * 6, x * 6 + 5);
             }
 
-            if(mESSB4 != null)
-            {
-                for(int x = 3; x >= 0; x--)
-                {
-                    input[inputPointer++] = mESSB4.getInt(x * 6, x * 6 + 5);
-                }
-            }
-            else
-            {
-                inputPointer += 4;
-            }
+            BinaryMessage[] essB = {mESSB4, mESSB3, mESSB2, mESSB1};
 
-            if(mESSB3 != null)
+            for(int fragment = 0; fragment < essB.length; fragment++)
             {
-                for(int x = 3; x >= 0; x--)
-                {
-                    input[inputPointer++] = mESSB3.getInt(x * 6, x * 6 + 5);
-                }
-            }
-            else
-            {
-                inputPointer += 4;
-            }
+                int inputPointer = 28 + (fragment * 4);
 
-            if(mESSB2 != null)
-            {
                 for(int x = 3; x >= 0; x--)
                 {
-                    input[inputPointer++] = mESSB2.getInt(x * 6, x * 6 + 5);
-                }
-            }
-            else
-            {
-                inputPointer += 4;
-            }
+                    if(essB[fragment] != null)
+                    {
+                        input[inputPointer] = essB[fragment].getInt(x * 6, x * 6 + 5);
+                    }
+                    else
+                    {
+                        erasures[erasureCount++] = inputPointer;
+                    }
 
-            if(mESSB1 != null)
-            {
-                for(int x = 3; x >= 0; x--)
-                {
-                    input[inputPointer++] = mESSB1.getInt(x * 6, x * 6 + 5);
+                    inputPointer++;
                 }
             }
 
             int[] output = new int[63];
+            boolean irrecoverableErrors = decode(input, output, erasures, 0);
 
-            ReedSolomon_44_16_29_P25 rs = new ReedSolomon_44_16_29_P25();
-
-            boolean irrecoverableErrors = rs.decode(input, output);
+            if(irrecoverableErrors && erasureCount > 0)
+            {
+                irrecoverableErrors = decode(input, output, erasures, erasureCount);
+            }
 
             if(!irrecoverableErrors)
             {
@@ -188,11 +173,7 @@ public class EncryptionSynchronizationSequenceProcessor
 
                 for(int x = 43; x >= 28; x--)
                 {
-                    if(output[x] != -1)
-                    {
-                        message.load(pointer, 6, output[x]);
-                    }
-
+                    message.load(pointer, 6, output[x]);
                     pointer += 6;
                 }
 
@@ -201,6 +182,33 @@ public class EncryptionSynchronizationSequenceProcessor
         }
 
         return null;
+    }
+
+    /**
+     * Decodes the RS(44,16,29) codeword.
+     * @param input codeword
+     * @param output for the corrected codeword
+     * @param erasures positions of the erased symbols
+     * @param erasureCount number of erasure positions to use
+     * @return true if the codeword has irrecoverable errors or a correction is located in a shortened symbol.
+     */
+    private static boolean decode(int[] input, int[] output, int[] erasures, int erasureCount)
+    {
+        if(REED_SOLOMON.decode(input, output, erasures, erasureCount))
+        {
+            return true;
+        }
+
+        //The shortened symbols are known to be zero, so a correction in a shortened symbol is a decoding failure
+        for(int x = 44; x < output.length; x++)
+        {
+            if(output[x] != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

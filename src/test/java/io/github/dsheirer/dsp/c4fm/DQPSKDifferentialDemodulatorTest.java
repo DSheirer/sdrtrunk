@@ -17,7 +17,7 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25.phase1;
+package io.github.dsheirer.dsp.c4fm;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.symbol.Dibit;
@@ -28,9 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * JUnit tests for the P25 Phase 1 LSM differential demodulator and differential integrator filter design.
+ * JUnit tests for the DQPSK differential demodulator and differential integrator filter design.
  */
-public class P25P1DifferentialDemodulatorLSMTest
+public class DQPSKDifferentialDemodulatorTest
 {
     private static final int SAMPLE_RATE = 24000;
     private static final int SAMPLES_PER_SYMBOL = 5;
@@ -122,7 +122,7 @@ public class P25P1DifferentialDemodulatorLSMTest
     void testOffsetRemovalAndSymbolRecovery()
     {
         SignalGenerator generator = new SignalGenerator(300, 0.0);
-        P25P1DifferentialDemodulatorLSM demodulator = new P25P1DifferentialDemodulatorLSM();
+        DQPSKDifferentialDemodulator demodulator = new DQPSKDifferentialDemodulator();
         demodulator.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
         Dibit[] completed = new Dibit[BUFFER_LENGTH];
         int symbolCount = 0;
@@ -164,7 +164,7 @@ public class P25P1DifferentialDemodulatorLSMTest
     void testAmbiguitySearch()
     {
         SignalGenerator generator = new SignalGenerator(-750, 0.1);
-        P25P1DifferentialDemodulatorLSM demodulator = new P25P1DifferentialDemodulatorLSM();
+        DQPSKDifferentialDemodulator demodulator = new DQPSKDifferentialDemodulator();
         demodulator.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
         Dibit[] completed = new Dibit[BUFFER_LENGTH];
         boolean resolved = false;
@@ -197,7 +197,7 @@ public class P25P1DifferentialDemodulatorLSMTest
     void testSearchHoldsAcrossSignalGap()
     {
         SignalGenerator generator = new SignalGenerator(-750, 0.1);
-        P25P1DifferentialDemodulatorLSM demodulator = new P25P1DifferentialDemodulatorLSM();
+        DQPSKDifferentialDemodulator demodulator = new DQPSKDifferentialDemodulator();
         demodulator.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
         Dibit[] completed = new Dibit[BUFFER_LENGTH];
         boolean resolved = false;
@@ -250,8 +250,8 @@ public class P25P1DifferentialDemodulatorLSMTest
     {
         SignalGenerator generatorUnverified = new SignalGenerator(-750, 0.1);
         SignalGenerator generatorVerified = new SignalGenerator(-750, 0.1);
-        P25P1DifferentialDemodulatorLSM unverified = new P25P1DifferentialDemodulatorLSM();
-        P25P1DifferentialDemodulatorLSM verified = new P25P1DifferentialDemodulatorLSM();
+        DQPSKDifferentialDemodulator unverified = new DQPSKDifferentialDemodulator();
+        DQPSKDifferentialDemodulator verified = new DQPSKDifferentialDemodulator();
         unverified.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
         verified.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
         Dibit[] completed = new Dibit[BUFFER_LENGTH];
@@ -287,7 +287,7 @@ public class P25P1DifferentialDemodulatorLSMTest
     @Test
     void testReliabilities()
     {
-        P25P1DifferentialDemodulatorLSM demodulator = new P25P1DifferentialDemodulatorLSM();
+        DQPSKDifferentialDemodulator demodulator = new DQPSKDifferentialDemodulator();
         demodulator.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
         float[] amplitudes = new float[2 * BUFFER_LENGTH];
 
@@ -331,7 +331,7 @@ public class P25P1DifferentialDemodulatorLSMTest
     void testNoiseDoesNotMoveEstimate()
     {
         Random random = new Random(2);
-        P25P1DifferentialDemodulatorLSM demodulator = new P25P1DifferentialDemodulatorLSM();
+        DQPSKDifferentialDemodulator demodulator = new DQPSKDifferentialDemodulator();
         demodulator.setSamplesPerSymbol(SAMPLES_PER_SYMBOL);
 
         for(int buffer = 0; buffer < 2000; buffer++)

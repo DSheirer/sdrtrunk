@@ -25,6 +25,7 @@ import io.github.dsheirer.edac.bch.BCH_63_16_23_P25;
 import io.github.dsheirer.edac.trellis.P25_1_2_Node;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
+import io.github.dsheirer.module.decode.p25.phase1.sync.P25P1SyncDetector;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -252,7 +253,7 @@ public class P25P1DecoderLSMTest
     private static List<Dibit> getFrame(BitSet tsbk)
     {
         List<Dibit> data = new ArrayList<>();
-        addBits(data, 0x5575F5FF77FFL, 48);
+        addBits(data, P25P1SyncDetector.SYNC_PATTERN, 48);
         addBits(data, BCH_63_16_23_P25.encode(NAC, TSBK_DUID) << 1, 64); //64th (parity) bit is zero
         data.addAll(encodeTSBK(tsbk));
 

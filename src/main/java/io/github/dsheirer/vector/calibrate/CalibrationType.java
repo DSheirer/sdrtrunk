@@ -34,7 +34,7 @@ public enum CalibrationType
 
     AM_DEMODULATOR("AM Demodulator", 1),
     DC_REMOVAL_REAL("Real DC Removal Filter", 1),
-    DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 1),
+    DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 2),
     DIFFERENTIAL_DEMODULATOR("DQPSK Demodulator", 1),
     FILTER_FIR("FIR Filter", 1),
     FILTER_HALF_BAND_REAL_11_TAP("Real Half-Band Decimation Filter - 11 Tap", 1),
@@ -48,12 +48,13 @@ public enum CalibrationType
     INTERPOLATOR("Interpolator", 1),
     MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 1),
-    NXDN_SOFT_SYNC_DETECTOR("NXDN Soft Sync Detector", 2),
+    NXDN_SOFT_SYNC_DETECTOR("NXDN Soft Sync Detector", 3),
     OSCILLATOR_REAL("Real Oscillator", 1),
-    P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 1),
-    SAMPLE_PACKED_CONVERTER("Packed Sample Converter", 1),
-    SAMPLE_UNPACKED_INTERLEAVED_ITERATOR("Unpacked Interleaved Sample Iterator", 1),
-    SAMPLE_UNPACKED_ITERATOR("Unpacked Sample Iterator", 1),
+    P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 2),
+    P25P2_SOFT_SYNC_DETECTOR("P25 Phase 2 Soft Sync Detector", 1),
+    SAMPLE_PACKED_CONVERTER("Packed Sample Converter", 2),
+    SAMPLE_UNPACKED_INTERLEAVED_ITERATOR("Unpacked Interleaved Sample Iterator", 2),
+    SAMPLE_UNPACKED_ITERATOR("Unpacked Sample Iterator", 2),
     SQUELCHING_FM_DEMODULATOR("Squelching FM Demodulator", 1),
     WINDOW("Window", 1);
 

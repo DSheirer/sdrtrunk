@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,12 +22,8 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.bits.IntField;
-import io.github.dsheirer.edac.ReedSolomon_63_35_29_P25;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructureFailedRS;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -148,7 +144,7 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
         if(mMacMessages == null)
         {
             int[] input = new int[63];
-            int[] output = new int[63];
+            float[] reliabilities = createReliabilities();
 
 //            input[0] = 0; //Punctured
 //            input[1] = 0; //Punctured
@@ -156,115 +152,65 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
 //            input[3] = 0; //Punctured
 //            input[4] = 0; //Punctured
 //            input[5] = 0; //Punctured
-            input[6] = getInt(PARITY_22);
-            input[7] = getInt(PARITY_21);
-            input[8] = getInt(PARITY_20);
-            input[9] = getInt(PARITY_19);
-            input[10] = getInt(PARITY_18);
-            input[11] = getInt(PARITY_17);
-            input[12] = getInt(PARITY_16);
-            input[13] = getInt(PARITY_15);
-            input[14] = getInt(PARITY_14);
-            input[15] = getInt(PARITY_13);
-            input[16] = getInt(PARITY_12);
-            input[17] = getInt(PARITY_11);
-            input[18] = getInt(PARITY_10);
-            input[19] = getInt(PARITY_9);
-            input[20] = getInt(PARITY_8);
-            input[21] = getInt(PARITY_7);
-            input[22] = getInt(PARITY_6);
-            input[23] = getInt(PARITY_5);
-            input[24] = getInt(PARITY_4);
-            input[25] = getInt(PARITY_3);
-            input[26] = getInt(PARITY_2);
-            input[27] = getInt(PARITY_1);
-            input[28] = getInt(INFO_30);
-            input[29] = getInt(INFO_29);
-            input[30] = getInt(INFO_28);
-            input[31] = getInt(INFO_27);
-            input[32] = getInt(INFO_26);
-            input[33] = getInt(INFO_25);
-            input[34] = getInt(INFO_24);
-            input[35] = getInt(INFO_23);
-            input[36] = getInt(INFO_22);
-            input[37] = getInt(INFO_21);
-            input[38] = getInt(INFO_20);
-            input[39] = getInt(INFO_19);
-            input[40] = getInt(INFO_18);
-            input[41] = getInt(INFO_17);
-            input[42] = getInt(INFO_16);
-            input[43] = getInt(INFO_15);
-            input[44] = getInt(INFO_14);
-            input[45] = getInt(INFO_13);
-            input[46] = getInt(INFO_12);
-            input[47] = getInt(INFO_11);
-            input[48] = getInt(INFO_10);
-            input[49] = getInt(INFO_9);
-            input[50] = getInt(INFO_8);
-            input[51] = getInt(INFO_7);
-            input[52] = getInt(INFO_6);
-            input[53] = getInt(INFO_5);
-            input[54] = getInt(INFO_4);
-            input[55] = getInt(INFO_3);
-            input[56] = getInt(INFO_2);
-            input[57] = getInt(INFO_1);
+            load(input, reliabilities, 6, PARITY_22);
+            load(input, reliabilities, 7, PARITY_21);
+            load(input, reliabilities, 8, PARITY_20);
+            load(input, reliabilities, 9, PARITY_19);
+            load(input, reliabilities, 10, PARITY_18);
+            load(input, reliabilities, 11, PARITY_17);
+            load(input, reliabilities, 12, PARITY_16);
+            load(input, reliabilities, 13, PARITY_15);
+            load(input, reliabilities, 14, PARITY_14);
+            load(input, reliabilities, 15, PARITY_13);
+            load(input, reliabilities, 16, PARITY_12);
+            load(input, reliabilities, 17, PARITY_11);
+            load(input, reliabilities, 18, PARITY_10);
+            load(input, reliabilities, 19, PARITY_9);
+            load(input, reliabilities, 20, PARITY_8);
+            load(input, reliabilities, 21, PARITY_7);
+            load(input, reliabilities, 22, PARITY_6);
+            load(input, reliabilities, 23, PARITY_5);
+            load(input, reliabilities, 24, PARITY_4);
+            load(input, reliabilities, 25, PARITY_3);
+            load(input, reliabilities, 26, PARITY_2);
+            load(input, reliabilities, 27, PARITY_1);
+            load(input, reliabilities, 28, INFO_30);
+            load(input, reliabilities, 29, INFO_29);
+            load(input, reliabilities, 30, INFO_28);
+            load(input, reliabilities, 31, INFO_27);
+            load(input, reliabilities, 32, INFO_26);
+            load(input, reliabilities, 33, INFO_25);
+            load(input, reliabilities, 34, INFO_24);
+            load(input, reliabilities, 35, INFO_23);
+            load(input, reliabilities, 36, INFO_22);
+            load(input, reliabilities, 37, INFO_21);
+            load(input, reliabilities, 38, INFO_20);
+            load(input, reliabilities, 39, INFO_19);
+            load(input, reliabilities, 40, INFO_18);
+            load(input, reliabilities, 41, INFO_17);
+            load(input, reliabilities, 42, INFO_16);
+            load(input, reliabilities, 43, INFO_15);
+            load(input, reliabilities, 44, INFO_14);
+            load(input, reliabilities, 45, INFO_13);
+            load(input, reliabilities, 46, INFO_12);
+            load(input, reliabilities, 47, INFO_11);
+            load(input, reliabilities, 48, INFO_10);
+            load(input, reliabilities, 49, INFO_9);
+            load(input, reliabilities, 50, INFO_8);
+            load(input, reliabilities, 51, INFO_7);
+            load(input, reliabilities, 52, INFO_6);
+            load(input, reliabilities, 53, INFO_5);
+            load(input, reliabilities, 54, INFO_4);
+            load(input, reliabilities, 55, INFO_3);
+            load(input, reliabilities, 56, INFO_2);
+            load(input, reliabilities, 57, INFO_1);
 //            input[58] = 0; //Shortened
 //            input[59] = 0; //Shortened
 //            input[60] = 0; //Shortened
 //            input[61] = 0; //Shortened
 //            input[62] = 0; //Shortened
 
-            ReedSolomon_63_35_29_P25 reedSolomon_63_35_29 = new ReedSolomon_63_35_29_P25();
-
-            boolean irrecoverableErrors;
-
-            try
-            {
-                irrecoverableErrors = reedSolomon_63_35_29.decode(input, output);
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-                irrecoverableErrors = true;
-            }
-
-            CorrectedBinaryMessage binaryMessage = new CorrectedBinaryMessage(180);
-
-            int pointer = 0;
-
-            for(int x = 57; x >= 28; x--)
-            {
-                if(output[x] != -1)
-                {
-                    binaryMessage.load(pointer, 6, output[x]);
-                }
-
-                pointer += 6;
-            }
-
-
-            if(irrecoverableErrors)
-            {
-                MacMessage macMessage = new MacMessage(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp(),
-                        new MacStructureFailedRS(binaryMessage, 0));
-                macMessage.setValid(false);
-                mMacMessages = new ArrayList<>();
-                mMacMessages.add(macMessage);
-            }
-            else
-            {
-                //If we corrected any bit errors, update the original message with the bit error count
-                for(int x = 6; x <= 57; x++)
-                {
-                    if(output[x] != input[x])
-                    {
-                        binaryMessage.incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
-                    }
-                }
-
-                mMacMessages = MacMessageFactory.create(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp(), 99);
-
-            }
+            mMacMessages = decode(input, reliabilities, 6, 57, MAX_OCTET_INDEX);
         }
 
         return mMacMessages;

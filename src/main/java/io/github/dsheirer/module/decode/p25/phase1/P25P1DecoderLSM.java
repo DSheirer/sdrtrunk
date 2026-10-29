@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.dsp.c4fm.DQPSKDifferentialDemodulator;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
@@ -76,7 +77,7 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     private static final int SYMBOL_RATE = 4800;
 
     private final P25P1SymbolProcessorLSM mSymbolProcessor;
-    private final P25P1DifferentialDemodulatorLSM mDemodulator = new P25P1DifferentialDemodulatorLSM();
+    private final DQPSKDifferentialDemodulator mDemodulator = new DQPSKDifferentialDemodulator();
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
     private IRealDecimationFilter mDecimationFilterI;

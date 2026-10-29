@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,9 @@ public class P25P1SoftSyncCalibration extends Calibration
     private final P25P1SoftSyncDetector mVectorDetector128 = new P25P1SoftSyncDetectorVector128();
     private final P25P1SoftSyncDetector mVectorDetector256 = new P25P1SoftSyncDetectorVector256();
     private final P25P1SoftSyncDetector mVectorDetector512 = new P25P1SoftSyncDetectorVector512();
+    //Accumulates the sync detection scores so that the JIT compiler can't eliminate the unused sync detector
+    //calculations, which otherwise measures the loop overhead instead of the implementation.
+    private float mScoreAccumulator;
 
     /**
      * Constructs an instance
@@ -193,6 +196,7 @@ public class P25P1SoftSyncCalibration extends Calibration
     private long testScalar(float[] samples)
     {
         long count = 0;
+        float accumulator = 0.0f;
 
         long start = System.currentTimeMillis();
 
@@ -200,79 +204,88 @@ public class P25P1SoftSyncCalibration extends Calibration
         {
             for(float sample : samples)
             {
-                mScalarDetector.process(sample);
+                accumulator += mScalarDetector.process(sample);
             }
             count++;
         }
 
+        mScoreAccumulator += accumulator;
         return count;
     }
 
     private long testVector64(float[] samples)
     {
         long count = 0;
+        float accumulator = 0.0f;
         long start = System.currentTimeMillis();
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
             for(float sample : samples)
             {
-                mVectorDetector64.process(sample);
+                accumulator += mVectorDetector64.process(sample);
             }
             count++;
         }
 
+        mScoreAccumulator += accumulator;
         return count;
     }
 
     private long testVector128(float[] samples)
     {
         long count = 0;
+        float accumulator = 0.0f;
         long start = System.currentTimeMillis();
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
             for(float sample : samples)
             {
-                mVectorDetector128.process(sample);
+                accumulator += mVectorDetector128.process(sample);
             }
             count++;
         }
 
+        mScoreAccumulator += accumulator;
         return count;
     }
 
     private long testVector256(float[] samples)
     {
         long count = 0;
+        float accumulator = 0.0f;
         long start = System.currentTimeMillis();
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
             for(float sample : samples)
             {
-                mVectorDetector256.process(sample);
+                accumulator += mVectorDetector256.process(sample);
             }
             count++;
         }
 
+        mScoreAccumulator += accumulator;
         return count;
     }
 
     private long testVector512(float[] samples)
     {
         long count = 0;
+        float accumulator = 0.0f;
         long start = System.currentTimeMillis();
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
             for(float sample : samples)
             {
-                mVectorDetector512.process(sample);
+                accumulator += mVectorDetector512.process(sample);
             }
             count++;
         }
 
+        mScoreAccumulator += accumulator;
         return count;
     }
 

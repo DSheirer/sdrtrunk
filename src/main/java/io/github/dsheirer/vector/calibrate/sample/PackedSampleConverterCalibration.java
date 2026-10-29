@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,7 +106,7 @@ public class PackedSampleConverterCalibration extends Calibration
         ScalarUnpackedSampleConverter scalor = new ScalarUnpackedSampleConverter();
 
         long count = 0;
-        long accumulator = 0;
+        double accumulator = 0.0;
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
@@ -115,14 +115,14 @@ public class PackedSampleConverterCalibration extends Calibration
             count++;
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 
     private long testVector(ByteBuffer buffer)
     {
         VectorUnpackedSampleConverter vector = new VectorUnpackedSampleConverter();
         long start = System.currentTimeMillis();
-        long accumulator = 0;
+        double accumulator = 0.0;
         long count = 0;
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
@@ -132,6 +132,6 @@ public class PackedSampleConverterCalibration extends Calibration
             count++;
         }
 
-        return count + (accumulator * 0);
+        return count + (long)(accumulator * 0);
     }
 }
