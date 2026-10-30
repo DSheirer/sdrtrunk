@@ -1182,6 +1182,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             ChannelStartProcessingRequest startChannelRequest = new ChannelStartProcessingRequest(trafficChannel,
                     apco25Channel, identifierCollection, this);
+            startChannelRequest.setStartTimestamp(timestamp);
             startChannelRequest.addPreloadDataContent(new PatchGroupPreLoadDataContent(identifierCollection, timestamp));
             startChannelRequest.addPreloadDataContent(new P25FrequencyBandPreloadDataContent(mFrequencyBandMap.values()));
             getInterModuleEventBus().post(startChannelRequest);

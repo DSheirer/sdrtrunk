@@ -30,6 +30,7 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import io.github.dsheirer.util.Dispatcher;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +50,15 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     private final ComplexMixer mFrequencyCorrectionMixer;
     private final IRealDecimationFilter mIDecimationFilter;
     private final IRealDecimationFilter mQDecimationFilter;
+    private final boolean mReuseMixerOutput;
+    private float[] mIMixerOutput;
+    private float[] mQMixerOutput;
     private Listener<ComplexSamples> mSamplesListener;
     private final double mChannelSampleRate;
-    private long mChannelFrequency;
+    private volatile long mChannelFrequency;
     private final long mFrequencyOffset;
-    private long mFrequencyCorrection;
+    private volatile long mFrequencyCorrection;
+    private final AtomicBoolean mPendingMixerUpdate = new AtomicBoolean();
 
     /**
      * Constructs a frequency translating and CIC decimating channel source.
@@ -80,8 +85,11 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
         mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
+        //The decimation filters copy the mixed samples, unless there's no decimation and the mixed samples are the output
+        mReuseMixerOutput = decimation > 1;
+
         //Set dispatcher to process 1/10 of estimated sample arrival rate, 20 times per second (up to 200% per interval)
-        mBufferDispatcher = new Dispatcher(threadName, 50, getHeartbeatManager());
+        mBufferDispatcher = new Dispatcher(threadName, 50, getHeartbeatManager(), BUFFER_MAX_CAPACITY);
         mBufferDispatcher.setListener(new NativeBufferProcessor());
 
         //Setup the frequency mixer to the current source frequency
@@ -92,21 +100,22 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     }
 
     /**
-     * Sets and applies the channel decoder requested frequency correction.
+     * Sets the channel decoder requested frequency correction, which is applied on the sample processing thread.
      * @param correction requested by the downstream processors.
      */
     @Override
     public void setFrequencyCorrection(long correction)
     {
         mFrequencyCorrection = correction;
-        updateMixerFrequencyOffset();
+        mPendingMixerUpdate.set(true);
     }
 
     @Override
     public void start()
     {
-        super.start();
+        //The dispatcher has to be running to accept delayed sample buffers preloaded in response to the start request
         mBufferDispatcher.start();
+        super.start();
     }
 
     @Override
@@ -131,7 +140,8 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     }
 
     /**
-     * Sets/updates the center frequency for the sample streaming being sent from the producer.
+     * Sets/updates the center frequency for the sample streaming being sent from the producer, which is applied on
+     * the sample processing thread.
      *
      * @param frequency in hertz
      */
@@ -139,12 +149,14 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     public void setFrequency(long frequency)
     {
         mChannelFrequency = frequency;
-        updateMixerFrequencyOffset();
+        mPendingMixerUpdate.set(true);
     }
 
     /**
      * Calculates the local mixer frequency offset from the tuned frequency,
-     * channel's requested frequency, and channel frequency correction.
+     * channel's requested frequency, and channel frequency correction.  This is only invoked on the sample processing
+     * thread so that the latest values from the tuner and channel frequency correction threads are applied together
+     * and the mixer is never updated while it is generating samples.
      */
     private void updateMixerFrequencyOffset()
     {
@@ -190,6 +202,27 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     }
 
     /**
+     * Mixes the samples to baseband, reusing the mixer output arrays when they aren't passed to the consumer.
+     * @param samples to mix, which aren't modified since they can be shared with other channels.
+     * @return mixed samples
+     */
+    private ComplexSamples mix(ComplexSamples samples)
+    {
+        if(!mReuseMixerOutput)
+        {
+            return mFrequencyCorrectionMixer.mix(samples);
+        }
+
+        if(mIMixerOutput == null || mIMixerOutput.length != samples.i().length)
+        {
+            mIMixerOutput = new float[samples.i().length];
+            mQMixerOutput = new float[samples.q().length];
+        }
+
+        return mFrequencyCorrectionMixer.mix(samples, mIMixerOutput, mQMixerOutput);
+    }
+
+    /**
      * Processes native buffers received from the dispatcher and sends to the registered listener
      */
     public class NativeBufferProcessor implements Listener<T>
@@ -203,7 +236,12 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
 
                 while(iterator.hasNext())
                 {
-                    ComplexSamples basebanded = mFrequencyCorrectionMixer.mix(iterator.next());
+                    if(mPendingMixerUpdate.compareAndSet(true, false))
+                    {
+                        updateMixerFrequencyOffset();
+                    }
+
+                    ComplexSamples basebanded = mix(iterator.next());
                     float[] i = mIDecimationFilter.decimateReal(basebanded.i());
                     float[] q = mQDecimationFilter.decimateReal(basebanded.q());
 

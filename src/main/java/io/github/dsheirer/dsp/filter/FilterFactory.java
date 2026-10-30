@@ -1619,7 +1619,8 @@ public class FilterFactory
 
     /**
      * Creates a symmetrical half-band filter where all odd-indexed coefficients except center are zero
-     * valued.
+     * valued.  The non-center coefficients are normalized to sum to 0.5 to compensate for the window, which provides
+     * unity gain at DC and a null at the Nyquist frequency.
      * @param length N is odd where m is an integer multiple in the formula: N = 4m + 3 (e.g. 7, 11, 15, etc.)
      * @param windowType to apply to the filter.
      * @return coefficients
@@ -1650,6 +1651,18 @@ public class FilterFactory
                 //Only calculate the even-index taps, leaving odd-index taps at default value of zero
                 taps[x] = (float)((Math.sin(offset * Math.PI / 2) / (offset * Math.PI)) * window[x]);
             }
+        }
+
+        double sum = 0.0;
+
+        for(int x = 0; x < length; x += 2)
+        {
+            sum += taps[x];
+        }
+
+        for(int x = 0; x < length; x += 2)
+        {
+            taps[x] = (float)(taps[x] * 0.5 / sum);
         }
 
         return taps;

@@ -371,7 +371,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                         if(traffic != null)
                         {
-                            requestTrafficChannelStart(traffic, channel, ic, tracker);
+                            requestTrafficChannelStart(traffic, channel, ic, tracker, timestamp);
                         }
                         else
                         {
@@ -583,7 +583,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                 if(traffic != null)
                 {
-                    requestTrafficChannelStart(traffic, channel, ic, tracker);
+                    requestTrafficChannelStart(traffic, channel, ic, tracker, timestamp);
                 }
                 else
                 {
@@ -609,7 +609,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param tracker to update with channel allocation flag
      */
     private void requestTrafficChannelStart(Channel trafficChannel, NXDNChannel nxdnChannel,
-                                            IdentifierCollection ic, NXDNChannelEventTracker tracker)
+                                            IdentifierCollection ic, NXDNChannelEventTracker tracker, long timestamp)
     {
         if(nxdnChannel != null && nxdnChannel.getDownlinkFrequency() > 0 && getInterModuleEventBus() != null)
         {
@@ -623,6 +623,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             mAllocatedTrafficChannelMap.put(nxdnChannel.getDownlinkFrequency(), trafficChannel);
             ChannelStartProcessingRequest startChannelRequest = new ChannelStartProcessingRequest(trafficChannel,
                     nxdnChannel, ic, this);
+            startChannelRequest.setStartTimestamp(timestamp);
             startChannelRequest.addPreloadDataContent(new NXDNChannelInfoPreloadData(mChannelAccessInformation, mChannelFrequencies));
             getInterModuleEventBus().post(startChannelRequest);
             tracker.setTrafficChannelAllocated(true);

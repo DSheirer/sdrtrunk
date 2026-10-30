@@ -489,8 +489,10 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                         config.setChannelGrantEvent(event);
                     }
 
-                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, channel,
-                            identifierCollection, this));
+                    ChannelStartProcessingRequest request = new ChannelStartProcessingRequest(trafficChannel, channel,
+                            identifierCollection, this);
+                    request.setStartTimestamp(timestamp);
+                    getInterModuleEventBus().post(request);
                 }
                 else
                 {

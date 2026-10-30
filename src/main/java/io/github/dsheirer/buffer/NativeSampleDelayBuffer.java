@@ -116,7 +116,8 @@ public class NativeSampleDelayBuffer implements Listener<INativeBuffer>
             actionRequest = mActionQueue.poll();
         }
 
-        mBroadcaster.receive(samples);
+        //The delay queue stores the unconverted buffer since it's more compact than the converted samples
+        mBroadcaster.receive(mBroadcaster.getListenerCount() > 1 ? new SharedNativeBuffer(samples) : samples);
 
         //Store the new buffer in the delay queue and increment the pointer
         mDelayBuffer[mDelayBufferPointer++] = samples;

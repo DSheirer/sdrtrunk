@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.dsp.filter.decimate;
 
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +29,12 @@ import org.slf4j.LoggerFactory;
 public class DecimationFilterFactory
 {
     private static final Logger mLog = LoggerFactory.getLogger(DecimationFilterFactory.class);
-    private static final int[] SUPPORTED_RATES = new int[]{0,2,4,8,16,32,64,128,256,512,1024};
+    private static final int[] SUPPORTED_RATES = new int[]{1,2,4,8,16,32,64,128,256,512,1024};
 
     /**
-     * Creates a real-valued decimation filter for float array sample buffers providing greater than 100 dB of
-     * attenuation for out of band signal aliases.  Supports power of 2 decimation rates up to 1024.
+     * Creates a real-valued decimation filter for float array sample buffers providing approximately 70 dB of
+     * attenuation for out of band signal aliases, when the signal bandwidth is no more than half of the decimated
+     * sample rate.  Supports power of 2 decimation rates up to 1024.
      *
      * @param decimationRate requested @see SUPPORTED_RATES
      * @return constructed decimation filter
@@ -66,20 +68,21 @@ public class DecimationFilterFactory
                 return new RealDecimateX1024Filter();
             default:
                 throw new IllegalArgumentException("Unsupported decimation rate: " + decimationRate +
-                        ".  Supported decimation rates are:" + SUPPORTED_RATES);
+                        ".  Supported decimation rates are:" + Arrays.toString(SUPPORTED_RATES));
         }
     }
 
     /**
      * Finds the greatest factor of 2 decimation rate that is less than the requested rate.
      * @param requestedRate for decimation
-     * @return factor of 2 decimation rate that is closest to the requested rate
+     * @return factor of 2 decimation rate that is closest to the requested rate, or 1 (no decimation) when the
+     * requested rate is too small to allow decimation.
      */
     public static int getDecimationRate(int requestedRate)
     {
         if(requestedRate < 0)
         {
-            throw new IllegalArgumentException("Requested decimation rate must be greater than 2");
+            throw new IllegalArgumentException("Requested decimation rate must not be negative");
         }
 
         for(int x = SUPPORTED_RATES.length - 1; x >= 0; x--)
@@ -90,6 +93,6 @@ public class DecimationFilterFactory
             }
         }
 
-        return 2;
+        return 1;
     }
 }

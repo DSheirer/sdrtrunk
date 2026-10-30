@@ -22,6 +22,7 @@ package io.github.dsheirer.vector.calibrate.oscillator;
 import io.github.dsheirer.dsp.oscillator.IComplexOscillator;
 import io.github.dsheirer.dsp.oscillator.ScalarComplexOscillator;
 import io.github.dsheirer.dsp.oscillator.VectorComplexOscillator;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.vector.calibrate.Calibration;
 import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
@@ -123,8 +124,8 @@ public class ComplexOscillatorCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            float[] generated = mScalarOscillator.generate(BUFFER_SIZE);
-            accumulator += generated[0];
+            ComplexSamples generated = mScalarOscillator.generateComplexSamples(BUFFER_SIZE, 0);
+            accumulator += generated.i()[0];
             count++;
         }
 
@@ -144,8 +145,8 @@ public class ComplexOscillatorCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            float[] generated = mVectorOscillator.generate(BUFFER_SIZE);
-            accumulator += generated[0];
+            ComplexSamples generated = mVectorOscillator.generateComplexSamples(BUFFER_SIZE, 0);
+            accumulator += generated.i()[0];
             count++;
         }
 
