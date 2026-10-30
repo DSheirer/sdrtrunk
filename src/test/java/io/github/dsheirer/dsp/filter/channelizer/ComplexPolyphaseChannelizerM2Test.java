@@ -19,8 +19,12 @@
 
 package io.github.dsheirer.dsp.filter.channelizer;
 
+import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import org.jtransforms.fft.FloatFFT_1D;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,6 +90,94 @@ public class ComplexPolyphaseChannelizerM2Test
         }
     }
 
+    /**
+     * Test: the channelizer's output is bit-for-bit identical to a reference that shifts all of its samples for each
+     * block, across several wraps of the sample buffer window and with buffers that end part way through a block.
+     */
+    @Test
+    void slidingWindowMatchesShiftingReference() throws Exception
+    {
+        Random rng = new Random(0xC0FFEEL);
+
+        for(int channelCount : new int[]{2, 8, 96, 100, 400})
+        {
+            Harness harness = new Harness(channelCount, TAPS_PER_CHANNEL, rng);
+            List<float[]> batches = new CopyOnWriteArrayList<>();
+            ComplexPolyphaseChannelizerM2 channelizer = new ComplexPolyphaseChannelizerM2(harness.getCoefficients(),
+                25000 * channelCount, channelCount)
+            {
+                @Override
+                protected void dispatch(ChannelResultsBatch channelResults)
+                {
+                    batches.add(channelResults.getSamples().clone());
+                }
+            };
+
+            int batchCount = 3;
+            int blocksPerBatch = 1024;
+            float[] samples = new float[batchCount * blocksPerBatch * channelCount];
+
+            for(int x = 0; x < samples.length; x++)
+            {
+                samples[x] = rng.nextFloat() * 2f - 1f;
+            }
+
+            channelizer.start();
+            int pointer = 0;
+
+            while(pointer < samples.length)
+            {
+                int length = Math.min(2 * (1 + rng.nextInt(channelCount * 3)), samples.length - pointer);
+                channelizer.receive(new InterleavedComplexSamples(Arrays.copyOfRange(samples, pointer, pointer + length), 0));
+                pointer += length;
+            }
+
+            long timeout = System.currentTimeMillis() + 5000;
+
+            while(batches.size() < batchCount && System.currentTimeMillis() < timeout)
+            {
+                Thread.sleep(2);
+            }
+
+            channelizer.stop();
+            assertEquals(batchCount, batches.size(), "Batches (channelCount=" + channelCount + ")");
+
+            FloatFFT_1D fft = new FloatFFT_1D(channelCount);
+            int blockLength = channelCount * 2;
+            boolean topBlock = TAPS_PER_CHANNEL % 2 == 0;
+
+            for(int block = 0; block < batchCount * blocksPerBatch; block++)
+            {
+                harness.load(samples, block * channelCount, channelCount);
+                float[] expected = harness.processFused(topBlock);
+                topBlock = !topBlock;
+                harness.shift(channelCount);
+                fft.complexInverse(expected, true);
+
+                float[] batch = batches.get(block / blocksPerBatch);
+                int offset = (block % blocksPerBatch) * blockLength;
+                assertBitIdentical(expected, Arrays.copyOfRange(batch, offset, offset + blockLength), channelCount, 0, block);
+            }
+        }
+    }
+
+    /**
+     * Test: channel counts are even, have only factors of 2, 3 and 5, and are as large as possible for the minimum
+     * channel bandwidth.
+     */
+    @Test
+    void channelCountIsAnEfficientIFFTSize()
+    {
+        assertEquals(96, ComplexPolyphaseChannelizerM2.getChannelCount(2_400_000.0));
+        assertEquals(128, ComplexPolyphaseChannelizerM2.getChannelCount(3_200_000.0));
+        assertEquals(400, ComplexPolyphaseChannelizerM2.getChannelCount(10_000_000.0));
+        assertEquals(72, ComplexPolyphaseChannelizerM2.getChannelCount(1_920_000.0));
+        assertEquals(100, ComplexPolyphaseChannelizerM2.getChannelCount(2_560_000.0));
+        assertEquals(108, ComplexPolyphaseChannelizerM2.getChannelCount(2_880_000.0));
+        assertEquals(240, ComplexPolyphaseChannelizerM2.getChannelCount(6_100_000.0));
+        assertEquals(2, ComplexPolyphaseChannelizerM2.getChannelCount(50_000.0));
+    }
+
     private static void assertBitIdentical(float[] reference, float[] fused, int channelCount, int mode, int iteration)
     {
         assertEquals(reference.length, fused.length,
@@ -116,6 +208,7 @@ public class ComplexPolyphaseChannelizerM2Test
         private final int[] mTopBlockMap;     // length mSubChannelCount
         private final int[] mMiddleBlockMap;  // length mSubChannelCount
         private final float[] mReusableAccumulator;
+        private final float[] mCoefficients;
 
         private Harness(int channelCount, int tapsPerChannel, Random rng)
         {
@@ -129,11 +222,29 @@ public class ComplexPolyphaseChannelizerM2Test
                 coefficients[i] = rng.nextFloat() * 2f - 1f;
             }
 
+            mCoefficients = coefficients;
             mInlineFilter = getAlignedFilter(coefficients, channelCount, tapsPerChannel);
             mInlineSamples = new float[mBufferLength];
             mTopBlockMap = getTopBlockMap(channelCount);
             mMiddleBlockMap = getMiddleBlockMap(channelCount);
             mReusableAccumulator = new float[mSubChannelCount];
+        }
+
+        private float[] getCoefficients()
+        {
+            return mCoefficients;
+        }
+
+        //Loads a block of samples to the start of the sample buffer
+        private void load(float[] samples, int offset, int blockLength)
+        {
+            System.arraycopy(samples, offset, mInlineSamples, 0, blockLength);
+        }
+
+        //Shifts all of the samples by one block
+        private void shift(int blockLength)
+        {
+            System.arraycopy(mInlineSamples, 0, mInlineSamples, blockLength, mBufferLength - blockLength);
         }
 
         //Reference: multiply the whole array into an interim buffer, then accumulate across taps (prior behavior).

@@ -23,7 +23,9 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -41,7 +43,8 @@ import org.slf4j.LoggerFactory;
 public class Dispatcher<E> implements Listener<E>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Dispatcher.class);
-    private final LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<>();
+    private static final long OVERFLOW_LOG_INTERVAL_MILLISECONDS = 10000;
+    private final BlockingQueue<E> mQueue;
     private Listener<E> mListener;
     private final AtomicBoolean mRunning = new AtomicBoolean();
     private String mThreadName;
@@ -49,6 +52,8 @@ public class Dispatcher<E> implements Listener<E>
     private ScheduledFuture<?> mScheduledFuture;
     private final long mInterval;
     private HeartbeatManager mHeartbeatManager;
+    private long mDroppedCount = 0;
+    private long mLastOverflowLogTimestamp = 0;
 
     /**
      * Constructs an instance of a Dispatcher with integrated heartbeat support.
@@ -63,7 +68,20 @@ public class Dispatcher<E> implements Listener<E>
     }
 
     /**
-     * Constructs an instance
+     * Constructs an instance of a bounded Dispatcher with integrated heartbeat support.
+     * @param threadName to name the dispatcher thread
+     * @param interval for processing each batch in milliseconds.
+     * @param heartbeatManager to receive a heartbeat command at each processing interval.
+     * @param maximumQueueSize for queued elements.  Elements received while the queue is full are dropped.
+     */
+    public Dispatcher(String threadName, long interval, HeartbeatManager heartbeatManager, int maximumQueueSize)
+    {
+        this(threadName, interval, maximumQueueSize);
+        mHeartbeatManager = heartbeatManager;
+    }
+
+    /**
+     * Constructs an instance with an unbounded queue.
      * @param threadName to name the dispatcher thread
      * @param interval for processing each batch in milliseconds.
      */
@@ -71,6 +89,20 @@ public class Dispatcher<E> implements Listener<E>
     {
         mThreadName = threadName;
         mInterval = interval;
+        mQueue = new LinkedTransferQueue<>();
+    }
+
+    /**
+     * Constructs a bounded instance.
+     * @param threadName to name the dispatcher thread
+     * @param interval for processing each batch in milliseconds.
+     * @param maximumQueueSize for queued elements.  Elements received while the queue is full are dropped.
+     */
+    public Dispatcher(String threadName, long interval, int maximumQueueSize)
+    {
+        mThreadName = threadName;
+        mInterval = interval;
+        mQueue = new LinkedBlockingQueue<>(maximumQueueSize);
     }
 
     /**
@@ -94,16 +126,46 @@ public class Dispatcher<E> implements Listener<E>
     /**
      * Primary input method for adding buffers to this processor.  Note: incoming buffers will be ignored if this
      * processor is in a stopped state.  You must invoke start() to allow incoming buffers and initiate buffer
-     * processing.
+     * processing.  If this processor has a bounded queue and the queue is full, the incoming buffer is dropped.
      *
      * @param e to enqueue for distribution to a registered listener
      */
     public void receive(E e)
     {
-        if(mRunning.get())
+        offer(e);
+    }
+
+    /**
+     * Adds the element to this processor's queue, for when the caller has to take action on an element that isn't
+     * accepted.
+     *
+     * @param e to enqueue for distribution to a registered listener
+     * @return true if the element was queued, or false if this processor is stopped or a bounded queue is full.
+     */
+    public boolean offer(E e)
+    {
+        if(!mRunning.get())
         {
-            mQueue.add(e);
+            return false;
         }
+
+        boolean queued = mQueue.offer(e);
+
+        if(!queued)
+        {
+            mDroppedCount++;
+            long now = System.currentTimeMillis();
+
+            if(now - mLastOverflowLogTimestamp >= OVERFLOW_LOG_INTERVAL_MILLISECONDS)
+            {
+                mLog.warn("Dispatcher [" + mThreadName + "] queue is full, consumer is not keeping up - dropped [" +
+                    mDroppedCount + "] elements");
+                mLastOverflowLogTimestamp = now;
+                mDroppedCount = 0;
+            }
+        }
+
+        return queued;
     }
 
     /**
