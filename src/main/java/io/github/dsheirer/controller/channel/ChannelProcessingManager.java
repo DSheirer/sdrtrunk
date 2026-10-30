@@ -418,6 +418,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             throw new ChannelException("No Tuner Available");
         }
 
+        if(source instanceof TunerChannelSource tunerChannelSource)
+        {
+            tunerChannelSource.setStartTimestamp(request.getStartTimestamp());
+        }
+
         ProcessingChain processingChain = new ProcessingChain(channel, mAliasModel);
 
         //Certain decoders aggregate the decode events in the parent channel that also includes any events produced

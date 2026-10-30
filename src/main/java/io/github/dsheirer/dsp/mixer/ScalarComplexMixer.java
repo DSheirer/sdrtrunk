@@ -49,19 +49,14 @@ public class ScalarComplexMixer extends ComplexMixer
     }
 
     /**
-     * Mixes the complex I & Q samples with samples generated from an oscillator.
+     * Mixes the complex I & Q samples with the oscillator samples and stores the results in the oscillator arrays.
      * @param iSamples complex samples to mix
      * @param qSamples complex samples to mix
-     * @param timestamp of the first sample
-     * @return mixed samples
+     * @param iMixer oscillator samples, replaced with the mixed samples
+     * @param qMixer oscillator samples, replaced with the mixed samples
      */
-    @Override public ComplexSamples mix(float[] iSamples, float[] qSamples, long timestamp)
+    @Override protected void mix(float[] iSamples, float[] qSamples, float[] iMixer, float[] qMixer)
     {
-        ComplexSamples mixer = generate(iSamples.length, timestamp);
-
-        float[] iMixer = mixer.i();
-        float[] qMixer = mixer.q();
-
         float inphase, quadrature;
 
         for(int x = 0; x < iSamples.length; x++)
@@ -71,8 +66,6 @@ public class ScalarComplexMixer extends ComplexMixer
             iMixer[x] = inphase;
             qMixer[x] = quadrature;
         }
-
-        return mixer;
     }
 
     /**

@@ -42,6 +42,7 @@ public class ChannelStartProcessingRequest extends ModuleEventBusMessage
     private DecodeEventHistory mParentDecodeEventHistory;
     private DecodeEventHistory mChildDecodeEventHistory;
     private boolean mPersistentAttempt;
+    private long mStartTimestamp;
 
     /**
      * Constructs an instance
@@ -107,6 +108,25 @@ public class ChannelStartProcessingRequest extends ModuleEventBusMessage
     public boolean isPersistentAttempt()
     {
         return mPersistentAttempt;
+    }
+
+    /**
+     * Sets the timestamp of the channel grant so that a tuner channel source with a sample delay buffer can preload the
+     * channel with the samples that occurred after the grant, while the grant was being decoded and processed.
+     * @param timestamp of the channel grant in milliseconds since epoch.
+     */
+    public void setStartTimestamp(long timestamp)
+    {
+        mStartTimestamp = timestamp;
+    }
+
+    /**
+     * Timestamp for the oldest samples requested for the channel.
+     * @return timestamp in milliseconds since epoch, or 0 if the channel should start with current samples.
+     */
+    public long getStartTimestamp()
+    {
+        return mStartTimestamp;
     }
 
     /**

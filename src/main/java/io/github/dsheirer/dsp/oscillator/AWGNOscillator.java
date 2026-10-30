@@ -68,15 +68,22 @@ public class AWGNOscillator implements IComplexOscillator
     @Override
     public ComplexSamples generateComplexSamples(int sampleCount, long timestamp)
     {
-        ComplexSamples samples = mComplexOscillator.generateComplexSamples(sampleCount, timestamp);
+        float[] i = new float[sampleCount];
+        float[] q = new float[sampleCount];
+        generateComplexSamples(i, q);
+        return new ComplexSamples(i, q, timestamp);
+    }
 
-        for(int x = 0; x < samples.i().length; x++)
+    @Override
+    public void generateComplexSamples(float[] i, float[] q)
+    {
+        mComplexOscillator.generateComplexSamples(i, q);
+
+        for(int x = 0; x < i.length; x++)
         {
-            samples.i()[x] += nextNoise();
-            samples.q()[x] += nextNoise();
+            i[x] += nextNoise();
+            q[x] += nextNoise();
         }
-
-        return samples;
     }
 
     @Override

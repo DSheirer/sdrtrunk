@@ -29,7 +29,7 @@ public enum CalibrationType
 {
     //There's an oddity with these two vector implementations where it takes ~30x longer when it runs
     //after any other calibrations ... so we always sort to top to run this one first
-    OSCILLATOR_COMPLEX("Complex Oscillator", 1),
+    OSCILLATOR_COMPLEX("Complex Oscillator", 2),
     GAIN_COMPLEX("Complex Gain", 1),
 
     AM_DEMODULATOR("AM Demodulator", 1),
@@ -48,7 +48,7 @@ public enum CalibrationType
     HILBERT_TRANSFORM("Hilbert Transform", 1),
     INTERPOLATOR("Interpolator", 1),
     MAGNITUDE("Magnitude", 1),
-    MIXER_COMPLEX("Complex Mixer", 1),
+    MIXER_COMPLEX("Complex Mixer", 2),
     NXDN_SOFT_SYNC_DETECTOR("NXDN Soft Sync Detector", 3),
     OSCILLATOR_REAL("Real Oscillator", 1),
     P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 2),
