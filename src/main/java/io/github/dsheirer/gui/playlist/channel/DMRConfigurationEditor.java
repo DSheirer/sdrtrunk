@@ -94,6 +94,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     private Spinner<Integer> mChannelRotationDelaySpinner;
     private ToggleSwitch mJmbeAGCButton;
     private Slider mJmbeToneGainSlider;
+    private ToggleSwitch mLegacyToneLevelsButton;
     private Slider mJmbeNoiseGainSlider;
 
     /**
@@ -225,6 +226,9 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setHgrow(getJmbeNoiseGainSlider(), Priority.ALWAYS);
             gridPane.add(getJmbeNoiseGainSlider(), 5, row);
+
+            row++;
+            gridPane.add(getLegacyToneLevelsButton(), 0, row, 6, 1);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -589,6 +593,21 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         return mJmbeAGCButton;
     }
 
+    private ToggleSwitch getLegacyToneLevelsButton()
+    {
+        if(mLegacyToneLevelsButton == null)
+        {
+            mLegacyToneLevelsButton = new ToggleSwitch("Use legacy tone levels");
+            mLegacyToneLevelsButton.setTooltip(new Tooltip(
+                "Restore JMBE 1.x AMBE tone levels. Requires a supporting JMBE library; " +
+                "stock libraries ignore this option. Tone Volume still adjusts the selected level."));
+            mLegacyToneLevelsButton.setDisable(true);
+            mLegacyToneLevelsButton.selectedProperty().addListener(
+                (o, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+        return mLegacyToneLevelsButton;
+    }
+
     public Slider getJmbeToneGainSlider()
     {
         if(mJmbeToneGainSlider == null)
@@ -678,6 +697,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         getJmbeAGCButton().setDisable(disable);
         getJmbeNoiseGainSlider().setDisable(disable);
         getJmbeToneGainSlider().setDisable(disable);
+        getLegacyToneLevelsButton().setDisable(disable);
 
         if(config instanceof DecodeConfigDMR)
         {
@@ -696,6 +716,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             getJmbeAGCButton().setSelected(decodeConfig.isAGC());
             getJmbeNoiseGainSlider().setValue(decodeConfig.getNoiseGain());
             getJmbeToneGainSlider().setValue(decodeConfig.getToneGain());
+            getLegacyToneLevelsButton().setSelected(decodeConfig.isLegacyToneLevels());
         }
         else
         {
@@ -707,6 +728,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             getJmbeAGCButton().setSelected(false);
             getJmbeNoiseGainSlider().setValue(0);
             getJmbeToneGainSlider().setValue(0);
+            getLegacyToneLevelsButton().setSelected(false);
         }
     }
 
@@ -732,6 +754,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
         config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
         config.setToneGain((float)getJmbeToneGainSlider().getValue());
+        config.setLegacyToneLevels(getLegacyToneLevelsButton().isSelected());
         getItem().setDecodeConfiguration(config);
     }
 
