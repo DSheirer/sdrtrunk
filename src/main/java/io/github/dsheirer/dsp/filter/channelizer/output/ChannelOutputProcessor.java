@@ -18,11 +18,14 @@
  */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
+import io.github.dsheirer.dsp.filter.channelizer.ChannelResultsBatch;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.Dispatcher;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +33,17 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
-    private Dispatcher<List<float[]>> mChannelResultsDispatcher;
+    /**
+     * Maximum queued channel results batches, about one second of samples.  A full batch is dropped when this channel
+     * falls behind, which preserves the even-sized batch block parity that two-channel synthesis relies on.
+     */
+    private static final int MAXIMUM_QUEUED_BATCHES = 50;
+
+    private Dispatcher<QueuedChannelResults> mChannelResultsDispatcher;
+    private final Queue<PendingUpdate> mPendingUpdates = new ConcurrentLinkedQueue<>();
+    private final AtomicLong mBatchSequence = new AtomicLong();
     private HeartbeatManager mHeartbeatManager;
-    protected Listener<ComplexSamples> mComplexSamplesListener;
+    protected volatile Listener<ComplexSamples> mComplexSamplesListener;
     private int mInputChannelCount;
     private long mCurrentSampleTimestamp = System.currentTimeMillis();
 
@@ -49,17 +60,51 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mInputChannelCount = inputChannelCount;
         //Process 1/10th of the sample rate per second at a rate of 20 times a second (200% of anticipated rate)
         mHeartbeatManager = heartbeatManager;
-        mChannelResultsDispatcher = new Dispatcher(threadName,50, mHeartbeatManager);
-        mChannelResultsDispatcher.setListener(floats -> {
+        mChannelResultsDispatcher = new Dispatcher(threadName,50, mHeartbeatManager, MAXIMUM_QUEUED_BATCHES);
+        mChannelResultsDispatcher.setListener(queued -> {
             try
             {
-                process(floats);
+                applyPendingUpdates(queued.sequence());
+                mCurrentSampleTimestamp = queued.channelResults().getTimestamp();
+                process(queued.channelResults());
             }
             catch(Throwable t)
             {
                 mLog.error("Error processing channel results", t);
             }
+            finally
+            {
+                queued.channelResults().release();
+            }
         });
+    }
+
+    /**
+     * Queues a configuration change to apply on the dispatcher thread, so that configuration changes don't overlap with
+     * sample processing.  The change takes effect at the first channel results batch received after this method is
+     * invoked and batches that are already queued continue to use the previous configuration.  A change is not lost if
+     * that batch is dropped, since it then takes effect at the following batch.
+     * @param update to apply
+     */
+    protected void enqueueUpdate(Runnable update)
+    {
+        mPendingUpdates.add(new PendingUpdate(update, mBatchSequence.get()));
+    }
+
+    /**
+     * Applies queued configuration changes that take effect at or before the batch sequence number.  This should only
+     * be invoked on the dispatcher thread.
+     * @param sequence of the batch about to be processed
+     */
+    private void applyPendingUpdates(long sequence)
+    {
+        PendingUpdate update;
+
+        while((update = mPendingUpdates.peek()) != null && update.lastSequenceBefore() < sequence)
+        {
+            mPendingUpdates.poll();
+            update.update().run();
+        }
     }
 
     /**
@@ -103,21 +148,35 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     }
 
     @Override
-    public void receiveChannelResults(List<float[]> channelResultsList, long timestamp)
+    public void receiveChannelResults(ChannelResultsBatch channelResults)
     {
-        mChannelResultsDispatcher.receive(channelResultsList);
-        mCurrentSampleTimestamp = timestamp;
+        channelResults.retain();
+
+        if(!mChannelResultsDispatcher.offer(new QueuedChannelResults(channelResults, mBatchSequence.incrementAndGet())))
+        {
+            channelResults.release();
+        }
     }
 
     /**
-     * Sub-class implementation to process one polyphase channelizer result array.
+     * Sub-class implementation to process one polyphase channelizer results batch.
      * @param channelResults to process
      */
-    public abstract void process(List<float[]> channelResults);
+    public abstract void process(ChannelResultsBatch channelResults);
 
     @Override
     public int getInputChannelCount()
     {
         return mInputChannelCount;
     }
+
+    /**
+     * Channel results batch and its position in the sequence of received batches.
+     */
+    private record QueuedChannelResults(ChannelResultsBatch channelResults, long sequence) {}
+
+    /**
+     * Configuration change and the sequence number of the last batch received before the change was requested.
+     */
+    private record PendingUpdate(Runnable update, long lastSequenceBefore) {}
 }

@@ -75,6 +75,15 @@ public class FilterFactory
     private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
     private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5, 0.0)
     private static final double MARGIN_OF_ERROR = 0.0003;
+
+    /**
+     * Two-sided synthesizer filter cutoff, in channel bandwidths.  The synthesizer filter is centered on the boundary
+     * between the two channels, but the desired signal can be located anywhere across that boundary, so the pass band
+     * has to extend beyond the +/- 0.5 channel bandwidth centers of the channels.  It can't extend much further because
+     * the channelizer transition regions of the outer channel edges alias into the composite beyond about +/- 0.72
+     * channel bandwidths from the boundary.
+     */
+    private static final double SYNTHESIZER_CUTOFF_CHANNEL_BANDWIDTHS = 1.5;
     private static final Map<LowPassSpecification,float[]> REMEZ_LOW_PASS_FILTERS = new ConcurrentHashMap<>();
 
     /**
@@ -1330,9 +1339,8 @@ public class FilterFactory
     {
         int filterLength = (channels * tapsPerChannel) - 1;
 
-        double cutoff = (channelBandwidth * 1.10) / (channelSampleRate * (double)channels);
+        double cutoff = (channelBandwidth * SYNTHESIZER_CUTOFF_CHANNEL_BANDWIDTHS) / (channelSampleRate * (double)channels);
 
-        //Design the prototype synthesizer with 105% of the channel bandwidth produced by the channelizer.
         float[] taps = FilterFactory.getKaiserSinc(filterLength, cutoff, 80.0f);
 
         //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient

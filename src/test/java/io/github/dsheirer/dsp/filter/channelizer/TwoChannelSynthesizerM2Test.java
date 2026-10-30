@@ -48,7 +48,9 @@ public class TwoChannelSynthesizerM2Test
 
     /**
      * Test: tones at mirrored offsets from the boundary between two channels produce equal output levels, and a tone
-     * exactly on the boundary produces the same level as one near the center of the composite.
+     * exactly on the boundary produces the same level as one near the center of the composite.  The pass band must
+     * extend past the center of each channel so that a signal offset from the boundary doesn't lose its outer band edge,
+     * and tones beyond the alias-free region of the composite must be rejected.
      */
     @Test
     void boundaryResponseIsFlatAndSymmetric() throws Exception
@@ -58,19 +60,17 @@ public class TwoChannelSynthesizerM2Test
             double center = gain(0.0, tapsPerChannel);
             assertEquals(1.0, center, 0.01, "Unity gain at channel boundary (taps per channel=" + tapsPerChannel + ")");
 
-            for(double offset : new double[]{0.1, 0.2, 0.3, 0.4})
+            for(double offset : new double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6})
             {
                 double below = gain(-offset, tapsPerChannel);
                 double above = gain(offset, tapsPerChannel);
                 assertEquals(below, above, 0.01, "Asymmetric response at +/-" + offset +
                     " channel bandwidths from boundary (taps per channel=" + tapsPerChannel + ")");
-
-                //Synthesis filter cutoff is 0.55 channel bandwidths, so only check flatness for the inner region
-                if(offset <= 0.25)
-                {
-                    assertTrue(below > 0.98, "Passband droop at " + offset + " channel bandwidths: " + below);
-                }
+                assertTrue(below > 0.98, "Passband droop at " + offset + " channel bandwidths: " + below);
             }
+
+            double stopBand = gain(0.9, tapsPerChannel);
+            assertTrue(stopBand < 0.001, "Stop band leakage at 0.9 channel bandwidths: " + stopBand);
         }
     }
 
@@ -88,9 +88,15 @@ public class TwoChannelSynthesizerM2Test
             CHANNEL_COUNT)
         {
             @Override
-            protected void dispatch(List<float[]> channelResultsList)
+            protected void dispatch(ChannelResultsBatch channelResults)
             {
-                results.addAll(channelResultsList);
+                float[] samples = channelResults.getSamples();
+                int blockLength = channelResults.getBlockLength();
+
+                for(int offset = 0; offset < samples.length; offset += blockLength)
+                {
+                    results.add(Arrays.copyOfRange(samples, offset, offset + blockLength));
+                }
             }
         };
 
@@ -126,7 +132,7 @@ public class TwoChannelSynthesizerM2Test
             q2[x] = sign * result[2 * (LOWER_CHANNEL + 1) + 1];
         }
 
-        float[] filter = FilterFactory.getSincM2Synthesizer(2.0 * CHANNEL_BANDWIDTH, CHANNEL_BANDWIDTH, 2, 9);
+        float[] filter = new SynthesisFilterManager().getFilter(2.0 * CHANNEL_BANDWIDTH, CHANNEL_BANDWIDTH, 2);
         ComplexSamples output = new TwoChannelSynthesizerM2(filter).process(new ComplexSamples(i1, q1, 0),
             new ComplexSamples(i2, q2, 0));
 

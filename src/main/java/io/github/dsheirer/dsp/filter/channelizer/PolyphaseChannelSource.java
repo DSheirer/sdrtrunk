@@ -28,8 +28,11 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
+import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +51,10 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     private List<Integer> mOutputProcessorIndexes = new ArrayList<>();
     private double mTunerSampleRate;
     private double mTunerCenterFrequency;
-    private long mFrequencyCorrection;
-    private boolean mPendingFrequencyCorrectionUpdate = false;
-    private PendingOutputProcessorUpdate mPendingOutputProcessorUpdate;
+    private volatile long mFrequencyCorrection;
+    private final AtomicBoolean mPendingFrequencyCorrectionUpdate = new AtomicBoolean();
+    private final AtomicReference<PendingOutputProcessorUpdate> mPendingOutputProcessorUpdate = new AtomicReference<>();
+    private boolean mOutputProcessorUpdateFailed = false;
 
     /**
      * Constructs an instance
@@ -78,7 +82,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     public void setFrequencyCorrection(long correction)
     {
         mFrequencyCorrection = correction;
-        mPendingFrequencyCorrectionUpdate = true;
+        mPendingFrequencyCorrectionUpdate.set(true);
     }
 
     /**
@@ -170,14 +174,14 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      * @param filterManager for designing and caching synthesis filters
      */
     public void updateOutputProcessor(ChannelCalculator channelCalculator, SynthesisFilterManager filterManager)
-            throws IllegalArgumentException
     {
-        mPendingOutputProcessorUpdate = new PendingOutputProcessorUpdate(channelCalculator, filterManager);
+        mPendingOutputProcessorUpdate.set(new PendingOutputProcessorUpdate(channelCalculator, filterManager));
     }
 
     /**
-     * Performs the output processor update.  This method must be invoked on the channel results calling thread to
-     * ensure we don't have thread contention on the output processor.
+     * Performs the output processor update.  This method must be invoked on the channel results calling thread so that
+     * replacing the output processor doesn't overlap with delivery of channel results to it.  The output processor
+     * applies the configuration changes on its own dispatcher thread.
      * @param channelCalculator for updates
      * @param filterManager for updates
      * @throws IllegalArgumentException if there's an issue.
@@ -280,36 +284,68 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      * queued for processing to extract the target channel samples, process them for frequency correction and/or
      * channel aggregation, and dispatch the results to the downstream sample listener/consumer.
      *
-     * @param channelResultsList containing a list of polyphase channelizer output arrays.
-     * @param currentSamplesTimestamp for the samples
+     * @param channelResults batch of polyphase channelizer output.
      */
-    public void receiveChannelResults(List<float[]> channelResultsList, long currentSamplesTimestamp)
+    public void receiveChannelResults(ChannelResultsBatch channelResults)
     {
-        if(mPendingOutputProcessorUpdate != null)
+        if(mOutputProcessorUpdateFailed)
         {
-            ChannelCalculator channelCalculator = mPendingOutputProcessorUpdate.getChannelCalculator();
-            SynthesisFilterManager filterManager = mPendingOutputProcessorUpdate.getSynthesisFilterManager();
-            mPendingOutputProcessorUpdate = null;
-            doUpdateOutputProcessor(channelCalculator, filterManager);
+            return;
         }
 
         //Apply channel decider requested frequency correction
-        if(mPendingFrequencyCorrectionUpdate)
+        if(mPendingFrequencyCorrectionUpdate.compareAndSet(true, false))
         {
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
-            mPendingFrequencyCorrectionUpdate = false;
         }
 
         try
         {
             if(mPolyphaseChannelOutputProcessor != null)
             {
-                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList, currentSamplesTimestamp);
+                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResults);
             }
         }
         catch(Exception e)
         {
             mLog.error("Error processing channel results", e);
+        }
+    }
+
+    /**
+     * Applies a pending output processor update.  The channelizer invokes this method before it transforms each batch,
+     * because the batch only contains valid results for the polyphase channel indexes that are in use at that time.
+     *
+     * If the update fails, for example when the tuner center frequency change means that this channel can no longer be
+     * sourced, this source stops processing results and signals an error to the consumer.
+     */
+    public void applyPendingOutputProcessorUpdate()
+    {
+        if(mOutputProcessorUpdateFailed)
+        {
+            return;
+        }
+
+        PendingOutputProcessorUpdate pendingUpdate = mPendingOutputProcessorUpdate.getAndSet(null);
+
+        if(pendingUpdate != null)
+        {
+            ChannelCalculator channelCalculator = pendingUpdate.getChannelCalculator();
+            SynthesisFilterManager filterManager = pendingUpdate.getSynthesisFilterManager();
+
+            try
+            {
+                doUpdateOutputProcessor(channelCalculator, filterManager);
+            }
+            catch(IllegalArgumentException iae)
+            {
+                mLog.error("Error updating polyphase channel output processor following tuner frequency or sample " +
+                    "rate change - " + iae.getMessage());
+                mOutputProcessorUpdateFailed = true;
+
+                //Stopping the channel is a blocking operation, so don't do it on the channelizer's dispatch thread
+                ThreadPool.CACHED.execute(() -> setError(iae.getMessage()));
+            }
         }
     }
 

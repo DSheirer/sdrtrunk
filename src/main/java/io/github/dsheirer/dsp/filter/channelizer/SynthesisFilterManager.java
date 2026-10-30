@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class SynthesisFilterManager
 {
-    private static final int POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL = 9;
+    private static final int POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL = 24;
     private static final String SEPARATOR = "-";
     private Map<String,float[]> mFilterMap = new HashMap<>();
 

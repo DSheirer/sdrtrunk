@@ -33,6 +33,7 @@ public enum CalibrationType
     GAIN_COMPLEX("Complex Gain", 1),
 
     AM_DEMODULATOR("AM Demodulator", 1),
+    CHANNEL_DFT("Polyphase Channel DFT", 1),
     DC_REMOVAL_REAL("Real DC Removal Filter", 1),
     DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 2),
     DIFFERENTIAL_DEMODULATOR("DQPSK Demodulator", 1),

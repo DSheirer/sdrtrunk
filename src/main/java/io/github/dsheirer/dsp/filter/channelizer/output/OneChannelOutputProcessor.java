@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
+import io.github.dsheirer.dsp.filter.channelizer.ChannelResultsBatch;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import java.util.List;
@@ -80,27 +81,32 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
 
         //Set the channelized output results offset to twice the channel index to account for each channel having
         //an I/Q pair
-        mChannelOffset = indexes.get(0) * 2;
+        int channelOffset = indexes.get(0) * 2;
+        enqueueUpdate(() -> mChannelOffset = channelOffset);
     }
 
     @Override
     public void setFrequencyOffset(long frequency)
     {
-        mMixerAssembler.getMixer().setFrequency(frequency);
+        enqueueUpdate(() -> mMixerAssembler.getMixer().setFrequency(frequency));
     }
 
     /**
      * Extract the channel from the channel results array and pass to the assembler.  The assembler will
      * apply frequency translation and gain and indicate when a buffer is fully assembled.
      *
-     * @param channelResultsList to process containing a list of a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param channelResults to process containing blocks of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      */
     @Override
-    public void process(List<float[]> channelResultsList)
+    public void process(ChannelResultsBatch channelResults)
     {
-        for(float[] channelResults: channelResultsList)
+        float[] samples = channelResults.getSamples();
+        int blockLength = channelResults.getBlockLength();
+        int channelOffset = mChannelOffset;
+
+        for(int index = channelOffset; index < samples.length; index += blockLength)
         {
-            mMixerAssembler.receive(channelResults[mChannelOffset], channelResults[mChannelOffset + 1]);
+            mMixerAssembler.receive(samples[index], samples[index + 1]);
 
             if(mMixerAssembler.hasBuffer())
             {
