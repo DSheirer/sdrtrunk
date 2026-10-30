@@ -4,6 +4,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 public abstract class DecodeConfigJMBE extends DecodeConfiguration
 {
+    public static float DEFAULT_COMFORT_NOISE_GAIN = 0.05f;
+    public static float DEFAULT_TONE_GAIN = 1.0f;
     private boolean mAGC = true;
     private boolean mLegacyToneLevels;
 
@@ -21,8 +23,8 @@ public abstract class DecodeConfigJMBE extends DecodeConfiguration
     {
         mLegacyToneLevels = enabled;
     }
-    private float mToneGain = 1.0f;
-    private float mNoiseGain = 1.0f;
+    private float mToneGain = DEFAULT_TONE_GAIN;
+    private float mComfortNoiseGain = DEFAULT_COMFORT_NOISE_GAIN;
 
     /**
      * Automatic Gain Control (AGC) for the JMBE audio codec
@@ -78,28 +80,28 @@ public abstract class DecodeConfigJMBE extends DecodeConfiguration
      * @return noise gain in range 0.0 (no noise) to 1.0 (default noise)
      */
     @JacksonXmlProperty(isAttribute = true, localName = "jmbeNoiseGain", namespace = "http://www.w3.org/2001/XMLSchema-instance")
-    public float getNoiseGain()
+    public float getComfortNoiseGain()
     {
-        return mNoiseGain;
+        return mComfortNoiseGain;
     }
 
     /**
      * Sets the comfort noise insertion gain for the JMBE audio codec
      * @param gain noise gain in range 0.0 (no noise) to 1.0 (default noise)
      */
-    public void setNoiseGain(float gain)
+    public void setComfortNoiseGain(float gain)
     {
         if(gain > 1.0f)
         {
-            mNoiseGain = 1.0f;
+            mComfortNoiseGain = 1.0f;
         }
         else if(gain < 0)
         {
-            mNoiseGain = 0;
+            mComfortNoiseGain = 0;
         }
         else
         {
-            mNoiseGain = gain;
+            mComfortNoiseGain = gain;
         }
     }
 }

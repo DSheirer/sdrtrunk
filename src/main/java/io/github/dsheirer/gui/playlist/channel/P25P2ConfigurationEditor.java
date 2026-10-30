@@ -48,7 +48,6 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
@@ -171,26 +170,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(noteLabel);
 
             row++;
-            Label jmbeLabel = new Label("AMBE Audio");
-            GridPane.setHalignment(jmbeLabel, HPos.LEFT);
-            gridPane.add(jmbeLabel, 0, row);
-
-            GridPane.setHalignment(getJmbeAGCButton(), HPos.LEFT);
-            gridPane.add(getJmbeAGCButton(), 1, row);
-
-            gridPane.add(new Label("Tone Volume:"), 2, row);
-
-            GridPane.setHgrow(getJmbeToneGainSlider(), Priority.ALWAYS);
-            gridPane.add(getJmbeToneGainSlider(), 3, row);
-
-            gridPane.add(new Label("Comfort Noise Volume:"), 4, row);
-
-            GridPane.setHgrow(getJmbeNoiseGainSlider(), Priority.ALWAYS);
-            gridPane.add(getJmbeNoiseGainSlider(), 5, row);
-
-
-            row++;
-            gridPane.add(getLegacyToneLevelsButton(), 0, row, 6, 1);
+            addAudioControls(gridPane, row, "AMBE Audio", getJmbeNoiseGainSlider(), getJmbeAGCButton(),
+                getJmbeToneGainSlider(), getLegacyToneLevelsButton());
 
             mDecoderPane.setContent(gridPane);
         }
@@ -202,7 +183,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mJmbeAGCButton == null)
         {
-            mJmbeAGCButton = new ToggleSwitch("AGC:");
+            mJmbeAGCButton = new ToggleSwitch();
             mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
             mJmbeAGCButton.setDisable(true);
             mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
@@ -215,7 +196,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mLegacyToneLevelsButton == null)
         {
-            mLegacyToneLevelsButton = new ToggleSwitch("Use legacy tone levels");
+            mLegacyToneLevelsButton = new ToggleSwitch();
             mLegacyToneLevelsButton.setTooltip(new Tooltip(
                 "Restore JMBE 1.x AMBE tone levels. Requires a supporting JMBE library; " +
                 "stock libraries ignore this option. Tone Volume still adjusts the selected level."));
@@ -433,7 +414,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getTrafficChannelPoolSizeSpinner().setDisable(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             getJmbeAGCButton().setSelected(decodeConfig.isAGC());
-            getJmbeNoiseGainSlider().setValue(decodeConfig.getNoiseGain());
+            getJmbeNoiseGainSlider().setValue(decodeConfig.getComfortNoiseGain());
             getJmbeToneGainSlider().setValue(decodeConfig.getToneGain());
             getLegacyToneLevelsButton().setSelected(decodeConfig.isLegacyToneLevels());
         }
@@ -480,7 +461,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
-        config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
+        config.setComfortNoiseGain((float)getJmbeNoiseGainSlider().getValue());
         config.setToneGain((float)getJmbeToneGainSlider().getValue());
         config.setLegacyToneLevels(getLegacyToneLevelsButton().isSelected());
         getItem().setDecodeConfiguration(config);
