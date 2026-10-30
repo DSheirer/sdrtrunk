@@ -72,6 +72,44 @@ public class ThinlineRadioPreferenceTest
         }
     }
 
+    @Test
+    void trunkedChannelKeysFitPreferencesAndStayDistinct()
+    {
+        String longName = "Boyd County Public Safety\u0000Law Enforcement\u0000" + "Boyd Law F2".repeat(20);
+        String key = ThinlineRadioPreference.trunkedKey(longName);
+
+        assertTrue(key.length() <= Preferences.MAX_KEY_LENGTH, key);
+        assertTrue(key.equals(ThinlineRadioPreference.trunkedKey(longName)), "the same channel keeps its key");
+        assertFalse(key.equals(ThinlineRadioPreference.trunkedKey(longName + "3")), "another channel gets another key");
+    }
+
+    @Test
+    void conventionalChannelNeverBecomesTrunked()
+    {
+        Preferences preferences = new MemoryPreferences();
+        String boydFire = "Boyd County Public Safety\u0000Fire\u0000BoydFire F1";
+
+        for(int report = 0; report < 10; report++)
+        {
+            assertFalse(ThinlineRadioPreference.isTrunkedChannel(preferences, boydFire, false));
+        }
+    }
+
+    @Test
+    void trunkedChannelIsRememberedAfterRestartButOthersAreNot()
+    {
+        Preferences preferences = new MemoryPreferences();
+        String controlChannel = "Ohio MARCS\u0000Trumbull\u0000Control";
+        String conventional = "Ohio MARCS\u0000Trumbull\u0000Fireground";
+
+        assertFalse(ThinlineRadioPreference.isTrunkedChannel(preferences, controlChannel, false), "not seen in control yet");
+        assertTrue(ThinlineRadioPreference.isTrunkedChannel(preferences, controlChannel, true));
+
+        assertTrue(ThinlineRadioPreference.isTrunkedChannel(preferences, controlChannel, false),
+            "after a restart a trunked channel that has not locked still counts as trunked");
+        assertFalse(ThinlineRadioPreference.isTrunkedChannel(preferences, conventional, false));
+    }
+
     private static class MemoryPreferences extends AbstractPreferences
     {
         private final Map<String,String> mValues = new HashMap<>();

@@ -22,6 +22,10 @@ package io.github.dsheirer.preference.thinline;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.prefs.Preferences;
 
 /**
@@ -39,6 +43,7 @@ public class ThinlineRadioPreference extends Preference
     private static final String ALERT_OFFLINE = "thinline.health.alert.offline";
     private static final String REMOTE = "thinline.remote.";
     private static final String REMOTE_SAVED = "thinline.remote.saved";
+    private static final String TRUNKED = "thinline.trunked.";
 
     /**
      * What the Thinline Radio admin page may do on this computer.  Viewing status is always allowed.
@@ -214,5 +219,37 @@ public class ThinlineRadioPreference extends Preference
     {
         mPreferences.putBoolean(REMOTE + remote.key(), allowed);
         notifyPreferenceUpdated();
+    }
+
+    /**
+     * True once the channel has locked onto a trunking control channel on this computer. DMR, P25 and NXDN
+     * channels can be conventional, so only a channel that has carried a control channel can lose one.
+     */
+    public boolean isTrunkedChannel(String channelKey, boolean inControl)
+    {
+        return isTrunkedChannel(mPreferences, channelKey, inControl);
+    }
+
+    static boolean isTrunkedChannel(Preferences preferences, String channelKey, boolean inControl)
+    {
+        if(inControl)
+        {
+            preferences.putBoolean(trunkedKey(channelKey), true);
+            return true;
+        }
+        return preferences.getBoolean(trunkedKey(channelKey), false);
+    }
+
+    static String trunkedKey(String channelKey)
+    {
+        try
+        {
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(channelKey.getBytes(StandardCharsets.UTF_8));
+            return TRUNKED + HexFormat.of().formatHex(hash, 0, 12);
+        }
+        catch(NoSuchAlgorithmException e)
+        {
+            return TRUNKED + Integer.toHexString(channelKey.hashCode());
+        }
     }
 }
