@@ -40,7 +40,7 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
     private static final Logger mLog = LoggerFactory.getLogger(VectorComplexOscillator.class);
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_PREFERRED;
     //Number of samples between SIMD lane realignments.
-    private static final int LANE_ALIGNMENT_INTERVAL = 262_144;
+    private static final int LANE_ALIGNMENT_INTERVAL = 4096;
 
     private float[] mPreviousInphases;
     private float[] mPreviousQuadratures;

@@ -90,19 +90,24 @@ public class VectorComplexOscillatorTest
     }
 
     /**
-     * Test: the SIMD lanes stay aligned over a long run at a frequency where the rotation for a set of lanes is nearly
-     * a whole turn or half turn, which is small enough for rounding to affect each lane differently.
+     * Test: the SIMD lanes stay aligned over a long run at frequencies where the rotation for a set of lanes is nearly
+     * a whole turn or half turn, which is small enough for rounding to affect each lane differently.  The frequencies
+     * that are affected depend on the lane width of the hardware.
      */
     @Test
-    void lanesRemainAlignedAtRationalFrequency()
+    void lanesRemainAlignedAtRationalFrequencies()
     {
-        double frequency = SAMPLE_RATE / 16.0;
-        VectorComplexOscillator oscillator = new VectorComplexOscillator(frequency, SAMPLE_RATE);
         int buffers = 30_000_000 / BUFFER_SIZE;
 
-        for(int x = 0; x < buffers; x++)
+        for(double divisor: new double[]{8.0, 16.0, 32.0})
         {
-            assertTrue(rotationError(oscillator.generateComplexSamples(BUFFER_SIZE, 0), frequency) < MAXIMUM_ERROR_RADIANS);
+            double frequency = SAMPLE_RATE / divisor;
+            VectorComplexOscillator oscillator = new VectorComplexOscillator(frequency, SAMPLE_RATE);
+
+            for(int x = 0; x < buffers; x++)
+            {
+                assertTrue(rotationError(oscillator.generateComplexSamples(BUFFER_SIZE, 0), frequency) < MAXIMUM_ERROR_RADIANS);
+            }
         }
     }
 
