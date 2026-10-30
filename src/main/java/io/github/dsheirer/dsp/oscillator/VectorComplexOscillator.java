@@ -39,12 +39,15 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
 {
     private static final Logger mLog = LoggerFactory.getLogger(VectorComplexOscillator.class);
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_PREFERRED;
+    //Number of samples between SIMD lane realignments.
+    private static final int LANE_ALIGNMENT_INTERVAL = 262_144;
 
     private float[] mPreviousInphases;
     private float[] mPreviousQuadratures;
     private float[] mGainInitials; //Set to 3.0f as the first constant in the gain calculation
     //Note: this must not have an initializer because the parent constructor sets it via the update() method
     private volatile boolean mLaneUpdateRequired;
+    private int mSamplesSinceLaneUpdate;
 
     /**
      * Constructs an instance
@@ -77,15 +80,23 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
     }
 
     /**
-     * Updates the SIMD lanes when the frequency or sample rate has changed.  Note: this must only be invoked on the
-     * sample generation thread.
+     * Updates the SIMD lanes when the frequency or sample rate has changed, and periodically to realign the lanes.  At
+     * frequencies where the rotation for a set of lanes is nearly a whole or half turn, rounding affects each lane
+     * differently and the lanes would otherwise drift apart until the next frequency change, producing spurs at
+     * multiples of the sample rate divided by the lane count.  Note: this must only be invoked on the sample generation
+     * thread.
+     * @param sampleCount that will be generated following this update check.
      */
-    private void updateLanes()
+    private void updateLanes(int sampleCount)
     {
-        if(!mLaneUpdateRequired)
+        mSamplesSinceLaneUpdate += sampleCount;
+
+        if(!mLaneUpdateRequired && mSamplesSinceLaneUpdate < LANE_ALIGNMENT_INTERVAL)
         {
             return;
         }
+
+        mSamplesSinceLaneUpdate = 0;
 
         //Clear the flag before reading the angle so that a concurrent update can't be missed.
         mLaneUpdateRequired = false;
@@ -120,7 +131,7 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
                     "] must be a power of 2 and a multiple of the SIMD lane width [" + VECTOR_SPECIES.length() + "]");
         }
 
-        updateLanes();
+        updateLanes(sampleCount);
 
         float[] samples = new float[sampleCount * 2];
         FloatVector previousInphase = FloatVector.fromArray(VECTOR_SPECIES, mPreviousInphases, 0);
@@ -191,7 +202,7 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
                     "] must be a power of 2 and a multiple of the SIMD lane width [" + VECTOR_SPECIES.length() + "]");
         }
 
-        updateLanes();
+        updateLanes(sampleCount);
 
         FloatVector previousInphase = FloatVector.fromArray(VECTOR_SPECIES, mPreviousInphases, 0);
         FloatVector previousQuadrature = FloatVector.fromArray(VECTOR_SPECIES, mPreviousQuadratures, 0);
