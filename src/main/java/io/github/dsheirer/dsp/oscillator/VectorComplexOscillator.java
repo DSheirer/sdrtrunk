@@ -91,15 +91,18 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
     {
         mSamplesSinceLaneUpdate += sampleCount;
 
-        if(!mLaneUpdateRequired && mSamplesSinceLaneUpdate < LANE_ALIGNMENT_INTERVAL)
+        //Only clear the flag after reading it as set, otherwise a periodic realignment could clear a concurrent update
+        if(mLaneUpdateRequired)
+        {
+            //Clear the flag before reading the angle so that a concurrent update can't be missed.
+            mLaneUpdateRequired = false;
+        }
+        else if(mSamplesSinceLaneUpdate < LANE_ALIGNMENT_INTERVAL)
         {
             return;
         }
 
         mSamplesSinceLaneUpdate = 0;
-
-        //Clear the flag before reading the angle so that a concurrent update can't be missed.
-        mLaneUpdateRequired = false;
 
         float cosineAngle = (float)FastMath.cos(getAnglePerSample());
         float sineAngle = (float)FastMath.sin(getAnglePerSample());
