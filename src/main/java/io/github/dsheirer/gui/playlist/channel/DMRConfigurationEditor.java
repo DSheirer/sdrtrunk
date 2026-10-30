@@ -40,8 +40,6 @@ import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import java.util.ArrayList;
 import java.util.List;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -62,9 +60,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,25 +206,8 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(editorBox);
 
             row++;
-            Label jmbeLabel = new Label("AMBE Audio");
-            GridPane.setHalignment(jmbeLabel, HPos.LEFT);
-            gridPane.add(jmbeLabel, 0, row);
-
-            GridPane.setHalignment(getJmbeAGCButton(), HPos.LEFT);
-            gridPane.add(getJmbeAGCButton(), 1, row);
-
-            gridPane.add(new Label("Tone Volume:"), 2, row);
-
-            GridPane.setHgrow(getJmbeToneGainSlider(), Priority.ALWAYS);
-            gridPane.add(getJmbeToneGainSlider(), 3, row);
-
-            gridPane.add(new Label("Comfort Noise Volume:"), 4, row);
-
-            GridPane.setHgrow(getJmbeNoiseGainSlider(), Priority.ALWAYS);
-            gridPane.add(getJmbeNoiseGainSlider(), 5, row);
-
-            row++;
-            gridPane.add(getLegacyToneLevelsButton(), 0, row, 6, 1);
+            addAudioControls(gridPane, row, "AMBE Audio", getJmbeNoiseGainSlider(), getJmbeAGCButton(),
+                getJmbeToneGainSlider(), getLegacyToneLevelsButton());
 
             mDecoderPane.setContent(gridPane);
         }
@@ -584,7 +563,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mJmbeAGCButton == null)
         {
-            mJmbeAGCButton = new ToggleSwitch("AGC:");
+            mJmbeAGCButton = new ToggleSwitch();
             mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
             mJmbeAGCButton.setDisable(true);
             mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
@@ -597,7 +576,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mLegacyToneLevelsButton == null)
         {
-            mLegacyToneLevelsButton = new ToggleSwitch("Use legacy tone levels");
+            mLegacyToneLevelsButton = new ToggleSwitch();
             mLegacyToneLevelsButton.setTooltip(new Tooltip(
                 "Restore JMBE 1.x AMBE tone levels. Requires a supporting JMBE library; " +
                 "stock libraries ignore this option. Tone Volume still adjusts the selected level."));
@@ -714,7 +693,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             }
 
             getJmbeAGCButton().setSelected(decodeConfig.isAGC());
-            getJmbeNoiseGainSlider().setValue(decodeConfig.getNoiseGain());
+            getJmbeNoiseGainSlider().setValue(decodeConfig.getComfortNoiseGain());
             getJmbeToneGainSlider().setValue(decodeConfig.getToneGain());
             getLegacyToneLevelsButton().setSelected(decodeConfig.isLegacyToneLevels());
         }
@@ -752,7 +731,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         config.setUseCompressedTalkgroups(getUseCompressedTalkgroupsToggle().isSelected());
         config.setTimeslotMap(new ArrayList<>(getTimeslotTable().getItems()));
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
-        config.setNoiseGain((float)getJmbeNoiseGainSlider().getValue());
+        config.setComfortNoiseGain((float)getJmbeNoiseGainSlider().getValue());
         config.setToneGain((float)getJmbeToneGainSlider().getValue());
         config.setLegacyToneLevels(getLegacyToneLevelsButton().isSelected());
         getItem().setDecodeConfiguration(config);
