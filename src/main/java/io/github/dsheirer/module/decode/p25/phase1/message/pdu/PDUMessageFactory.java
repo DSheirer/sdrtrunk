@@ -173,6 +173,13 @@ public class PDUMessageFactory
             case RESPONSE_PACKET_HEADER_FORMAT:
                 return new ResponseMessage(pduSequence, nac, timestamp);
             case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
+                //The header factory creates a packet header when the unconfirmed data header carries a packet data
+                //SAP, so that unconfirmed IP packets are processed the same as confirmed (PACKET_DATA) packets.
+                if(pduSequence.getHeader() instanceof PacketHeader)
+                {
+                    return createPacketData(pduSequence, nac, timestamp);
+                }
+
                 return createUMBTC(pduSequence, nac, timestamp);
             default:
                 return new PDUSequenceMessage(pduSequence, nac, timestamp);
@@ -229,7 +236,7 @@ public class PDUMessageFactory
     }
 
     /**
-     * Creates a packet data message
+     * Creates a packet data message from a confirmed or unconfirmed packet data sequence.
      *
      * @param pduSequence containing a packet data header and zero or more data blocks
      * @param nac network access code
