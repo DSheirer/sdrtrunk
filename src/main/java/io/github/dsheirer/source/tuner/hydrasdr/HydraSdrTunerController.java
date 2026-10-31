@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,31 +19,42 @@
 
 package io.github.dsheirer.source.tuner.hydrasdr;
 
-import io.github.dsheirer.buffer.INativeBufferFactory;
-import io.github.dsheirer.buffer.sample.SampleNativeBufferFactory;
+import io.github.dsheirer.buffer.FloatNativeBuffer;
+import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.hydrasdr.DecimationMode;
+import io.github.dsheirer.hydrasdr.GainType;
+import io.github.dsheirer.hydrasdr.HydraSdr;
+import io.github.dsheirer.hydrasdr.HydraSdrDevice;
+import io.github.dsheirer.hydrasdr.HydraSdrException;
+import io.github.dsheirer.hydrasdr.SampleBuffer;
+import io.github.dsheirer.hydrasdr.SampleType;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
+import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Context;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceHandle;
+import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
-import org.usb4java.LibUsbException;
-
-import javax.usb.UsbException;
 
 /**
- * HydraSDR tuner controller
+ * HydraSDR tuner controller, implemented with the jHydraSDR library (libhydrasdr).
+ *
+ * The tuner is discovered with LibUsb at a USB bus and port, like all other USB tuners, however libhydrasdr owns the
+ * USB device, its transfers, and the conversion of real samples to complex samples.
  */
-public class HydraSdrTunerController extends USBTunerController
+public class HydraSdrTunerController extends TunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(HydraSdrTunerController.class);
     public static final Gain LINEARITY_GAIN_DEFAULT = Gain.LINEARITY_14;
@@ -63,16 +74,25 @@ public class HydraSdrTunerController extends USBTunerController
     public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1800000000l;
     public static final long FREQUENCY_DEFAULT = 101100000;
     public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
-    private static final long USB_TIMEOUT_MS = 2000l; //milliseconds
-    private static final int USB_TRANSFER_BUFFER_SIZE = 262144;
-    private static final byte USB_REQUEST_IN = (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
-    private static final byte USB_REQUEST_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     public static final DecimalFormat MHZ_FORMATTER = new DecimalFormat("#.00 MHz");
     public static final HydraSdrSampleRate DEFAULT_SAMPLE_RATE = new HydraSdrSampleRate(0, 10000000, "10.00 MHz");
-    private SampleNativeBufferFactory mNativeBufferFactory = new SampleNativeBufferFactory();
+    //Lower rates from libhydrasdr don't divide into whole 25 kHz polyphase channels, and the lowest give none at all.
+    private static final long MINIMUM_SAMPLE_RATE = 1250000;
+    //Power-of-2 sample count of an undecimated buffer, used until buffers arrive from the device.  libhydrasdr divides
+    //this by the software decimation factor, which is also a power of 2.
+    private static final int UNDECIMATED_BUFFER_SAMPLE_COUNT = 65536;
+    //Complex samples from libhydrasdr are half the amplitude (-6 dB) of the analytic signal for a real input.  Restoring
+    //this keeps spectrum levels and squelch thresholds consistent with the other tuners.
+    private static final float SAMPLE_SCALE = 2.0f;
+    private final int mBus;
+    private final String mPortAddress;
+    private HydraSdrDevice mDevice;
     private HydraSdrDeviceInformation mDeviceInfo;
     private List<HydraSdrSampleRate> mSampleRates = new ArrayList<>();
     private int mSampleRate = 0;
+    private volatile float mSamplesPerMillisecond = 0.0f;
+    private volatile int mBufferSampleCount = UNDECIMATED_BUFFER_SAMPLE_COUNT;
+    private boolean mStreaming = false;
 
     /**
      * Constructs an instance
@@ -82,7 +102,13 @@ public class HydraSdrTunerController extends USBTunerController
      */
     public HydraSdrTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, 0, USABLE_BANDWIDTH_PERCENT, tunerErrorListener);
+        super(tunerErrorListener);
+        mBus = bus;
+        mPortAddress = portAddress;
+        setMinimumFrequency(MINIMUM_TUNABLE_FREQUENCY_HZ);
+        setMaximumFrequency(MAXIMUM_TUNABLE_FREQUENCY_HZ);
+        setMiddleUnusableHalfBandwidth(0);
+        setUsableBandwidthPercentage(USABLE_BANDWIDTH_PERCENT);
     }
 
     @Override
@@ -92,76 +118,333 @@ public class HydraSdrTunerController extends USBTunerController
     }
 
     @Override
-    protected INativeBufferFactory getNativeBufferFactory()
-    {
-        return mNativeBufferFactory;
-    }
-
-    @Override
-    protected int getTransferBufferSize()
-    {
-        return USB_TRANSFER_BUFFER_SIZE;
-    }
-
-    @Override
     public int getBufferSampleCount()
     {
-        //Each HydraSDR complex sample is 4 bytes, so sample count is buffer size / 4
-        return USB_TRANSFER_BUFFER_SIZE / 4;
+        return mBufferSampleCount;
     }
 
     @Override
-    protected void deviceStart() throws SourceException
+    public void start() throws SourceException
     {
-        try
-        {
-            setSamplePacking(false);
-        }
-        catch(LibUsbException | UsbException | UnsupportedOperationException e)
-        {
-            mLog.info("Sample packing is not supported by HydraSDR firmware");
-        }
+        long serialNumber = readSerialNumber();
+
+        getLock().lock();
 
         try
         {
-            setReceiverMode(true);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Couldn't enable HydraSDR receiver mode", e);
-        }
+            mDevice = HydraSdr.open(serialNumber);
+            mDevice.setSampleType(SampleType.FLOAT32_IQ);
+            mDevice.setDecimationMode(DecimationMode.HIGH_DEFINITION);
+            mDeviceInfo = new HydraSdrDeviceInformation(mDevice.deviceInfo());
+            mSampleRates.clear();
 
-        setFrequency(FREQUENCY_DEFAULT);
+            for(long rate : mDevice.sampleRates())
+            {
+                if(rate >= MINIMUM_SAMPLE_RATE)
+                {
+                    mSampleRates.add(new HydraSdrSampleRate(mSampleRates.size(), (int)rate, formatSampleRate((int)rate)));
+                }
+            }
 
-        try
-        {
-            determineAvailableSampleRates();
-        }
-        catch(LibUsbException | UsbException e)
-        {
-            mLog.error("Error identifying available samples rates", e);
-        }
+            if(mSampleRates.isEmpty())
+            {
+                mSampleRates.add(DEFAULT_SAMPLE_RATE);
+            }
 
-        try
-        {
+            setFrequency(FREQUENCY_DEFAULT);
             setSampleRate(mSampleRates.get(0));
         }
-        catch(IllegalArgumentException | LibUsbException | UsbException e)
+        catch(HydraSdrException | SourceException | LinkageError e)
         {
-            mLog.error("Setting sample rate is not supported by firmware", e);
+            closeDevice(mDevice);
+            mDevice = null;
+            throw new SourceException("Can't start HydraSDR tuner - " + e.getMessage(), e);
+        }
+        finally
+        {
+            getLock().unlock();
         }
     }
 
     @Override
-    protected void deviceStop()
+    public void stop()
+    {
+        HydraSdrDevice device;
+
+        getLock().lock();
+
+        try
+        {
+            device = mDevice;
+            mDevice = null;
+            mStreaming = false;
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+
+        mNativeBufferBroadcaster.clear();
+        closeDevice(device);
+    }
+
+    /**
+     * Closes the device, which also stops streaming and turns off the bias-T.
+     * @param device to close, or null
+     */
+    private static void closeDevice(HydraSdrDevice device)
+    {
+        if(device != null)
+        {
+            try
+            {
+                device.close();
+            }
+            catch(HydraSdrException | RuntimeException e)
+            {
+                mLog.error("Error closing HydraSDR device", e);
+            }
+        }
+    }
+
+    /**
+     * Reads the serial number of the device at this controller's USB bus and port, since libhydrasdr opens a specific
+     * device by serial number.  The device is closed again before returning so that libhydrasdr can open it.
+     * @return serial number
+     * @throws SourceException if the device isn't found or can't be accessed.
+     */
+    private long readSerialNumber() throws SourceException
+    {
+        Context context = new Context();
+        int status = LibUsb.init(context);
+
+        if(status != LibUsb.SUCCESS)
+        {
+            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
+        }
+
+        try
+        {
+            DeviceList deviceList = new DeviceList();
+            int count = LibUsb.getDeviceList(context, deviceList);
+
+            if(count < 0)
+            {
+                throw new SourceException("Can't get the USB device list - " + LibUsb.errorName(count));
+            }
+
+            try
+            {
+                for(Device device : deviceList)
+                {
+                    if(LibUsb.getBusNumber(device) == mBus && LibUsb.getPortNumber(device) > 0 &&
+                        mPortAddress != null && mPortAddress.equals(TunerManager.getPortAddress(device)))
+                    {
+                        return readSerialNumber(device);
+                    }
+                }
+            }
+            finally
+            {
+                LibUsb.freeDeviceList(deviceList, true);
+            }
+        }
+        finally
+        {
+            LibUsb.exit(context);
+        }
+
+        throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
+    }
+
+    /**
+     * Reads the serial number from the device's USB serial string, formatted as: HYDRASDR SN:0123456789ABCDEF
+     * @param device to read
+     * @return serial number
+     * @throws SourceException if the device can't be opened or the serial string isn't valid.
+     */
+    private static long readSerialNumber(Device device) throws SourceException
+    {
+        DeviceDescriptor descriptor = new DeviceDescriptor();
+        int status = LibUsb.getDeviceDescriptor(device, descriptor);
+
+        if(status != LibUsb.SUCCESS)
+        {
+            throw new SourceException("Can't obtain tuner's device descriptor - " + LibUsb.errorName(status));
+        }
+
+        DeviceHandle handle = new DeviceHandle();
+        status = LibUsb.open(device, handle);
+
+        if(status == LibUsb.ERROR_ACCESS)
+        {
+            mLog.error("Access to USB tuner denied - (windows) reinstall zadig driver or (linux) blacklist driver and/or check udev rules");
+            throw new SourceException("access denied - if using linux, blacklist the default driver and/or install udev rules");
+        }
+        else if(status != LibUsb.SUCCESS)
+        {
+            mLog.error("Can't open USB tuner - check driver or Linux udev rules");
+            throw new SourceException("Can't open USB tuner - reinstall driver? - " + LibUsb.errorName(status));
+        }
+
+        String serial;
+
+        try
+        {
+            serial = LibUsb.getStringDescriptor(handle, descriptor.iSerialNumber());
+        }
+        finally
+        {
+            LibUsb.close(handle);
+        }
+
+        try
+        {
+            return Long.parseUnsignedLong(serial.substring(serial.lastIndexOf(':') + 1), 16);
+        }
+        catch(NullPointerException | NumberFormatException e)
+        {
+            throw new SourceException("Can't read HydraSDR serial number from USB serial string [" + serial + "]", e);
+        }
+    }
+
+    /**
+     * Operation that requires the device.
+     */
+    private interface DeviceOperation
+    {
+        void execute(HydraSdrDevice device) throws HydraSdrException;
+    }
+
+    /**
+     * Executes the operation under the controller lock so that the device can't be closed while it is in use.  The
+     * operation is ignored when the device isn't open, which allows for calls that arrive during tuner shutdown.
+     * @param operation to execute
+     * @throws SourceException if the operation fails
+     */
+    private void execute(DeviceOperation operation) throws SourceException
+    {
+        getLock().lock();
+
+        try
+        {
+            if(mDevice != null)
+            {
+                operation.execute(mDevice);
+            }
+        }
+        catch(HydraSdrException e)
+        {
+            throw new SourceException(e.getMessage(), e);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    /**
+     * Receives converted samples on the libhydrasdr thread and dispatches them to the buffer listeners.  Exceptions
+     * are contained here since an exception reaching the library would stop the sample stream.
+     * @param buffer from the library, which is only valid until this method returns.
+     * @return true to continue streaming
+     */
+    private boolean receive(SampleBuffer buffer)
     {
         try
         {
-            setReceiverMode(false);
+            mBufferSampleCount = buffer.sampleCount();
+            float[] samples = buffer.copyFloats();
+
+            for(int x = 0; x < samples.length; x++)
+            {
+                samples[x] *= SAMPLE_SCALE;
+            }
+
+            broadcast(new FloatNativeBuffer(samples, System.currentTimeMillis(), mSamplesPerMillisecond));
         }
-        catch(Exception e)
+        catch(RuntimeException e)
         {
-            mLog.error("Couldn't enable HydraSDR receiver mode", e);
+            mLog.error("Error dispatching HydraSDR sample buffer", e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Starts the sample stream if it's not already started.
+     */
+    private void startStreaming() throws SourceException
+    {
+        if(!mStreaming)
+        {
+            execute(device -> device.startRx(this::receive));
+            mStreaming = mDevice != null;
+        }
+    }
+
+    /**
+     * Stops the sample stream if it's started.
+     */
+    private void stopStreaming() throws SourceException
+    {
+        if(mStreaming)
+        {
+            mStreaming = false;
+            execute(HydraSdrDevice::stopRx);
+        }
+    }
+
+    /**
+     * Adds the IQ buffer listener and automatically starts streaming, if not already started.
+     */
+    @Override
+    public void addBufferListener(Listener<INativeBuffer> listener)
+    {
+        getLock().lock();
+
+        try
+        {
+            if(mDevice != null)
+            {
+                super.addBufferListener(listener);
+                startStreaming();
+            }
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error starting streaming on HydraSDR tuner", se);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    /**
+     * Removes the IQ buffer listener and stops streaming if there are no more listeners.
+     */
+    @Override
+    public void removeBufferListener(Listener<INativeBuffer> listener)
+    {
+        getLock().lock();
+
+        try
+        {
+            super.removeBufferListener(listener);
+
+            if(!hasBufferListeners())
+            {
+                stopStreaming();
+            }
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error stopping streaming on HydraSDR tuner", se);
+        }
+        finally
+        {
+            getLock().unlock();
         }
     }
 
@@ -173,29 +456,8 @@ public class HydraSdrTunerController extends USBTunerController
 
         if(tunerConfiguration instanceof HydraSdrTunerConfiguration config)
         {
-            int sampleRate = config.getSampleRate();
-            HydraSdrSampleRate rate = getSampleRate(sampleRate);
-
-            if(rate == null)
-            {
-                if(!mSampleRates.isEmpty())
-                {
-                    rate = mSampleRates.get(0);
-                }
-                else
-                {
-                    rate = DEFAULT_SAMPLE_RATE;
-                }
-            }
-
-            try
-            {
-                setSampleRate(rate);
-            }
-            catch(UsbException e)
-            {
-                throw new SourceException("Couldn't set sample rate [" + rate.toString() + "]", e);
-            }
+            HydraSdrSampleRate rate = getSampleRate(config.getSampleRate());
+            setSampleRate(rate != null ? rate : mSampleRates.isEmpty() ? DEFAULT_SAMPLE_RATE : mSampleRates.get(0));
 
             try
             {
@@ -231,24 +493,11 @@ public class HydraSdrTunerController extends USBTunerController
     }
 
     @Override
-    public synchronized void setTunedFrequency(long frequency) throws SourceException
+    public void setTunedFrequency(long frequency) throws SourceException
     {
         if(MINIMUM_TUNABLE_FREQUENCY_HZ <= frequency && frequency <= MAXIMUM_TUNABLE_FREQUENCY_HZ)
         {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(4);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            buffer.putInt((int) frequency);
-            buffer.rewind();
-
-            try
-            {
-                write(Command.SET_FREQUENCY, 0, 0, buffer);
-            }
-            catch(UsbException e)
-            {
-                mLog.error("error setting frequency [" + frequency + "]", e);
-                throw new SourceException("error setting frequency [" + frequency + "]", e);
-            }
+            execute(device -> device.setFrequency(frequency));
         }
         else
         {
@@ -263,52 +512,71 @@ public class HydraSdrTunerController extends USBTunerController
     }
 
     /**
-     * Sets the sample rate to the rate specified by the index value in the available sample rates map
+     * Sets the sample rate.  The sample stream is stopped for the change, because libhydrasdr replaces the sample
+     * converter that its streaming thread is using.
      *
-     * @param rate to a sample rate in the available samples rates map.
-     * @throws IllegalArgumentException if index is not a valid rate index
-     * @throws LibUsbException          if there was a read error or if this operation is not supported by the current firmware
-     * @throws UsbException             if there was a USB error
+     * @param rate to set
+     * @throws SourceException if the rate can't be set
      */
-    public void setSampleRate(HydraSdrSampleRate rate) throws LibUsbException, UsbException, SourceException
+    public void setSampleRate(HydraSdrSampleRate rate) throws SourceException
     {
-        getNativeBufferFactory().setSamplesPerMillisecond((float)rate.getRate() / 1000.0f);
-        if(rate.getRate() != mSampleRate)
+        getLock().lock();
+
+        try
         {
-            int result = readByte(Command.SET_SAMPLE_RATE, 0, rate.getIndex(), true);
+            mSamplesPerMillisecond = (float)rate.getRate() / 1000.0f;
 
-            if(result != 1)
+            if(rate.getRate() != mSampleRate)
             {
-                throw new UsbException("Error setting sample rate [" + rate + "] rate - return value [" + result + "]");
-            }
-            else
-            {
-                mSampleRate = rate.getRate();
-                mFrequencyController.setSampleRate(mSampleRate);
+                boolean streaming = mStreaming;
+                stopStreaming();
 
-                // Update the Usable Bandwidth Percentage, as the usable range varies with the sample rate.
-                switch(mSampleRate)
+                try
                 {
-                    default:
-                    case 10000000:
-                        super.setUsableBandwidthPercentage(0.90);
-                        break;
-                    case 6000000:
-                        super.setUsableBandwidthPercentage(0.83);
-                        break;
-                    case 3000000:
-                        super.setUsableBandwidthPercentage(0.66);
-                        break;
-                    case 2500000:
-                        super.setUsableBandwidthPercentage(0.60);
-                        break;
+                    execute(device ->
+                    {
+                        device.setSampleRate(rate.getRate());
+                        mBufferSampleCount = UNDECIMATED_BUFFER_SAMPLE_COUNT /
+                                (int)device.deviceInfo().current().decimationFactor();
+                    });
+                    mSampleRate = rate.getRate();
+                    mFrequencyController.setSampleRate(mSampleRate);
+
+                    // Update the Usable Bandwidth Percentage, as the usable range varies with the sample rate.
+                    switch(mSampleRate)
+                    {
+                        default:
+                        case 10000000:
+                            super.setUsableBandwidthPercentage(0.90);
+                            break;
+                        case 6000000:
+                            super.setUsableBandwidthPercentage(0.83);
+                            break;
+                        case 3000000:
+                            super.setUsableBandwidthPercentage(0.66);
+                            break;
+                        case 2500000:
+                            super.setUsableBandwidthPercentage(0.90);
+                            break;
+                    }
+                }
+                finally
+                {
+                    if(streaming)
+                    {
+                        startStreaming();
+                    }
                 }
             }
+        }
+        finally
+        {
+            getLock().unlock();
         }
     }
 
     /**
-     * Returns a list of sample rates supported by the firmware version
+     * Returns a list of sample rates supported by the device
      */
     public List<HydraSdrSampleRate> getSampleRates()
     {
@@ -343,61 +611,28 @@ public class HydraSdrTunerController extends USBTunerController
     }
 
     /**
-     * Enables/Disables sample packing to allow two 12-bit samples to be packed into 3 bytes (enabled) or 4 bytes (disabled).
-     *
-     * @param enabled true or false
-     * @throws UsbException if sample packing is not supported by the current device firmware or if there were usb
-     * communication issues
-     */
-    public void setSamplePacking(boolean enabled) throws LibUsbException, UsbException
-    {
-        int result = readByte(Command.SET_PACKING, 0, (enabled ? 1 : 0), true);
-
-        if(result != 1)
-        {
-            throw new UsbException("Couldnt set sample packing enabled: " + enabled);
-        }
-
-        /* If we didn't throw an exception above, then update the sample adapter
-         * to process samples accordingly */
-        mNativeBufferFactory.setSamplePacking(enabled);
-    }
-
-    /**
      * Enables/disables the mixer automatic gain setting
      *
-     * @param enabled
-     * @throws LibUsbException on unsuccessful read operation
-     * @throws UsbException    on USB error
+     * @param enabled true to enable
+     * @throws SourceException on error
      */
-    public synchronized void setMixerAGC(boolean enabled) throws LibUsbException, UsbException
+    public void setMixerAGC(boolean enabled) throws SourceException
     {
-        int result = readByte(Command.SET_MIXER_AGC, 0, (enabled ? 1 : 0), true);
-
-        if(result != LibUsb.SUCCESS)
-        {
-            throw new UsbException("Couldnt set mixer AGC enabled: " + enabled);
-        }
+        execute(device -> device.setGain(GainType.MIXER_AGC, enabled ? 1 : 0));
     }
 
     /**
      * Enables/disables the low noise amplifier automatic gain setting
      *
-     * @param enabled
-     * @throws LibUsbException on unsuccessful read operation
-     * @throws UsbException    on USB error
+     * @param enabled true to enable
+     * @throws SourceException on error
      */
-    public synchronized void setLNAAGC(boolean enabled) throws LibUsbException, UsbException
+    public void setLNAAGC(boolean enabled) throws SourceException
     {
-        int result = readByte(Command.SET_LNA_AGC, 0, (enabled ? 1 : 0), true);
-
-        if(result != LibUsb.SUCCESS)
-        {
-            throw new UsbException("Couldn't set LNA AGC enabled: " + enabled);
-        }
+        execute(device -> device.setGain(GainType.LNA_AGC, enabled ? 1 : 0));
     }
 
-    public void setGain(Gain gain) throws UsbException
+    public void setGain(Gain gain) throws SourceException
     {
         if(gain != Gain.CUSTOM)
         {
@@ -413,20 +648,14 @@ public class HydraSdrTunerController extends USBTunerController
      * Sets LNA gain
      *
      * @param gain - value within range of LNA_GAIN_MIN to LNA_GAIN_MAX
-     * @throws LibUsbException          on error in java USB wrapper
-     * @throws UsbException             on error in USB transfer
+     * @throws SourceException          on error
      * @throws IllegalArgumentException if gain value is invalid
      */
-    public synchronized void setLNAGain(int gain) throws LibUsbException, UsbException, IllegalArgumentException
+    public void setLNAGain(int gain) throws SourceException, IllegalArgumentException
     {
         if(LNA_GAIN_MIN <= gain && gain <= LNA_GAIN_MAX)
         {
-            int result = readByte(Command.SET_LNA_GAIN, 0, gain, true);
-
-            if(result != LibUsb.SUCCESS)
-            {
-                throw new UsbException("Couldnt set LNA gain to: " + gain);
-            }
+            execute(device -> device.setGain(GainType.LNA, gain));
         }
         else
         {
@@ -439,20 +668,14 @@ public class HydraSdrTunerController extends USBTunerController
      * Sets Mixer gain
      *
      * @param gain - value within range of MIXER_GAIN_MIN to MIXER_GAIN_MAX
-     * @throws LibUsbException          on error in java USB wrapper
-     * @throws UsbException             on error in USB transfer
+     * @throws SourceException          on error
      * @throws IllegalArgumentException if gain value is invalid
      */
-    public void setMixerGain(int gain) throws LibUsbException, UsbException, IllegalArgumentException
+    public void setMixerGain(int gain) throws SourceException, IllegalArgumentException
     {
         if(MIXER_GAIN_MIN <= gain && gain <= MIXER_GAIN_MAX)
         {
-            int result = readByte(Command.SET_MIXER_GAIN, 0, gain, true);
-
-            if(result != LibUsb.SUCCESS)
-            {
-                throw new UsbException("Couldnt set mixer gain to: " + gain);
-            }
+            execute(device -> device.setGain(GainType.MIXER, gain));
         }
         else
         {
@@ -464,21 +687,15 @@ public class HydraSdrTunerController extends USBTunerController
     /**
      * Sets IF (VGA) gain
      *
-     * @param gain - value within range of VGA_GAIN_MIN to VGA_GAIN_MAX
-     * @throws LibUsbException          on error in java USB wrapper
-     * @throws UsbException             on error in USB transfer
+     * @param gain - value within range of IF_GAIN_MIN to IF_GAIN_MAX
+     * @throws SourceException          on error
      * @throws IllegalArgumentException if gain value is invalid
      */
-    public void setIFGain(int gain) throws LibUsbException, UsbException, IllegalArgumentException
+    public void setIFGain(int gain) throws SourceException, IllegalArgumentException
     {
         if(IF_GAIN_MIN <= gain && gain <= IF_GAIN_MAX)
         {
-            int result = readByte(Command.SET_VGA_GAIN, 0, gain, true);
-
-            if(result != LibUsb.SUCCESS)
-            {
-                throw new UsbException("Couldnt set VGA gain to: " + gain);
-            }
+            execute(device -> device.setGain(GainType.VGA, gain));
         }
         else
         {
@@ -487,64 +704,15 @@ public class HydraSdrTunerController extends USBTunerController
         }
     }
 
-    public void setReceiverMode(boolean enabled) throws LibUsbException, UsbException
-    {
-        //Empty buffer to throw away
-        ByteBuffer buffer = ByteBuffer.allocateDirect(0);
-        write(Command.RECEIVER_MODE, (enabled ? 1 : 0), 0, buffer);
-    }
-
     /**
      * Enables/disables the Bias-T (RF bias tee) power output for active antennas
      *
      * @param enabled true to enable Bias-T, false to disable
-     * @throws LibUsbException on unsuccessful write operation
-     * @throws UsbException on USB error
+     * @throws SourceException on error
      */
-    public synchronized void setBiasT(boolean enabled) throws LibUsbException, UsbException
+    public void setBiasT(boolean enabled) throws SourceException
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(0);
-        write(Command.SET_RF_BIAS_COMMAND, 0, (enabled ? 1 : 0), buffer);
-    }
-
-    /**
-     * Queries the device for available sample rates.  Will always provide at
-     * least the default 10 MHz sample rate.
-     */
-    private void determineAvailableSampleRates() throws LibUsbException, UsbException
-    {
-        mSampleRates.clear();
-
-        //Get a count of available sample rates.  If we get an exception, then
-        //we're using an older firmware revision and only the default 10 MHz
-        //rate is supported
-        try
-        {
-            byte[] rawCount = readArray(Command.GET_SAMPLE_RATES, 0, 0, 4);
-
-            if(rawCount != null)
-            {
-                int count = EndianUtils.readSwappedInteger(rawCount, 0);
-
-                byte[] rawRates = readArray(Command.GET_SAMPLE_RATES, 0,
-                    count, (count * 4));
-
-                for(int x = 0; x < count; x++)
-                {
-                    int rate = EndianUtils.readSwappedInteger(rawRates, (x * 4));
-                    mSampleRates.add(new HydraSdrSampleRate(x, rate, formatSampleRate(rate)));
-                }
-            }
-        }
-        catch(LibUsbException e)
-        {
-            //Press on, nothing else to do here ..
-        }
-
-        if(mSampleRates.isEmpty())
-        {
-            mSampleRates.add(DEFAULT_SAMPLE_RATE);
-        }
+        execute(device -> device.setBiasTee(enabled));
     }
 
     /**
@@ -556,162 +724,11 @@ public class HydraSdrTunerController extends USBTunerController
     }
 
     /**
-     * Device information
+     * Device information, available once the tuner has been started.
      */
     public HydraSdrDeviceInformation getDeviceInfo()
     {
-        //Lazy initialization
-        if(mDeviceInfo == null)
-        {
-            readDeviceInfo();
-        }
-
         return mDeviceInfo;
-    }
-
-    /**
-     * Reads version information from the device and populates the info object
-     */
-    private void readDeviceInfo()
-    {
-        if(mDeviceInfo == null)
-        {
-            mDeviceInfo = new HydraSdrDeviceInformation();
-        }
-
-        /* Board ID */
-        try
-        {
-            int boardID = readByte(Command.BOARD_ID_READ, 0, 0, true);
-            mDeviceInfo.setBoardID(boardID);
-        }
-        catch(LibUsbException | UsbException e)
-        {
-            mLog.error("Error reading HydraSDR board ID", e);
-        }
-
-        /* Version String */
-        try
-        {
-            byte[] version = readArray(Command.VERSION_STRING_READ, 0, 0, 127);
-            mDeviceInfo.setVersion(version);
-        }
-        catch(LibUsbException | UsbException e)
-        {
-            mLog.error("Error reading HydraSDR version string", e);
-        }
-
-        /* Part ID and Serial Number */
-        try
-        {
-            //Read 6 x 32-bit integers = 24 bytes
-            byte[] serial = readArray(Command.BOARD_PART_ID_SERIAL_NUMBER_READ, 0, 0, 24);
-            mDeviceInfo.setPartAndSerialNumber(serial);
-        }
-        catch(LibUsbException | UsbException e)
-        {
-            mLog.error("Error reading HydraSDR version string", e);
-        }
-    }
-
-    /**
-     * Reads a single byte value from the device.
-     *
-     * @param command - HydraSDR command
-     * @param value - value field for usb setup packet
-     * @param index - index field for usb setup packet
-     * @return - byte value as an integer
-     * @throws LibUsbException if the operation is unsuccesful
-     * @throws UsbException    on any usb errors
-     */
-    private int readByte(Command command, int value, int index, boolean signed) throws LibUsbException, UsbException
-    {
-        if(isRunning())
-        {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1);
-
-            int transferred = LibUsb.controlTransfer(getDeviceHandle(), USB_REQUEST_IN, command.getValue(),
-                    (short) value, (short) index, buffer, USB_TIMEOUT_MS);
-
-            if(transferred < 0)
-            {
-                throw new LibUsbException("read error", transferred);
-            }
-
-            byte result = buffer.get(0);
-
-            if(signed)
-            {
-                return (result & 0xFF);
-            }
-            else
-            {
-                return result;
-            }
-        }
-
-        return 0;
-    }
-
-    /**
-     * Reads a multi-byte value from the device
-     *
-     * @param command - HydraSDR command
-     * @param value - usb packet value
-     * @param index - usb packet index
-     * @param length - number of bytes to read
-     * @return - bytes read from the device
-     * @throws LibUsbException if quantity of bytes read doesn't equal the requested number of bytes
-     * @throws UsbException    on error communicating with the device
-     */
-    private byte[] readArray(Command command, int value, int index, int length) throws LibUsbException, UsbException
-    {
-        if(isRunning())
-        {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(length);
-
-            int transferred = LibUsb.controlTransfer(getDeviceHandle(), USB_REQUEST_IN, command.getValue(), (short) value,
-                (short) index, buffer, USB_TIMEOUT_MS);
-
-            if(transferred < 0)
-            {
-                throw new LibUsbException("read error", transferred);
-            }
-
-            byte[] results = new byte[transferred];
-            buffer.get(results);
-            return results;
-        }
-
-        return new byte[0];
-    }
-
-    /**
-     * Writes the buffer contents to the device
-     *
-     * @param command - HydraSDR command
-     * @param value - usb packet value
-     * @param index - usb packet index
-     * @param buffer - data to write to the device
-     * @throws UsbException on error
-     */
-    public void write(Command command, int value, int index, ByteBuffer buffer) throws UsbException
-    {
-        if(isRunning())
-        {
-            int transferred = LibUsb.controlTransfer(getDeviceHandle(), USB_REQUEST_OUT, command.getValue(),
-                (short) value, (short) index, buffer, USB_TIMEOUT_MS);
-
-            if(transferred < 0)
-            {
-                throw new LibUsbException("error writing byte buffer", transferred);
-            }
-            else if(transferred != buffer.capacity())
-            {
-                throw new LibUsbException("transferred bytes [" + transferred + "] is not what was expected [" +
-                        buffer.capacity() + "]", transferred);
-            }
-        }
     }
 
     public enum GainMode
@@ -854,201 +871,6 @@ public class HydraSdrTunerController extends USBTunerController
         public static EnumSet<Gain> getSensitivityGains()
         {
             return EnumSet.range(SENSITIVITY_1, SENSITIVITY_22);
-        }
-    }
-
-    /**
-     * HydraSDR Board Identifier
-     */
-    public enum BoardID
-    {
-        HYDRASDR_PROTO(0, "HydraSDR Proto"),
-        HYDRASDR_RFONE(1, "HydraSDR RF-One"),
-        UNKNOWN(-1, "Unknown");
-
-        private int mValue;
-        private String mLabel;
-
-        private BoardID(int value, String label)
-        {
-            mValue = value;
-            mLabel = label;
-        }
-
-        public int getValue()
-        {
-            return mValue;
-        }
-
-        public String getLabel()
-        {
-            return mLabel;
-        }
-
-        public static BoardID fromValue(int value)
-        {
-            if(value == 0)
-            {
-                return HYDRASDR_PROTO;
-            }
-            else if(value == 1)
-            {
-                return HYDRASDR_RFONE;
-            }
-
-            return UNKNOWN;
-        }
-    }
-
-    /**
-     * HydraSDR Commands
-     */
-    public enum Command
-    {
-        INVALID(0),
-        RECEIVER_MODE(1),
-        SI5351C_WRITE(2),
-        SI5351C_READ(3),
-        R828D_WRITE(4),
-        R828D_READ(5),
-        SPIFLASH_ERASE(6),
-        SPIFLASH_WRITE(7),
-        SPIFLASH_READ(8),
-        BOARD_ID_READ(9),
-        VERSION_STRING_READ(10),
-        BOARD_PART_ID_SERIAL_NUMBER_READ(11),
-        SET_SAMPLE_RATE(12),
-        SET_FREQUENCY(13),
-        SET_LNA_GAIN(14),
-        SET_MIXER_GAIN(15),
-        SET_VGA_GAIN(16),
-        SET_LNA_AGC(17),
-        SET_MIXER_AGC(18),
-        MS_VENDOR_COMMAND(19),
-        SET_RF_BIAS_COMMAND(20),
-        GPIO_WRITE(21),
-        GPIO_READ(22),
-        GPIO_DIR__WRITE(23),
-        GPIO_DIR_READ(24),
-        GET_SAMPLE_RATES(25),
-        SET_PACKING(26);
-
-        private int mValue;
-
-        Command(int value)
-        {
-            mValue = value;
-        }
-
-        public byte getValue()
-        {
-            return (byte) mValue;
-        }
-
-        public static Command fromValue(int value)
-        {
-            if(0 <= value && value <= 25)
-            {
-                return Command.values()[value];
-            }
-
-            return INVALID;
-        }
-    }
-
-    public enum ReceiverMode
-    {
-        OFF(0),
-        ON(1);
-
-        private int mValue;
-
-        private ReceiverMode(int value)
-        {
-            mValue = value;
-        }
-
-        public int getValue()
-        {
-            return mValue;
-        }
-    }
-
-    /**
-     * General Purpose Input/Output Ports (accessible on the HydraSDR board)
-     */
-    public enum GPIOPort
-    {
-        PORT_0(0),
-        PORT_1(1),
-        PORT_2(2),
-        PORT_3(3),
-        PORT_4(4),
-        PORT_5(5),
-        PORT_6(6),
-        PORT_7(7);
-
-        private int mValue;
-
-        private GPIOPort(int value)
-        {
-            mValue = value;
-        }
-
-        public int getValue()
-        {
-            return mValue;
-        }
-    }
-
-    /**
-     * General Purpose Input/Output Pins (accessible on the HydraSDR board)
-     */
-    public enum GPIOPin
-    {
-        PIN_0(0),
-        PIN_1(1),
-        PIN_2(2),
-        PIN_3(3),
-        PIN_4(4),
-        PIN_5(5),
-        PIN_6(6),
-        PIN_7(7),
-        PIN_8(8),
-        PIN_9(9),
-        PIN_10(10),
-        PIN_11(11),
-        PIN_12(12),
-        PIN_13(13),
-        PIN_14(14),
-        PIN_15(15),
-        PIN_16(16),
-        PIN_17(17),
-        PIN_18(18),
-        PIN_19(19),
-        PIN_20(20),
-        PIN_21(21),
-        PIN_22(22),
-        PIN_23(23),
-        PIN_24(24),
-        PIN_25(25),
-        PIN_26(26),
-        PIN_27(27),
-        PIN_28(28),
-        PIN_29(29),
-        PIN_30(30),
-        PIN_31(31);
-
-        private int mValue;
-
-        GPIOPin(int value)
-        {
-            mValue = value;
-        }
-
-        public int getValue()
-        {
-            return mValue;
         }
     }
 }
