@@ -16,5 +16,13 @@ dependencyResolutionManagement {
             metadataSources { artifact() }
             content { includeModule 'io.github.dsheirer', 'jhydrasdr' }
         }
+
+        //jBladeRF is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jBladeRF/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jbladerf' }
+        }
     }
 }

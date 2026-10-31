@@ -26,6 +26,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerConfiguration;
 import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerConfiguration;
+import io.github.dsheirer.source.tuner.bladerf.BladeRfTunerConfiguration;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import io.github.dsheirer.source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
@@ -44,6 +45,7 @@ import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AirspyTunerConfiguration.class, name = "airspyTunerConfiguration"),
         @JsonSubTypes.Type(value = AirspyHfTunerConfiguration.class, name = "airspyHfTunerConfiguration"),
+        @JsonSubTypes.Type(value = BladeRfTunerConfiguration.class, name = "bladeRfTunerConfiguration"),
         @JsonSubTypes.Type(value = E4KTunerConfiguration.class, name = "e4KTunerConfiguration"),
         @JsonSubTypes.Type(value = FC0013TunerConfiguration.class, name = "fc0013TunerConfiguration"),
         @JsonSubTypes.Type(value = FCD1TunerConfiguration.class, name = "fcd1TunerConfiguration"),
