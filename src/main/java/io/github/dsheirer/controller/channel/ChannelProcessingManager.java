@@ -163,6 +163,14 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Channels that currently have a processing chain, including traffic channels.
+     */
+    public List<Channel> getProcessingChannels()
+    {
+        return new ArrayList<>(mProcessingChainsMap.keySet());
+    }
+
+    /**
      * Returns the channel associated with the processing chain
      *
      * @param processingChain

@@ -185,6 +185,12 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     }
 
     @Override
+    public List<State> getStates()
+    {
+        return List.of(mStateMachine.getState());
+    }
+
+    @Override
     protected void checkState()
     {
         mStateMachine.checkState();

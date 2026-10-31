@@ -160,6 +160,24 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     }
 
     /**
+     * Records the bit errors of the voice frame just added with addAudio(). Negative values are ignored.
+     */
+    protected void addVoiceFrameErrors(int errors)
+    {
+        if(errors < 0)
+        {
+            return;
+        }
+        synchronized(this)
+        {
+            if(mAudioSegment != null)
+            {
+                mAudioSegment.addVoiceFrame(errors);
+            }
+        }
+    }
+
+    /**
      * Sets all audio segments as recordable when the argument is true.  Otherwise, defers to the aliased identifiers
      * from the identifier collection to determine whether to record the audio or not.
      * @param recordAudio set to true to mark all audio as recordable.

@@ -77,6 +77,8 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private List<float[]> mAudioBuffers = new CopyOnWriteArrayList();
     private AtomicInteger mConsumerCount = new AtomicInteger();
+    private final AtomicInteger mVoiceFrames = new AtomicInteger();
+    private final AtomicInteger mCleanVoiceFrames = new AtomicInteger();
     private AliasList mAliasList;
     private long mStartTimestamp = System.currentTimeMillis();
     private long mSampleCount = 0;
@@ -414,6 +416,35 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
 
         mAudioBuffers.add(audioBuffer);
         mSampleCount += audioBuffer.length;
+    }
+
+    /**
+     * Records one decoded digital voice frame and the bit errors in its first protected block.
+     */
+    public void addVoiceFrame(int errors)
+    {
+        mVoiceFrames.incrementAndGet();
+        if(errors <= 1)
+        {
+            mCleanVoiceFrames.incrementAndGet();
+        }
+    }
+
+    /**
+     * Number of digital voice frames measured for this segment.
+     */
+    public int getVoiceFrameCount()
+    {
+        return mVoiceFrames.get();
+    }
+
+    /**
+     * Percent of digital voice frames that decoded cleanly, or -1 when no frames were measured (analog audio).
+     */
+    public int getVoiceQuality()
+    {
+        int frames = mVoiceFrames.get();
+        return frames == 0 ? -1 : Math.round(100f * mCleanVoiceFrames.get() / frames);
     }
 
     /**

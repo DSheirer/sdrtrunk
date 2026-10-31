@@ -548,6 +548,14 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     }
 
     /**
+     * All discovered tuners, including ones in an error or removed state.
+     */
+    public List<DiscoveredTuner> getDiscoveredTuners()
+    {
+        return mDiscoveredTunerModel.getDiscoveredTuners();
+    }
+
+    /**
      * Obtain a channel (sample stream) source from one of the tuners.
      * @param config for the source
      * @param channelSpecification required by the decoder

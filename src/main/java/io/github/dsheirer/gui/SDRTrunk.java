@@ -22,6 +22,7 @@ import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.DuplicateCallDetector;
 import io.github.dsheirer.audio.broadcast.AudioStreamingManager;
+import io.github.dsheirer.audio.broadcast.thinline.ThinlineRadioHealthReporter;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
@@ -123,6 +124,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private boolean mNowPlayingDetailsVisible;
     private AudioRecordingManager mAudioRecordingManager;
     private AudioStreamingManager mAudioStreamingManager;
+    private ThinlineRadioHealthReporter mThinlineRadioHealthReporter;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private ControllerPanel mControllerPanel;
     private DiagnosticMonitor mDiagnosticMonitor;
@@ -209,6 +211,12 @@ public class SDRTrunk implements Listener<TunerEvent>
         mAudioStreamingManager = new AudioStreamingManager(mPlaylistManager.getBroadcastModel(), BroadcastFormat.MP3,
             mUserPreferences);
         mAudioStreamingManager.start();
+
+        mThinlineRadioHealthReporter = new ThinlineRadioHealthReporter(mUserPreferences,
+            mPlaylistManager.getBroadcastModel(), mPlaylistManager.getChannelModel(),
+            mPlaylistManager.getChannelProcessingManager(), mTunerManager, mPlaylistManager.getAliasModel(),
+            mPlaylistManager.getChannelMapModel(), mMainGui);
+        mThinlineRadioHealthReporter.start();
 
         DuplicateCallDetector duplicateCallDetector = new DuplicateCallDetector(mUserPreferences);
 
@@ -624,6 +632,10 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void processShutdown()
     {
         mLog.info("Application shutdown started ...");
+        if(mThinlineRadioHealthReporter != null)
+        {
+            mThinlineRadioHealthReporter.stop();
+        }
         mDiagnosticMonitor.stop();
         mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
         mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
