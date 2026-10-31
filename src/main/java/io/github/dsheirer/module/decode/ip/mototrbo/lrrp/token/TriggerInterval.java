@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,38 +16,49 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LRRP Trigger on GPIO Token
+ * LRRP Trigger Interval Token
  *
- * Total Length: 1 byte
+ * Start Token: 0x31
+ * Total Length: 1 byte identifier plus a 7-bit variable length integer value (1-5 bytes)
+ *
+ * Reporting interval in seconds for a periodic triggered location request, e.g. 0x31 0x84 0x58 = 600 seconds.
  */
-public class TriggerGpio extends Token
+public class TriggerInterval extends VarIntToken
 {
     /**
-     * Constructs an instance of a heading token.
+     * Constructs an instance of a trigger interval token.
      *
-     * @param message containing the heading
+     * @param message containing the token
      * @param offset to the start of the token
+     * @param remainingCharacterCount number of payload bytes remaining, counting from the token identifier
      */
-    public TriggerGpio(CorrectedBinaryMessage message, int offset)
+    public TriggerInterval(CorrectedBinaryMessage message, int offset, int remainingCharacterCount)
     {
-        super(message, offset);
+        super(message, offset, remainingCharacterCount);
     }
 
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.TRIGGER_GPIO;
+        return TokenType.TRIGGER_INTERVAL;
+    }
+
+    /**
+     * Interval in seconds
+     */
+    public int getSeconds()
+    {
+        return getValue();
     }
 
     @Override
     public String toString()
     {
-        return "TRIGGER ON GPIO";
+        return "INTERVAL:" + getSeconds() + " SECS";
     }
 }

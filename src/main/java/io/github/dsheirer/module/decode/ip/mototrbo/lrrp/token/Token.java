@@ -88,6 +88,11 @@ public abstract class Token
         {
             return getVariableLengthPayloadSize() + 2; //Variable Length Payload + Id + Length Field
         }
+        else if(getTokenType().isVarInt())
+        {
+            //Id + 7-bit variable length integer.  VarIntToken overrides this to bound the read by the payload.
+            return VarInt.length(getMessage(), getOffset() + 8, VarInt.MAX_BYTES) + 1;
+        }
         else
         {
             return getTokenType().getLength() + 1; //Fixed Length Payload + Id
