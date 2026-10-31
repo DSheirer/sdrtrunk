@@ -8,5 +8,13 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         maven { url 'https://jitpack.io' }
+
+        //jHydraSDR is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jHydraSDR/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jhydrasdr' }
+        }
     }
 }

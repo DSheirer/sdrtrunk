@@ -722,16 +722,15 @@ public class HydraSdrTunerEditor extends TunerEditor<HydraSdrTuner, HydraSdrTune
             sb.append("<br>");
 
             sb.append("<b>Firmware: </b>");
-            String[] firmware = info.getVersion().split(" ");
-            sb.append(firmware.length > 1 ? firmware[0] : info.getVersion());
+            sb.append(info.getVersion());
             sb.append("<br>");
 
             sb.append("<b>Part: </b>");
             sb.append(info.getPartNumber());
             sb.append("<br>");
 
-            sb.append("<b>Board ID: </b>");
-            sb.append(info.getBoardID().getLabel());
+            sb.append("<b>Board: </b>");
+            sb.append(info.getBoardName());
             sb.append("<br>");
 
             return sb.toString();
