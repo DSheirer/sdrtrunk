@@ -29,12 +29,14 @@ import org.slf4j.LoggerFactory;
 public class DecimationFilterFactory
 {
     private static final Logger mLog = LoggerFactory.getLogger(DecimationFilterFactory.class);
-    private static final int[] SUPPORTED_RATES = new int[]{1,2,4,8,16,32,64,128,256,512,1024};
+    public static final int MAXIMUM_DECIMATION_RATE = 4096;
+    private static final int[] SUPPORTED_RATES = new int[]{1,2,4,8,16,32,64,128,256,512,1024,2048,MAXIMUM_DECIMATION_RATE};
 
     /**
      * Creates a real-valued decimation filter for float array sample buffers providing approximately 70 dB of
      * attenuation for out of band signal aliases, when the signal bandwidth is no more than half of the decimated
-     * sample rate.  Supports power of 2 decimation rates up to 1024.
+     * sample rate.  Supports power of 2 decimation rates up to 4096.  Sample buffers must be an integer multiple of the
+     * decimation rate.
      *
      * @param decimationRate requested @see SUPPORTED_RATES
      * @return constructed decimation filter
@@ -66,6 +68,10 @@ public class DecimationFilterFactory
                 return new RealDecimateX512Filter();
             case 1024:
                 return new RealDecimateX1024Filter();
+            case 2048:
+                return new RealDecimateX2048Filter();
+            case 4096:
+                return new RealDecimateX4096Filter();
             default:
                 throw new IllegalArgumentException("Unsupported decimation rate: " + decimationRate +
                         ".  Supported decimation rates are:" + Arrays.toString(SUPPORTED_RATES));

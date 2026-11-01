@@ -28,14 +28,17 @@ import io.github.dsheirer.bladerf.Channel;
 import io.github.dsheirer.bladerf.ChannelLayout;
 import io.github.dsheirer.bladerf.DeviceInfo;
 import io.github.dsheirer.bladerf.DeviceSpeed;
+import io.github.dsheirer.bladerf.Feature;
 import io.github.dsheirer.bladerf.GainMode;
 import io.github.dsheirer.bladerf.GainModeInfo;
 import io.github.dsheirer.bladerf.Range;
 import io.github.dsheirer.bladerf.SampleBuffer;
 import io.github.dsheirer.bladerf.SampleFormat;
 import io.github.dsheirer.bladerf.StreamConfig;
+import io.github.dsheirer.bladerf.Version;
 import io.github.dsheirer.buffer.FloatNativeBuffer;
 import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.buffer.SignedByteNativeBuffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
@@ -62,6 +65,12 @@ import org.usb4java.LibUsb;
  *
  * Only the first receive channel (RX1 connector) is used.  The bladeRF 2.0 has a second receive channel, but it shares
  * the local oscillator and sample rate with the first, so it couldn't be tuned as an independent tuner.
+ *
+ * Sample rates above 61.44 MHz use the AD9361 oversample feature with 8-bit samples.  These are only offered with FPGA
+ * version 0.15.0 or later, because starting an 8-bit sample stream on an older FPGA crashes in libbladeRF.
+ *
+ * The device is reopened when changing between oversampled and normal sample rates.  Disabling the oversample feature
+ * doesn't fully restore the RFIC.  The device reports the correct settings, but streams at the wrong rate or times out.
  */
 public class BladeRfTunerController extends TunerController
 {
@@ -75,10 +84,16 @@ public class BladeRfTunerController extends TunerController
     private static final Channel CHANNEL = Channel.RX0;
     private static final float SAMPLE_SCALE = 1.0f / 2048.0f;
     private static final SampleFormat SAMPLE_FORMAT = SampleFormat.SC16_Q11;
+    private static final SampleFormat OVERSAMPLE_SAMPLE_FORMAT = SampleFormat.SC8_Q7;
+    private static final int OVERSAMPLE_MINIMUM_FPGA_MAJOR = 0;
+    private static final int OVERSAMPLE_MINIMUM_FPGA_MINOR = 15;
     private static final int BUFFER_SAMPLE_COUNT = 65536;
     private static final StreamConfig STREAM_CONFIG = new StreamConfig(32, BUFFER_SAMPLE_COUNT, 16);
+    private static final StreamConfig OVERSAMPLE_STREAM_CONFIG = new StreamConfig(64, BUFFER_SAMPLE_COUNT, 32);
     private static final long USB2_MAXIMUM_BYTES_PER_SECOND = 32_000_000L;
     private static final double MAXIMUM_USABLE_BANDWIDTH_PERCENT = 0.90;
+    //Measured with a carrier swept across the band at 122.88 MHz.  The analog filter is 3 dB down at about +/- 33 MHz.
+    private static final double OVERSAMPLE_USABLE_BANDWIDTH_HZ = 66_000_000.0;
     private static final long STREAM_CHECK_INTERVAL_SECONDS = 1;
 
     private final int mBus;
@@ -89,6 +104,7 @@ public class BladeRfTunerController extends TunerController
     private ScheduledFuture<?> mStreamCheck;
     private List<BladeRfSampleRate> mSampleRates = List.of();
     private BladeRfSampleRate mSampleRate;
+    private boolean mOversampled;
     private List<GainModeInfo> mGainModes = List.of();
     private Range mGainRange;
     private long mMinimumTunableFrequency = MINIMUM_TUNABLE_FREQUENCY_HZ;
@@ -136,6 +152,8 @@ public class BladeRfTunerController extends TunerController
         try
         {
             mDevice = BladeRf.open(findDevice());
+            mSampleRate = null;
+            mOversampled = false;
 
             if(!mDevice.isFpgaConfigured())
             {
@@ -270,10 +288,67 @@ public class BladeRfTunerController extends TunerController
 
         if(device.speed() != DeviceSpeed.SUPER)
         {
-            maximum = Math.min(maximum, USB2_MAXIMUM_BYTES_PER_SECOND / SAMPLE_FORMAT.bytesPerSample());
+            return Math.min(maximum, USB2_MAXIMUM_BYTES_PER_SECOND / SAMPLE_FORMAT.bytesPerSample());
+        }
+
+        if(isOversampleSupported(device.fpgaVersion()))
+        {
+            maximum = Math.max(maximum, getOversampleMaximumSampleRate(device));
+        }
+        else
+        {
+            mLog.info("bladeRF sample rates limited to [" + maximum + "] Hz - FPGA version [" + device.fpgaVersion() +
+                    "] doesn't support 8-bit samples.  Upgrade to FPGA version 0.15.0 or later for higher sample rates.");
         }
 
         return maximum;
+    }
+
+    /**
+     * Indicates if the FPGA version supports the 8-bit samples that are required for the oversample feature.
+     * @param fpga version
+     * @return true if supported
+     */
+    static boolean isOversampleSupported(Version fpga)
+    {
+        return fpga.major() > OVERSAMPLE_MINIMUM_FPGA_MAJOR ||
+                (fpga.major() == OVERSAMPLE_MINIMUM_FPGA_MAJOR && fpga.minor() >= OVERSAMPLE_MINIMUM_FPGA_MINOR);
+    }
+
+    /**
+     * Usable portion of an oversampled rate, which is limited by the analog filter that stays in the signal path.
+     * @param rate that is oversampled
+     * @return usable bandwidth percentage
+     */
+    static double getOversampleUsableBandwidthPercentage(BladeRfSampleRate rate)
+    {
+        return Math.min(MAXIMUM_USABLE_BANDWIDTH_PERCENT, OVERSAMPLE_USABLE_BANDWIDTH_HZ / rate.getRate());
+    }
+
+    /**
+     * Highest sample rate that the device reports while the oversample feature is enabled.
+     * @return maximum rate, or zero if the device doesn't have the oversample feature, such as the bladeRF 1.0.
+     */
+    private static long getOversampleMaximumSampleRate(BladeRfDevice device) throws BladeRfException
+    {
+        try
+        {
+            device.enableFeature(Feature.OVERSAMPLE, true);
+        }
+        catch(BladeRfException e)
+        {
+            mLog.info("bladeRF oversample feature isn't available - " + e.getMessage());
+            return 0;
+        }
+
+        try
+        {
+            return device.sampleRateRange(CHANNEL).max();
+        }
+        finally
+        {
+            device.enableFeature(Feature.DEFAULT, true);
+        }
     }
 
     /**
@@ -450,11 +525,33 @@ public class BladeRfTunerController extends TunerController
 
                 try
                 {
+                    if(rate.isOversampled() != mOversampled)
+                    {
+                        reopenDevice();
+
+                        if(rate.isOversampled())
+                        {
+                            //Bandwidth has to be set first since it can't be reliably set with oversample enabled.
+                            mDevice.setBandwidth(CHANNEL, mDevice.bandwidthRange(CHANNEL).max());
+                            mDevice.enableFeature(Feature.OVERSAMPLE, true);
+                            mOversampled = true;
+                        }
+                    }
+
                     mDevice.setSampleRate(CHANNEL, rate.getRate());
-                    long requested = (long)(rate.getRate() * MAXIMUM_USABLE_BANDWIDTH_PERCENT);
-                    long bandwidth = mDevice.setBandwidth(CHANNEL, requested);
-                    setUsableBandwidthPercentage(Math.min(MAXIMUM_USABLE_BANDWIDTH_PERCENT,
-                            (double)bandwidth / rate.getRate()));
+
+                    if(rate.isOversampled())
+                    {
+                        setUsableBandwidthPercentage(getOversampleUsableBandwidthPercentage(rate));
+                    }
+                    else
+                    {
+                        long requested = (long)(rate.getRate() * MAXIMUM_USABLE_BANDWIDTH_PERCENT);
+                        long bandwidth = mDevice.setBandwidth(CHANNEL, requested);
+                        setUsableBandwidthPercentage(Math.min(MAXIMUM_USABLE_BANDWIDTH_PERCENT,
+                                (double)bandwidth / rate.getRate()));
+                    }
+
                     mSampleRate = rate;
                     mSamplesPerMillisecond = rate.getRate() / 1000.0f;
                     mFrequencyController.setSampleRate(rate.getRate());
@@ -465,7 +562,7 @@ public class BladeRfTunerController extends TunerController
                 }
                 finally
                 {
-                    if(streaming)
+                    if(streaming && mDevice != null)
                     {
                         startStream();
                     }
@@ -475,6 +572,33 @@ public class BladeRfTunerController extends TunerController
         finally
         {
             getLock().unlock();
+        }
+    }
+
+    /**
+     * Closes and reopens the device and restores the settings that were reset, except for the sample rate and bandwidth
+     * which the caller sets.  The sample stream must be stopped.
+     */
+    private void reopenDevice() throws SourceException, BladeRfException
+    {
+        long frequency = mFrequencyController.getTunedFrequency();
+        BladeRfDevice device = mDevice;
+        mDevice = null;
+        mOversampled = false;
+        closeDevice(device, false);
+
+        mDevice = BladeRf.open(findDevice());
+        mDevice.setFrequency(CHANNEL, frequency);
+        mDevice.setGainMode(CHANNEL, mGainMode);
+
+        if(mGainMode == GainMode.MANUAL)
+        {
+            mDevice.setGain(CHANNEL, mGain);
+        }
+
+        if(mBiasT)
+        {
+            mDevice.setBiasTee(CHANNEL, true);
         }
     }
 
@@ -679,7 +803,9 @@ public class BladeRfTunerController extends TunerController
     {
         try
         {
-            mStream = mDevice.startRx(ChannelLayout.RX_X1, SAMPLE_FORMAT, STREAM_CONFIG, this::receive);
+            mStream = mOversampled ?
+                    mDevice.startRx(ChannelLayout.RX_X1, OVERSAMPLE_SAMPLE_FORMAT, OVERSAMPLE_STREAM_CONFIG, this::receive) :
+                    mDevice.startRx(ChannelLayout.RX_X1, SAMPLE_FORMAT, STREAM_CONFIG, this::receive);
             mStreamCheck = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::checkStream, STREAM_CHECK_INTERVAL_SECONDS,
                     STREAM_CHECK_INTERVAL_SECONDS, TimeUnit.SECONDS);
         }
@@ -746,7 +872,16 @@ public class BladeRfTunerController extends TunerController
     {
         try
         {
-            broadcast(new FloatNativeBuffer(scale(buffer.copyShorts()), System.currentTimeMillis(), mSamplesPerMillisecond));
+            long timestamp = System.currentTimeMillis();
+
+            if(buffer.format() == OVERSAMPLE_SAMPLE_FORMAT)
+            {
+                broadcast(new SignedByteNativeBuffer(buffer.copyBytes(), timestamp, 0.0f, 0.0f, mSamplesPerMillisecond));
+            }
+            else
+            {
+                broadcast(new FloatNativeBuffer(scale(buffer.copyShorts()), timestamp, mSamplesPerMillisecond));
+            }
         }
         catch(RuntimeException e)
         {

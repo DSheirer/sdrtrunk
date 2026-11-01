@@ -20,11 +20,16 @@ package io.github.dsheirer.source.tuner.bladerf;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.dsheirer.bladerf.GainMode;
+import io.github.dsheirer.bladerf.Version;
+import io.github.dsheirer.buffer.SignedByteNativeBuffer;
+import io.github.dsheirer.dsp.filter.channelizer.ComplexPolyphaseChannelizerM2;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -65,12 +70,82 @@ class BladeRfTunerTest
     }
 
     @Test
+    void sampleRatesFollowTheDeviceMaximum()
+    {
+        //bladeRF 2.0 on USB 3.0 with FPGA version 0.15.0 or later
+        assertEquals(List.of(BladeRfSampleRate.values()), BladeRfSampleRate.getRates(122_880_000));
+        //bladeRF 2.0 on USB 3.0 with an older FPGA version
+        assertEquals(BladeRfSampleRate.RATE_61_44, BladeRfSampleRate.getRates(61_440_000).getLast());
+        //bladeRF 1.0 on USB 3.0
+        assertEquals(BladeRfSampleRate.RATE_40_0, BladeRfSampleRate.getRates(40_000_000).getLast());
+        //USB 2.0
+        assertEquals(BladeRfSampleRate.RATE_7_5, BladeRfSampleRate.getRates(8_000_000).getLast());
+    }
+
+    @Test
+    void savedRateAboveTheDeviceMaximumIsReduced()
+    {
+        List<BladeRfSampleRate> rates = BladeRfSampleRate.getRates(40_000_000);
+
+        assertEquals(BladeRfSampleRate.RATE_40_0, BladeRfSampleRate.getClosest(rates,
+                BladeRfSampleRate.RATE_122_88.getRate()));
+    }
+
+    @Test
+    void onlyRatesAbove61MhzAreOversampled()
+    {
+        assertFalse(BladeRfSampleRate.RATE_61_44.isOversampled());
+        assertTrue(BladeRfSampleRate.RATE_70_0.isOversampled());
+        assertTrue(BladeRfSampleRate.RATE_122_88.isOversampled());
+    }
+
+    @Test
+    void oversampledUsableBandwidthIsLimitedByTheAnalogFilter()
+    {
+        assertEquals(0.90, BladeRfTunerController.getOversampleUsableBandwidthPercentage(BladeRfSampleRate.RATE_70_0));
+        assertEquals(66_000_000, BladeRfTunerController.getOversampleUsableBandwidthPercentage(
+                BladeRfSampleRate.RATE_122_88) * BladeRfSampleRate.RATE_122_88.getRate(), 1.0);
+    }
+
+    @Test
+    void oversampleRequiresFpga15()
+    {
+        assertFalse(BladeRfTunerController.isOversampleSupported(new Version(0, 14, 0, "0.14.0")));
+        assertTrue(BladeRfTunerController.isOversampleSupported(new Version(0, 15, 0, "0.15.0")));
+        assertTrue(BladeRfTunerController.isOversampleSupported(new Version(0, 16, 3, "0.16.3")));
+        assertTrue(BladeRfTunerController.isOversampleSupported(new Version(1, 0, 0, "1.0.0")));
+    }
+
+    @Test
+    void streamBufferFitsTheEightBitNativeBuffer()
+    {
+        int sampleCount = 65536;
+
+        assertEquals(sampleCount, new SignedByteNativeBuffer(new byte[sampleCount * 2], 0, 0, 0, 1).sampleCount());
+    }
+
+    @Test
     void sampleRatesDivideIntoPolyphaseChannels()
     {
         for(BladeRfSampleRate rate : BladeRfSampleRate.values())
         {
-            assertEquals(0, rate.getRate() % 50_000, rate.toString());
+            if(rate != BladeRfSampleRate.RATE_61_44 && rate != BladeRfSampleRate.RATE_122_88)
+            {
+                assertEquals(0, rate.getRate() % 50_000, rate.toString());
+            }
+
+            int channelCount = ComplexPolyphaseChannelizerM2.getChannelCount(rate.getRate());
+            assertEquals(0, channelCount % 2, rate.toString());
+            assertTrue((double)rate.getRate() / channelCount >= 25_000.0, rate.toString());
         }
+    }
+
+    @Test
+    void maximumUsbRateDoesNotOverflow()
+    {
+        assertEquals(1_966_080_000L, BladeRfSampleRate.RATE_61_44.getRate() * 32L);
+        assertTrue(BladeRfSampleRate.RATE_61_44.getRate() * 32L <= Integer.MAX_VALUE);
+        assertEquals(1_966_080_000L, BladeRfSampleRate.RATE_122_88.getRate() * 16L);
     }
 
     @Test

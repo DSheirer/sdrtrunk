@@ -90,7 +90,7 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]", "[][][][][][][][][][grow]"));
+        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]", "[][][][][][][][][][][][grow]"));
 
         add(new JLabel("Tuner:"));
         add(getTunerIdLabel());
@@ -101,7 +101,7 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
 
         add(getButtonPanel(), "span,align left");
 
-        add(new JSeparator(), "span,growx,push");
+        add(new JSeparator(), "span,growx");
 
         add(new JLabel("Frequency (MHz):"));
         add(getFrequencyPanel(), "wrap");
@@ -112,7 +112,7 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
         add(new JLabel());
         add(getBiasTCheckBox(), "wrap");
 
-        add(new JSeparator(), "span,growx,push");
+        add(new JSeparator(), "span,growx");
         add(new JLabel("Gain Control"), "wrap");
 
         add(new JLabel("Mode:"));
@@ -121,6 +121,9 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
         add(new JLabel("Gain:"));
         add(getGainSlider());
         add(getGainValueLabel());
+
+        //Empty row that takes all extra vertical space so that the controls stay stacked at the top of the editor.
+        add(new JLabel(), "span,pushy");
     }
 
     @Override

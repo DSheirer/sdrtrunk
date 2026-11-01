@@ -23,7 +23,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Sample rates offered for bladeRF tuners.  Each is a multiple of the 25 kHz polyphase channel spacing.
+ * Sample rates offered for bladeRF tuners, up to the 122.88 MHz maximum of the bladeRF 2.0.  Use getRates() to get the
+ * rates supported by a specific device, since the bladeRF 1.0, USB 2.0 connections and older FPGA images have lower
+ * maximums.
+ *
+ * Rates above 61.44 MHz use the AD9361 oversample feature, which requires 8-bit samples.
+ *
+ * Each rate is a multiple of the 25 kHz polyphase channel spacing, except for the 61.44 and 122.88 MHz rates.  The
+ * channelizer uses slightly wider channels at those rates.
  */
 public enum BladeRfSampleRate
 {
@@ -36,7 +43,21 @@ public enum BladeRfSampleRate
     RATE_15_0(15_000_000, "15.00 MHz"),
     RATE_20_0(20_000_000, "20.00 MHz"),
     RATE_25_0(25_000_000, "25.00 MHz"),
-    RATE_30_0(30_000_000, "30.00 MHz");
+    RATE_30_0(30_000_000, "30.00 MHz"),
+    RATE_35_0(35_000_000, "35.00 MHz"),
+    RATE_40_0(40_000_000, "40.00 MHz"),
+    RATE_45_0(45_000_000, "45.00 MHz"),
+    RATE_50_0(50_000_000, "50.00 MHz"),
+    RATE_55_0(55_000_000, "55.00 MHz"),
+    RATE_60_0(60_000_000, "60.00 MHz"),
+    RATE_61_44(61_440_000, "61.44 MHz"),
+    RATE_70_0(70_000_000, "70.00 MHz (8-bit)"),
+    RATE_80_0(80_000_000, "80.00 MHz (8-bit)"),
+    RATE_90_0(90_000_000, "90.00 MHz (8-bit)"),
+    RATE_100_0(100_000_000, "100.00 MHz (8-bit)"),
+    RATE_110_0(110_000_000, "110.00 MHz (8-bit)"),
+    RATE_120_0(120_000_000, "120.00 MHz (8-bit)"),
+    RATE_122_88(122_880_000, "122.88 MHz (8-bit)");
 
     public static final BladeRfSampleRate DEFAULT = RATE_10_0;
     private final int mRate;
@@ -56,6 +77,14 @@ public enum BladeRfSampleRate
         return mRate;
     }
 
+    /**
+     * Indicates if this rate requires the oversample feature and 8-bit samples.
+     */
+    public boolean isOversampled()
+    {
+        return mRate > RATE_61_44.mRate;
+    }
+
     @Override
     public String toString()
     {
@@ -63,7 +92,7 @@ public enum BladeRfSampleRate
     }
 
     /**
-     * Sample rates within the device maximum, which is the lower of the hardware limit and what the USB link sustains.
+     * Sample rates within the device maximum, which is the lower of what the hardware, FPGA image and USB link support.
      * @param maximumRate in Hertz
      * @return rates, lowest to highest
      */

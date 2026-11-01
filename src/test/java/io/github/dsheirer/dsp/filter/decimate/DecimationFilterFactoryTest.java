@@ -83,7 +83,25 @@ public class DecimationFilterFactoryTest
         assertEquals(2, DecimationFilterFactory.getDecimationRate(4));
         assertEquals(4, DecimationFilterFactory.getDecimationRate(5));
         assertEquals(64, DecimationFilterFactory.getDecimationRate(96));
-        assertEquals(1024, DecimationFilterFactory.getDecimationRate(4096));
+        assertEquals(1024, DecimationFilterFactory.getDecimationRate(2048));
+        assertEquals(2048, DecimationFilterFactory.getDecimationRate(4096));
+        assertEquals(4096, DecimationFilterFactory.getDecimationRate(4097));
+        assertEquals(4096, DecimationFilterFactory.getDecimationRate(100000));
+    }
+
+    /**
+     * Test: each decimation rate reduces the sample count by that rate and rejects a length that isn't a multiple.
+     */
+    @Test
+    void highestRatesDecimateAndValidateLength()
+    {
+        for(int decimation : new int[]{1024, 2048, 4096})
+        {
+            assertEquals(1, DecimationFilterFactory.getRealDecimationFilter(decimation)
+                .decimateReal(new float[decimation]).length);
+            assertThrows(IllegalArgumentException.class, () -> DecimationFilterFactory
+                .getRealDecimationFilter(decimation).decimateReal(new float[decimation / 2]));
+        }
     }
 
     /**
@@ -138,7 +156,7 @@ public class DecimationFilterFactoryTest
     @Test
     void aliasRejection()
     {
-        for(int decimation = 2; decimation <= 512; decimation *= 2)
+        for(int decimation = 2; decimation <= DecimationFilterFactory.MAXIMUM_DECIMATION_RATE; decimation *= 2)
         {
             double sampleRate = DECIMATED_SAMPLE_RATE * decimation;
 

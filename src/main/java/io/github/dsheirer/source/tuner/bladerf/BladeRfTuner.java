@@ -30,6 +30,8 @@ import io.github.dsheirer.source.tuner.TunerClass;
 public class BladeRfTuner extends Tuner
 {
     private static final int BITS_PER_SAMPLE = 32;
+    private static final double SAMPLE_SIZE_12_BIT = 12.0;
+    private static final double SAMPLE_SIZE_8_BIT = 8.0;
 
     /**
      * Constructs an instance
@@ -72,12 +74,13 @@ public class BladeRfTuner extends Tuner
     @Override
     public double getSampleSize()
     {
-        return 12.0;
+        BladeRfSampleRate rate = getController().getBladeRfSampleRate();
+        return rate != null && rate.isOversampled() ? SAMPLE_SIZE_8_BIT : SAMPLE_SIZE_12_BIT;
     }
 
     @Override
     public int getMaximumUSBBitsPerSecond()
     {
-        return BladeRfSampleRate.RATE_30_0.getRate() * BITS_PER_SAMPLE;
+        return BladeRfSampleRate.RATE_61_44.getRate() * BITS_PER_SAMPLE;
     }
 }
