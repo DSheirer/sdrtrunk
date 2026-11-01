@@ -26,6 +26,8 @@ import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -63,6 +65,7 @@ import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
+import io.github.dsheirer.preference.decoder.TrafficChannelPreference;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import java.util.ArrayList;
@@ -71,6 +74,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -124,6 +128,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private ScrambleParameters mPhase2ScrambleParameters;
     private Listener<IMessage> mMessageListener;
     private boolean mIgnoreDataCalls;
+    private AliasList mAliasList;
+    private final Set<Integer> mEncryptedTalkgroups = ConcurrentHashMap.newKeySet();
+    private TrafficChannelPreference mTrafficChannelPreference;
     //Used only for data calls
     private final DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
     private final TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
@@ -303,6 +310,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      */
     public void broadcast(P25ChannelEventTracker tracker)
     {
+        learnEncryptedTalkgroup(tracker.getEvent().getIdentifierCollection());
         broadcast(tracker.getEvent());
     }
 
@@ -544,7 +552,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     {
         long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
 
-        if(frequency > 0)
+        if(frequency > 0 && !mIgnoreDataCalls)
         {
             mLock.lock();
 
@@ -1202,6 +1210,107 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Encrypted calls can't be decoded, so their grants don't get a traffic channel.
+     */
+    private static boolean isEncryptedGrant(ServiceOptions serviceOptions)
+    {
+        return serviceOptions != null && serviceOptions.isEncrypted();
+    }
+
+    /**
+     * Remembers a talkgroup heard encrypted on a traffic channel, so its later grants are skipped even when the grant
+     * doesn't flag encryption.
+     */
+    private void learnEncryptedTalkgroup(IdentifierCollection ic)
+    {
+        Integer talkgroup = getTalkgroup(ic);
+
+        if(talkgroup != null && ic.getEncryptionIdentifier() instanceof EncryptionKeyIdentifier eki &&
+            eki.isEncrypted() && mEncryptedTalkgroups.add(talkgroup))
+        {
+            LOGGING_SUPPRESSOR.info("encrypted-talkgroup-" + talkgroup, 1, "Talkgroup " + talkgroup +
+                " was heard encrypted - skipping its grants for the rest of the session");
+        }
+    }
+
+    private static Integer getTalkgroup(IdentifierCollection ic)
+    {
+        Identifier to = ic != null ? ic.getToIdentifier() : null;
+
+        if(to != null && to.getForm() == Form.TALKGROUP && to.getValue() instanceof Integer value && value != 0)
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Sets the control channel's alias list and the preference that decides whether talkgroups without an alias in
+     * that list are tuned.
+     */
+    public void setTalkgroupFilter(AliasList aliasList, TrafficChannelPreference trafficChannelPreference)
+    {
+        mAliasList = aliasList;
+        mTrafficChannelPreference = trafficChannelPreference;
+    }
+
+    private boolean isUnaliasedTalkgroup(IdentifierCollection ic)
+    {
+        if(mAliasList == null || mTrafficChannelPreference == null ||
+            !mTrafficChannelPreference.isIgnoreUnaliasedTalkgroups())
+        {
+            return false;
+        }
+
+        Identifier to = ic.getToIdentifier();
+
+        return to != null && (to.getForm() == Form.TALKGROUP || to.getForm() == Form.PATCH_GROUP) &&
+            mAliasList.getAliases(to).isEmpty();
+    }
+
+    /**
+     * Reason a grant is left untuned, or null to tune it.
+     */
+    private String getIgnoreReason(ServiceOptions serviceOptions, IdentifierCollection ic, boolean isDataChannelGrant,
+                                   DecodeEventType decodeEventType)
+    {
+        if(isEncryptedGrant(serviceOptions))
+        {
+            return "ENCRYPTED CALL";
+        }
+
+        Integer talkgroup = getTalkgroup(ic);
+
+        if(talkgroup != null && mEncryptedTalkgroups.contains(talkgroup))
+        {
+            return "ENCRYPTED TALKGROUP";
+        }
+
+        if(mIgnoreDataCalls && isDataGrant(isDataChannelGrant, decodeEventType))
+        {
+            return "DATA CALL";
+        }
+
+        if(isUnaliasedTalkgroup(ic))
+        {
+            return "UNALIASED TALKGROUP";
+        }
+
+        return null;
+    }
+
+    /**
+     * Some data grants (L3Harris private and unit-to-unit data) are typed as data calls without being listed as data
+     * channel grants, so the event type is checked as well.
+     */
+    private static boolean isDataGrant(boolean isDataChannelGrant, DecodeEventType decodeEventType)
+    {
+        return isDataChannelGrant || decodeEventType == DecodeEventType.DATA_CALL ||
+            decodeEventType == DecodeEventType.DATA_CALL_ENCRYPTED;
+    }
+
+    /**
      * Processes Phase 1 control-only channel grants to allocate traffic channels and track overall channel usage.
      * Generates a tracked decode event for each new channel that is allocated.
      *
@@ -1219,6 +1328,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                                                   boolean isDataChannelGrant, long timestamp, String context)
     {
         long frequency = apco25Channel.getDownlinkFrequency();
+        String ignoreReason = getIgnoreReason(serviceOptions, ic, isDataChannelGrant, decodeEventType);
+        boolean ignore = ignoreReason != null;
 
         P25ChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, P25P1Message.TIMESLOT_1, timestamp);
 
@@ -1248,7 +1359,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             //Even though we have a tracked event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
-            if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant))
+            if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !ignore)
             {
                 Channel trafficChannel = mAvailablePhase1TrafficChannelQueue.poll();
 
@@ -1276,13 +1387,13 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             return;
         }
 
-        if(mIgnoreDataCalls && isDataChannelGrant)
+        if(ignore)
         {
             if(tracker == null)
             {
                 P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
                         .channelDescriptor(apco25Channel)
-                        .details("IGNORED: PHASE 1 DATA CALL " + (serviceOptions != null ? serviceOptions : ""))
+                        .details("IGNORED: PHASE 1 " + ignoreReason + " " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(ic)
                         .build();
                 tracker = new P25ChannelEventTracker(event);
@@ -1346,6 +1457,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         int timeslot = apco25Channel.getTimeslot();
         long frequency = apco25Channel.getDownlinkFrequency();
         ic.setTimeslot(timeslot);
+        String ignoreReason = getIgnoreReason(serviceOptions, ic, isDataChannelGrant, decodeEventType);
+        boolean ignore = ignoreReason != null;
 
         P25ChannelEventTracker tracker = getTrackerRemoveIfStale(apco25Channel, timestamp);
 
@@ -1373,7 +1486,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             //Even though we have a tracked event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
-            if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant) &&
+            if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !ignore &&
                 (getCurrentControlFrequency() != frequency))
             {
                 Channel trafficChannel = mAvailablePhase2TrafficChannelQueue.poll();
@@ -1394,11 +1507,11 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             return;
         }
 
-        if(mIgnoreDataCalls && isDataChannelGrant && tracker == null)
+        if(ignore && tracker == null)
         {
             P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
                 .channelDescriptor(apco25Channel)
-                .details("PHASE 2 DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
+                .details("PHASE 2 " + ignoreReason + " IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(ic)
                 .timeslot(apco25Channel.getTimeslot())
                 .build();

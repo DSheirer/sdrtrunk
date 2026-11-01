@@ -35,6 +35,7 @@ public enum PreferenceEditorType
     AUDIO_CALL_MANAGEMENT("Call Management"),
     SOURCE_TUNERS("Tuners"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
+    TRAFFIC_CHANNELS("Traffic Channels"),
     VECTOR_CALIBRATION("Vector Calibration"),
     DEFAULT("Default");
 
