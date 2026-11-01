@@ -63,6 +63,31 @@ java {
     }
 }
 
+/**
+ * Verifies that the selected toolchain JDK includes the JavaFX modules (e.g. Bellsoft Liberica 'Full JDK').
+ *
+ * Gradle's toolchain spec can only select by language version, vendor and implementation, so it can't distinguish
+ * between the Liberica JDK packages that do and don't bundle JavaFX. This task fails the build with a clear message
+ * instead of allowing compilation to fail with missing javafx packages.
+ */
+tasks.register('verifyToolchainJavaFx') {
+    def jdkHome = javaToolchains.launcherFor(java.toolchain).map { it.metadata.installationPath.asFile }
+
+    doLast {
+        def release = new File(jdkHome.get(), 'release')
+
+        if(!release.exists() || !release.text.contains('javafx.base')) {
+            throw new GradleException("The JDK at [${jdkHome.get()}] does not include the JavaFX modules. Install " +
+                    "the Bellsoft Liberica JDK 27 'Full' package (includes LibericaFX), or use " +
+                    "-Porg.gradle.java.installations.paths=<jdk path> to specify the JDK that Gradle should use.")
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn 'verifyToolchainJavaFx'
+}
+
 test {
     useJUnitPlatform()
 }
@@ -84,7 +109,7 @@ dependencies {
     //mavenCentral/jcenter imports
     implementation 'ch.qos.logback:logback-classic:1.6.3'
     implementation 'ch.qos.logback:logback-core:1.5.38'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.22.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.22.4'
     implementation 'com.fazecast:jSerialComm:2.11.4'
     implementation 'com.formdev:flatlaf:3.7.2'
     implementation 'com.formdev:flatlaf-intellij-themes:3.7.2'
