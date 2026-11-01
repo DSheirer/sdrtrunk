@@ -79,7 +79,9 @@ public class ControllerPanel extends JPanel
 
     private void init()
     {
-        setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[]0[grow,fill]0[]"));
+        //Disable visual padding.  MigLayout otherwise assumes the tabbed pane has native Aqua margins on macOS and
+        //expands it past the bounds of this panel, clipping the tab content on the left, right and bottom edges.
+        setLayout(new MigLayout("insets 0 0 0 0, novisualpadding", "[grow,fill]", "[]0[grow,fill]0[]"));
 
         add(mAudioPanel, "wrap");
 
