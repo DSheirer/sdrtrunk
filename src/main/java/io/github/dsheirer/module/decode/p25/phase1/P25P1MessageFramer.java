@@ -796,6 +796,10 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                 {
                     dispatchMessage();
                 }
+                else
+                {
+                    mMessageAssembler = null;
+                }
             }
             else
             {
@@ -803,6 +807,18 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                 dispatchDroppedSamples(droppedBitCount);
                 dispatchMessage();
             }
+
+            //A multi-block TSBK or PDU reconfigures the assembler for its next block.  A place holder that resolved to
+            //a PDU may already contain those blocks, so dispatch each block that's fully assembled.
+            while(mMessageAssembler != null && mMessageAssembler.isComplete())
+            {
+                dispatchMessage();
+            }
+
+            //The new NID ended the multi-block sequence, so the assembler can't continue into the next frame, which
+            //would prevent starting the assembler for that frame.  The elapsed dibits are reported as sync loss.
+            mMessageAssembler = null;
+            mPDUSequence = null;
         }
 
         mDibitCounter -= 57;
