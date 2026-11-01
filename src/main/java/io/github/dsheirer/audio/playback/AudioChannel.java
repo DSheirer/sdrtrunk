@@ -46,6 +46,12 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      * sample rate.
      */
     public static final int SAMPLES_PER_INTERVAL = 160;
+    /**
+     * Quantity of consecutive intervals without new audio (1 second) before an incomplete audio segment is treated as
+     * stalled and abandoned.  An audio segment is delivered once to a single channel, so abandoning a segment that is
+     * still live loses the rest of the call.  This has to tolerate decoder gaps, such as a missed P25 LDU (180 ms).
+     */
+    static final int MAX_STALLED_INTERVALS = 50;
     private static final Logger LOGGER = LoggerFactory.getLogger(AudioChannel.class);
     private final AudioBuffer mAudioBuffer = new AudioBuffer();
     private final Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
@@ -225,7 +231,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
         }
 
         //Dispose completed/fully-played audio segments and segments that have stalled/failed to progress
-        if(mCurrentAudioSegment != null && ((mNoAudioFromSegmentIntervalCount >= 6) ||
+        if(mCurrentAudioSegment != null && ((mNoAudioFromSegmentIntervalCount >= MAX_STALLED_INTERVALS) ||
           (mCurrentAudioSegment.isComplete() && (mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))))
         {
             disposeCurrentAudioSegment();
@@ -402,6 +408,24 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     }
 
     /**
+     * Next audio segment queued for playback, without removing it from the queue.
+     * @return queued audio segment or null if the queue is empty.
+     */
+    AudioSegment peekQueuedAudioSegment()
+    {
+        return mAudioSegmentQueue.peek();
+    }
+
+    /**
+     * Removes the next audio segment from the queue, transferring it (and its consumer count) to the caller.
+     * @return queued audio segment or null if the queue is empty.
+     */
+    AudioSegment pollQueuedAudioSegment()
+    {
+        return mAudioSegmentQueue.poll();
+    }
+
+    /**
      * Schedules the audio segment for playback.  The audio segment user count should already be incremented by the
      * calling entity.
      *
@@ -475,6 +499,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
         }
 
         mCurrentBufferIndex = -1;
+        mNoAudioFromSegmentIntervalCount = 0;
     }
 
     /**
