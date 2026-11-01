@@ -50,8 +50,10 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     public static final int COLUMN_DECODER_LOGICAL_CHANNEL_NAME = 6;
     public static final int COLUMN_CONFIGURATION_FREQUENCY = 7;
     public static final int COLUMN_CONFIGURATION_CHANNEL = 8;
+    public static final int COLUMN_SIGNAL_LEVEL = 9;
 
-    private static final String[] COLUMNS = {"Status", "Decoder", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Channel Name"};
+    private static final String[] COLUMNS = {"Status", "Decoder", "From", "Alias", "To", "Alias", "Channel", "Frequency",
+        "Channel Name", "Signal"};
 
     private List<ChannelMetadata> mChannelMetadata = new ArrayList();
     private Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap();
@@ -249,6 +251,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
             case COLUMN_USER_TO_ALIAS:
                 return Alias.class;
             case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
+            case COLUMN_SIGNAL_LEVEL:
                 return String.class;
             default:
                 return Identifier.class;
@@ -299,6 +302,9 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                     return channelMetadata.getFrequencyConfigurationIdentifier();
                 case COLUMN_CONFIGURATION_CHANNEL:
                     return channelMetadata.getChannelNameConfigurationIdentifier();
+                case COLUMN_SIGNAL_LEVEL:
+                    Double level = channelMetadata.getSignalLevel();
+                    return level == null || level.isInfinite() ? null : String.format("%.1f dB", level);
                 case COLUMN_USER_TO:
                     return channelMetadata;
                 case COLUMN_USER_FROM:
@@ -342,6 +348,9 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                             break;
                         case DECODER_STATE:
                             fireTableCellUpdated(rowIndex, COLUMN_DECODER_STATE);
+                            break;
+                        case SIGNAL_LEVEL:
+                            fireTableCellUpdated(rowIndex, COLUMN_SIGNAL_LEVEL);
                             break;
                         case USER_FROM:
                             fireTableCellUpdated(rowIndex, COLUMN_USER_FROM);

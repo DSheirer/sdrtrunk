@@ -96,13 +96,15 @@ public class DecodeQualityReporter
                     }
 
                     DecodeQuality.Sample sample = current.minus(previous);
+                    Double level = DecodeQuality.getSignalLevel(tunerChannel.getOwner());
                     long offset = tunerChannel.getFrequency() - center;
                     double edge = Math.abs(offset) * 100.0 / controller.getUsableHalfBandwidth();
                     mLog.info(String.format("Decode quality: [%s] %d on [%s] at %+d kHz (%.0f%% to the edge) - " +
-                        "%.1f valid/s, %d failed, %.2f corrected bits per message, %d sync loss bits",
+                        "%.1f valid/s, %d failed, %.2f corrected bits per message, %d sync loss bits, signal %s",
                         tunerChannel.getOwner(), tunerChannel.getFrequency(), discoveredTuner.getTuner().getPreferredName(),
                         offset / 1000, edge, sample.valid() / (double)REPORT_INTERVAL_SECONDS, sample.invalid(),
-                        sample.correctedBitsPerMessage(), sample.syncLossBits()));
+                        sample.correctedBitsPerMessage(), sample.syncLossBits(),
+                        level == null || level.isInfinite() ? "unknown" : String.format("%.1f dB", level)));
                 }
             }
         }

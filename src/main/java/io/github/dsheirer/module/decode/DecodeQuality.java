@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.LongAdder;
 public final class DecodeQuality
 {
     private static final Map<String, Counter> COUNTERS = new ConcurrentHashMap<>();
+    private static final Map<String, Double> SIGNAL_LEVELS = new ConcurrentHashMap<>();
 
     private DecodeQuality()
     {
@@ -77,6 +78,22 @@ public final class DecodeQuality
     {
         Counter counter = owner == null ? null : COUNTERS.get(owner);
         return counter == null ? Sample.EMPTY : counter.sample();
+    }
+
+    /**
+     * Records the owner's latest signal level in dBFS.
+     */
+    public static void setSignalLevel(String owner, double level)
+    {
+        SIGNAL_LEVELS.put(owner, level);
+    }
+
+    /**
+     * Latest signal level in dBFS for the owner, or null when it hasn't been measured.
+     */
+    public static Double getSignalLevel(String owner)
+    {
+        return owner == null ? null : SIGNAL_LEVELS.get(owner);
     }
 
     /**

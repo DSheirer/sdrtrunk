@@ -36,6 +36,7 @@ import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.channel.metadata.SignalLevelMonitor;
 import io.github.dsheirer.module.decode.DecodeQuality;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
@@ -493,6 +494,18 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             processingChain.addModule(DecodeQuality.monitor(owner));
         }
+
+        processingChain.addModule(new SignalLevelMonitor(level -> {
+            for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
+            {
+                channelMetadata.setSignalLevel(level);
+            }
+
+            if(owner != null)
+            {
+                DecodeQuality.setSignalLevel(owner, level);
+            }
+        }));
 
         //Post preload data from the request to the event bus.  Modules that can handle preload data will annotate
         //their processor method with @Subscribe to receive each specific preload data content class.
