@@ -26,6 +26,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
@@ -285,7 +286,8 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                                     sb.append(",");
                                 }
                                 sb.append(Joiner.on(", ").skipNulls().join(aliases));
-                                color = aliases.getFirst().getDisplayColor();
+                                color = ThemeManager.getInstance().getReadableColor(
+                                    aliases.getFirst().getDisplayColor(), label.getBackground());
                                 icon = mIconModel.getIcon(aliases.getFirst().getIconName(), IconModel.DEFAULT_ICON_SIZE);
                             }
                         }

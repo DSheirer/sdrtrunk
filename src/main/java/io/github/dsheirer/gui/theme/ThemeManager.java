@@ -221,6 +221,18 @@ public class ThemeManager
         return mCurrentTheme != null && mCurrentTheme.isDark();
     }
 
+    /**
+     * Provides the color to render user-selected content (e.g. an alias) against a background in the current theme.
+     * @param color selected by the user.
+     * @param background that the color is rendered against.
+     * @return the color, or a readable alternative when dark mode is active and the color lacks contrast with the
+     * background.
+     */
+    public Color getReadableColor(Color color, Color background)
+    {
+        return isDarkMode() ? ColorContrast.getReadable(color, background) : color;
+    }
+
     public void register(Scene scene)
     {
         if(scene == null)

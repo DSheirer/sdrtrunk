@@ -19,15 +19,19 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
+import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +70,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
+import javax.swing.UIManager;
 import jiconfont.IconCode;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
@@ -124,6 +129,20 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
         setOrientation(Orientation.VERTICAL);
         mCurrentEditor = getAliasItemEditor();
         getItems().addAll(topBox, getAliasItemEditor());
+
+        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    /**
+     * Redraws the alias color swatches after a change to the application theme.
+     */
+    @Subscribe
+    public void onPreferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.APPLICATION)
+        {
+            Platform.runLater(() -> getAliasTableView().refresh());
+        }
     }
 
     /**
@@ -727,7 +746,11 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                         if(alias != null)
                         {
                             rectangle.setVisible(true);
-                            rectangle.setFill(ColorUtil.fromInteger(alias.getColor()));
+                            java.awt.Color color = alias.getDisplayColor();
+                            java.awt.Color readable = ThemeManager.getInstance().getReadableColor(color,
+                                UIManager.getColor("TextField.background"));
+                            rectangle.setFill(ColorUtil.fromInteger(readable.equals(color) ? alias.getColor() :
+                                readable.getRGB()));
                         }
                         else
                         {
