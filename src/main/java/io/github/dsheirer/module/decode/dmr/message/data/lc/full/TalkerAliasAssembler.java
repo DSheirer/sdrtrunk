@@ -26,6 +26,9 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
  */
 public class TalkerAliasAssembler
 {
+    //Header (49) plus three blocks (56 each)
+    private static final int MAX_BIT_LENGTH = 217;
+
     //Timeslot 1 fragments
     private TalkerAliasHeader mHeaderTs1;
     private TalkerAliasBlock1 mBlock1Ts1;
@@ -84,6 +87,7 @@ public class TalkerAliasAssembler
         {
             case FULL_STANDARD_TALKER_ALIAS_HEADER:
             case FULL_HYTERA_TALKER_ALIAS_HEADER:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_HEADER:
                 if(message instanceof TalkerAliasHeader tah)
                 {
                     if(message.getTimeslot() == 1)
@@ -101,6 +105,7 @@ public class TalkerAliasAssembler
                 }
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
             case FULL_HYTERA_TALKER_ALIAS_BLOCK_1:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_1:
                 if(message instanceof TalkerAliasBlock1 tab1)
                 {
                     if(message.getTimeslot() == 1)
@@ -118,6 +123,7 @@ public class TalkerAliasAssembler
                 }
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
             case FULL_HYTERA_TALKER_ALIAS_BLOCK_2:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_2:
                 if(message instanceof TalkerAliasBlock2 tab2)
                 {
                     if(message.getTimeslot() == 1)
@@ -135,6 +141,7 @@ public class TalkerAliasAssembler
                 }
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
             case FULL_HYTERA_TALKER_ALIAS_BLOCK_3:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_3:
                 if(message instanceof TalkerAliasBlock3 tab3)
                 {
                     if(message.getTimeslot() == 1)
@@ -187,39 +194,37 @@ public class TalkerAliasAssembler
     {
         if(header != null)
         {
+            CorrectedBinaryMessage message = new CorrectedBinaryMessage(MAX_BIT_LENGTH);
+            message.load(0, header.getPayloadFragment());
+            int availableBits = 49;
+
+            //Load the contiguous fragments that are available.  UTF-8 aliases need all of them because the header's
+            //character length under-counts the bytes when characters are multi-byte, so a longer alias replaces a
+            //shorter one as the remaining fragments arrive.
+            if(block1 != null)
+            {
+                message.load(49, block1.getPayloadFragment());
+                availableBits = 105;
+
+                if(block2 != null)
+                {
+                    message.load(105, block2.getPayloadFragment());
+                    availableBits = 161;
+
+                    if(block3 != null)
+                    {
+                        message.load(161, block3.getPayloadFragment());
+                        availableBits = MAX_BIT_LENGTH;
+                    }
+                }
+            }
+
             int bitLength = header.getTotalBitLength();
 
-            if(1 <= bitLength && bitLength <= 49)
+            if(1 <= bitLength && bitLength <= availableBits)
             {
-                return new TalkerAliasComplete(header.getPayloadFragment(), header.getFormat(), header.getCharacterLength(),
-                        header.getTimestamp(), header.getTimeslot());
-            }
-            else if(50 <= bitLength && bitLength <= 105 && block1 != null)
-            {
-                CorrectedBinaryMessage message = new CorrectedBinaryMessage(105);
-                message.load(0, header.getPayloadFragment());
-                message.load(49, block1.getPayloadFragment());
-                return new TalkerAliasComplete(message, header.getFormat(), header.getCharacterLength(),
-                        header.getTimestamp(), header.getTimeslot());
-            }
-            else if(106 <= bitLength && bitLength <= 161 && block1 != null && block2 != null)
-            {
-                CorrectedBinaryMessage message = new CorrectedBinaryMessage(161);
-                message.load(0, header.getPayloadFragment());
-                message.load(49, block1.getPayloadFragment());
-                message.load(105, block2.getPayloadFragment());
-                return new TalkerAliasComplete(message, header.getFormat(), header.getCharacterLength(),
-                        header.getTimestamp(), header.getTimeslot());
-            }
-            else if(162 <= bitLength && bitLength <= 217 && block1 != null && block2 != null && block3 != null)
-            {
-                CorrectedBinaryMessage message = new CorrectedBinaryMessage(217);
-                message.load(0, header.getPayloadFragment());
-                message.load(49, block1.getPayloadFragment());
-                message.load(105, block2.getPayloadFragment());
-                message.load(161, block3.getPayloadFragment());
-                return new TalkerAliasComplete(message, header.getFormat(), header.getCharacterLength(),
-                        header.getTimestamp(), header.getTimeslot());
+                return new TalkerAliasComplete(message.getSubMessage(0, availableBits), header.getFormat(),
+                        header.getCharacterLength(), header.getTimestamp(), header.getTimeslot());
             }
         }
 

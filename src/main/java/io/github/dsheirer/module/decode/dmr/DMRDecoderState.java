@@ -76,8 +76,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasComp
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAlias;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAliasContinuation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
@@ -1193,73 +1191,6 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                 }
                 break;
-            case FULL_CAPACITY_MAX_TALKER_ALIAS:
-                if(message instanceof CapacityMaxTalkerAlias alias)
-                {
-                    //If we have a talker alias identifier, append this value.
-                    Identifier existing = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
-
-                    if(existing instanceof DmrTalkerAliasIdentifier talkerAlias &&
-                            !talkerAlias.equals(alias.getTalkerAliasIdentifier()) &&
-                            !talkerAlias.getValue().contains(alias.getTalkerAliasIdentifier().getValue()))
-                    {
-                        //Concatenate the existing talker alias fragment with the base alias value.
-                        DmrTalkerAliasIdentifier updated = DmrTalkerAliasIdentifier
-                                .create(alias.getTalkerAliasIdentifier().getValue() + talkerAlias.getValue());
-                        getIdentifierCollection().update(updated);
-
-                        Identifier fromRadio = getIdentifierCollection().getFromIdentifier();
-
-                        if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
-                        {
-                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
-                        }
-                    }
-                    else
-                    {
-                        getIdentifierCollection().update(alias.getTalkerAliasIdentifier());
-                    }
-
-                    if(mCurrentCallEvent != null)
-                    {
-                        broadcast(mCurrentCallEvent);
-                    }
-                }
-                break;
-            case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
-                if(message instanceof CapacityMaxTalkerAliasContinuation alias)
-                {
-                    //If we have a talker alias identifier, append this value.
-                    Identifier existing = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
-
-                    if(existing instanceof DmrTalkerAliasIdentifier talkerAlias &&
-                            !talkerAlias.equals(alias.getTalkerAliasIdentifier()) &&
-                            !talkerAlias.getValue().contains(alias.getTalkerAliasIdentifier().getValue()))
-                    {
-                        //Concatenate the existing talker alias value with the updated continuation fragment.
-                        DmrTalkerAliasIdentifier updated = DmrTalkerAliasIdentifier.create(talkerAlias.getValue() +
-                                alias.getTalkerAliasIdentifier().getValue());
-                        getIdentifierCollection().update(updated);
-
-                        Identifier fromRadio = getIdentifierCollection().getFromIdentifier();
-
-                        if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
-                        {
-                            mTrafficChannelManager.getTalkerAliasManager().update(radio, updated);
-                        }
-                    }
-                    else
-                    {
-                        //Temporarily place the continuation fragment alias into the identifier collection.
-                        getIdentifierCollection().update(alias.getTalkerAliasIdentifier());
-                    }
-
-                    if(mCurrentCallEvent != null)
-                    {
-                        broadcast(mCurrentCallEvent);
-                    }
-                }
-                break;
             case FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER:
                 if(message instanceof CapacityPlusWideAreaVoiceChannelUser cpwavcu)
                 {
@@ -1382,6 +1313,18 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(message instanceof TalkerAliasComplete tac && tac.hasTalkerAliasIdentifier())
                 {
                     getIdentifierCollection().update(tac.getTalkerAliasIdentifier());
+
+                    Identifier fromRadio = getIdentifierCollection().getFromIdentifier();
+
+                    if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
+                    {
+                        mTrafficChannelManager.getTalkerAliasManager().update(radio, tac.getTalkerAliasIdentifier());
+                    }
+
+                    if(mCurrentCallEvent != null)
+                    {
+                        broadcast(mCurrentCallEvent);
+                    }
                 }
                 break;
         }
