@@ -27,11 +27,11 @@ import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.geom.Line2D;
-import java.awt.image.ColorModel;
-import java.awt.image.MemoryImageSource;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.IndexColorModel;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import org.apache.commons.math3.util.FastMath;
@@ -57,10 +57,11 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     private byte[] mPausedPixels;
     private int mDFTSize = 4096;
     private int mImageHeight = 700;
-    private MemoryImageSource mMemoryImageSource;
-    private ColorModel mColorModel = WaterfallColorModel.getDefaultColorModel();
+    private IndexColorModel mColorModel = WaterfallColorModel.getDefaultColorModel();
     private Color mColorSpectrumCursor;
-    private Image mWaterfallImage;
+    private BufferedImage mVisibleImage;
+    private byte[] mVisiblePixels;
+    private boolean mIsDisposed = false;
 
     private Point mCursorLocation = new Point(0, 0);
     private boolean mCursorVisible = false;
@@ -99,27 +100,20 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         }
 
         mSettingsManager = null;
-        mMemoryImageSource = null;
+        mIsDisposed = true;
     }
 
     /**
-     * Resets the memory image source and byte backing array when the DFT point
-     * size has changed
+     * Resets the byte backing arrays when the DFT point size has changed
      */
     private void reset()
     {
         mPixels = new byte[mDFTSize * mImageHeight];
 
-        mMemoryImageSource = new MemoryImageSource(mDFTSize,
-            mImageHeight,
-            mColorModel,
-            mPixels,
-            0,
-            mDFTSize);
-
-        mMemoryImageSource.setAnimated(true);
-
-        mWaterfallImage = createImage(mMemoryImageSource);
+        if(mPaused)
+        {
+            mPausedPixels = mPixels.clone();
+        }
 
         repaint();
     }
@@ -259,28 +253,36 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     }
 
     /**
-     * Calculates the x-axis pixel offset from zero where to start rendering the
-     * waterfall image
+     * Copies the DFT bins that are visible at the current zoom level and offset into an image that is sized to hold
+     * only those bins.  The whole waterfall can't be scaled to the zoomed width and clipped to the panel because the
+     * XRender pipeline silently renders nothing once the scaled width of the source image reaches 65,536 pixels.
+     *
+     * The image's pixel array is accessed directly, so Java2D doesn't cache it and each paint renders the current bins.
      *
      * @param multiplier - current zoom multiplier
-     * @return x-axis pixel offset
      */
-    private double getPixelOffset(int multiplier)
+    private void updateVisibleImage(int multiplier)
     {
-        double offset = 0;
+        int bins = mDFTSize / multiplier;
 
-        if(mZoom != 0)
+        if(mVisibleImage == null || mVisibleImage.getWidth() != bins)
         {
-            double binPixelWidth = getBinPixelWidth(multiplier);
-            offset = -binPixelWidth * (double)(mDFTZoomWindowOffset);
+            mVisibleImage = new BufferedImage(bins, mImageHeight, BufferedImage.TYPE_BYTE_INDEXED, mColorModel);
+            mVisiblePixels = ((DataBufferByte)mVisibleImage.getRaster().getDataBuffer()).getData();
         }
 
-        return offset;
-    }
+        byte[] source = mPaused ? mPausedPixels : mPixels;
 
-    private double getBinPixelWidth(int multiplier)
-    {
-        return ((double)getWidth() * (double)multiplier) / (double)mDFTSize;
+        //The display is shifted one bin to the left, to align with the spectrum.  Bins past the end are set to zero.
+        int firstBin = Math.min(mDFTZoomWindowOffset + 1, mDFTSize);
+        int length = Math.min(bins, mDFTSize - firstBin);
+
+        for(int row = 0; row < mImageHeight; row++)
+        {
+            int destination = row * bins;
+            System.arraycopy(source, (row * mDFTSize) + firstBin, mVisiblePixels, destination, length);
+            Arrays.fill(mVisiblePixels, destination + length, destination + bins, (byte)0);
+        }
     }
 
     /**
@@ -290,11 +292,8 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     {
         super.paintComponent(g);
 
-        int multiplier = getZoomMultiplier();
-
-        double binPixelWidth = getBinPixelWidth(multiplier);
-        int offset = (int)(getPixelOffset(multiplier) - binPixelWidth);
-        g.drawImage(mWaterfallImage, offset, 0, (getWidth() * multiplier) + (int)binPixelWidth, mImageHeight, this);
+        updateVisibleImage(getZoomMultiplier());
+        g.drawImage(mVisibleImage, 0, 0, getWidth(), mImageHeight, null);
         Graphics2D graphics = (Graphics2D)g;
         graphics.setColor(mColorSpectrumCursor);
 
@@ -391,9 +390,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 
         //Task the swing event thread to add the new pixels to the pixel array and update the display
         EventQueue.invokeLater(() -> {
-            if(mMemoryImageSource != null)
+            if(!mIsDisposed)
             {
-                //If our FFT size changes, reset our pixel map and image source
+                //If our FFT size changes, reset our pixel map
                 if(mDFTSize != newPixels.length)
                 {
                     mDFTSize = newPixels.length;
@@ -403,36 +402,24 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
                 //Move the pixels down a row and add in the new pixels row
                 System.arraycopy(mPixels, 0, mPixels, mDFTSize, mPixels.length - mDFTSize);
                 System.arraycopy(newPixels, 0, mPixels, 0, newPixels.length);
-
-                if(mPaused)
-                {
-                    mMemoryImageSource.newPixels(mPausedPixels, mColorModel, 0, mDFTSize);
-                }
-                else
-                {
-                    mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
-                }
+                repaint();
             }
         });
     }
 
     public void clearWaterfall()
     {
-        Arrays.fill(mPixels, (byte)0);
         mDisabled = true;
 
         EventQueue.invokeLater(() -> {
-            if(mMemoryImageSource != null)
+            Arrays.fill(mPixels, (byte)0);
+
+            if(mPausedPixels != null)
             {
-                try
-                {
-                    mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
-                }
-                catch(Exception e)
-                {
-                    mLog.error("Temporary error updating cleared waterfall panel - " + e.getLocalizedMessage());
-                }
+                Arrays.fill(mPausedPixels, (byte)0);
             }
+
+            repaint();
         });
     }
 }
