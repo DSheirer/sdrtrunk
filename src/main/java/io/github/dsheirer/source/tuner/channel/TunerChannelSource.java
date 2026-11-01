@@ -204,6 +204,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
             case NOTIFICATION_CHANNEL_POWER:
             case NOTIFICATION_SQUELCH_THRESHOLD:
+            case NOTIFICATION_SQUELCH_USER_THRESHOLD:
             case NOTIFICATION_SQUELCH_AUTO_TRACK:
             case REQUEST_CHANGE_SQUELCH_THRESHOLD:
             case REQUEST_CURRENT_SQUELCH_THRESHOLD:

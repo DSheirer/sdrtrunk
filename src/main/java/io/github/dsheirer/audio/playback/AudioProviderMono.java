@@ -77,7 +77,7 @@ public class AudioProviderMono extends AudioProvider
 
         for(int x = 0; x < AudioChannel.SAMPLES_PER_INTERVAL; x++)
         {
-            shortBuffer.put((short) (audio[x] * Short.MAX_VALUE));
+            shortBuffer.put(toPcm(audio[x]));
         }
 
         return buffer;

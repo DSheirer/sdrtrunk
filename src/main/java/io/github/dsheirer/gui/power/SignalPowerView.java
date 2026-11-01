@@ -109,6 +109,7 @@ public class SignalPowerView extends JPanel
         mSquelchAutoTrackCheckBox.addActionListener(e ->
         {
             broadcast(SourceEvent.requestSquelchAutoTrack(mSquelchAutoTrackCheckBox.isSelected()));
+            setConfigSquelchAutoTrack(mSquelchAutoTrackCheckBox.isSelected());
         });
         valuePanel.add(mSquelchAutoTrackCheckBox, "span,left");
 
@@ -116,7 +117,11 @@ public class SignalPowerView extends JPanel
     }
 
     /**
-     * Updates the channel's decode configuration with a new squelch threshold value
+     * Updates the channel's decode configuration with a new squelch threshold value.
+     *
+     * Note: this is only used for the user threshold notification that follows a user change.  The threshold
+     * notifications from the decoder can be values that are automatically tracked from current channel conditions, and
+     * saving those would replace the user's setting.
      */
     private void setConfigSquelchThreshold(int threshold)
     {
@@ -195,7 +200,6 @@ public class SignalPowerView extends JPanel
             {
                 final double threshold = sourceEvent.getValue().doubleValue();
                 mSquelchThreshold = threshold;
-                setConfigSquelchThreshold((int)threshold);
 
                 EventQueue.invokeLater(() -> {
                     mPowerMeter.setSquelchThreshold(threshold);
@@ -206,10 +210,11 @@ public class SignalPowerView extends JPanel
                     mSquelchUpButton.setEnabled(true);
                 });
             }
+            case NOTIFICATION_SQUELCH_USER_THRESHOLD ->
+                    setConfigSquelchThreshold((int)Math.round(sourceEvent.getValue().doubleValue()));
             case NOTIFICATION_SQUELCH_AUTO_TRACK ->
             {
                 boolean autoTrack = sourceEvent.getValue().intValue() == 1;
-                setConfigSquelchAutoTrack(autoTrack);
                 EventQueue.invokeLater(() -> {
                     mSquelchAutoTrackCheckBox.setSelected(autoTrack);
                     mSquelchAutoTrackCheckBox.setEnabled(true);
@@ -225,5 +230,9 @@ public class SignalPowerView extends JPanel
     {
         mProcessingChain = processingChain;
         reset();
+
+        //Request the current squelch settings, which enables the squelch controls when the decoder responds.
+        broadcast(SourceEvent.requestCurrentSquelchThreshold());
+        broadcast(SourceEvent.requestCurrentSquelchAutoTrack());
     }
 }

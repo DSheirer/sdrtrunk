@@ -18,8 +18,6 @@
  */
 package io.github.dsheirer.dsp.am;
 
-import io.github.dsheirer.dsp.magnitude.IMagnitudeCalculator;
-import io.github.dsheirer.dsp.magnitude.MagnitudeFactory;
 import io.github.dsheirer.vector.VectorUtilities;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorSpecies;
@@ -32,7 +30,6 @@ public class VectorAMDemodulator128 implements IAmDemodulator
 {
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_128;
     private float mGain;
-    private IMagnitudeCalculator mMagnitudeCalculator = MagnitudeFactory.getMagnitudeCalculator();
 
     /**
      * Constructs this demodulator where the specified gain is applied to demodulated output samples.

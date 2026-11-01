@@ -17,13 +17,14 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.fm;
+package io.github.dsheirer.dsp.am;
 
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 
 /**
- * Interface for FM demodulator that provides squelch control.
+ * Interface for AM demodulator that provides squelch control.
  */
 public interface ISquelchingDemodulator extends IDemodulator
 {

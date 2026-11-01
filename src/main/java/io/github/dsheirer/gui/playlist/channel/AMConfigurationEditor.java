@@ -301,7 +301,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
                         DecodeConfigAM.Bandwidth bandwidth = config.getBandwidth();
                         if(bandwidth == null)
                         {
-                            bandwidth = DecodeConfigNBFM.Bandwidth.BW_15_0;
+                            bandwidth = DecodeConfigAM.DEFAULT_BANDWIDTH;
                         }
 
                         for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
@@ -409,7 +409,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
         {
             getBandwidthButton().setDisable(false);
             final DecodeConfigAM.Bandwidth bandwidth = (decodeConfigAM.getBandwidth() != null ?
-                    decodeConfigAM.getBandwidth() : DecodeConfigNBFM.Bandwidth.BW_15_0);
+                    decodeConfigAM.getBandwidth() : DecodeConfigAM.DEFAULT_BANDWIDTH);
 
             for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
             {
@@ -454,7 +454,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             config = new DecodeConfigAM();
         }
 
-        DecodeConfigAM.Bandwidth bandwidth = DecodeConfigAM.Bandwidth.BW_15_0;
+        DecodeConfigAM.Bandwidth bandwidth = DecodeConfigAM.DEFAULT_BANDWIDTH;
 
         if(getBandwidthButton().getToggleGroup().getSelectedToggle() != null)
         {

@@ -22,11 +22,10 @@ import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventProvider;
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.dsp.filter.ChannelFilterDesigner;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
@@ -34,7 +33,6 @@ import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.dsp.squelch.INoiseSquelchController;
 import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
-import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.module.decode.squelch.SquelchCodeState;
@@ -456,37 +454,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         mNoiseSquelch.setSampleRate(decimatedSampleRate);
 
-        int passBandStop = (int) (mChannelBandwidth * .8);
-        int stopBandStart = (int) mChannelBandwidth;
-
-        float[] coefficients = null;
-
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                .sampleRate(decimatedSampleRate * 2)
-                .gridDensity(16)
-                .oddLength(true)
-                .passBandCutoff(passBandStop)
-                .passBandAmplitude(1.0)
-                .passBandRipple(0.01)
-                .stopBandStart(stopBandStart)
-                .stopBandAmplitude(0.0)
-                .stopBandRipple(0.005)
-                .build();
-
-        try
-        {
-            coefficients = FilterFactory.getTaps(specification);
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Couldn't design demodulator remez filter for sample rate [" + sampleRate + "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart + "] - will proceed using sinc (low-pass) filter");
-        }
-
-        if(coefficients == null)
-        {
-            mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate + "] pass band stop [" + passBandStop + "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
-            coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60, WindowType.HAMMING, true);
-        }
+        float[] coefficients = ChannelFilterDesigner.design(decimatedSampleRate, mChannelBandwidth);
 
         mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
         mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
