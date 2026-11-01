@@ -23,6 +23,7 @@ import io.github.dsheirer.dsp.filter.channelizer.output.OneChannelOutputProcesso
 import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.SerializedListener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
@@ -45,7 +46,8 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
 {
     private Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
-    private Listener<ComplexSamples> mSamplesListener;
+    //Output processor replacement can overlap the outgoing and incoming dispatcher threads, and consumers aren't thread safe
+    private final SerializedListener<ComplexSamples> mSamplesListener = new SerializedListener<>();
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
     private List<Integer> mOutputProcessorIndexes = new ArrayList<>();
@@ -148,23 +150,20 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     @Override
     public void setListener(final Listener<ComplexSamples> listener)
     {
-        mSamplesListener = listener;
+        mSamplesListener.setListener(listener);
         mPolyphaseChannelOutputProcessor.setListener(this);
     }
 
     @Override
     public void receive(ComplexSamples complexSamples)
     {
-        if(mSamplesListener != null)
+        try
         {
-            try
-            {
-                mSamplesListener.receive(complexSamples);
-            }
-            catch(Throwable t)
-            {
-                mLog.error("Error dispatching complex samples to listener [" + mSamplesListener.getClass() + "]", t);
-            }
+            mSamplesListener.receive(complexSamples);
+        }
+        catch(Throwable t)
+        {
+            mLog.error("Error dispatching complex samples to listener", t);
         }
     }
 

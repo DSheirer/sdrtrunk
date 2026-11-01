@@ -25,6 +25,7 @@ import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -123,6 +124,102 @@ public class PolyphaseChannelSourceTest
         channelizer.dispatch(batch());
 
         assertEquals(1, received.get());
+    }
+
+    /**
+     * Test: replacing the output processor while the outgoing dispatcher thread is still inside the consumer doesn't
+     * let the incoming dispatcher thread into the consumer until the outgoing thread leaves.
+     */
+    @Test
+    void outputProcessorReplacementDoesNotOverlapConsumerThreads() throws Exception
+    {
+        CountDownLatch firstEntered = new CountDownLatch(1);
+        CountDownLatch releaseFirst = new CountDownLatch(1);
+        CountDownLatch secondEntered = new CountDownLatch(1);
+        AtomicInteger active = new AtomicInteger();
+        AtomicInteger maximumActive = new AtomicInteger();
+        AtomicReference<Thread> firstThread = new AtomicReference<>();
+
+        PolyphaseChannelSource source = source();
+        source.setListener(samples -> {
+            maximumActive.accumulateAndGet(active.incrementAndGet(), Math::max);
+
+            if(firstThread.compareAndSet(null, Thread.currentThread()))
+            {
+                firstEntered.countDown();
+
+                try
+                {
+                    releaseFirst.await(10, TimeUnit.SECONDS);
+                }
+                catch(InterruptedException ie)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            else if(Thread.currentThread() != firstThread.get())
+            {
+                secondEntered.countDown();
+            }
+
+            active.decrementAndGet();
+        });
+
+        source.start();
+
+        try
+        {
+            source.receiveChannelResults(largeBatch());
+            assertTrue(firstEntered.await(5, TimeUnit.SECONDS), "Consumer did not receive samples");
+
+            source.updateOutputProcessor(calculatorForTwoChannels(source), new SynthesisFilterManager());
+            source.applyPendingOutputProcessorUpdate();
+            assertEquals(2, source.getOutputProcessorIndexes().size());
+
+            //Give the replacement processor enough samples and time to attempt delivery to the consumer
+            for(int x = 0; x < 20; x++)
+            {
+                source.receiveChannelResults(largeBatch());
+                Thread.sleep(25);
+            }
+
+            assertEquals(1, maximumActive.get(), "Dispatcher threads overlapped in the consumer");
+
+            releaseFirst.countDown();
+            assertTrue(secondEntered.await(5, TimeUnit.SECONDS), "Replacement processor did not deliver samples");
+            assertEquals(1, maximumActive.get(), "Dispatcher threads overlapped in the consumer");
+        }
+        finally
+        {
+            releaseFirst.countDown();
+            source.stop();
+        }
+    }
+
+    /**
+     * Finds a tuner center frequency that positions the source's channel across two polyphase channels.
+     */
+    private static ChannelCalculator calculatorForTwoChannels(PolyphaseChannelSource source)
+    {
+        for(long offset = 0; offset < 25000; offset += 500)
+        {
+            ChannelCalculator calculator = calculator(CENTER + offset);
+
+            if(calculator.getChannelIndexes(source.getTunerChannel()).size() == 2)
+            {
+                return calculator;
+            }
+        }
+
+        throw new IllegalStateException("Unable to position the channel across two polyphase channels");
+    }
+
+    /**
+     * Batch with enough blocks to complete an output processor sample buffer.
+     */
+    private static ChannelResultsBatch largeBatch()
+    {
+        return new ChannelResultsBatch(new float[CHANNEL_COUNT * 2 * 4096], CHANNEL_COUNT * 2, 0, new ArrayDeque<>());
     }
 
     /**
