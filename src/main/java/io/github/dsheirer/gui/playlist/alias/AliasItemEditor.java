@@ -33,16 +33,22 @@ import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
+import io.github.dsheirer.alias.id.INXDNTypeD;
+import io.github.dsheirer.alias.id.INXDNTypeDRange;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadio;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadioRange;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioFormatter;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroupRange;
 import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.StreamAsTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
@@ -70,6 +76,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
@@ -770,6 +777,12 @@ public class AliasItemEditor extends Editor<Alias>
             nxdnMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.NXDN));
             nxdnMenu.getItems().add(new AddRadioIdItem(Protocol.NXDN));
             nxdnMenu.getItems().add(new AddRadioIdRangeItem(Protocol.NXDN));
+            nxdnMenu.getItems().add(new SeparatorMenuItem());
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Talkgroup", NXDNTypeDTalkgroup::new));
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Talkgroup Range", NXDNTypeDTalkgroupRange::new));
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Radio ID", NXDNTypeDRadio::new));
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Radio ID Range", NXDNTypeDRadioRange::new));
+            nxdnMenu.getItems().add(new SeparatorMenuItem());
             nxdnMenu.getItems().add(new AddTonesItem("AMBE Audio Tones"));
 
             Menu passportMenu = new ProtocolMenu(Protocol.PASSPORT);
@@ -1457,6 +1470,24 @@ public class AliasItemEditor extends Editor<Alias>
     }
 
     /**
+     * Menu Item for adding a new NXDN Type-D alias identifier
+     */
+    public class AddNXDNTypeDItem extends MenuItem
+    {
+        public AddNXDNTypeDItem(String label, Supplier<AliasID> supplier)
+        {
+            super(label);
+            setOnAction(event -> {
+                AliasID aliasID = supplier.get();
+                getIdentifiersList().getItems().add(aliasID);
+                getIdentifiersList().getSelectionModel().select(aliasID);
+                getIdentifiersList().scrollTo(aliasID);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
      * Menu Item for adding a new protocol-specific Talkgroup alias identifier
      */
     public class AddTalkgroupItem extends MenuItem
@@ -1617,7 +1648,11 @@ public class AliasItemEditor extends Editor<Alias>
 
             if(item != null)
             {
-                if(item instanceof P25FullyQualifiedTalkgroup fqt)
+                if(item instanceof INXDNTypeD || item instanceof INXDNTypeDRange)
+                {
+                    setText(item.overlapProperty().get() ? item + " - Error: Overlap" : item.toString());
+                }
+                else if(item instanceof P25FullyQualifiedTalkgroup fqt)
                 {
                     StringBuilder sb = new StringBuilder();
                     sb.append("APCO-25 Fully Qualified Talkgroup:").append(fqt.getWacn());
