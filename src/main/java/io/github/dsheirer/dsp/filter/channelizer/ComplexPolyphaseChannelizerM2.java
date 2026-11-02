@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import org.apache.commons.math3.util.FastMath;
-import org.jtransforms.fft.FloatFFT_1D;
+import org.jtransforms.fft.ReusableFloatInverseFFT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +85,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
     //Sized to process 40 times per second
     private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(25);
-    private FloatFFT_1D mFFT;
+    private ReusableFloatInverseFFT mFFT;
     private ChannelDFT mChannelDFT;
     private float[] mInlineSamples;
     private float[] mInlineFilter;
@@ -453,7 +453,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private void init(float[] coefficients)
     {
         int channelCount = getChannelCount();
-        mFFT = new FloatFFT_1D(channelCount);
+        mFFT = new ReusableFloatInverseFFT(channelCount);
         mChannelDFT = ChannelDFTFactory.getChannelDFT(channelCount);
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
         mSamplesPerBlock = channelCount; //Same as subChannelCount / 2
@@ -505,7 +505,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
                         for(int offset = 0; offset < samples.length; offset += blockLength)
                         {
                             //Rotate each of the channels to the correct phase using the IFFT
-                            mFFT.complexInverse(samples, offset, true);
+                            mFFT.complexInverse(samples, offset);
                         }
                     }
 
