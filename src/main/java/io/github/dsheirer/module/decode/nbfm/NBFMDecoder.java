@@ -452,9 +452,9 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
             throw new IllegalStateException(getDecoderType().name() + " demodulator with channel bandwidth [" + mChannelBandwidth + "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth + "] - sample rate of [" + decimatedSampleRate + "] is not supported"));
         }
 
-        mNoiseSquelch.setSampleRate(decimatedSampleRate);
-
         float[] coefficients = ChannelFilterDesigner.design(decimatedSampleRate, mChannelBandwidth);
+
+        mNoiseSquelch.setSampleRate(decimatedSampleRate, coefficients);
 
         mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
         mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
