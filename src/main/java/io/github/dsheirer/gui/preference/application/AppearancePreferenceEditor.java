@@ -25,6 +25,7 @@ import io.github.dsheirer.preference.application.ApplicationPreference;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Separator;
@@ -45,6 +46,7 @@ public class AppearancePreferenceEditor extends HBox
     private final ApplicationPreference mApplicationPreference;
     private GridPane mEditorPane;
     private VBox mThemeRadioGroup;
+    private CheckBox mComplementaryAliasColorsCheckBox;
     private Slider mGuiScaleSlider;
     private Label mGuiScaleValueLabel;
 
@@ -74,6 +76,12 @@ public class AppearancePreferenceEditor extends HBox
 
             mEditorPane.add(new Label("Theme"), 0, row, 3, 1);
             mEditorPane.add(getThemeRadioGroup(), 0, ++row, 3, 1);
+            mEditorPane.add(getComplementaryAliasColorsCheckBox(), 0, ++row, 3, 1);
+
+            Label aliasColorHint = new Label("Dark themes only. Replaces alias colors that are hard to read against " +
+                "the background with a complementary color.");
+            aliasColorHint.setWrapText(true);
+            mEditorPane.add(aliasColorHint, 0, ++row, 3, 1);
 
             Separator separator = new Separator(Orientation.HORIZONTAL);
             GridPane.setHgrow(separator, Priority.ALWAYS);
@@ -137,6 +145,22 @@ public class AppearancePreferenceEditor extends HBox
         }
 
         return mThemeRadioGroup;
+    }
+
+    /**
+     * Check box to opt in to replacing hard to read alias colors with a complementary color in dark themes.
+     */
+    private CheckBox getComplementaryAliasColorsCheckBox()
+    {
+        if(mComplementaryAliasColorsCheckBox == null)
+        {
+            mComplementaryAliasColorsCheckBox = new CheckBox("Use Complementary Alias Colors");
+            mComplementaryAliasColorsCheckBox.setSelected(mApplicationPreference.isComplementaryAliasColors());
+            mComplementaryAliasColorsCheckBox.setOnAction(e -> mApplicationPreference
+                .setComplementaryAliasColors(mComplementaryAliasColorsCheckBox.isSelected()));
+        }
+
+        return mComplementaryAliasColorsCheckBox;
     }
 
     /**
