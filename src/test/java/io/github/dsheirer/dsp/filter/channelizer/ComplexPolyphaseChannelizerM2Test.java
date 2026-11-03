@@ -19,12 +19,12 @@
 
 package io.github.dsheirer.dsp.filter.channelizer;
 
+import io.github.dsheirer.dsp.fft.MixedRadixComplexFFT;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.jtransforms.fft.FloatFFT_1D;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -142,7 +142,9 @@ public class ComplexPolyphaseChannelizerM2Test
             channelizer.stop();
             assertEquals(batchCount, batches.size(), "Batches (channelCount=" + channelCount + ")");
 
-            FloatFFT_1D fft = new FloatFFT_1D(channelCount);
+            //Use the same IFFT as the channelizer so the comparison remains bit-exact.  Equivalence of this IFFT with
+            //JTransforms is verified separately in MixedRadixComplexFFTTest.
+            MixedRadixComplexFFT fft = new MixedRadixComplexFFT(channelCount);
             int blockLength = channelCount * 2;
             boolean topBlock = TAPS_PER_CHANNEL % 2 == 0;
 
@@ -152,7 +154,7 @@ public class ComplexPolyphaseChannelizerM2Test
                 float[] expected = harness.processFused(topBlock);
                 topBlock = !topBlock;
                 harness.shift(channelCount);
-                fft.complexInverse(expected, true);
+                fft.inverse(expected, true);
 
                 float[] batch = batches.get(block / blocksPerBatch);
                 int offset = (block % blocksPerBatch) * blockLength;
