@@ -21,6 +21,7 @@ package io.github.dsheirer.preference.record;
 
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.record.BasebandRecordFormat;
 import io.github.dsheirer.record.RecordFormat;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -35,9 +36,12 @@ public class RecordPreference extends Preference
 {
     private static final String PREFERENCE_KEY_AUDIO_RECORD_FORMAT = "audio.record.format";
     private static final RecordFormat DEFAULT_RECORD_FORMAT = RecordFormat.MP3;
+    private static final String PREFERENCE_KEY_BASEBAND_RECORD_FORMAT = "baseband.record.format";
+    private static final BasebandRecordFormat DEFAULT_BASEBAND_RECORD_FORMAT = BasebandRecordFormat.WAVE;
     private final static Logger mLog = LoggerFactory.getLogger(RecordPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(RecordPreference.class);
     private RecordFormat mAudioRecordFormat;
+    private BasebandRecordFormat mBasebandRecordFormat;
 
     /**
      * Constructs this preference with an update listener
@@ -88,6 +92,43 @@ public class RecordPreference extends Preference
     {
         mAudioRecordFormat = audioRecordFormat;
         mPreferences.put(PREFERENCE_KEY_AUDIO_RECORD_FORMAT, audioRecordFormat.name());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Baseband (complex I/Q) recording file format for tuner and channel baseband recordings.
+     */
+    public BasebandRecordFormat getBasebandRecordFormat()
+    {
+        if(mBasebandRecordFormat == null)
+        {
+            try
+            {
+                String format = mPreferences.get(PREFERENCE_KEY_BASEBAND_RECORD_FORMAT,
+                    DEFAULT_BASEBAND_RECORD_FORMAT.name());
+                mBasebandRecordFormat = BasebandRecordFormat.valueOf(format);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error parsing baseband record format preference", e);
+            }
+
+            if(mBasebandRecordFormat == null)
+            {
+                mBasebandRecordFormat = DEFAULT_BASEBAND_RECORD_FORMAT;
+            }
+        }
+
+        return mBasebandRecordFormat;
+    }
+
+    /**
+     * Sets the baseband (complex I/Q) recording file format
+     */
+    public void setBasebandRecordFormat(BasebandRecordFormat basebandRecordFormat)
+    {
+        mBasebandRecordFormat = basebandRecordFormat;
+        mPreferences.put(PREFERENCE_KEY_BASEBAND_RECORD_FORMAT, basebandRecordFormat.name());
         notifyPreferenceUpdated();
     }
 }
