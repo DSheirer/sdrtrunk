@@ -74,7 +74,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -129,7 +128,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private Listener<IMessage> mMessageListener;
     private boolean mIgnoreDataCalls;
     private AliasList mAliasList;
-    private final Set<Integer> mEncryptedTalkgroups = ConcurrentHashMap.newKeySet();
     private TrafficChannelPreference mTrafficChannelPreference;
     //Used only for data calls
     private final DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
@@ -310,7 +308,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      */
     public void broadcast(P25ChannelEventTracker tracker)
     {
-        learnEncryptedTalkgroup(tracker.getEvent().getIdentifierCollection());
         broadcast(tracker.getEvent());
     }
 
@@ -1218,34 +1215,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
-     * Remembers a talkgroup heard encrypted on a traffic channel, so its later grants are skipped even when the grant
-     * doesn't flag encryption.
-     */
-    private void learnEncryptedTalkgroup(IdentifierCollection ic)
-    {
-        Integer talkgroup = getTalkgroup(ic);
-
-        if(talkgroup != null && ic.getEncryptionIdentifier() instanceof EncryptionKeyIdentifier eki &&
-            eki.isEncrypted() && mEncryptedTalkgroups.add(talkgroup))
-        {
-            LOGGING_SUPPRESSOR.info("encrypted-talkgroup-" + talkgroup, 1, "Talkgroup " + talkgroup +
-                " was heard encrypted - skipping its grants for the rest of the session");
-        }
-    }
-
-    private static Integer getTalkgroup(IdentifierCollection ic)
-    {
-        Identifier to = ic != null ? ic.getToIdentifier() : null;
-
-        if(to != null && to.getForm() == Form.TALKGROUP && to.getValue() instanceof Integer value && value != 0)
-        {
-            return value;
-        }
-
-        return null;
-    }
-
-    /**
      * Sets the control channel's alias list and the preference that decides whether talkgroups without an alias in
      * that list are tuned.
      */
@@ -1278,13 +1247,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         if(isEncryptedGrant(serviceOptions))
         {
             return "ENCRYPTED CALL";
-        }
-
-        Integer talkgroup = getTalkgroup(ic);
-
-        if(talkgroup != null && mEncryptedTalkgroups.contains(talkgroup))
-        {
-            return "ENCRYPTED TALKGROUP";
         }
 
         if(mIgnoreDataCalls && isDataGrant(isDataChannelGrant, decodeEventType))
