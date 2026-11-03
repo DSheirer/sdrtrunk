@@ -749,7 +749,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     {
         if(!isRecording())
         {
-            mRecorder = RecorderFactory.getTunerRecorder(prefix + "_" + getFrequency(), userPreferences, statusListener);
+            mRecorder = RecorderFactory.getTunerRecorder(prefix, getFrequency(), userPreferences, statusListener);
             mRecorder.setSampleRate((float)getSampleRate());
             mRecorder.start();
             addBufferListener(mRecorder);

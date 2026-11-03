@@ -21,12 +21,14 @@ package io.github.dsheirer.gui.preference.record;
 
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.record.RecordPreference;
+import io.github.dsheirer.record.BasebandRecordFormat;
 import io.github.dsheirer.record.RecordFormat;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -43,6 +45,7 @@ public class RecordPreferenceEditor extends HBox
     private RecordPreference mRecordPreference;
     private GridPane mEditorPane;
     private ComboBox<RecordFormat> mRecordFormatComboBox;
+    private ComboBox<BasebandRecordFormat> mBasebandRecordFormatComboBox;
 
     public RecordPreferenceEditor(UserPreferences userPreferences)
     {
@@ -64,9 +67,37 @@ public class RecordPreferenceEditor extends HBox
             mEditorPane.add(label, 0, 0);
 
             mEditorPane.add(getRecordFormatComboBox(), 1, 0);
+
+            Label basebandLabel = new Label("Baseband I/Q Recording Format:");
+            mEditorPane.add(basebandLabel, 0, 1);
+            mEditorPane.add(getBasebandRecordFormatComboBox(), 1, 1);
         }
 
         return mEditorPane;
+    }
+
+    /**
+     * Baseband (tuner and channel I/Q) recording file format selector
+     */
+    private ComboBox<BasebandRecordFormat> getBasebandRecordFormatComboBox()
+    {
+        if(mBasebandRecordFormatComboBox == null)
+        {
+            mBasebandRecordFormatComboBox = new ComboBox<>();
+            mBasebandRecordFormatComboBox.getItems().addAll(BasebandRecordFormat.values());
+            mBasebandRecordFormatComboBox.getSelectionModel().select(mRecordPreference.getBasebandRecordFormat());
+            mBasebandRecordFormatComboBox.setTooltip(new Tooltip("File format for tuner and channel baseband " +
+                "I/Q recordings.  Applies to recordings started after the change."));
+            mBasebandRecordFormatComboBox.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                    if(newValue != null)
+                    {
+                        mRecordPreference.setBasebandRecordFormat(newValue);
+                    }
+                });
+        }
+
+        return mBasebandRecordFormatComboBox;
     }
 
     private ComboBox<RecordFormat> getRecordFormatComboBox()

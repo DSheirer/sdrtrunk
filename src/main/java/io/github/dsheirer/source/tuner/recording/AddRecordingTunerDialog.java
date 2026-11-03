@@ -24,6 +24,7 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
+import io.github.dsheirer.source.wave.SDRSharpIQRecording;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -42,7 +43,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * Dialog to select a recording and specify a center frequency for use in adding a Recording Tuner
@@ -100,20 +101,13 @@ public class AddRecordingTunerDialog extends JFrame
 
             fileChooser.setCurrentDirectory(browseDirectory);
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fileChooser.setFileFilter(new FileFilter()
-            {
-                @Override
-                public boolean accept(File f)
-                {
-                    return f.getAbsolutePath().endsWith(".wav") || f.isDirectory();
-                }
-
-                @Override
-                public String getDescription()
-                {
-                    return "Recordings (*.wav)";
-                }
-            });
+            FileNameExtensionFilter basebandFilter = new FileNameExtensionFilter("Baseband Recordings (*.wav, *.iq)",
+                "wav", SDRSharpIQRecording.FILE_EXTENSION);
+            fileChooser.addChoosableFileFilter(basebandFilter);
+            fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Wave Recordings (*.wav)", "wav"));
+            fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("SDRSharp I/Q Recordings (*.iq)",
+                SDRSharpIQRecording.FILE_EXTENSION));
+            fileChooser.setFileFilter(basebandFilter);
 
             int returnVal = fileChooser.showOpenDialog(AddRecordingTunerDialog.this);
 
@@ -128,9 +122,30 @@ public class AddRecordingTunerDialog extends JFrame
             {
                 mSelectedRecording = fileChooser.getSelectedFile();
 
-                mAddButton.setEnabled(mSelectedRecording != null);
+                if(SDRSharpIQRecording.hasIQExtension(mSelectedRecording))
+                {
+                    SDRSharpIQRecording iqRecording = SDRSharpIQRecording.parse(mSelectedRecording);
 
-                if(mSelectedRecording != null &&
+                    if(iqRecording == null)
+                    {
+                        JOptionPane.showMessageDialog(AddRecordingTunerDialog.this,
+                            "<html>Unable to determine the sample rate and center frequency from the I/Q recording " +
+                            "file name.<br>Expected format: <i>yyyyMMdd-HHmmss_label_TUNER_123456789Hz_10MSps.iq</i></html>",
+                            "Unsupported I/Q Recording",
+                            JOptionPane.ERROR_MESSAGE);
+                        mSelectedRecording = null;
+                    }
+                    else
+                    {
+                        mLog.info("Selected " + iqRecording);
+
+                        if(mFrequencyTextField.getText() == null || mFrequencyTextField.getText().isEmpty())
+                        {
+                            mFrequencyTextField.setText(String.valueOf(iqRecording.getCenterFrequency()));
+                        }
+                    }
+                }
+                else if(mSelectedRecording != null &&
                    (mFrequencyTextField.getText() == null || mFrequencyTextField.getText().isEmpty()))
                 {
                     Matcher m = TUNER_RECORDING_PATTERN.matcher(mSelectedRecording.getName());
@@ -140,6 +155,8 @@ public class AddRecordingTunerDialog extends JFrame
                         mFrequencyTextField.setText(m.group(1));
                     }
                 }
+
+                mAddButton.setEnabled(mSelectedRecording != null);
             }
             else
             {
