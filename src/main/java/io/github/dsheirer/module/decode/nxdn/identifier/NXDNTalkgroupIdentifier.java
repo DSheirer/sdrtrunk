@@ -50,6 +50,13 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
         return Protocol.NXDN;
     }
 
+    @Override
+    public boolean isValid()
+    {
+        //NXDN conventional repeaters use a value of zero for the TO talkgroup value.
+        return getValue() >= 0;
+    }
+
     /**
      * Indicates if the identifier is for a Type-D system.
      */
