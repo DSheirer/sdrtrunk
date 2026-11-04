@@ -53,9 +53,6 @@ public enum CalibrationType
     OSCILLATOR_REAL("Real Oscillator", 1),
     P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 2),
     P25P2_SOFT_SYNC_DETECTOR("P25 Phase 2 Soft Sync Detector", 1),
-    SAMPLE_PACKED_CONVERTER("Packed Sample Converter", 2),
-    SAMPLE_UNPACKED_INTERLEAVED_ITERATOR("Unpacked Interleaved Sample Iterator", 2),
-    SAMPLE_UNPACKED_ITERATOR("Unpacked Sample Iterator", 2),
     SQUELCHING_FM_DEMODULATOR("Squelching FM Demodulator", 1),
     WINDOW("Window", 1);
 

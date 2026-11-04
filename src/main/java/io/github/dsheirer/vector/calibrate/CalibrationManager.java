@@ -39,9 +39,6 @@ import io.github.dsheirer.vector.calibrate.magnitude.MagnitudeCalibration;
 import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.RealOscillatorCalibration;
-import io.github.dsheirer.vector.calibrate.sample.PackedSampleConverterCalibration;
-import io.github.dsheirer.vector.calibrate.sample.UnpackedInterleavedSampleConverterCalibration;
-import io.github.dsheirer.vector.calibrate.sample.UnpackedSampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.NXDNSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
@@ -103,9 +100,6 @@ public class CalibrationManager
 
             sInstance = new CalibrationManager();
 
-            sInstance.add(new PackedSampleConverterCalibration());
-            sInstance.add(new UnpackedSampleConverterCalibration());
-            sInstance.add(new UnpackedInterleavedSampleConverterCalibration());
             sInstance.add(new AmDemodulatorCalibration());
             sInstance.add(new ChannelDFTCalibration());
             sInstance.add(new ComplexGainCalibration());
