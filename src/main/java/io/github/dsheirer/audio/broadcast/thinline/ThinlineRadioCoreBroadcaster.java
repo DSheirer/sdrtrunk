@@ -76,7 +76,11 @@ public class ThinlineRadioCoreBroadcaster extends AbstractAudioBroadcaster<Thinl
 
     private final AliasModel mAliasModel;
     private final UserPreferences mUserPreferences;
-    private final HttpClient mHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    // Both attempts together stay under the server's 15 second wait for a requested upload.
+    private static final int UPLOAD_ATTEMPTS = 2;
+    private static final Duration UPLOAD_TIMEOUT = Duration.ofSeconds(6);
+
+    private final HttpClient mHttpClient = newHttpClient();
     private final Map<AudioSegment, String> mStarted = new ConcurrentHashMap<>();
     private final Map<String, Held> mHeld = new ConcurrentHashMap<>();
     private final AtomicBoolean mRunning = new AtomicBoolean();
@@ -429,51 +433,108 @@ public class ThinlineRadioCoreBroadcaster extends AbstractAudioBroadcaster<Thinl
             held.stage = Stage.UPLOADING;
         }
 
+        byte[] audio = null;
         try
         {
-            byte[] audio = Files.readAllBytes(held.recording.getPath());
-            String audioName = held.recording.getPath().getFileName().toString();
-            RdioScannerBuilder body = new RdioScannerBuilder();
-            body.addPart(FormField.KEY, siteKey())
-                .addPart(FormField.SYSTEM, getBroadcastConfiguration().getSystemID())
-                .addPart(FormField.TALKGROUP_ID, held.talkgroup)
-                .addPart(FormField.SOURCE, held.radioId)
-                .addPart(FormField.FREQUENCY, held.frequency)
-                .addPart(FormField.DATE_TIME, String.valueOf(held.recording.getStartTime()))
-                .addPart(FormField.DURATION, String.valueOf(held.recording.getRecordingLength()))
-                .addPart(FormField.RECORDING_ID, recordingId)
-                .addPart(FormField.PATCHES, held.patches)
-                .addAudioName(audioName)
-                .addFile(audio);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uploadUrl(serverHost())))
-                .header("Content-Type", "multipart/form-data; boundary=" + body.getBoundary())
-                .header("User-Agent", "sdrtrunk")
-                .timeout(Duration.ofSeconds(60))
-                .POST(body.build())
-                .build();
-
-            HttpResponse<String> response = mHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if(response.statusCode() == 200 && response.body() != null &&
-                response.body().contains("Call imported successfully."))
-            {
-                incrementStreamedAudioCount();
-                broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STREAMED_COUNT_CHANGE));
-                finish(recordingId, held);
-                return;
-            }
-
-            mLog.warn("Thinline Radio Core upload failed [{}] {}", response.statusCode(), response.body());
+            audio = Files.readAllBytes(held.recording.getPath());
         }
         catch(Exception e)
         {
             mLog.warn("Thinline Radio Core upload failed: {}", e.toString());
         }
 
+        for(int attempt = 1; audio != null && attempt <= UPLOAD_ATTEMPTS; attempt++)
+        {
+            // A pooled connection the network silently dropped hangs until the timeout, so the
+            // retry goes out on a new connection.
+            HttpClient client = attempt == 1 ? mHttpClient : newHttpClient();
+            try
+            {
+                HttpResponse<String> response = client.send(uploadRequest(recordingId, held, audio),
+                    HttpResponse.BodyHandlers.ofString());
+                if(response.statusCode() == 200 && response.body() != null &&
+                    response.body().contains("Call imported successfully."))
+                {
+                    incrementStreamedAudioCount();
+                    broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STREAMED_COUNT_CHANGE));
+                    finish(recordingId, held);
+                    return;
+                }
+
+                mLog.warn("Thinline Radio Core upload failed [{}] {}", response.statusCode(), response.body());
+                if(response.statusCode() < 500)
+                {
+                    break;
+                }
+            }
+            catch(InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            catch(Exception e)
+            {
+                mLog.warn("Thinline Radio Core upload failed (attempt {} of {}): {}", attempt, UPLOAD_ATTEMPTS,
+                    e.toString());
+            }
+            finally
+            {
+                if(client != mHttpClient)
+                {
+                    client.close();
+                }
+            }
+        }
+
         incrementErrorAudioCount();
         broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_ERROR_COUNT_CHANGE));
         held.stage = Stage.HELD;
+        sendUploadFailed(recordingId);
+    }
+
+    private HttpRequest uploadRequest(String recordingId, Held held, byte[] audio)
+    {
+        RdioScannerBuilder body = new RdioScannerBuilder();
+        body.addPart(FormField.KEY, siteKey())
+            .addPart(FormField.SYSTEM, getBroadcastConfiguration().getSystemID())
+            .addPart(FormField.TALKGROUP_ID, held.talkgroup)
+            .addPart(FormField.SOURCE, held.radioId)
+            .addPart(FormField.FREQUENCY, held.frequency)
+            .addPart(FormField.DATE_TIME, String.valueOf(held.recording.getStartTime()))
+            .addPart(FormField.DURATION, String.valueOf(held.recording.getRecordingLength()))
+            .addPart(FormField.RECORDING_ID, recordingId)
+            .addPart(FormField.PATCHES, held.patches)
+            .addAudioName(held.recording.getPath().getFileName().toString())
+            .addFile(audio);
+
+        return HttpRequest.newBuilder()
+            .uri(URI.create(uploadUrl(serverHost())))
+            .header("Content-Type", "multipart/form-data; boundary=" + body.getBoundary())
+            .header("User-Agent", "sdrtrunk")
+            .timeout(UPLOAD_TIMEOUT)
+            .POST(body.build())
+            .build();
+    }
+
+    private static HttpClient newHttpClient()
+    {
+        return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    }
+
+    /**
+     * Tells the server this site could not upload the recording, so it asks another site's copy.
+     */
+    private void sendUploadFailed(String recordingId)
+    {
+        if(!mEndpoint.isReady())
+        {
+            return;
+        }
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("type", "call.uploadFailed");
+        body.put("recordingId", recordingId);
+        body.put("system", getBroadcastConfiguration().getSystemID());
+        mEndpoint.send(body);
     }
 
     private void finish(String recordingId, Held held)
