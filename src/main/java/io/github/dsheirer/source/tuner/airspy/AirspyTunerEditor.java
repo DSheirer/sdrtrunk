@@ -689,8 +689,8 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
             sb.append(info.getPartNumber());
             sb.append("<br>");
 
-            sb.append("<b>Board ID: </b>");
-            sb.append(info.getBoardID().getLabel());
+            sb.append("<b>Board: </b>");
+            sb.append(info.getBoardName());
             sb.append("<br>");
 
             return sb.toString();
