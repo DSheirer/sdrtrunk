@@ -44,8 +44,13 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     private static final int DC_SPIKE_AVOID_BUFFER = 5000;
     private static final byte VERSION = (byte) 49;
     protected static final int IF_FREQUENCY = 3570000;
+    private static final int[] IF_LOW_PASS_BANDWIDTHS = {1700000, 1600000, 1550000, 1450000, 1200000, 900000, 700000,
+        550000, 450000, 350000};
+    private static final int HIGH_PASS_BANDWIDTH_1 = 350000;
+    private static final int HIGH_PASS_BANDWIDTH_2 = 380000;
     private static final Logger mLog = LoggerFactory.getLogger(R8xEmbeddedTuner.class);
     private int mVcoPowerRef = 1;
+    private volatile int mIfFrequency = IF_FREQUENCY;
 
     /**
      * Shadow register is used to keep a cached (in-memory) copy of all registers, so that we don't have to read a
@@ -175,6 +180,102 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
     }
 
     /**
+     * Intermediate frequency the tuner currently mixes to.  The PLL is tuned this far above the requested frequency.
+     */
+    public int getIfFrequency()
+    {
+        return mIfFrequency;
+    }
+
+    /**
+     * Sets the IF filter to the narrowest bandwidth that passes the sample rate, or back to the default 6 MHz filter,
+     * and moves the IF to match.  Follows r82xx_set_bandwidth() from librtlsdr.  The caller retunes afterward so the
+     * PLL picks up the new IF.
+     *
+     * @param narrow to fit the filter to the sample rate, false for the default 6 MHz filter
+     * @param sampleRate in hertz
+     * @return filter bandwidth in hertz
+     */
+    public int setIfFilter(boolean narrow, int sampleRate) throws SourceException
+    {
+        int bandwidth = narrow ? sampleRate : 6_000_000;
+        byte filterQ;
+        int filter;
+        int ifFrequency;
+        int passband = 0;
+
+        if(bandwidth > IF_LOW_PASS_BANDWIDTHS[0] + HIGH_PASS_BANDWIDTH_1 + HIGH_PASS_BANDWIDTH_2)
+        {
+            filterQ = 0x10;
+            filter = 0x6B;
+            ifFrequency = IF_FREQUENCY;
+            passband = 6_000_000;
+        }
+        else
+        {
+            filterQ = 0x00;
+            filter = 0x80;
+            ifFrequency = 2_300_000;
+
+            if(bandwidth > IF_LOW_PASS_BANDWIDTHS[0] + HIGH_PASS_BANDWIDTH_1)
+            {
+                bandwidth -= HIGH_PASS_BANDWIDTH_2;
+                ifFrequency += HIGH_PASS_BANDWIDTH_2;
+                passband += HIGH_PASS_BANDWIDTH_2;
+            }
+            else
+            {
+                filter |= 0x20;
+            }
+
+            if(bandwidth > IF_LOW_PASS_BANDWIDTHS[0])
+            {
+                bandwidth -= HIGH_PASS_BANDWIDTH_1;
+                ifFrequency += HIGH_PASS_BANDWIDTH_1;
+                passband += HIGH_PASS_BANDWIDTH_1;
+            }
+            else
+            {
+                filter |= 0x40;
+            }
+
+            int index = 0;
+
+            while(index < IF_LOW_PASS_BANDWIDTHS.length && bandwidth <= IF_LOW_PASS_BANDWIDTHS[index])
+            {
+                index++;
+            }
+
+            index = Math.max(0, index - 1);
+            filter |= (15 - index);
+            passband += IF_LOW_PASS_BANDWIDTHS[index];
+            ifFrequency -= passband / 2;
+        }
+
+        getAdapter().getLock().lock();
+
+        try
+        {
+            getAdapter().enableI2CRepeater();
+            writeRegister(Register.FILTER_Q, filterQ, false);
+            writeRegister(Register.BANDWIDTH_FILTER_GAIN_HIGHPASS_FILTER_CORNER, (byte)filter, false);
+            getAdapter().disableI2CRepeater();
+            getAdapter().setIFFrequency(ifFrequency);
+            mIfFrequency = ifFrequency;
+        }
+        catch(UsbException e)
+        {
+            throw new SourceException("Unable to set R8xxx IF filter", e);
+        }
+        finally
+        {
+            getAdapter().getLock().unlock();
+        }
+
+        return passband;
+    }
+
+    /**
      * Overrides the same method from the RTL2832 tuner controller to apply settings specific to the R8xxx tuner.
      */
     public void setSamplingMode(RTL2832TunerController.SampleMode mode) throws LibUsbException
@@ -182,7 +283,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
         if(mode == RTL2832TunerController.SampleMode.QUADRATURE)
         {
             /* Set intermediate frequency to R820T IF frequency */
-            getAdapter().setIFFrequency(IF_FREQUENCY);
+            getAdapter().setIFFrequency(mIfFrequency);
 
             /* Enable spectrum inversion */
             getAdapter().writeDemodRegister(RTL2832TunerController.Page.ONE, (short) 0x15, (short) 0x01, 1);
@@ -205,6 +306,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
 
         /* Set intermediate frequency to IF frequency (3.57 MHz) */
         getAdapter().setIFFrequency(IF_FREQUENCY);
+        mIfFrequency = IF_FREQUENCY;
 
         /* Enable spectrum inversion */
         getAdapter().writeDemodRegister(RTL2832TunerController.Page.ONE, (short) 0x15, (short) 0x01, 1);
@@ -759,6 +861,7 @@ public abstract class R8xEmbeddedTuner extends EmbeddedTuner
         UNKNOWN_REGISTER_8(0x08, 0x3F),
         UNKNOWN_REGISTER_9(0x09, 0x3F),
         FILTER_CALIBRATION_CODE(0x0A, 0x1F),
+        FILTER_Q(0x0A, 0x10),
         FILTER_CURRENT(0x0A, 0x60),
         CALIBRATION_TRIGGER(0x0B, 0x10),
         FILTER_CAPACITOR(0x0B, 0x60),

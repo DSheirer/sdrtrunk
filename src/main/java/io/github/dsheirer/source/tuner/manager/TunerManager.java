@@ -38,6 +38,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRplay;
@@ -78,6 +79,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     private final HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
     private final Context mLibUsbApplicationContext = new Context();
     private boolean mLibUsbInitialized = false;
+    private ScheduledFuture<?> mIfFilterFuture;
     private SDRplay mSDRplay;
 
     /**
@@ -116,6 +118,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     public void start()
     {
         mLog.info("Discovering tuners ...");
+        RTL2832TunerController.setNarrowIfFilterTuners(mUserPreferences.getDirectoryPreference()
+            .getDirectoryConfiguration().resolve("narrow_if_filter_tuners.txt"));
 
         boolean libUsbAvailable = false;
 
@@ -177,6 +181,29 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         discoverRecordingTuners();
         mTunerPlanner.start();
         mDecodeQualityReporter.start();
+        mIfFilterFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::updateIfFilters, 10, 10, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Applies changes to the narrow IF filter tuner list to running RTL-2832 tuners.
+     */
+    private void updateIfFilters()
+    {
+        for(DiscoveredTuner discoveredTuner: mDiscoveredTunerModel.getAvailableTuners())
+        {
+            if(discoveredTuner.hasTuner() &&
+                discoveredTuner.getTuner().getTunerController() instanceof RTL2832TunerController controller)
+            {
+                try
+                {
+                    controller.updateIfFilter();
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Unable to update IF filter on tuner [" + discoveredTuner.getId() + "]", e);
+                }
+            }
+        }
     }
 
     /**
@@ -185,6 +212,12 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     public void stop()
     {
         mDecodeQualityReporter.stop();
+
+        if(mIfFilterFuture != null)
+        {
+            mIfFilterFuture.cancel(false);
+            mIfFilterFuture = null;
+        }
         mTunerPlanner.stop();
 
         //Stop all tuners
