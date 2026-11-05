@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.playlist.alias;
 
 import com.google.common.collect.Ordering;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -100,6 +101,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         gridPane.getChildren().add(separator);
 
         Label colorLabel = new Label("Color");
+        colorLabel.setLabelFor(getColorPicker());
         GridPane.setHalignment(colorLabel, HPos.RIGHT);
         GridPane.setConstraints(colorLabel, 0, ++row);
         gridPane.getChildren().add(colorLabel);
@@ -114,6 +116,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         gridPane.getChildren().add(getResetColorButton());
 
         Label iconLabel = new Label("Icon");
+        iconLabel.setLabelFor(getIconNodeComboBox());
         GridPane.setHalignment(iconLabel, HPos.RIGHT);
         GridPane.setConstraints(iconLabel, 0, ++row);
         gridPane.getChildren().add(iconLabel);
@@ -125,6 +128,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         gridPane.getChildren().add(getApplyIconButton());
 
         Label listenLabel = new Label("Listen");
+        listenLabel.setLabelFor(getMonitorAudioToggleSwitch());
         GridPane.setHalignment(listenLabel, HPos.RIGHT);
         GridPane.setConstraints(listenLabel, 0, ++row);
         gridPane.getChildren().add(listenLabel);
@@ -133,6 +137,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         gridPane.getChildren().add(getMonitorAudioToggleSwitch());
 
         Label priorityLabel = new Label("Priority");
+        priorityLabel.setLabelFor(getMonitorPriorityComboBox());
         GridPane.setHalignment(priorityLabel, HPos.RIGHT);
         GridPane.setConstraints(priorityLabel, 2, row);
         gridPane.getChildren().add(priorityLabel);
@@ -144,6 +149,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         gridPane.getChildren().add(getApplyMonitorButton());
 
         Label recordLabel = new Label("Record");
+        recordLabel.setLabelFor(getRecordToggleSwitch());
         GridPane.setHalignment(recordLabel, HPos.RIGHT);
         GridPane.setConstraints(recordLabel, 0, ++row);
         gridPane.getChildren().add(recordLabel);
@@ -235,6 +241,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mApplyColorButton == null)
         {
             mApplyColorButton = new Button("Apply");
+            mApplyColorButton.setAccessibleText("Apply color to selected aliases");
             mApplyColorButton.setOnAction(event ->
             {
                 startChange();
@@ -258,6 +265,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mResetColorButton == null)
         {
             mResetColorButton = new Button("Reset Color");
+            mResetColorButton.setAccessibleText("Reset color for selected aliases");
             mResetColorButton.setOnAction(event ->
             {
                 startChange();
@@ -297,6 +305,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mApplyIconButton == null)
         {
             mApplyIconButton = new Button("Apply");
+            mApplyIconButton.setAccessibleText("Apply icon to selected aliases");
             mApplyIconButton.setDisable(true);
             mApplyIconButton.setOnAction(new EventHandler<ActionEvent>()
             {
@@ -327,7 +336,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     {
         if(mMonitorAudioToggleSwitch == null)
         {
-            mMonitorAudioToggleSwitch = new ToggleSwitch();
+            mMonitorAudioToggleSwitch = new AccessibleToggleSwitch();
             mMonitorAudioToggleSwitch.setSelected(true);
             mMonitorAudioToggleSwitch.selectedProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -340,7 +349,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     {
         if(mRecordToggleSwitch == null)
         {
-            mRecordToggleSwitch = new ToggleSwitch();
+            mRecordToggleSwitch = new AccessibleToggleSwitch();
             mRecordToggleSwitch.setSelected(false);
             mRecordToggleSwitch.selectedProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -374,6 +383,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mApplyMonitorButton == null)
         {
             mApplyMonitorButton = new Button("Apply");
+            mApplyMonitorButton.setAccessibleText("Apply listen and priority to selected aliases");
             mApplyMonitorButton.setOnAction(new EventHandler<ActionEvent>()
             {
                 @Override
@@ -414,6 +424,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mApplyRecordButton == null)
         {
             mApplyRecordButton = new Button("Apply");
+            mApplyRecordButton.setAccessibleText("Apply record to selected aliases");
             mApplyRecordButton.setOnAction(event -> {
                 startChange();
                 boolean record = getRecordToggleSwitch().isSelected();
@@ -456,12 +467,15 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                     {
                         setText(null);
                         setGraphic(null);
+                        setAccessibleText(null);
                     }
                     else
                     {
                         textLabel.setText(item.getName());
                         iconLabel.setGraphic(new ImageView(item.getFxImage()));
                         setGraphic(gridPane);
+                        //The name is shown in a nested label, so expose it as the cell's accessible text
+                        setAccessibleText(item.getName());
                     }
                 }
             };

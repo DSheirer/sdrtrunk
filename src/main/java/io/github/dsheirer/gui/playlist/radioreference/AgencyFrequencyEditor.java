@@ -94,6 +94,7 @@ public class AgencyFrequencyEditor extends GridPane
         getColumnConstraints().addAll(column1, column2, column3);
 
         Label categoryLabel = new Label("Category");
+        categoryLabel.setLabelFor(getCategoryComboBox());
         GridPane.setConstraints(categoryLabel, 0, row);
         GridPane.setHalignment(categoryLabel, HPos.RIGHT);
         getChildren().add(categoryLabel);
@@ -103,6 +104,7 @@ public class AgencyFrequencyEditor extends GridPane
         getChildren().add(getCategoryComboBox());
 
         Label subCategoryLabel = new Label("Sub-Category");
+        subCategoryLabel.setLabelFor(getSubCategoryComboBox());
         GridPane.setConstraints(subCategoryLabel, 0, ++row);
         GridPane.setHalignment(subCategoryLabel, HPos.RIGHT);
         getChildren().add(subCategoryLabel);
@@ -207,6 +209,7 @@ public class AgencyFrequencyEditor extends GridPane
         if(mFrequencyTableView == null)
         {
             mFrequencyTableView = new TableView<>();
+            mFrequencyTableView.setAccessibleText("Agency frequencies");
             mFrequencyTableView.setMaxHeight(Double.MAX_VALUE);
             mFrequencyTableView.setPlaceholder(getPlaceholderLabel());
 

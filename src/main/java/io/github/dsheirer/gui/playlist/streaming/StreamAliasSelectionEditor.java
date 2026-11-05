@@ -39,6 +39,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -153,6 +154,7 @@ public class StreamAliasSelectionEditor extends VBox
             mSearchBox.setSpacing(5);
 
             Label searchLabel = new Label("Search:");
+            searchLabel.setLabelFor(getSearchField());
             searchLabel.setAlignment(Pos.CENTER_RIGHT);
             mSearchBox.getChildren().addAll(searchLabel, getSearchField());
         }
@@ -212,6 +214,7 @@ public class StreamAliasSelectionEditor extends VBox
         if(mAvailableAliasTableView == null)
         {
             mAvailableAliasTableView = new TableView<>();
+            mAvailableAliasTableView.setAccessibleText("Available aliases");
             mAvailableAliasTableView.setMaxHeight(Double.MAX_VALUE);
             mAvailableAliasTableView.setDisable(true);
             mAvailableAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -256,6 +259,7 @@ public class StreamAliasSelectionEditor extends VBox
         if(mSelectedAliasTableView == null)
         {
             mSelectedAliasTableView = new TableView<>();
+            mSelectedAliasTableView.setAccessibleText("Aliases selected for this stream");
             mSelectedAliasTableView.setMaxHeight(Double.MAX_VALUE);
             mSelectedAliasTableView.setDisable(true);
             mSelectedAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -303,6 +307,8 @@ public class StreamAliasSelectionEditor extends VBox
             mAddButton.setDisable(true);
             mAddButton.setMaxWidth(Double.MAX_VALUE);
             mAddButton.setGraphic(new IconNode(FontAwesome.ANGLE_RIGHT));
+            mAddButton.setAccessibleText("Add selected alias to stream");
+            mAddButton.setTooltip(new Tooltip("Add selected alias to stream"));
             mAddButton.setAlignment(Pos.CENTER);
             mAddButton.setOnAction(event -> {
                 Alias selectedAlias = getAvailableAliasTableView().getSelectionModel().getSelectedItem();
@@ -327,6 +333,8 @@ public class StreamAliasSelectionEditor extends VBox
             mAddAllButton.setDisable(true);
             mAddAllButton.setMaxWidth(Double.MAX_VALUE);
             mAddAllButton.setGraphic(new IconNode(FontAwesome.ANGLE_DOUBLE_RIGHT));
+            mAddAllButton.setAccessibleText("Add all selected aliases to stream");
+            mAddAllButton.setTooltip(new Tooltip("Add all selected aliases to stream"));
             mAddAllButton.setAlignment(Pos.CENTER);
             mAddAllButton.setOnAction(new EventHandler<ActionEvent>()
             {
@@ -361,6 +369,8 @@ public class StreamAliasSelectionEditor extends VBox
             mRemoveButton.setDisable(true);
             mRemoveButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveButton.setGraphic(new IconNode(FontAwesome.ANGLE_LEFT));
+            mRemoveButton.setAccessibleText("Remove selected alias from stream");
+            mRemoveButton.setTooltip(new Tooltip("Remove selected alias from stream"));
             mRemoveButton.setAlignment(Pos.CENTER);
             mRemoveButton.setOnAction(event -> {
                 Alias selectedAlias = getSelectedAliasTableView().getSelectionModel().getSelectedItem();
@@ -385,6 +395,8 @@ public class StreamAliasSelectionEditor extends VBox
             mRemoveAllButton.setDisable(true);
             mRemoveAllButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveAllButton.setGraphic(new IconNode(FontAwesome.ANGLE_DOUBLE_LEFT));
+            mRemoveAllButton.setAccessibleText("Remove all selected aliases from stream");
+            mRemoveAllButton.setTooltip(new Tooltip("Remove all selected aliases from stream"));
             mRemoveAllButton.setAlignment(Pos.CENTER);
             mRemoveAllButton.setOnAction(event -> {
                 List<Alias> selectedAliases =

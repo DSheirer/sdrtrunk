@@ -73,6 +73,7 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
         gridPane.getChildren().add(getProtocolLabel());
 
         Label valueLabel = new Label("Talkgroup");
+        valueLabel.setLabelFor(getTalkgroupField());
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 1, 0);
         gridPane.getChildren().add(valueLabel);

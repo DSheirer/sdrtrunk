@@ -70,6 +70,7 @@ public class P25FullyQualifiedTalkgroupEditor extends IdentifierEditor<P25FullyQ
         gridPane.getChildren().add(getProtocolLabel());
 
         Label valueLabel = new Label("WACN");
+        valueLabel.setLabelFor(getWacnField());
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 1, 0);
         gridPane.getChildren().add(valueLabel);
@@ -78,6 +79,7 @@ public class P25FullyQualifiedTalkgroupEditor extends IdentifierEditor<P25FullyQ
         gridPane.getChildren().add(getWacnField());
 
         Label systemLabel = new Label("System");
+        systemLabel.setLabelFor(getSystemField());
         GridPane.setHalignment(systemLabel, HPos.RIGHT);
         GridPane.setConstraints(systemLabel, 3, 0);
         gridPane.getChildren().add(systemLabel);
@@ -86,6 +88,7 @@ public class P25FullyQualifiedTalkgroupEditor extends IdentifierEditor<P25FullyQ
         gridPane.getChildren().add(getSystemField());
 
         Label radioLabel = new Label("Talkgroup");
+        radioLabel.setLabelFor(getTalkgroupField());
         GridPane.setHalignment(radioLabel, HPos.RIGHT);
         GridPane.setConstraints(radioLabel, 5, 0);
         gridPane.getChildren().add(radioLabel);

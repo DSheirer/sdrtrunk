@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.AccessibilityUtil;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
@@ -148,6 +150,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             int row = 0;
 
             Label mode = new Label("Mode:");
+            AccessibilityUtil.labelGroup(mode, getTransmissionModeButton());
             GridPane.setHalignment(mode, HPos.RIGHT);
             GridPane.setConstraints(mode, 0, row);
             gridPane.getChildren().add(mode);
@@ -156,6 +159,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getTransmissionModeButton());
 
             Label encoding = new Label("Talker Alias Encoding:");
+            encoding.setLabelFor(getEncodingComboBox());
             GridPane.setHalignment(encoding, HPos.RIGHT);
             GridPane.setConstraints(encoding, 2, row);
             gridPane.getChildren().add(encoding);
@@ -164,6 +168,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getEncodingComboBox());
 
             Label poolSizeLabel = new Label("Max Traffic Channels");
+            poolSizeLabel.setLabelFor(getTrafficChannelPoolSizeSpinner());
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
             GridPane.setConstraints(poolSizeLabel, 4, row);
             gridPane.getChildren().add(poolSizeLabel);
@@ -205,9 +210,11 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             editorBox.setSpacing(5);
 
             Label lcnLabel = new Label("Channel Number");
+            lcnLabel.setLabelFor(getChannelField());
             editorBox.getChildren().addAll(lcnLabel, getChannelField());
 
             Label downlinkLabel = new Label("Downlink Frequency (MHz)");
+            downlinkLabel.setLabelFor(getDownlinkFrequencyField());
             downlinkLabel.setPadding(new Insets(0,0,0,5));
             editorBox.getChildren().addAll(downlinkLabel,getDownlinkFrequencyField());
 
@@ -312,6 +319,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         if(mChannelMapTable == null)
         {
             mChannelMapTable = new TableView<>(FXCollections.observableArrayList(ObservableChannelFrequency.extractor()));
+            mChannelMapTable.setAccessibleText("Channel number (LCN) to frequency map");
             mChannelMapTable.setPrefHeight(100.0);
 
             TableColumn<ObservableChannelFrequency,Number> channelColumn = new TableColumn<>("Channel");
@@ -401,6 +409,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         if(mAddTimeslotFrequencyButton == null)
         {
             mAddTimeslotFrequencyButton = new Button("Add");
+            mAddTimeslotFrequencyButton.setAccessibleText("Add channel frequency");
             mAddTimeslotFrequencyButton.setMaxWidth(Double.MAX_VALUE);
             mAddTimeslotFrequencyButton.setOnAction(event -> addChannelFrequency());
         }
@@ -425,6 +434,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         if(mDeleteButton == null)
         {
             mDeleteButton = new Button("Delete");
+            mDeleteButton.setAccessibleText("Delete channel frequency");
             mDeleteButton.setDisable(true);
             mDeleteButton.setMaxWidth(Double.MAX_VALUE);
             mDeleteButton.setOnAction(event -> {
@@ -519,7 +529,8 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mIgnoreDataCallsToggle == null)
         {
-            mIgnoreDataCallsToggle = new ToggleSwitch("Data Calls");
+            mIgnoreDataCallsToggle = new AccessibleToggleSwitch("Data Calls");
+            mIgnoreDataCallsToggle.setAccessibleText("Ignore data calls");
             mIgnoreDataCallsToggle.setDisable(true);
             mIgnoreDataCallsToggle.selectedProperty().addListener((o, ov, nv) -> modifiedProperty().set(true));
         }
@@ -534,7 +545,8 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mIgnoreEncryptedCallsToggle == null)
         {
-            mIgnoreEncryptedCallsToggle = new ToggleSwitch("Encrypted Calls");
+            mIgnoreEncryptedCallsToggle = new AccessibleToggleSwitch("Encrypted Calls");
+            mIgnoreEncryptedCallsToggle.setAccessibleText("Ignore encrypted calls");
             mIgnoreEncryptedCallsToggle.setDisable(true);
             mIgnoreEncryptedCallsToggle.selectedProperty().addListener((o, ov, nv) -> modifiedProperty().set(true));
         }
@@ -546,7 +558,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mJmbeAGCButton == null)
         {
-            mJmbeAGCButton = new ToggleSwitch();
+            mJmbeAGCButton = new AccessibleToggleSwitch();
             mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
             mJmbeAGCButton.setDisable(true);
             mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
@@ -559,7 +571,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mJmbeLegacyToneLevelsButton == null)
         {
-            mJmbeLegacyToneLevelsButton = new ToggleSwitch();
+            mJmbeLegacyToneLevelsButton = new AccessibleToggleSwitch();
             mJmbeLegacyToneLevelsButton.setTooltip(new Tooltip(
                 "Restore JMBE 1.x AMBE tone levels. Requires a supporting JMBE library; " +
                 "stock libraries ignore this option. Tone Volume still adjusts the selected level."));

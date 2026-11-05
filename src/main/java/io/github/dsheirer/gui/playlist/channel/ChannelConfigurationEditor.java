@@ -23,6 +23,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
@@ -464,7 +465,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     {
         if(mAutoStartSwitch == null)
         {
-            mAutoStartSwitch = new ToggleSwitch();
+            mAutoStartSwitch = new AccessibleToggleSwitch();
             mAutoStartSwitch.setDisable(true);
             mAutoStartSwitch.setDisable(true);
             mAutoStartSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -533,6 +534,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             int row = 0;
 
             Label systemLabel = new Label("System");
+            systemLabel.setLabelFor(getSystemField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, row);
             mTextFieldPane.getChildren().add(systemLabel);
@@ -542,6 +544,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mTextFieldPane.getChildren().add(getSystemField());
 
             Label autoStartLabel = new Label("Auto-Start");
+            autoStartLabel.setLabelFor(getAutoStartSwitch());
             GridPane.setHalignment(autoStartLabel, HPos.RIGHT);
             GridPane.setConstraints(autoStartLabel, 2, row);
             mTextFieldPane.getChildren().add(autoStartLabel);
@@ -554,6 +557,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mTextFieldPane.getChildren().add(getPlayButton());
 
             Label siteLabel = new Label("Site");
+            siteLabel.setLabelFor(getSiteField());
             GridPane.setHalignment(siteLabel, HPos.RIGHT);
             GridPane.setConstraints(siteLabel, 0, ++row);
             mTextFieldPane.getChildren().add(siteLabel);
@@ -563,6 +567,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mTextFieldPane.getChildren().add(getSiteField());
 
             Label autoStartOrderLabel = new Label("Start Order");
+            autoStartOrderLabel.setLabelFor(getAutoStartOrderSpinner());
             GridPane.setHalignment(autoStartOrderLabel, HPos.RIGHT);
             GridPane.setConstraints(autoStartOrderLabel, 2, row);
             mTextFieldPane.getChildren().add(autoStartOrderLabel);
@@ -572,6 +577,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mTextFieldPane.getChildren().add(getAutoStartOrderSpinner());
 
             Label nameLabel = new Label("Name");
+            nameLabel.setLabelFor(getNameField());
             GridPane.setHalignment(nameLabel, HPos.RIGHT);
             GridPane.setConstraints(nameLabel, 0, ++row);
             mTextFieldPane.getChildren().add(nameLabel);
@@ -581,6 +587,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mTextFieldPane.getChildren().add(getNameField());
 
             Label aliasListLabel = new Label("Alias List");
+            aliasListLabel.setLabelFor(getAliasListComboBox());
             GridPane.setHalignment(aliasListLabel, HPos.RIGHT);
             GridPane.setConstraints(aliasListLabel, 2, row);
             mTextFieldPane.getChildren().add(aliasListLabel);
@@ -708,20 +715,25 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
         audioPane.add(new Label(title), 0, 0);
         Label noiseGainLabel = new Label("Comfort Noise Volume:");
+        noiseGainLabel.setLabelFor(noiseGainSlider);
         GridPane.setHalignment(noiseGainLabel, HPos.RIGHT);
         audioPane.add(noiseGainLabel, 1, 0);
-        audioPane.add(createSliderWithReset(noiseGainSlider, DecodeConfigJMBE.DEFAULT_COMFORT_NOISE_GAIN), 2, 0);
+        audioPane.add(createSliderWithReset(noiseGainSlider, DecodeConfigJMBE.DEFAULT_COMFORT_NOISE_GAIN,
+            "Reset comfort noise volume"), 2, 0);
         Label agcLabel = new Label("AGC:");
+        agcLabel.setLabelFor(agcSwitch);
         agcLabel.setTooltip(agcSwitch.getTooltip());
         GridPane.setHalignment(agcLabel, HPos.RIGHT);
         audioPane.add(agcLabel, 3, 0);
         audioPane.add(agcSwitch, 4, 0);
 
         Label toneGainLabel = new Label("Tone Volume:");
+        toneGainLabel.setLabelFor(toneGainSlider);
         GridPane.setHalignment(toneGainLabel, HPos.RIGHT);
         audioPane.add(toneGainLabel, 1, 1);
-        audioPane.add(createSliderWithReset(toneGainSlider, DecodeConfigJMBE.DEFAULT_TONE_GAIN), 2, 1);
+        audioPane.add(createSliderWithReset(toneGainSlider, DecodeConfigJMBE.DEFAULT_TONE_GAIN, "Reset tone volume"), 2, 1);
         Label legacyToneLevelsLabel = new Label("Use Legacy Tone Levels:");
+        legacyToneLevelsLabel.setLabelFor(legacyToneLevelsSwitch);
         legacyToneLevelsLabel.setTooltip(legacyToneLevelsSwitch.getTooltip());
         GridPane.setHalignment(legacyToneLevelsLabel, HPos.RIGHT);
         audioPane.add(legacyToneLevelsLabel, 3, 1);
@@ -739,9 +751,10 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
      * current slider value and a small reset button.  The label and button track the disabled state of the slider.
      * @param slider to wrap
      * @param defaultValue to apply to the slider when the reset button is clicked
+     * @param resetName accessible name for the reset button, announced by screen readers
      * @return box containing the slider, the value label and the reset button
      */
-    private HBox createSliderWithReset(Slider slider, double defaultValue)
+    private HBox createSliderWithReset(Slider slider, double defaultValue, String resetName)
     {
         IconNode resetIcon = new IconNode(FontAwesome.UNDO);
         resetIcon.setIconSize(10);
@@ -750,6 +763,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         resetIcon.fillProperty().bind(resetButton.textFillProperty());
         resetButton.setGraphic(resetIcon);
         resetButton.setTooltip(new Tooltip("Reset to default value"));
+        resetButton.setAccessibleText(resetName);
         resetButton.disableProperty().bind(slider.disableProperty());
         resetButton.setOnAction(event -> slider.setValue(defaultValue));
 

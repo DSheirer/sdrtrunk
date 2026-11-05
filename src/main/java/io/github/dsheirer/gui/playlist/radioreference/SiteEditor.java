@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.control.AccessibilityUtil;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.module.decode.DecoderFactory;
@@ -156,6 +157,7 @@ public class SiteEditor extends GridPane
         getChildren().add(getSiteFrequencyTableView());
 
         Label frequenciesLabel = new Label("Frequencies:");
+        AccessibilityUtil.labelGroup(frequenciesLabel, getFrequenciesSegmentedButton());
         GridPane.setConstraints(frequenciesLabel, 1, row);
         GridPane.setHalignment(frequenciesLabel, HPos.RIGHT);
         getChildren().add(frequenciesLabel);
@@ -164,6 +166,7 @@ public class SiteEditor extends GridPane
         getChildren().add(getFrequenciesSegmentedButton());
 
         Label configurationsLabel = new Label("Configurations:");
+        AccessibilityUtil.labelGroup(configurationsLabel, getConfigurationsSegmentedButton());
         GridPane.setConstraints(configurationsLabel, 1, ++row);
         GridPane.setHalignment(configurationsLabel, HPos.RIGHT);
         getChildren().add(configurationsLabel);
@@ -176,9 +179,11 @@ public class SiteEditor extends GridPane
         getChildren().add(getP25ControlLabel());
 
         GridPane.setConstraints(getP25ControlSegmentedButton(), 2, row);
+        AccessibilityUtil.labelGroup(getP25ControlLabel(), getP25ControlSegmentedButton());
         getChildren().add(getP25ControlSegmentedButton());
 
         Label systemLabel = new Label("System");
+        systemLabel.setLabelFor(getSystemTextField());
         GridPane.setConstraints(systemLabel, 1, ++row);
         GridPane.setHalignment(systemLabel, HPos.RIGHT);
         getChildren().add(systemLabel);
@@ -188,6 +193,7 @@ public class SiteEditor extends GridPane
         getChildren().add(getSystemTextField());
 
         Label siteLabel = new Label("Site");
+        siteLabel.setLabelFor(getSiteTextField());
         GridPane.setConstraints(siteLabel, 1, ++row);
         GridPane.setHalignment(siteLabel, HPos.RIGHT);
         getChildren().add(siteLabel);
@@ -197,6 +203,7 @@ public class SiteEditor extends GridPane
         getChildren().add(getSiteTextField());
 
         Label nameLabel = new Label("Name");
+        nameLabel.setLabelFor(getNameTextField());
         GridPane.setConstraints(nameLabel, 1, ++row);
         GridPane.setHalignment(nameLabel, HPos.RIGHT);
         getChildren().add(nameLabel);
@@ -206,6 +213,7 @@ public class SiteEditor extends GridPane
         getChildren().add(getNameTextField());
 
         Label aliasListLabel = new Label("Alias List");
+        aliasListLabel.setLabelFor(getAliasListNameComboBox());
         GridPane.setConstraints(aliasListLabel, 1, ++row);
         GridPane.setHalignment(aliasListLabel, HPos.RIGHT);
         getChildren().add(aliasListLabel);
@@ -1138,6 +1146,7 @@ public class SiteEditor extends GridPane
         if(mSiteFrequencyTableView == null)
         {
             mSiteFrequencyTableView = new TableView<>();
+            mSiteFrequencyTableView.setAccessibleText("Site frequencies");
             mSiteFrequencyTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             mSiteFrequencyTableView.setPlaceholder(new Label("Please select a site to view frequencies"));
 

@@ -75,6 +75,8 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         gridPane.getChildren().add(getProtocolLabel());
 
         Label valueLabel = new Label("Talkgroup Range");
+        valueLabel.setLabelFor(getMinTalkgroupField());
+        valueLabel.setAccessibleText("Talkgroup Range start");
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 1, 0);
         gridPane.getChildren().add(valueLabel);
@@ -83,6 +85,8 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         gridPane.getChildren().add(getMinTalkgroupField());
 
         Label dashLabel = new Label("-");
+        dashLabel.setLabelFor(getMaxTalkgroupField());
+        dashLabel.setAccessibleText("Talkgroup Range end");
         GridPane.setConstraints(dashLabel, 3, 0);
         gridPane.getChildren().add(dashLabel);
 

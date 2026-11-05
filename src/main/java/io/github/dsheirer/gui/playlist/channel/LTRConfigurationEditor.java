@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.AccessibilityUtil;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
@@ -146,6 +147,7 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
 
             Label directionLabel = new Label("Direction");
+            AccessibilityUtil.labelGroup(directionLabel, getDirectionButton());
             GridPane.setHalignment(directionLabel, HPos.LEFT);
             GridPane.setConstraints(directionLabel, 0, 0);
             gridPane.getChildren().add(directionLabel);
