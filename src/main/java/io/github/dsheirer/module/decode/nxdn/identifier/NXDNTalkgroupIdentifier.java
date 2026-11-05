@@ -91,7 +91,6 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
         return getValue() & 0x7FF;
     }
 
-
     @Override
     public String toString()
     {
@@ -100,13 +99,7 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
             return REPEATER_FORMAT.format(getTypeDHomeRepeater()) + "-" + TALKGROUP_FORMAT.format(getTypeDTalkgroup());
         }
 
-        return switch(getValue())
-        {
-            case 0x0 -> "0x0000 NULL GROUP";
-            case 0xFFF0 -> "0xFFF0 RESERVED GROUP";
-            case 0xFFFF -> "0xFFFF ALL GROUPS";
-            default -> super.toString();
-        };
+        return super.toString();
     }
 
     /**
