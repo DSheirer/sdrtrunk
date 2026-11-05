@@ -261,6 +261,26 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         return false;
     }
 
+    @Override
+    public List<State> getStates()
+    {
+        List<State> states = new ArrayList<>();
+
+        try
+        {
+            for(StateMachine stateMachine: mStateMachineMap.values())
+            {
+                states.add(stateMachine.getState());
+            }
+        }
+        catch(Exception e)
+        {
+            //Timeslot map can change while a health snapshot is reading it.
+        }
+
+        return states;
+    }
+
     /**
      * Creates configuration identifiers for the channel name, system, site and alias list name.
      */

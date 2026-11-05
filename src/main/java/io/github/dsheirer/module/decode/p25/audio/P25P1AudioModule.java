@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.p25.audio;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
+import io.github.dsheirer.audio.codec.mbe.MbeFrameErrors;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
@@ -137,6 +138,7 @@ public class P25P1AudioModule extends ImbeAudioModule
             for(byte[] frame : ldu.getIMBEFrames())
             {
                 addAudio(getAudioCodec().getAudio(frame));
+                addVoiceFrameErrors(MbeFrameErrors.imbe(frame));
             }
         }
         else

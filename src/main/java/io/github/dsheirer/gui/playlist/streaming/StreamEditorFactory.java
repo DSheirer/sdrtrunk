@@ -41,6 +41,10 @@ public class StreamEditorFactory
                 return new BroadcastifyStreamEditor(playlistManager);
             case RDIOSCANNER_CALL:
                 return new RdioScannerEditor(playlistManager);
+            case THINLINE_RADIO:
+                return new ThinlineRadioEditor(playlistManager);
+            case THINLINE_RADIO_CORE:
+                return new ThinlineRadioCoreEditor(playlistManager);
             case OPENMHZ:
                 return new OpenMHzEditor(playlistManager);
             case BROADCASTIFY_CALL:

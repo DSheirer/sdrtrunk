@@ -83,6 +83,14 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     }
 
     /**
+     * All discovered tuners, including ones in an error or removed state.
+     */
+    public List<DiscoveredTuner> getDiscoveredTuners()
+    {
+        return new ArrayList<>(mDiscoveredTuners);
+    }
+
+    /**
      * Find the discovered tuner that matches the instantiated tuner
      * @param tuner to match
      * @return matching discovered tuner

@@ -34,6 +34,7 @@ import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.preference.record.RecordPreference;
 import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
+import io.github.dsheirer.preference.thinline.ThinlineRadioPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
 import io.github.dsheirer.sample.Listener;
@@ -68,6 +69,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private RadioReferencePreference mRadioReferencePreference;
     private RecordPreference mRecordPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
+    private ThinlineRadioPreference mThinlineRadioPreference;
     private TunerPreference mTunerPreference;
     private VectorCalibrationPreference mVectorCalibrationPreference;
 
@@ -189,6 +191,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Thinline Radio site-health preferences.
+     */
+    public ThinlineRadioPreference getThinlineRadioPreference()
+    {
+        return mThinlineRadioPreference;
+    }
+
+    /**
      * Tuner preferences
      */
     public TunerPreference getTunerPreference()
@@ -230,6 +240,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mRadioReferencePreference = new RadioReferencePreference(this::receive);
         mRecordPreference = new RecordPreference(this::receive);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this::receive);
+        mThinlineRadioPreference = new ThinlineRadioPreference(this::receive);
         mTunerPreference = new TunerPreference(this::receive);
         mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);
     }

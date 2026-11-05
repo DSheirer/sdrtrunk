@@ -113,7 +113,8 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
         }
         else
         {
-            mLog.error("Error connecting to Rdio Scanner server on startup [" + response + "]");
+            mLog.error("Error connecting to " + getBroadcastConfiguration().getServiceName() +
+                " server on startup [" + response + "]");
             setBroadcastState(BroadcastState.ERROR);
         }
 
@@ -249,7 +250,8 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                     }
                     catch(IOException e)
                     {
-                        mLog.error("Rdio Scanner API - audio recording file not found - ignoring upload");
+                        mLog.error(getBroadcastConfiguration().getServiceName() +
+                            " API - audio recording file not found - ignoring upload");
                     }
 
                     if(audioBytes != null)
@@ -286,14 +288,14 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                                         //We get socket reset exceptions occasionally when the remote server doesn't
                                         //fully read our request and immediately responds.
                                         setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                        mLog.error("Rdio Scanner API file upload fail [" +
+                                        mLog.error(getBroadcastConfiguration().getServiceName() + " API file upload fail [" +
                                             fileResponse.statusCode() + "] response [" +
                                             fileResponse.body() + "]");
                                     }
                                     else
                                     {
                                         setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                        mLog.error("Rdio Scanner API file upload fail [" +
+                                        mLog.error(getBroadcastConfiguration().getServiceName() + " API file upload fail [" +
                                             fileResponse.statusCode() + "] response [" +
                                             fileResponse.body() + "]");
                                     }
@@ -321,7 +323,7 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                                     else
                                     {
                                         setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                        mLog.error("Rdio Scanner API file upload fail [" +
+                                        mLog.error(getBroadcastConfiguration().getServiceName() + " API file upload fail [" +
                                             fileResponse.statusCode() + "] response [" +
                                             fileResponse.body() + "]");
                                     }
@@ -334,7 +336,7 @@ public class RdioScannerBroadcaster extends AbstractAudioBroadcaster<RdioScanner
                     else
                     {
                         //Register an error for the file not found exception
-                        mLog.error("Rdio Scanner API - upload file not found [" +
+                        mLog.error(getBroadcastConfiguration().getServiceName() + " API - upload file not found [" +
                             audioRecording.getPath().toString() + "]");
                         incrementErrorAudioCount();
                         broadcast(new BroadcastEvent(RdioScannerBroadcaster.this,

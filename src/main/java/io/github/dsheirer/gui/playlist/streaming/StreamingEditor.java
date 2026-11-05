@@ -453,6 +453,27 @@ public class StreamingEditor extends SplitPane
     }
 
     /**
+     * Replaces one stream configuration with another and selects the replacement.
+     * The stream name is unchanged, so aliases that point at that name stay attached.
+     */
+    void replaceBroadcastConfiguration(BroadcastConfiguration existing, BroadcastConfiguration replacement)
+    {
+        if(existing == null || replacement == null)
+        {
+            return;
+        }
+
+        mPlaylistManager.getBroadcastModel().removeBroadcastConfiguration(existing);
+        ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
+            .addBroadcastConfiguration(replacement);
+
+        if(configuredBroadcast != null)
+        {
+            getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
+        }
+    }
+
+    /**
      * Menu item to create a broadcastify configuration
      */
     public class CreateBroadcastifyMenuItem extends MenuItem
@@ -489,6 +510,19 @@ public class StreamingEditor extends SplitPane
             mBroadcastServerType = type;
 
             setOnAction(event -> {
+                if(mBroadcastServerType == BroadcastServerType.THINLINE_RADIO_CORE &&
+                    !RdioScannerEditor.siteKeyReady(mPlaylistManager))
+                {
+                    javafx.scene.control.Alert missing = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.INFORMATION,
+                        "Open User Preferences, choose Thinline Radio, and enter the site key. Thinline Radio Core uses that key.",
+                        javafx.scene.control.ButtonType.OK);
+                    missing.setTitle("Site key required");
+                    missing.setHeaderText("Add the site key before using Thinline Radio Core");
+                    missing.initOwner(getConfiguredBroadcastTableView().getScene().getWindow());
+                    missing.showAndWait();
+                    return;
+                }
                 BroadcastConfiguration config = BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
                 ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
                     .addBroadcastConfiguration(config);
