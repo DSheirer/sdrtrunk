@@ -103,7 +103,9 @@ public class SystemEditor extends VBox
         systemBox.setAlignment(Pos.CENTER_LEFT);
         systemBox.setSpacing(5);
         systemBox.setMaxWidth(Double.MAX_VALUE);
-        systemBox.getChildren().addAll(new Label("System"), getSystemComboBox());
+        Label systemLabel = new Label("System");
+        systemLabel.setLabelFor(getSystemComboBox());
+        systemBox.getChildren().addAll(systemLabel, getSystemComboBox());
         VBox.setVgrow(getTabPane(), Priority.ALWAYS);
         getChildren().addAll(systemBox, getTabPane());
     }
@@ -388,11 +390,14 @@ public class SystemEditor extends VBox
                 setGraphic(null);
                 mName.setText(null);
                 mProtocol.setText(null);
+                setAccessibleText(null);
             }
             else
             {
                 mName.setText(item.getName());
                 mProtocol.setText(getType(item));
+                //Text is shown in nested labels, so expose it as the cell's accessible text
+                setAccessibleText(item.getName() + ", " + getType(item));
 
                 if(isSupported(item))
                 {

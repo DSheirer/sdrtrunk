@@ -73,6 +73,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
         editorsPane.setVgap(10);
 
         Label toneLabel = new Label("Tone");
+        toneLabel.setLabelFor(getAmbeToneComboBox());
         GridPane.setConstraints(toneLabel, 0, 0);
         GridPane.setHalignment(toneLabel, HPos.RIGHT);
         editorsPane.getChildren().add(toneLabel);
@@ -81,6 +82,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
         editorsPane.getChildren().add(getAmbeToneComboBox());
 
         Label durationLabel = new Label("Duration 1-50");
+        durationLabel.setLabelFor(getDurationTextField());
         GridPane.setConstraints(durationLabel, 0, 1);
         GridPane.setHalignment(durationLabel, HPos.RIGHT);
         editorsPane.getChildren().add(durationLabel);
@@ -222,6 +224,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
             iconNode.setIconSize(12);
             iconNode.setFill(getMoveUpButton().getTextFill());
             mMoveUpButton.setGraphic(iconNode);
+            mMoveUpButton.setAccessibleText("Move tone up");
             mMoveUpButton.setMaxWidth(Double.MAX_VALUE);
             mMoveUpButton.setDisable(true);
             mMoveUpButton.setOnAction(event -> {
@@ -249,6 +252,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
             iconNode.setIconSize(12);
             iconNode.setFill(getMoveDownButton().getTextFill());
             mMoveDownButton.setGraphic(iconNode);
+            mMoveDownButton.setAccessibleText("Move tone down");
             mMoveDownButton.setMaxWidth(Double.MAX_VALUE);
             mMoveDownButton.setDisable(true);
             mMoveDownButton.setOnAction(event -> {
@@ -274,6 +278,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
             mToneListView = new ListView<>();
             mToneListView.setDisable(true);
             mToneListView.setPrefHeight(75);
+            mToneListView.setAccessibleText("Tone sequence");
             mToneListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
                 setTone(newValue);
             });

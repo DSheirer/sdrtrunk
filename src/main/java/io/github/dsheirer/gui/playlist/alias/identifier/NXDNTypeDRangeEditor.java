@@ -89,15 +89,21 @@ public class NXDNTypeDRangeEditor<T extends AliasID & INXDNTypeDRange> extends I
         gridPane.add(new Label("NXDN Type-D"), 0, 0);
 
         Label homeRepeaterLabel = new Label("Home Repeater");
+        homeRepeaterLabel.setLabelFor(mHomeRepeaterField);
         GridPane.setHalignment(homeRepeaterLabel, HPos.RIGHT);
         gridPane.add(homeRepeaterLabel, 1, 0);
         gridPane.add(mHomeRepeaterField, 2, 0);
 
         Label rangeFieldLabel = new Label(rangeLabel);
+        rangeFieldLabel.setLabelFor(mMinField);
+        rangeFieldLabel.setAccessibleText(rangeLabel + " start");
         GridPane.setHalignment(rangeFieldLabel, HPos.RIGHT);
         gridPane.add(rangeFieldLabel, 3, 0);
         gridPane.add(mMinField, 4, 0);
-        gridPane.add(new Label("-"), 5, 0);
+        Label dashLabel = new Label("-");
+        dashLabel.setLabelFor(mMaxField);
+        dashLabel.setAccessibleText(rangeLabel + " end");
+        gridPane.add(dashLabel, 5, 0);
         gridPane.add(mMaxField, 6, 0);
 
         getChildren().add(gridPane);

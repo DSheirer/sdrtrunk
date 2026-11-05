@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
@@ -100,6 +101,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.setHgap(5);
 
             Label formatLabel = new Label("Format");
+            formatLabel.setLabelFor(getFormatField());
             GridPane.setHalignment(formatLabel, HPos.RIGHT);
             GridPane.setConstraints(formatLabel, 0, 0);
             mEditorPane.getChildren().add(formatLabel);
@@ -108,6 +110,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getFormatField());
 
             Label enabledLabel = new Label("Enabled");
+            enabledLabel.setLabelFor(getEnabledSwitch());
             GridPane.setHalignment(enabledLabel, HPos.RIGHT);
             GridPane.setConstraints(enabledLabel, 2, 0);
             mEditorPane.getChildren().add(enabledLabel);
@@ -116,6 +119,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getEnabledSwitch());
 
             Label systemLabel = new Label("Name");
+            systemLabel.setLabelFor(getNameTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, 1);
             mEditorPane.getChildren().add(systemLabel);
@@ -124,6 +128,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getNameTextField());
 
             Label hostLabel = new Label("Server");
+            hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, 2);
             mEditorPane.getChildren().add(hostLabel);
@@ -132,6 +137,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getHostTextField());
 
             Label portLabel = new Label("Port");
+            portLabel.setLabelFor(getPortTextField());
             GridPane.setHalignment(portLabel, HPos.RIGHT);
             GridPane.setConstraints(portLabel, 2, 2);
             mEditorPane.getChildren().add(portLabel);
@@ -140,6 +146,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getPortTextField());
 
             Label mountPointLabel = new Label("Mount Point");
+            mountPointLabel.setLabelFor(getMountPointTextField());
             GridPane.setHalignment(mountPointLabel, HPos.RIGHT);
             GridPane.setConstraints(mountPointLabel, 0, 3);
             mEditorPane.getChildren().add(mountPointLabel);
@@ -148,6 +155,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getMountPointTextField());
 
             Label passwordLabel = new Label("Password");
+            setPasswordLabel(passwordLabel);
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
             GridPane.setConstraints(passwordLabel, 2, 3);
             mEditorPane.getChildren().add(passwordLabel);
@@ -160,6 +168,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getShowPasswordCheckBox());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
+            maxAgeLabel.setLabelFor(getMaxAgeTextField());
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
             GridPane.setConstraints(maxAgeLabel, 0, 4);
             mEditorPane.getChildren().add(maxAgeLabel);
@@ -168,6 +177,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
             Label delayLabel = new Label("Delay (seconds)");
+            delayLabel.setLabelFor(getDelayTextField());
             GridPane.setHalignment(delayLabel, HPos.RIGHT);
             GridPane.setConstraints(delayLabel, 2, 4);
             mEditorPane.getChildren().add(delayLabel);
@@ -176,6 +186,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             mEditorPane.getChildren().add(getDelayTextField());
 
             Label feedIdLabel = new Label("Feed ID");
+            feedIdLabel.setLabelFor(getFeedIdTextField());
             GridPane.setHalignment(feedIdLabel, HPos.RIGHT);
             GridPane.setConstraints(feedIdLabel, 0, 5);
             getEditorPane().getChildren().add(feedIdLabel);
@@ -184,6 +195,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
             getEditorPane().getChildren().add(getFeedIdTextField());
 
             Label loggingLabel = new Label("Verbose Logging");
+            loggingLabel.setLabelFor(getVerboseLoggingToggle());
             GridPane.setHalignment(loggingLabel, HPos.RIGHT);
             GridPane.setConstraints(loggingLabel, 2, 5);
             getEditorPane().getChildren().add(loggingLabel);
@@ -199,7 +211,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyF
     {
         if(mVerboseLoggingToggle == null)
         {
-            mVerboseLoggingToggle = new ToggleSwitch();
+            mVerboseLoggingToggle = new AccessibleToggleSwitch();
             mVerboseLoggingToggle.setTooltip(new Tooltip("Turn on additional logging for connection troubleshooting"));
             mVerboseLoggingToggle.setDisable(true);
             mVerboseLoggingToggle.selectedProperty().addListener((ob, ol, ne) -> modifiedProperty().set(true));

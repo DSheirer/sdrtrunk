@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
@@ -205,7 +206,7 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
     {
         if(mEnabledSwitch == null)
         {
-            mEnabledSwitch = new ToggleSwitch();
+            mEnabledSwitch = new AccessibleToggleSwitch();
             mEnabledSwitch.setDisable(true);
             mEnabledSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));

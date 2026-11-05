@@ -66,6 +66,7 @@ public class BeepEditor extends ActionEditor<BeepAction>
         int row = 0;
 
         Label intervalLabel = new Label(("Beep"));
+        intervalLabel.setLabelFor(getIntervalComboBox());
         GridPane.setHalignment(intervalLabel, HPos.RIGHT);
         GridPane.setConstraints(intervalLabel, 0, row);
         gridPane.getChildren().add(intervalLabel);
@@ -80,6 +81,7 @@ public class BeepEditor extends ActionEditor<BeepAction>
         GridPane.setConstraints(getSecondsLabel(), 3, row);
         GridPane.setHgrow(getSecondsLabel(), Priority.ALWAYS);
         gridPane.getChildren().add(getSecondsLabel());
+        getSecondsLabel().setLabelFor(getPeriodTextField());
 
         GridPane.setConstraints(getTestButton(), 4, row);
         gridPane.getChildren().add(getTestButton());
@@ -155,6 +157,7 @@ public class BeepEditor extends ActionEditor<BeepAction>
         if(mTestButton == null)
         {
             mTestButton = new Button("Test");
+            mTestButton.setAccessibleText("Test beep");
             mTestButton.setMaxWidth(Double.MAX_VALUE);
             mTestButton.setOnAction(event -> test());
         }

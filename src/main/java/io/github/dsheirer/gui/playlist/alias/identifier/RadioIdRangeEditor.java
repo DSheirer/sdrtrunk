@@ -73,6 +73,8 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
         gridPane.getChildren().add(getProtocolLabel());
 
         Label valueLabel = new Label("Radio ID Range");
+        valueLabel.setLabelFor(getMinRadioIdField());
+        valueLabel.setAccessibleText("Radio ID Range start");
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 1, 0);
         gridPane.getChildren().add(valueLabel);
@@ -81,6 +83,8 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
         gridPane.getChildren().add(getMinRadioIdField());
 
         Label dashLabel = new Label("-");
+        dashLabel.setLabelFor(getMaxRadioIdField());
+        dashLabel.setAccessibleText("Radio ID Range end");
         GridPane.setConstraints(dashLabel, 3, 0);
         gridPane.getChildren().add(dashLabel);
 

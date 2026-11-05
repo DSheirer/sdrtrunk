@@ -25,6 +25,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
@@ -113,6 +114,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.setHgap(5);
 
             Label formatLabel = new Label("Format");
+            formatLabel.setLabelFor(getFormatField());
             GridPane.setHalignment(formatLabel, HPos.RIGHT);
             GridPane.setConstraints(formatLabel, 0, 0);
             mEditorPane.getChildren().add(formatLabel);
@@ -122,6 +124,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getFormatField());
 
             Label enabledLabel = new Label("Enabled");
+            enabledLabel.setLabelFor(getEnabledSwitch());
             GridPane.setHalignment(enabledLabel, HPos.RIGHT);
             GridPane.setConstraints(enabledLabel, 2, 0);
             mEditorPane.getChildren().add(enabledLabel);
@@ -130,6 +133,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getEnabledSwitch());
 
             Label systemLabel = new Label("Name");
+            systemLabel.setLabelFor(getNameTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, 1);
             mEditorPane.getChildren().add(systemLabel);
@@ -138,6 +142,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getNameTextField());
 
             Label publicLabel = new Label("Public");
+            publicLabel.setLabelFor(getPublicToggleSwitch());
             GridPane.setHalignment(publicLabel, HPos.RIGHT);
             GridPane.setConstraints(publicLabel, 2, 1);
             mEditorPane.getChildren().add(publicLabel);
@@ -146,6 +151,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getPublicToggleSwitch());
 
             Label hostLabel = new Label("Server");
+            hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, 2);
             mEditorPane.getChildren().add(hostLabel);
@@ -154,6 +160,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getHostTextField());
 
             Label portLabel = new Label("Port");
+            portLabel.setLabelFor(getPortTextField());
             GridPane.setHalignment(portLabel, HPos.RIGHT);
             GridPane.setConstraints(portLabel, 2, 2);
             mEditorPane.getChildren().add(portLabel);
@@ -162,6 +169,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getPortTextField());
 
             Label userIdLabel = new Label("User ID");
+            userIdLabel.setLabelFor(getUserIdTextField());
             GridPane.setHalignment(userIdLabel, HPos.RIGHT);
             GridPane.setConstraints(userIdLabel, 0, 3);
             mEditorPane.getChildren().add(userIdLabel);
@@ -170,6 +178,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getUserIdTextField());
 
             Label streamIdLabel = new Label("Stream ID");
+            streamIdLabel.setLabelFor(getStreamIdTextField());
             GridPane.setHalignment(streamIdLabel, HPos.RIGHT);
             GridPane.setConstraints(streamIdLabel, 2, 3);
             mEditorPane.getChildren().add(streamIdLabel);
@@ -178,6 +187,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getStreamIdTextField());
 
             Label passwordLabel = new Label("Password");
+            setPasswordLabel(passwordLabel);
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
             GridPane.setConstraints(passwordLabel, 0, 4);
             mEditorPane.getChildren().add(passwordLabel);
@@ -190,6 +200,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getShowPasswordCheckBox());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
+            maxAgeLabel.setLabelFor(getMaxAgeTextField());
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
             GridPane.setConstraints(maxAgeLabel, 0, 5);
             mEditorPane.getChildren().add(maxAgeLabel);
@@ -198,6 +209,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
             Label delayLabel = new Label("Delay (seconds)");
+            delayLabel.setLabelFor(getDelayTextField());
             GridPane.setHalignment(delayLabel, HPos.RIGHT);
             GridPane.setConstraints(delayLabel, 2, 5);
             mEditorPane.getChildren().add(delayLabel);
@@ -206,6 +218,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getDelayTextField());
 
             Label descriptionLabel = new Label("Description");
+            descriptionLabel.setLabelFor(getUrlTextField());
             GridPane.setHalignment(descriptionLabel, HPos.RIGHT);
             GridPane.setConstraints(descriptionLabel, 0, 6);
             mEditorPane.getChildren().add(descriptionLabel);
@@ -214,6 +227,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             mEditorPane.getChildren().add(getUrlTextField());
 
             Label genreLabel = new Label("Genre");
+            genreLabel.setLabelFor(getGenreTextField());
             GridPane.setHalignment(genreLabel, HPos.RIGHT);
             GridPane.setConstraints(genreLabel, 0, 7);
             mEditorPane.getChildren().add(genreLabel);
@@ -277,7 +291,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
     {
         if(mPublicToggleSwitch == null)
         {
-            mPublicToggleSwitch = new ToggleSwitch();
+            mPublicToggleSwitch = new AccessibleToggleSwitch();
             mPublicToggleSwitch.setDisable(true);
             mPublicToggleSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }

@@ -57,6 +57,7 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.playlist.alias.action.ActionEditor;
@@ -574,6 +575,7 @@ public class AliasItemEditor extends Editor<Alias>
         {
             mActionsList = new ListView<>(FXCollections.observableArrayList(AliasAction.extractor()));
             mActionsList.setPrefHeight(75);
+            mActionsList.setAccessibleText("Alias actions");
             mActionsList.setDisable(true);
             mActionsList.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setAction(newValue));
@@ -686,6 +688,7 @@ public class AliasItemEditor extends Editor<Alias>
             mIdentifiersList = new ListView<>(FXCollections.observableArrayList(AliasID.extractor()));
             mIdentifiersList.setDisable(true);
             mIdentifiersList.setPrefHeight(75);
+            mIdentifiersList.setAccessibleText("Alias identifiers");
             mIdentifiersList.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setIdentifier(newValue));
             mIdentifiersList.setCellFactory(param -> new AliasIdentifierCell());
@@ -846,13 +849,17 @@ public class AliasItemEditor extends Editor<Alias>
             buttonBox.setSpacing(5);
             buttonBox.getChildren().addAll(new Label(" "), getAddStreamButton(), getRemoveStreamButton());
 
+            Label availableLabel = new Label("Available");
+            getAvailableStreamsView().setAccessibleText("Available streams");
             VBox availableBox = new VBox();
             VBox.setVgrow(getAvailableStreamsView(), Priority.ALWAYS);
-            availableBox.getChildren().addAll(new Label("Available"), getAvailableStreamsView());
+            availableBox.getChildren().addAll(availableLabel, getAvailableStreamsView());
 
+            Label selectedLabel = new Label("Selected");
+            getSelectedStreamsView().setAccessibleText("Selected streams");
             VBox selectedBox = new VBox();
             VBox.setVgrow(getSelectedStreamsView(), Priority.ALWAYS);
-            selectedBox.getChildren().addAll(new Label("Selected"), getSelectedStreamsView());
+            selectedBox.getChildren().addAll(selectedLabel, getSelectedStreamsView());
 
             HBox hbox = new HBox();
             hbox.setSpacing(10);
@@ -864,6 +871,7 @@ public class AliasItemEditor extends Editor<Alias>
             vbox.setSpacing(10);
             VBox.setVgrow(hbox, Priority.ALWAYS);
             Label label = new Label("Stream this Alias as Talkgroup:");
+            label.setLabelFor(getStreamAsTalkgroupField());
             HBox streamAsHBox = new HBox();
             streamAsHBox.setAlignment(Pos.CENTER_LEFT);
             streamAsHBox.setSpacing(10);
@@ -964,6 +972,8 @@ public class AliasItemEditor extends Editor<Alias>
                     .or(Bindings.isNull(getAvailableStreamsView().getSelectionModel().selectedItemProperty())));
             mAddStreamButton.setMaxWidth(Double.MAX_VALUE);
             mAddStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_RIGHT));
+            mAddStreamButton.setAccessibleText("Add selected stream");
+            mAddStreamButton.setTooltip(new Tooltip("Add selected stream"));
             mAddStreamButton.setAlignment(Pos.CENTER);
             mAddStreamButton.setOnAction(event -> {
                 String stream = getAvailableStreamsView().getSelectionModel().getSelectedItem();
@@ -990,6 +1000,8 @@ public class AliasItemEditor extends Editor<Alias>
                     .or(Bindings.isNull(getSelectedStreamsView().getSelectionModel().selectedItemProperty())));
             mRemoveStreamButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_LEFT));
+            mRemoveStreamButton.setAccessibleText("Remove selected stream");
+            mRemoveStreamButton.setTooltip(new Tooltip("Remove selected stream"));
             mRemoveStreamButton.setAlignment(Pos.CENTER);
             mRemoveStreamButton.setOnAction(event -> {
                 BroadcastChannel broadcastChannel = getSelectedStreamsView().getSelectionModel().getSelectedItem();
@@ -1050,6 +1062,7 @@ public class AliasItemEditor extends Editor<Alias>
             int row = 0;
 
             Label nameLabel = new Label("Alias");
+            nameLabel.setLabelFor(getNameField());
             GridPane.setHalignment(nameLabel, HPos.RIGHT);
             GridPane.setConstraints(nameLabel, 0, row);
             mTextFieldPane.getChildren().add(nameLabel);
@@ -1058,6 +1071,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getNameField());
 
             Label monitorAudioLabel = new Label("Listen");
+            monitorAudioLabel.setLabelFor(getMonitorAudioToggleSwitch());
             GridPane.setHalignment(monitorAudioLabel, HPos.RIGHT);
             GridPane.setConstraints(monitorAudioLabel, 2, row);
             mTextFieldPane.getChildren().add(monitorAudioLabel);
@@ -1065,6 +1079,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
 
             Label monitorPriorityLabel = new Label("Priority");
+            monitorPriorityLabel.setLabelFor(getMonitorPriorityComboBox());
             GridPane.setHalignment(monitorPriorityLabel, HPos.RIGHT);
             GridPane.setConstraints(monitorPriorityLabel, 4, row);
             mTextFieldPane.getChildren().add(monitorPriorityLabel);
@@ -1072,6 +1087,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getMonitorPriorityComboBox());
 
             Label colorLabel = new Label("Color");
+            colorLabel.setLabelFor(getColorPicker());
             GridPane.setHalignment(colorLabel, HPos.RIGHT);
             GridPane.setConstraints(colorLabel, 6, row);
             mTextFieldPane.getChildren().add(colorLabel);
@@ -1079,6 +1095,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getColorPicker());
 
             Label groupLabel = new Label("Group");
+            groupLabel.setLabelFor(getGroupField());
             GridPane.setHalignment(groupLabel, HPos.RIGHT);
             GridPane.setConstraints(groupLabel, 0, ++row);
             mTextFieldPane.getChildren().add(groupLabel);
@@ -1087,6 +1104,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getGroupField());
 
             Label recordAudioLabel = new Label("Record");
+            recordAudioLabel.setLabelFor(getRecordAudioToggleSwitch());
             GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
             GridPane.setConstraints(recordAudioLabel, 2, row);
             mTextFieldPane.getChildren().add(recordAudioLabel);
@@ -1094,6 +1112,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
 
             Label iconLabel = new Label("Icon");
+            iconLabel.setLabelFor(getIconNodeComboBox());
             GridPane.setHalignment(iconLabel, HPos.RIGHT);
             GridPane.setConstraints(iconLabel, 4, row);
             mTextFieldPane.getChildren().add(iconLabel);
@@ -1108,7 +1127,7 @@ public class AliasItemEditor extends Editor<Alias>
     {
         if(mMonitorAudioToggleSwitch == null)
         {
-            mMonitorAudioToggleSwitch = new ToggleSwitch();
+            mMonitorAudioToggleSwitch = new AccessibleToggleSwitch();
             mMonitorAudioToggleSwitch.setDisable(true);
             mMonitorAudioToggleSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1141,7 +1160,7 @@ public class AliasItemEditor extends Editor<Alias>
     {
         if(mRecordAudioToggleSwitch == null)
         {
-            mRecordAudioToggleSwitch = new ToggleSwitch();
+            mRecordAudioToggleSwitch = new AccessibleToggleSwitch();
             mRecordAudioToggleSwitch.setDisable(true);
             mRecordAudioToggleSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1820,12 +1839,15 @@ public class AliasItemEditor extends Editor<Alias>
                     {
                         setText(null);
                         setGraphic(null);
+                        setAccessibleText(null);
                     }
                     else
                     {
                         textLabel.setText(item.getName());
                         iconLabel.setGraphic(new ImageView(item.getFxImage()));
                         setGraphic(gridPane);
+                        //The name is shown in a nested label, so expose it as the cell's accessible text
+                        setAccessibleText(item.getName());
                     }
                 }
             };

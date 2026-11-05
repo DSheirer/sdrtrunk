@@ -80,6 +80,7 @@ public class TalkgroupEditor extends GridPane
         getChildren().add(radioReferenceLabel);
 
         Label talkgroupLabel = new Label("Talkgroup");
+        talkgroupLabel.setLabelFor(getTalkgroupTextField());
         GridPane.setConstraints(talkgroupLabel, 0, ++row);
         GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
         getChildren().add(talkgroupLabel);
@@ -89,6 +90,7 @@ public class TalkgroupEditor extends GridPane
         getChildren().add(getTalkgroupTextField());
 
         Label alphaLabel = new Label("Alpha Tag");
+        alphaLabel.setLabelFor(getAlphaTagTextField());
         GridPane.setConstraints(alphaLabel, 0, ++row);
         GridPane.setHalignment(alphaLabel, HPos.RIGHT);
         getChildren().add(alphaLabel);
@@ -98,6 +100,7 @@ public class TalkgroupEditor extends GridPane
         getChildren().add(getAlphaTagTextField());
 
         Label descriptionLabel = new Label("Description");
+        descriptionLabel.setLabelFor(getDescriptionTextField());
         GridPane.setConstraints(descriptionLabel, 0, ++row);
         GridPane.setHalignment(descriptionLabel, HPos.RIGHT);
         getChildren().add(descriptionLabel);
@@ -107,6 +110,7 @@ public class TalkgroupEditor extends GridPane
         getChildren().add(getDescriptionTextField());
 
         Label modeLabel = new Label("Mode");
+        modeLabel.setLabelFor(getModeTextField());
         GridPane.setConstraints(modeLabel, 0, ++row);
         GridPane.setHalignment(modeLabel, HPos.RIGHT);
         getChildren().add(modeLabel);
@@ -222,6 +226,7 @@ public class TalkgroupEditor extends GridPane
         if(mNameLabel == null)
         {
             mNameLabel = new Label("Name");
+            mNameLabel.setLabelFor(getAliasNameTextField());
             mNameLabel.setVisible(false);
         }
 
@@ -233,6 +238,7 @@ public class TalkgroupEditor extends GridPane
         if(mGroupLabel == null)
         {
             mGroupLabel = new Label("Group");
+            mGroupLabel.setLabelFor(getAliasGroupTextField());
             mGroupLabel.setVisible(false);
         }
 

@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.AccessibilityUtil;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
@@ -135,6 +137,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             // channel bandwidth
             Label bandwidthLabel = new Label("Channel Bandwidth");
+            AccessibilityUtil.labelGroup(bandwidthLabel, getBandwidthButton());
             GridPane.setHalignment(bandwidthLabel, HPos.RIGHT);
             GridPane.setConstraints(bandwidthLabel, 0, 0);
             gridPane.getChildren().add(bandwidthLabel);
@@ -144,6 +147,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             //De-emphasis
             Label deemphasisLabel = new Label("De-emphasis");
+            deemphasisLabel.setLabelFor(getDeemphasisCombo());
             GridPane.setHalignment(deemphasisLabel, HPos.RIGHT);
             GridPane.setConstraints(deemphasisLabel, 0, 1);
             gridPane.getChildren().add(deemphasisLabel);
@@ -154,6 +158,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             // Note: normally the label and its toggle switch are one cell.  They were split to make the next row
             //  look better. The label is manually created and placed here.  Might want to create a new grid pane instead.
             Label HPFLabel = new Label("High-pass Audio Filter (300 Hz)");
+            HPFLabel.setLabelFor(getAudioFilterEnable());
             GridPane.setHalignment(HPFLabel, HPos.RIGHT);
             GridPane.setConstraints(HPFLabel, 2, 1);
             gridPane.getChildren().add(HPFLabel);
@@ -172,6 +177,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
              */
             // talkgroup
             Label talkgroupLabel = new Label("Talkgroup To Assign");
+            talkgroupLabel.setLabelFor(getTalkgroupField());
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
             GridPane.setConstraints(talkgroupLabel, 0, 2);
             gridPane.getChildren().add(talkgroupLabel);
@@ -198,6 +204,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
                 modifiedProperty().set(true);
             });
             GridPane.setConstraints(mSquelchTypeCombo, 3, 2);
+            typeLabel.setLabelFor(mSquelchTypeCombo);
             gridPane.getChildren().add(mSquelchTypeCombo);
 
             // CTCSS code selector
@@ -318,6 +325,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getBasebandRecordSwitch());
 
             Label recordBasebandLabel = new Label("Channel (Baseband I&Q)");
+            recordBasebandLabel.setLabelFor(getBasebandRecordSwitch());
             GridPane.setHalignment(recordBasebandLabel, HPos.LEFT);
             GridPane.setConstraints(recordBasebandLabel, 1, 0);
             gridPane.getChildren().add(recordBasebandLabel);
@@ -381,7 +389,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             // removed label from toggle switch so that the label and the switch can be in different columns
             //  to make things look better on the next line. Perhaps make a new grid pane instead.
             //mAudioFilterEnable = new ToggleSwitch("High-Pass Audio Filter (300 Hz)");
-            mAudioFilterEnable = new ToggleSwitch("");
+            mAudioFilterEnable = new AccessibleToggleSwitch("");
             mAudioFilterEnable.setTooltip(new Tooltip("High-pass filter to remove DC offset and sub-audible signalling"));
             mAudioFilterEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
@@ -396,7 +404,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mALCEnable == null)
         {
-            mALCEnable = new ToggleSwitch("Automatic Level Control");
+            mALCEnable = new AccessibleToggleSwitch("Automatic Level Control");
             mALCEnable.setTooltip(new Tooltip("Automatic Level Control (ALC). Tries to make the volume of each received transmission the same."));
             mALCEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
@@ -518,7 +526,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mBasebandRecordSwitch == null)
         {
-            mBasebandRecordSwitch = new ToggleSwitch();
+            mBasebandRecordSwitch = new AccessibleToggleSwitch();
             mBasebandRecordSwitch.setDisable(true);
             mBasebandRecordSwitch.setTextAlignment(TextAlignment.RIGHT);
             mBasebandRecordSwitch.selectedProperty()

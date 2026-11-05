@@ -97,6 +97,7 @@ public class AliasViewByIdentifierEditor extends VBox
         gridPane.setHgap(10);
 
         Label aliasListLabel = new Label("Alias List");
+        aliasListLabel.setLabelFor(getAliasListNameComboBox());
         GridPane.setHalignment(aliasListLabel, HPos.RIGHT);
         GridPane.setConstraints(aliasListLabel, 0, 0);
         gridPane.getChildren().add(aliasListLabel);
@@ -106,6 +107,7 @@ public class AliasViewByIdentifierEditor extends VBox
         gridPane.getChildren().add(getAliasListNameComboBox());
 
         Label identifierLabel = new Label("Identifier Type");
+        identifierLabel.setLabelFor(getAliasIDTypeComboBox());
         GridPane.setHalignment(identifierLabel, HPos.RIGHT);
         GridPane.setConstraints(identifierLabel, 0, 1);
         gridPane.getChildren().add(identifierLabel);
@@ -210,6 +212,7 @@ public class AliasViewByIdentifierEditor extends VBox
         if(mAliasAndIdentifierTableView == null)
         {
             mAliasAndIdentifierTableView = new TableView<>(FXCollections.observableArrayList(AliasAndIdentifier.extractor()));
+            mAliasAndIdentifierTableView.setAccessibleText("Aliases by identifier");
             mAliasAndIdentifierTableView.setPlaceholder(new Label("No aliases or identifiers available"));
             mIdentifierColumn = new TableColumn<>("Identifier");
             mIdentifierColumn.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue().getAliasIdentifier()));
