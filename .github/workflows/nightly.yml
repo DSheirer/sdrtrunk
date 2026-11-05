@@ -13,32 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 27
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         with:
           # Must match the JDK version downloaded in build.gradle (jdk_download_base) - jlink requires an exact version match
           java-version: '27.0.0'
           distribution: 'liberica'
           java-package: 'jdk+fx'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: Build Linux and Mac releases with Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: runtimeZipOthers -PprojectVersion=nightly
+        run: ./gradlew runtimeZipOthers -PprojectVersion=nightly
 
       - name: Build Windows release with Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: runtimeZipWindows -PprojectVersion=nightly
+        run: ./gradlew runtimeZipWindows -PprojectVersion=nightly
 
       - name: Create Build Info file
         run: |
           echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" > build/image/build_info.txt
 
       - name: Add build artifacts to nightly release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: nightly
           prerelease: true

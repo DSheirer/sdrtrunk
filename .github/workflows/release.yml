@@ -1,0 +1,130 @@
+# Publishes a release when a version tag is pushed. The tag has to match
+# projectVersion in gradle.properties with a leading 'v': v0.6.2 for a final
+# release, or v0.6.2-beta-1 / v0.6.2-alpha-1 for a pre-release.
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      previous_tag: ${{ steps.previous.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history and tags, to find the previous release tag for the release notes
+          fetch-depth: 0
+
+      - id: version
+        run: |
+          expected="v$(sed -n 's/^projectVersion=//p' gradle.properties | tr -d '[:space:]')"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match projectVersion in gradle.properties ($expected)"
+            exit 1
+          fi
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Release notes list the PRs since the previous version tag (never 'nightly'). A final release
+      # starts from the previous final release, so it covers every alpha and beta in between.
+      - id: previous
+        run: |
+          exclude=(--exclude "$GITHUB_REF_NAME")
+          if [[ "$GITHUB_REF_NAME" != *-* ]]; then
+            exclude+=(--exclude '*-*')
+          fi
+          tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${exclude[@]}" HEAD 2>/dev/null || true)"
+          echo "Release notes start from: ${tag:-(GitHub default)}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK 27
+        uses: actions/setup-java@v6
+        with:
+          # Must match the JDK version downloaded in build.gradle (jdk_download_base) - jlink requires an exact version match
+          java-version: '27.0.0'
+          distribution: 'liberica'
+          java-package: 'jdk+fx'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build and test
+        run: ./gradlew clean build --console=plain
+
+      # The runtime plugin can't build Windows and the other platforms in the same invocation.
+      - name: Build Linux and Mac releases
+        run: ./gradlew runtimeZipOthers --console=plain
+
+      - name: Build Windows release
+        run: ./gradlew runtimeZipWindows --console=plain
+
+      - name: Check release zips
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          missing=0
+          for platform in linux-aarch64 linux-x86_64 osx-aarch64 osx-x86_64 windows-aarch64 windows-x86_64; do
+            zip="build/image/sdr-trunk-${platform}-v${VERSION}.zip"
+            if [ ! -f "$zip" ]; then
+              echo "::error::Missing $zip"
+              missing=1
+            fi
+          done
+          ls -l build/image/*.zip
+          exit $missing
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-zips
+          path: build/image/*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-zips
+          path: zips
+
+      # Publishing is split into steps that can all be repeated, so a failed
+      # upload or a re-run finishes the draft left behind rather than failing on
+      # it: gh retries uploads, and a retry of an upload that had in fact
+      # succeeded fails with "ReleaseAsset.name already exists" unless clobbering.
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PREVIOUS_TAG: ${{ needs.build.outputs.previous_tag }}
+        run: |
+          (cd zips && sha256sum *.zip > SHA256SUMS)
+          prerelease=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            prerelease=(--prerelease)
+          fi
+          notes_start=()
+          if [ -n "$PREVIOUS_TAG" ]; then
+            notes_start=(--notes-start-tag "$PREVIOUS_TAG")
+          fi
+          if gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft 2>/dev/null | grep -qx false; then
+            echo "::error::Release $GITHUB_REF_NAME is already published"
+            exit 1
+          elif gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Reusing the draft release $GITHUB_REF_NAME"
+          else
+            gh release create "$GITHUB_REF_NAME" --draft "${prerelease[@]}" \
+              --verify-tag --generate-notes "${notes_start[@]}" --title "Version $VERSION"
+          fi
+          gh release upload "$GITHUB_REF_NAME" zips/* --clobber
+          gh release edit "$GITHUB_REF_NAME" --draft=false
