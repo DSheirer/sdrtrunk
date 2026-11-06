@@ -56,20 +56,15 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerEditor;
-import io.github.dsheirer.source.tuner.rtl.EmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832Tuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
+import io.github.dsheirer.source.tuner.rtl.RTL2832TunerEditor;
 import io.github.dsheirer.source.tuner.rtl.RTL2832UnknownTunerEditor;
-import io.github.dsheirer.source.tuner.rtl.e4k.E4KEmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerEditor;
-import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013EmbeddedTuner;
+import io.github.dsheirer.source.tuner.rtl.fc0012.FC0012TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerEditor;
-import io.github.dsheirer.source.tuner.rtl.r8x.R8xTunerEditor;
-import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TEmbeddedTuner;
+import io.github.dsheirer.source.tuner.rtl.fc2580.FC2580TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DEmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspTuner;
@@ -395,25 +390,6 @@ public class TunerFactory
     }
 
     /**
-     * Creates an RTL-2832 embedded tuner instance.
-     * @param tunerType to create
-     * @param adapter exposing the RTL-2832 tuner controller functions
-     * @return embedded tuner
-     */
-    public static EmbeddedTuner getRtlEmbeddedTuner(TunerType tunerType,
-                                        RTL2832TunerController.ControllerAdapter adapter) throws SourceException
-    {
-        return switch(tunerType)
-        {
-            case ELONICS_E4000 -> new E4KEmbeddedTuner(adapter);
-            case FITIPOWER_FC0013 -> new FC0013EmbeddedTuner(adapter);
-            case RAFAELMICRO_R820T -> new R820TEmbeddedTuner(adapter);
-            case RAFAELMICRO_R828D -> new R828DEmbeddedTuner(adapter);
-            default -> throw new SourceException("Unsupported/Unrecognized Tuner Type: " + tunerType);
-        };
-    }
-
-    /**
      * Creates a tuner configuration for the specified tuner type, unique ID and name
      */
     public static TunerConfiguration getTunerConfiguration(TunerType type, String uniqueID)
@@ -428,8 +404,12 @@ public class TunerFactory
                 return new BladeRfTunerConfiguration(uniqueID);
             case ELONICS_E4000:
                 return new E4KTunerConfiguration(uniqueID);
+            case FITIPOWER_FC0012:
+                return new FC0012TunerConfiguration(uniqueID);
             case FITIPOWER_FC0013:
                 return new FC0013TunerConfiguration(uniqueID);
+            case FCI_FC2580:
+                return new FC2580TunerConfiguration(uniqueID);
             case FUNCUBE_DONGLE_PRO:
                 return new FCD1TunerConfiguration(uniqueID);
             case FUNCUBE_DONGLE_PRO_PLUS:
@@ -532,12 +512,12 @@ public class TunerFactory
                     switch(discoveredTuner.getTuner().getTunerType())
                     {
                         case ELONICS_E4000:
-                            return new E4KTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                        case FCI_FC2580:
+                        case FITIPOWER_FC0012:
                         case FITIPOWER_FC0013:
-                            return new FC0013TunerEditor(userPreferences, tunerManager, discoveredTuner);
                         case RAFAELMICRO_R820T:
                         case RAFAELMICRO_R828D:
-                            return new R8xTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                            return new RTL2832TunerEditor(userPreferences, tunerManager, discoveredTuner);
                     }
                 }
                 return new RTL2832UnknownTunerEditor(userPreferences, tunerManager, discoveredTuner);

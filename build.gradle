@@ -127,6 +127,7 @@ dependencies {
     implementation 'io.github.dsheirer:jbladerf:2.6.0' //bladeRF tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jairspy:1.0.12' //Airspy tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jhydrasdr:1.1.4' //HydraSDR tuners - GitHub release, see settings.gradle
+    implementation 'io.github.dsheirer:jrtl:1.4.0.1' //RTL-SDR tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:radio-reference-api:18.0.0'
     implementation 'io.github.dsheirer:usb4java-native-libraries:1.3.3' //OSX & Windows aarch64 native libs
     implementation 'io.github.dsheirer:usb4java:1.3.5' //Fork with Loader support for OSX Multi-Version

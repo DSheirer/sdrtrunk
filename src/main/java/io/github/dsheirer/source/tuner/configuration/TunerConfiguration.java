@@ -33,7 +33,9 @@ import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.fc0012.FC0012TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.fc2580.FC2580TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
@@ -47,7 +49,9 @@ import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
         @JsonSubTypes.Type(value = AirspyHfTunerConfiguration.class, name = "airspyHfTunerConfiguration"),
         @JsonSubTypes.Type(value = BladeRfTunerConfiguration.class, name = "bladeRfTunerConfiguration"),
         @JsonSubTypes.Type(value = E4KTunerConfiguration.class, name = "e4KTunerConfiguration"),
+        @JsonSubTypes.Type(value = FC0012TunerConfiguration.class, name = "fc0012TunerConfiguration"),
         @JsonSubTypes.Type(value = FC0013TunerConfiguration.class, name = "fc0013TunerConfiguration"),
+        @JsonSubTypes.Type(value = FC2580TunerConfiguration.class, name = "fc2580TunerConfiguration"),
         @JsonSubTypes.Type(value = FCD1TunerConfiguration.class, name = "fcd1TunerConfiguration"),
         @JsonSubTypes.Type(value = FCD2TunerConfiguration.class, name = "fcd2TunerConfiguration"),
         @JsonSubTypes.Type(value = HackRFTunerConfiguration.class, name = "hackRFTunerConfiguration"),
