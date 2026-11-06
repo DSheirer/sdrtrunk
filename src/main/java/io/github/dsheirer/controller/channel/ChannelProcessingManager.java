@@ -36,6 +36,8 @@ import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.channel.metadata.SignalLevelMonitor;
+import io.github.dsheirer.module.decode.DecodeQuality;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.log.EventLogManager;
@@ -380,6 +382,22 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * @param request containing channel and other details
      * @throws ChannelException if a source is not available for the channel
      */
+    /**
+     * Identifies the playlist channel a tuner channel belongs to.  Traffic channels are named "T-" plus their
+     * control channel's name and share its system and site, so they map back to the control channel.
+     */
+    private static String getTunerOwner(Channel channel)
+    {
+        String name = channel.getName() != null ? channel.getName() : "";
+
+        if(channel.isTrafficChannel() && name.startsWith("T-"))
+        {
+            name = name.substring(2);
+        }
+
+        return channel.getSystem() + " | " + channel.getSite() + " | " + name;
+    }
+
     private synchronized void startProcessing(ChannelStartProcessingRequest request) throws ChannelException
     {
         Channel channel = request.getChannel();
@@ -397,7 +415,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             String threadName = "sdrtrunk channel [" + channel.getChannelID() + "/" +
                     channel.getDecodeConfiguration().getDecoderType().getShortDisplayString() + "]";
             source = mTunerManager.getSource(channel.getSourceConfiguration(),
-                channel.getDecodeConfiguration().getChannelSpecification(), threadName);
+                channel.getDecodeConfiguration().getChannelSpecification(), threadName, !channel.isTrafficChannel(),
+                getTunerOwner(channel));
         }
         catch(SourceException se)
         {
@@ -469,6 +488,24 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences,
             request.getTrafficChannelManager(), request.getChannelDescriptor());
         processingChain.addModules(modules);
+        String owner = channel.isTrafficChannel() ? null : getTunerOwner(channel);
+
+        if(owner != null)
+        {
+            processingChain.addModule(DecodeQuality.monitor(owner));
+        }
+
+        processingChain.addModule(new SignalLevelMonitor(level -> {
+            for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
+            {
+                channelMetadata.setSignalLevel(level);
+            }
+
+            if(owner != null)
+            {
+                DecodeQuality.setSignalLevel(owner, level);
+            }
+        }));
 
         //Post preload data from the request to the event bus.  Modules that can handle preload data will annotate
         //their processor method with @Subscribe to receive each specific preload data content class.

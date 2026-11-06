@@ -22,11 +22,41 @@ public class TunerChannel implements Comparable<TunerChannel>
 {
     private long mFrequency;
     private int mBandwidth;
+    private boolean mAnchored;
+    private String mOwner;
 
     public TunerChannel(long frequency, int bandwidth)
     {
         mFrequency = frequency;
         mBandwidth = bandwidth;
+    }
+
+    /**
+     * Indicates if this channel is a configured (control or conventional) channel, as opposed to a traffic channel.
+     * Tuners carrying an anchored channel are the last choice for a retune to fit a traffic channel.
+     */
+    public boolean isAnchored()
+    {
+        return mAnchored;
+    }
+
+    public void setAnchored(boolean anchored)
+    {
+        mAnchored = anchored;
+    }
+
+    /**
+     * Playlist channel this tuner channel belongs to.  For a traffic channel this is the control channel that
+     * granted it.  Can be null.
+     */
+    public String getOwner()
+    {
+        return mOwner;
+    }
+
+    public void setOwner(String owner)
+    {
+        mOwner = owner;
     }
 
     public long getFrequency()

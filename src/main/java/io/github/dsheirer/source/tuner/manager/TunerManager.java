@@ -38,6 +38,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRplay;
@@ -73,9 +74,12 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     private final UserPreferences mUserPreferences;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
     private final TunerConfigurationManager mTunerConfigurationManager;
+    private final TunerPlanner mTunerPlanner;
+    private final DecodeQualityReporter mDecodeQualityReporter;
     private final HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
     private final Context mLibUsbApplicationContext = new Context();
     private boolean mLibUsbInitialized = false;
+    private ScheduledFuture<?> mIfFilterFuture;
     private SDRplay mSDRplay;
 
     /**
@@ -87,6 +91,9 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         mUserPreferences = userPreferences;
         mTunerConfigurationManager = new TunerConfigurationManager(userPreferences);
         mDiscoveredTunerModel = new DiscoveredTunerModel(mTunerConfigurationManager);
+        mTunerPlanner = new TunerPlanner(mDiscoveredTunerModel, userPreferences.getDirectoryPreference()
+            .getDirectoryConfiguration().resolve("tuner_traffic_frequencies.json"));
+        mDecodeQualityReporter = new DecodeQualityReporter(mDiscoveredTunerModel);
     }
 
     /**
@@ -111,6 +118,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     public void start()
     {
         mLog.info("Discovering tuners ...");
+        RTL2832TunerController.setNarrowIfFilterTuners(mUserPreferences.getDirectoryPreference()
+            .getDirectoryConfiguration().resolve("narrow_if_filter_tuners.txt"));
 
         boolean libUsbAvailable = false;
 
@@ -170,6 +179,31 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         discoverRecordingTuners();
+        mTunerPlanner.start();
+        mDecodeQualityReporter.start();
+        mIfFilterFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::updateIfFilters, 10, 10, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Applies changes to the narrow IF filter tuner list to running RTL-2832 tuners.
+     */
+    private void updateIfFilters()
+    {
+        for(DiscoveredTuner discoveredTuner: mDiscoveredTunerModel.getAvailableTuners())
+        {
+            if(discoveredTuner.hasTuner() &&
+                discoveredTuner.getTuner().getTunerController() instanceof RTL2832TunerController controller)
+            {
+                try
+                {
+                    controller.updateIfFilter();
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Unable to update IF filter on tuner [" + discoveredTuner.getId() + "]", e);
+                }
+            }
+        }
     }
 
     /**
@@ -177,6 +211,15 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     public void stop()
     {
+        mDecodeQualityReporter.stop();
+
+        if(mIfFilterFuture != null)
+        {
+            mIfFilterFuture.cancel(false);
+            mIfFilterFuture = null;
+        }
+        mTunerPlanner.stop();
+
         //Stop all tuners
         mDiscoveredTunerModel.releaseDiscoveredTuners();
 
@@ -558,6 +601,22 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     public Source getSource(SourceConfiguration config, ChannelSpecification channelSpecification,
                             String threadName) throws SourceException
     {
+        return getSource(config, channelSpecification, threadName, false, null);
+    }
+
+    /**
+     * Obtain a channel (sample stream) source from one of the tuners.
+     * @param config for the source
+     * @param channelSpecification required by the decoder
+     * @param thread name to apply for the channel's scheduled executor
+     * @param anchored true for configured (control or conventional) channels, false for traffic channels
+     * @param owner playlist channel the source belongs to (the control channel for a traffic channel), or null
+     * @return a configured source or null if there aren't any tuners that can provide the source.
+     * @throws SourceException if there is an issue.
+     */
+    public Source getSource(SourceConfiguration config, ChannelSpecification channelSpecification,
+                            String threadName, boolean anchored, String owner) throws SourceException
+    {
         Source retVal = null;
 
         switch(config.getSourceType())
@@ -570,6 +629,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 {
                     SourceConfigTuner sourceConfigTuner = (SourceConfigTuner)config;
                     TunerChannel tunerChannel = sourceConfigTuner.getTunerChannel(channelSpecification.getBandwidth());
+                    tunerChannel.setAnchored(anchored);
+                    tunerChannel.setOwner(owner);
                     String preferredTuner = sourceConfigTuner.getPreferredTuner();
                     retVal = getSource(tunerChannel, channelSpecification, preferredTuner, threadName +
                             " " + tunerChannel.getFrequency());
@@ -580,6 +641,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 {
                     SourceConfigTunerMultipleFrequency sourceConfigTuner = (SourceConfigTunerMultipleFrequency)config;
                     TunerChannel tunerChannel = sourceConfigTuner.getTunerChannel(channelSpecification.getBandwidth());
+                    tunerChannel.setAnchored(anchored);
+                    tunerChannel.setOwner(owner);
                     String preferredTuner = sourceConfigTuner.getPreferredTuner();
 
                     Source source = getSource(tunerChannel, channelSpecification, preferredTuner, threadName);
@@ -612,6 +675,41 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                             String threadName)
     {
         TunerChannelSource source = null;
+
+        if(tunerChannel != null && channelSpecification != null && !tunerChannel.isAnchored())
+        {
+            return getTrafficSource(tunerChannel, channelSpecification, preferredTuner, threadName);
+        }
+
+        if(tunerChannel != null && channelSpecification != null && preferredTuner == null)
+        {
+            for(DiscoveredTuner discoveredTuner: mDiscoveredTunerModel.getAvailableTuners())
+            {
+                if(discoveredTuner.hasTuner() &&
+                    discoveredTuner.getTuner().getChannelSourceManager().canSourceWithoutRetune(tunerChannel))
+                {
+                    Source covered = getSource(discoveredTuner, tunerChannel, channelSpecification, threadName);
+
+                    if(covered != null)
+                    {
+                        return covered;
+                    }
+                }
+            }
+
+            for(DiscoveredTuner discoveredTuner: mDiscoveredTunerModel.getAvailableTuners())
+            {
+                if(discoveredTuner.hasTuner() && discoveredTuner.getTuner().getChannelSourceManager().getTunerChannelCount() == 0)
+                {
+                    Source idle = getSource(discoveredTuner, tunerChannel, channelSpecification, threadName);
+
+                    if(idle != null)
+                    {
+                        return idle;
+                    }
+                }
+            }
+        }
 
         if(tunerChannel != null && channelSpecification != null)
         {
@@ -665,6 +763,109 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         return source;
+    }
+
+    /**
+     * Sources a traffic channel while avoiding center frequency changes, since a retune briefly interrupts every
+     * channel on that tuner.  Tuners are tried in this order: a tuner that already covers the frequency, an idle
+     * tuner, a tuner carrying only traffic channels, and finally a tuner carrying a control or conventional channel.
+     * The preferred tuner, when set, goes first within each group.
+     */
+    private Source getTrafficSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification,
+                                    String preferredTuner, String threadName)
+    {
+        mTunerPlanner.record(tunerChannel);
+
+        List<DiscoveredTuner> tuners = new ArrayList<>();
+
+        if(preferredTuner != null)
+        {
+            DiscoveredTuner preferred = getDiscoveredTuner(preferredTuner);
+
+            if(preferred != null && preferred.hasTuner())
+            {
+                tuners.add(preferred);
+            }
+        }
+
+        for(DiscoveredTuner discoveredTuner: mDiscoveredTunerModel.getAvailableTuners())
+        {
+            if(discoveredTuner.hasTuner() && !tuners.contains(discoveredTuner))
+            {
+                tuners.add(discoveredTuner);
+            }
+        }
+
+        for(DiscoveredTuner discoveredTuner: tuners)
+        {
+            if(discoveredTuner.getTuner().getChannelSourceManager().canSourceWithoutRetune(tunerChannel))
+            {
+                Source source = getSource(discoveredTuner, tunerChannel, channelSpecification, threadName);
+
+                if(source != null)
+                {
+                    return source;
+                }
+            }
+        }
+
+        for(DiscoveredTuner discoveredTuner: tuners)
+        {
+            if(discoveredTuner.getTuner().getChannelSourceManager().getTunerChannelCount() == 0)
+            {
+                Source source = getSource(discoveredTuner, tunerChannel, channelSpecification, threadName);
+
+                if(source != null)
+                {
+                    return source;
+                }
+            }
+        }
+
+        for(DiscoveredTuner discoveredTuner: tuners)
+        {
+            if(!discoveredTuner.getTuner().getChannelSourceManager().hasAnchoredChannel())
+            {
+                Source source = getSource(discoveredTuner, tunerChannel, channelSpecification, threadName);
+
+                if(source != null)
+                {
+                    return source;
+                }
+            }
+        }
+
+        for(DiscoveredTuner discoveredTuner: tuners)
+        {
+            if(discoveredTuner.getTuner().getChannelSourceManager().hasAnchoredChannel())
+            {
+                Source source = getSource(discoveredTuner, tunerChannel, channelSpecification, threadName);
+
+                if(source != null)
+                {
+                    mLog.info("Retuned tuner [" + discoveredTuner.getTuner().getPreferredName() +
+                        "] carrying a control channel to fit traffic channel [" + tunerChannel.getFrequency() + "]");
+                    return source;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Source getSource(DiscoveredTuner discoveredTuner, TunerChannel tunerChannel,
+                             ChannelSpecification channelSpecification, String threadName)
+    {
+        try
+        {
+            return discoveredTuner.getTuner().getChannelSourceManager().getSource(tunerChannel, channelSpecification,
+                threadName);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error obtaining channel from tuner [" + discoveredTuner.getTuner().getPreferredName() + "]", e);
+            return null;
+        }
     }
 
     /**

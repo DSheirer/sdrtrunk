@@ -26,10 +26,14 @@ import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.r8x.R8xEmbeddedTuner;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
@@ -66,6 +70,8 @@ public class RTL2832TunerController extends USBTunerController
     private Descriptor mDescriptor;
     private EmbeddedTuner mEmbeddedTuner;
     private long mTunedFrequency = 0;
+    private static volatile Path sNarrowIfFilterTuners;
+    private boolean mNarrowIfFilter;
     private boolean mBiasTEnabled = false;
 
     /**
@@ -352,6 +358,83 @@ public class RTL2832TunerController extends USBTunerController
     public void setSampleRateFilters(int sampleRate) throws SourceException
     {
         getEmbeddedTuner().setSampleRateFilters(sampleRate);
+        applyIfFilter(sampleRate, isNarrowIfFilterRequested());
+    }
+
+    /**
+     * Narrows or widens the R8xxx IF filter when the narrow IF filter tuner list has changed for this tuner.
+     */
+    public void updateIfFilter() throws SourceException
+    {
+        boolean narrow = isNarrowIfFilterRequested();
+
+        if(narrow != mNarrowIfFilter && getEmbeddedTuner() instanceof R8xEmbeddedTuner)
+        {
+            getLock().lock();
+
+            try
+            {
+                applyIfFilter(mSampleRate.getRate(), narrow);
+            }
+            finally
+            {
+                getLock().unlock();
+            }
+        }
+    }
+
+    private void applyIfFilter(int sampleRate, boolean narrow) throws SourceException
+    {
+        if(getEmbeddedTuner() instanceof R8xEmbeddedTuner r8x)
+        {
+            int passband = r8x.setIfFilter(narrow, sampleRate);
+
+            if(narrow || mNarrowIfFilter)
+            {
+                mLog.info((narrow ? "Narrow" : "Default") + " IF filter applied on tuner [" + getUniqueID() + "] - " +
+                    passband + " Hz passband, IF " + r8x.getIfFrequency() + " Hz");
+            }
+
+            mNarrowIfFilter = narrow;
+
+            if(mTunedFrequency > 0)
+            {
+                setTunedFrequency(mTunedFrequency);
+            }
+        }
+    }
+
+    /**
+     * Sets the file listing tuners, by serial number or unique ID with one per line, whose R8xxx IF filter is narrowed
+     * to the sample rate.  Tuners not listed keep the default 6 MHz filter.
+     */
+    public static void setNarrowIfFilterTuners(Path path)
+    {
+        sNarrowIfFilterTuners = path;
+    }
+
+    private boolean isNarrowIfFilterRequested()
+    {
+        Path path = sNarrowIfFilterTuners;
+
+        if(path == null || !Files.isRegularFile(path))
+        {
+            return false;
+        }
+
+        String serial = mDescriptor != null && mDescriptor.hasSerial() ? mDescriptor.getSerial() : null;
+        String uniqueID = getUniqueID();
+
+        try
+        {
+            return Files.readAllLines(path).stream().map(String::trim)
+                .anyMatch(line -> !line.isEmpty() && (line.equals(serial) || line.equals(uniqueID)));
+        }
+        catch(IOException e)
+        {
+            mLog.warn("Unable to read narrow IF filter tuner list [" + path + "]", e);
+            return false;
+        }
     }
 
     /**

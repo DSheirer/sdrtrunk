@@ -234,6 +234,8 @@ public class DecoderFactory
         if(channel.getChannelType() == ChannelType.STANDARD)
         {
             p25TrafficChannelManager = new P25TrafficChannelManager(channel);
+            p25TrafficChannelManager.setTalkgroupFilter(aliasList,
+                userPreferences != null ? userPreferences.getTrafficChannelPreference() : null);
         }
         else if(trafficChannelManager instanceof P25TrafficChannelManager p25)
         {
@@ -308,6 +310,8 @@ public class DecoderFactory
             if(channel.getChannelType() == ChannelType.STANDARD)
             {
                 P25TrafficChannelManager primaryTCM = new P25TrafficChannelManager(channel);
+                primaryTCM.setTalkgroupFilter(aliasList,
+                    userPreferences != null ? userPreferences.getTrafficChannelPreference() : null);
                 modules.add(primaryTCM);
                 modules.add(new P25P1DecoderState(channel, primaryTCM));
             }
