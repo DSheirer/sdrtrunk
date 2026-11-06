@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,9 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.fc0012.FC0012TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.fc2580.FC2580TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 
@@ -34,7 +36,9 @@ import io.github.dsheirer.source.tuner.rtl.r8x.r828d.R828DTunerConfiguration;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = E4KTunerConfiguration.class, name = "e4KTunerConfiguration"),
+        @JsonSubTypes.Type(value = FC0012TunerConfiguration.class, name = "fc0012TunerConfiguration"),
         @JsonSubTypes.Type(value = FC0013TunerConfiguration.class, name = "fc0013TunerConfiguration"),
+        @JsonSubTypes.Type(value = FC2580TunerConfiguration.class, name = "fc2580TunerConfiguration"),
         @JsonSubTypes.Type(value = R820TTunerConfiguration.class, name = "r820TTunerConfiguration"),
         @JsonSubTypes.Type(value = R828DTunerConfiguration.class, name = "r828DTunerConfiguration"),
 })
@@ -43,20 +47,92 @@ public abstract class RTL2832TunerConfiguration extends TunerConfiguration
 {
     private RTL2832TunerController.SampleRate mSampleRate = RTL2832TunerController.SampleRate.RATE_2_400MHZ;
     private boolean mBiasTEnabled = false;
+    private int mGain;
+    private boolean mAGC = false;
 
     /**
      * Default constructor to support Jackson
      * @param minimumFrequency tunable
      * @param maximumFrequency tunable
+     * @param defaultGain in tenths of a dB
      */
-    public RTL2832TunerConfiguration(long minimumFrequency, long maximumFrequency)
+    public RTL2832TunerConfiguration(long minimumFrequency, long maximumFrequency, int defaultGain)
     {
         super(minimumFrequency, maximumFrequency);
+        mGain = defaultGain;
     }
 
-    public RTL2832TunerConfiguration(String uniqueID)
+    /**
+     * Constructs an instance
+     * @param uniqueID for the tuner
+     * @param defaultGain in tenths of a dB
+     */
+    public RTL2832TunerConfiguration(String uniqueID, int defaultGain)
     {
         super(uniqueID);
+        mGain = defaultGain;
+    }
+
+    /**
+     * Tuner gain, applied when AGC is off.
+     * @return gain in tenths of a dB.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "gain")
+    public int getGain()
+    {
+        return mGain;
+    }
+
+    /**
+     * Sets the tuner gain, applied when AGC is off.
+     * @param gain in tenths of a dB
+     */
+    public void setGain(int gain)
+    {
+        mGain = gain;
+    }
+
+    /**
+     * Indicates if the tuner's automatic gain control is enabled.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "agc")
+    public boolean isAGC()
+    {
+        return mAGC;
+    }
+
+    /**
+     * Sets the enabled state of the tuner's automatic gain control.
+     */
+    public void setAGC(boolean agc)
+    {
+        mAGC = agc;
+    }
+
+    /**
+     * Parses a gain value from the name of a gain enumeration entry used by legacy tuner configurations, for
+     * example GAIN_327, GAIN_PLUS_200, GAIN_MINUS_50, PLUS_240 or MINUS_10.
+     * @param name of the legacy enumeration entry
+     * @return gain value, or null if the name doesn't contain a gain value.
+     */
+    protected static Integer parseLegacyGain(String name)
+    {
+        if(name != null)
+        {
+            String value = name.substring(name.lastIndexOf('_') + 1);
+
+            try
+            {
+                int gain = Integer.parseInt(value);
+                return name.contains("MINUS") ? -gain : gain;
+            }
+            catch(NumberFormatException nfe)
+            {
+                //Not a gain value
+            }
+        }
+
+        return null;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "sample_rate")

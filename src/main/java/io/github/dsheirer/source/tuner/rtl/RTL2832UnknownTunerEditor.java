@@ -22,7 +22,7 @@ package io.github.dsheirer.source.tuner.rtl;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import io.github.dsheirer.source.tuner.rtl.r8x.R8xEmbeddedTuner;
+import io.github.dsheirer.source.tuner.rtl.r8x.R8xTunerConfiguration;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
 import net.miginfocom.swing.MigLayout;
 
@@ -70,14 +70,14 @@ public class RTL2832UnknownTunerEditor extends TunerEditor<RTL2832Tuner, RTL2832
     public long getMinimumTunableFrequency()
     {
         //Bogus value.
-        return R8xEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ;
+        return R8xTunerConfiguration.MINIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
     public long getMaximumTunableFrequency()
     {
         //Bogus value.
-        return R8xEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ;
+        return R8xTunerConfiguration.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
     @Override
