@@ -73,6 +73,8 @@ public class AirspyHfTunerController extends TunerController
     private Attenuation mAttenuation = Attenuation.A0;
     private boolean mAgcEnabled;
     private boolean mLnaEnabled;
+    private boolean mBiasTSupported;
+    private boolean mBiasTEnabled;
     private volatile float mSamplesPerMillisecond = DEFAULT_SAMPLE_RATE.getSampleRate() / 1000.0f;
     private volatile int mBufferSampleCount = DEFAULT_BUFFER_SAMPLE_COUNT;
     private boolean mStreaming = false;
@@ -116,6 +118,8 @@ public class AirspyHfTunerController extends TunerController
 
         try
         {
+            mBiasTSupported = false;
+            mBiasTEnabled = false;
             mDevice = AirspyHf.open(serialNumber);
 
             BoardInfo boardInfo = mDevice.boardInfo();
@@ -139,6 +143,8 @@ public class AirspyHfTunerController extends TunerController
             }
 
             mAvailableSampleRates = Collections.unmodifiableList(sampleRates);
+            mBiasTSupported = detectBiasTSupport(mDevice);
+            mBiasTEnabled = false;
 
             //Force the sample rate to be applied, since the rate discovery leaves the device at the last rate.
             mCurrentSampleRate = null;
@@ -161,6 +167,7 @@ public class AirspyHfTunerController extends TunerController
     public void stop()
     {
         AirspyHfDevice device;
+        boolean biasTEnabled;
 
         getLock().lock();
 
@@ -169,6 +176,8 @@ public class AirspyHfTunerController extends TunerController
             device = mDevice;
             mDevice = null;
             mStreaming = false;
+            biasTEnabled = mBiasTEnabled;
+            mBiasTEnabled = false;
         }
         finally
         {
@@ -176,7 +185,56 @@ public class AirspyHfTunerController extends TunerController
         }
 
         mNativeBufferBroadcaster.clear();
+
+        if(device != null && biasTEnabled)
+        {
+            try
+            {
+                device.setBiasTee(0);
+            }
+            catch(AirspyHfException | RuntimeException e)
+            {
+                mLog.warn("Error turning off Airspy HF bias-T before closing the device - " + e.getMessage());
+            }
+        }
+
         closeDevice(device);
+    }
+
+    /**
+     * Detects if the device firmware supports a bias-T.  Firmware without bias-T support rejects the bias-T commands.
+     * Some firmware (HF+ Discovery R5.0.1) rejects the bias-T count request, so this falls back to turning the bias-T
+     * off, which is a safe probe since the bias-T should be off at startup anyway.
+     * @param device to probe
+     * @return true if the device accepts bias-T commands
+     */
+    private static boolean detectBiasTSupport(AirspyHfDevice device)
+    {
+        try
+        {
+            if(device.biasTeeCount() > 0)
+            {
+                device.setBiasTee(0);
+                return true;
+            }
+
+            return false;
+        }
+        catch(AirspyHfException | RuntimeException e)
+        {
+            //Bias-T count not supported - fall through and probe with a bias-T off command.
+        }
+
+        try
+        {
+            device.setBiasTee(0);
+            return true;
+        }
+        catch(AirspyHfException | RuntimeException e)
+        {
+            mLog.debug("Airspy HF firmware doesn't support bias-T - " + e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -448,6 +506,11 @@ public class AirspyHfTunerController extends TunerController
                 setLna(airspyConfig.isLna());
                 setAttenuation(airspyConfig.getAttenuation());
                 setAgc(airspyConfig.isAgc());
+
+                if(isBiasTSupported())
+                {
+                    setBiasT(airspyConfig.isBiasT());
+                }
             }
             catch(SourceException se)
             {
@@ -669,5 +732,39 @@ public class AirspyHfTunerController extends TunerController
     {
         execute(device -> device.setAttenuationStep(attenuation.getValue()));
         mAttenuation = attenuation;
+    }
+
+    /**
+     * Indicates if the device firmware supports a bias-T, available once the tuner is started.
+     * @return true if supported
+     */
+    public boolean isBiasTSupported()
+    {
+        return mBiasTSupported;
+    }
+
+    /**
+     * Indicates if the Bias-T power output is enabled.
+     * @return enabled state
+     */
+    public boolean getBiasT()
+    {
+        return mBiasTEnabled;
+    }
+
+    /**
+     * Enables/disables the Bias-T (RF bias tee) power output for active antennas
+     * @param enabled true to enable Bias-T, false to disable
+     * @throws SourceException if the device doesn't support a bias-T or there is an error
+     */
+    public void setBiasT(boolean enabled) throws SourceException
+    {
+        if(!mBiasTSupported)
+        {
+            throw new SourceException("Airspy HF firmware doesn't support bias-T");
+        }
+
+        execute(device -> device.setBiasTee(enabled ? 1 : 0));
+        mBiasTEnabled = enabled;
     }
 }
