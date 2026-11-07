@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import java.io.IOException;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,11 +146,9 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         if(hasTuner())
         {
             getTunerIdLabel().setText("Airspy " + getTuner().getController().getBoardId() + " SER# " +
-                    getTuner().getController().getSerialNumber());
+                    getTuner().getController().getSerialNumber() + " FW " + getTuner().getController().getFirmwareVersion());
 
-            //Permanently disable the sample rates combo and force 912kHz usage - during dev testing, attempts to use
-            //the other sample rates produced inconsistent results.
-            getSampleRateCombo().setEnabled(false);
+            getSampleRateCombo().setEnabled(!getTuner().getTunerController().isLockedSampleRate());
             getSampleRateCombo().removeAllItems();
             for(AirspyHfSampleRate sampleRate: getTuner().getController().getAvailableSampleRates())
             {
@@ -162,7 +159,7 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
             getLnaToggleButton().setEnabled(true);
             getLnaToggleButton().setSelected(getTuner().getController().getLna());
             getSampleRateCombo().setSelectedItem(getTuner().getController().getCurrentAirspySampleRate());
-            getAttenuationCombo().setEnabled(true);
+            getAttenuationCombo().setEnabled(!getTuner().getController().getAgc());
             getAttenuationCombo().setSelectedItem(getTuner().getController().getAttenuation());
         }
         else
@@ -260,6 +257,7 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         if(mAttenuationCombo == null)
         {
             mAttenuationCombo = new JComboBox<>(Attenuation.values());
+            mAttenuationCombo.setToolTipText("Attenuation applies when the AGC is off");
             mAttenuationCombo.setEnabled(false);
             mAttenuationCombo.addActionListener(e -> {
                 if(!isLoading())
@@ -270,12 +268,12 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                         getTuner().getController().setAttenuation(selected);
                         save();
                     }
-                    catch(IOException ioe)
+                    catch(SourceException se)
                     {
-                        mLog.error("Error setting Airspy Hf attenuation [" + selected + "]", ioe);
+                        mLog.error("Error setting Airspy Hf attenuation [" + selected + "]", se);
                         JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
                                 "Airspy Tuner Controller - couldn't apply attenuation setting [" +
-                                        selected + "] " + ioe.getLocalizedMessage());
+                                        selected + "] " + se.getLocalizedMessage());
                     }
                 }
             });
@@ -300,13 +298,14 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                     try
                     {
                         getTuner().getController().setAgc(mAgcToggleButton.isSelected());
+                        getAttenuationCombo().setEnabled(!mAgcToggleButton.isSelected());
                         save();
                     }
-                    catch(IOException ioe)
+                    catch(SourceException se)
                     {
-                        mLog.error("Error setting Airspy HF AGC", ioe);
+                        mLog.error("Error setting Airspy HF AGC", se);
                         JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
-                        "Airspy HF Tuner Controller - couldn't change AGC setting" + ioe.getLocalizedMessage());
+                        "Airspy HF Tuner Controller - couldn't change AGC setting" + se.getLocalizedMessage());
                     }
                 }
             });
@@ -333,11 +332,11 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                         getTuner().getController().setLna(mLnaToggleButton.isSelected());
                         save();
                     }
-                    catch(IOException ioe)
+                    catch(SourceException se)
                     {
-                        mLog.error("Error setting Airspy HF LNA", ioe);
+                        mLog.error("Error setting Airspy HF LNA", se);
                         JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
-                                "Airspy HF Tuner Controller - couldn't change LNA setting" + ioe.getLocalizedMessage());
+                                "Airspy HF Tuner Controller - couldn't change LNA setting" + se.getLocalizedMessage());
                     }
                 }
             });
