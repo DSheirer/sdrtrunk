@@ -73,6 +73,7 @@ public class HackRFTunerController extends TunerController
     private String mFirmwareVersion;
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE_5_0;
     private boolean mAmplifierEnabled = false;
+    private boolean mBiasTEnabled = false;
     private volatile int mBufferSampleCount = DEFAULT_BUFFER_SAMPLE_COUNT;
     private boolean mStreaming = false;
 
@@ -198,6 +199,15 @@ public class HackRFTunerController extends TunerController
     {
         if(device != null)
         {
+            try
+            {
+                device.setAntennaEnable(false);
+            }
+            catch(HackRfException | RuntimeException e)
+            {
+                mLog.error("Error disabling HackRF Bias-T antenna power", e);
+            }
+
             try
             {
                 device.close();
@@ -413,6 +423,12 @@ public class HackRFTunerController extends TunerController
         {
             execute(device -> device.startRx(this::receive));
             mStreaming = mDevice != null;
+
+            //The firmware turns off antenna power when the transceiver returns to idle, so restore it
+            if(mBiasTEnabled)
+            {
+                execute(device -> device.setAntennaEnable(true));
+            }
         }
     }
 
@@ -541,6 +557,20 @@ public class HackRFTunerController extends TunerController
     }
 
     /**
+     * Enables (true) or disables (false) the Bias-T power on the antenna port.
+     */
+    public void setBiasTEnabled(boolean enabled) throws SourceException
+    {
+        execute(device -> device.setAntennaEnable(enabled));
+        mBiasTEnabled = enabled;
+    }
+
+    public boolean isBiasTEnabled()
+    {
+        return mBiasTEnabled;
+    }
+
+    /**
      * Sets the IF LNA Gain
      */
     public void setLNAGain(HackRFLNAGain gain) throws SourceException
@@ -602,6 +632,7 @@ public class HackRFTunerController extends TunerController
             {
                 setSampleRate(hackRFConfig.getSampleRate());
                 setAmplifierEnabled(hackRFConfig.getAmplifierEnabled());
+                setBiasTEnabled(hackRFConfig.isBiasT());
                 setLNAGain(hackRFConfig.getLNAGain());
                 setVGAGain(hackRFConfig.getVGAGain());
             }
