@@ -40,8 +40,6 @@ import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import javax.sound.sampled.TargetDataLine;
-import javax.usb.UsbClaimException;
-import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -428,7 +426,7 @@ public abstract class FCDTunerController extends TunerController
     /**
      * Set fcd interface mode
      */
-    public void setFCDMode(Mode mode) throws UsbException, UsbClaimException
+    public void setFCDMode(Mode mode)
     {
         ByteBuffer response = null;
 

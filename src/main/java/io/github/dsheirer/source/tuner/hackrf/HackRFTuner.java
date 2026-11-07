@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,17 +22,12 @@ import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.BoardID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * HackRF Tuner
  */
 public class HackRFTuner extends Tuner
 {
-    private final static Logger mLog = LoggerFactory.getLogger(HackRFTuner.class);
-
     /**
      * Constructs an instance
      * @param controller for the HackRF
@@ -48,14 +43,11 @@ public class HackRFTuner extends Tuner
     @Override
     public String getPreferredName()
     {
-        try
+        String serialNumber = getController().getSerialNumber();
+
+        if(serialNumber != null)
         {
-            HackRFTunerController.Serial serial = getController().getSerial();
-            return "HackRF " + getController().getTunerType() + " " + serial.getSerialNumber();
-        }
-        catch(Exception e)
-        {
-            //No - op
+            return "HackRF " + getController().getTunerType() + " " + serialNumber;
         }
 
         return "HackRF " + getController().getTunerType();
@@ -81,16 +73,14 @@ public class HackRFTuner extends Tuner
     @Override
     public String getUniqueID()
     {
-        try
+        String serialNumber = getController().getSerialNumber();
+
+        if(serialNumber != null)
         {
-            return getTunerClass().toString() + " " + getController().getSerial().getSerialNumber();
-        }
-        catch(Exception e)
-        {
-            mLog.error("error gettting serial number", e);
+            return getTunerClass().toString() + " " + serialNumber;
         }
 
-        return BoardID.HACKRF_ONE.getLabel();
+        return "HackRF One";
     }
 
     @Override
