@@ -32,6 +32,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
     private int mLNAGain = AirspyTunerController.LNA_GAIN_DEFAULT;
     private boolean mMixerAGC = false;
     private boolean mLNAAGC = false;
+    private boolean mBiasT = false;
 
     /**
      * Default constructor for JAXB
@@ -128,5 +129,16 @@ public class AirspyTunerConfiguration extends TunerConfiguration
     public void setLNAAGC(boolean enabled)
     {
         mLNAAGC = enabled;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean isBiasT()
+    {
+        return mBiasT;
+    }
+
+    public void setBiasT(boolean enabled)
+    {
+        mBiasT = enabled;
     }
 }

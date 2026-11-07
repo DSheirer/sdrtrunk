@@ -32,6 +32,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.SpinnerNumberModel;
 
@@ -45,6 +46,7 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
     private JButton mTunerInfoButton;
     private JCheckBox mLnaGainCheckBox;
     private JCheckBox mMixerGainCheckBox;
+    private JCheckBox mBiasTCheckBox;
 
     /**
      * Constructs an instance
@@ -106,11 +108,13 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         getTunerInfoButton().setEnabled(hasTuner());
         getLnaGainCheckBox().setEnabled(hasTuner());
         getMixerGainCheckBox().setEnabled(hasTuner());
+        getBiasTCheckBox().setEnabled(hasTuner());
 
         if(hasTuner() && hasConfiguration())
         {
             getLnaGainCheckBox().setSelected(getConfiguration().getGainLNA());
             getMixerGainCheckBox().setSelected(getConfiguration().getGainMixer());
+            getBiasTCheckBox().setSelected(getConfiguration().isBiasT());
         }
 
         setLoading(false);
@@ -135,8 +139,12 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         add(getFrequencyPanel(), "wrap");
 
         add(new JSeparator(), "span,growx,push");
-        add(getLnaGainCheckBox());
-        add(getMixerGainCheckBox());
+        JPanel checkBoxPanel = new JPanel();
+        checkBoxPanel.setLayout(new MigLayout("insets 0", "[left][left][left]", ""));
+        checkBoxPanel.add(getLnaGainCheckBox());
+        checkBoxPanel.add(getMixerGainCheckBox());
+        checkBoxPanel.add(getBiasTCheckBox());
+        add(checkBoxPanel, "span,align left");
     }
 
     public JButton getTunerInfoButton()
@@ -204,6 +212,37 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         return mMixerGainCheckBox;
     }
 
+    /**
+     * Checkbox to enable/disable Bias-T power for active antennas
+     */
+    public JCheckBox getBiasTCheckBox()
+    {
+        if(mBiasTCheckBox == null)
+        {
+            mBiasTCheckBox = new JCheckBox("Bias-T");
+            mBiasTCheckBox.setEnabled(false);
+            mBiasTCheckBox.setToolTipText("Enable Bias-T power output for active antennas");
+            mBiasTCheckBox.addActionListener(event ->
+            {
+                if(hasTuner() && !isLoading())
+                {
+                    try
+                    {
+                        getController().setBiasT(getBiasTCheckBox().isSelected());
+                        save();
+                    }
+                    catch(SourceException e)
+                    {
+                        mLog.error("Couldn't set bias-T for FCD2", e);
+                        JOptionPane.showMessageDialog(mBiasTCheckBox, "Couldn't set Bias-T: " + e.getMessage());
+                    }
+                }
+            });
+        }
+
+        return mBiasTCheckBox;
+    }
+
     @Override
     public void setTunerLockState(boolean locked)
     {
@@ -255,6 +294,7 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
             getConfiguration().setGainLNA(getLnaGainCheckBox().isSelected());
             getConfiguration().setGainMixer(getMixerGainCheckBox().isSelected());
+            getConfiguration().setBiasT(getBiasTCheckBox().isSelected());
             saveConfiguration();
         }
     }

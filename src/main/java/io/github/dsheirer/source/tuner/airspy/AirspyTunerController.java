@@ -183,13 +183,22 @@ public class AirspyTunerController extends TunerController
     }
 
     /**
-     * Closes the device, which also stops streaming.
+     * Turns off the bias-T and closes the device, which also stops streaming.
      * @param device to close, or null
      */
     private static void closeDevice(AirspyDevice device)
     {
         if(device != null)
         {
+            try
+            {
+                device.setBiasTee(false);
+            }
+            catch(AirspyException | RuntimeException e)
+            {
+                mLog.warn("Error turning off Airspy bias-T before closing the device - " + e.getMessage());
+            }
+
             try
             {
                 device.close();
@@ -462,6 +471,7 @@ public class AirspyTunerController extends TunerController
                 setLNAGain(config.getLNAGain());
                 setMixerAGC(config.isMixerAGC());
                 setLNAAGC(config.isLNAAGC());
+                setBiasT(config.isBiasT());
 
                 //Set the gain mode last, so custom values are already set, and linearity and sensitivity modes will
                 //automatically override the custom values.
@@ -618,6 +628,17 @@ public class AirspyTunerController extends TunerController
     public void setLNAAGC(boolean enabled) throws SourceException
     {
         execute(device -> device.setLnaAgc(enabled));
+    }
+
+    /**
+     * Enables/disables the Bias-T (RF bias tee) power output for active antennas
+     *
+     * @param enabled true to enable Bias-T, false to disable
+     * @throws SourceException on error
+     */
+    public void setBiasT(boolean enabled) throws SourceException
+    {
+        execute(device -> device.setBiasTee(enabled));
     }
 
     public void setGain(Gain gain) throws SourceException

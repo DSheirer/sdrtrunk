@@ -27,6 +27,7 @@ public class FCD2TunerConfiguration extends TunerConfiguration
 {
     private boolean mGainLNA = true;
     private boolean mGainMixer = true;
+    private boolean mBiasT = false;
 
     /**
      * Default constructor for JAXB
@@ -68,5 +69,16 @@ public class FCD2TunerConfiguration extends TunerConfiguration
     public void setGainMixer(boolean gain)
     {
         mGainMixer = gain;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean isBiasT()
+    {
+        return mBiasT;
+    }
+
+    public void setBiasT(boolean enabled)
+    {
+        mBiasT = enabled;
     }
 }
