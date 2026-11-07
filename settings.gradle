@@ -17,6 +17,14 @@ dependencyResolutionManagement {
             content { includeModule 'io.github.dsheirer', 'jairspy' }
         }
 
+        //jAirspyHF is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jAirspyHF/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jairspyhf' }
+        }
+
         //jRTL is published as a GitHub release, with the native libraries for all platforms in the jar
         ivy {
             url = 'https://github.com/DSheirer/jRTL/releases/download'
