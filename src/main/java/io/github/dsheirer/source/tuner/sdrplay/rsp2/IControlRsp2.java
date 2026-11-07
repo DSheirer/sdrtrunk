@@ -20,8 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay.rsp2;
 
 import io.github.dsheirer.source.tuner.sdrplay.IControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AntennaSelection;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 
 /**
  * Control interface for RSP2 device
@@ -31,56 +30,56 @@ public interface IControlRsp2 extends IControlRsp
     /**
      * Indicates if the Bias-T power is enabled.
      * @return true if enabled.
-     * @throws SDRPlayException if the device is no started/selected
+     * @throws RspException if the device is no started/selected
      */
-    boolean isBiasT() throws SDRPlayException;
+    boolean isBiasT() throws RspException;
 
     /**
      * Sets the enabled state of the Bias-T power.
      * @param enabled true to power on the Bias-T
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setBiasT(boolean enabled) throws SDRPlayException;
+    void setBiasT(boolean enabled) throws RspException;
 
     /**
      * Indicates the enabled state of the external reference output.
      * @return true if enabled.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    boolean isExternalReferenceOutput() throws SDRPlayException;
+    boolean isExternalReferenceOutput() throws RspException;
 
     /**
      * Sets the enabled state of the external reference output.
      * @param enabled true to enable.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setExternalReferenceOutput(boolean enabled) throws SDRPlayException;
+    void setExternalReferenceOutput(boolean enabled) throws RspException;
 
     /**
      * Indicates if the RF notch is enabled (FM broadcast band filter).
      * @return true if enabled.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    boolean isRfNotch() throws SDRPlayException;
+    boolean isRfNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF notch
      * @param enabled true to filter the FM broadcast band frequency range.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setRfNotch(boolean enabled) throws SDRPlayException;
+    void setRfNotch(boolean enabled) throws RspException;
 
     /**
      * Antenna currently being used.
      * @return antenna being used.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    Rsp2AntennaSelection getAntennaSelection() throws SDRPlayException;
+    Rsp2AntennaSelection getAntennaSelection() throws RspException;
 
     /**
      * Sets the antenna selection
      * @param antenna to use
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setAntennaSelection(Rsp2AntennaSelection antenna) throws SDRPlayException;
+    void setAntennaSelection(Rsp2AntennaSelection antenna) throws RspException;
 }

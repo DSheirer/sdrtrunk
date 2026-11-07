@@ -386,7 +386,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
 
             //Special handling for RSPduo Tuner 1 configured as master - remove the slave tuner also
             if(discoveredTuner instanceof DiscoveredRspDuoTuner1 master1 &&
-               master1.getDeviceInfo().getDeviceSelectionMode().isMasterMode())
+               master1.getDeviceSelectionMode().isMasterMode())
             {
                 DiscoveredTuner slave2 = getDiscoveredTuner(master1.getSlaveId());
 
@@ -399,7 +399,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
             }
             //Special handling for RSPduo Tuner 2 configured as slave - remove the master tuner also
             else if(discoveredTuner instanceof DiscoveredRspDuoTuner2 slave2 &&
-                    slave2.getDeviceInfo().getDeviceSelectionMode().isSlaveMode())
+                    slave2.getDeviceSelectionMode().isSlaveMode())
             {
                 String masterId = slave2.getMasterId();
 

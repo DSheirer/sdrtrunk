@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,136 +19,26 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rsp1b;
 
-import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp1bDevice;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1a.ControlRsp1a;
 
 /**
- * Control wrapper for an RSP1B Device
+ * Control wrapper for an RSP1B Device.  The SDRplay API controls the RSP1B the same as the RSP1A.
  */
-public class ControlRsp1b extends ControlRsp<Rsp1bDevice> implements IControlRsp1b
+public class ControlRsp1b extends ControlRsp1a implements IControlRsp1b
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRsp1b.class);
-
     /**
      * Constructs an instance
-     * @param device for the device
+     * @param deviceInfo for the device
      */
-    public ControlRsp1b(Rsp1bDevice device)
+    public ControlRsp1b(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo);
     }
 
     @Override
-    public boolean isBiasT() throws SDRPlayException
+    protected long getLowBandLimit()
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isBiasT();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setBiasT(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setBiasT(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public boolean isRfDabNotch() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfDabNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setRfDabNotch(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfDabNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public boolean isRfNotch() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setRfNotch(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    /**
-     * Maximum LNA index value as determined by frequency range using the API section 5. Gain Reduction Table values.
-     * @return maximum (valid) LNA index value.
-     */
-    @Override
-    public int getMaximumLNASetting()
-    {
-        try
-        {
-            long frequency = getTunedFrequency();
-
-            if(frequency < 50_000_000)
-            {
-                return 6;
-            }
-            else if(frequency < 1_000_000_000)
-            {
-                return 9;
-            }
-            else
-            {
-                return 8;
-            }
-
-        }
-        catch(SDRPlayException se)
-        {
-            mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
-        }
-
-        return 6; //Use the most restrictive setting as a default.
+        return 50_000_000;
     }
 }

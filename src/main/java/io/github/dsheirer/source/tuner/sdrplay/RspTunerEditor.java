@@ -21,9 +21,7 @@ package io.github.dsheirer.source.tuner.sdrplay;
 
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
+import io.github.dsheirer.sdrplay.Tuner;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
 import io.github.dsheirer.util.ThreadPool;
 import java.awt.Color;
@@ -133,10 +131,10 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
                 {
                     try
                     {
-                        getTunerController().getControlRsp().setAgcMode(mAgcButton.isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
+                        getTunerController().getControlRsp().setAgcMode(mAgcButton.isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
                         updateGainLabel();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Error setting AGC mode on RSP device");
                     }
@@ -175,9 +173,9 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     }
 
     @Override
-    public void notifyGainOverload(TunerSelect tunerSelect)
+    public void notifyGainOverload(Tuner tuner)
     {
-        if(hasTuner() && getTuner().getRspTunerController().getTunerSelect() == tunerSelect)
+        if(hasTuner() && getTuner().getRspTunerController().getSdrplayTuner() == tuner)
         {
             //Set overload alert
             EventQueue.invokeLater(() -> setGainOverloadAlert(true));
@@ -291,7 +289,7 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
             float currentGain = getTunerController().getControlRsp().getCurrentGain();
             getGainValueLabel().setText((int)currentGain + " dB");
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error accessing current gain value from RSP tuner", se);
         }

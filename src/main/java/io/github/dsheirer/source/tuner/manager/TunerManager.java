@@ -22,6 +22,9 @@ package io.github.dsheirer.source.tuner.manager;
 import io.github.dsheirer.gui.preference.tuner.RspDuoSelectionMode;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.SDRplay;
+import io.github.dsheirer.sdrplay.SDRplayException;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigTuner;
@@ -39,9 +42,6 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRplay;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
@@ -181,11 +181,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         mDiscoveredTunerModel.releaseDiscoveredTuners();
 
         //Shutdown SDRplay API instance
-        if(mSDRplay != null)
-        {
-            mSDRplay.close();
-            mSDRplay = null;
-        }
+        closeSDRplay();
 
         //Shutdown LibUsb
         if(mLibUsbInitialized)
@@ -360,31 +356,36 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
         RspDuoSelectionMode duoSelectionMode = mUserPreferences.getTunerPreference().getRspDuoTunerMode();
 
-        //Note: we have to keep this first API instance open while we use any RSP tuners, otherwise the additional API
-        //instance(s) used by the individual tuners become unresponsive.  Note sure why.
+        if(!SDRplay.isInstalled())
+        {
+            mLog.info("SDRplay API is not installed - RSP tuners are not available");
+            return;
+        }
 
+        //Note: this session stays open while RSP tuners are in use.  Each RSP tuner opens its own session and the
+        //sessions share a single connection to the SDRplay API service, which closes when the last session closes.
         try
         {
-            mSDRplay = new SDRplay();
+            mSDRplay = SDRplay.open();
+            mLog.info("SDRplay API version [" + mSDRplay.apiVersion() + "] loaded from [" + mSDRplay.location() + "]");
         }
-        catch(SDRPlayException se)
+        catch(SDRplayException se)
         {
-            mLog.error("Couldn't load SDRPlay API");
+            mLog.error("Couldn't open SDRplay API - " + se.getMessage());
             mSDRplay = null;
         }
 
-        if(mSDRplay != null && mSDRplay.isAvailable())
+        if(mSDRplay != null)
         {
             try
             {
-                List<DeviceInfo> deviceInfos = mSDRplay.getDeviceInfos();
+                List<DeviceInfo> deviceInfos = mSDRplay.devices();
 
                 mLog.info("Discovered [" + deviceInfos.size() + "] RSP devices from SDRplay API");
 
                 if(deviceInfos.isEmpty())
                 {
-                    mSDRplay.close();
-                    mSDRplay = null;
+                    closeSDRplay();
                     return;
                 }
 
@@ -398,16 +399,27 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                     }
                 }
             }
-            catch(SDRPlayException se)
+            catch(SDRplayException se)
             {
-                mLog.info("Unable to get list of devices from SDRplay API");
+                mLog.info("Unable to get list of devices from SDRplay API - " + se.getMessage());
             }
         }
-        else
+    }
+
+    /**
+     * Closes the SDRplay API discovery session.
+     */
+    private void closeSDRplay()
+    {
+        if(mSDRplay != null)
         {
-            if(mSDRplay != null)
+            try
             {
                 mSDRplay.close();
+            }
+            catch(SDRplayException se)
+            {
+                mLog.warn("Error closing SDRplay API - " + se.getMessage());
             }
 
             mSDRplay = null;
@@ -459,7 +471,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         //Special handling for RSPduo to auto-update enabled state for slave device when configured for master/slave operation
-        if(discoveredTuner instanceof DiscoveredRspDuoTuner1 rspDuoTuner1 && rspDuoTuner1.getDeviceInfo().getDeviceSelectionMode().isMasterMode())
+        if(discoveredTuner instanceof DiscoveredRspDuoTuner1 rspDuoTuner1 && rspDuoTuner1.getDeviceSelectionMode().isMasterMode())
         {
             String id = rspDuoTuner1.getId();
             id = id.replace(DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "1", DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "2");

@@ -23,8 +23,8 @@ import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.RspModel;
 
 /**
  * Discovered SDRplay RSP tuner
@@ -32,16 +32,31 @@ import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
 public abstract class DiscoveredRspTuner<R extends IControlRsp> extends DiscoveredTuner
 {
     private final DeviceInfo mDeviceInfo;
+    private final DeviceSelectionMode mDeviceSelectionMode;
     private final ChannelizerType mChannelizerType;
 
     /**
      * Constructs an instance
      * @param deviceInfo to select the device from the API
+     * @param deviceSelectionMode for selecting the device from the API
+     * @param channelizerType to use for the tuner
+     */
+    public DiscoveredRspTuner(DeviceInfo deviceInfo, DeviceSelectionMode deviceSelectionMode,
+                              ChannelizerType channelizerType)
+    {
+        mDeviceInfo = deviceInfo;
+        mDeviceSelectionMode = deviceSelectionMode;
+        mChannelizerType = channelizerType;
+    }
+
+    /**
+     * Constructs an instance for single tuner 1 selection mode.
+     * @param deviceInfo to select the device from the API
+     * @param channelizerType to use for the tuner
      */
     public DiscoveredRspTuner(DeviceInfo deviceInfo, ChannelizerType channelizerType)
     {
-        mDeviceInfo = deviceInfo;
-        mChannelizerType = channelizerType;
+        this(deviceInfo, DeviceSelectionMode.SINGLE_TUNER_1, channelizerType);
     }
 
     /**
@@ -51,6 +66,14 @@ public abstract class DiscoveredRspTuner<R extends IControlRsp> extends Discover
     public DeviceInfo getDeviceInfo()
     {
         return mDeviceInfo;
+    }
+
+    /**
+     * Device selection mode for the discovered tuner
+     */
+    public DeviceSelectionMode getDeviceSelectionMode()
+    {
+        return mDeviceSelectionMode;
     }
 
     /**
@@ -68,11 +91,32 @@ public abstract class DiscoveredRspTuner<R extends IControlRsp> extends Discover
     }
 
     /**
-     * Type of RSP tuner device
+     * RSP model
      */
-    public DeviceType getDeviceType()
+    public RspModel getModel()
     {
-        return mDeviceInfo.getDeviceType();
+        return mDeviceInfo.model();
+    }
+
+    /**
+     * Model name used in tuner IDs and display names.  Note: these names are used for tuner configuration IDs and
+     * must not change.
+     * @param model of RSP
+     * @return model name
+     */
+    public static String getModelName(RspModel model)
+    {
+        return switch(model)
+        {
+            case RSP1 -> "RSP1";
+            case RSP1A -> "RSP1A";
+            case RSP1B -> "RSP1B";
+            case RSP2 -> "RSP2";
+            case RSPDUO -> "RSPduo";
+            case RSPDX -> "RSPdx";
+            case RSPDX_R2 -> "RSPdxR2";
+            default -> "UNKNOWN";
+        };
     }
 
     /**
@@ -85,11 +129,11 @@ public abstract class DiscoveredRspTuner<R extends IControlRsp> extends Discover
         {
             try
             {
-                mTuner = TunerFactory.getRspTuner(getDeviceInfo(), getChannelizerType(), this);
+                mTuner = TunerFactory.getRspTuner(getDeviceInfo(), getDeviceSelectionMode(), getChannelizerType(), this);
             }
             catch(Exception se)
             {
-                setErrorMessage("Tuner unavailable [" + getId() + "]");
+                setErrorMessage("Tuner unavailable [" + getId() + "] - " + se.getMessage());
                 mTuner = null;
             }
 
@@ -101,7 +145,7 @@ public abstract class DiscoveredRspTuner<R extends IControlRsp> extends Discover
                 }
                 catch(Exception se)
                 {
-                    setErrorMessage("Error starting tuner [" + getId() + "]");
+                    setErrorMessage("Error starting tuner [" + getId() + "] - " + se.getMessage());
                     mTuner = null;
                 }
             }
@@ -111,7 +155,7 @@ public abstract class DiscoveredRspTuner<R extends IControlRsp> extends Discover
     @Override
     public String getId()
     {
-        return getDeviceType().name() + " SER#" + getDeviceInfo().getSerialNumber();
+        return getModelName(getModel()) + " SER#" + getDeviceInfo().serialNumber();
     }
 
     @Override
