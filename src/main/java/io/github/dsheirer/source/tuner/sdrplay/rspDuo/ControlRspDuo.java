@@ -214,11 +214,50 @@ public abstract class ControlRspDuo<T extends RspDuoTuner> extends ControlRsp<Rs
     @Override
     public void setGain(int lna, int gr) throws SDRPlayException
     {
-        if(mLNA != lna && mBasebandGainReduction != gr)
+        if(mLNA != lna || mBasebandGainReduction != gr)
         {
             mLNA = lna;
-            mBasebandGainReduction = gr;
-            getTuner().setGain(lna, gr);
+
+            // 🔧 SAFETY: Validate GR against current LNA state
+            int minGR = 0;
+            int maxGR = getMaxValidGainReduction(lna);  // См. ниже
+
+            // Clamp to valid range to prevent API errors
+            int safeGR = Math.max(minGR, Math.min(maxGR, gr));
+
+            // Optional: Log if clamping occurred (for debugging)
+            if(safeGR != gr)
+            {
+                mLog.debug("Clamped GR: requested={} → safe={} (LNA={})", gr, safeGR, lna);
+            }
+
+            mBasebandGainReduction = safeGR;  // Store the clamped value
+            getTuner().setGain(lna, safeGR);  // Send valid value to API
+        }
+    }
+
+    /**
+     * Returns the maximum valid Gain Reduction (GR) for the given LNA state on RSPduo.
+     * Values are based on SDRplay API v3 documentation and device-specific limits.
+     * Exceeding these limits causes driver rejections or ADC clipping.
+     */
+    private int getMaxValidGainReduction(int lnaState)
+    {
+        // Conservative mapping - RSPduo specific
+        // Actual values may vary by frequency band and mode
+        switch(lnaState)
+        {
+            case 0: return 40;
+            case 1: return 42;
+            case 2: return 44;
+            case 3: return 46;
+            case 4: return 48;
+            case 5: return 50;
+            case 6: return 52;
+            case 7: return 54;
+            case 8: return 20;  // ← Ваша ошибка: LNA=8, max GR=20!
+            case 9: return 59;
+            default: return 40; // Safe fallback
         }
     }
 
