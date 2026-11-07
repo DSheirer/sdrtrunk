@@ -49,6 +49,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
     private JButton mTunerInfo;
     private JComboBox<HackRFSampleRate> mSampleRateCombo;
     private JToggleButton mAmplifier;
+    private JToggleButton mBiasT;
     private JComboBox<HackRFLNAGain> mLnaGainCombo;
     private JComboBox<HackRFVGAGain> mVgaGainCombo;
 
@@ -80,7 +81,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
-                "[][][][][][][][][][][grow]"));
+                "[][][][][][][][][][][][grow]"));
 
         add(new JLabel("Tuner:"));
         add(getTunerIdLabel());
@@ -109,6 +110,12 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
 
         add(new JLabel("VGA:"));
         add(getVgaGainCombo(), "wrap");
+
+        add(new JLabel("Bias-T:"));
+        add(getBiasTToggle(), "wrap");
+
+        //Empty filler row that grows to take up the remaining vertical space
+        add(new JLabel(), "span,grow,push");
     }
 
     @Override
@@ -137,6 +144,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         getTunerInfoButton().setEnabled(hasTuner());
 
         getAmplifierToggle().setEnabled(hasTuner());
+        getBiasTToggle().setEnabled(hasTuner());
         getLnaGainCombo().setEnabled(hasTuner());
         getVgaGainCombo().setEnabled(hasTuner());
 
@@ -144,6 +152,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         {
             getSampleRateCombo().setSelectedItem(getConfiguration().getSampleRate());
             getAmplifierToggle().setSelected(getConfiguration().getAmplifierEnabled());
+            getBiasTToggle().setSelected(getConfiguration().isBiasT());
             getLnaGainCombo().setSelectedItem(getConfiguration().getLNAGain());
             getVgaGainCombo().setSelectedItem(getConfiguration().getVGAGain());
         }
@@ -252,6 +261,38 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         }
 
         return mAmplifier;
+    }
+
+    private JToggleButton getBiasTToggle()
+    {
+        if(mBiasT == null)
+        {
+            mBiasT = new JToggleButton("Disabled");
+            mBiasT.setToolTipText("Enable or disable Bias-T power (3.3V) on the antenna port for active antennas or LNAs");
+            mBiasT.setEnabled(false);
+            //Item listener also fires for programmatic setSelected() when the configuration loads
+            mBiasT.addItemListener(e -> mBiasT.setText(mBiasT.isSelected() ? "Enabled" : "Disabled"));
+            mBiasT.addActionListener(arg0 ->
+            {
+                if(!isLoading())
+                {
+                    try
+                    {
+                        getTuner().getController().setBiasTEnabled(mBiasT.isSelected());
+                        save();
+                    }
+                    catch(SourceException e)
+                    {
+                        mLog.error("couldn't enable/disable bias-t", e);
+
+                        JOptionPane.showMessageDialog(HackRFTunerEditor.this, "Couldn't change Bias-T setting",
+                                "Error changing Bias-T setting", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+        }
+
+        return mBiasT;
     }
 
     private JComboBox getSampleRateCombo()
@@ -371,6 +412,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
             getConfiguration().setSampleRate((HackRFSampleRate)getSampleRateCombo().getSelectedItem());
             getConfiguration().setAmplifierEnabled(getAmplifierToggle().isSelected());
+            getConfiguration().setBiasT(getBiasTToggle().isSelected());
             getConfiguration().setLNAGain((HackRFLNAGain)getLnaGainCombo().getSelectedItem());
             getConfiguration().setVGAGain((HackRFVGAGain)getVgaGainCombo().getSelectedItem());
             saveConfiguration();
