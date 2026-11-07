@@ -37,6 +37,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
+import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
@@ -170,6 +171,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         discoverRecordingTuners();
+        discoverNetworkTuners();
     }
 
     /**
@@ -437,6 +439,33 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                 discoveredRecordingTuner.setEnabled(false);
                 mLog.info("Tuner Added: " + discoveredRecordingTuner);
                 mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
+            }
+        }
+    }
+
+    /**
+     * Discover network (e.g. rtl_tcp) based tuners
+     */
+    private void discoverNetworkTuners()
+    {
+        List<TunerConfiguration> tunerConfigurations = getTunerConfigurationManager().getTunerConfigurations(TunerType.RTL_TCP);
+
+        if(tunerConfigurations.size() > 0)
+        {
+            mLog.info("Discovered [" + tunerConfigurations.size() + "] network tuners");
+        }
+
+        for(TunerConfiguration tunerConfiguration: tunerConfigurations)
+        {
+            if(tunerConfiguration instanceof NetworkTunerConfiguration networkTunerConfiguration)
+            {
+                DiscoveredNetworkTuner discoveredNetworkTuner =
+                        new DiscoveredNetworkTuner(mUserPreferences, networkTunerConfiguration);
+
+                discoveredNetworkTuner.addTunerStatusListener(this);
+                discoveredNetworkTuner.setEnabled(false);
+                mLog.info("Tuner Added: " + discoveredNetworkTuner);
+                mDiscoveredTunerModel.addDiscoveredTuner(discoveredNetworkTuner);
             }
         }
     }

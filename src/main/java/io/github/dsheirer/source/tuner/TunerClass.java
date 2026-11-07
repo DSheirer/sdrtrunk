@@ -36,6 +36,7 @@ public enum TunerClass
 	RSP("RSP"),
 	TEST_TUNER("Test"),
 	RECORDING_TUNER("Recording"),
+	NETWORK_TUNER("Network"),
 	UNKNOWN("Unknown" );
 	
 	private final String mDescription;
