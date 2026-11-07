@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.hackrf;
 
+import io.github.dsheirer.hackrf.HackRf;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
@@ -37,7 +38,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
-import javax.usb.UsbException;
 
 /**
  * HackRF Tuner Editor
@@ -174,7 +174,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         getTuner().getController().setVGAGain(vgaGain);
                         save();
                     }
-                    catch(UsbException e)
+                    catch(SourceException e)
                     {
                         JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                                 + " - couldn't apply the VGA gain setting - " + e.getLocalizedMessage());
@@ -211,7 +211,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         getTuner().getController().setLNAGain(lnaGain);
                         save();
                     }
-                    catch(UsbException e)
+                    catch(SourceException e)
                     {
                         JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                                 + " - couldn't apply the LNA gain setting - " + e.getLocalizedMessage());
@@ -240,7 +240,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         getTuner().getController().setAmplifierEnabled(mAmplifier.isSelected());
                         save();
                     }
-                    catch(UsbException e)
+                    catch(SourceException e)
                     {
                         mLog.error("couldn't enable/disable amplifier", e);
 
@@ -274,7 +274,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         adjustForSampleRate(sampleRate.getRate());
                         save();
                     }
-                    catch(SourceException | UsbException e2)
+                    catch(SourceException e2)
                     {
                         JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                                 + " - couldn't apply the sample rate setting [" + sampleRate.getLabel() +
@@ -329,83 +329,33 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
 
     private String getTunerInfo()
     {
-        HackRFTunerController.BoardID board = HackRFTunerController.BoardID.INVALID;
-
-        try
-        {
-            if(hasTuner())
-            {
-                board = getTuner().getController().getBoardID();
-            }
-        }
-        catch(UsbException e)
-        {
-            mLog.error("couldn't read HackRF board identifier", e);
-        }
+        HackRFTunerController controller = hasTuner() ? getTuner().getController() : null;
 
         StringBuilder sb = new StringBuilder();
-
         sb.append("<html><h3>HackRF Tuner</h3>");
-        sb.append("<b>Board: </b>");
-        sb.append(board.getLabel());
-        sb.append("<br>");
-
-        HackRFTunerController.Serial serial = null;
-
-        try
-        {
-            if(hasTuner())
-            {
-                serial = getTuner().getController().getSerial();
-            }
-        }
-        catch(Exception e)
-        {
-            mLog.error("couldn't read HackRF serial number", e);
-        }
-
-        if(serial != null)
-        {
-            sb.append("<b>Serial: </b>");
-            sb.append(serial.getSerialNumber());
-            sb.append("<br>");
-
-            sb.append("<b>Part: </b>");
-            sb.append(serial.getPartID());
-            sb.append("<br>");
-        }
-        else
-        {
-            sb.append("<b>Serial: Unknown</b><br>");
-            sb.append("<b>Part: Unknown</b><br>");
-        }
-
-        String firmware = null;
+        appendInfo(sb, "Board", controller != null ? controller.getBoardName() : null);
+        appendInfo(sb, "Serial", controller != null ? controller.getSerialNumber() : null);
+        appendInfo(sb, "Part", controller != null ? controller.getPartId() : null);
+        appendInfo(sb, "Firmware", controller != null ? controller.getFirmwareVersion() : null);
 
         try
         {
-            if(hasTuner())
-            {
-                firmware = getTuner().getController().getFirmwareVersion();
-            }
+            appendInfo(sb, "Library", "libhackrf " + HackRf.libraryVersion() + " (" + HackRf.libraryRelease() + ")");
         }
-        catch(Exception e)
+        catch(RuntimeException | LinkageError e)
         {
-            mLog.error("couldn't read HackRF firmware version", e);
-        }
-
-        if(firmware != null)
-        {
-            sb.append("<b>Firmware: </b>");
-            sb.append(firmware);
-            sb.append("<br>");
-        }
-        else
-        {
-            sb.append("<b>Firmware: Unknown</b><br>");
+            mLog.error("couldn't read libhackrf version", e);
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Appends a labeled tuner info value, or Unknown when the value is not available.
+     */
+    private static void appendInfo(StringBuilder sb, String label, String value)
+    {
+        sb.append("<b>").append(label).append(": </b>").append(value != null ? value : "Unknown").append("<br>");
     }
 
     @Override

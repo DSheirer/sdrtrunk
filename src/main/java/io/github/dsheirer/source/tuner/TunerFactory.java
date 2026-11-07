@@ -347,6 +347,7 @@ public class TunerFactory
                 return new FCD2TunerConfiguration(uniqueID);
             case HACKRF_JAWBREAKER:
             case HACKRF_ONE:
+            case HACKRF_PRO:
             case HACKRF_RAD1O:
                 return new HackRFTunerConfiguration(uniqueID);
             case HYDRASDR_R828D:

@@ -33,6 +33,14 @@ dependencyResolutionManagement {
             content { includeModule 'io.github.dsheirer', 'jrtl' }
         }
 
+        //jHackRF is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jHackRF/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jhackrf' }
+        }
+
         //jHydraSDR is published as a GitHub release, with the native libraries for all platforms in the jar
         ivy {
             url = 'https://github.com/DSheirer/jHydraSDR/releases/download'

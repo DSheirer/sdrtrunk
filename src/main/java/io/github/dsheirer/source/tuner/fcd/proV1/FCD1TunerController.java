@@ -32,8 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.TargetDataLine;
-import javax.usb.UsbClaimException;
-import javax.usb.UsbException;
 
 /**
  * Funcube Dongle Pro tuner controller.  Combines USB HID control with Audio Mixer data streaming interface.
@@ -131,7 +129,7 @@ public class FCD1TunerController extends FCDTunerController
     /**
      * Gets the current LNA Gain value from the controller and stores it
      */
-    public LNAGain getLNAGainSetting() throws UsbClaimException, UsbException
+    public LNAGain getLNAGainSetting()
     {
         if(mLNAGain == null)
         {
@@ -148,10 +146,8 @@ public class FCD1TunerController extends FCDTunerController
      * Sets lna gain for the controller
      *
      * @param gain
-     * @throws UsbException
-     * @throws UsbClaimException
      */
-    public void setLNAGain(LNAGain gain) throws UsbException, UsbClaimException
+    public void setLNAGain(LNAGain gain)
     {
         send(FCDCommand.APP_SET_LNA_GAIN, gain.getSetting());
     }
@@ -169,10 +165,8 @@ public class FCD1TunerController extends FCDTunerController
      *
      * @param value - new phase correction
      * @throws IllegalArgumentException for value outside limits (0.0 <> 1.0)
-     * @throws UsbClaimException        - if cannot claim the FCD HID controller
-     * @throws UsbException             - if there was a usb error
      */
-    public void setPhaseCorrection(double value) throws UsbClaimException, UsbException
+    public void setPhaseCorrection(double value)
     {
         if(value < -1.0 || value > 1.0)
         {
@@ -194,11 +188,8 @@ public class FCD1TunerController extends FCDTunerController
     /**
      * @param value - gain correction value
      * @throws IllegalArgumentException for value outside limits (0.0 <> 1.0)
-     * @throws UsbClaimException        - if cannot claim the FCD HID controller
-     * @throws UsbException             - if there was a usb error
      */
     public void setGainCorrection(double value)
-        throws UsbClaimException, UsbException
     {
         if(value < -1.0 || value > 1.0)
         {
@@ -220,7 +211,7 @@ public class FCD1TunerController extends FCDTunerController
      * Gain correction values range -1.0 to 0.0 to 1.0 and applied to the dongle as values 0 to 65534
      * Phase correction values range -1.0 to 0.0 to 1.0 and applied to the dongle as signed values -32768 to 32767
      */
-    private void setPhaseAndGainCorrection() throws UsbClaimException, UsbException
+    private void setPhaseAndGainCorrection()
     {
         //UNSIGNED short gain value - masked into a long to avoid sign-extension
         long gain = (long)((1.0 + mGainCorrection) * Short.MAX_VALUE);
@@ -239,10 +230,8 @@ public class FCD1TunerController extends FCDTunerController
      * Note: testing shows that when the dongle is unplugged, any stored phase and gain correction values are reset.
      * Reading the dongle after a fresh plugin shows the values reset.
      *
-     * @throws UsbClaimException
-     * @throws UsbException
      */
-    private void getPhaseAndGainCorrection() throws UsbClaimException, UsbException
+    private void getPhaseAndGainCorrection()
     {
         ByteBuffer buffer = send(FCDCommand.APP_GET_IQ_CORRECTION);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -276,10 +265,8 @@ public class FCD1TunerController extends FCDTunerController
      *
      * @param value - new DC correction value for the inphase component
      * @throws IllegalArgumentException for values outside limits (-1.0 <> 1.0)
-     * @throws UsbClaimException        - if cannot claim the FCD HID controller
-     * @throws UsbException             - if there was a usb error
      */
-    public void setDCCorrectionInPhase(double value) throws UsbClaimException, UsbException
+    public void setDCCorrectionInPhase(double value)
     {
         if(value < -1.0 || value > 1.0)
         {
@@ -304,10 +291,8 @@ public class FCD1TunerController extends FCDTunerController
      *
      * @param value - new DC correction value for the quadrature component
      * @throws IllegalArgumentException for values outside limits (-1.0 <> 1.0)
-     * @throws UsbClaimException        - if cannot claim the FCD HID controller
-     * @throws UsbException             - if there was a usb error
      */
-    public void setDCCorrectionQuadrature(double value) throws UsbClaimException, UsbException
+    public void setDCCorrectionQuadrature(double value)
     {
         if(value < -1.0 || value > 1.0)
         {
@@ -332,7 +317,7 @@ public class FCD1TunerController extends FCDTunerController
      * Both Inphase and Quadrature correction values range -1.0 to 0.0 to 1.0 and are applied to the dongle as signed
      * short values -32768 to 0 to 32767
      */
-    private void setDCIQCorrection() throws UsbClaimException, UsbException
+    private void setDCIQCorrection()
     {
         //I & Q DC offset correction values are signed short values
         short inphase = (short)(mDCCorrectionInPhase * Short.MAX_VALUE);
@@ -348,7 +333,7 @@ public class FCD1TunerController extends FCDTunerController
         send(FCDCommand.APP_SET_DC_CORRECTION, correction);
     }
 
-    private void getDCIQCorrection() throws UsbClaimException, UsbException
+    private void getDCIQCorrection()
     {
         ByteBuffer buffer = send(FCDCommand.APP_GET_DC_CORRECTION);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -370,7 +355,7 @@ public class FCD1TunerController extends FCDTunerController
         mDCCorrectionInPhase = ((short)inphase / (double)Short.MAX_VALUE);
     }
 
-    private void getLNAEnhanceSetting() throws UsbClaimException, UsbException
+    private void getLNAEnhanceSetting()
     {
         ByteBuffer buffer = send(FCDCommand.APP_GET_LNA_ENHANCE);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -383,12 +368,12 @@ public class FCD1TunerController extends FCDTunerController
         return mLNAEnhance;
     }
 
-    public void setLNAEnhance(LNAEnhance enhance) throws UsbClaimException, UsbException
+    public void setLNAEnhance(LNAEnhance enhance)
     {
         send(FCDCommand.APP_SET_LNA_ENHANCE, enhance.getSetting());
     }
 
-    private void getMixerGainSetting() throws UsbClaimException, UsbException
+    private void getMixerGainSetting()
     {
         ByteBuffer buffer = send(FCDCommand.APP_GET_MIXER_GAIN);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -401,7 +386,7 @@ public class FCD1TunerController extends FCDTunerController
         return mMixerGain;
     }
 
-    public void setMixerGain(MixerGain gain) throws UsbClaimException, UsbException
+    public void setMixerGain(MixerGain gain)
     {
         send(FCDCommand.APP_SET_MIXER_GAIN, gain.getSetting());
     }
