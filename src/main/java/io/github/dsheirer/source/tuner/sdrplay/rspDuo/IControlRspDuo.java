@@ -21,7 +21,7 @@ package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.IControlRsp;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import java.util.EnumSet;
 
 /**
@@ -40,40 +40,40 @@ public interface IControlRspDuo extends IControlRsp
      * @return true if enabled.
      * @throws exception if the device is not started (selected).
      */
-    boolean isRfDabNotch() throws SDRPlayException;
+    boolean isRfDabNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF DAB notch.
      * @param enabled true to filter the DAB broadcast band frequency range.
      * @throws exception if the device is not started (selected).
      */
-    void setRfDabNotch(boolean enabled) throws SDRPlayException;
+    void setRfDabNotch(boolean enabled) throws RspException;
 
     /**
      * Indicates if the RF notch is enabled (FM broadcast band filter).
      * @return true if enabled.
      * @throws exception if the device is not started (selected).
      */
-    boolean isRfNotch() throws SDRPlayException;
+    boolean isRfNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF notch
      * @param enabled true to filter the FM broadcast band frequency range.
      * @throws exception if the device is not started (selected).
      */
-    void setRfNotch(boolean enabled) throws SDRPlayException;
+    void setRfNotch(boolean enabled) throws RspException;
 
     /**
      * Indicates the enabled state of the external reference output.
      * @return true if enabled.
      * @throws exception if the device is not started (selected).
      */
-    boolean isExternalReferenceOutput() throws SDRPlayException;
+    boolean isExternalReferenceOutput() throws RspException;
 
     /**
      * Sets the enabled state of the external reference output.
      * @param enabled true to enable.
      * @throws exception if the device is not started (selected).
      */
-    void setExternalReferenceOutput(boolean enabled) throws SDRPlayException;
+    void setExternalReferenceOutput(boolean enabled) throws RspException;
 }

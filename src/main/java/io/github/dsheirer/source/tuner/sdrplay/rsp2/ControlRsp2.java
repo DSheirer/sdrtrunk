@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,10 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rsp2;
 
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.Rsp2Device;
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp2Device;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AmPort;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AntennaSelection;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,115 +31,69 @@ import org.slf4j.LoggerFactory;
  */
 public class ControlRsp2 extends ControlRsp<Rsp2Device> implements IControlRsp2
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRsp2.class);
+    private static final Logger mLog = LoggerFactory.getLogger(ControlRsp2.class);
     private Rsp2AntennaSelection mAntennaSelection = Rsp2AntennaSelection.ANT_A;
 
     /**
      * Constructs an instance
-     * @param sdrplayApi to control the device
-     * @param device to control
+     * @param deviceInfo for the device
      */
-    public ControlRsp2(Rsp2Device device)
+    public ControlRsp2(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo, Rsp2Device.class);
     }
 
     @Override
-    public boolean isBiasT() throws SDRPlayException
+    public boolean isBiasT() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isBiasT();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get Bias-T", Rsp2Device::isBiasT);
     }
 
     @Override
-    public void setBiasT(boolean enabled) throws SDRPlayException
+    public void setBiasT(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setBiasT(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set Bias-T", device -> device.setBiasT(enabled));
     }
 
     @Override
-    public boolean isExternalReferenceOutput() throws SDRPlayException
+    public boolean isExternalReferenceOutput() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isExternalReferenceOutput();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get external reference output", Rsp2Device::isExternalReferenceOutput);
     }
 
     @Override
-    public void setExternalReferenceOutput(boolean enabled) throws SDRPlayException
+    public void setExternalReferenceOutput(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setExternalReferenceOutput(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set external reference output", device -> device.setExternalReferenceOutput(enabled));
     }
 
     @Override
-    public boolean isRfNotch() throws SDRPlayException
+    public boolean isRfNotch() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get RF notch", Rsp2Device::isRfNotch);
     }
 
     @Override
-    public void setRfNotch(boolean enabled) throws SDRPlayException
+    public void setRfNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set RF notch", device -> device.setRfNotch(enabled));
     }
 
     @Override
-    public Rsp2AntennaSelection getAntennaSelection() throws SDRPlayException
+    public Rsp2AntennaSelection getAntennaSelection() throws RspException
     {
         return mAntennaSelection;
     }
 
     @Override
-    public void setAntennaSelection(Rsp2AntennaSelection selection) throws SDRPlayException
+    public void setAntennaSelection(Rsp2AntennaSelection selection) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setAmPort(selection.getAmPort());
-            getDevice().getTuner().setAntenna(selection.getAntenna());
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set antenna " + selection, device -> {
+            device.setAmPort(selection.getAmPort());
+            device.setAntenna(selection.getAntenna());
+        });
+
+        mAntennaSelection = selection;
     }
 
     /**
@@ -150,15 +103,14 @@ public class ControlRsp2 extends ControlRsp<Rsp2Device> implements IControlRsp2
     @Override
     public int getMaximumLNASetting()
     {
+        if(mAntennaSelection.isHighZ())
+        {
+            return 4;
+        }
+
         try
         {
             long frequency = getTunedFrequency();
-            Rsp2AmPort port = getAntennaSelection().getAmPort();
-
-            if(port == Rsp2AmPort.PORT_1_HIGH_Z)
-            {
-                return 4;
-            }
 
             if(frequency < 420_000_000)
             {
@@ -169,7 +121,7 @@ public class ControlRsp2 extends ControlRsp<Rsp2Device> implements IControlRsp2
                 return 5;
             }
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
         }

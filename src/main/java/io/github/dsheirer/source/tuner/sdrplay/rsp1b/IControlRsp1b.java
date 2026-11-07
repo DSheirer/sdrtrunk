@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay.rsp1b;
 
 import io.github.dsheirer.source.tuner.sdrplay.IControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 
 /**
  * Control interface for RSP1B device
@@ -32,40 +32,40 @@ public interface IControlRsp1b extends IControlRsp
      * @return true if enabled.
      * @throws exception if the device is no started/selected
      */
-    boolean isBiasT() throws SDRPlayException;
+    boolean isBiasT() throws RspException;
 
     /**
      * Sets the enabled state of the Bias-T power.
      * @param enabled true to power on the Bias-T
      * @throws exception if the device is no started/selected
      */
-    void setBiasT(boolean enabled) throws SDRPlayException;
+    void setBiasT(boolean enabled) throws RspException;
 
     /**
      * Indicates if the RF DAB notch is enabled (DAB broadcast band filter).
      * @return true if enabled.
      * @throws exception if the device is no started/selected
      */
-    boolean isRfDabNotch() throws SDRPlayException;
+    boolean isRfDabNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF DAB notch.
      * @param enabled true to filter the DAB broadcast band frequency range.
      * @throws exception if the device is no started/selected
      */
-    void setRfDabNotch(boolean enabled) throws SDRPlayException;
+    void setRfDabNotch(boolean enabled) throws RspException;
 
     /**
      * Indicates if the RF notch is enabled (FM broadcast band filter).
      * @return true if enabled.
      * @throws exception if the device is no started/selected
      */
-    boolean isRfNotch() throws SDRPlayException;
+    boolean isRfNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF notch
      * @param enabled true to filter the FM broadcast band frequency range.
      * @throws exception if the device is no started/selected
      */
-    void setRfNotch(boolean enabled) throws SDRPlayException;
+    void setRfNotch(boolean enabled) throws RspException;
 }

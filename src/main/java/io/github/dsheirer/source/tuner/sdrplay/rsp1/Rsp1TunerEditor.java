@@ -24,8 +24,8 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerEditor;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
+import io.github.dsheirer.source.tuner.sdrplay.RspAgcMode;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,9 +132,9 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
         getAgcButton().setEnabled(hasTuner());
         if(hasTuner())
         {
-            AgcMode current = getTunerController().getControlRsp().getAgcMode();
-            getAgcButton().setSelected(current == null || current.equals(AgcMode.ENABLE));
-            getAgcButton().setText((current == null || current.equals(AgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
+            RspAgcMode current = getTunerController().getControlRsp().getAgcMode();
+            getAgcButton().setSelected(current == null || current.equals(RspAgcMode.ENABLE));
+            getAgcButton().setText((current == null || current.equals(RspAgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
             getLNASlider().setLNA(getTunerController().getControlRsp().getLNA());
             getIfGainSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
 
@@ -144,7 +144,7 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
         }
 
         getLNASlider().setEnabled(hasTuner());
-        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != AgcMode.ENABLE);
+        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != RspAgcMode.ENABLE);
         getGainValueLabel().setEnabled(hasTuner());
 
         setLoading(false);
@@ -164,7 +164,7 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
             getConfiguration().setSampleRate((RspSampleRate)getSampleRateCombo().getSelectedItem());
             getConfiguration().setLNA(getLNASlider().getLNA());
             getConfiguration().setBasebandGainReduction(getIfGainSlider().getGR());
-            getConfiguration().setAgcMode(getAgcButton().isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
+            getConfiguration().setAgcMode(getAgcButton().isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
 
             saveConfiguration();
         }
@@ -192,7 +192,7 @@ public class Rsp1TunerEditor extends RspTunerEditor<Rsp1TunerConfiguration>
                         adjustForSampleRate((int)selected.getSampleRate());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Error setting sample rate for RSP1A tuner", se);
                     }

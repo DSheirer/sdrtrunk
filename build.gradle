@@ -129,6 +129,7 @@ dependencies {
     implementation 'io.github.dsheirer:jbladerf:2.6.0' //bladeRF tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jhydrasdr:1.1.4' //HydraSDR tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jrtl:1.4.0.1' //RTL-SDR tuners - GitHub release, see settings.gradle
+    implementation 'io.github.dsheirer:jsdrplay:3.15.3' //SDRplay RSP tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:radio-reference-api:18.0.0'
     implementation 'io.github.dsheirer:usb4java-native-libraries:1.3.3' //OSX & Windows aarch64 native libs
     implementation 'io.github.dsheirer:usb4java:1.3.5' //Fork with Loader support for OSX Multi-Version
@@ -168,8 +169,7 @@ def jvmArgsWindows =
          '--enable-preview', //Project Panama Vector API is still in incubator
          '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
-         '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
-         '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //SDRPlay API library path
+         '--sun-misc-unsafe-memory-access=allow'] //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
 
 /**
  * JVM Arguments for running the application on Linux.
@@ -180,7 +180,7 @@ def jvmArgsLinux =
          '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
          '--sun-misc-unsafe-memory-access=allow', //JDK24 - suppress sun.misc.Unsafe::allocateMemory warning
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
-         '--enable-native-access=ALL-UNNAMED'] //SDRPlay API library path
+         '--enable-native-access=ALL-UNNAMED'] //Suppress warnings for FFM API native calls (tuner libraries)
 
 application {
     mainClass = "io.github.dsheirer.gui.SDRTrunk"
