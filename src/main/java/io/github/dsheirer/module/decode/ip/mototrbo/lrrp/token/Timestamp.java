@@ -28,7 +28,7 @@ import java.util.TimeZone;
 /**
  * LRRP Timestamp Token
  *
- * Start Token: 0x34
+ * Start Token: 0x34 (response packets; in a request packet 0x34 is the Periodic Trigger token)
  * Total Length: 6 bytes
  */
 public class Timestamp extends Token
