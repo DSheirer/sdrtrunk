@@ -45,6 +45,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 /**
@@ -575,7 +576,17 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             @Override
             public void mouseWheelMoved(MouseWheelEvent e)
             {
-                set(mValue - e.getWheelRotation());
+                //Swing delivers mouse wheel events to disabled components, so check enabled state explicitly so that
+                //the wheel can't bypass the lock when the tuner is providing channels.
+                if(isEnabled())
+                {
+                    set(mValue - e.getWheelRotation());
+                }
+                else if(getParent() != null)
+                {
+                    //Pass the event up so that an enclosing scroll pane can still scroll while this control is locked
+                    getParent().dispatchEvent(SwingUtilities.convertMouseEvent(Digit.this, e, getParent()));
+                }
             }
         }
     }
