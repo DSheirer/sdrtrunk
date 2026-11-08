@@ -54,6 +54,10 @@ import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTuner;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerConfiguration;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerEditor;
+import io.github.dsheirer.source.tuner.limesdr.LimeSdrTuner;
+import io.github.dsheirer.source.tuner.limesdr.LimeSdrTunerConfiguration;
+import io.github.dsheirer.source.tuner.limesdr.LimeSdrTunerController;
+import io.github.dsheirer.source.tuner.limesdr.LimeSdrTunerEditor;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
@@ -313,6 +317,8 @@ public class TunerFactory
                 return new HackRFTuner(new HackRFTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case HYDRASDR:
                 return new HydraSdrTuner(new HydraSdrTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            case LIMESDR:
+                return new LimeSdrTuner(new LimeSdrTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case RTL2832:
                 return new RTL2832Tuner(new RTL2832TunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             default:
@@ -352,6 +358,8 @@ public class TunerFactory
                 return new HackRFTunerConfiguration(uniqueID);
             case HYDRASDR_R828D:
                 return new HydraSdrTunerConfiguration(uniqueID);
+            case LIMESDR:
+                return new LimeSdrTunerConfiguration(uniqueID);
             case RAFAELMICRO_R820T:
                 return new R820TTunerConfiguration(uniqueID);
             case RAFAELMICRO_R828D:
@@ -399,6 +407,8 @@ public class TunerFactory
                 return new HackRFTunerEditor(userPreferences, tunerManager, discoveredTuner);
             case HYDRASDR:
                 return new HydraSdrTunerEditor(userPreferences, tunerManager, discoveredTuner);
+            case LIMESDR:
+                return new LimeSdrTunerEditor(userPreferences, tunerManager, discoveredTuner);
             case RSP:
                 if(discoveredTuner instanceof DiscoveredRspTuner discoveredRspTuner)
                 {
