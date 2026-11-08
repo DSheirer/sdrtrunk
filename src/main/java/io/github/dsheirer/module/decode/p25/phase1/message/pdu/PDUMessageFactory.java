@@ -37,6 +37,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitAnswerResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcastUncoordinated;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCCallAlert;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCFrequencyBandUpdateTDMA;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupAffiliationQuery;
@@ -47,7 +48,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCIn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMessageUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMotorolaGroupRegroupChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCProtectionParameterBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRoamingAddressResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRoamingAddressUpdate;
@@ -337,7 +337,7 @@ public class PDUMessageFactory
             case OSP_NETWORK_STATUS_BROADCAST:
                 return new AMBTCNetworkStatusBroadcast(pduSequence, nac, timestamp);
             case OSP_ADJACENT_STATUS_BROADCAST_UNCOORDINATED_BAND_PLAN:
-                return new AMBTCProtectionParameterBroadcast(pduSequence, nac, timestamp);
+                return new AMBTCAdjacentStatusBroadcastUncoordinated(pduSequence, nac, timestamp);
             case OSP_RFSS_STATUS_BROADCAST:
                 return new AMBTCRFSSStatusBroadcast(pduSequence, nac, timestamp);
             case OSP_ROAMING_ADDRESS_UPDATE:

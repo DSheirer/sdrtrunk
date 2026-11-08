@@ -35,6 +35,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSeconda
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcastUncoordinated;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
@@ -198,6 +199,7 @@ public class P25P1NetworkConfigurationMonitor
         switch(ambtc.getHeader().getOpcode())
         {
             case OSP_ADJACENT_STATUS_BROADCAST:
+            case OSP_ADJACENT_STATUS_BROADCAST_UNCOORDINATED_BAND_PLAN:
                 if(ambtc instanceof AMBTCAdjacentStatusBroadcast)
                 {
                     AMBTCAdjacentStatusBroadcast aasb = (AMBTCAdjacentStatusBroadcast)ambtc;
@@ -502,14 +504,24 @@ public class P25P1NetworkConfigurationMonitor
                         if(mAMBTCNeighborSites.containsKey(site))
                         {
                             AMBTCAdjacentStatusBroadcast ambtc = mAMBTCNeighborSites.get(site);
-                            sb.append("  SYSTEM:").append(format(ambtc.getSystem(), 3));
+                            sb.append("  ");
+                            if(ambtc instanceof AMBTCAdjacentStatusBroadcastUncoordinated unc)
+                            {
+                                sb.append("WACN:").append(unc.getWacn()).append(" ");
+                            }
+                            sb.append("SYSTEM:").append(format(ambtc.getSystem(), 3));
                             sb.append(" NAC:").append(format(ambtc.getNAC(), 3));
                             sb.append(" RFSS:").append(format(ambtc.getRfss(), 2));
                             sb.append(" SITE:").append(format(ambtc.getSite(), 2));
                             sb.append(" LRA:").append(format(ambtc.getLocationRegistrationArea(), 2));
                             sb.append(" CHANNEL:").append(ambtc.getChannel());
                             sb.append(" DOWNLINK:").append(ambtc.getChannel().getDownlinkFrequency());
-                            sb.append(" UPLINK:").append(ambtc.getChannel().getUplinkFrequency()).append("\n");
+                            sb.append(" UPLINK:").append(ambtc.getChannel().getUplinkFrequency());
+                            if(ambtc instanceof AMBTCAdjacentStatusBroadcastUncoordinated unc)
+                            {
+                                sb.append(" SERVICES:").append(unc.getSystemServiceClass());
+                            }
+                            sb.append("\n");
                         }
                         if(mLCNeighborSites.containsKey(site))
                         {
