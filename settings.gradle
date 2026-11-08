@@ -33,6 +33,15 @@ dependencyResolutionManagement {
             content { includeModule 'io.github.dsheirer', 'jrtl' }
         }
 
+        //jlibusb is published as a GitHub release, with libusb for all platforms in the jar.  Tuner libraries built on
+        //jlibusb (jAirspy, jAirspyHF, jBladeRF, jHackRF, jHydraSDR, jLimeSDR, jRTL) load their native library next to its libusb, so the process shares one copy.
+        ivy {
+            url = 'https://github.com/DSheirer/jlibusb/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jlibusb' }
+        }
+
         //jHackRF is published as a GitHub release, with the native libraries for all platforms in the jar
         ivy {
             url = 'https://github.com/DSheirer/jHackRF/releases/download'

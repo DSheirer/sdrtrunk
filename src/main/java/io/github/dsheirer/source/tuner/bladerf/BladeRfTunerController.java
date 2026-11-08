@@ -45,17 +45,13 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Context;
-import org.usb4java.Device;
-import org.usb4java.DeviceList;
-import org.usb4java.LibUsb;
 
 /**
  * bladeRF tuner controller, implemented with the jBladeRF library (libbladeRF).
@@ -376,46 +372,7 @@ public class BladeRfTunerController extends TunerController
      */
     private int readUsbAddress() throws SourceException
     {
-        Context context = new Context();
-        int status = LibUsb.init(context);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-        }
-
-        try
-        {
-            DeviceList deviceList = new DeviceList();
-            int count = LibUsb.getDeviceList(context, deviceList);
-
-            if(count < 0)
-            {
-                throw new SourceException("Can't get the USB device list - " + LibUsb.errorName(count));
-            }
-
-            try
-            {
-                for(Device device : deviceList)
-                {
-                    if(LibUsb.getBusNumber(device) == mBus && LibUsb.getPortNumber(device) > 0 &&
-                        mPortAddress != null && mPortAddress.equals(TunerManager.getPortAddress(device)))
-                    {
-                        return LibUsb.getDeviceAddress(device);
-                    }
-                }
-            }
-            finally
-            {
-                LibUsb.freeDeviceList(deviceList, true);
-            }
-        }
-        finally
-        {
-            LibUsb.exit(context);
-        }
-
-        throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
+        return UsbDeviceLookup.find(mBus, mPortAddress).address();
     }
 
     @Override

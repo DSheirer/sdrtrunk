@@ -18,6 +18,10 @@
  */
 package io.github.dsheirer.source.tuner.rtl;
 
+import io.github.dsheirer.libusb.UsbContext;
+import io.github.dsheirer.libusb.UsbDeviceHandle;
+import io.github.dsheirer.libusb.UsbDeviceInfo;
+import io.github.dsheirer.libusb.UsbException;
 import io.github.dsheirer.buffer.ByteNativeBufferFactory;
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.rtlsdr.DeviceInfo;
@@ -32,7 +36,7 @@ import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.fc0012.FC0012TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.fc0013.FC0013TunerConfiguration;
@@ -44,12 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Context;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.DeviceHandle;
-import org.usb4java.DeviceList;
-import org.usb4java.LibUsb;
 
 /**
  * RTL-2832 tuner controller, implemented with the jRTL library (librtlsdr from rtl-sdr-blog).
@@ -328,73 +326,40 @@ public class RTL2832TunerController extends TunerController
      */
     private UsbIdentity readUsbIdentity() throws SourceException
     {
-        Context context = new Context();
-        int status = LibUsb.init(context);
-
-        if(status != LibUsb.SUCCESS)
+        try(UsbContext usb = UsbDeviceLookup.createContext())
         {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-        }
+            //RTL-2832 devices that precede this controller's device in the device list
+            List<UsbDeviceInfo> earlierDevices = new ArrayList<>();
 
-        try
-        {
-            DeviceList deviceList = new DeviceList();
-            int count = LibUsb.getDeviceList(context, deviceList);
-
-            if(count < 0)
+            for(UsbDeviceInfo device : UsbDeviceLookup.devices(usb))
             {
-                throw new SourceException("Can't get the USB device list - " + LibUsb.errorName(count));
-            }
-
-            try
-            {
-                //RTL-2832 devices that precede this controller's device in the device list
-                List<Device> earlierDevices = new ArrayList<>();
-                List<DeviceDescriptor> earlierDescriptors = new ArrayList<>();
-
-                for(Device device : deviceList)
+                if(TunerClass.lookup((short)device.vendorId(), (short)device.productId()) != TunerClass.RTL2832)
                 {
-                    DeviceDescriptor descriptor = new DeviceDescriptor();
+                    continue;
+                }
 
-                    if(LibUsb.getDeviceDescriptor(device, descriptor) != LibUsb.SUCCESS ||
-                       TunerClass.lookup(descriptor.idVendor(), descriptor.idProduct()) != TunerClass.RTL2832)
+                if(UsbDeviceLookup.isAt(device, mBus, mPortAddress))
+                {
+                    mUsbSerialNumberIndex = device.serialNumberIndex();
+                    String serial = readSerial(usb, device, true);
+                    int serialPosition = 0;
+
+                    if(serial != null)
                     {
-                        continue;
-                    }
-
-                    if(LibUsb.getBusNumber(device) == mBus && LibUsb.getPortNumber(device) > 0 &&
-                       mPortAddress != null && mPortAddress.equals(TunerManager.getPortAddress(device)))
-                    {
-                        mUsbSerialNumberIndex = 0xFF & descriptor.iSerialNumber();
-                        String serial = readSerial(device, descriptor, true);
-                        int serialPosition = 0;
-
-                        if(serial != null)
+                        for(UsbDeviceInfo earlierDevice : earlierDevices)
                         {
-                            for(int x = 0; x < earlierDevices.size(); x++)
+                            if(serial.equals(readSerial(usb, earlierDevice, false)))
                             {
-                                if(serial.equals(readSerial(earlierDevices.get(x), earlierDescriptors.get(x), false)))
-                                {
-                                    serialPosition++;
-                                }
+                                serialPosition++;
                             }
                         }
-
-                        return new UsbIdentity(serial, serialPosition, earlierDevices.size());
                     }
 
-                    earlierDevices.add(device);
-                    earlierDescriptors.add(descriptor);
+                    return new UsbIdentity(serial, serialPosition, earlierDevices.size());
                 }
+
+                earlierDevices.add(device);
             }
-            finally
-            {
-                LibUsb.freeDeviceList(deviceList, true);
-            }
-        }
-        finally
-        {
-            LibUsb.exit(context);
         }
 
         throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
@@ -402,51 +367,32 @@ public class RTL2832TunerController extends TunerController
 
     /**
      * Reads the device's USB serial string.
+     * @param usb context
      * @param device to read
-     * @param descriptor for the device
      * @param required true to throw an exception when the device can't be opened, false to return null
      * @return serial or null if the device doesn't have a serial string
      * @throws SourceException if the device is required and it can't be opened.
      */
-    private static String readSerial(Device device, DeviceDescriptor descriptor, boolean required) throws SourceException
+    private static String readSerial(UsbContext usb, UsbDeviceInfo device, boolean required) throws SourceException
     {
-        if(descriptor.iSerialNumber() == 0)
+        if(!required)
         {
-            return null;
-        }
-
-        DeviceHandle handle = new DeviceHandle();
-        int status = LibUsb.open(device, handle);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            if(!required)
+            if(device.serialNumberIndex() == 0)
             {
                 return null;
             }
 
-            if(status == LibUsb.ERROR_ACCESS)
+            try(UsbDeviceHandle handle = usb.open(device))
             {
-                mLog.error("Access to USB tuner denied - (windows) reinstall zadig driver or (linux) check udev rules");
-                throw new SourceException("access denied - if using linux, install udev rules");
+                return handle.readString(device.serialNumberIndex());
             }
-
-            mLog.error("Can't open USB tuner - check driver or Linux udev rules");
-            throw new SourceException("Can't open USB tuner - reinstall driver? - " + LibUsb.errorName(status));
+            catch(UsbException e)
+            {
+                return null;
+            }
         }
 
-        try
-        {
-            return LibUsb.getStringDescriptor(handle, descriptor.iSerialNumber());
-        }
-        catch(RuntimeException e)
-        {
-            return null;
-        }
-        finally
-        {
-            LibUsb.close(handle);
-        }
+        return UsbDeviceLookup.readSerialNumber(usb, device);
     }
 
     /**

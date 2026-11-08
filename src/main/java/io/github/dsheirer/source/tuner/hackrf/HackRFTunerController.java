@@ -32,17 +32,11 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import java.util.EnumSet;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Context;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.DeviceHandle;
-import org.usb4java.DeviceList;
-import org.usb4java.LibUsb;
 
 /**
  * HackRF One, HackRF Pro, Jawbreaker and rad1o tuner controller, implemented with the jHackRF library (libhackrf).
@@ -252,110 +246,21 @@ public class HackRFTunerController extends TunerController
 
     /**
      * Reads the USB serial number of the device at this controller's USB bus and port, since libhackrf opens a
-     * specific device by serial number.  The device is closed again before returning so that libhackrf can open it.
+     * specific device by serial number.
      * @return serial number or null if the device doesn't report a serial number.
      * @throws SourceException if the device isn't found or can't be accessed.
      */
     private String readSerialNumber() throws SourceException
     {
-        Context context = new Context();
-        int status = LibUsb.init(context);
+        String serial = UsbDeviceLookup.readSerialNumber(mBus, mPortAddress);
 
-        if(status != LibUsb.SUCCESS)
+        //libhackrf compares, at most, the last 32 characters of the serial string
+        if(serial != null && serial.length() > 32)
         {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
+            serial = serial.substring(serial.length() - 32);
         }
 
-        try
-        {
-            DeviceList deviceList = new DeviceList();
-            int count = LibUsb.getDeviceList(context, deviceList);
-
-            if(count < 0)
-            {
-                throw new SourceException("Can't get the USB device list - " + LibUsb.errorName(count));
-            }
-
-            try
-            {
-                for(Device device : deviceList)
-                {
-                    if(LibUsb.getBusNumber(device) == mBus && LibUsb.getPortNumber(device) > 0 &&
-                        mPortAddress != null && mPortAddress.equals(TunerManager.getPortAddress(device)))
-                    {
-                        return readSerialNumber(device);
-                    }
-                }
-            }
-            finally
-            {
-                LibUsb.freeDeviceList(deviceList, true);
-            }
-        }
-        finally
-        {
-            LibUsb.exit(context);
-        }
-
-        throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
-    }
-
-    /**
-     * Reads the serial number from the device's USB serial string descriptor.
-     * @param device to read
-     * @return serial number or null if the device doesn't have a serial string.
-     * @throws SourceException if the device can't be opened.
-     */
-    private static String readSerialNumber(Device device) throws SourceException
-    {
-        DeviceDescriptor descriptor = new DeviceDescriptor();
-        int status = LibUsb.getDeviceDescriptor(device, descriptor);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't obtain tuner's device descriptor - " + LibUsb.errorName(status));
-        }
-
-        if(descriptor.iSerialNumber() == 0)
-        {
-            return null;
-        }
-
-        DeviceHandle handle = new DeviceHandle();
-        status = LibUsb.open(device, handle);
-
-        if(status == LibUsb.ERROR_ACCESS)
-        {
-            mLog.error("Access to USB tuner denied - (windows) reinstall zadig driver or (linux) blacklist driver and/or check udev rules");
-            throw new SourceException("access denied - if using linux, blacklist the default driver and/or install udev rules");
-        }
-        else if(status != LibUsb.SUCCESS)
-        {
-            mLog.error("Can't open USB tuner - check driver or Linux udev rules");
-            throw new SourceException("Can't open USB tuner - reinstall driver? - " + LibUsb.errorName(status));
-        }
-
-        try
-        {
-            String serial = LibUsb.getStringDescriptor(handle, descriptor.iSerialNumber());
-
-            if(serial != null)
-            {
-                serial = serial.trim();
-
-                //libhackrf compares, at most, the last 32 characters of the serial string
-                if(serial.length() > 32)
-                {
-                    serial = serial.substring(serial.length() - 32);
-                }
-            }
-
-            return serial == null || serial.isEmpty() ? null : serial;
-        }
-        finally
-        {
-            LibUsb.close(handle);
-        }
+        return serial == null || serial.isEmpty() ? null : serial;
     }
 
     /**
