@@ -34,19 +34,13 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Context;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.DeviceHandle;
-import org.usb4java.DeviceList;
-import org.usb4java.LibUsb;
 
 /**
  * HydraSDR tuner controller, implemented with the jHydraSDR library (libhydrasdr).
@@ -209,98 +203,17 @@ public class HydraSdrTunerController extends TunerController
 
     /**
      * Reads the serial number of the device at this controller's USB bus and port, since libhydrasdr opens a specific
-     * device by serial number.  The device is closed again before returning so that libhydrasdr can open it.
+     * device by serial number.  The USB serial string is formatted as: HYDRASDR SN:0123456789ABCDEF
      * @return serial number
      * @throws SourceException if the device isn't found or can't be accessed.
      */
     private long readSerialNumber() throws SourceException
     {
-        Context context = new Context();
-        int status = LibUsb.init(context);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-        }
+        String serial = UsbDeviceLookup.readSerialNumber(mBus, mPortAddress);
 
         try
         {
-            DeviceList deviceList = new DeviceList();
-            int count = LibUsb.getDeviceList(context, deviceList);
-
-            if(count < 0)
-            {
-                throw new SourceException("Can't get the USB device list - " + LibUsb.errorName(count));
-            }
-
-            try
-            {
-                for(Device device : deviceList)
-                {
-                    if(LibUsb.getBusNumber(device) == mBus && LibUsb.getPortNumber(device) > 0 &&
-                        mPortAddress != null && mPortAddress.equals(TunerManager.getPortAddress(device)))
-                    {
-                        return readSerialNumber(device);
-                    }
-                }
-            }
-            finally
-            {
-                LibUsb.freeDeviceList(deviceList, true);
-            }
-        }
-        finally
-        {
-            LibUsb.exit(context);
-        }
-
-        throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
-    }
-
-    /**
-     * Reads the serial number from the device's USB serial string, formatted as: HYDRASDR SN:0123456789ABCDEF
-     * @param device to read
-     * @return serial number
-     * @throws SourceException if the device can't be opened or the serial string isn't valid.
-     */
-    private static long readSerialNumber(Device device) throws SourceException
-    {
-        DeviceDescriptor descriptor = new DeviceDescriptor();
-        int status = LibUsb.getDeviceDescriptor(device, descriptor);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't obtain tuner's device descriptor - " + LibUsb.errorName(status));
-        }
-
-        DeviceHandle handle = new DeviceHandle();
-        status = LibUsb.open(device, handle);
-
-        if(status == LibUsb.ERROR_ACCESS)
-        {
-            mLog.error("Access to USB tuner denied - (windows) reinstall zadig driver or (linux) blacklist driver and/or check udev rules");
-            throw new SourceException("access denied - if using linux, blacklist the default driver and/or install udev rules");
-        }
-        else if(status != LibUsb.SUCCESS)
-        {
-            mLog.error("Can't open USB tuner - check driver or Linux udev rules");
-            throw new SourceException("Can't open USB tuner - reinstall driver? - " + LibUsb.errorName(status));
-        }
-
-        String serial;
-
-        try
-        {
-            serial = LibUsb.getStringDescriptor(handle, descriptor.iSerialNumber());
-        }
-        finally
-        {
-            LibUsb.close(handle);
-        }
-
-        try
-        {
-            return Long.parseUnsignedLong(serial.substring(serial.lastIndexOf(':') + 1), 16);
+            return Long.parseUnsignedLong(serial.substring(serial.lastIndexOf(':') + 1).trim(), 16);
         }
         catch(NullPointerException | NumberFormatException e)
         {

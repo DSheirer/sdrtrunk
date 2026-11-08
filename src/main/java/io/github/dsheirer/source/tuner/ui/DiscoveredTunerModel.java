@@ -320,7 +320,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         {
             DiscoveredTuner discoveredTuner = mDiscoveredTuners.stream()
                     .filter(tuner -> tuner instanceof DiscoveredUSBTuner usbTuner &&
-                            usbTuner.isAt(bus, portAddress)).findFirst().get();
+                            usbTuner.isAt(bus, portAddress)).findFirst().orElse(null);
 
             if(discoveredTuner != null)
             {

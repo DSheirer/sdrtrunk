@@ -19,6 +19,11 @@
 
 package io.github.dsheirer.source.tuner.limesdr;
 
+import io.github.dsheirer.libusb.LibUsb;
+import io.github.dsheirer.libusb.UsbContext;
+import io.github.dsheirer.libusb.UsbDeviceHandle;
+import io.github.dsheirer.libusb.UsbDeviceInfo;
+import io.github.dsheirer.libusb.UsbException;
 import io.github.dsheirer.buffer.FloatNativeBuffer;
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.limesdr.DeviceEntry;
@@ -38,7 +43,7 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,12 +54,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Context;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.DeviceHandle;
-import org.usb4java.DeviceList;
-import org.usb4java.LibUsb;
 
 /**
  * LimeSDR tuner controller, implemented with the jLimeSDR library (LimeSuiteNG).
@@ -448,103 +447,42 @@ public class LimeSdrTunerController extends TunerController
      */
     private UsbIdentity readUsbIdentity() throws SourceException
     {
-        Context context = new Context();
-        int status = LibUsb.init(context);
-
-        if(status != LibUsb.SUCCESS)
+        try(UsbContext usb = UsbDeviceLookup.createContext())
         {
-            throw new SourceException("Can't initialize libusb library - " + LibUsb.errorName(status));
-        }
+            UsbDeviceInfo device = UsbDeviceLookup.find(usb, mBus, mPortAddress);
+            String serial = null;
 
-        try
-        {
-            DeviceList deviceList = new DeviceList();
-            int count = LibUsb.getDeviceList(context, deviceList);
-
-            if(count < 0)
+            if(device.serialNumberIndex() != 0)
             {
-                throw new SourceException("Can't get the USB device list - " + LibUsb.errorName(count));
-            }
-
-            try
-            {
-                for(Device device : deviceList)
-                {
-                    if(LibUsb.getBusNumber(device) == mBus && LibUsb.getPortNumber(device) > 0 &&
-                        mPortAddress != null && mPortAddress.equals(TunerManager.getPortAddress(device)))
-                    {
-                        return readUsbIdentity(device);
-                    }
-                }
-            }
-            finally
-            {
-                LibUsb.freeDeviceList(deviceList, true);
-            }
-        }
-        finally
-        {
-            LibUsb.exit(context);
-        }
-
-        throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
-    }
-
-    /**
-     * Reads the vendor ID, product ID and serial number of the USB device.
-     */
-    private static UsbIdentity readUsbIdentity(Device device) throws SourceException
-    {
-        DeviceDescriptor descriptor = new DeviceDescriptor();
-        int status = LibUsb.getDeviceDescriptor(device, descriptor);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't obtain tuner's device descriptor - " + LibUsb.errorName(status));
-        }
-
-        int vendor = descriptor.idVendor() & 0xFFFF;
-        int product = descriptor.idProduct() & 0xFFFF;
-        String serial = null;
-
-        if(descriptor.iSerialNumber() != 0)
-        {
-            DeviceHandle handle = new DeviceHandle();
-            status = LibUsb.open(device, handle);
-
-            if(status == LibUsb.SUCCESS)
-            {
-                try
+                try(UsbDeviceHandle handle = usb.open(device))
                 {
                     //LimeSuiteNG aborts the application when it opens a device that another application is using,
                     //since the open throws a C++ exception through its C API.  Check that the device is free first.
-                    status = LibUsb.claimInterface(handle, 0);
-
-                    if(status == LibUsb.ERROR_BUSY)
+                    try
                     {
-                        throw new SourceException("LimeSDR is in use by another application");
+                        handle.claimInterface(0);
+                        handle.releaseInterface(0);
                     }
-                    else if(status == LibUsb.SUCCESS)
+                    catch(UsbException e)
                     {
-                        LibUsb.releaseInterface(handle, 0);
+                        if(e.code() == UsbDeviceLookup.ERROR_BUSY)
+                        {
+                            throw new SourceException("LimeSDR is in use by another application");
+                        }
                     }
 
-                    serial = LibUsb.getStringDescriptor(handle, descriptor.iSerialNumber());
-                    serial = serial != null && !serial.isBlank() ? serial.trim() : null;
+                    serial = handle.readString(device.serialNumberIndex());
+                    serial = serial != null && !serial.isBlank() ? serial : null;
                 }
-                finally
+                catch(UsbException e)
                 {
-                    LibUsb.close(handle);
+                    //Expected on Windows, where libusb can't open a device that uses the Cypress or FTDI driver
+                    mLog.debug("Can't open LimeSDR to read its USB serial number - " + LibUsb.errorName(e.code()));
                 }
             }
-            else
-            {
-                //Expected on Windows, where libusb can't open a device that uses the Cypress or FTDI driver
-                mLog.debug("Can't open LimeSDR to read its USB serial number - " + LibUsb.errorName(status));
-            }
-        }
 
-        return new UsbIdentity(vendor, product, serial);
+            return new UsbIdentity(device.vendorId(), device.productId(), serial);
+        }
     }
 
     @Override
