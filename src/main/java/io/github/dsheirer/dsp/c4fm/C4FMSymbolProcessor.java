@@ -258,6 +258,20 @@ public abstract class C4FMSymbolProcessor
     }
 
     /**
+     * Maximum bit errors allowed in a detected sync pattern while acquiring (ie not synchronized), measured from the
+     * symbol decisions at the optimized symbol timing.  Sync detections with more bit errors are rejected.  Bit errors
+     * include symbol magnitude (ie +3 vs +1) errors, so this rejects noise where the symbol signs correlate with the
+     * sync pattern but the symbol magnitudes are inconsistent.  Once synchronized, the limit isn't applied since the
+     * sync detection timing is known and rejecting a valid sync detection costs the burst.  Default implementation
+     * imposes no limit.
+     * @return maximum sync pattern bit error count while acquiring.
+     */
+    public int getSyncAcquisitionMaxBitErrors()
+    {
+        return Integer.MAX_VALUE;
+    }
+
+    /**
      * Number of consecutive sync periods (capped at 3) where a sync was detected within the max message length.
      */
     protected int getConsecutiveSyncPeriods()
@@ -945,12 +959,14 @@ public abstract class C4FMSymbolProcessor
         }
 
         /**
-         * Indicates if this correction has a valid NID or the optimization (or detection) score is high quality.
+         * Indicates if the optimization score is high quality and, while acquiring, the sync pattern bit errors don't
+         * exceed the max.
          * @return true if valid.
          */
         public boolean isValid()
         {
-            return mOptimizationScore > getSyncThresholdEqualized();
+            return mOptimizationScore > getSyncThresholdEqualized() &&
+                    (mSynchronized || mCorrectedBitCount <= getSyncAcquisitionMaxBitErrors());
         }
     }
 

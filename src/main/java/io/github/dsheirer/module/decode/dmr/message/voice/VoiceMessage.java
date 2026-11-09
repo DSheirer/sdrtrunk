@@ -40,9 +40,10 @@ public abstract class VoiceMessage extends DMRBurst
     public static int[] FRAME_1_IV_FRAGMENT = new int[]{95, 91, 87, 83};
     public static int[] FRAME_2_IV_FRAGMENT = new int[]{215, 211, 207, 203};
     public static int[] FRAME_3_IV_FRAGMENT = new int[]{287, 283, 279, 275};
+    private Boolean mValid;
 
     /**
-     * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
+     * DMR message frame.  This message comprises a 24-bit prefix and a 264-bit message frame.  Outbound base
      * station frames transmit a Common Announcement Channel (CACH) in the 24-bit prefix, whereas Mobile inbound frames
      * do not use the 24-bit prefix.
      *
@@ -73,8 +74,8 @@ public abstract class VoiceMessage extends DMRBurst
         {
             frame_2[i] = getMessage().getByte(96 + i * 8);
         }
-        // 4 bits and 4 bits
-        frame_2[4] = (byte)((getMessage().getByte(128) & 0xF0) | (getMessage().getByte(180) >> 4));
+        // 4 bits and 4 bits.  Note: mask the shifted (signed) byte to prevent sign extension into the upper 4 bits.
+        frame_2[4] = (byte)((getMessage().getByte(128) & 0xF0) | ((getMessage().getByte(180) >> 4) & 0x0F));
         // copy last 4 byte
         for(int i = 0; i < 4; i++)
         {
@@ -109,10 +110,20 @@ public abstract class VoiceMessage extends DMRBurst
         return fragments;
     }
 
+    /**
+     * Indicates if the voice burst is valid, meaning that at least one of the three AMBE voice frames passes error
+     * detection (see AMBEFrameValidator).  Frames are checked in turn until a valid frame is found and the result is
+     * cached.
+     */
     @Override
     public boolean isValid()
     {
-        return true;
+        if(mValid == null)
+        {
+            mValid = AMBEFrameValidator.isValid(getMessage());
+        }
+
+        return mValid;
     }
 
     @Override
