@@ -298,7 +298,10 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             if(message instanceof VoiceMessage voice)
             {
-                processVoice(voice);
+                if(isValid(voice))
+                {
+                    processVoice(voice);
+                }
             }
             else if(message instanceof DataMessage data)
             {
