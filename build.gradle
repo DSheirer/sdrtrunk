@@ -273,7 +273,10 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
     //java.management for JVM resource monitoring
-    rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management')
+    //javafx.swing - JFXPanel.  The runtime plugin's module auto-detection uses Gradle's ASM library, which can't read
+    //  Java 27 class files, so modules used only by sdrtrunk's own classes are not detected.  See checkImageModules.
+    rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management',
+            'javafx.swing')
 
     //Use auto-detected modules and 'add' any specified modules.
     rt.extension.additive.set(true)
@@ -389,6 +392,47 @@ tasks.named('runtime') {rt ->
             logger.lifecycle("Native strip: removed ${String.format('%.1f', total / 1048576)} MB of other " +
                     "platform native libraries from [${target}]")
         }
+    }
+}
+
+/**
+ * Verifies that each runtime target image contains every module that the sdrtrunk jar requires, as reported by jdeps.
+ * This guards against the runtime plugin's module auto-detection silently missing modules (e.g. when it can't parse
+ * class files compiled for a newer Java version).
+ */
+def jdepsHome = javaToolchains.launcherFor(java.toolchain).map { it.metadata.installationPath.asFile }
+def mainJar = tasks.named('jar').flatMap { it.archiveFile }
+
+tasks.named('runtime') {rt ->
+    rt.doLast {
+        def jdeps = new File(jdepsHome.get(), 'bin/' + (os.isWindows() ? 'jdeps.exe' : 'jdeps')).absolutePath
+        def process = new ProcessBuilder(jdeps, '--multi-release', java.toolchain.languageVersion.get().toString(),
+                '--ignore-missing-deps', '--print-module-deps', '-q', mainJar.get().asFile.absolutePath)
+                .redirectErrorStream(true).start()
+        def output = process.inputStream.text.trim()
+
+        if(process.waitFor() != 0) {
+            throw new GradleException("Module check: jdeps failed: ${output}")
+        }
+
+        def required = output.split(',')*.trim().findAll { it } as Set
+
+        rt.targetPlatforms.get().keySet().each { target ->
+            def release = new File(rt.imageDir.asFile, "${project.name}-${target}/release")
+            def match = release.text =~ /(?m)^MODULES="([^"]*)"/
+
+            if(!match.find()) {
+                throw new GradleException("Module check: no MODULES entry in ${release}")
+            }
+
+            def missing = required - (match.group(1).split(' ') as Set)
+
+            if(missing) {
+                throw new GradleException("Module check: runtime image [${target}] is missing required modules " +
+                        "${missing.sort()} - add them to addModules() in build.gradle")
+            }
+        }
+        logger.lifecycle("Module check: runtime images contain all modules required by sdrtrunk: ${required.sort()}")
     }
 }
 
