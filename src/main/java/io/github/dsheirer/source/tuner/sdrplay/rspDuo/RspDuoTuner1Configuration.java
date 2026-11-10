@@ -22,14 +22,13 @@ package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDuoAmPort;
 
 /**
  * RSPduo tuner 1 configuration
  */
 public class RspDuoTuner1Configuration extends RspTunerConfiguration
 {
-    private RspDuoAmPort mAmPort = RspDuoAmPort.PORT_2; //50-ohm port is default.
+    private RspDuoAmPortSelection mAmPort = RspDuoAmPortSelection.PORT_2; //50-ohm port is default.
     private boolean mAmNotch;
     private boolean mExternalReferenceOutput;
     private boolean mRfDabNotch;
@@ -129,7 +128,7 @@ public class RspDuoTuner1Configuration extends RspTunerConfiguration
      * AM port setting
      */
     @JacksonXmlProperty(isAttribute = true, localName = "am_port")
-    public RspDuoAmPort getAmPort()
+    public RspDuoAmPortSelection getAmPort()
     {
         return mAmPort;
     }
@@ -137,7 +136,7 @@ public class RspDuoTuner1Configuration extends RspTunerConfiguration
     /**
      * Sets the AM port
      */
-    public void setAmPort(RspDuoAmPort amPort)
+    public void setAmPort(RspDuoAmPortSelection amPort)
     {
         mAmPort = amPort;
     }

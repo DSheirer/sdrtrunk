@@ -19,6 +19,7 @@
 package io.github.dsheirer.source.tuner.fcd.proV1;
 
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.fcd.FCDTuner;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.LNAEnhance;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.LNAGain;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -52,6 +54,7 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
     private JComboBox<LNAGain> mLnaGainCombo;
     private JComboBox<LNAEnhance> mLnaEnhanceCombo;
     private JComboBox<MixerGain> mMixerGainCombo;
+    private JCheckBox mBiasTCheckBox;
     private CorrectionSpinner mCorrectionDCI;
     private CorrectionSpinner mCorrectionDCQ;
     private CorrectionSpinner mGainCorrectionSpinner;
@@ -121,6 +124,7 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
             getMixerGainCombo().setSelectedItem(getConfiguration().getMixerGain());
             getLnaEnhanceCombo().setSelectedItem(getConfiguration().getLNAEnhance());
             getLnaGainCombo().setSelectedItem(getConfiguration().getLNAGain());
+            getBiasTCheckBox().setSelected(getConfiguration().isBiasT());
             getDcCorrectionSpinnerI().setValue(getConfiguration().getInphaseDCCorrection());
             getDcCorrectionSpinnerQ().setValue(getConfiguration().getQuadratureDCCorrection());
             getPhaseCorrectionSpinner().setValue(getConfiguration().getGainCorrection());
@@ -130,6 +134,7 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
         getMixerGainCombo().setEnabled(hasTuner());
         getLnaEnhanceCombo().setEnabled(hasTuner());
         getLnaGainCombo().setEnabled(hasTuner());
+        getBiasTCheckBox().setEnabled(hasTuner());
         getDcCorrectionSpinnerI().setEnabled(hasTuner());
         getDcCorrectionSpinnerQ().setEnabled(hasTuner());
         getPhaseCorrectionSpinner().setEnabled(hasTuner());
@@ -164,6 +169,8 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
         add(getLnaEnhanceCombo(), "wrap");
         add(new JLabel("Mixer:"));
         add(getMixerGainCombo(), "wrap");
+        add(new JLabel(""));
+        add(getBiasTCheckBox(), "wrap");
 
         add(new JSeparator(), "span,growx,push");
         add(new JLabel("Correction"), "span,align center");
@@ -207,6 +214,37 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
         }
 
         return mLnaGainCombo;
+    }
+
+    /**
+     * Checkbox to enable/disable Bias-T power for active antennas
+     */
+    public JCheckBox getBiasTCheckBox()
+    {
+        if(mBiasTCheckBox == null)
+        {
+            mBiasTCheckBox = new JCheckBox("Bias-T");
+            mBiasTCheckBox.setEnabled(false);
+            mBiasTCheckBox.setToolTipText("Enable Bias-T power output for active antennas");
+            mBiasTCheckBox.addActionListener(event ->
+            {
+                if(hasTuner() && !isLoading())
+                {
+                    try
+                    {
+                        getController().setBiasT(mBiasTCheckBox.isSelected());
+                        save();
+                    }
+                    catch(SourceException e)
+                    {
+                        mLog.error("Couldn't set bias-T for FCD Pro", e);
+                        JOptionPane.showMessageDialog(FCD1TunerEditor.this, "Couldn't set Bias-T: " + e.getMessage());
+                    }
+                }
+            });
+        }
+
+        return mBiasTCheckBox;
     }
 
     public JComboBox getLnaEnhanceCombo()
@@ -386,6 +424,7 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
             getConfiguration().setLNAEnhance((LNAEnhance) mLnaEnhanceCombo.getSelectedItem());
             getConfiguration().setLNAGain((LNAGain) mLnaGainCombo.getSelectedItem());
             getConfiguration().setMixerGain((MixerGain) mMixerGainCombo.getSelectedItem());
+            getConfiguration().setBiasT(getBiasTCheckBox().isSelected());
             double dci = ((SpinnerNumberModel)mCorrectionDCI.getModel()).getNumber().doubleValue();
             getConfiguration().setInphaseDCCorrection(dci);
             double dcq = ((SpinnerNumberModel)mCorrectionDCQ.getModel()).getNumber().doubleValue();

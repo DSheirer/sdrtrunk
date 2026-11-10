@@ -97,6 +97,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(detailsLabel);
 
         Label alphaLabel = new Label("Alpha Tag");
+        alphaLabel.setLabelFor(getAlphaTagTextField());
         GridPane.setHalignment(alphaLabel, HPos.RIGHT);
         GridPane.setConstraints(alphaLabel, 0, ++row);
         gridPane.getChildren().add(alphaLabel);
@@ -106,6 +107,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(getAlphaTagTextField());
 
         Label toneLabel = new Label("Tone");
+        toneLabel.setLabelFor(getToneTextField());
         GridPane.setHalignment(toneLabel, HPos.RIGHT);
         GridPane.setConstraints(toneLabel, 0, ++row);
         gridPane.getChildren().add(toneLabel);
@@ -115,6 +117,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(getToneTextField());
 
         Label modeLabel = new Label("Mode");
+        modeLabel.setLabelFor(getModeTextField());
         GridPane.setHalignment(modeLabel, HPos.RIGHT);
         GridPane.setConstraints(modeLabel, 0, ++row);
         gridPane.getChildren().add(modeLabel);
@@ -124,6 +127,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(getModeTextField());
 
         Label frequencyLabel = new Label("Frequency");
+        frequencyLabel.setLabelFor(getFrequencyTextField());
         GridPane.setHalignment(frequencyLabel, HPos.RIGHT);
         GridPane.setConstraints(frequencyLabel, 0, ++row);
         gridPane.getChildren().add(frequencyLabel);
@@ -141,6 +145,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(createLabel);
 
         Label systemLabel = new Label("System");
+        systemLabel.setLabelFor(getSystemTextField());
         GridPane.setHalignment(systemLabel, HPos.RIGHT);
         GridPane.setConstraints(systemLabel, 0, ++row);
         gridPane.getChildren().add(systemLabel);
@@ -150,6 +155,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(getSystemTextField());
 
         Label siteLabel = new Label("Site");
+        siteLabel.setLabelFor(getSiteTextField());
         GridPane.setHalignment(siteLabel, HPos.RIGHT);
         GridPane.setConstraints(siteLabel, 0, ++row);
         gridPane.getChildren().add(siteLabel);
@@ -159,6 +165,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(getSiteTextField());
 
         Label nameLabel = new Label("Name");
+        nameLabel.setLabelFor(getNameTextField());
         GridPane.setHalignment(nameLabel, HPos.RIGHT);
         GridPane.setConstraints(nameLabel, 0, ++row);
         gridPane.getChildren().add(nameLabel);
@@ -168,6 +175,7 @@ public class FrequencyEditor extends VBox
         gridPane.getChildren().add(getNameTextField());
 
         Label decoderLabel = new Label("Decoder");
+        decoderLabel.setLabelFor(getDecoderTextField());
         GridPane.setHalignment(decoderLabel, HPos.RIGHT);
         GridPane.setConstraints(decoderLabel, 0, ++row);
         gridPane.getChildren().add(decoderLabel);

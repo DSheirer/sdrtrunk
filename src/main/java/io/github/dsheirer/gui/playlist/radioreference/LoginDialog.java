@@ -25,6 +25,7 @@ import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
@@ -128,6 +129,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             mGridPane.setVgap(5.0);
 
             Label userNameLabel = new Label("User Name:");
+            userNameLabel.setLabelFor(getUserNameText());
             GridPane.setHalignment(userNameLabel, HPos.RIGHT);
             GridPane.setConstraints(userNameLabel, 0, 0);
             mGridPane.getChildren().add(userNameLabel);
@@ -137,6 +139,8 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             mGridPane.getChildren().add(getUserNameText());
 
             Label passwordLabel = new Label("Password:");
+            passwordLabel.labelForProperty().bind(Bindings.when(getPasswordText().visibleProperty())
+                .then((Node)getPasswordText()).otherwise(getPasswordField()));
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
             GridPane.setConstraints(passwordLabel, 0, 1);
             mGridPane.getChildren().add(passwordLabel);
@@ -229,6 +233,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
         if(mShowPasswordCheckBox == null)
         {
             mShowPasswordCheckBox = new CheckBox("Show");
+            mShowPasswordCheckBox.setAccessibleText("Show password");
             mShowPasswordCheckBox.setSelected(mUserPreferences.getRadioReferencePreference().getShowPassword());
             mShowPasswordCheckBox.setOnAction(new EventHandler<ActionEvent>()
             {
@@ -281,6 +286,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                 public void handle(ActionEvent event)
                 {
                     getTestConnectionButton().setDisable(true);
+                    getTestConnectionButton().setAccessibleText(null);
                     getTestPassIcon().setVisible(false);
                     getTestFailIcon().setVisible(false);
                     getTestExpiredIcon().setVisible(false);
@@ -327,6 +333,8 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                                     getTestPassIcon().setVisible(true);
                                     getTestFailIcon().setVisible(false);
                                     getTestExpiredIcon().setVisible(false);
+                                    //Success is only shown as an icon, so report it in the button's accessible name
+                                    getTestConnectionButton().setAccessibleText("Test Connection: login successful");
                                 }
                                 else if (loginStatus == RadioReference.LoginStatus.EXPIRED_PREMIUM)
                                 {

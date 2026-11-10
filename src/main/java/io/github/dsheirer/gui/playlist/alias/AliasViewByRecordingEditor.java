@@ -34,6 +34,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -157,12 +158,14 @@ public class AliasViewByRecordingEditor extends VBox
             aliasListBox.setAlignment(Pos.CENTER);
             aliasListBox.setSpacing(5);
             Label aliasListLabel = new Label("Alias List");
+            aliasListLabel.setLabelFor(getAliasListNameComboBox());
             aliasListBox.getChildren().addAll(aliasListLabel, getAliasListNameComboBox());
 
             HBox searchBox = new HBox();
             searchBox.setAlignment(Pos.CENTER);
             searchBox.setSpacing(5);
             Label searchLabel = new Label("Search");
+            searchLabel.setLabelFor(getSearchField());
             searchBox.getChildren().addAll(searchLabel, getSearchField());
 
             mTopBox.getChildren().addAll(aliasListBox, searchBox);
@@ -228,6 +231,7 @@ public class AliasViewByRecordingEditor extends VBox
         if(mNoRecordAliasTableView == null)
         {
             mNoRecordAliasTableView = new TableView<>();
+            mNoRecordAliasTableView.setAccessibleText("Don't record audio aliases");
             mNoRecordAliasTableView.setMaxHeight(Double.MAX_VALUE);
             mNoRecordAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
@@ -266,6 +270,7 @@ public class AliasViewByRecordingEditor extends VBox
         if(mRecordAliasTableView == null)
         {
             mRecordAliasTableView = new TableView<>();
+            mRecordAliasTableView.setAccessibleText("Record audio aliases");
             mRecordAliasTableView.setMaxHeight(Double.MAX_VALUE);
             mRecordAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
@@ -307,6 +312,8 @@ public class AliasViewByRecordingEditor extends VBox
             mAddButton.setDisable(true);
             mAddButton.setMaxWidth(Double.MAX_VALUE);
             mAddButton.setGraphic(new IconNode(FontAwesome.ANGLE_RIGHT));
+            mAddButton.setAccessibleText("Record audio for selected alias");
+            mAddButton.setTooltip(new Tooltip("Record audio for selected alias"));
             mAddButton.setAlignment(Pos.CENTER);
             mAddButton.setOnAction(event -> {
                 Alias selectedAlias = getNoRecordAliasTableView().getSelectionModel().getSelectedItem();
@@ -330,6 +337,8 @@ public class AliasViewByRecordingEditor extends VBox
             mAddAllButton.setDisable(true);
             mAddAllButton.setMaxWidth(Double.MAX_VALUE);
             mAddAllButton.setGraphic(new IconNode(FontAwesome.ANGLE_DOUBLE_RIGHT));
+            mAddAllButton.setAccessibleText("Record audio for all selected aliases");
+            mAddAllButton.setTooltip(new Tooltip("Record audio for all selected aliases"));
             mAddAllButton.setAlignment(Pos.CENTER);
             mAddAllButton.setOnAction(event -> {
                 List<Alias> selectedAliases =
@@ -358,6 +367,8 @@ public class AliasViewByRecordingEditor extends VBox
             mRemoveButton.setDisable(true);
             mRemoveButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveButton.setGraphic(new IconNode(FontAwesome.ANGLE_LEFT));
+            mRemoveButton.setAccessibleText("Don't record audio for selected alias");
+            mRemoveButton.setTooltip(new Tooltip("Don't record audio for selected alias"));
             mRemoveButton.setAlignment(Pos.CENTER);
             mRemoveButton.setOnAction(event -> {
                 Alias selectedAlias = getRecordAliasTableView().getSelectionModel().getSelectedItem();
@@ -381,6 +392,8 @@ public class AliasViewByRecordingEditor extends VBox
             mRemoveAllButton.setDisable(true);
             mRemoveAllButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveAllButton.setGraphic(new IconNode(FontAwesome.ANGLE_DOUBLE_LEFT));
+            mRemoveAllButton.setAccessibleText("Don't record audio for all selected aliases");
+            mRemoveAllButton.setTooltip(new Tooltip("Don't record audio for all selected aliases"));
             mRemoveAllButton.setAlignment(Pos.CENTER);
             mRemoveAllButton.setOnAction(event -> {
                 List<Alias> selectedAliases =

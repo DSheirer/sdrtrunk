@@ -20,6 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay;
 
 import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.sdrplay.DeviceInfo;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
@@ -52,7 +53,7 @@ public class RspTuner extends Tuner
     @Override
     public String getUniqueID()
     {
-        return getRspTunerController().getControlRsp().getDevice().getSerialNumber();
+        return getRspTunerController().getControlRsp().getDeviceInfo().serialNumber();
     }
 
     @Override
@@ -72,28 +73,20 @@ public class RspTuner extends Tuner
     @Override
     public String getPreferredName()
     {
-        if(getRspTunerController().getControlRsp() instanceof IControlRspDuoTuner1 &&
-            getRspTunerController().getControlRsp().getDevice() != null)
+        IControlRsp controlRsp = getRspTunerController().getControlRsp();
+        DeviceInfo deviceInfo = controlRsp.getDeviceInfo();
+        String name = DiscoveredRspTuner.getModelName(deviceInfo.model()) + " SER:" + deviceInfo.serialNumber();
+
+        if(controlRsp instanceof IControlRspDuoTuner1)
         {
-            return getRspTunerController().getControlRsp().getDevice().getDeviceType() +
-                " SER:" + getRspTunerController().getControlRsp().getDevice().getSerialNumber() + " Tuner 1";
+            return name + " Tuner 1";
         }
-        else if(getRspTunerController().getControlRsp() instanceof IControlRspDuoTuner2 &&
-                getRspTunerController().getControlRsp().getDevice() != null)
+        else if(controlRsp instanceof IControlRspDuoTuner2)
         {
-            return getRspTunerController().getControlRsp().getDevice().getDeviceType() +
-                " SER:" + getRspTunerController().getControlRsp().getDevice().getSerialNumber() + " Tuner 2";
+            return name + " Tuner 2";
         }
-        else if(getRspTunerController().getControlRsp() instanceof IControlRsp &&
-                getRspTunerController().getControlRsp().getDevice() != null)
-        {
-            return getRspTunerController().getControlRsp().getDevice().getDeviceType() +
-                    " SER:" + getRspTunerController().getControlRsp().getDevice().getSerialNumber();
-        }
-        else
-        {
-            return "RSP Tuner - Device Not Available";
-        }
+
+        return name;
     }
 
     @Override

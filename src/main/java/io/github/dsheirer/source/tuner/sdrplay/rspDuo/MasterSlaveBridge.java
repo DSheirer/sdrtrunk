@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +125,7 @@ public class MasterSlaveBridge
             {
                 mSlave.setSampleRate(sampleRate);
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting sample rate on RSPduo tuner 2 slave", se);
             }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,55 +19,62 @@
 
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.callback.IDeviceEventListener;
-import io.github.dsheirer.source.tuner.sdrplay.api.callback.IStreamListener;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.Device;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
+import io.github.dsheirer.sdrplay.DeviceEventListener;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.SampleListener;
+import io.github.dsheirer.sdrplay.Tuner;
 
 /**
  * Control interface for base RSP device
  */
 public interface IControlRsp
 {
+    /**
+     * Device selection mode for this RSP.  All RSP devices use single tuner 1, except the RSPduo.
+     */
     DeviceSelectionMode getDeviceSelectionMode();
 
     /**
-     * Device descriptor for this RSP
-     * @return device descriptor
+     * Device information (model and serial number) for this RSP, as discovered from the API.
+     * @return device info
      */
-    Device getDevice();
+    DeviceInfo getDeviceInfo();
 
     /**
-     * Process an RSP device removal.  Device memory resources should be nullified and the software should not attempt
-     * any further interaction with the device via the API.
+     * Indicates if the device is started (selected from the API) and available for control.
+     */
+    boolean hasDevice();
+
+    /**
+     * Process an RSP device removal.  Closes the device and releases it from the API.  Note: this method must not
+     * be invoked from an SDRplay API callback (stream or event listener) thread.
      */
     void deviceRemoved();
 
     /**
-     * Selected tuner for this RSP.
+     * Selected tuner for this RSP: tuner A for all RSP devices, except the RSPduo.
      * @return selected tuner.
      */
-    TunerSelect getTunerSelect();
+    Tuner getSdrplayTuner();
 
     /**
-     * Starts the device
+     * Starts the device: selects the device from the API for exclusive use.
+     * @throws RspException if the device is not available or can't be selected
      */
-    void start() throws SDRPlayException;
+    void start() throws RspException;
 
     /**
-     * Stops the device
+     * Stops the device: stops streaming and releases the device back to the API.
+     * @throws RspException if there is an error
      */
-    void stop() throws SDRPlayException;
+    void stop() throws RspException;
 
     /**
      * Registers listeners to receive device events and streaming samples when startStream() is invoked.
      * @param deviceEventListener to receive device events
-     * @param streamListener to receive sample stream and related parameters.
+     * @param sampleListener to receive sample stream.
      */
-    void resister(IDeviceEventListener deviceEventListener, IStreamListener streamListener);
+    void register(DeviceEventListener deviceEventListener, SampleListener sampleListener);
 
     /**
      * Starts the sample stream and delivers the samples to the registered listener.
@@ -80,22 +87,22 @@ public interface IControlRsp
     void stopStream();
 
     /**
-     * Callback to acknowledge a power overload event.
-     * @param tunerSelect identifies the tuner where the power overload is happening.
+     * Process a power overload detected event from the API.  The jsdrplay library acknowledges the event to the API.
+     * @param tuner where the power overload is happening.
      */
-    void acknowledgePowerOverload(TunerSelect tunerSelect) throws SDRPlayException;
+    void processPowerOverload(Tuner tuner);
 
     /**
      * Current center tune frequency
      * @return frequency in Hertz
      */
-    long getTunedFrequency() throws SDRPlayException;
+    long getTunedFrequency() throws RspException;
 
     /**
      * Sets the center tune frequency
      * @param frequency in Hertz
      */
-    void setTunedFrequency(long frequency) throws SDRPlayException;
+    void setTunedFrequency(long frequency) throws RspException;
 
     /**
      * Current sample rate enumeration value
@@ -107,7 +114,7 @@ public interface IControlRsp
      * Sets the sample rate.
      * @param rspSampleRate enumeration value.
      */
-    void setSampleRate(RspSampleRate rspSampleRate) throws SDRPlayException;
+    void setSampleRate(RspSampleRate rspSampleRate) throws RspException;
 
     /**
      * Current sample rate value.
@@ -119,15 +126,15 @@ public interface IControlRsp
      * Set the lna state and gain reduction dB values separately.
      * @param lna state (varies by tuner and frequency range)
      * @param basebandGainReduction setting (20-59)
-     * @throws SDRPlayException
+     * @throws RspException if the device is not started or the API rejects the setting.
      */
-    void setGain(int lna, int basebandGainReduction) throws SDRPlayException;
+    void setGain(int lna, int basebandGainReduction) throws RspException;
 
     /**
      * Current gain setting as reported by the device.
      * @return gain value in decibels
      */
-    float getCurrentGain() throws SDRPlayException;
+    float getCurrentGain() throws RspException;
 
     /**
      * Current LNA gain index value
@@ -149,18 +156,18 @@ public interface IControlRsp
 
     /**
      * Current IF AGC mode setting.
-     * @return IF agc mode
+     * @return IF agc mode, or null if the device is not started.
      */
-    AgcMode getAgcMode();
+    RspAgcMode getAgcMode();
 
     /**
      * Sets the IF AGC mode
      * @param mode to set.
      */
-    void setAgcMode(AgcMode mode) throws SDRPlayException;
+    void setAgcMode(RspAgcMode mode) throws RspException;
 
     /**
-     * Registers a listener to receive notifications of gain overload.
+     * Registers a listener to receive notifications of gain overload and frequency changes.
      * @param listener to register
      */
     void setGainOverloadListener(ITunerStatusListener listener);

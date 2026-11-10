@@ -138,6 +138,7 @@ public class AgencyEditor extends VBox
         if(mAgencyListView == null)
         {
             mAgencyListView = new ListView<>();
+            mAgencyListView.setAccessibleText("Agencies");
             mAgencyListView.setPrefHeight(200);
             mAgencyListView.setCellFactory(param -> new AgencyListCell());
             mAgencyListView.getSelectionModel().selectedItemProperty()

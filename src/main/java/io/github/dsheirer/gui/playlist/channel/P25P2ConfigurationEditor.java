@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
@@ -124,6 +125,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             int row = 0;
 
             Label poolSizeLabel = new Label("Max Traffic Channels");
+            poolSizeLabel.setLabelFor(getTrafficChannelPoolSizeSpinner());
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
             GridPane.setConstraints(poolSizeLabel, 0, row);
             gridPane.getChildren().add(poolSizeLabel);
@@ -135,11 +137,13 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getIgnoreDataCallsButton());
 
             Label directionLabel = new Label("Ignore Data Calls");
+            directionLabel.setLabelFor(getIgnoreDataCallsButton());
             GridPane.setHalignment(directionLabel, HPos.LEFT);
             GridPane.setConstraints(directionLabel, 3, row);
             gridPane.getChildren().add(directionLabel);
 
             Label wacnLabel = new Label("WACN");
+            wacnLabel.setLabelFor(getWacnTextField());
             GridPane.setHalignment(wacnLabel, HPos.RIGHT);
             GridPane.setConstraints(wacnLabel, 0, ++row);
             gridPane.getChildren().add(wacnLabel);
@@ -148,6 +152,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getWacnTextField());
 
             Label systemLabel = new Label("System");
+            systemLabel.setLabelFor(getSystemTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 2, row);
             gridPane.getChildren().add(systemLabel);
@@ -156,6 +161,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getSystemTextField());
 
             Label nacLabel = new Label("NAC");
+            nacLabel.setLabelFor(getNacTextField());
             GridPane.setHalignment(nacLabel, HPos.RIGHT);
             GridPane.setConstraints(nacLabel, 4, row);
             gridPane.getChildren().add(nacLabel);
@@ -183,7 +189,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mJmbeAGCButton == null)
         {
-            mJmbeAGCButton = new ToggleSwitch();
+            mJmbeAGCButton = new AccessibleToggleSwitch();
             mJmbeAGCButton.setTooltip(new Tooltip("Automatic Gain Control to automatically adjust call audio volume"));
             mJmbeAGCButton.setDisable(true);
             mJmbeAGCButton.selectedProperty().addListener((o, old, n) -> modifiedProperty().set(true));
@@ -196,7 +202,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mLegacyToneLevelsButton == null)
         {
-            mLegacyToneLevelsButton = new ToggleSwitch();
+            mLegacyToneLevelsButton = new AccessibleToggleSwitch();
             mLegacyToneLevelsButton.setTooltip(new Tooltip(
                 "Restore JMBE 1.x AMBE tone levels. Requires a supporting JMBE library; " +
                 "stock libraries ignore this option. Tone Volume still adjusts the selected level."));
@@ -298,7 +304,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mIgnoreDataCallsButton == null)
         {
-            mIgnoreDataCallsButton = new ToggleSwitch();
+            mIgnoreDataCallsButton = new AccessibleToggleSwitch();
             mIgnoreDataCallsButton.setDisable(true);
             mIgnoreDataCallsButton.selectedProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));

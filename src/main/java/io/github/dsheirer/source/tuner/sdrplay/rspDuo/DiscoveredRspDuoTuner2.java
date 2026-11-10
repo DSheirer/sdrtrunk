@@ -21,8 +21,9 @@ package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.TunerFactory;
+import io.github.dsheirer.source.tuner.sdrplay.DeviceSelectionMode;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
+import io.github.dsheirer.sdrplay.DeviceInfo;
 
 /**
  * RSPduo Tuner 2 discovered tuner.
@@ -41,7 +42,7 @@ public class DiscoveredRspDuoTuner2 extends DiscoveredRspTuner<IControlRspDuoTun
      */
     public DiscoveredRspDuoTuner2(DeviceInfo deviceInfo, ChannelizerType channelizerType)
     {
-        super(deviceInfo, channelizerType);
+        super(deviceInfo, DeviceSelectionMode.SINGLE_TUNER_2, channelizerType);
     }
 
     /**
@@ -52,7 +53,7 @@ public class DiscoveredRspDuoTuner2 extends DiscoveredRspTuner<IControlRspDuoTun
      */
     public DiscoveredRspDuoTuner2(DeviceInfo deviceInfo, ChannelizerType channelizerType, MasterSlaveBridge bridge)
     {
-        super(deviceInfo, channelizerType);
+        super(deviceInfo, DeviceSelectionMode.SLAVE_TUNER_2, channelizerType);
         mMasterSlaveBridge = bridge;
     }
 
@@ -68,16 +69,16 @@ public class DiscoveredRspDuoTuner2 extends DiscoveredRspTuner<IControlRspDuoTun
             {
                 if(mMasterSlaveBridge != null)
                 {
-                    mTuner = TunerFactory.getRspDuoTuner(getDeviceInfo(), getChannelizerType(), this, mMasterSlaveBridge);
+                    mTuner = TunerFactory.getRspDuoTuner(getDeviceInfo(), getDeviceSelectionMode(), getChannelizerType(), this, mMasterSlaveBridge);
                 }
                 else
                 {
-                    mTuner = TunerFactory.getRspTuner(getDeviceInfo(), getChannelizerType(), this);
+                    mTuner = TunerFactory.getRspTuner(getDeviceInfo(), getDeviceSelectionMode(), getChannelizerType(), this);
                 }
             }
             catch(Exception se)
             {
-                setErrorMessage("Tuner unavailable [" + getId() + "]");
+                setErrorMessage("Tuner unavailable [" + getId() + "] - " + se.getMessage());
                 mTuner = null;
             }
 
@@ -97,7 +98,7 @@ public class DiscoveredRspDuoTuner2 extends DiscoveredRspTuner<IControlRspDuoTun
                 }
                 catch(Exception se)
                 {
-                    setErrorMessage("Error starting tuner [" + getId() + "]");
+                    setErrorMessage("Error starting tuner [" + getId() + "] - " + se.getMessage());
                     mTuner = null;
                 }
             }
@@ -107,7 +108,7 @@ public class DiscoveredRspDuoTuner2 extends DiscoveredRspTuner<IControlRspDuoTun
     @Override
     public String getId()
     {
-        return DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "2 SER#" + getDeviceInfo().getSerialNumber();
+        return DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "2 SER#" + getDeviceInfo().serialNumber();
     }
 
     /**
@@ -116,6 +117,6 @@ public class DiscoveredRspDuoTuner2 extends DiscoveredRspTuner<IControlRspDuoTun
      */
     public String getMasterId()
     {
-        return DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "1 SER#" + getDeviceInfo().getSerialNumber();
+        return DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "1 SER#" + getDeviceInfo().serialNumber();
     }
 }

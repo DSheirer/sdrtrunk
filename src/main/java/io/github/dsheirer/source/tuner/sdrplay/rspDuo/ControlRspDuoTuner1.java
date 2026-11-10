@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,116 +19,50 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoTuner1;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDuoAmPort;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.RspDuoDevice;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Base control wrapper for an RSPduo Tuner 1
  */
-public abstract class ControlRspDuoTuner1 extends ControlRspDuo<RspDuoTuner1> implements IControlRspDuoTuner1
+public abstract class ControlRspDuoTuner1 extends ControlRspDuo implements IControlRspDuoTuner1
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRspDuoTuner1.class);
+    private static final Logger mLog = LoggerFactory.getLogger(ControlRspDuoTuner1.class);
 
     /**
      * Constructs an instance
-     *
-     * @param device to control
+     * @param deviceInfo for the device
      */
-    public ControlRspDuoTuner1(RspDuoDevice device)
+    public ControlRspDuoTuner1(DeviceInfo deviceInfo)
     {
-        super(device);
-    }
-
-    /**
-     * Access tuner 1.
-     * @return tuner
-     * @throws SDRPlayException if the device is not started.
-     */
-    protected RspDuoTuner1 getTuner() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return (RspDuoTuner1) getDevice().getTuner();
-        }
-
-        throw new SDRPlayException("RSPduo device is not started");
+        super(deviceInfo);
     }
 
     @Override
-    public TunerSelect getTunerSelect()
+    public boolean isAmNotch() throws RspException
     {
-        return TunerSelect.TUNER_1;
+        return query("get AM notch", RspDuoDevice::isTuner1AmNotch);
     }
 
     @Override
-    protected ControlParameters getControlParameters()
+    public void setAmNotch(boolean enabled) throws RspException
     {
-        return getDevice().getCompositeParameters().getControlAParameters();
+        command("set AM notch", device -> device.setTuner1AmNotch(enabled));
     }
 
     @Override
-    protected TunerParameters getTunerParameters()
+    public RspDuoAmPortSelection getAmPort() throws RspException
     {
-        return getDevice().getCompositeParameters().getTunerAParameters();
+        return query("get AM port", device -> RspDuoAmPortSelection.fromAmPort(device.tuner1AmPort()));
     }
 
     @Override
-    public boolean isAmNotch() throws SDRPlayException
+    public void setAmPort(RspDuoAmPortSelection port) throws RspException
     {
-        if(hasDevice())
-        {
-            return getTuner().isAmNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setAmNotch(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getTuner().setAmNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public RspDuoAmPort getAmPort() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return getTuner().getAmPort();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setAmPort(RspDuoAmPort port) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getTuner().setAmPort(port);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set AM port " + port, device -> device.setTuner1AmPort(port.getAmPort()));
     }
 
     /**
@@ -141,9 +75,8 @@ public abstract class ControlRspDuoTuner1 extends ControlRspDuo<RspDuoTuner1> im
         try
         {
             long frequency = getTunedFrequency();
-            RspDuoAmPort port = getAmPort();
 
-            if(port == RspDuoAmPort.PORT_1) //Hi-Z Port
+            if(getAmPort() == RspDuoAmPortSelection.PORT_1) //Hi-Z Port
             {
                 return 4;
             }
@@ -160,9 +93,8 @@ public abstract class ControlRspDuoTuner1 extends ControlRspDuo<RspDuoTuner1> im
             {
                 return 6;
             }
-
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
         }

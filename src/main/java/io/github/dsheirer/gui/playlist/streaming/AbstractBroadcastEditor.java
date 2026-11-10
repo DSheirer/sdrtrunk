@@ -22,6 +22,8 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
+import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
@@ -66,6 +68,26 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
         buttonBox.setPadding(new Insets(10,10,10,10));
         buttonBox.setSpacing(10);
         buttonBox.getChildren().addAll(getSaveButton(), getResetButton());
+
+        /**
+         * Allow column 1 (Primary input fields) to expand with editor width
+         */
+        for(Node node : getEditorPane().getChildren())
+        {
+            Integer column = GridPane.getColumnIndex(node);
+
+            if(column != null && column == 1)
+            {
+                if(node instanceof IntegerTextField)
+                {
+                    GridPane.setFillWidth(node, false);
+                }
+                else if(node instanceof TextField)
+                {
+                    GridPane.setHgrow(node, Priority.ALWAYS);
+                }
+            }
+        }
 
         HBox editorBox = new HBox();
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
@@ -205,7 +227,7 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
     {
         if(mEnabledSwitch == null)
         {
-            mEnabledSwitch = new ToggleSwitch();
+            mEnabledSwitch = new AccessibleToggleSwitch();
             mEnabledSwitch.setDisable(true);
             mEnabledSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));

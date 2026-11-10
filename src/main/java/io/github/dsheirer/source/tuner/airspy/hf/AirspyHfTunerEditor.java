@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import java.io.IOException;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +46,7 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
     private JComboBox<Attenuation> mAttenuationCombo;
     private JToggleButton mAgcToggleButton;
     private JToggleButton mLnaToggleButton;
+    private JToggleButton mBiasTToggleButton;
 
     /**
      * Constructs an instance
@@ -101,6 +101,7 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         buttonPanel.setLayout(new MigLayout("insets 0", "[left]", ""));
         buttonPanel.add(getAgcToggleButton());
         buttonPanel.add(getLnaToggleButton());
+        buttonPanel.add(getBiasTToggleButton());
         add(new JLabel(" "));
         add(buttonPanel, "wrap");
 
@@ -126,6 +127,12 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
             getConfiguration().setAgc(getAgcToggleButton().isSelected());
             getConfiguration().setLna(getLnaToggleButton().isSelected());
 
+            //Only update bias-T when the device supports it, so the saved setting isn't lost on unsupported firmware.
+            if(getTuner().getController().isBiasTSupported())
+            {
+                getConfiguration().setBiasT(getBiasTToggleButton().isSelected());
+            }
+
             saveConfiguration();
         }
     }
@@ -147,11 +154,9 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         if(hasTuner())
         {
             getTunerIdLabel().setText("Airspy " + getTuner().getController().getBoardId() + " SER# " +
-                    getTuner().getController().getSerialNumber());
+                    getTuner().getController().getSerialNumber() + " FW " + getTuner().getController().getFirmwareVersion());
 
-            //Permanently disable the sample rates combo and force 912kHz usage - during dev testing, attempts to use
-            //the other sample rates produced inconsistent results.
-            getSampleRateCombo().setEnabled(false);
+            getSampleRateCombo().setEnabled(!getTuner().getTunerController().isLockedSampleRate());
             getSampleRateCombo().removeAllItems();
             for(AirspyHfSampleRate sampleRate: getTuner().getController().getAvailableSampleRates())
             {
@@ -161,8 +166,13 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
             getAgcToggleButton().setSelected(getTuner().getController().getAgc());
             getLnaToggleButton().setEnabled(true);
             getLnaToggleButton().setSelected(getTuner().getController().getLna());
+            boolean biasTSupported = getTuner().getController().isBiasTSupported();
+            getBiasTToggleButton().setEnabled(biasTSupported);
+            getBiasTToggleButton().setSelected(biasTSupported && getTuner().getController().getBiasT());
+            getBiasTToggleButton().setToolTipText(biasTSupported ? "Enable Bias-T power output for active antennas" :
+                    "Bias-T not supported by this device or firmware");
             getSampleRateCombo().setSelectedItem(getTuner().getController().getCurrentAirspySampleRate());
-            getAttenuationCombo().setEnabled(true);
+            getAttenuationCombo().setEnabled(!getTuner().getController().getAgc());
             getAttenuationCombo().setSelectedItem(getTuner().getController().getAttenuation());
         }
         else
@@ -172,6 +182,9 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
             getAgcToggleButton().setSelected(false);
             getLnaToggleButton().setEnabled(false);
             getLnaToggleButton().setSelected(false);
+            getBiasTToggleButton().setEnabled(false);
+            getBiasTToggleButton().setSelected(false);
+            getBiasTToggleButton().setToolTipText("No tuner available");
             getSampleRateCombo().setEnabled(false);
             getAttenuationCombo().setEnabled(false);
             getAttenuationCombo().setSelectedItem(Attenuation.A0);
@@ -260,6 +273,7 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
         if(mAttenuationCombo == null)
         {
             mAttenuationCombo = new JComboBox<>(Attenuation.values());
+            mAttenuationCombo.setToolTipText("Attenuation applies when the AGC is off");
             mAttenuationCombo.setEnabled(false);
             mAttenuationCombo.addActionListener(e -> {
                 if(!isLoading())
@@ -270,12 +284,12 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                         getTuner().getController().setAttenuation(selected);
                         save();
                     }
-                    catch(IOException ioe)
+                    catch(SourceException se)
                     {
-                        mLog.error("Error setting Airspy Hf attenuation [" + selected + "]", ioe);
+                        mLog.error("Error setting Airspy Hf attenuation [" + selected + "]", se);
                         JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
                                 "Airspy Tuner Controller - couldn't apply attenuation setting [" +
-                                        selected + "] " + ioe.getLocalizedMessage());
+                                        selected + "] " + se.getLocalizedMessage());
                     }
                 }
             });
@@ -300,13 +314,14 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                     try
                     {
                         getTuner().getController().setAgc(mAgcToggleButton.isSelected());
+                        getAttenuationCombo().setEnabled(!mAgcToggleButton.isSelected());
                         save();
                     }
-                    catch(IOException ioe)
+                    catch(SourceException se)
                     {
-                        mLog.error("Error setting Airspy HF AGC", ioe);
+                        mLog.error("Error setting Airspy HF AGC", se);
                         JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
-                        "Airspy HF Tuner Controller - couldn't change AGC setting" + ioe.getLocalizedMessage());
+                        "Airspy HF Tuner Controller - couldn't change AGC setting" + se.getLocalizedMessage());
                     }
                 }
             });
@@ -333,16 +348,48 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
                         getTuner().getController().setLna(mLnaToggleButton.isSelected());
                         save();
                     }
-                    catch(IOException ioe)
+                    catch(SourceException se)
                     {
-                        mLog.error("Error setting Airspy HF LNA", ioe);
+                        mLog.error("Error setting Airspy HF LNA", se);
                         JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
-                                "Airspy HF Tuner Controller - couldn't change LNA setting" + ioe.getLocalizedMessage());
+                                "Airspy HF Tuner Controller - couldn't change LNA setting" + se.getLocalizedMessage());
                     }
                 }
             });
         }
 
         return mLnaToggleButton;
+    }
+
+    /**
+     * Bias-T toggle button, enabled only when the device firmware supports a bias-T.
+     */
+    private JToggleButton getBiasTToggleButton()
+    {
+        if(mBiasTToggleButton == null)
+        {
+            mBiasTToggleButton = new JToggleButton("Bias-T");
+            mBiasTToggleButton.setToolTipText("Enable Bias-T power output for active antennas");
+            mBiasTToggleButton.setEnabled(false);
+            mBiasTToggleButton.addActionListener(e -> {
+                if(hasTuner() && !isLoading())
+                {
+                    try
+                    {
+                        getTuner().getController().setBiasT(mBiasTToggleButton.isSelected());
+                        save();
+                    }
+                    catch(SourceException se)
+                    {
+                        mLog.error("Error setting Airspy HF Bias-T", se);
+                        mBiasTToggleButton.setSelected(getTuner().getController().getBiasT());
+                        JOptionPane.showMessageDialog(AirspyHfTunerEditor.this,
+                                "Airspy HF Tuner Controller - couldn't change Bias-T setting " + se.getLocalizedMessage());
+                    }
+                }
+            });
+        }
+
+        return mBiasTToggleButton;
     }
 }

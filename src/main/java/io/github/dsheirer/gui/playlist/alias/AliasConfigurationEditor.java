@@ -273,7 +273,9 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
 
 
             Label listLabel = new Label("Alias List");
+            listLabel.setLabelFor(getAliasListNameComboBox());
             Label searchLabel = new Label("Search");
+            searchLabel.setLabelFor(getSearchField());
             searchLabel.setAlignment(Pos.CENTER_RIGHT);
 
             HBox searchBox = new HBox();
@@ -451,6 +453,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
         if(mAliasTableView == null)
         {
             mAliasTableView = new TableView<>();
+            mAliasTableView.setAccessibleText("Aliases");
 
             TableColumn nameColumn = new TableColumn();
             nameColumn.setText("Alias");
@@ -751,15 +754,18 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                                 UIManager.getColor("TextField.background"));
                             rectangle.setFill(ColorUtil.fromInteger(readable.equals(color) ? alias.getColor() :
                                 readable.getRGB()));
+                            setAccessibleText(String.format("#%06X", alias.getColor() & 0xFFFFFF));
                         }
                         else
                         {
                             rectangle.setVisible(false);
+                            setAccessibleText(null);
                         }
                     }
                     else
                     {
                         rectangle.setVisible(false);
+                        setAccessibleText(null);
                     }
                 }
             };
@@ -798,13 +804,15 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                 {
                     super.updateItem(item, empty);
 
-                    if(!empty && getTableRow() != null)
+                    if(!empty && getTableRow() != null && item != null)
                     {
                         iconNode.setVisible(item);
+                        setAccessibleText(item ? "Yes" : "No");
                     }
                     else
                     {
                         iconNode.setVisible(false);
+                        setAccessibleText(null);
                     }
                 }
             };
@@ -919,6 +927,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                 {
                     super.updateItem(item, empty);
                     setAlignment(Pos.CENTER);
+                    setAccessibleText(null);
 
                     if(empty)
                     {
@@ -937,6 +946,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                                 if(icon != null && icon.getFxImage() != null)
                                 {
                                     setGraphic(new ImageView(icon.getFxImage()));
+                                    setAccessibleText(icon.getName());
                                 }
                                 else
                                 {

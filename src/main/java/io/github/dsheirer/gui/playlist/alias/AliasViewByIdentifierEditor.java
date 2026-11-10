@@ -23,11 +23,21 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
+import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
+import io.github.dsheirer.alias.id.radio.Radio;
+import io.github.dsheirer.alias.id.radio.RadioRange;
+import io.github.dsheirer.alias.id.status.UnitStatusID;
+import io.github.dsheirer.alias.id.status.UserStatusID;
+import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.protocol.Protocol;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -39,6 +49,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -52,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -62,7 +74,7 @@ public class AliasViewByIdentifierEditor extends VBox
     private ComboBox<String> mAliasListNameComboBox;
     private ComboBox<AliasIDType> mAliasIDTypeComboBox;
     private TableView<AliasAndIdentifier> mAliasAndIdentifierTableView;
-    private TableColumn<AliasAndIdentifier,String> mIdentifierColumn;
+    private TableColumn<AliasAndIdentifier,AliasID> mIdentifierColumn;
     private Button mViewAliasButton;
     private boolean aliasListInvalidated;
 
@@ -85,6 +97,7 @@ public class AliasViewByIdentifierEditor extends VBox
         gridPane.setHgap(10);
 
         Label aliasListLabel = new Label("Alias List");
+        aliasListLabel.setLabelFor(getAliasListNameComboBox());
         GridPane.setHalignment(aliasListLabel, HPos.RIGHT);
         GridPane.setConstraints(aliasListLabel, 0, 0);
         gridPane.getChildren().add(aliasListLabel);
@@ -94,6 +107,7 @@ public class AliasViewByIdentifierEditor extends VBox
         gridPane.getChildren().add(getAliasListNameComboBox());
 
         Label identifierLabel = new Label("Identifier Type");
+        identifierLabel.setLabelFor(getAliasIDTypeComboBox());
         GridPane.setHalignment(identifierLabel, HPos.RIGHT);
         GridPane.setConstraints(identifierLabel, 0, 1);
         gridPane.getChildren().add(identifierLabel);
@@ -198,9 +212,29 @@ public class AliasViewByIdentifierEditor extends VBox
         if(mAliasAndIdentifierTableView == null)
         {
             mAliasAndIdentifierTableView = new TableView<>(FXCollections.observableArrayList(AliasAndIdentifier.extractor()));
+            mAliasAndIdentifierTableView.setAccessibleText("Aliases by identifier");
             mAliasAndIdentifierTableView.setPlaceholder(new Label("No aliases or identifiers available"));
             mIdentifierColumn = new TableColumn<>("Identifier");
-            mIdentifierColumn.setCellValueFactory(new PropertyValueFactory<>("identifier"));
+            mIdentifierColumn.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue().getAliasIdentifier()));
+            mIdentifierColumn.setCellFactory(column -> new TableCell<>()
+            {
+                @Override
+                protected void updateItem(AliasID item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+                    textProperty().unbind();
+
+                    if(empty || item == null)
+                    {
+                        setText(null);
+                    }
+                    else
+                    {
+                        textProperty().bind(item.valueProperty());
+                    }
+                }
+            });
+            mIdentifierColumn.setComparator(new AliasIdentifierComparator());
             mIdentifierColumn.setPrefWidth(350);
 
             TableColumn<AliasAndIdentifier, String> aliasColumn = new TableColumn<>();
@@ -266,6 +300,103 @@ public class AliasViewByIdentifierEditor extends VBox
         }
 
         return mAliasIDTypeComboBox;
+    }
+
+    /**
+     * Compares alias identifiers by protocol and then by numeric identifier value(s) so that the identifier column
+     * sorts numerically rather than alphabetically by the formatted display text.  Identifiers that don't have a
+     * numeric value fall back to comparing the display text.
+     */
+    public static class AliasIdentifierComparator implements Comparator<AliasID>
+    {
+        private static final Comparator<Protocol> PROTOCOL_COMPARATOR = Comparator.nullsLast(Comparator.naturalOrder());
+
+        @Override
+        public int compare(AliasID a, AliasID b)
+        {
+            if(a == b)
+            {
+                return 0;
+            }
+            if(a == null)
+            {
+                return 1;
+            }
+            if(b == null)
+            {
+                return -1;
+            }
+
+            int comparison = PROTOCOL_COMPARATOR.compare(getProtocol(a), getProtocol(b));
+
+            if(comparison == 0)
+            {
+                long[] aValues = getValues(a);
+                long[] bValues = getValues(b);
+
+                if(aValues != null && bValues != null)
+                {
+                    for(int x = 0; x < Math.min(aValues.length, bValues.length) && comparison == 0; x++)
+                    {
+                        comparison = Long.compare(aValues[x], bValues[x]);
+                    }
+
+                    if(comparison == 0)
+                    {
+                        comparison = Integer.compare(aValues.length, bValues.length);
+                    }
+                }
+                else if(aValues != null)
+                {
+                    comparison = -1;
+                }
+                else if(bValues != null)
+                {
+                    comparison = 1;
+                }
+            }
+
+            if(comparison == 0)
+            {
+                comparison = String.valueOf(a).compareTo(String.valueOf(b));
+            }
+
+            return comparison;
+        }
+
+        /**
+         * Protocol for the identifier, or null if the identifier doesn't have a protocol.
+         */
+        private static Protocol getProtocol(AliasID id)
+        {
+            return switch(id)
+            {
+                case Talkgroup talkgroup -> talkgroup.getProtocol();
+                case TalkgroupRange talkgroupRange -> talkgroupRange.getProtocol();
+                case Radio radio -> radio.getProtocol();
+                case RadioRange radioRange -> radioRange.getProtocol();
+                default -> null;
+            };
+        }
+
+        /**
+         * Numeric values for the identifier, in order of sort significance, or null if the identifier is not numeric.
+         */
+        private static long[] getValues(AliasID id)
+        {
+            return switch(id)
+            {
+                case P25FullyQualifiedTalkgroup fqt -> new long[]{fqt.getWacn(), fqt.getSystem(), fqt.getValue()};
+                case P25FullyQualifiedRadio fqr -> new long[]{fqr.getWacn(), fqr.getSystem(), fqr.getValue()};
+                case Talkgroup talkgroup -> new long[]{talkgroup.getValue()};
+                case TalkgroupRange range -> new long[]{range.getMinTalkgroup(), range.getMaxTalkgroup()};
+                case Radio radio -> new long[]{radio.getValue()};
+                case RadioRange range -> new long[]{range.getMinRadio(), range.getMaxRadio()};
+                case UnitStatusID status -> new long[]{status.getStatus()};
+                case UserStatusID status -> new long[]{status.getStatus()};
+                default -> null;
+            };
+        }
     }
 
     public static class AliasAndIdentifier

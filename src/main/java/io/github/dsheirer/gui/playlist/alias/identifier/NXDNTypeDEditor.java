@@ -76,11 +76,13 @@ public class NXDNTypeDEditor<T extends AliasID & INXDNTypeD> extends IdentifierE
         gridPane.add(new Label("NXDN Type-D"), 0, 0);
 
         Label homeRepeaterLabel = new Label("Home Repeater");
+        homeRepeaterLabel.setLabelFor(mHomeRepeaterField);
         GridPane.setHalignment(homeRepeaterLabel, HPos.RIGHT);
         gridPane.add(homeRepeaterLabel, 1, 0);
         gridPane.add(mHomeRepeaterField, 2, 0);
 
         Label identifierFieldLabel = new Label(identifierLabel);
+        identifierFieldLabel.setLabelFor(mIdentifierField);
         GridPane.setHalignment(identifierFieldLabel, HPos.RIGHT);
         gridPane.add(identifierFieldLabel, 3, 0);
         gridPane.add(mIdentifierField, 4, 0);

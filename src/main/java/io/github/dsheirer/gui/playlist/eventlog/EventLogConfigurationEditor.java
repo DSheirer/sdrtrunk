@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.gui.playlist.eventlog;
 
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -117,6 +118,7 @@ public class EventLogConfigurationEditor extends Editor<EventLogConfiguration>
             getChildren().add(getToggleSwitch());
 
             Label label = new Label(mEventLogType.getDisplayString());
+            label.setLabelFor(getToggleSwitch());
             GridPane.setHalignment(label, HPos.LEFT);
             GridPane.setConstraints(label, 1, 0);
             getChildren().add(label);
@@ -126,7 +128,7 @@ public class EventLogConfigurationEditor extends Editor<EventLogConfiguration>
         {
             if(mToggleSwitch == null)
             {
-                mToggleSwitch = new ToggleSwitch();
+                mToggleSwitch = new AccessibleToggleSwitch();
                 mToggleSwitch.setDisable(true);
                 mToggleSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
             }

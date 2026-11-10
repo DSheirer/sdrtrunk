@@ -377,6 +377,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mComboBoxPane.getColumnConstraints().addAll(column1, column2, column3);
 
             Label countryLabel = new Label("Country");
+            countryLabel.setLabelFor(getCountryComboBox());
             GridPane.setConstraints(countryLabel, 0, 0);
             mComboBoxPane.getChildren().add(countryLabel);
 
@@ -385,6 +386,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mComboBoxPane.getChildren().add(getCountryComboBox());
 
             Label stateLabel = new Label("State");
+            stateLabel.setLabelFor(getStateComboBox());
             GridPane.setConstraints(stateLabel, 1, 0);
             mComboBoxPane.getChildren().add(stateLabel);
 
@@ -393,6 +395,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mComboBoxPane.getChildren().add(getStateComboBox());
 
             Label countyLabel = new Label("County");
+            countyLabel.setLabelFor(getCountyComboBox());
             GridPane.setConstraints(countyLabel, 2, 0);
             mComboBoxPane.getChildren().add(countyLabel);
 

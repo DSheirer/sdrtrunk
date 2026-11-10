@@ -24,6 +24,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 
 import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -108,6 +109,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.setHgap(5);
 
             Label formatLabel = new Label("Format");
+            formatLabel.setLabelFor(getFormatField());
             GridPane.setHalignment(formatLabel, HPos.RIGHT);
             GridPane.setConstraints(formatLabel, 0, 0);
             mEditorPane.getChildren().add(formatLabel);
@@ -117,6 +119,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getFormatField());
 
             Label enabledLabel = new Label("Enabled");
+            enabledLabel.setLabelFor(getEnabledSwitch());
             GridPane.setHalignment(enabledLabel, HPos.RIGHT);
             GridPane.setConstraints(enabledLabel, 2, 0);
             mEditorPane.getChildren().add(enabledLabel);
@@ -125,6 +128,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getEnabledSwitch());
 
             Label systemLabel = new Label("Name");
+            systemLabel.setLabelFor(getNameTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, 1);
             mEditorPane.getChildren().add(systemLabel);
@@ -133,6 +137,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getNameTextField());
 
             Label hostLabel = new Label("Server");
+            hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, 2);
             mEditorPane.getChildren().add(hostLabel);
@@ -141,6 +146,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getHostTextField());
 
             Label portLabel = new Label("Port");
+            portLabel.setLabelFor(getPortTextField());
             GridPane.setHalignment(portLabel, HPos.RIGHT);
             GridPane.setConstraints(portLabel, 2, 2);
             mEditorPane.getChildren().add(portLabel);
@@ -149,6 +155,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getPortTextField());
 
             Label mountPointLabel = new Label("Mount Point");
+            mountPointLabel.setLabelFor(getMountPointTextField());
             GridPane.setHalignment(mountPointLabel, HPos.RIGHT);
             GridPane.setConstraints(mountPointLabel, 0, 3);
             mEditorPane.getChildren().add(mountPointLabel);
@@ -157,6 +164,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getMountPointTextField());
 
             Label inlineLabel = new Label("Inline Metadata");
+            inlineLabel.setLabelFor(getInlineToggleSwitch());
             GridPane.setHalignment(inlineLabel, HPos.RIGHT);
             GridPane.setConstraints(inlineLabel, 2, 3);
             mEditorPane.getChildren().add(inlineLabel);
@@ -165,6 +173,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getInlineToggleSwitch());
 
             Label userNameLabel = new Label("User Name");
+            userNameLabel.setLabelFor(getUserNameTextField());
             GridPane.setHalignment(userNameLabel, HPos.RIGHT);
             GridPane.setConstraints(userNameLabel, 0, 4);
             mEditorPane.getChildren().add(userNameLabel);
@@ -173,6 +182,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getUserNameTextField());
 
             Label passwordLabel = new Label("Password");
+            setPasswordLabel(passwordLabel);
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
             GridPane.setConstraints(passwordLabel, 2, 4);
             mEditorPane.getChildren().add(passwordLabel);
@@ -185,6 +195,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getShowPasswordCheckBox());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
+            maxAgeLabel.setLabelFor(getMaxAgeTextField());
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
             GridPane.setConstraints(maxAgeLabel, 0, 5);
             mEditorPane.getChildren().add(maxAgeLabel);
@@ -193,6 +204,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
             Label delayLabel = new Label("Delay (seconds)");
+            delayLabel.setLabelFor(getDelayTextField());
             GridPane.setHalignment(delayLabel, HPos.RIGHT);
             GridPane.setConstraints(delayLabel, 2, 5);
             mEditorPane.getChildren().add(delayLabel);
@@ -201,6 +213,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getDelayTextField());
 
             Label descriptionLabel = new Label("Description");
+            descriptionLabel.setLabelFor(getDescriptionTextField());
             GridPane.setHalignment(descriptionLabel, HPos.RIGHT);
             GridPane.setConstraints(descriptionLabel, 0, 6);
             mEditorPane.getChildren().add(descriptionLabel);
@@ -209,6 +222,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getDescriptionTextField());
 
             Label genreLabel = new Label("Genre");
+            genreLabel.setLabelFor(getGenreTextField());
             GridPane.setHalignment(genreLabel, HPos.RIGHT);
             GridPane.setConstraints(genreLabel, 0, 7);
             mEditorPane.getChildren().add(genreLabel);
@@ -217,6 +231,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             mEditorPane.getChildren().add(getGenreTextField());
 
             Label urlLabel = new Label("URL");
+            urlLabel.setLabelFor(getURLTextField());
             GridPane.setHalignment(urlLabel, HPos.RIGHT);
             GridPane.setConstraints(urlLabel, 0, 8);
             mEditorPane.getChildren().add(urlLabel);
@@ -244,7 +259,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
     {
         if(mInlineToggleSwitch == null)
         {
-            mInlineToggleSwitch = new ToggleSwitch();
+            mInlineToggleSwitch = new AccessibleToggleSwitch();
             mInlineToggleSwitch.setDisable(true);
             mInlineToggleSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
