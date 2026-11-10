@@ -7,7 +7,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenCentral()
-        maven { url 'https://jitpack.io' }
+        maven { url = 'https://jitpack.io' }
 
         //jAirspy is published as a GitHub release, with the native libraries for all platforms in the jar
         ivy {
