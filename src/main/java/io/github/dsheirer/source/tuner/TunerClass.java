@@ -27,17 +27,19 @@ public enum TunerClass
 {
 	AIRSPY("Airspy"),
 	AIRSPY_HF("Airspy HF+"),
+	BLADERF("bladeRF"),
 	FUNCUBE_DONGLE_PRO("Funcube Dongle Pro" ),
 	FUNCUBE_DONGLE_PRO_PLUS("Funcube Dongle Pro+" ),
 	HACKRF("HackRF" ),
 	HYDRASDR("HydraSDR"),
+	LIMESDR("LimeSDR"),
 	RTL2832("RTL-2832"),
 	RSP("RSP"),
 	TEST_TUNER("Test"),
 	RECORDING_TUNER("Recording"),
 	UNKNOWN("Unknown" );
 	
-	private String mDescription;
+	private final String mDescription;
 
 	/**
 	 * Constructs an entry
@@ -54,8 +56,8 @@ public enum TunerClass
 		return mDescription;
 	}
 
-	public static final EnumSet<TunerClass> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY, AIRSPY_HF, HACKRF, HYDRASDR,
-			RTL2832, FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
+	public static final EnumSet<TunerClass> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY, AIRSPY_HF, BLADERF, HACKRF,
+			HYDRASDR, LIMESDR, RTL2832, FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
 
 	public static final EnumSet<TunerClass> FUNCUBE_TUNERS = EnumSet.of(FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
 
@@ -117,19 +119,43 @@ public enum TunerClass
 			case 0x0CCD00D3: //TERRATEC CINERGY T REV3
 			case 0x0CCD00D7: //TERRATEC T STICK PLUS
 			case 0x0CCD00E0: //TERRATEC NOXON REV2
+			case 0x04136680: //DIGITALNOW QUAD DVB-T PCI-E CARD
+			case 0x04136F0F: //LEADTEK WINFAST DTV DONGLE MINI D
+			case 0x0458707F: //GENIUS TVGO DVB-T03 USB DONGLE (VER. B)
+			case 0x0CCD00B5: //TERRATEC NOXON DAB STICK - RADIO ENERGY
+			case 0x0CCD00B8: //TERRATEC BR DAB STICK
+			case 0x0CCD00B9: //TERRATEC WDR DAB STICK
+			case 0x0CCD00C0: //TERRATEC MUELLERVERLAG DAB STICK
+			case 0x15545020: //PIXELVIEW PV-DT235U(RN)
+			case 0x15F40131: //ASTROMETA DVB-T/DVB-T2
+			case 0x15F40133: //HANFTEK DAB+FM+DVB-T
+			case 0x1B80D394: //DIKOM USB-DVBT HD
+			case 0x1B80D397: //KWORLD KW-UB450-T USB DVB-T PICO TV
+			case 0x1B80D3A8: //ASUS U3100MINI_PLUS_V2
+			case 0x1B80D3AF: //SVEON STV27 DVB-T USB & FM
+			case 0x1B80D3B0: //SVEON STV21 DVB-T USB & FM
+			case 0x1D191104: //MSI DIGIVOX MICRO HD
+			case 0x1F4DA803: //SWEEX DVB-T USB
 				return RTL2832;
 			case 0x1D506089: //HACKRF ONE
 			case 0x1D50CC15: //HACKRF ONE
 			case 0x1D50604B: //HACKRF JAWBREAKER
 				return HACKRF;
+			case 0x2CF05246: //BLADERF X40/X115
+			case 0x1D506066: //BLADERF X40/X115 LEGACY VID/PID
+			case 0x2CF05250: //BLADERF 2.0 MICRO
+				return BLADERF;
 			case 0x38AF0001: //HYDRASDR RFONE (official VID 38af, PID 0001)
 				return HYDRASDR;
+			case 0x1D506108: //LIMESDR-USB
+			case 0x0403601F: //LIMESDR MINI (FTDI FT601)
+				return LIMESDR;
 			case 0x1D5060A1:
 				return AIRSPY;
 			case 0x03EB800C:
 				return AIRSPY_HF;
 		}
-		
+
 		return TunerClass.UNKNOWN;
 	}
 }

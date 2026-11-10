@@ -25,4 +25,16 @@ package io.github.dsheirer.dsp.filter.decimate;
 public interface IRealDecimationFilter
 {
     float[] decimateReal(float[] samples);
+
+    /**
+     * Decimates the samples using the output array when the implementation supports it, to avoid an allocation.  This
+     * is for intermediate results where the caller retains ownership of the output array.
+     * @param samples to decimate
+     * @param output array to reuse, sized to the decimated sample count
+     * @return decimated samples, which may be a different array than the output argument.
+     */
+    default float[] decimateReal(float[] samples, float[] output)
+    {
+        return decimateReal(samples);
+    }
 }

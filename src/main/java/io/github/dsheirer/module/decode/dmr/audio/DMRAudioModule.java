@@ -106,6 +106,13 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     {
         if(hasAudioCodec() && message.getTimeslot() == getTimeslot())
         {
+            //Ignore voice messages where none of the AMBE voice frames pass error detection, so that invalid voice
+            //messages (ie false sync detections) don't produce audio or establish the encryption state.
+            if(message instanceof VoiceMessage voiceMessage && !voiceMessage.isValid())
+            {
+                return;
+            }
+
             //Attempt to set the audio encryption state from certain types of messages
             if(!mEncryptedCallStateEstablished)
             {

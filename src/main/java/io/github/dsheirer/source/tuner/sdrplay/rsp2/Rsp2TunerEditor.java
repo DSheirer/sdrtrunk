@@ -24,9 +24,8 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerEditor;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AntennaSelection;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
+import io.github.dsheirer.source.tuner.sdrplay.RspAgcMode;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,9 +146,9 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         getAgcButton().setEnabled(hasTuner());
         if(hasTuner())
         {
-            AgcMode current = getTunerController().getControlRsp().getAgcMode();
-            getAgcButton().setSelected(current == null || current.equals(AgcMode.ENABLE));
-            getAgcButton().setText((current == null || current.equals(AgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
+            RspAgcMode current = getTunerController().getControlRsp().getAgcMode();
+            getAgcButton().setSelected(current == null || current.equals(RspAgcMode.ENABLE));
+            getAgcButton().setText((current == null || current.equals(RspAgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
             getLNASlider().setLNA(getTunerController().getControlRsp().getLNA());
             getIfGainSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
 
@@ -159,7 +158,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         }
 
         getLNASlider().setEnabled(hasTuner());
-        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != AgcMode.ENABLE);
+        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != RspAgcMode.ENABLE);
         getGainValueLabel().setEnabled(hasTuner());
 
         getBiasTCheckBox().setEnabled(hasTuner());
@@ -167,7 +166,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         {
             getBiasTCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isBiasT());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting Bias-T enabled state in editor");
         }
@@ -177,7 +176,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         {
             getExternalReferenceOutputCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isExternalReferenceOutput());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RF DAB Notch enabled state in editor");
         }
@@ -187,7 +186,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         {
             getRfNotchCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isRfNotch());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RF Notch enabled state in editor");
         }
@@ -197,7 +196,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
         {
             getAntennaSelectionCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getAntennaSelection() : null);
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting antenna selection in editor");
         }
@@ -222,7 +221,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
             getConfiguration().setAntennaSelection((Rsp2AntennaSelection)getAntennaSelectionCombo().getSelectedItem());
             getConfiguration().setLNA(getLNASlider().getLNA());
             getConfiguration().setBasebandGainReduction(getIfGainSlider().getGR());
-            getConfiguration().setAgcMode(getAgcButton().isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
+            getConfiguration().setAgcMode(getAgcButton().isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
 
             saveConfiguration();
         }
@@ -250,7 +249,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
                         adjustForSampleRate((int)selected.getSampleRate());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Error setting sample rate for RSP2 tuner", se);
                     }
@@ -278,7 +277,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
                         getTunerController().getControlRsp().setBiasT(mBiasTCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSP2 Bias-T enabled to " + mBiasTCheckBox.isSelected(), se);
                     }
@@ -306,7 +305,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
                         getTunerController().getControlRsp().setRfNotch(mRfNotchCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSP2 RF notch enabled to " + mRfNotchCheckBox.isSelected(), se);
                     }
@@ -334,7 +333,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
                         getTunerController().getControlRsp().setExternalReferenceOutput(mExternalReferenceOutputCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSP2 external reference output notch enabled to " +
                                 mExternalReferenceOutputCheckBox.isSelected(), se);
@@ -365,7 +364,7 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
                         getTunerController().getControlRsp().setAntennaSelection(selected);
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Error setting Antenna selection for RSP2", se);
                     }

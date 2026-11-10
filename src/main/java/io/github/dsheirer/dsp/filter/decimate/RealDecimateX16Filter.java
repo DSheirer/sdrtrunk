@@ -31,6 +31,7 @@ public class RealDecimateX16Filter extends RealDecimateX8Filter
     private static final int DECIMATE_BY_16_FILTER_LENGTH = 15;
     private static final WindowType DECIMATE_BY_16_WINDOW_TYPE = WindowType.BLACKMAN;
     private IRealDecimationFilter mFilter;
+    private float[] mOutput;
 
     /**
      * Constructs the decimation filter.
@@ -47,6 +48,7 @@ public class RealDecimateX16Filter extends RealDecimateX8Filter
         validate(samples, VALIDATION_LENGTH);
 
         //Decimate by this filter, then by the parent decimation filter
-        return super.decimateReal(mFilter.decimateReal(samples));
+        mOutput = getIntermediateOutput(mOutput, samples.length / 2);
+        return super.decimateReal(mFilter.decimateReal(samples, mOutput));
     }
 }

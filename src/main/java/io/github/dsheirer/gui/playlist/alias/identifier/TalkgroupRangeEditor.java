@@ -75,6 +75,8 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         gridPane.getChildren().add(getProtocolLabel());
 
         Label valueLabel = new Label("Talkgroup Range");
+        valueLabel.setLabelFor(getMinTalkgroupField());
+        valueLabel.setAccessibleText("Talkgroup Range start");
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 1, 0);
         gridPane.getChildren().add(valueLabel);
@@ -83,6 +85,8 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         gridPane.getChildren().add(getMinTalkgroupField());
 
         Label dashLabel = new Label("-");
+        dashLabel.setLabelFor(getMaxTalkgroupField());
+        dashLabel.setAccessibleText("Talkgroup Range end");
         GridPane.setConstraints(dashLabel, 3, 0);
         gridPane.getChildren().add(dashLabel);
 
@@ -220,7 +224,7 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         if(mMaxTalkgroupField == null)
         {
             mMaxTalkgroupField = new TextField();
-            mMaxTalkgroupField.setTextFormatter(mMinIntegerTextFormatter);
+            mMaxTalkgroupField.setTextFormatter(mMaxIntegerTextFormatter);
         }
 
         return mMaxTalkgroupField;
@@ -292,8 +296,8 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         List<TalkgroupDetail> details = new ArrayList<>();
         details.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
                 new IntegerFormatter(0,65535), "Format 0 - 65535"));
-        details.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.HEXADECIMAL, new IntegerFormatter(0,65535),
-                new IntegerFormatter(0,65535), "Format 0 - FFFF"));
+        details.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.HEXADECIMAL, new HexFormatter(0,65535),
+                new HexFormatter(0,65535), "Format 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
                 new IntegerFormatter(0,65535), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.HEXADECIMAL, new HexFormatter(0,65535),
@@ -301,7 +305,7 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         details.add(new TalkgroupDetail(Protocol.DMR, IntegerFormat.DECIMAL, new IntegerFormatter(1,16777215),
                 new IntegerFormatter(1,16777215), "Format: 1 - 16777215"));
         details.add(new TalkgroupDetail(Protocol.DMR, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0XFFFFFF),
-                new HexFormatter(1, 0xFFFFFF), "Format: 0 - FFFFFF"));
+                new HexFormatter(1, 0xFFFFFF), "Format: 1 - FFFFFF"));
         details.add(new TalkgroupDetail(Protocol.FLEETSYNC, IntegerFormat.FORMATTED,
                 new PrefixIdentFormatter(0,0xFFFFF), new PrefixIdentFormatter(0,0xFFFFF),
                 "Format: PPP-IIII = Prefix (0-127), Ident (0-8191)"));
@@ -316,12 +320,12 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
                 "Format: PPP-IIII = Prefix (0-127), Ident (1-8191)"));
         details.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
                 new IntegerFormatter(0,65535), "Format 0 - 65535"));
-        details.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.HEXADECIMAL, new IntegerFormatter(0,65535),
-                new IntegerFormatter(0,65535), "Format 0 - FFFF"));
-        details.add(new TalkgroupDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),
-                new IntegerFormatter(1,0xFFFF),"Format: 1 - 65,535"));
-        details.add(new TalkgroupDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
-                new IntegerFormatter(1,0xFFFF),"Format: 1 - FFFF"));
+        details.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.HEXADECIMAL, new HexFormatter(0,65535),
+                new HexFormatter(0,65535), "Format 0 - FFFF"));
+        details.add(new TalkgroupDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
+                new IntegerFormatter(0,0xFFFF),"Format: 0 - 65,535"));
+        details.add(new TalkgroupDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
+                new HexFormatter(0,0xFFFF),"Format: 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
                 new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),

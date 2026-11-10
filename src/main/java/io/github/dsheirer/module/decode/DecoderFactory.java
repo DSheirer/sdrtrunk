@@ -571,6 +571,11 @@ public class DecoderFactory
     {
         List<String> features = audioModule.getFeatures();
 
+        if(features.contains(IAudioCodecV2.FEATURE_LEGACY_TONE_LEVELS))
+        {
+            audioModule.setFeature(IAudioCodecV2.FEATURE_LEGACY_TONE_LEVELS, config.isLegacyToneLevels());
+        }
+
         if(features.contains(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL))
         {
             audioModule.setFeature(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL, config.isAGC());
@@ -578,7 +583,7 @@ public class DecoderFactory
 
         if(features.contains(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN))
         {
-            audioModule.setFeature(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN, config.getNoiseGain());
+            audioModule.setFeature(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN, config.getComfortNoiseGain());
         }
 
         if(features.contains(IAudioCodecV2.FEATURE_TONE_GENERATOR_GAIN))
@@ -950,7 +955,8 @@ public class DecoderFactory
     public static void transferJMBESettings(DecodeConfigJMBE from, DecodeConfigJMBE to)
     {
         to.setAGC(from.isAGC());
-        to.setNoiseGain(from.getNoiseGain());
+        to.setComfortNoiseGain(from.getComfortNoiseGain());
         to.setToneGain(from.getToneGain());
+        to.setLegacyToneLevels(from.isLegacyToneLevels());
     }
 }

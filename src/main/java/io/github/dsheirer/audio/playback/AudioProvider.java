@@ -31,6 +31,16 @@ import javax.sound.sampled.AudioFormat;
 public abstract class AudioProvider
 {
     /**
+     * Converts the audio sample to a 16-bit PCM sample, limiting out of range values instead of allowing them to wrap.
+     * @param sample in range -1.0 to 1.0
+     * @return PCM sample
+     */
+    protected static short toPcm(float sample)
+    {
+        return (short)(Math.clamp(sample, -1.0f, 1.0f) * Short.MAX_VALUE);
+    }
+
+    /**
      * Audio format for this provider
      */
     public abstract AudioFormat getAudioFormat();

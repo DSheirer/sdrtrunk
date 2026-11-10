@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,10 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rsp1a;
 
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.Rsp1aDevice;
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp1aDevice;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,93 +31,59 @@ import org.slf4j.LoggerFactory;
  */
 public class ControlRsp1a extends ControlRsp<Rsp1aDevice> implements IControlRsp1a
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRsp1a.class);
+    private static final Logger mLog = LoggerFactory.getLogger(ControlRsp1a.class);
 
     /**
      * Constructs an instance
-     * @param device for the device
+     * @param deviceInfo for the device
      */
-    public ControlRsp1a(Rsp1aDevice device)
+    public ControlRsp1a(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo, Rsp1aDevice.class);
     }
 
     @Override
-    public boolean isBiasT() throws SDRPlayException
+    public boolean isBiasT() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isBiasT();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get Bias-T", Rsp1aDevice::isBiasT);
     }
 
     @Override
-    public void setBiasT(boolean enabled) throws SDRPlayException
+    public void setBiasT(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setBiasT(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set Bias-T", device -> device.setBiasT(enabled));
     }
 
     @Override
-    public boolean isRfDabNotch() throws SDRPlayException
+    public boolean isRfDabNotch() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfDabNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get RF DAB notch", Rsp1aDevice::isRfDabNotch);
     }
 
     @Override
-    public void setRfDabNotch(boolean enabled) throws SDRPlayException
+    public void setRfDabNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfDabNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set RF DAB notch", device -> device.setRfDabNotch(enabled));
     }
 
     @Override
-    public boolean isRfNotch() throws SDRPlayException
+    public boolean isRfNotch() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get RF notch", Rsp1aDevice::isRfNotch);
     }
 
     @Override
-    public void setRfNotch(boolean enabled) throws SDRPlayException
+    public void setRfNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set RF notch", device -> device.setRfNotch(enabled));
+    }
+
+    /**
+     * Frequency below which the LNA has the low (HF) band gain table.
+     */
+    protected long getLowBandLimit()
+    {
+        return 60_000_000;
     }
 
     /**
@@ -130,7 +97,7 @@ public class ControlRsp1a extends ControlRsp<Rsp1aDevice> implements IControlRsp
         {
             long frequency = getTunedFrequency();
 
-            if(frequency < 60_000_000)
+            if(frequency < getLowBandLimit())
             {
                 return 6;
             }
@@ -142,9 +109,8 @@ public class ControlRsp1a extends ControlRsp<Rsp1aDevice> implements IControlRsp
             {
                 return 8;
             }
-
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
         }

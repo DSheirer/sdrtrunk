@@ -25,15 +25,12 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.callback.IDeviceEventListener;
-import io.github.dsheirer.source.tuner.sdrplay.api.callback.IStreamListener;
-import io.github.dsheirer.source.tuner.sdrplay.api.callback.StreamCallbackParameters;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.EventType;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.GainCallbackParameters;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.PowerOverloadCallbackParameters;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.RspDuoModeCallbackParameters;
+import io.github.dsheirer.sdrplay.DeviceEvent;
+import io.github.dsheirer.sdrplay.DeviceEventListener;
+import io.github.dsheirer.sdrplay.SampleBuffer;
+import io.github.dsheirer.sdrplay.SampleListener;
+import io.github.dsheirer.sdrplay.Tuner;
+import io.github.dsheirer.util.ThreadPool;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Abstract/Base RSP tuner controller
  */
 public abstract class RspTunerController<I extends IControlRsp> extends TunerController
-        implements IDeviceEventListener, IStreamListener
+        implements DeviceEventListener, SampleListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(RspTunerController.class);
     protected static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 100_000;
@@ -64,7 +61,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         mControlRsp = controlRsp;
 
         //Register this controller to receive device events and sample streams when startStream() is invoked.
-        mControlRsp.resister(this, this);
+        mControlRsp.register(this, this);
 
         setMinimumFrequency(MINIMUM_TUNABLE_FREQUENCY_HZ);
         setMaximumFrequency(MAXIMUM_TUNABLE_FREQUENCY_HZ);
@@ -84,7 +81,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
             {
                 setSampleRate(rtc.getSampleRate());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP sample rate to " + rtc.getSampleRate(), se);
             }
@@ -95,7 +92,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
                 int gr = rtc.getBasebandGainReduction();
                 getControlRsp().setGain(lna, gr);
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP LNA [" + rtc.getLNA() + "] and baseband [" + rtc.getBasebandGainReduction() + "]");
             }
@@ -110,41 +107,54 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         return mControlRsp;
     }
 
-    @Override
-    public TunerSelect getTunerSelect()
+    /**
+     * SDRplay tuner (A or B) for this controller.
+     */
+    public Tuner getSdrplayTuner()
     {
-        return mControlRsp.getTunerSelect();
+        return mControlRsp.getSdrplayTuner();
     }
 
+    /**
+     * Processes samples from the API.  Invoked on the API's stream callback thread.
+     * @param sampleBuffer containing the samples, valid only until this method returns.
+     */
     @Override
-    public void processStream(short[] inphase, short[] quadrature,
-                              StreamCallbackParameters parameters, boolean reset)
+    public void onSamples(SampleBuffer sampleBuffer)
     {
-        //The native buffer factory repackages the samples into buffers with the largest power-of-2 length that is
-        //smaller than the incoming buffer length and no smaller than 128 to ensure that down-stream vector optimized
+        //The native buffer factory repackages the samples into buffers with the smallest power-of-2 length that is
+        //no smaller than the incoming buffer length (minimum 128) to ensure that down-stream vector optimized
         //functions can process the data.
-        List<RspNativeBuffer> buffers = mNativeBufferFactory.get(inphase, quadrature, System.currentTimeMillis());
+        List<RspNativeBuffer> buffers = mNativeBufferFactory.get(sampleBuffer.copyI(), sampleBuffer.copyQ(),
+                System.currentTimeMillis());
 
         for(RspNativeBuffer buffer: buffers)
         {
             mNativeBufferBroadcaster.broadcast(buffer);
         }
+    }
 
-        if(reset)
+    /**
+     * Processes device events from the API.  Invoked on the API's event callback thread.  The jsdrplay library
+     * acknowledges power overload events to the API before invoking this method.
+     * @param event from the API
+     */
+    @Override
+    public void onEvent(DeviceEvent event)
+    {
+        switch(event)
         {
-//            mLog.info(getControlRsp().getDeviceDescriptor().getDeviceType() + " - sample stream was reset");
-        }
-        if(parameters.isGainReductionChanged())
-        {
-//            mLog.info("^^^ Got a gain reduction change");
-        }
-        if(parameters.isRfFrequencyChanged())
-        {
-//            mLog.info("^^^ Got a frequency changed");
-        }
-        if(parameters.isSampleRateChanged())
-        {
-//            mLog.info("^^^ Got a sample rate changed");
+            case DeviceEvent.PowerOverload overload ->
+            {
+                if(overload.overloaded())
+                {
+                    getControlRsp().processPowerOverload(overload.tuner());
+                }
+            }
+            //The device can't be closed from an API callback thread, so process the removal on another thread
+            case DeviceEvent.DeviceRemoved removed -> ThreadPool.CACHED.submit(() -> processDeviceRemoval(removed.tuner()));
+            case DeviceEvent.DeviceFailure failure -> ThreadPool.CACHED.submit(() -> processDeviceRemoval(failure.tuner()));
+            default -> {} //Ignore gain change and RSPduo mode change events
         }
     }
 
@@ -159,9 +169,9 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         {
             mControlRsp.start();
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
-            throw new SourceException("Unable to select tuner - in use");
+            throw new SourceException("Unable to select tuner - " + se.getMessage(), se);
         }
     }
 
@@ -172,7 +182,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         {
             mControlRsp.stop();
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error releasing RSP tuner device", se);
         }
@@ -238,7 +248,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         {
             return getControlRsp().getTunedFrequency();
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             throw new SourceException("Error setting tuned frequency", se);
         }
@@ -256,7 +266,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         {
             getControlRsp().setTunedFrequency(frequency);
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             throw new SourceException("Unable to set center frequency [" + frequency + "]", se);
         }
@@ -265,9 +275,9 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     /**
      * Sets the sample rate
      * @param rspSampleRate to apply
-     * @throws SDRPlayException if there is an error
+     * @throws RspException if there is an error
      */
-    public void setSampleRate(RspSampleRate rspSampleRate) throws SDRPlayException
+    public void setSampleRate(RspSampleRate rspSampleRate) throws RspException
     {
         getControlRsp().setSampleRate(rspSampleRate);
 
@@ -297,34 +307,14 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
         return 128;
     }
 
-    //Device Event Listener interface methods ...
-    @Override
-    public void processEvent(EventType eventType, TunerSelect tunerSelect) {}
-    @Override
-    public void processGainChange(TunerSelect tunerSelect, GainCallbackParameters parameters) {}
-    @Override
-    public void processRspDuoModeChange(TunerSelect tunerSelect, RspDuoModeCallbackParameters parameters) {}
-    @Override
-    public void processPowerOverload(TunerSelect tunerSelect, PowerOverloadCallbackParameters parameters)
+    /**
+     * Processes a device removal (or failure) event.
+     * @param tuner that was removed
+     */
+    public void processDeviceRemoval(Tuner tuner)
     {
-        if(getControlRsp() != null)
-        {
-            try
-            {
-                getControlRsp().acknowledgePowerOverload(tunerSelect);
-            }
-            catch(SDRPlayException se)
-            {
-                mLog.error("Unable to acknowledge power overload for [" + tunerSelect + "]", se);
-            }
-        }
-    }
-
-    @Override
-    public void processDeviceRemoval(TunerSelect tunerSelect)
-    {
-        mLog.info("Processing device removal for tuner [" + tunerSelect + "] controller class [" + getClass().getSimpleName() + "]");
-        //Command the control RSP to nullify the device so that we cease all attempts to control the device via the API
+        mLog.info("Processing device removal for tuner [" + tuner + "] controller class [" + getClass().getSimpleName() + "]");
+        //Command the control RSP to release the device so that we cease all attempts to control the device via the API
         if(getControlRsp() != null)
         {
             getControlRsp().deviceRemoved();

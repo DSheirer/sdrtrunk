@@ -27,9 +27,8 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerEditor;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDuoAmPort;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
+import io.github.dsheirer.source.tuner.sdrplay.RspAgcMode;
 import java.util.EnumSet;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -55,7 +54,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
     private JCheckBox mRfNotchCheckBox;
     private JCheckBox mAmNotchCheckBox;
     private JCheckBox mExternalReferenceOutputCheckBox;
-    private JComboBox<RspDuoAmPort> mAmPortCombo;
+    private JComboBox<RspDuoAmPortSelection> mAmPortCombo;
     private JButton mTunerPreferencesButton;
 
     /**
@@ -164,9 +163,9 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         getAgcButton().setEnabled(hasTuner());
         if(hasTuner())
         {
-            AgcMode current = getTunerController().getControlRsp().getAgcMode();
-            getAgcButton().setSelected(current == null || current.equals(AgcMode.ENABLE));
-            getAgcButton().setText((current == null || current.equals(AgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
+            RspAgcMode current = getTunerController().getControlRsp().getAgcMode();
+            getAgcButton().setSelected(current == null || current.equals(RspAgcMode.ENABLE));
+            getAgcButton().setText((current == null || current.equals(RspAgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
             getLNASlider().setLNA(getTunerController().getControlRsp().getLNA());
             getIfGainSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
 
@@ -176,7 +175,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         }
 
         getLNASlider().setEnabled(hasTuner());
-        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != AgcMode.ENABLE);
+        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != RspAgcMode.ENABLE);
         getGainValueLabel().setEnabled(hasTuner());
 
         getAmPortCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
@@ -184,7 +183,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         {
             getAmPortCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getAmPort() : null);
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RSPduo tuner 1 AM Port in editor");
         }
@@ -194,7 +193,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         {
             getRfDabNotchCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isRfDabNotch());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RSPduo tuner 1 RF DAB Notch enabled state in editor");
         }
@@ -204,7 +203,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         {
             getRfNotchCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isRfNotch());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RSPduo tuner 1 RF Notch enabled state in editor");
         }
@@ -214,7 +213,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         {
             getAmNotchCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isAmNotch());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RSPduo tuner 1 AM Notch enabled state in editor");
         }
@@ -225,7 +224,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
             getExternalReferenceOutputCheckBox()
                     .setSelected(hasTuner() && getTunerController().getControlRsp().isExternalReferenceOutput());
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error setting RSPduo tuner 1 external reference output enabled state in editor");
         }
@@ -246,13 +245,13 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
             getConfiguration().setSampleRate((RspSampleRate)getSampleRateCombo().getSelectedItem());
             getConfiguration().setAmNotch(getAmNotchCheckBox().isSelected());
-            getConfiguration().setAmPort(getAmPortCombo().getSelectedItem() != null ? (RspDuoAmPort)getAmPortCombo().getSelectedItem() : null);
+            getConfiguration().setAmPort(getAmPortCombo().getSelectedItem() != null ? (RspDuoAmPortSelection)getAmPortCombo().getSelectedItem() : null);
             getConfiguration().setExternalReferenceOutput(getExternalReferenceOutputCheckBox().isSelected());
             getConfiguration().setRfDabNotch(getRfDabNotchCheckBox().isSelected());
             getConfiguration().setRfNotch(getRfNotchCheckBox().isSelected());
             getConfiguration().setLNA(getLNASlider().getLNA());
             getConfiguration().setBasebandGainReduction(getIfGainSlider().getGR());
-            getConfiguration().setAgcMode(getAgcButton().isSelected() ? AgcMode.ENABLE : AgcMode.DISABLE);
+            getConfiguration().setAgcMode(getAgcButton().isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
 
             saveConfiguration();
         }
@@ -302,7 +301,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
                         adjustForSampleRate((int)selected.getSampleRate());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Error setting sample rate for RSPduo tuner 1", se);
                     }
@@ -316,23 +315,23 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
     /**
      * AM port selection combobox control
      */
-    private JComboBox<RspDuoAmPort> getAmPortCombo()
+    private JComboBox<RspDuoAmPortSelection> getAmPortCombo()
     {
         if(mAmPortCombo == null)
         {
-            mAmPortCombo = new JComboBox<>(RspDuoAmPort.values());
+            mAmPortCombo = new JComboBox<>(RspDuoAmPortSelection.values());
             mAmPortCombo.setEnabled(false);
             mAmPortCombo.addActionListener(e -> {
                 if(hasTuner() && !isLoading())
                 {
-                    RspDuoAmPort selected = (RspDuoAmPort)mAmPortCombo.getSelectedItem();
+                    RspDuoAmPortSelection selected = (RspDuoAmPortSelection)mAmPortCombo.getSelectedItem();
 
                     try
                     {
                         getTunerController().getControlRsp().setAmPort(selected);
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Error setting AM port for RSPduo tuner 1", se);
                     }
@@ -360,7 +359,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
                         getTunerController().getControlRsp().setRfDabNotch(mRfDabNotchCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSPduo tuner 1 RF DAB notch enabled to " + mRfDabNotchCheckBox.isSelected(), se);
                     }
@@ -388,7 +387,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
                         getTunerController().getControlRsp().setRfNotch(mRfNotchCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSPduo tuner 1 RF notch enabled to " + mRfNotchCheckBox.isSelected(), se);
                     }
@@ -416,7 +415,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
                         getTunerController().getControlRsp().setAmNotch(mAmNotchCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSPduo tuner 1 AM notch enabled to " + mAmNotchCheckBox.isSelected(), se);
                     }
@@ -444,7 +443,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
                         getTunerController().getControlRsp().setExternalReferenceOutput(mExternalReferenceOutputCheckBox.isSelected());
                         save();
                     }
-                    catch(SDRPlayException se)
+                    catch(RspException se)
                     {
                         mLog.error("Unable to set RSPduo tuner 1 external reference output notch enabled to " +
                                 mExternalReferenceOutputCheckBox.isSelected(), se);

@@ -30,12 +30,16 @@ import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadio;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadioRange;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.record.Record;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroupRange;
 import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
@@ -79,6 +83,31 @@ public class AliasFactory
                 Min copyMin = new Min();
                 copyMin.setMin(originalMin.getMin());
                 return copyMin;
+            case NXDN_TYPE_D_RADIO_ID:
+                NXDNTypeDRadio originalTypeDRadio = (NXDNTypeDRadio)id;
+                NXDNTypeDRadio copyTypeDRadio = new NXDNTypeDRadio(originalTypeDRadio.getHomeRepeater(),
+                        originalTypeDRadio.getIdentifier());
+                copyTypeDRadio.setOverlap(originalTypeDRadio.overlapProperty().get());
+                return copyTypeDRadio;
+            case NXDN_TYPE_D_RADIO_ID_RANGE:
+                NXDNTypeDRadioRange originalTypeDRadioRange = (NXDNTypeDRadioRange)id;
+                NXDNTypeDRadioRange copyTypeDRadioRange = new NXDNTypeDRadioRange(originalTypeDRadioRange.getHomeRepeater(),
+                        originalTypeDRadioRange.getMinIdentifier(), originalTypeDRadioRange.getMaxIdentifier());
+                copyTypeDRadioRange.setOverlap(originalTypeDRadioRange.overlapProperty().get());
+                return copyTypeDRadioRange;
+            case NXDN_TYPE_D_TALKGROUP:
+                NXDNTypeDTalkgroup originalTypeDTalkgroup = (NXDNTypeDTalkgroup)id;
+                NXDNTypeDTalkgroup copyTypeDTalkgroup = new NXDNTypeDTalkgroup(originalTypeDTalkgroup.getHomeRepeater(),
+                        originalTypeDTalkgroup.getIdentifier());
+                copyTypeDTalkgroup.setOverlap(originalTypeDTalkgroup.overlapProperty().get());
+                return copyTypeDTalkgroup;
+            case NXDN_TYPE_D_TALKGROUP_RANGE:
+                NXDNTypeDTalkgroupRange originalTypeDTalkgroupRange = (NXDNTypeDTalkgroupRange)id;
+                NXDNTypeDTalkgroupRange copyTypeDTalkgroupRange = new NXDNTypeDTalkgroupRange(
+                        originalTypeDTalkgroupRange.getHomeRepeater(), originalTypeDTalkgroupRange.getMinIdentifier(),
+                        originalTypeDTalkgroupRange.getMaxIdentifier());
+                copyTypeDTalkgroupRange.setOverlap(originalTypeDTalkgroupRange.overlapProperty().get());
+                return copyTypeDTalkgroupRange;
             case P25_FULLY_QUALIFIED_RADIO_ID:
                 P25FullyQualifiedRadio originalP25 = (P25FullyQualifiedRadio) id;
                 P25FullyQualifiedRadio copyP25 = new P25FullyQualifiedRadio(originalP25.getWacn(),

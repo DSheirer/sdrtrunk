@@ -125,7 +125,36 @@ public abstract class ComplexMixer
      * Mixes the complex I & Q samples with samples generated from an oscillator.
      * @param i complex samples to mix
      * @param q complex samples to mix
+     * @param timestamp of the first sample
      * @return mixed samples
      */
-    public abstract ComplexSamples mix(float[] i, float[] q, long timestamp);
+    public ComplexSamples mix(float[] i, float[] q, long timestamp)
+    {
+        ComplexSamples mixer = generate(i.length, timestamp);
+        mix(i, q, mixer.i(), mixer.q());
+        return mixer;
+    }
+
+    /**
+     * Mixes the complex samples into the output arrays, to avoid an allocation when the caller can reuse the arrays.
+     * @param samples to mix
+     * @param iOutput array to receive the mixed inphase samples, the same length as the samples.
+     * @param qOutput array to receive the mixed quadrature samples, the same length as the samples.
+     * @return mixed samples that use the output arrays
+     */
+    public ComplexSamples mix(ComplexSamples samples, float[] iOutput, float[] qOutput)
+    {
+        mOscillator.generateComplexSamples(iOutput, qOutput);
+        mix(samples.i(), samples.q(), iOutput, qOutput);
+        return new ComplexSamples(iOutput, qOutput, samples.timestamp());
+    }
+
+    /**
+     * Mixes the complex I & Q samples with the oscillator samples and stores the results in the oscillator arrays.
+     * @param iSamples complex samples to mix
+     * @param qSamples complex samples to mix
+     * @param iMixer oscillator samples, replaced with the mixed samples
+     * @param qMixer oscillator samples, replaced with the mixed samples
+     */
+    protected abstract void mix(float[] iSamples, float[] qSamples, float[] iMixer, float[] qMixer);
 }

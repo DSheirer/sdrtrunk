@@ -28,7 +28,9 @@ import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ScheduledFuture;
@@ -49,7 +51,7 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
     private IFrameLocationListener mFrameLocationListener;
     private int mBufferSampleCount = 65536; //Complex samples per buffer
     private int mBytesPerFrame;
-    private int mFrameCounter = 0;
+    private long mFrameCounter = 0; //Bytes read - long to support recordings larger than 2 GB
     private long mFrequency = 0;
     private Listener<INativeBuffer> mListener;
     private AudioInputStream mInputStream;
@@ -234,7 +236,7 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
     {
         if(mInputStream == null)
         {
-            mInputStream = AudioSystem.getAudioInputStream(mFile);
+            mInputStream = getAudioInputStream(mFile);
 
             AudioFormat format = mInputStream.getFormat();
 
@@ -320,7 +322,7 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
         return mFile;
     }
 
-    private void broadcast(int byteLocation)
+    private void broadcast(long byteLocation)
     {
         int frameLocation = (int)(byteLocation / mBytesPerFrame);
 
@@ -347,7 +349,7 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
      */
     public static boolean supports(File file)
     {
-        try(AudioInputStream ais = AudioSystem.getAudioInputStream(file))
+        try(AudioInputStream ais = getAudioInputStream(file))
         {
             AudioFormat format = ais.getFormat();
 
@@ -362,6 +364,38 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
         }
 
         return false;
+    }
+
+    /**
+     * Creates an audio input stream for the file.  Wave files are opened via the Java audio system.  SDRSharp raw
+     * I/Q (.iq) recordings are opened as headerless signed 16-bit little-endian stereo PCM, using the sample rate
+     * parsed from the file name.
+     * @param file to open
+     * @return audio input stream
+     * @throws IOException if the file can't be opened or (.iq) the file name can't be parsed
+     * @throws UnsupportedAudioFileException if the file is not a supported audio file
+     */
+    private static AudioInputStream getAudioInputStream(File file) throws IOException, UnsupportedAudioFileException
+    {
+        if(SDRSharpIQRecording.hasIQExtension(file))
+        {
+            SDRSharpIQRecording recording = SDRSharpIQRecording.parse(file);
+
+            if(recording == null)
+            {
+                throw new IOException("Unable to parse sample rate from SDRSharp I/Q recording file name: " +
+                    file.getName());
+            }
+
+            float sampleRate = (float)recording.getSampleRate();
+            AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, sampleRate,
+                SDRSharpIQRecording.BITS_PER_SAMPLE, SDRSharpIQRecording.CHANNELS, SDRSharpIQRecording.BYTES_PER_FRAME,
+                sampleRate, false);
+            long frameLength = file.length() / SDRSharpIQRecording.BYTES_PER_FRAME;
+            return new AudioInputStream(new BufferedInputStream(new FileInputStream(file)), format, frameLength);
+        }
+
+        return AudioSystem.getAudioInputStream(file);
     }
 
     public class ReplayController implements Runnable

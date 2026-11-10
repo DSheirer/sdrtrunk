@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.AccessibilityUtil;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.DbPowerMeter;
 import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
@@ -134,6 +136,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             int row = 0;
 
             Label bandwidthLabel = new Label("Channel Bandwidth");
+            AccessibilityUtil.labelGroup(bandwidthLabel, getBandwidthButton());
             GridPane.setHalignment(bandwidthLabel, HPos.RIGHT);
             GridPane.setConstraints(bandwidthLabel, 0, row);
             gridPane.getChildren().add(bandwidthLabel);
@@ -142,6 +145,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getBandwidthButton());
 
             Label squelchLabel = new Label("Squelch Threshold");
+            squelchLabel.setLabelFor(getSquelchThresholdField());
             GridPane.setHalignment(squelchLabel, HPos.RIGHT);
             GridPane.setConstraints(squelchLabel, 0, row);
             gridPane.getChildren().add(squelchLabel);
@@ -150,6 +154,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getSquelchThresholdField());
 
             Label autoTrackLabel = new Label("Squelch Auto-Track");
+            autoTrackLabel.setLabelFor(getSquelchAutoTrackSwitch());
             GridPane.setHalignment(autoTrackLabel, HPos.RIGHT);
             GridPane.setConstraints(autoTrackLabel, 2, row);
             gridPane.getChildren().add(autoTrackLabel);
@@ -159,6 +164,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getSquelchAutoTrackSwitch());
 
             Label talkgroupLabel = new Label("Talkgroup To Assign");
+            talkgroupLabel.setLabelFor(getTalkgroupField());
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
             GridPane.setConstraints(talkgroupLabel, 4, row);
             gridPane.getChildren().add(talkgroupLabel);
@@ -210,6 +216,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getBasebandRecordSwitch());
 
             Label recordBasebandLabel = new Label("Channel (Baseband I&Q)");
+            recordBasebandLabel.setLabelFor(getBasebandRecordSwitch());
             GridPane.setHalignment(recordBasebandLabel, HPos.LEFT);
             GridPane.setConstraints(recordBasebandLabel, 1, 1);
             gridPane.getChildren().add(recordBasebandLabel);
@@ -254,7 +261,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mBasebandRecordSwitch == null)
         {
-            mBasebandRecordSwitch = new ToggleSwitch();
+            mBasebandRecordSwitch = new AccessibleToggleSwitch();
             mBasebandRecordSwitch.setDisable(true);
             mBasebandRecordSwitch.setTextAlignment(TextAlignment.RIGHT);
             mBasebandRecordSwitch.selectedProperty()
@@ -301,7 +308,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
                         DecodeConfigAM.Bandwidth bandwidth = config.getBandwidth();
                         if(bandwidth == null)
                         {
-                            bandwidth = DecodeConfigNBFM.Bandwidth.BW_15_0;
+                            bandwidth = DecodeConfigAM.DEFAULT_BANDWIDTH;
                         }
 
                         for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
@@ -348,7 +355,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mSquelchAutoTrackSwitch == null)
         {
-            mSquelchAutoTrackSwitch = new ToggleSwitch();
+            mSquelchAutoTrackSwitch = new AccessibleToggleSwitch();
             mSquelchAutoTrackSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
@@ -409,7 +416,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
         {
             getBandwidthButton().setDisable(false);
             final DecodeConfigAM.Bandwidth bandwidth = (decodeConfigAM.getBandwidth() != null ?
-                    decodeConfigAM.getBandwidth() : DecodeConfigNBFM.Bandwidth.BW_15_0);
+                    decodeConfigAM.getBandwidth() : DecodeConfigAM.DEFAULT_BANDWIDTH);
 
             for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
             {
@@ -454,7 +461,7 @@ public class AMConfigurationEditor extends ChannelConfigurationEditor
             config = new DecodeConfigAM();
         }
 
-        DecodeConfigAM.Bandwidth bandwidth = DecodeConfigAM.Bandwidth.BW_15_0;
+        DecodeConfigAM.Bandwidth bandwidth = DecodeConfigAM.DEFAULT_BANDWIDTH;
 
         if(getBandwidthButton().getToggleGroup().getSelectedToggle() != null)
         {

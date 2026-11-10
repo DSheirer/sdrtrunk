@@ -214,6 +214,7 @@ public class SystemSiteSelectionEditor extends GridPane
         if(mSiteTableView == null)
         {
             mSiteTableView = new TableView<>();
+            mSiteTableView.setAccessibleText("Sites");
             mSiteTableView.setPlaceholder(getPlaceholderLabel());
 
             TableColumn systemColumn = new TableColumn();

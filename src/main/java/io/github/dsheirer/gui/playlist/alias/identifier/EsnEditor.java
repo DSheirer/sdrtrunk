@@ -54,6 +54,7 @@ public class EsnEditor extends IdentifierEditor<Esn>
         gridPane.setHgap(5);
 
         Label typeLabel = new Label("ESN");
+        typeLabel.setLabelFor(getEsnField());
         GridPane.setConstraints(typeLabel, 0, 0);
         gridPane.getChildren().add(typeLabel);
 

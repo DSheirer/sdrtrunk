@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.dsp.mixer;
 
-import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.vector.VectorUtilities;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorSpecies;
@@ -42,21 +41,15 @@ public class VectorComplexMixer extends ComplexMixer
     }
 
     /**
-     * Mixes the complex I & Q samples with samples generated from an oscillator.
+     * Mixes the complex I & Q samples with the oscillator samples and stores the results in the oscillator arrays.
      * @param iSamples complex samples to mix
      * @param qSamples complex samples to mix
-     * @param timestamp for the first sample
-     * @return mixed samples
+     * @param iMixer oscillator samples, replaced with the mixed samples
+     * @param qMixer oscillator samples, replaced with the mixed samples
      */
-    @Override public ComplexSamples mix(float[] iSamples, float[] qSamples, long timestamp)
+    @Override protected void mix(float[] iSamples, float[] qSamples, float[] iMixer, float[] qMixer)
     {
         VectorUtilities.checkComplexArrayLength(iSamples, qSamples, VECTOR_SPECIES);
-
-        //Reuse this complex samples buffer to store the results and return to caller
-        ComplexSamples mixer = generate(iSamples.length, timestamp);
-
-        float[] iMixer = mixer.i();
-        float[] qMixer = mixer.q();
 
         FloatVector iS, qS, iM, qM;
 
@@ -71,7 +64,5 @@ public class VectorComplexMixer extends ComplexMixer
             iM.mul(iS).sub(qM.mul(qS)).intoArray(iMixer, x);
             qM.mul(iS).add(iM.mul(qS)).intoArray(qMixer, x);
         }
-
-        return mixer;
     }
 }

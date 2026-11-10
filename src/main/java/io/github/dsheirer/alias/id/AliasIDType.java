@@ -29,6 +29,10 @@ public enum AliasIDType
     LOJACK("LoJack"),
     LTR_NET_UID("LTR-Net UID"),
     MIN("Passport MIN"),
+    NXDN_TYPE_D_RADIO_ID("NXDN Type-D Radio ID"),
+    NXDN_TYPE_D_RADIO_ID_RANGE("NXDN Type-D Radio ID Range"),
+    NXDN_TYPE_D_TALKGROUP("NXDN Type-D Talkgroup"),
+    NXDN_TYPE_D_TALKGROUP_RANGE("NXDN Type-D Talkgroup Range"),
     P25_FULLY_QUALIFIED_RADIO_ID("P25 Fully Qualified Radio ID"),
     P25_FULLY_QUALIFIED_TALKGROUP("P25 Fully Qualified Talkgroup"),
     PRIORITY("Audio Priority"),
@@ -58,6 +62,7 @@ public enum AliasIDType
 
     //Values used by the View-By alias editor
     public static EnumSet<AliasIDType> VIEW_BY_VALUES = EnumSet.of(TALKGROUP, TALKGROUP_RANGE, RADIO_ID, RADIO_ID_RANGE,
+        NXDN_TYPE_D_RADIO_ID, NXDN_TYPE_D_RADIO_ID_RANGE, NXDN_TYPE_D_TALKGROUP, NXDN_TYPE_D_TALKGROUP_RANGE,
         P25_FULLY_QUALIFIED_RADIO_ID, P25_FULLY_QUALIFIED_TALKGROUP, UNIT_STATUS, STATUS, TONES);
 
     public String toString()

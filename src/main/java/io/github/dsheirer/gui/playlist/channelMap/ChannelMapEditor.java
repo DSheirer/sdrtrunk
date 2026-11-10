@@ -276,6 +276,7 @@ public class ChannelMapEditor extends SplitPane
         if(mChannelMapListView == null)
         {
             mChannelMapListView = new ListView<>();
+            mChannelMapListView.setAccessibleText("Channel maps");
             mChannelMapListView.setItems(mChannelMapModel.getChannelMaps());
             mChannelMapListView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
@@ -390,6 +391,7 @@ public class ChannelMapEditor extends SplitPane
             mChannelRangePane.setHgap(5);
 
             Label firstLabel = new Label("First Channel");
+            firstLabel.setLabelFor(getFirstField());
             GridPane.setHalignment(firstLabel, HPos.RIGHT);
             GridPane.setConstraints(firstLabel, 0, 0);
             mChannelRangePane.getChildren().add(firstLabel);
@@ -399,6 +401,7 @@ public class ChannelMapEditor extends SplitPane
             mChannelRangePane.getChildren().add(getFirstField());
 
             Label lastLabel = new Label("Last Channel");
+            lastLabel.setLabelFor(getLastField());
             GridPane.setHalignment(lastLabel, HPos.RIGHT);
             GridPane.setConstraints(lastLabel, 0, 1);
             mChannelRangePane.getChildren().add(lastLabel);
@@ -408,6 +411,7 @@ public class ChannelMapEditor extends SplitPane
             mChannelRangePane.getChildren().add(getLastField());
 
             Label baseLabel = new Label("Base Frequency (Hz)");
+            baseLabel.setLabelFor(getBaseFrequencyField());
             GridPane.setHalignment(baseLabel, HPos.RIGHT);
             GridPane.setConstraints(baseLabel, 0, 2);
             mChannelRangePane.getChildren().add(baseLabel);
@@ -417,6 +421,7 @@ public class ChannelMapEditor extends SplitPane
             mChannelRangePane.getChildren().add(getBaseFrequencyField());
 
             Label stepSizeLabel = new Label("Step Size (Hz)");
+            stepSizeLabel.setLabelFor(getStepSizeField());
             GridPane.setHalignment(stepSizeLabel, HPos.RIGHT);
             GridPane.setConstraints(stepSizeLabel, 0, 3);
             mChannelRangePane.getChildren().add(stepSizeLabel);
@@ -445,7 +450,9 @@ public class ChannelMapEditor extends SplitPane
             nameBox.setSpacing(10);
             nameBox.setAlignment(Pos.CENTER);
             HBox.setHgrow(getNameField(), Priority.ALWAYS);
-            nameBox.getChildren().addAll(new Label("Name"), getNameField());
+            Label nameLabel = new Label("Name");
+            nameLabel.setLabelFor(getNameField());
+            nameBox.getChildren().addAll(nameLabel, getNameField());
 
             VBox contentsBox = new VBox();
             VBox.setVgrow(nameBox, Priority.NEVER);
@@ -599,6 +606,7 @@ public class ChannelMapEditor extends SplitPane
             if(mChannelRangeTableView == null)
             {
                 mChannelRangeTableView = new TableView<>();
+                mChannelRangeTableView.setAccessibleText("Channel ranges");
 
                 TableColumn<ChannelRange,Integer> firstColumn = new TableColumn("First");
                 firstColumn.setCellValueFactory(new PropertyValueFactory<ChannelRange,Integer>("firstChannel"));
@@ -790,6 +798,8 @@ public class ChannelMapEditor extends SplitPane
                     item == null || empty);
 
             this.setStyle(invalidRange ? BACKGROUND_COLOR_RED : BACKGROND_COLOR_NONE);
+            //Invalid ranges are only shown in red, so also report them to screen readers
+            setAccessibleText(invalidRange && item != null && !empty ? item + ", invalid or overlapping range" : null);
         }
 
         @Override

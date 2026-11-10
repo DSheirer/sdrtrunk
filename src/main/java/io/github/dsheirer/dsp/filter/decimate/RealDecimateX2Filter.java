@@ -28,7 +28,7 @@ import io.github.dsheirer.dsp.window.WindowType;
 public class RealDecimateX2Filter implements IRealDecimationFilter
 {
     private static final int DECIMATE_BY_2_FILTER_LENGTH = 63;
-    private static final WindowType DECIMATE_BY_2_WINDOW_TYPE = WindowType.HAMMING;
+    private static final WindowType DECIMATE_BY_2_WINDOW_TYPE = WindowType.BLACKMAN;
     private IRealDecimationFilter mFilter;
 
     /**
@@ -43,6 +43,18 @@ public class RealDecimateX2Filter implements IRealDecimationFilter
     @Override public float[] decimateReal(float[] samples)
     {
         return mFilter.decimateReal(samples);
+    }
+
+    /**
+     * Provides an array to reuse for the output of an intermediate decimation stage.  The output of the final decimate
+     * by 2 stage isn't reused since that array is passed to the consumer.
+     * @param output array from the previous invocation, or null
+     * @param length required
+     * @return the array when it has the required length, or a new array.
+     */
+    protected static float[] getIntermediateOutput(float[] output, int length)
+    {
+        return output != null && output.length == length ? output : new float[length];
     }
 
     /**

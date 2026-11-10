@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.source.tuner.rtl.r8x.R8xEmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.r8x.r820t.R820TTunerConfiguration;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -57,21 +56,22 @@ public class ThinlineRadioSettingsTest
         R820TTunerConfiguration configuration = new R820TTunerConfiguration("test");
         ArrayNode fields = ThinlineRadioSettings.describe(configuration, Set.of("uniqueID"), Set.of(), false);
 
-        JsonNode gain = field(fields, "masterGain");
-        assertEquals("enum", gain.path("kind").asText());
-        assertTrue(gain.path("options").size() > 2);
+        assertEquals("integer", field(fields, "gain").path("kind").asText());
+        assertEquals("boolean", field(fields, "agc").path("kind").asText());
         assertTrue(field(fields, "uniqueID").path("readOnly").asBoolean());
         assertEquals("boolean", field(fields, "biasT").path("kind").asText());
         assertEquals("number", field(fields, "frequencyCorrection").path("kind").asText());
 
         ObjectNode values = MAPPER.createObjectNode();
-        values.put("masterGain", R8xEmbeddedTuner.MasterGain.MANUAL.name());
+        values.put("gain", 280);
+        values.put("agc", true);
         values.put("frequencyCorrection", 1.5);
         values.put("biasT", true);
         values.put("uniqueID", "changed");
         ThinlineRadioSettings.apply(configuration, values, Set.of("uniqueID"), Set.of());
 
-        assertEquals(R8xEmbeddedTuner.MasterGain.MANUAL, configuration.getMasterGain());
+        assertEquals(280, configuration.getGain());
+        assertTrue(configuration.isAGC());
         assertEquals(1.5, configuration.getFrequencyCorrection());
         assertTrue(configuration.isBiasT());
         assertEquals("test", configuration.getUniqueID());

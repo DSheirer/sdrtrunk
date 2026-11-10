@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.hackrf;
 
+import io.github.dsheirer.hackrf.HackRf;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
@@ -37,7 +38,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
-import javax.usb.UsbException;
 
 /**
  * HackRF Tuner Editor
@@ -49,6 +49,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
     private JButton mTunerInfo;
     private JComboBox<HackRFSampleRate> mSampleRateCombo;
     private JToggleButton mAmplifier;
+    private JToggleButton mBiasT;
     private JComboBox<HackRFLNAGain> mLnaGainCombo;
     private JComboBox<HackRFVGAGain> mVgaGainCombo;
 
@@ -80,7 +81,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
-                "[][][][][][][][][][][grow]"));
+                "[][][][][][][][][][][][grow]"));
 
         add(new JLabel("Tuner:"));
         add(getTunerIdLabel());
@@ -109,6 +110,12 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
 
         add(new JLabel("VGA:"));
         add(getVgaGainCombo(), "wrap");
+
+        add(new JLabel("Bias-T:"));
+        add(getBiasTToggle(), "wrap");
+
+        //Empty filler row that grows to take up the remaining vertical space
+        add(new JLabel(), "span,grow,push");
     }
 
     @Override
@@ -137,6 +144,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         getTunerInfoButton().setEnabled(hasTuner());
 
         getAmplifierToggle().setEnabled(hasTuner());
+        getBiasTToggle().setEnabled(hasTuner());
         getLnaGainCombo().setEnabled(hasTuner());
         getVgaGainCombo().setEnabled(hasTuner());
 
@@ -144,6 +152,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         {
             getSampleRateCombo().setSelectedItem(getConfiguration().getSampleRate());
             getAmplifierToggle().setSelected(getConfiguration().getAmplifierEnabled());
+            getBiasTToggle().setSelected(getConfiguration().isBiasT());
             getLnaGainCombo().setSelectedItem(getConfiguration().getLNAGain());
             getVgaGainCombo().setSelectedItem(getConfiguration().getVGAGain());
         }
@@ -174,7 +183,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         getTuner().getController().setVGAGain(vgaGain);
                         save();
                     }
-                    catch(UsbException e)
+                    catch(SourceException e)
                     {
                         JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                                 + " - couldn't apply the VGA gain setting - " + e.getLocalizedMessage());
@@ -211,7 +220,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         getTuner().getController().setLNAGain(lnaGain);
                         save();
                     }
-                    catch(UsbException e)
+                    catch(SourceException e)
                     {
                         JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                                 + " - couldn't apply the LNA gain setting - " + e.getLocalizedMessage());
@@ -240,7 +249,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         getTuner().getController().setAmplifierEnabled(mAmplifier.isSelected());
                         save();
                     }
-                    catch(UsbException e)
+                    catch(SourceException e)
                     {
                         mLog.error("couldn't enable/disable amplifier", e);
 
@@ -252,6 +261,38 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         }
 
         return mAmplifier;
+    }
+
+    private JToggleButton getBiasTToggle()
+    {
+        if(mBiasT == null)
+        {
+            mBiasT = new JToggleButton("Disabled");
+            mBiasT.setToolTipText("Enable or disable Bias-T power (3.3V) on the antenna port for active antennas or LNAs");
+            mBiasT.setEnabled(false);
+            //Item listener also fires for programmatic setSelected() when the configuration loads
+            mBiasT.addItemListener(e -> mBiasT.setText(mBiasT.isSelected() ? "Enabled" : "Disabled"));
+            mBiasT.addActionListener(arg0 ->
+            {
+                if(!isLoading())
+                {
+                    try
+                    {
+                        getTuner().getController().setBiasTEnabled(mBiasT.isSelected());
+                        save();
+                    }
+                    catch(SourceException e)
+                    {
+                        mLog.error("couldn't enable/disable bias-t", e);
+
+                        JOptionPane.showMessageDialog(HackRFTunerEditor.this, "Couldn't change Bias-T setting",
+                                "Error changing Bias-T setting", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+        }
+
+        return mBiasT;
     }
 
     private JComboBox getSampleRateCombo()
@@ -274,7 +315,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
                         adjustForSampleRate(sampleRate.getRate());
                         save();
                     }
-                    catch(SourceException | UsbException e2)
+                    catch(SourceException e2)
                     {
                         JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                                 + " - couldn't apply the sample rate setting [" + sampleRate.getLabel() +
@@ -329,83 +370,33 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
 
     private String getTunerInfo()
     {
-        HackRFTunerController.BoardID board = HackRFTunerController.BoardID.INVALID;
-
-        try
-        {
-            if(hasTuner())
-            {
-                board = getTuner().getController().getBoardID();
-            }
-        }
-        catch(UsbException e)
-        {
-            mLog.error("couldn't read HackRF board identifier", e);
-        }
+        HackRFTunerController controller = hasTuner() ? getTuner().getController() : null;
 
         StringBuilder sb = new StringBuilder();
-
         sb.append("<html><h3>HackRF Tuner</h3>");
-        sb.append("<b>Board: </b>");
-        sb.append(board.getLabel());
-        sb.append("<br>");
-
-        HackRFTunerController.Serial serial = null;
-
-        try
-        {
-            if(hasTuner())
-            {
-                serial = getTuner().getController().getSerial();
-            }
-        }
-        catch(Exception e)
-        {
-            mLog.error("couldn't read HackRF serial number", e);
-        }
-
-        if(serial != null)
-        {
-            sb.append("<b>Serial: </b>");
-            sb.append(serial.getSerialNumber());
-            sb.append("<br>");
-
-            sb.append("<b>Part: </b>");
-            sb.append(serial.getPartID());
-            sb.append("<br>");
-        }
-        else
-        {
-            sb.append("<b>Serial: Unknown</b><br>");
-            sb.append("<b>Part: Unknown</b><br>");
-        }
-
-        String firmware = null;
+        appendInfo(sb, "Board", controller != null ? controller.getBoardName() : null);
+        appendInfo(sb, "Serial", controller != null ? controller.getSerialNumber() : null);
+        appendInfo(sb, "Part", controller != null ? controller.getPartId() : null);
+        appendInfo(sb, "Firmware", controller != null ? controller.getFirmwareVersion() : null);
 
         try
         {
-            if(hasTuner())
-            {
-                firmware = getTuner().getController().getFirmwareVersion();
-            }
+            appendInfo(sb, "Library", "libhackrf " + HackRf.libraryVersion() + " (" + HackRf.libraryRelease() + ")");
         }
-        catch(Exception e)
+        catch(RuntimeException | LinkageError e)
         {
-            mLog.error("couldn't read HackRF firmware version", e);
-        }
-
-        if(firmware != null)
-        {
-            sb.append("<b>Firmware: </b>");
-            sb.append(firmware);
-            sb.append("<br>");
-        }
-        else
-        {
-            sb.append("<b>Firmware: Unknown</b><br>");
+            mLog.error("couldn't read libhackrf version", e);
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Appends a labeled tuner info value, or Unknown when the value is not available.
+     */
+    private static void appendInfo(StringBuilder sb, String label, String value)
+    {
+        sb.append("<b>").append(label).append(": </b>").append(value != null ? value : "Unknown").append("<br>");
     }
 
     @Override
@@ -421,6 +412,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
             getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
             getConfiguration().setSampleRate((HackRFSampleRate)getSampleRateCombo().getSelectedItem());
             getConfiguration().setAmplifierEnabled(getAmplifierToggle().isSelected());
+            getConfiguration().setBiasT(getBiasTToggle().isSelected());
             getConfiguration().setLNAGain((HackRFLNAGain)getLnaGainCombo().getSelectedItem());
             getConfiguration().setVGAGain((HackRFVGAGain)getVgaGainCombo().getSelectedItem());
             saveConfiguration();

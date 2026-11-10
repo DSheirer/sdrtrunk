@@ -33,6 +33,9 @@ public class NXDNTalkgroupFormatter extends AbstractIntegerFormatter
     public static final int TYPE_D_REPEATER_WIDTH = 2;
     public static final int TYPE_D_VALUE_WIDTH = 4;
     public static final String TYPE_D_SEPARATOR = "-";
+    public static final int TYPE_D_IDENTIFIER_BIT_WIDTH = 11;
+    public static final int TYPE_D_MAX_HOME_REPEATER = 0x1F;
+    public static final int TYPE_D_MAX_IDENTIFIER = 0x7FF;
     public static final int GROUP_DECIMAL_WIDTH = 5;
     public static final int UNIT_DECIMAL_WIDTH = 5;
     public static final int GROUP_HEXADECIMAL_WIDTH = 4;
@@ -127,6 +130,37 @@ public class NXDNTalkgroupFormatter extends AbstractIntegerFormatter
             default:
                 throw new IllegalArgumentException("Unrecognized integer format: " + integerFormat);
         }
+    }
+
+    /**
+     * Combines the Type-D home repeater and radio or talkgroup into the over-the-air 16-bit identifier value.
+     * @param homeRepeater for the ID
+     * @param identifier radio or talkgroup value
+     * @return combined value
+     */
+    public static int toTypeDValue(int homeRepeater, int identifier)
+    {
+        return (homeRepeater & TYPE_D_MAX_HOME_REPEATER) << TYPE_D_IDENTIFIER_BIT_WIDTH | (identifier & TYPE_D_MAX_IDENTIFIER);
+    }
+
+    /**
+     * Home repeater from a combined Type-D identifier value
+     * @param value that combines the home repeater and the radio or talkgroup
+     * @return home repeater
+     */
+    public static int getTypeDHomeRepeater(int value)
+    {
+        return (value >> TYPE_D_IDENTIFIER_BIT_WIDTH) & TYPE_D_MAX_HOME_REPEATER;
+    }
+
+    /**
+     * Radio or talkgroup from a combined Type-D identifier value
+     * @param value that combines the home repeater and the radio or talkgroup
+     * @return radio or talkgroup, without the home repeater
+     */
+    public static int getTypeDIdentifier(int value)
+    {
+        return value & TYPE_D_MAX_IDENTIFIER;
     }
 
     /**

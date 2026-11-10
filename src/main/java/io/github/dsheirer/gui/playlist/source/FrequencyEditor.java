@@ -104,10 +104,12 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
         hBox.setAlignment(Pos.CENTER_LEFT);
 
         Label label = new Label(mAllowMultipleFrequencies ? "Frequencies (MHz)" : "Frequency (MHz)");
+        label.setLabelFor(getPrimaryFrequencyBox().getFrequencyField());
         label.setAlignment(Pos.BASELINE_RIGHT);
         hBox.getChildren().addAll(label, getFrequencyBoxContainer());
 
         Label preferredTunerLabel = new Label("Preferred Tuner");
+        preferredTunerLabel.setLabelFor(getPreferredTunerComboBox());
         HBox tunerBox = new HBox();
         tunerBox.setAlignment(Pos.CENTER_LEFT);
         tunerBox.setSpacing(10);
@@ -120,6 +122,7 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
         if(mAllowMultipleFrequencies)
         {
             Label frequencyRotationLabel = new Label("Frequency Rotation Delay (ms)");
+            frequencyRotationLabel.setLabelFor(getFrequencyRotationDelaySpinner());
             HBox frequencyBox = new HBox();
             frequencyBox.setAlignment(Pos.CENTER_LEFT);
             frequencyBox.setSpacing(10);
@@ -538,6 +541,7 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
             if(mAddButton == null)
             {
                 mAddButton = new Button("Add");
+                mAddButton.setAccessibleText("Add frequency");
                 mAddButton.setDisable(true);
                 mAddButton.setOnAction(event -> addFrequencyBox());
             }
@@ -553,6 +557,7 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
             if(mRemoveButton == null)
             {
                 mRemoveButton = new Button("Remove");
+                mRemoveButton.setAccessibleText("Remove frequency");
                 mRemoveButton.setDisable(true);
                 mRemoveButton.setOnAction(event -> {
                     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,

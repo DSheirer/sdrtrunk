@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,11 @@ import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
+import io.github.dsheirer.dsp.fm.ScalarFMDemodulator;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.sample.Listener;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Squelch processor for unfiltered, demodulated audio that operators by high-pass filtering the audio to remove below
@@ -47,6 +49,12 @@ public class NoiseSquelch implements INoiseSquelchController
     public static final float DEFAULT_NOISE_CLOSE_THRESHOLD = 0.19f;
     public static final float MINIMUM_NOISE_THRESHOLD = 0.1f;
     public static final float MAXIMUM_NOISE_THRESHOLD = 0.5f;
+    private static final int HIGH_PASS_FILTER_CUTOFF = 3000;
+    private static final int HIGH_PASS_FILTER_LENGTH = 31;
+    //Noise-only variance of a 12.5 kHz channel at 25 kHz, which is the reference that the noise thresholds are set against.
+    private static final float REFERENCE_NOISE_VARIANCE = 0.298f;
+    private static final int NOISE_MEASUREMENT_SETTLING_SAMPLES = 512;
+    private static final long NOISE_MEASUREMENT_SEED = 1L;
     private float[] mFilteredBuffer = new float[0];
     private float[] mAudioBuffer = new float[0];
     private float mMeanAccumulator;
@@ -227,12 +235,94 @@ public class NoiseSquelch implements INoiseSquelchController
      */
     public void setSampleRate(double sampleRate)
     {
-        float[] coefficients = FilterFactory.getHighPass((int)sampleRate, 3000, 31, WindowType.BLACKMAN_HARRIS_7);
+        float[] coefficients = getHighPassCoefficients(sampleRate);
         mHighPassFilter = new RealFIRFilter(coefficients);
         mVarianceWindowSize = (int)(sampleRate * (VARIANCE_CALCULATION_WINDOW_MILLISECONDS / 1000.0));
 
         //Offset for the filter delay between the audio buffer and the filtered audio noise detection buffer.
         mAudioBufferFilterDelay = (int)Math.ceil(coefficients.length / 2.0);
+    }
+
+    /**
+     * Sets the sample rate for the incoming demodulated audio sample stream and normalizes the noise measurement for
+     * the channel filter applied ahead of the FM demodulator.  The demodulated noise variance depends on the ratio of
+     * the channel bandwidth to the sample rate and, without normalization, a narrow channel can have a noise-only
+     * variance that is below the noise close threshold, which holds the squelch open.  The noise measurement is scaled
+     * up so that a noise-only channel measures at the reference noise variance.  The noise measurement is never scaled
+     * down, so channels that are already above the reference are unchanged.
+     *
+     * @param sampleRate of the sample stream.
+     * @param channelFilter coefficients of the low-pass channel filter applied ahead of the FM demodulator.
+     */
+    public void setSampleRate(double sampleRate, float[] channelFilter)
+    {
+        setSampleRate(sampleRate);
+
+        float gain = (float)Math.sqrt(Math.max(1.0f, REFERENCE_NOISE_VARIANCE / getNoiseVariance(sampleRate, channelFilter)));
+        float[] coefficients = getHighPassCoefficients(sampleRate);
+
+        for(int x = 0; x < coefficients.length; x++)
+        {
+            coefficients[x] *= gain;
+        }
+
+        mHighPassFilter = new RealFIRFilter(coefficients);
+    }
+
+    /**
+     * Creates the high-pass filter that isolates the noise in the demodulated audio.
+     * @param sampleRate of the demodulated audio.
+     * @return filter coefficients
+     */
+    private static float[] getHighPassCoefficients(double sampleRate)
+    {
+        return FilterFactory.getHighPass((int)sampleRate, HIGH_PASS_FILTER_CUTOFF, HIGH_PASS_FILTER_LENGTH,
+                WindowType.BLACKMAN_HARRIS_7);
+    }
+
+    /**
+     * Measures the variance that the squelch sees when the channel contains only noise, using one second of a
+     * repeatable sequence of complex noise samples.
+     *
+     * @param sampleRate of the channel.
+     * @param channelFilter coefficients of the low-pass channel filter applied ahead of the FM demodulator.
+     * @return noise-only variance of the demodulated, high-pass filtered samples.
+     */
+    public static float getNoiseVariance(double sampleRate, float[] channelFilter)
+    {
+        int length = (int)sampleRate;
+        float[] i = new float[length];
+        float[] q = new float[length];
+        Random random = new Random(NOISE_MEASUREMENT_SEED);
+
+        for(int x = 0; x < length; x++)
+        {
+            i[x] = (float)random.nextGaussian();
+            q[x] = (float)random.nextGaussian();
+        }
+
+        float[] demodulated = new ScalarFMDemodulator().demodulate(new RealFIRFilter(channelFilter.clone()).filter(i),
+                new RealFIRFilter(channelFilter.clone()).filter(q));
+        float[] noise = new RealFIRFilter(getHighPassCoefficients(sampleRate)).filter(demodulated);
+
+        int count = length - NOISE_MEASUREMENT_SETTLING_SAMPLES;
+        double mean = 0.0;
+
+        for(int x = NOISE_MEASUREMENT_SETTLING_SAMPLES; x < length; x++)
+        {
+            mean += noise[x];
+        }
+
+        mean /= count;
+
+        double variance = 0.0;
+
+        for(int x = NOISE_MEASUREMENT_SETTLING_SAMPLES; x < length; x++)
+        {
+            variance += (noise[x] - mean) * (noise[x] - mean);
+        }
+
+        return (float)(variance / count);
     }
 
     public void process(float[] samples)

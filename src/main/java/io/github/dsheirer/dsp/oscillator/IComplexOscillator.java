@@ -37,4 +37,11 @@ public interface IComplexOscillator extends IOscillator
      * @return generated samples
      */
     ComplexSamples generateComplexSamples(int sampleCount, long timestamp);
+
+    /**
+     * Generates complex samples into the arrays, filling each array.
+     * @param i array to receive the inphase samples
+     * @param q array to receive the quadrature samples, the same length as the inphase array
+     */
+    void generateComplexSamples(float[] i, float[] q);
 }

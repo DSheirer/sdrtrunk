@@ -74,6 +74,7 @@ public class ThemeManager
     private volatile UserPreferences mUserPreferences;
     private volatile Theme mCurrentTheme = Theme.LIGHT;
     private volatile double mCurrentGuiScale = 1.0d;
+    private volatile boolean mComplementaryAliasColors = false;
     /** Data URL of the currently-active per-theme accent stylesheet, or null. */
     private volatile String mAccentStylesheetUrl;
 
@@ -109,6 +110,7 @@ public class ThemeManager
         mUserPreferences = userPreferences;
         mCurrentTheme = userPreferences.getApplicationPreference().getTheme();
         mCurrentGuiScale = userPreferences.getApplicationPreference().getGuiScale();
+        mComplementaryAliasColors = userPreferences.getApplicationPreference().isComplementaryAliasColors();
 
         if(firstBind)
         {
@@ -221,6 +223,18 @@ public class ThemeManager
         return mCurrentTheme != null && mCurrentTheme.isDark();
     }
 
+    /**
+     * Provides the color to render user-selected content (e.g. an alias) against a background in the current theme.
+     * @param color selected by the user.
+     * @param background that the color is rendered against.
+     * @return the color, or a readable alternative when the user enabled complementary alias colors, dark mode is
+     * active and the color lacks contrast with the background.
+     */
+    public Color getReadableColor(Color color, Color background)
+    {
+        return mComplementaryAliasColors && isDarkMode() ? ColorContrast.getReadable(color, background) : color;
+    }
+
     public void register(Scene scene)
     {
         if(scene == null)
@@ -276,6 +290,20 @@ public class ThemeManager
 
         Theme updated = mUserPreferences.getApplicationPreference().getTheme();
         double updatedScale = mUserPreferences.getApplicationPreference().getGuiScale();
+        boolean updatedComplementary = mUserPreferences.getApplicationPreference().isComplementaryAliasColors();
+
+        if(updatedComplementary != mComplementaryAliasColors)
+        {
+            mComplementaryAliasColors = updatedComplementary;
+
+            //The Swing table renderers look up the alias color each time they paint.
+            EventQueue.invokeLater(() -> {
+                for(Window window: Window.getWindows())
+                {
+                    window.repaint();
+                }
+            });
+        }
 
         if(updated == mCurrentTheme && Math.abs(updatedScale - mCurrentGuiScale) < 1e-6)
         {

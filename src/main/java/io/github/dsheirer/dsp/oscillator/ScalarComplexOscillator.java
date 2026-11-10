@@ -100,6 +100,13 @@ public class ScalarComplexOscillator extends AbstractOscillator implements IComp
     {
         float[] iSamples = new float[sampleCount];
         float[] qSamples = new float[sampleCount];
+        generateComplexSamples(iSamples, qSamples);
+        return new ComplexSamples(iSamples, qSamples, timestamp);
+    }
+
+    @Override
+    public void generateComplexSamples(float[] iSamples, float[] qSamples)
+    {
         float cosineAngle = (float)FastMath.cos(getAnglePerSample());
         float sineAngle = (float)FastMath.sin(getAnglePerSample());
 
@@ -132,7 +139,5 @@ public class ScalarComplexOscillator extends AbstractOscillator implements IComp
 
         mPreviousInphase = previousInphase;
         mPreviousQuadrature = previousQuadrature;
-
-        return new ComplexSamples(iSamples, qSamples, timestamp);
     }
 }

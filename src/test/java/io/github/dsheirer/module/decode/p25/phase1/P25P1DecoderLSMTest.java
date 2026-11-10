@@ -278,7 +278,7 @@ public class P25P1DecoderLSMTest
     /**
      * Adds the CRC-CCITT checksum, 1/2 rate trellis encodes and interleaves the TSBK into 98 dibits.
      */
-    private static List<Dibit> encodeTSBK(BitSet tsbk)
+    static List<Dibit> encodeTSBK(BitSet tsbk)
     {
         BitSet message = (BitSet)tsbk.clone();
         int checksum = 0xFFFF;
@@ -387,7 +387,7 @@ public class P25P1DecoderLSMTest
     /**
      * Adds the most significant bits first, as dibits.
      */
-    private static void addBits(List<Dibit> dibits, long value, int bitCount)
+    static void addBits(List<Dibit> dibits, long value, int bitCount)
     {
         for(int bit = bitCount - 2; bit >= 0; bit -= 2)
         {
@@ -398,7 +398,7 @@ public class P25P1DecoderLSMTest
     /**
      * Sets the value at the bit offset, most significant bit first.
      */
-    private static void setValue(BitSet bits, int offset, int bitCount, int value)
+    static void setValue(BitSet bits, int offset, int bitCount, int value)
     {
         for(int x = 0; x < bitCount; x++)
         {

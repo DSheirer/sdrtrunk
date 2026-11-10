@@ -102,8 +102,8 @@ public class AudioProviderStereo extends AudioProvider
 
         for(int x = 0; x < AudioChannel.SAMPLES_PER_INTERVAL; x++)
         {
-            shortBuffer.put((short)(left[x] * Short.MAX_VALUE));
-            shortBuffer.put((short)(right[x] * Short.MAX_VALUE));
+            shortBuffer.put(toPcm(left[x]));
+            shortBuffer.put(toPcm(right[x]));
         }
 
         return buffer;

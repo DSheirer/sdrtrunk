@@ -75,6 +75,15 @@ public class FilterFactory
     private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
     private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5, 0.0)
     private static final double MARGIN_OF_ERROR = 0.0003;
+
+    /**
+     * Two-sided synthesizer filter cutoff, in channel bandwidths.  The synthesizer filter is centered on the boundary
+     * between the two channels, but the desired signal can be located anywhere across that boundary, so the pass band
+     * has to extend beyond the +/- 0.5 channel bandwidth centers of the channels.  It can't extend much further because
+     * the channelizer transition regions of the outer channel edges alias into the composite beyond about +/- 0.72
+     * channel bandwidths from the boundary.
+     */
+    private static final double SYNTHESIZER_CUTOFF_CHANNEL_BANDWIDTHS = 1.5;
     private static final Map<LowPassSpecification,float[]> REMEZ_LOW_PASS_FILTERS = new ConcurrentHashMap<>();
 
     /**
@@ -1330,9 +1339,8 @@ public class FilterFactory
     {
         int filterLength = (channels * tapsPerChannel) - 1;
 
-        double cutoff = (channelBandwidth * 1.10) / (channelSampleRate * (double)channels);
+        double cutoff = (channelBandwidth * SYNTHESIZER_CUTOFF_CHANNEL_BANDWIDTHS) / (channelSampleRate * (double)channels);
 
-        //Design the prototype synthesizer with 105% of the channel bandwidth produced by the channelizer.
         float[] taps = FilterFactory.getKaiserSinc(filterLength, cutoff, 80.0f);
 
         //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
@@ -1611,7 +1619,8 @@ public class FilterFactory
 
     /**
      * Creates a symmetrical half-band filter where all odd-indexed coefficients except center are zero
-     * valued.
+     * valued.  The non-center coefficients are normalized to sum to 0.5 to compensate for the window, which provides
+     * unity gain at DC and a null at the Nyquist frequency.
      * @param length N is odd where m is an integer multiple in the formula: N = 4m + 3 (e.g. 7, 11, 15, etc.)
      * @param windowType to apply to the filter.
      * @return coefficients
@@ -1642,6 +1651,18 @@ public class FilterFactory
                 //Only calculate the even-index taps, leaving odd-index taps at default value of zero
                 taps[x] = (float)((Math.sin(offset * Math.PI / 2) / (offset * Math.PI)) * window[x]);
             }
+        }
+
+        double sum = 0.0;
+
+        for(int x = 0; x < length; x += 2)
+        {
+            sum += taps[x];
+        }
+
+        for(int x = 0; x < length; x += 2)
+        {
+            taps[x] = (float)(taps[x] * 0.5 / sum);
         }
 
         return taps;

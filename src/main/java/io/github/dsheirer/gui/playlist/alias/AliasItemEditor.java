@@ -33,16 +33,22 @@ import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
+import io.github.dsheirer.alias.id.INXDNTypeD;
+import io.github.dsheirer.alias.id.INXDNTypeDRange;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadio;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadioRange;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioFormatter;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroupRange;
 import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.StreamAsTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
@@ -51,6 +57,7 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.playlist.alias.action.ActionEditor;
@@ -70,6 +77,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
@@ -567,6 +575,7 @@ public class AliasItemEditor extends Editor<Alias>
         {
             mActionsList = new ListView<>(FXCollections.observableArrayList(AliasAction.extractor()));
             mActionsList.setPrefHeight(75);
+            mActionsList.setAccessibleText("Alias actions");
             mActionsList.setDisable(true);
             mActionsList.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setAction(newValue));
@@ -679,6 +688,7 @@ public class AliasItemEditor extends Editor<Alias>
             mIdentifiersList = new ListView<>(FXCollections.observableArrayList(AliasID.extractor()));
             mIdentifiersList.setDisable(true);
             mIdentifiersList.setPrefHeight(75);
+            mIdentifiersList.setAccessibleText("Alias identifiers");
             mIdentifiersList.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setIdentifier(newValue));
             mIdentifiersList.setCellFactory(param -> new AliasIdentifierCell());
@@ -770,6 +780,12 @@ public class AliasItemEditor extends Editor<Alias>
             nxdnMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.NXDN));
             nxdnMenu.getItems().add(new AddRadioIdItem(Protocol.NXDN));
             nxdnMenu.getItems().add(new AddRadioIdRangeItem(Protocol.NXDN));
+            nxdnMenu.getItems().add(new SeparatorMenuItem());
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Talkgroup", NXDNTypeDTalkgroup::new));
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Talkgroup Range", NXDNTypeDTalkgroupRange::new));
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Radio ID", NXDNTypeDRadio::new));
+            nxdnMenu.getItems().add(new AddNXDNTypeDItem("Type-D Radio ID Range", NXDNTypeDRadioRange::new));
+            nxdnMenu.getItems().add(new SeparatorMenuItem());
             nxdnMenu.getItems().add(new AddTonesItem("AMBE Audio Tones"));
 
             Menu passportMenu = new ProtocolMenu(Protocol.PASSPORT);
@@ -833,13 +849,17 @@ public class AliasItemEditor extends Editor<Alias>
             buttonBox.setSpacing(5);
             buttonBox.getChildren().addAll(new Label(" "), getAddStreamButton(), getRemoveStreamButton());
 
+            Label availableLabel = new Label("Available");
+            getAvailableStreamsView().setAccessibleText("Available streams");
             VBox availableBox = new VBox();
             VBox.setVgrow(getAvailableStreamsView(), Priority.ALWAYS);
-            availableBox.getChildren().addAll(new Label("Available"), getAvailableStreamsView());
+            availableBox.getChildren().addAll(availableLabel, getAvailableStreamsView());
 
+            Label selectedLabel = new Label("Selected");
+            getSelectedStreamsView().setAccessibleText("Selected streams");
             VBox selectedBox = new VBox();
             VBox.setVgrow(getSelectedStreamsView(), Priority.ALWAYS);
-            selectedBox.getChildren().addAll(new Label("Selected"), getSelectedStreamsView());
+            selectedBox.getChildren().addAll(selectedLabel, getSelectedStreamsView());
 
             HBox hbox = new HBox();
             hbox.setSpacing(10);
@@ -851,6 +871,7 @@ public class AliasItemEditor extends Editor<Alias>
             vbox.setSpacing(10);
             VBox.setVgrow(hbox, Priority.ALWAYS);
             Label label = new Label("Stream this Alias as Talkgroup:");
+            label.setLabelFor(getStreamAsTalkgroupField());
             HBox streamAsHBox = new HBox();
             streamAsHBox.setAlignment(Pos.CENTER_LEFT);
             streamAsHBox.setSpacing(10);
@@ -951,6 +972,8 @@ public class AliasItemEditor extends Editor<Alias>
                     .or(Bindings.isNull(getAvailableStreamsView().getSelectionModel().selectedItemProperty())));
             mAddStreamButton.setMaxWidth(Double.MAX_VALUE);
             mAddStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_RIGHT));
+            mAddStreamButton.setAccessibleText("Add selected stream");
+            mAddStreamButton.setTooltip(new Tooltip("Add selected stream"));
             mAddStreamButton.setAlignment(Pos.CENTER);
             mAddStreamButton.setOnAction(event -> {
                 String stream = getAvailableStreamsView().getSelectionModel().getSelectedItem();
@@ -977,6 +1000,8 @@ public class AliasItemEditor extends Editor<Alias>
                     .or(Bindings.isNull(getSelectedStreamsView().getSelectionModel().selectedItemProperty())));
             mRemoveStreamButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_LEFT));
+            mRemoveStreamButton.setAccessibleText("Remove selected stream");
+            mRemoveStreamButton.setTooltip(new Tooltip("Remove selected stream"));
             mRemoveStreamButton.setAlignment(Pos.CENTER);
             mRemoveStreamButton.setOnAction(event -> {
                 BroadcastChannel broadcastChannel = getSelectedStreamsView().getSelectionModel().getSelectedItem();
@@ -1037,6 +1062,7 @@ public class AliasItemEditor extends Editor<Alias>
             int row = 0;
 
             Label nameLabel = new Label("Alias");
+            nameLabel.setLabelFor(getNameField());
             GridPane.setHalignment(nameLabel, HPos.RIGHT);
             GridPane.setConstraints(nameLabel, 0, row);
             mTextFieldPane.getChildren().add(nameLabel);
@@ -1045,6 +1071,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getNameField());
 
             Label monitorAudioLabel = new Label("Listen");
+            monitorAudioLabel.setLabelFor(getMonitorAudioToggleSwitch());
             GridPane.setHalignment(monitorAudioLabel, HPos.RIGHT);
             GridPane.setConstraints(monitorAudioLabel, 2, row);
             mTextFieldPane.getChildren().add(monitorAudioLabel);
@@ -1052,6 +1079,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
 
             Label monitorPriorityLabel = new Label("Priority");
+            monitorPriorityLabel.setLabelFor(getMonitorPriorityComboBox());
             GridPane.setHalignment(monitorPriorityLabel, HPos.RIGHT);
             GridPane.setConstraints(monitorPriorityLabel, 4, row);
             mTextFieldPane.getChildren().add(monitorPriorityLabel);
@@ -1059,6 +1087,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getMonitorPriorityComboBox());
 
             Label colorLabel = new Label("Color");
+            colorLabel.setLabelFor(getColorPicker());
             GridPane.setHalignment(colorLabel, HPos.RIGHT);
             GridPane.setConstraints(colorLabel, 6, row);
             mTextFieldPane.getChildren().add(colorLabel);
@@ -1066,6 +1095,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getColorPicker());
 
             Label groupLabel = new Label("Group");
+            groupLabel.setLabelFor(getGroupField());
             GridPane.setHalignment(groupLabel, HPos.RIGHT);
             GridPane.setConstraints(groupLabel, 0, ++row);
             mTextFieldPane.getChildren().add(groupLabel);
@@ -1074,6 +1104,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getGroupField());
 
             Label recordAudioLabel = new Label("Record");
+            recordAudioLabel.setLabelFor(getRecordAudioToggleSwitch());
             GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
             GridPane.setConstraints(recordAudioLabel, 2, row);
             mTextFieldPane.getChildren().add(recordAudioLabel);
@@ -1081,6 +1112,7 @@ public class AliasItemEditor extends Editor<Alias>
             mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
 
             Label iconLabel = new Label("Icon");
+            iconLabel.setLabelFor(getIconNodeComboBox());
             GridPane.setHalignment(iconLabel, HPos.RIGHT);
             GridPane.setConstraints(iconLabel, 4, row);
             mTextFieldPane.getChildren().add(iconLabel);
@@ -1095,7 +1127,7 @@ public class AliasItemEditor extends Editor<Alias>
     {
         if(mMonitorAudioToggleSwitch == null)
         {
-            mMonitorAudioToggleSwitch = new ToggleSwitch();
+            mMonitorAudioToggleSwitch = new AccessibleToggleSwitch();
             mMonitorAudioToggleSwitch.setDisable(true);
             mMonitorAudioToggleSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1128,7 +1160,7 @@ public class AliasItemEditor extends Editor<Alias>
     {
         if(mRecordAudioToggleSwitch == null)
         {
-            mRecordAudioToggleSwitch = new ToggleSwitch();
+            mRecordAudioToggleSwitch = new AccessibleToggleSwitch();
             mRecordAudioToggleSwitch.setDisable(true);
             mRecordAudioToggleSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1457,6 +1489,24 @@ public class AliasItemEditor extends Editor<Alias>
     }
 
     /**
+     * Menu Item for adding a new NXDN Type-D alias identifier
+     */
+    public class AddNXDNTypeDItem extends MenuItem
+    {
+        public AddNXDNTypeDItem(String label, Supplier<AliasID> supplier)
+        {
+            super(label);
+            setOnAction(event -> {
+                AliasID aliasID = supplier.get();
+                getIdentifiersList().getItems().add(aliasID);
+                getIdentifiersList().getSelectionModel().select(aliasID);
+                getIdentifiersList().scrollTo(aliasID);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
      * Menu Item for adding a new protocol-specific Talkgroup alias identifier
      */
     public class AddTalkgroupItem extends MenuItem
@@ -1617,7 +1667,11 @@ public class AliasItemEditor extends Editor<Alias>
 
             if(item != null)
             {
-                if(item instanceof P25FullyQualifiedTalkgroup fqt)
+                if(item instanceof INXDNTypeD || item instanceof INXDNTypeDRange)
+                {
+                    setText(item.overlapProperty().get() ? item + " - Error: Overlap" : item.toString());
+                }
+                else if(item instanceof P25FullyQualifiedTalkgroup fqt)
                 {
                     StringBuilder sb = new StringBuilder();
                     sb.append("APCO-25 Fully Qualified Talkgroup:").append(fqt.getWacn());
@@ -1785,12 +1839,15 @@ public class AliasItemEditor extends Editor<Alias>
                     {
                         setText(null);
                         setGraphic(null);
+                        setAccessibleText(null);
                     }
                     else
                     {
                         textLabel.setText(item.getName());
                         iconLabel.setGraphic(new ImageView(item.getFxImage()));
                         setGraphic(gridPane);
+                        //The name is shown in a nested label, so expose it as the cell's accessible text
+                        setAccessibleText(item.getName());
                     }
                 }
             };

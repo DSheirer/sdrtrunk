@@ -20,8 +20,18 @@
 package io.github.dsheirer.source.tuner.manager;
 
 import io.github.dsheirer.gui.preference.tuner.RspDuoSelectionMode;
+import io.github.dsheirer.libusb.LibUsb;
+import io.github.dsheirer.libusb.UsbContext;
+import io.github.dsheirer.libusb.UsbDeviceInfo;
+import io.github.dsheirer.libusb.UsbException;
+import io.github.dsheirer.libusb.UsbHotplug;
+import io.github.dsheirer.libusb.UsbHotplugListener;
+import io.github.dsheirer.libusb.UsbLogLevel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.SDRplay;
+import io.github.dsheirer.sdrplay.SDRplayException;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigTuner;
@@ -39,28 +49,16 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRplay;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Context;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.DeviceList;
-import org.usb4java.HotplugCallback;
-import org.usb4java.HotplugCallbackHandle;
-import org.usb4java.LibUsb;
 
 /**
  * Tuner manager provides access to tuners using USB, recording, sound-card and system-daemon accessible devices. This
@@ -73,9 +71,12 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     private final UserPreferences mUserPreferences;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
     private final TunerConfigurationManager mTunerConfigurationManager;
+    /**
+     * libusb error code for an unspecified error (LIBUSB_ERROR_OTHER)
+     */
+    private static final int LIBUSB_ERROR_OTHER = -99;
     private final HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
-    private final Context mLibUsbApplicationContext = new Context();
-    private boolean mLibUsbInitialized = false;
+    private boolean mLibUsbAvailable = false;
     private SDRplay mSDRplay;
 
     /**
@@ -112,60 +113,26 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     {
         mLog.info("Discovering tuners ...");
 
-        boolean libUsbAvailable = false;
-
         try
         {
-            int api = LibUsb.getApiVersion();
-            libUsbAvailable = true;
-            mLog.info("LibUsb API Version: " + ((api >> 24) & 0xFF) + "." + ((api >> 16) & 0xFF) + "." + (api & 0xFFFF));
-            mLog.info("LibUsb Version: " + LibUsb.getVersion());
+            //Loads the libusb library that jlibusb bundles, which the USB tuner libraries share
+            mLog.info("LibUsb Version: " + LibUsb.version() + " - hotplug detection: " +
+                    (LibUsb.hasHotplug() ? "native" : "polling"));
+            mLibUsbAvailable = true;
         }
-        catch(Exception e)
+        catch(LinkageError | RuntimeException e)
         {
-            final String os = System.getProperty("os.name").toLowerCase();
-            final String version = System.getProperty("os.version");
-
-            //Special handling for MacOS Tahoe version 26 issue with LibUsb.
-            if(os != null && os.startsWith("macos") && version != null && version.startsWith("26"))
-            {
-                mLog.warn("Unable to load libusb library for communication with USB tuner(s)");
-                mLog.warn("Mac OS Tahoe [" + os + "] version [" + version + "] detected.  There is an issue");
-                mLog.warn("with libusb for this OS version.  You might consider manually installing the latest");
-                mLog.warn("version of the libusb library.  In a terminal window type:");
-                mLog.warn("");
-                mLog.warn("\t\tbrew install libusb --HEAD");
-                mLog.warn("");
-            }
-            else
-            {
-                mLog.error("Error while loading libusb for os [" + os + "] version [" + version + "]", e);
-            }
+            String os = System.getProperty("os.name");
+            String version = System.getProperty("os.version");
+            mLog.error("Unable to load the libusb library for communication with USB tuner(s) on os [" + os +
+                    "] version [" + version + "].  To use a different libusb build, start sdrtrunk with " +
+                    "-Djlibusb.library.path=<directory containing libusb>", e);
         }
 
-        if(libUsbAvailable)
+        if(mLibUsbAvailable)
         {
-            try
-            {
-                int status = LibUsb.init(mLibUsbApplicationContext);
-
-                if(status == LibUsb.SUCCESS)
-                {
-                    mLibUsbInitialized = true;
-                    //            LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_DEBUG);
-                    discoverUSBTuners();
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error initializing LibUsb and usb4java library", e);
-            }
-
-            if(mLibUsbInitialized)
-            {
-                mHotplugEventSupport.start();
-            }
-
+            discoverUSBTuners();
+            mHotplugEventSupport.start();
             discoverSdrPlayTuners();
         }
 
@@ -177,23 +144,14 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     public void stop()
     {
+        //Stop hotplug detection first so that no tuner is added or removed while the tuners are released
+        mHotplugEventSupport.stop();
+
         //Stop all tuners
         mDiscoveredTunerModel.releaseDiscoveredTuners();
 
         //Shutdown SDRplay API instance
-        if(mSDRplay != null)
-        {
-            mSDRplay.close();
-            mSDRplay = null;
-        }
-
-        //Shutdown LibUsb
-        if(mLibUsbInitialized)
-        {
-            mHotplugEventSupport.stop();
-            LibUsb.exit(mLibUsbApplicationContext);
-            mLibUsbInitialized = false;
-        }
+        closeSDRplay();
     }
 
     /**
@@ -209,101 +167,123 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     private void discoverUSBTuners()
     {
-        if(mLibUsbInitialized)
+        List<DiscoveredUSBTuner> discoveredUSBTuners = new ArrayList<>();
+
+        try(UsbContext usb = UsbContext.create())
         {
-            List<DiscoveredUSBTuner> discoveredUSBTuners = new ArrayList<>();
+            List<UsbDeviceInfo> devices = getDeviceList(usb);
 
-            try
+            if(devices != null)
             {
-                DeviceList deviceList = new DeviceList();
-                int deviceCount = LibUsb.getDeviceList(mLibUsbApplicationContext, deviceList);
+                mLog.info("LibUsb - discovered [" + devices.size() + "] potential usb devices");
 
-                if(deviceCount >= 0)
+                for(UsbDeviceInfo device: devices)
                 {
-                    mLog.info("LibUsb - discovered [" + deviceCount + "] potential usb devices");
+                    DiscoveredUSBTuner discoveredUSBTuner = createDiscoveredTuner(device);
 
-                    for(Device device: deviceList)
+                    if(discoveredUSBTuner != null)
                     {
-                        int bus = LibUsb.getBusNumber(device);
-                        int port = LibUsb.getPortNumber(device);
-
-                        if(port > 0)
-                        {
-                            DeviceDescriptor deviceDescriptor = new DeviceDescriptor();
-                            int status = LibUsb.getDeviceDescriptor(device, deviceDescriptor);
-
-                            if(status == LibUsb.SUCCESS)
-                            {
-                                TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(),
-                                        deviceDescriptor.idProduct());
-
-                                String portAddress = getPortAddress(device);
-
-                                if(tunerClass.isSupportedUsbTuner())
-                                {
-                                    mLog.info("Discovered tuner at USB Bus [" + bus + "] Port [" + portAddress +
-                                            "] Tuner Class [" + tunerClass + "]");
-                                    ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
-                                    DiscoveredUSBTuner discoveredUSBTuner = new DiscoveredUSBTuner(tunerClass, bus,
-                                            portAddress, channelizerType);
-                                    discoveredUSBTuners.add(discoveredUSBTuner);
-                                }
-                            }
-                            else
-                            {
-                                mLog.error("LibUsb - unable to get device descriptor for device on bus [" + bus +
-                                        "] port [" + port + "] - status [" + status + "] - " + LibUsb.errorName(status));
-                            }
-                        }
-
-                        //Unref the device - it will be rediscovered under the device context when it is started
-                        LibUsb.unrefDevice(device);
-                    }
-
-                    LibUsb.freeDeviceList(deviceList, false);
-                }
-                //If the get device list operation generated error -99, turn on warning logging and try device list
-                // again to see what's causing it.
-                else if(deviceCount == LibUsb.ERROR_OTHER)
-                {
-                    try
-                    {
-                        mLog.info("LibUsb reported error -99 during get device list - increasing logging level and retrying");
-                        LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_WARNING);
-                        deviceCount = LibUsb.getDeviceList(mLibUsbApplicationContext, deviceList);
-                        if(deviceCount >=0)
-                        {
-                            mLog.info("LibUsb - get device list count [" + deviceCount + "] during retry");
-                            LibUsb.freeDeviceList(deviceList, false);
-                        }
-                        else
-                        {
-                            mLog.info("LibUsb - get device list reported error [" + deviceCount + "/" +
-                                    LibUsb.errorName(deviceCount) + "] during retry");
-                        }
-                        LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_NONE);
-                        mLog.info("LibUse - get device list reattempt complete - if additional logging was generated please notify developer");
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.info("LibUsb error during get device list reattempt", e);
+                        mLog.info("Discovered tuner at USB Bus [" + discoveredUSBTuner.getBus() + "] Port [" +
+                                discoveredUSBTuner.getPortAddress() + "] Tuner Class [" +
+                                discoveredUSBTuner.getTunerClass() + "]");
+                        discoveredUSBTuners.add(discoveredUSBTuner);
                     }
                 }
-                else
-                {
-                    mLog.error("LibUsb - error [" + deviceCount + "/" + LibUsb.errorName(deviceCount) + "] during get device list");
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("LibUsb - error during USB device discovery", e);
-            }
-
-            for(DiscoveredUSBTuner discoveredUSBTuner: discoveredUSBTuners)
-            {
-                addUsbTuner(discoveredUSBTuner);
             }
         }
+        catch(UsbException | RuntimeException e)
+        {
+            mLog.error("LibUsb - error during USB device discovery", e);
+        }
+
+        for(DiscoveredUSBTuner discoveredUSBTuner: discoveredUSBTuners)
+        {
+            addUsbTuner(discoveredUSBTuner);
+        }
+    }
+
+    /**
+     * Lists the USB devices.  If listing fails with error -99, retries once with libusb warning logging turned on so
+     * that the log shows what caused it.
+     * @param usb context to list devices from
+     * @return devices, or null if they couldn't be listed
+     */
+    private List<UsbDeviceInfo> getDeviceList(UsbContext usb)
+    {
+        try
+        {
+            return usb.devices();
+        }
+        catch(UsbException e)
+        {
+            if(e.code() != LIBUSB_ERROR_OTHER)
+            {
+                mLog.error("LibUsb - error during get device list - " + e.getMessage());
+                return null;
+            }
+        }
+
+        try
+        {
+            mLog.info("LibUsb reported error -99 during get device list - increasing logging level and retrying");
+            usb.setLogLevel(UsbLogLevel.WARNING);
+            List<UsbDeviceInfo> devices = usb.devices();
+            mLog.info("LibUsb - get device list count [" + devices.size() + "] during retry");
+            return devices;
+        }
+        catch(UsbException e)
+        {
+            mLog.info("LibUsb - get device list reported error during retry - " + e.getMessage());
+            return null;
+        }
+        finally
+        {
+            try
+            {
+                usb.setLogLevel(UsbLogLevel.NONE);
+            }
+            catch(UsbException e)
+            {
+                //Logging level only - nothing else to do
+            }
+
+            mLog.info("LibUsb - get device list reattempt complete - if additional logging was generated please notify developer");
+        }
+    }
+
+    /**
+     * Identifies the USB tuner class of a device.
+     * @param device to identify
+     * @return tuner class, or null for a root hub or a device that isn't a supported tuner
+     */
+    private static TunerClass getSupportedTunerClass(UsbDeviceInfo device)
+    {
+        //A root hub has no port numbers
+        if(device.portNumbers().isEmpty())
+        {
+            return null;
+        }
+
+        TunerClass tunerClass = TunerClass.lookup((short)device.vendorId(), (short)device.productId());
+        return tunerClass.isSupportedUsbTuner() ? tunerClass : null;
+    }
+
+    /**
+     * Creates a discovered tuner for a USB device.
+     * @param device to create a tuner for
+     * @return discovered tuner, or null if the device isn't a supported tuner
+     */
+    private DiscoveredUSBTuner createDiscoveredTuner(UsbDeviceInfo device)
+    {
+        TunerClass tunerClass = getSupportedTunerClass(device);
+
+        if(tunerClass == null)
+        {
+            return null;
+        }
+
+        ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+        return new DiscoveredUSBTuner(tunerClass, device.busNumber(), UsbPortAddress.of(device), channelizerType);
     }
 
     /**
@@ -360,31 +340,36 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
         RspDuoSelectionMode duoSelectionMode = mUserPreferences.getTunerPreference().getRspDuoTunerMode();
 
-        //Note: we have to keep this first API instance open while we use any RSP tuners, otherwise the additional API
-        //instance(s) used by the individual tuners become unresponsive.  Note sure why.
+        if(!SDRplay.isInstalled())
+        {
+            mLog.info("SDRplay API is not installed - RSP tuners are not available");
+            return;
+        }
 
+        //Note: this session stays open while RSP tuners are in use.  Each RSP tuner opens its own session and the
+        //sessions share a single connection to the SDRplay API service, which closes when the last session closes.
         try
         {
-            mSDRplay = new SDRplay();
+            mSDRplay = SDRplay.open();
+            mLog.info("SDRplay API version [" + mSDRplay.apiVersion() + "] loaded from [" + mSDRplay.location() + "]");
         }
-        catch(SDRPlayException se)
+        catch(SDRplayException se)
         {
-            mLog.error("Couldn't load SDRPlay API");
+            mLog.error("Couldn't open SDRplay API - " + se.getMessage());
             mSDRplay = null;
         }
 
-        if(mSDRplay != null && mSDRplay.isAvailable())
+        if(mSDRplay != null)
         {
             try
             {
-                List<DeviceInfo> deviceInfos = mSDRplay.getDeviceInfos();
+                List<DeviceInfo> deviceInfos = mSDRplay.devices();
 
                 mLog.info("Discovered [" + deviceInfos.size() + "] RSP devices from SDRplay API");
 
                 if(deviceInfos.isEmpty())
                 {
-                    mSDRplay.close();
-                    mSDRplay = null;
+                    closeSDRplay();
                     return;
                 }
 
@@ -398,16 +383,27 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                     }
                 }
             }
-            catch(SDRPlayException se)
+            catch(SDRplayException se)
             {
-                mLog.info("Unable to get list of devices from SDRplay API");
+                mLog.info("Unable to get list of devices from SDRplay API - " + se.getMessage());
             }
         }
-        else
+    }
+
+    /**
+     * Closes the SDRplay API discovery session.
+     */
+    private void closeSDRplay()
+    {
+        if(mSDRplay != null)
         {
-            if(mSDRplay != null)
+            try
             {
                 mSDRplay.close();
+            }
+            catch(SDRplayException se)
+            {
+                mLog.warn("Error closing SDRplay API - " + se.getMessage());
             }
 
             mSDRplay = null;
@@ -459,7 +455,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         //Special handling for RSPduo to auto-update enabled state for slave device when configured for master/slave operation
-        if(discoveredTuner instanceof DiscoveredRspDuoTuner1 rspDuoTuner1 && rspDuoTuner1.getDeviceInfo().getDeviceSelectionMode().isMasterMode())
+        if(discoveredTuner instanceof DiscoveredRspDuoTuner1 rspDuoTuner1 && rspDuoTuner1.getDeviceSelectionMode().isMasterMode())
         {
             String id = rspDuoTuner1.getId();
             id = id.replace(DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "1", DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "2");
@@ -676,161 +672,104 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     }
 
     /**
-     * Creates a dotted-notation string representing the port numbers for the device from the root hub through any
-     * intermediate hubs.
-     * @param device to inspect
-     * @return formatted address
-     */
-    public static String getPortAddress(Device device)
-    {
-        ByteBuffer portNumberArray = ByteBuffer.allocateDirect(7);  //7 ports maximum.
-        int portCount = LibUsb.getPortNumbers(device, portNumberArray);
-        portNumberArray.rewind();
-
-        StringBuilder sb = new StringBuilder();
-
-        for(int x = 0; x < portCount; x++)
-        {
-            if(x > 0)
-            {
-                sb.append(".");
-            }
-
-            sb.append(portNumberArray.get());
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * USB hotplug event listener to register, unregister and detect when USB devices are added or removed.
+     * USB hotplug support to detect when USB tuners are added or removed.  jlibusb reports changes as they happen
+     * where libusb supports hotplug (Linux and macOS) and polls the USB device list elsewhere (Windows).
      *
-     * Note: hotplug is not supported on all platforms.
+     * Tuners already connected when detection starts are reported as arrivals too.  Those were added during discovery
+     * at startup and are ignored here because the tuner model already has a tuner at that bus and port.
      */
-    public class HotplugEventSupport implements HotplugCallback
+    public class HotplugEventSupport implements UsbHotplugListener
     {
-        private static final int HOTPLUG_CONTINUE_EVENT_SUPPORT = 0;
-        private HotplugCallbackHandle mHotplugCallbackHandle;
-        private ScheduledFuture<?> mEventProcessorFuture;
+        private UsbHotplug mUsbHotplug;
 
         /**
-         * LibUsb hotplug event notification
-         * @param context used for hotplug event registration
-         * @param device that arrived or left
-         * @param event value, arrived event or left event
-         * @param userData not used
-         * @return
-         */
-        @Override
-        public int processEvent(Context context, Device device, int event, Object userData)
-        {
-            int bus = LibUsb.getBusNumber(device);
-            int port = LibUsb.getPortNumber(device);
-
-            if(port > 0)
-            {
-                String portAddress = getPortAddress(device);
-
-                switch(event)
-                {
-                    case LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED:
-                        DeviceDescriptor deviceDescriptor = new DeviceDescriptor();
-                        int status = LibUsb.getDeviceDescriptor(device, deviceDescriptor);
-
-                        if(status == LibUsb.SUCCESS)
-                        {
-                            TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(), deviceDescriptor.idProduct());
-
-                            if(tunerClass.isSupportedUsbTuner())
-                            {
-                                mLog.info("Tuner plug-in detected at USB Bus [" + bus + "] Port [" + port +
-                                        "] Tuner Class [" + tunerClass + "]");
-                                ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
-                                DiscoveredUSBTuner discoveredUSBTuner = new DiscoveredUSBTuner(tunerClass, bus,
-                                        portAddress, channelizerType);
-
-                                if(tunerClass.isFuncubeTuner())
-                                {
-                                    //Funcube tuners take a few moments to init the sound card interface.  Delay adding
-                                    //the tuner so that it can be started correctly.
-                                    ThreadPool.SCHEDULED.schedule(() ->
-                                    {
-                                        addUsbTuner(discoveredUSBTuner);
-                                    }, 2, TimeUnit.SECONDS);
-                                }
-                                else
-                                {
-                                    addUsbTuner(discoveredUSBTuner);
-                                }
-                            }
-                        }
-                        break;
-                    case LibUsb.HOTPLUG_EVENT_DEVICE_LEFT:
-                        DiscoveredTuner removed = removeUsbTuner(bus, portAddress);
-
-                        if(removed != null)
-                        {
-                            mLog.info("Tuner Unplugged: " + removed.getId());
-                        }
-                        break;
-                }
-            }
-
-            return HOTPLUG_CONTINUE_EVENT_SUPPORT;
-        }
-
-        /**
-         * Registers for hotplug event notifications, if the capability is supported on this platform and starts an
-         * event processing timer to process hotplug events.
+         * Starts hotplug detection of supported USB tuners.
          */
         public void start()
         {
-            if(LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG))
+            try
             {
-                mHotplugCallbackHandle = new HotplugCallbackHandle();
-                int events = LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT;
-                int flags = LibUsb.HOTPLUG_ENUMERATE;
-                int vendorId = LibUsb.HOTPLUG_MATCH_ANY;
-                int productId = LibUsb.HOTPLUG_MATCH_ANY;
-                int deviceClass = LibUsb.HOTPLUG_MATCH_ANY;
-
-                mLog.info("LibUsb - starting HotPlug detection");
-                int status = LibUsb.hotplugRegisterCallback(mLibUsbApplicationContext, events, flags, vendorId,
-                        productId, deviceClass, this, "sdrtrunk hotplug support", mHotplugCallbackHandle);
-
-                if(status == LibUsb.SUCCESS)
-                {
-                    Runnable eventHandler = () -> LibUsb.handleEvents(mLibUsbApplicationContext);
-                    mEventProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(eventHandler,
-                            0, 1, TimeUnit.SECONDS);
-                }
-                else
-                {
-                    mHotplugCallbackHandle = null;
-                    mLog.info("LibUsb - unable to register device hotplug listener - " + LibUsb.errorName(status));
-                }
+                mUsbHotplug = UsbHotplug.start(device -> getSupportedTunerClass(device) != null, this);
+                mLog.info("LibUsb - started USB hotplug detection (" +
+                        (mUsbHotplug.mode() == UsbHotplug.Mode.NATIVE ? "native" : "polling") + ")");
             }
-            else
+            catch(UsbException | RuntimeException e)
             {
-                mLog.info("LibUsb Hotplug event notification Is Not Supported on this platform.");
+                mLog.error("LibUsb - unable to start USB hotplug detection", e);
+                mUsbHotplug = null;
             }
         }
 
         /**
-         * Unregisters from hotplug event notifications and stops the event processing timer
+         * Stops hotplug detection.  Waits for an arrival or removal that is being processed to finish.
          */
         public void stop()
         {
-            if(mHotplugCallbackHandle != null)
+            if(mUsbHotplug != null)
             {
-                LibUsb.hotplugDeregisterCallback(mLibUsbApplicationContext, mHotplugCallbackHandle);
-                mHotplugCallbackHandle = null;
+                mUsbHotplug.close();
+                mUsbHotplug = null;
             }
+        }
 
-            if(mEventProcessorFuture != null)
+        /**
+         * A supported USB tuner was connected.  Called on the jlibusb hotplug dispatch thread.
+         * @param device that arrived
+         */
+        @Override
+        public void arrived(UsbDeviceInfo device)
+        {
+            try
             {
-                mEventProcessorFuture.cancel(true);
-                mEventProcessorFuture = null;
+                DiscoveredUSBTuner discoveredUSBTuner = createDiscoveredTuner(device);
+
+                if(discoveredUSBTuner == null ||
+                   mDiscoveredTunerModel.hasUsbTuner(discoveredUSBTuner.getBus(), discoveredUSBTuner.getPortAddress()))
+                {
+                    return;
+                }
+
+                mLog.info("Tuner plug-in detected at USB Bus [" + discoveredUSBTuner.getBus() + "] Port [" +
+                        discoveredUSBTuner.getPortAddress() + "] Tuner Class [" + discoveredUSBTuner.getTunerClass() + "]");
+
+                if(discoveredUSBTuner.getTunerClass().isFuncubeTuner())
+                {
+                    //Funcube tuners take a few moments to init the sound card interface.  Delay adding
+                    //the tuner so that it can be started correctly.
+                    ThreadPool.SCHEDULED.schedule(() -> addUsbTuner(discoveredUSBTuner), 2, TimeUnit.SECONDS);
+                }
+                else
+                {
+                    addUsbTuner(discoveredUSBTuner);
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error adding USB tuner after plug-in at USB Bus [" + device.busNumber() + "] Port [" +
+                        UsbPortAddress.of(device) + "]", e);
+            }
+        }
+
+        /**
+         * A supported USB tuner was disconnected.  Called on the jlibusb hotplug dispatch thread.
+         * @param device that left
+         */
+        @Override
+        public void left(UsbDeviceInfo device)
+        {
+            try
+            {
+                DiscoveredTuner removed = removeUsbTuner(device.busNumber(), UsbPortAddress.of(device));
+
+                if(removed != null)
+                {
+                    mLog.info("Tuner Unplugged: " + removed.getId());
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error removing USB tuner after unplug at USB Bus [" + device.busNumber() + "] Port [" +
+                        UsbPortAddress.of(device) + "]", e);
             }
         }
     }

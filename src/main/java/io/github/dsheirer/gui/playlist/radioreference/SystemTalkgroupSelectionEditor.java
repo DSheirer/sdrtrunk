@@ -128,6 +128,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         listBox.setSpacing(5);
         listBox.setAlignment(Pos.CENTER);
         Label importLabel = new Label("Import To Alias List:");
+        importLabel.setLabelFor(getAliasListNameComboBox());
         listBox.getChildren().addAll(importLabel, getAliasListNameComboBox(), getNewAliasListButton());
         GridPane.setConstraints(listBox, 0, row);
         getChildren().add(listBox);
@@ -139,7 +140,9 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         HBox searchBox = new HBox();
         searchBox.setSpacing(5);
         searchBox.setAlignment(Pos.CENTER);
-        searchBox.getChildren().addAll(new Label("Search"), getSearchField());
+        Label searchLabel = new Label("Search");
+        searchLabel.setLabelFor(getSearchField());
+        searchBox.getChildren().addAll(searchLabel, getSearchField());
         GridPane.setConstraints(searchBox, 0, ++row);
         getChildren().add(searchBox);
 
@@ -151,7 +154,9 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         categoryBox.setAlignment(Pos.CENTER_LEFT);
         categoryBox.setSpacing(5);
         HBox.setHgrow(getTalkgroupCategoryComboBox(), Priority.ALWAYS);
-        categoryBox.getChildren().addAll(new Label("Category"), getTalkgroupCategoryComboBox());
+        Label categoryLabel = new Label("Category");
+        categoryLabel.setLabelFor(getTalkgroupCategoryComboBox());
+        categoryBox.getChildren().addAll(categoryLabel, getTalkgroupCategoryComboBox());
         GridPane.setHgrow(categoryBox, Priority.ALWAYS);
         GridPane.setConstraints(categoryBox, 0, ++row);
         getChildren().add(categoryBox);
@@ -612,6 +617,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         if(mTalkgroupTableView == null)
         {
             mTalkgroupTableView = new TableView<>();
+            mTalkgroupTableView.setAccessibleText("Talkgroups");
             mTalkgroupTableView.setMaxHeight(Double.MAX_VALUE);
             TableColumn<AliasedTalkgroup,String> talkgroupColumn = new TableColumn("Talkgroup");
             talkgroupColumn.setCellValueFactory(new PropertyValueFactory<>("talkgroup"));

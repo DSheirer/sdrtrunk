@@ -26,6 +26,7 @@ import java.util.EnumSet;
 public enum TunerType
 {
     AIRSPY_R820T("R820T"),
+    BLADERF("bladeRF"),
     AIRSPY_HF_PLUS("HF+"),
     ELONICS_E4000("E4000"),
     FCI_FC2580("FC2580"),
@@ -34,9 +35,11 @@ public enum TunerType
     FUNCUBE_DONGLE_PRO("Funcube Dongle Pro"),
     FUNCUBE_DONGLE_PRO_PLUS("Funcube Dongle Pro Plus"),
     HACKRF_ONE("ONE"),
+    HACKRF_PRO("Pro"),
     HACKRF_JAWBREAKER("Jawbreaker"),
     HACKRF_RAD1O("RAD1O"),
     HYDRASDR_R828D("R828D"),
+    LIMESDR("LimeSDR"),
     RAFAELMICRO_R820T("R820T"),
     RAFAELMICRO_R828D("R828D"),
     RSP_1("RSP1"),
@@ -51,7 +54,7 @@ public enum TunerType
     RECORDING("Recording"),
     UNKNOWN("Unknown");
 
-    private String mLabel;
+    private final String mLabel;
 
     /**
      * Constructs an instance
@@ -73,13 +76,13 @@ public enum TunerType
     /**
      * Supported USB tuner types
      */
-    public static EnumSet<TunerType> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY_R820T, ELONICS_E4000, FITIPOWER_FC0012,
-            HACKRF_JAWBREAKER, HACKRF_RAD1O, HACKRF_ONE, HYDRASDR_R828D, RAFAELMICRO_R820T);
+    public static final EnumSet<TunerType> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY_R820T, BLADERF, ELONICS_E4000, FITIPOWER_FC0012,
+            HACKRF_JAWBREAKER, HACKRF_RAD1O, HACKRF_ONE, HACKRF_PRO, HYDRASDR_R828D, LIMESDR, RAFAELMICRO_R820T);
 
     /**
      * Supported sound card tuner types
      */
-    public static EnumSet<TunerType> SUPPORTED_SOUND_CARD_TUNERS = EnumSet.of(FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
+    public static final EnumSet<TunerType> SUPPORTED_SOUND_CARD_TUNERS = EnumSet.of(FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
 
     /**
      * Indicates if this tuner is supported as a USB tuner

@@ -144,8 +144,10 @@ public class DMRNetworkConfigurationMonitor
         switch(linkControl.getOpcode())
         {
             case FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER:
-            case FULL_CAPACITY_MAX_TALKER_ALIAS:
-            case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_HEADER:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_1:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_2:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_3:
                 mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
                 break;
 

@@ -8,5 +8,79 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         maven { url 'https://jitpack.io' }
+
+        //jAirspy is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jAirspy/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jairspy' }
+        }
+
+        //jAirspyHF is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jAirspyHF/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jairspyhf' }
+        }
+
+        //jRTL is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jRTL/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jrtl' }
+        }
+
+        //jlibusb is published as a GitHub release, with libusb for all platforms in the jar.  Tuner libraries built on
+        //jlibusb (jAirspy, jAirspyHF, jBladeRF, jHackRF, jHydraSDR, jLimeSDR, jRTL) load their native library next to its libusb, so the process shares one copy.
+        ivy {
+            url = 'https://github.com/DSheirer/jlibusb/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jlibusb' }
+        }
+
+        //jHackRF is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jHackRF/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jhackrf' }
+        }
+
+        //jHydraSDR is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jHydraSDR/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jhydrasdr' }
+        }
+
+        //jLimeSDR is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jLimeSDR/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jlimesdr' }
+        }
+
+        //jsdrplay is published as a GitHub release.  The jar does not contain the SDRplay API native library, which
+        //users install separately from sdrplay.com
+        ivy {
+            url = 'https://github.com/DSheirer/jsdrplay/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jsdrplay' }
+        }
+
+        //jBladeRF is published as a GitHub release, with the native libraries for all platforms in the jar
+        ivy {
+            url = 'https://github.com/DSheirer/jBladeRF/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jbladerf' }
+        }
     }
 }

@@ -45,6 +45,7 @@ public class SourceEvent
         NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_SQUELCH_THRESHOLD,
+        NOTIFICATION_SQUELCH_USER_THRESHOLD,
         NOTIFICATION_SQUELCH_AUTO_TRACK,
         NOTIFICATION_STOP_SAMPLE_STREAM,
         NOTIFICATION_TUNER_SHUTDOWN,
@@ -426,6 +427,17 @@ public class SourceEvent
     public static SourceEvent squelchThreshold(Source source, double thresholdDb)
     {
         return new SourceEvent(Event.NOTIFICATION_SQUELCH_THRESHOLD, source, thresholdDb);
+    }
+
+    /**
+     * Creates a new squelch user threshold notification, which is the setting to save after a user change request.  This
+     * can differ from the current squelch threshold when auto-tracking the noise floor.
+     * @param thresholdDb setting
+     * @return new source event
+     */
+    public static SourceEvent squelchUserThreshold(double thresholdDb)
+    {
+        return new SourceEvent(Event.NOTIFICATION_SQUELCH_USER_THRESHOLD, null, thresholdDb);
     }
 
     /**

@@ -66,6 +66,7 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
     private JLabel mMixerGainValueLabel;
     private JCheckBox mLNAAGCCheckBox;
     private JCheckBox mMixerAGCCheckBox;
+    private JCheckBox mBiasTCheckBox;
 
     /**
      * Constructs an instance
@@ -116,6 +117,8 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         getFrequencyPanel().updateControls();
         getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
         getTunerInfoButton().setEnabled(hasTuner());
+        getBiasTCheckBox().setEnabled(hasTuner());
+        getBiasTCheckBox().setSelected(hasTuner() && hasConfiguration() && getConfiguration().isBiasT());
         updateGainComponents((hasTuner() && hasConfiguration()) ? getConfiguration().getGain() : null);
 
         if(hasTuner())
@@ -159,6 +162,9 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         add(new JLabel("Sample Rate:"));
         add(getSampleRateCombo(), "wrap");
 
+        add(new JLabel(""));
+        add(getBiasTCheckBox(), "wrap");
+
         add(new JSeparator(), "span,growx,push");
         add(new JLabel("Gain Control"), "wrap");
 
@@ -180,6 +186,37 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         add(getLNAAGCCheckBox());
         add(getLNAGainSlider());
         add(getLNAGainValueLabel());
+    }
+
+    /**
+     * Checkbox to enable/disable Bias-T power for active antennas
+     */
+    private JCheckBox getBiasTCheckBox()
+    {
+        if(mBiasTCheckBox == null)
+        {
+            mBiasTCheckBox = new JCheckBox("Bias-T");
+            mBiasTCheckBox.setEnabled(false);
+            mBiasTCheckBox.setToolTipText("Enable Bias-T power output for active antennas");
+            mBiasTCheckBox.addActionListener(e ->
+            {
+                if(hasTuner() && !isLoading())
+                {
+                    try
+                    {
+                        getTuner().getController().setBiasT(mBiasTCheckBox.isSelected());
+                        save();
+                    }
+                    catch(Exception e1)
+                    {
+                        mLog.error("Error setting Bias-T", e1);
+                        JOptionPane.showMessageDialog(mBiasTCheckBox, "Couldn't set Bias-T: " + e1.getMessage());
+                    }
+                }
+            });
+        }
+
+        return mBiasTCheckBox;
     }
 
     private JCheckBox getLNAAGCCheckBox()
@@ -607,6 +644,7 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
             getConfiguration().setLNAGain(getLNAGainSlider().getValue());
             getConfiguration().setMixerAGC(getMixerAGCCheckBox().isSelected());
             getConfiguration().setLNAAGC(getLNAAGCCheckBox().isSelected());
+            getConfiguration().setBiasT(getBiasTCheckBox().isSelected());
             saveConfiguration();
         }
     }
@@ -689,8 +727,8 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
             sb.append(info.getPartNumber());
             sb.append("<br>");
 
-            sb.append("<b>Board ID: </b>");
-            sb.append(info.getBoardID().getLabel());
+            sb.append("<b>Board: </b>");
+            sb.append(info.getBoardName());
             sb.append("<br>");
 
             return sb.toString();

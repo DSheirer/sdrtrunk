@@ -59,7 +59,7 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
 
     public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
-        super(aliasList, timeslot, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
+        super(aliasList, timeslot, DEFAULT_MAX_SEGMENT_LENGTH_MILLIS);
         mUserPreferences = userPreferences;
         MyEventBus.getGlobalEventBus().register(this);
         loadConverter();

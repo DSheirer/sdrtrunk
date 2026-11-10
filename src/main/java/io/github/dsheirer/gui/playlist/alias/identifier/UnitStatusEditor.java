@@ -58,6 +58,7 @@ public class UnitStatusEditor extends IdentifierEditor<UnitStatusID>
         gridPane.setVgap(3);
 
         Label valueLabel = new Label("Unit Status");
+        valueLabel.setLabelFor(getUnitStatusField());
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 0, 0);
         gridPane.getChildren().add(valueLabel);

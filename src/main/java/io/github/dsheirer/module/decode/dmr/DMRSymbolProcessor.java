@@ -66,6 +66,12 @@ public class DMRSymbolProcessor extends C4FMSymbolProcessor
     private static final float SYNC_THRESHOLD_EQUALIZED = 70;
     //Once synchronized, sync detections are only allowed within this many symbols of a burst boundary.
     private static final int SYNC_WINDOW_SYMBOLS = 2;
+    //Maximum bit errors (of 48) in a detected sync pattern while acquiring.  Testing: all false sync detections in
+    //600 seconds of noise occurred while acquiring, with 7+ (mostly 12+) bit errors, and a max of 8 eliminated them
+    //(245 bursts to 0) at a cost of < 0.6% valid data bursts on clean recordings and 0.3 - 5.5% on multipath
+    //recordings with injected noise, where valid link control improved.  A max of 10 leaks noise false syncs and 6
+    //costs more multipath data bursts.  Applying the max once synchronized cost 3 - 20% of valid bursts.
+    private static final int SYNC_ACQUISITION_MAX_BIT_ERRORS = 8;
     private final DMRSyncModeMonitor mSyncModeMonitor = new DMRSyncModeMonitor();
     private final DMRMessageFramer mMessageFramer;
 
@@ -140,6 +146,12 @@ public class DMRSymbolProcessor extends C4FMSymbolProcessor
 
         int offset = symbolsSinceLastSync % BURST_DIBIT_LENGTH;
         return Math.min(offset, BURST_DIBIT_LENGTH - offset) <= SYNC_WINDOW_SYMBOLS;
+    }
+
+    @Override
+    public int getSyncAcquisitionMaxBitErrors()
+    {
+        return SYNC_ACQUISITION_MAX_BIT_ERRORS;
     }
 
     @Override
