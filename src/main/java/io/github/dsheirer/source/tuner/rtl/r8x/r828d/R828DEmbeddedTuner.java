@@ -81,7 +81,7 @@ public class R828DEmbeddedTuner extends R8xEmbeddedTuner
         {
             getAdapter().enableI2CRepeater();
             boolean controlI2C = false;
-            long offsetFrequency = frequency + getIfFrequency();
+            long offsetFrequency = frequency + IF_FREQUENCY;
             setMux(offsetFrequency, controlI2C);
             setPLL(offsetFrequency, controlI2C);
 
