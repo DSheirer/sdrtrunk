@@ -664,8 +664,9 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     }
 
     /**
-     * USB hotplug support to detect when USB tuners are added or removed.  jlibusb reports changes as they happen
-     * where libusb supports hotplug (Linux and macOS) and polls the USB device list elsewhere (Windows).
+     * USB hotplug support to detect when USB tuners are added or removed, where libusb supports hotplug (Linux and
+     * macOS).  It's off elsewhere (Windows), where jlibusb would poll the USB device list every second alongside the
+     * tuners' own libusb traffic.
      *
      * Tuners already connected when detection starts are reported as arrivals too.  Those were added during discovery
      * at startup and are ignored here because the tuner model already has a tuner at that bus and port.
@@ -679,6 +680,13 @@ public class TunerManager implements IDiscoveredTunerStatusListener
          */
         public void start()
         {
+            if(!LibUsb.hasHotplug())
+            {
+                mLog.info("LibUsb - USB hotplug detection is off since this OS has no native hotplug support.  " +
+                        "Tuners are discovered at startup.");
+                return;
+            }
+
             try
             {
                 mUsbHotplug = UsbHotplug.start(device -> getSupportedTunerClass(device) != null, this);

@@ -458,6 +458,11 @@ public class RTL2832TunerController extends TunerController
      */
     private boolean receive(SampleBuffer buffer)
     {
+        if(!hasBufferListeners())
+        {
+            return true;
+        }
+
         try
         {
             //The buffer factory copies the samples from native memory
@@ -480,18 +485,6 @@ public class RTL2832TunerController extends TunerController
         {
             execute(device -> device.startRx(this::receive, USB_TRANSFER_BUFFER_COUNT, USB_TRANSFER_BUFFER_SIZE));
             mStreaming = mDevice != null;
-        }
-    }
-
-    /**
-     * Stops the sample stream if it's started.
-     */
-    private void stopStreaming() throws SourceException
-    {
-        if(mStreaming)
-        {
-            mStreaming = false;
-            execute(RtlSdrDevice::stopRx);
         }
     }
 
@@ -522,7 +515,8 @@ public class RTL2832TunerController extends TunerController
     }
 
     /**
-     * Removes the IQ buffer listener and stops streaming if there are no more listeners.
+     * Removes the IQ buffer listener.  Streaming continues without listeners until the tuner stops, since repeatedly
+     * starting and stopping the librtlsdr stream has crashed the JVM in libusb on Windows.
      */
     @Override
     public void removeBufferListener(Listener<INativeBuffer> listener)
@@ -532,15 +526,6 @@ public class RTL2832TunerController extends TunerController
         try
         {
             super.removeBufferListener(listener);
-
-            if(!hasBufferListeners())
-            {
-                stopStreaming();
-            }
-        }
-        catch(SourceException se)
-        {
-            mLog.error("Error stopping streaming on RTL-2832 tuner", se);
         }
         finally
         {
