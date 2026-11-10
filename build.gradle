@@ -234,18 +234,6 @@ String targetWindowsX86_64 = 'windows-x86_64-v' + version
 String targetWindowsAarch64 = 'windows-aarch64-v' + version
 
 /**
- * Optional pre-downloaded Java Development Kit (JDK) for each target OS and CPU.  These locations are hard-coded to the
- * author's development environment, but can be changed to your environment if you want to use this build pattern.
- */
-String jdk_base = '/home/denny/java_jdks/'
-String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-25.0.1-full'
-String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-25.0.1-full'
-String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-25.0.1-full.jdk'
-String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-25.0.1-full.jdk'
-String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-25.0.1-full'
-String jdk_windows_aarch64 = jdk_base + 'windows-arm64/jdk-25.0.1-full'
-
-/**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
 def jdk_download_base = "https://download.bell-sw.com/java/27+36/bellsoft-jdk27+36-"
@@ -273,16 +261,17 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
     //java.management for JVM resource monitoring
-    //javafx.swing - JFXPanel.  The runtime plugin's module auto-detection uses Gradle's ASM library, which can't read
-    //  Java 27 class files, so modules used only by sdrtrunk's own classes are not detected.  See checkImageModules.
+    //java.base, java.logging, java.net.http, java.prefs, javafx.controls, javafx.swing - required by sdrtrunk (jdeps)
     rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management',
-            'javafx.swing')
+            'java.base', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls', 'javafx.swing')
 
-    //Use auto-detected modules and 'add' any specified modules.
-    rt.extension.additive.set(true)
+    //Use only the modules listed above.  The runtime plugin's module auto-detection uses a bundled ASM library that
+    //can't read Java 27 class files and logs a 'Failed to scan' error for each sdrtrunk class.  The jdeps module check
+    //on the runtime task verifies that this list is complete.
+    rt.extension.additive.set(false)
 
     //Recommended options for reducing/shrinking runtime target image size
-    rt.extension.addOptions('--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages')
+    rt.extension.addOptions('--strip-debug', '--compress', 'zip-6', '--no-header-files', '--no-man-pages')
 
     //Runtime images have auto appended version in image zip name.  Override to include version in single target image.
 //    rt.extension.imageDir=layout.buildDirectory.dir('image')
@@ -492,22 +481,12 @@ tasks.register('runtimeZipCurrent', RuntimeZipTask) {rt ->
  */
 tasks.register('runtimeZipWindows', RuntimeZipTask) {rt ->
     //Windows aarch64
-    if(file(jdk_windows_aarch64).exists()) {
-        rt.extension.targetPlatform(targetWindowsAarch64, jdk_windows_aarch64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetWindowsAarch64) {
-            jdkHome = jdkDownload(jdk_download_windows_aarch64)
-        }
+    rt.extension.targetPlatform(targetWindowsAarch64) {
+        jdkHome = jdkDownload(jdk_download_windows_aarch64)
     }
     //Windows x86-64
-    if(file(jdk_windows_x86_64).exists()) {
-        rt.extension.targetPlatform(targetWindowsX86_64, jdk_windows_x86_64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetWindowsX86_64) {
-            jdkHome = jdkDownload(jdk_download_windows_x86_64)
-        }
+    rt.extension.targetPlatform(targetWindowsX86_64) {
+        jdkHome = jdkDownload(jdk_download_windows_x86_64)
     }
 
     configure(rt, jvmArgsWindows)
@@ -524,40 +503,20 @@ tasks.register('runtimeZipWindows', RuntimeZipTask) {rt ->
  */
 tasks.register('runtimeZipOthers', RuntimeZipTask) {rt ->
     //Linux aarch64
-    if(file(jdk_linux_aarch64).exists()) {
-        rt.extension.targetPlatform(targetLinuxAarch64, jdk_linux_aarch64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetLinuxAarch64) {
-            jdkHome = jdkDownload(jdk_download_linux_aarch64)
-        }
+    rt.extension.targetPlatform(targetLinuxAarch64) {
+        jdkHome = jdkDownload(jdk_download_linux_aarch64)
     }
     //Linux x86-64
-    if(file(jdk_linux_x86_64).exists()) {
-        rt.extension.targetPlatform(targetLinuxX86_64, jdk_linux_x86_64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetLinuxX86_64) {
-            jdkHome = jdkDownload(jdk_download_linux_x86_64)
-        }
+    rt.extension.targetPlatform(targetLinuxX86_64) {
+        jdkHome = jdkDownload(jdk_download_linux_x86_64)
     }
     //OSX aarch64
-    if(file(jdk_osx_aarch64).exists()) {
-        rt.extension.targetPlatform(targetOsxAarch64, jdk_osx_aarch64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetOsxAarch64) {
-            jdkHome = jdkDownload(jdk_download_osx_aarch64)
-        }
+    rt.extension.targetPlatform(targetOsxAarch64) {
+        jdkHome = jdkDownload(jdk_download_osx_aarch64)
     }
     //OSX x86-64
-    if(file(jdk_osx_x86_64).exists()) {
-        rt.extension.targetPlatform(targetOsxX86_64, jdk_osx_x86_64, [])
-    }
-    else {
-        rt.extension.targetPlatform(targetOsxX86_64) {
-            jdkHome = jdkDownload(jdk_download_osx_x86_64)
-        }
+    rt.extension.targetPlatform(targetOsxX86_64) {
+        jdkHome = jdkDownload(jdk_download_osx_x86_64)
     }
 
     configure(rt, jvmArgsLinux)
