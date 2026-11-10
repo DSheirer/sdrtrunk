@@ -287,6 +287,112 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
 }
 
 /**
+ * Native library folders to keep in each runtime target image, keyed by the target name prefix.  The tuner libraries
+ * (jRTL, jAirspy, etc.) package their native libraries under '<library>/native/<os>-<arch>/' and jSerialComm packages
+ * them under '<OS>/<arch>/'.  All other operating system and architecture folders are removed from the target image.
+ */
+def nativeFolders = [
+        'linux-aarch64'  : [tuner: 'linux-aarch64',   serial: 'Linux/armv8_64'],
+        'linux-x86_64'   : [tuner: 'linux-x86_64',    serial: 'Linux/x86_64'],
+        'osx-aarch64'    : [tuner: 'macos-aarch64',   serial: 'OSX/aarch64'],
+        'osx-x86_64'     : [tuner: 'macos-x86_64',    serial: 'OSX/x86_64'],
+        'windows-aarch64': [tuner: 'windows-aarch64', serial: 'Windows/aarch64'],
+        'windows-x86_64' : [tuner: 'windows-x86_64',  serial: 'Windows/x86_64']
+]
+
+/**
+ * Top level folders that jSerialComm uses for its per-OS native libraries.
+ */
+def serialOsFolders = ['Android', 'FreeBSD', 'Linux', 'OpenBSD', 'OSX', 'Solaris', 'Windows'] as Set
+
+/**
+ * Rewrites the jar file without the native library folders for other operating systems and architectures.  Fails the
+ * build if a jar that contains native libraries doesn't contain the folder for the target.
+ * @param jar file to rewrite
+ * @param keep native folders for the target (tuner and serial)
+ * @param serialOsFolders jSerialComm top level OS folders
+ * @return number of bytes removed from the jar
+ */
+long stripJar(File jar, Map<String,String> keep, Set<String> serialOsFolders) {
+    def tunerPattern = ~/^[^\/]+\/native\/([^\/]+)\/.*/
+    def serialPrefix = keep.serial + '/'
+    def removed = [] as Set
+    def hadTuner = false, keptTuner = false, hadSerial = false, keptSerial = false
+    File temp = new File(jar.parentFile, jar.name + '.tmp')
+
+    new java.util.zip.ZipFile(jar).withCloseable { zip ->
+        def entries = zip.entries().toList()
+
+        entries.each { e ->
+            def tuner = tunerPattern.matcher(e.name)
+            def top = e.name.contains('/') ? e.name.substring(0, e.name.indexOf('/')) : null
+
+            if(tuner.matches()) {
+                hadTuner = true
+                if(tuner.group(1) == keep.tuner) { keptTuner = true } else { removed << e.name }
+            }
+            else if(top in serialOsFolders) {
+                hadSerial = true
+                if(e.name.startsWith(serialPrefix)) { keptSerial = true } else { removed << e.name }
+            }
+        }
+
+        if(hadTuner && !keptTuner) {
+            throw new GradleException("Native strip: ${jar.name} has no native/${keep.tuner} folder")
+        }
+        if(hadSerial && !keptSerial) {
+            throw new GradleException("Native strip: ${jar.name} has no ${keep.serial} folder")
+        }
+
+        if(!removed.isEmpty()) {
+            new java.util.zip.ZipOutputStream(new FileOutputStream(temp)).withCloseable { out ->
+                entries.findAll { !removed.contains(it.name) }.each { e ->
+                    def copy = new java.util.zip.ZipEntry(e)
+                    if(copy.method == java.util.zip.ZipEntry.DEFLATED) {
+                        copy.compressedSize = -1
+                    }
+                    out.putNextEntry(copy)
+                    zip.getInputStream(e).withCloseable { out << it }
+                    out.closeEntry()
+                }
+            }
+        }
+    }
+
+    if(removed.isEmpty()) {
+        return 0
+    }
+
+    long before = jar.length()
+    java.nio.file.Files.move(temp.toPath(), jar.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    return before - jar.length()
+}
+
+/**
+ * Removes the native libraries for other operating systems and architectures from the jars in each runtime target
+ * image, before the runtimeZip tasks package the images.
+ */
+tasks.named('runtime') {rt ->
+    rt.doLast {
+        rt.targetPlatforms.get().keySet().each { target ->
+            def key = nativeFolders.keySet().find { target.startsWith(it + '-') }
+
+            if(key == null) {
+                throw new GradleException("Native strip: no native folder mapping for runtime target [${target}]")
+            }
+
+            def lib = new File(rt.imageDir.asFile, "${project.name}-${target}/lib")
+            long total = 0
+            lib.listFiles({ File f -> f.name.endsWith('.jar') } as FileFilter).each { jar ->
+                total += stripJar(jar, nativeFolders[key], serialOsFolders)
+            }
+            logger.lifecycle("Native strip: removed ${String.format('%.1f', total / 1048576)} MB of other " +
+                    "platform native libraries from [${target}]")
+        }
+    }
+}
+
+/**
  * Creates a release package for the current operating system.
  *
  * Note: you cannot create both Windows and Linux releases at the same time due to limitations of the Runtime plugin
