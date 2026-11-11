@@ -1313,7 +1313,7 @@ public abstract class C4FMSymbolProcessor
 
         for(int x = 0; x < patternSymbols.length; x++)
         {
-            if(bufferPointer < maxPointer)
+            if(bufferPointer >= 0 && bufferPointer < maxPointer)
             {
                 softSymbol = interpolate(mBuffer[bufferPointer], mBuffer[bufferPointer + 1], fractional) * gain + balance;
             }
