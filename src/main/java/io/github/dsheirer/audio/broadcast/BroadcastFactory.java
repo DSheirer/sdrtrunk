@@ -25,6 +25,8 @@ import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfigura
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.audio.broadcast.thinline.ThinlineRadioConfiguration;
+import io.github.dsheirer.audio.broadcast.thinline.ThinlineRadioCoreBroadcaster;
+import io.github.dsheirer.audio.broadcast.thinline.ThinlineRadioCoreConfiguration;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerFeedConfiguration;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzBroadcaster;
 import io.github.dsheirer.audio.broadcast.openmhz.OpenMHzConfiguration;
@@ -72,6 +74,9 @@ public class BroadcastFactory
                 case THINLINE_RADIO:
                     return new RdioScannerBroadcaster((RdioScannerConfiguration)configuration,
                             inputAudioFormat, mp3Setting, aliasModel);
+                case THINLINE_RADIO_CORE:
+                    return new ThinlineRadioCoreBroadcaster((ThinlineRadioCoreConfiguration)configuration, aliasModel,
+                        userPreferences);
                 case OPENMHZ:
                     return new OpenMHzBroadcaster((OpenMHzConfiguration)configuration,
                         inputAudioFormat, mp3Setting, aliasModel);
@@ -117,6 +122,8 @@ public class BroadcastFactory
                 return new RdioScannerConfiguration(format);
             case THINLINE_RADIO:
                 return new ThinlineRadioConfiguration(format);
+            case THINLINE_RADIO_CORE:
+                return new ThinlineRadioCoreConfiguration(format);
             case BROADCASTIFY:
                 return new BroadcastifyFeedConfiguration(format);
             case OPENMHZ:

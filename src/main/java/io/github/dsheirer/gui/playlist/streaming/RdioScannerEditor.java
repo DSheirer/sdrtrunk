@@ -107,7 +107,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
                 host += API_PATH;
                 getItem().setHost(host);
             }
-            getItem().setApiKey(getApiKeyTextField().getText());
+            getItem().setApiKey(showsApiKey() ? getApiKeyTextField().getText() : "");
             getItem().setMaximumRecordingAge(getMaxAgeTextField().get() * 1000);
         }
 
@@ -133,6 +133,32 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
     protected String getApiKeyLabel()
     {
         return "API Key";
+    }
+
+    /**
+     * Whether the API key field is shown. Core uses the site key from preferences instead.
+     */
+    protected boolean showsApiKey()
+    {
+        return true;
+    }
+
+    /**
+     * True when User Preferences has the Thinline Radio site key.
+     */
+    static boolean siteKeyReady(PlaylistManager playlistManager)
+    {
+        if(playlistManager == null || playlistManager.getUserPreferences() == null)
+        {
+            return false;
+        }
+        String key = playlistManager.getUserPreferences().getThinlineRadioPreference().getApiKey();
+        return key != null && !key.isBlank();
+    }
+
+    protected boolean hasSiteKey()
+    {
+        return siteKeyReady(getPlaylistManager());
     }
 
     protected GridPane getEditorPane()
@@ -173,14 +199,17 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(getNameTextField(), 1, row);
             mEditorPane.getChildren().add(getNameTextField());
 
-            Label apiKeyLabel = new Label(getApiKeyLabel());
-            apiKeyLabel.setLabelFor(getApiKeyTextField());
-            GridPane.setHalignment(apiKeyLabel, HPos.RIGHT);
-            GridPane.setConstraints(apiKeyLabel, 0, ++row);
-            mEditorPane.getChildren().add(apiKeyLabel);
+            if(showsApiKey())
+            {
+                Label apiKeyLabel = new Label(getApiKeyLabel());
+                apiKeyLabel.setLabelFor(getApiKeyTextField());
+                GridPane.setHalignment(apiKeyLabel, HPos.RIGHT);
+                GridPane.setConstraints(apiKeyLabel, 0, ++row);
+                mEditorPane.getChildren().add(apiKeyLabel);
 
-            GridPane.setConstraints(getApiKeyTextField(), 1, row);
-            mEditorPane.getChildren().add(getApiKeyTextField());
+                GridPane.setConstraints(getApiKeyTextField(), 1, row);
+                mEditorPane.getChildren().add(getApiKeyTextField());
+            }
 
             Label systemIdLabel = new Label("System ID");
             systemIdLabel.setLabelFor(getSystemIdTextField());
@@ -231,7 +260,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         return mMaxAgeTextField;
     }
 
-    private TextField getHostTextField()
+    protected TextField getHostTextField()
     {
         if(mHostTextField == null)
         {
