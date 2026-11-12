@@ -32,6 +32,10 @@ import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.sdrplay.DeviceInfo;
 import io.github.dsheirer.sdrplay.SDRplay;
 import io.github.dsheirer.sdrplay.SDRplayException;
+import io.github.dsheirer.signalhound.DeviceDescriptor;
+import io.github.dsheirer.signalhound.SignalHound;
+import io.github.dsheirer.signalhound.SignalHoundApi;
+import io.github.dsheirer.signalhound.SignalHoundException;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigTuner;
@@ -50,6 +54,7 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
+import io.github.dsheirer.source.tuner.signalhound.DiscoveredSignalHoundTuner;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
@@ -136,6 +141,8 @@ public class TunerManager implements IDiscoveredTunerStatusListener
             discoverSdrPlayTuners();
         }
 
+        //The Signal Hound API libraries link their own libusb (and FTDI library for the BB60), so they don't need jlibusb
+        discoverSignalHoundTuners();
         discoverRecordingTuners();
     }
 
@@ -387,6 +394,57 @@ public class TunerManager implements IDiscoveredTunerStatusListener
             {
                 mLog.info("Unable to get list of devices from SDRplay API - " + se.getMessage());
             }
+        }
+    }
+
+    /**
+     * Discover Signal Hound tuners (BB60, SM200/SM435 and SP145) with each of the Signal Hound API libraries that is
+     * installed.  The libraries are from the Signal Hound SDK and are installed separately.  Networked (10GbE) SM
+     * devices aren't discovered.
+     */
+    private void discoverSignalHoundTuners()
+    {
+        ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+        List<String> notInstalled = new ArrayList<>();
+
+        for(SignalHoundApi api : SignalHoundApi.values())
+        {
+            try
+            {
+                if(!api.isAvailable())
+                {
+                    notInstalled.add(api.libraryName());
+                    mLog.debug("Signal Hound " + api.libraryName() + " library not loaded - " +
+                            api.loadFailure().orElse("unknown reason"));
+                    continue;
+                }
+
+                mLog.info("Signal Hound " + api.libraryName() + " version [" + api.version() + "] loaded from [" +
+                        api.location().orElse("unknown") + "]");
+
+                List<DeviceDescriptor> devices = SignalHound.devices(api);
+                mLog.info("Discovered [" + devices.size() + "] Signal Hound " + api.description() + " devices");
+
+                for(DeviceDescriptor device : devices)
+                {
+                    DiscoveredSignalHoundTuner tuner = new DiscoveredSignalHoundTuner(device, channelizerType);
+
+                    if(mDiscoveredTunerModel.getDiscoveredTuner(tuner.getId()) == null)
+                    {
+                        startAndConfigureTuner(tuner);
+                    }
+                }
+            }
+            catch(SignalHoundException | RuntimeException | LinkageError e)
+            {
+                mLog.error("Unable to discover Signal Hound " + api.description() + " devices - " + e.getMessage());
+            }
+        }
+
+        if(!notInstalled.isEmpty())
+        {
+            mLog.info("Signal Hound API libraries not installed " + notInstalled + " - Signal Hound tuners for these " +
+                    "libraries are not available");
         }
     }
 

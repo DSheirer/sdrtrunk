@@ -35,6 +35,7 @@ public enum TunerClass
 	LIMESDR("LimeSDR"),
 	RTL2832("RTL-2832"),
 	RSP("RSP"),
+	SIGNAL_HOUND("Signal Hound"),
 	TEST_TUNER("Test"),
 	RECORDING_TUNER("Recording"),
 	UNKNOWN("Unknown" );

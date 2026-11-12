@@ -24,6 +24,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.sdrplay.DeviceInfo;
 import io.github.dsheirer.sdrplay.RspModel;
+import io.github.dsheirer.signalhound.DeviceDescriptor;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.MixerManager;
 import io.github.dsheirer.source.tuner.airspy.AirspyTuner;
@@ -121,6 +122,11 @@ import io.github.dsheirer.source.tuner.sdrplay.rspDx.IControlRspDx;
 import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerController;
 import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerEditor;
+import io.github.dsheirer.source.tuner.signalhound.DiscoveredSignalHoundTuner;
+import io.github.dsheirer.source.tuner.signalhound.SignalHoundTuner;
+import io.github.dsheirer.source.tuner.signalhound.SignalHoundTunerConfiguration;
+import io.github.dsheirer.source.tuner.signalhound.SignalHoundTunerController;
+import io.github.dsheirer.source.tuner.signalhound.SignalHoundTunerEditor;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
 import java.util.ArrayList;
 import java.util.List;
@@ -277,6 +283,20 @@ public class TunerFactory
     }
 
     /**
+     * Creates a Signal Hound tuner
+     * @param descriptor of the device from the Signal Hound API device list
+     * @param channelizerType for the tuner
+     * @param tunerErrorListener to listen for errors from the tuner
+     * @return tuner
+     */
+    public static SignalHoundTuner getSignalHoundTuner(DeviceDescriptor descriptor, ChannelizerType channelizerType,
+                                                       ITunerErrorListener tunerErrorListener)
+    {
+        return new SignalHoundTuner(new SignalHoundTunerController(descriptor, tunerErrorListener), tunerErrorListener,
+                channelizerType);
+    }
+
+    /**
      * Create a USB tuner
      * @param tunerClass to instantiate
      * @param portAddress usb
@@ -380,6 +400,8 @@ public class TunerFactory
                 return new RspDuoTuner2Configuration(uniqueID);
             case RSP_DX:
                 return new RspDxTunerConfiguration(uniqueID);
+            case SIGNAL_HOUND:
+                return new SignalHoundTunerConfiguration(uniqueID);
             default:
                 throw new IllegalArgumentException("Unrecognized tuner type [" + type.name() + "]");
         }
@@ -448,6 +470,13 @@ public class TunerFactory
                         discoveredTuner.getClass());
             case RECORDING_TUNER:
                 return new RecordingTunerEditor(userPreferences, tunerManager, discoveredTuner);
+            case SIGNAL_HOUND:
+                if(discoveredTuner instanceof DiscoveredSignalHoundTuner discoveredSignalHoundTuner)
+                {
+                    return new SignalHoundTunerEditor(userPreferences, tunerManager, discoveredSignalHoundTuner);
+                }
+                throw new IllegalArgumentException("Unrecognized discovered Signal Hound tuner class: " +
+                        discoveredTuner.getClass());
             case RTL2832:
                 if(discoveredTuner.hasTuner())
                 {
