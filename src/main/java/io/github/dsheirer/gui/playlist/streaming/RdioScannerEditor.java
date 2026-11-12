@@ -119,6 +119,22 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         return BroadcastServerType.RDIOSCANNER_CALL;
     }
 
+    /**
+     * Label for the server URL field. Subclasses can override this for another product that uses the same API.
+     */
+    protected String getHostLabel()
+    {
+        return "RdioScanner URL";
+    }
+
+    /**
+     * Label for the credential field.
+     */
+    protected String getApiKeyLabel()
+    {
+        return "API Key";
+    }
+
     protected GridPane getEditorPane()
     {
         if(mEditorPane == null)
@@ -157,7 +173,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(getNameTextField(), 1, row);
             mEditorPane.getChildren().add(getNameTextField());
 
-            Label apiKeyLabel = new Label("API Key");
+            Label apiKeyLabel = new Label(getApiKeyLabel());
             apiKeyLabel.setLabelFor(getApiKeyTextField());
             GridPane.setHalignment(apiKeyLabel, HPos.RIGHT);
             GridPane.setConstraints(apiKeyLabel, 0, ++row);
@@ -175,7 +191,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(getSystemIdTextField(), 1, row);
             mEditorPane.getChildren().add(getSystemIdTextField());
 
-            Label hostLabel = new Label("RdioScanner URL");
+            Label hostLabel = new Label(getHostLabel());
             hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, ++row);
