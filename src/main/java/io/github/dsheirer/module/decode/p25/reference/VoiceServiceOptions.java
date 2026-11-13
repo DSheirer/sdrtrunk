@@ -80,4 +80,13 @@ public class VoiceServiceOptions extends ServiceOptions
     {
         return new VoiceServiceOptions(4);
     }
+
+    /**
+     * Creates a copy of the supplied service options with the encryption flag cleared and all other options unchanged.
+     * @param serviceOptions to copy
+     */
+    public static VoiceServiceOptions createUnencrypted(ServiceOptions serviceOptions)
+    {
+        return new VoiceServiceOptions(serviceOptions.mServiceOptions & ~ENCRYPTION_FLAG);
+    }
 }
