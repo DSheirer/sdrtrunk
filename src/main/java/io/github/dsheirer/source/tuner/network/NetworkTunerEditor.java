@@ -103,7 +103,7 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
 
     if (hasConfiguration()) {
       getBiasTButton().setSelected(getConfiguration().isBiasTEnabled());
-      getSampleRateCombo().setSelectedItem(SampleRate.getClosest((int) getConfiguration().getSampleRate()));
+      getSampleRateCombo().setSelectedItem(closestSampleRate(getConfiguration().getSampleRate()));
       getGainAutoCheckBox().setSelected(getConfiguration().isGainAuto());
       getGainCombo().setSelectedItem(closestGain(getConfiguration().getGain()));
       getGainCombo().setEnabled(hasTuner() && !getConfiguration().isGainAuto());
@@ -270,6 +270,21 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
     }
 
     return mAutoReconnectCheckBox;
+  }
+
+  /**
+   * Finds the SampleRate enum value closest to the specified sample rate (Hz).
+   */
+  private static SampleRate closestSampleRate(long sampleRate) {
+    SampleRate closest = SampleRate.values()[0];
+
+    for (SampleRate candidate : SampleRate.values()) {
+      if (Math.abs(candidate.getRate() - sampleRate) < Math.abs(closest.getRate() - sampleRate)) {
+        closest = candidate;
+      }
+    }
+
+    return closest;
   }
 
   /**

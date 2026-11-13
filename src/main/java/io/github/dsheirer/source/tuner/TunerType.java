@@ -89,7 +89,7 @@ public enum TunerType
     /**
      * Supported network tuner Types
      */
-    public static EnumSet<TunerType> SUPPORTED_NETWORK_TUNERS = EnumSet.of(RTL_TCP);
+    public static final EnumSet<TunerType> SUPPORTED_NETWORK_TUNERS = EnumSet.of(RTL_TCP);
 
     /**
      * Indicates if this tuner is supported as a USB tuner
