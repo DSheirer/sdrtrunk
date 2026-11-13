@@ -54,17 +54,19 @@ committed to the code base, so it's not really 'nightly' as much as it is 'curre
 Releases are built and published automatically by the [Release](.github/workflows/release.yml) GitHub workflow
 whenever a version tag is pushed to the repository.
 
-1. Update `projectVersion` in `gradle.properties` to the new version, following the naming convention described in
-that file (e.g. `0.6.2-alpha-1`, `0.6.2-beta-1` or `0.6.2`).
-2. Commit and push the change to `master`.
-3. Create and push a tag that matches the version with a leading `v`:
+The version is taken from the tag, so there is no version number to update in the code. Create and push a tag
+with a leading `v`, following the naming convention described in `gradle.properties` (e.g. `v0.6.2-alpha-1`,
+`v0.6.2-beta-1` or `v0.6.2`):
 ```
 git tag v0.6.2-beta-1
 git push origin v0.6.2-beta-1
 ```
 
+Builds made from an untagged commit get a version like `0.6.2-beta-1-14-g4626d567` (14 commits after the
+`v0.6.2-beta-1` tag, at commit `4626d567`), with `-dirty` appended when there are uncommitted changes.
+
 The workflow then:
-* Verifies that the tag matches `projectVersion` in `gradle.properties` and fails if it does not.
+* Verifies that the version the build derives from git matches the tag and fails if it does not.
 * Builds and tests the code, then creates the release zips for Linux, Mac and Windows (x86-64 and aarch64).
 * Creates a GitHub release titled `Version <version>` with auto-generated release notes (a "What's Changed" list of
 the PRs merged since the previous version tag), and attaches the six zip

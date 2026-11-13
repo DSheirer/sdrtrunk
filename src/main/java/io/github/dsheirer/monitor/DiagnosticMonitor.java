@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -247,6 +247,7 @@ public class DiagnosticMonitor
         Attributes atts = findManifestAttributes();
         if (atts != null) {
             sb.append("\nVersion  : " + atts.getValue("Implementation-Version"));
+            sb.append("\nGit Describe      : " + atts.getValue("Git-Describe"));
             sb.append("\nGradle Version    : " + atts.getValue("Created-By"));
             sb.append("\nBuild Timestamp   : " + atts.getValue("Build-Timestamp"));
             sb.append("\nBuild-JDK         : " + atts.getValue("Build-JDK"));
