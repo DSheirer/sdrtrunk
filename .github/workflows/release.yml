@@ -1,6 +1,6 @@
-# Publishes a release when a version tag is pushed. The tag has to match
-# projectVersion in gradle.properties with a leading 'v': v0.6.2 for a final
-# release, or v0.6.2-beta-1 / v0.6.2-alpha-1 for a pre-release.
+# Publishes a release when a version tag is pushed: v0.6.2 for a final release,
+# or v0.6.2-beta-1 / v0.6.2-alpha-1 for a pre-release. The build derives the
+# version from the tag (see build.gradle).
 name: Release
 
 on:
@@ -21,15 +21,6 @@ jobs:
         with:
           # Full history and tags, to find the previous release tag for the release notes
           fetch-depth: 0
-
-      - id: version
-        run: |
-          expected="v$(sed -n 's/^projectVersion=//p' gradle.properties | tr -d '[:space:]')"
-          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match projectVersion in gradle.properties ($expected)"
-            exit 1
-          fi
-          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       # Release notes list the PRs since the previous version tag (never 'nightly'). A final release
       # starts from the previous final release, so it covers every alpha and beta in between.
@@ -53,6 +44,17 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+
+      # The version comes from 'git describe', which can pick a different tag when more than one
+      # version tag points at the same commit. Fail rather than publish zips with the wrong version.
+      - id: version
+        run: |
+          version="$(./gradlew -q printVersion --console=plain | tail -n 1)"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Build version $version does not match tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Build and test
         run: ./gradlew clean build --console=plain
