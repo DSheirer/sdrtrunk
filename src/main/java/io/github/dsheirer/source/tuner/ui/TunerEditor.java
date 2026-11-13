@@ -34,7 +34,7 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
-import io.github.dsheirer.spectrum.SpectralDisplayPanel;
+import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
 import io.github.dsheirer.util.SwingUtils;
 import io.github.dsheirer.util.ThreadPool;
 import java.awt.EventQueue;
@@ -592,7 +592,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
 
                 if(tuner != null)
                 {
-                    SystemProperties.getInstance().set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
+                    SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true);
 
                     ThreadPool.CACHED.submit(() -> mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
                             TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)));

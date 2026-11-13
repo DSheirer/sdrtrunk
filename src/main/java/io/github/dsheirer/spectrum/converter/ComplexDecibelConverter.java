@@ -68,8 +68,21 @@ public class ComplexDecibelConverter extends DFTResultsConverter
 
 	public static float[] convert(float[] results)
 	{
+		return convert(results, 1.0f / (float)(results.length / 2));
+	}
+
+	/**
+	 * Converts the output of the JTransforms FloatFFT_1D.complexForward() calculation into decibels, with each bin's
+	 * power (magnitude squared) multiplied by the scale factor, and swaps the upper and lower halves of the results
+	 * so the lowest frequency is first.
+	 * @param results interleaved complex DFT results
+	 * @param powerScale to multiply each bin's power by before converting to decibels
+	 * @return decibel value for each bin, half the length of the results
+	 */
+	public static float[] convert(float[] results, float powerScale)
+	{
 		int halfResults = results.length / 2;
-		float dftBinSizeScalor = 1.0f / (float) halfResults;
+		float dftBinSizeScalor = powerScale;
 		float[] processed = new float[halfResults];
 		int middle = processed.length / 2;
 

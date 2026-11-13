@@ -22,6 +22,8 @@ package io.github.dsheirer.gui.channel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
 import io.github.dsheirer.gui.power.SignalPowerView;
+import io.github.dsheirer.gui.spectrum.ChannelSpectralDisplay;
+import io.github.dsheirer.gui.spectrum.DftSpectralDisplay;
 import io.github.dsheirer.gui.squelch.NoiseSquelchView;
 import io.github.dsheirer.gui.symbol.SymbolView;
 import io.github.dsheirer.gui.theme.ThemeManager;
@@ -33,23 +35,14 @@ import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamplesToNativeBufferModule;
-import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ChannelFrequencyCorrectionStatusNotification;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-import io.github.dsheirer.spectrum.ComplexDftProcessor;
-import io.github.dsheirer.spectrum.FrequencyOverlayPanel;
-import io.github.dsheirer.spectrum.SpectrumPanel;
-import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
-import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
 import java.awt.Component;
 import java.awt.EventQueue;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.MouseEvent;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -63,12 +56,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.event.MouseInputAdapter;
 
 /**
  * Display for channel FFT and squelch details
@@ -85,18 +74,20 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     private final PlaylistManager mPlaylistManager;
     private ProcessingChain mProcessingChain;
     private final ComplexSamplesToNativeBufferModule mSampleStreamTapModule = new ComplexSamplesToNativeBufferModule();
-    private final ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
-    private SpectrumPanel mSpectrumPanel;
-    private final FrequencyOverlayPanel mFrequencyOverlayPanel;
+    private final JFXPanel mSpectralPanel = new JFXPanel();
+    //Created on the JavaFX thread - guarded by this.  Channel state is kept here until the display exists.
+    private ChannelSpectralDisplay mChannelSpectralDisplay;
+    private long mChannelFrequency;
+    private int mChannelSampleRate;
+    private int mChannelBandwidth;
+    private Long mCarrierOffset;
     private final SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
-    private final SpinnerNumberModel mNoiseFloorSpinnerModel;
     private final JLabel mTunerPPMLabel;
     private final JLabel mTunerCorrectionLabel;
     private final JLabel mChannelCorrectionLabel;
     private final JLabel mDecoderCorrectionLabel;
     private final JLabel mDummyLabel = new JLabel(" ");
     private boolean mPanelVisible = false;
-    private boolean mDftProcessing = false;
     private final NoiseSquelchView mNoiseSquelchView;
     private final SignalPowerView mSignalPowerView;
     private final SymbolView mSymbolView = new SymbolView();
@@ -108,7 +99,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     /**
      * Constructs an instance.
      */
-    public ChannelSpectrumPanel(PlaylistManager playlistManager, SettingsManager settingsManager)
+    public ChannelSpectrumPanel(PlaylistManager playlistManager)
     {
         mPlaylistManager = playlistManager;
         mNoiseSquelchView = new NoiseSquelchView(mPlaylistManager);
@@ -124,7 +115,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         fftPanel.setLayout(new MigLayout("insets 0", "[grow,fill]", "[][grow,fill]"));
 
         JPanel labelPanel = new JPanel();
-        labelPanel.setLayout(new MigLayout("insets 2", "[grow,fill][][][][][grow,fill][][]", ""));
+        labelPanel.setLayout(new MigLayout("insets 2", "[grow,fill][][][][][grow,fill]", ""));
 
         mTunerPPMLabel = new JLabel(LABEL_PREFIX_PPM);
         mTunerPPMLabel.setEnabled(false);
@@ -145,15 +136,6 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         labelPanel.add(mDecoderCorrectionLabel);
 
         labelPanel.add(mDummyLabel);
-
-        mNoiseFloorSpinnerModel = new SpinnerNumberModel(18, 8, 36, 1);
-        mNoiseFloorSpinnerModel.addChangeListener(e -> {
-            Number number = mNoiseFloorSpinnerModel.getNumber();
-            mSpectrumPanel.setSampleSize(number.doubleValue());
-        });
-        JSpinner noiseFloorSpinner = new JSpinner(mNoiseFloorSpinnerModel);
-        labelPanel.add(new JLabel("Noise Floor:"));
-        labelPanel.add(noiseFloorSpinner);
 
         JButton logIndexesButton = new JButton("Log Settings");
         logIndexesButton.addActionListener(e -> {
@@ -199,32 +181,16 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
 
         fftPanel.add(labelPanel, "wrap");
 
-        mFrequencyOverlayPanel = new FrequencyOverlayPanel(settingsManager);
-        mSpectrumPanel = new SpectrumPanel(settingsManager);
-        mSpectrumPanel.setSampleSize(18.0);
+        fftPanel.add(mSpectralPanel);
+        ThemeManager.getInstance().registerSwing(mSpectralPanel);
 
-        /**
-         * The layered pane holds the overlapping spectrum and channel panels
-         * and manages the sizing of each panel with the resize listener
-         */
-        JLayeredPane layeredPanel = new JLayeredPane();
-        layeredPanel.addComponentListener(new ResizeListener());
-
-        /**
-         * Create a mouse adapter to handle mouse events over the spectrum
-         * and waterfall panels
-         */
-        MouseEventProcessor mouser = new MouseEventProcessor();
-
-        mFrequencyOverlayPanel.addMouseListener(mouser);
-        mFrequencyOverlayPanel.addMouseMotionListener(mouser);
-        mFrequencyOverlayPanel.addMouseWheelListener(mouser);
-
-        //Add the spectrum and channel panels to the layered panel
-        layeredPanel.add(mSpectrumPanel, 0, 0);
-        layeredPanel.add(mFrequencyOverlayPanel, 1, 0);
-
-        fftPanel.add(layeredPanel);
+        Platform.runLater(() -> {
+            ChannelSpectralDisplay display = new ChannelSpectralDisplay();
+            Scene scene = new Scene(display);
+            ThemeManager.getInstance().register(scene);
+            mSpectralPanel.setScene(scene);
+            displayCreated(display);
+        });
 
         mNoiseSquelchPanel = new JFXPanel();
         mSymbolPanel = new JFXPanel();
@@ -249,6 +215,8 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
             }
 
             ThemeManager.getInstance().register(scene2);
+            //Use the same color theme as the channel spectral display
+            mSymbolView.followTheme(DftSpectralDisplay.getSharedTheme());
             mSymbolPanel.setScene(scene2);
         });
 
@@ -258,11 +226,49 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         add(mSplitPane);
 //        mSplitPane.setDividerLocation(0.5);
 
-        mSampleStreamTapModule.setListener(mComplexDftProcessor);
-        DFTResultsConverter DFTResultsConverter = new ComplexDecibelConverter();
-        mComplexDftProcessor.addConverter(DFTResultsConverter);
-        DFTResultsConverter.addListener(mSpectrumPanel);
-        mSpectrumPanel.clearSpectrum();
+    }
+
+    /**
+     * Stores the spectral display once it's created on the JavaFX thread and applies the current channel state.
+     */
+    private synchronized void displayCreated(ChannelSpectralDisplay display)
+    {
+        mChannelSpectralDisplay = display;
+
+        if(mChannelSampleRate > 0)
+        {
+            display.setChannel(mChannelFrequency, mChannelSampleRate, mChannelBandwidth);
+        }
+
+        if(mCarrierOffset != null)
+        {
+            display.setCarrierOffset(mCarrierOffset);
+        }
+
+        updateFFTProcessing();
+    }
+
+    private synchronized void setChannel(long frequency, int sampleRate, int bandwidth)
+    {
+        mChannelFrequency = frequency;
+        mChannelSampleRate = sampleRate;
+        mChannelBandwidth = bandwidth;
+        mCarrierOffset = null;
+
+        if(mChannelSpectralDisplay != null)
+        {
+            mChannelSpectralDisplay.setChannel(frequency, sampleRate, bandwidth);
+        }
+    }
+
+    private synchronized void setCarrierOffset(long offset)
+    {
+        mCarrierOffset = offset;
+
+        if(mChannelSpectralDisplay != null)
+        {
+            mChannelSpectralDisplay.setCarrierOffset(offset);
+        }
     }
 
     /**
@@ -295,46 +301,28 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
     }
 
     /**
-     * Updates processing state for the DFT processor.  Turns on DFT processing when we have a processing chain and
+     * Updates processing state for the spectral display.  Turns on DFT processing when we have a processing chain and
      * when the user has this tab selected and visible.  Otherwise, turns off DFT processing.
      */
-    private void updateFFTProcessing()
+    private synchronized void updateFFTProcessing()
     {
-        if(mPanelVisible && mProcessingChain != null)
+        if(mChannelSpectralDisplay == null)
         {
-            startDftProcessing();
+            return;
+        }
+
+        boolean active = mPanelVisible && mProcessingChain != null;
+
+        if(active)
+        {
+            mSampleStreamTapModule.setListener(mChannelSpectralDisplay.getSampleListener());
         }
         else
         {
-            stopDftProcessing();
-        }
-    }
-
-    /**
-     * Starts DFT processing
-     */
-    private void startDftProcessing()
-    {
-        if(!mDftProcessing)
-        {
-            mDftProcessing = true;
-            mSampleStreamTapModule.setListener(mComplexDftProcessor);
-            mComplexDftProcessor.start();
-        }
-    }
-
-    /**
-     * Stops DFT processing
-     */
-    private void stopDftProcessing()
-    {
-        if(mDftProcessing)
-        {
             mSampleStreamTapModule.removeListener();
-            mComplexDftProcessor.stop();
-            mSpectrumPanel.clearSpectrum();
-            mDftProcessing = false;
         }
+
+        mChannelSpectralDisplay.setActive(active);
     }
 
     private void broadcast(SourceEvent sourceEvent)
@@ -359,10 +347,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
         mChannelCorrectionLabel.setEnabled(false);
         mDecoderCorrectionLabel.setText(LABEL_PREFIX_DECODER);
         mDecoderCorrectionLabel.setEnabled(false);
-        mFrequencyOverlayPanel.process(SourceEvent.frequencyChange(null, 0));
-        mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(0));
-        mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(0);
-        mFrequencyOverlayPanel.setChannelBandwidth(0);
+        setChannel(0, 0, 0);
     }
 
     /**
@@ -414,12 +399,7 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
             mProcessingChain.addModule(mSampleStreamTapModule);
             Source source = mProcessingChain.getSource();
 
-            if(source instanceof TunerChannelSource tcs)
-            {
-                mFrequencyOverlayPanel.process(SourceEvent.frequencyChange(null, tcs.getFrequency()));
-                mFrequencyOverlayPanel.process(SourceEvent.sampleRateChange(tcs.getSampleRate()));
-            }
-
+            int bandwidth = 0;
             Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
 
             if(channel != null)
@@ -428,8 +408,13 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
 
                 if(!tunerChannels.isEmpty())
                 {
-                    mFrequencyOverlayPanel.setChannelBandwidth(tunerChannels.getFirst().getBandwidth());
+                    bandwidth = tunerChannels.getFirst().getBandwidth();
                 }
+            }
+
+            if(source instanceof TunerChannelSource tcs)
+            {
+                setChannel(tcs.getFrequency(), (int)tcs.getSampleRate(), bandwidth);
             }
         }
 
@@ -486,61 +471,13 @@ public class ChannelSpectrumPanel extends JPanel implements Listener<ProcessingC
 
                         //We se the offset cursor line to negative so that it aligns with where the signal is located
                         //instead of the correction that's needed to bring the signal to zero.
-                        mFrequencyOverlayPanel.setEstimatedCarrierOffsetFrequency(-status.getDecoderCorrection());
+                        setCarrierOffset(-status.getDecoderCorrection());
                     });
                 }
             }
 
 //TODO: is this still needed?
             mSignalPowerView.receive(sourceEvent);
-        }
-    }
-
-    /**
-     * Monitors the sizing of the layered pane and resizes the spectrum and
-     * channel panels whenever the layered pane is resized
-     */
-    public class ResizeListener implements ComponentListener
-    {
-        @Override public void componentResized(ComponentEvent e)
-        {
-            Component c = e.getComponent();
-
-            mSpectrumPanel.setBounds(0, 0, c.getWidth(), c.getHeight());
-            mFrequencyOverlayPanel.setBounds(0, 0, c.getWidth(), c.getHeight());
-        }
-
-        @Override public void componentHidden(ComponentEvent arg0) {}
-        @Override public void componentMoved(ComponentEvent arg0) {}
-        @Override public void componentShown(ComponentEvent arg0) {}
-    }
-
-    /**
-     * Mouse event handler for the spectral display panel.
-     */
-    public class MouseEventProcessor extends MouseInputAdapter
-    {
-        @Override public void mouseMoved(MouseEvent event)
-        {
-            update(event);
-        }
-
-        /**
-         * Updates the cursor display while the mouse is performing actions
-         */
-        private void update(MouseEvent event)
-        {
-            mFrequencyOverlayPanel.setCursorLocation(event.getPoint());
-        }
-
-        @Override public void mouseEntered(MouseEvent e)
-        {
-            mFrequencyOverlayPanel.setCursorVisible(true);
-        }
-
-        @Override public void mouseExited(MouseEvent e)
-        {
-            mFrequencyOverlayPanel.setCursorVisible(false);
         }
     }
 }

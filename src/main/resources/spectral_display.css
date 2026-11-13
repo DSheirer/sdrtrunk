@@ -1,0 +1,256 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* Spectral display configuration panel.  The panel floats over the (normally black) spectrum, so it uses the same
+   dark translucent style with both the light and the dark application themes. */
+
+.spectral-config-panel
+{
+    -fx-base: #3a3d41;
+    -fx-background: #26282b;
+    -fx-control-inner-background: #303236;
+    -fx-control-inner-background-alt: #383a3e;
+    -fx-accent: #4a90d9;
+    -fx-focus-color: #4a90d9;
+    -fx-faint-focus-color: #4a90d922;
+    -fx-text-base-color: #ececec;
+    -fx-text-background-color: #ececec;
+    -fx-mark-color: #ececec;
+    -fx-background-color: rgba(28, 30, 33, 0.84);
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.16);
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 8, 0, 0, 2);
+}
+
+.spectral-config-panel.collapsed
+{
+    -fx-background-color: rgba(28, 30, 33, 0.55);
+    -fx-padding: 5;
+    -fx-cursor: hand;
+}
+
+.spectral-config-panel .label
+{
+    -fx-text-fill: #dcdcdc;
+}
+
+.spectral-config-panel .spectral-config-title
+{
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.spectral-config-panel .spectral-config-section
+{
+    -fx-font-weight: bold;
+    -fx-text-fill: #8fbaf0;
+    -fx-padding: 6 0 0 0;
+}
+
+.spectral-config-panel .spectral-config-icon
+{
+    -fx-fill: #e0e0e0;
+}
+
+.spectral-config-panel .spectral-config-pin
+{
+    -fx-background-color: transparent;
+    -fx-padding: 2 5 2 5;
+}
+
+.spectral-config-panel .spectral-config-pin:selected
+{
+    -fx-background-color: #4a90d9;
+    -fx-background-radius: 4;
+}
+
+.spectral-config-panel .spectral-config-scroll,
+.spectral-config-panel .spectral-config-scroll > .viewport
+{
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.spectral-config-panel .toggle-switch > .thumb-area
+{
+    -fx-background-color: #45484c;
+    -fx-border-color: #5a5e62;
+}
+
+.spectral-config-panel .toggle-switch:selected > .thumb-area
+{
+    -fx-background-color: #4a90d9;
+    -fx-border-color: #4a90d9;
+}
+
+.spectral-config-panel .toggle-switch > .thumb
+{
+    -fx-background-color: #ececec;
+}
+
+/* Spectral display split pane between the spectrum and the waterfall */
+
+.spectral-display-split-pane
+{
+    -fx-padding: 0;
+    -fx-background-color: black;
+    -fx-background-insets: 0;
+    -fx-box-border: transparent;
+}
+
+.spectral-display-split-pane > .split-pane-divider
+{
+    -fx-background-color: #3a3d41;
+    -fx-padding: 0 0 2 0;
+}
+
+.spectral-config-panel .spectral-config-hint
+{
+    -fx-text-fill: #a0a8b4;
+    -fx-font-size: 0.9em;
+}
+
+/* Edge slider: thin strip along the right edge of the display that expands into a vertical slider on mouse over */
+
+.spectral-edge-slider
+{
+    -fx-base: #3a3d41;
+    -fx-background: #26282b;
+    -fx-accent: #4a90d9;
+    -fx-focus-color: #4a90d9;
+    -fx-faint-focus-color: #4a90d922;
+    -fx-cursor: hand;
+}
+
+.spectral-edge-slider-strip
+{
+    -fx-background-color: rgba(200, 205, 212, 0.28);
+    -fx-background-radius: 2;
+}
+
+.spectral-edge-slider-marker
+{
+    -fx-background-color: #4a90d9;
+    -fx-background-radius: 2;
+    -fx-border-color: rgba(255, 255, 255, 0.7);
+    -fx-border-radius: 2;
+    -fx-border-width: 1;
+}
+
+.spectral-edge-slider-panel
+{
+    -fx-background-color: rgba(28, 30, 33, 0.84);
+    -fx-background-radius: 8 0 0 8;
+    -fx-border-color: rgba(255, 255, 255, 0.16);
+    -fx-border-radius: 8 0 0 8;
+    -fx-border-width: 1 0 1 1;
+    -fx-padding: 6 4 6 4;
+    -fx-cursor: default;
+}
+
+.spectral-edge-slider-title
+{
+    -fx-font-weight: bold;
+    -fx-font-size: 0.9em;
+    -fx-text-fill: #8fbaf0;
+}
+
+.spectral-edge-slider-value
+{
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #dcdcdc;
+}
+
+/* Channel symbol view (ScatterChart) colored by the spectral display theme.  SymbolView.setTheme() defines the
+   looked-up colors on the view.  Defaults match the Classic theme. */
+
+.symbol-view
+{
+    symbol-background: #000000;
+    symbol-color: #ffffffcc;
+    symbol-grid: #c0c0c02d;
+    symbol-text: #c0c0c0;
+    -fx-background-color: symbol-background;
+}
+
+.symbol-view .chart,
+.symbol-view .chart-content
+{
+    -fx-background-color: symbol-background;
+}
+
+.symbol-view .chart-plot-background
+{
+    -fx-background-color: symbol-background;
+}
+
+.symbol-view .chart-vertical-grid-lines,
+.symbol-view .chart-horizontal-grid-lines
+{
+    -fx-stroke: symbol-grid;
+}
+
+.symbol-view .chart-vertical-zero-line,
+.symbol-view .chart-horizontal-zero-line
+{
+    -fx-stroke: symbol-grid;
+}
+
+.symbol-view .chart-symbol
+{
+    -fx-background-color: symbol-color;
+    -fx-background-radius: 2px;
+    -fx-padding: 1px;
+}
+
+.symbol-view .axis
+{
+    -fx-tick-label-fill: symbol-text;
+    -fx-tick-mark-stroke: symbol-grid;
+    AXIS_COLOR: symbol-grid;
+    -fx-background-color: transparent;
+}
+
+.symbol-view .axis-label,
+.symbol-view .chart-title
+{
+    -fx-text-fill: symbol-text;
+}
+
+.symbol-view .chart-legend
+{
+    -fx-background-color: transparent;
+}
+
+.symbol-view .chart-legend-item
+{
+    -fx-text-fill: symbol-text;
+}
+
+/* The dark application theme colors every Text node, which would override the label text fill */
+.symbol-view .chart-legend-item .text,
+.symbol-view .axis-label .text,
+.symbol-view .chart-title .text
+{
+    -fx-fill: symbol-text;
+}
