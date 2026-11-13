@@ -27,6 +27,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -43,6 +44,8 @@ public class TunerPreferenceEditor extends HBox
         "channelizer is more efficient when decoding 3 or more channels.";
     private static final String HELP_TEXT_HETERODYNE = "Processes each channel on-demand.  This " +
         "channelizer may work better for computers with constrained resources when processing a small number of channels.";
+    private static final String HELP_TEXT_DECODE_QUALITY_LOGGING = "Logs the decode quality of each control and " +
+        "conventional channel every 5 minutes, with the channel's position in its tuner's band, to the application log.";
 
     private TunerPreference mTunerPreference;
     private GridPane mEditorPane;
@@ -54,6 +57,7 @@ public class TunerPreferenceEditor extends HBox
     private Label mHelpTextHeterodyneLabel;
     private ChoiceBox<RspDuoSelectionMode> mRspDuoTunerModeChoiceBox;
     private Label mRspDuoModeLabel;
+    private CheckBox mDecodeQualityLoggingCheckBox;
 
     public TunerPreferenceEditor(UserPreferences userPreferences)
     {
@@ -83,6 +87,11 @@ public class TunerPreferenceEditor extends HBox
             mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row, 2, 1);
             mEditorPane.add(getRspDuoModeLabel(), 0, ++row);
             mEditorPane.add(getRspDuoTunerModeChoiceBox(), 1, row);
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, ++row, 2, 1);
+            mEditorPane.add(getDecodeQualityLoggingCheckBox(), 0, ++row, 2, 1);
+            Label decodeQualityHelp = new Label(HELP_TEXT_DECODE_QUALITY_LOGGING);
+            decodeQualityHelp.setWrapText(true);
+            mEditorPane.add(decodeQualityHelp, 0, ++row, 2, 1);
         }
 
         return mEditorPane;
@@ -192,6 +201,19 @@ public class TunerPreferenceEditor extends HBox
         }
 
         return mRspDuoTunerModeChoiceBox;
+    }
+
+    private CheckBox getDecodeQualityLoggingCheckBox()
+    {
+        if(mDecodeQualityLoggingCheckBox == null)
+        {
+            mDecodeQualityLoggingCheckBox = new CheckBox("Log Decode Quality");
+            mDecodeQualityLoggingCheckBox.setSelected(mTunerPreference.isDecodeQualityLogging());
+            mDecodeQualityLoggingCheckBox.setOnAction(event ->
+                mTunerPreference.setDecodeQualityLogging(mDecodeQualityLoggingCheckBox.isSelected()));
+        }
+
+        return mDecodeQualityLoggingCheckBox;
     }
 
     private Label getRspDuoModeLabel()

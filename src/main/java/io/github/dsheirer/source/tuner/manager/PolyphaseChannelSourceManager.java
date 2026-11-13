@@ -422,6 +422,78 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         return mPolyphaseChannelManager.getTunerChannelCount();
     }
 
+    @Override
+    public boolean canSourceWithoutRetune(TunerChannel tunerChannel)
+    {
+        mTunerController.getLock().lock();
+
+        try
+        {
+            if(!isTunable(tunerChannel))
+            {
+                return false;
+            }
+
+            SortedSet<TunerChannel> tunerChannels = getTunerChannels();
+            tunerChannels.add(tunerChannel);
+            long center = mTunerController.getFrequency();
+
+            return canTune(tunerChannels) && isValidCenterFrequency(tunerChannels, center);
+        }
+        finally
+        {
+            mTunerController.getLock().unlock();
+        }
+    }
+
+    @Override
+    public boolean canRecenter()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean recenter(long centerFrequency)
+    {
+        mTunerController.getLock().lock();
+
+        try
+        {
+            if(mTunerController.getFrequency() == centerFrequency)
+            {
+                return true;
+            }
+
+            SortedSet<TunerChannel> tunerChannels = getTunerChannels();
+
+            for(TunerChannel tunerChannel: tunerChannels)
+            {
+                if(!tunerChannel.isAnchored())
+                {
+                    return false;
+                }
+            }
+
+            if(!mTunerController.canTune(centerFrequency) ||
+                (!tunerChannels.isEmpty() && !isValidCenterFrequency(tunerChannels, centerFrequency)))
+            {
+                return false;
+            }
+
+            mTunerController.setFrequency(centerFrequency);
+            return true;
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error moving tuner to planned center frequency [" + centerFrequency + "]", se);
+            return false;
+        }
+        finally
+        {
+            mTunerController.getLock().unlock();
+        }
+    }
+
     /**
      * Allocates a tuner channel source for the tuner channel.
      *

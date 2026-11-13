@@ -85,6 +85,51 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
                                                  String threadName);
 
     /**
+     * Indicates if this manager can source the tuner channel at the tuner's current center frequency.
+     * @param tunerChannel to test
+     * @return true if the channel fits without changing the tuner's center frequency
+     */
+    public boolean canSourceWithoutRetune(TunerChannel tunerChannel)
+    {
+        return false;
+    }
+
+    /**
+     * Indicates if this manager supports moving the tuner's center frequency through recenter().
+     */
+    public boolean canRecenter()
+    {
+        return false;
+    }
+
+    /**
+     * Moves the tuner's center frequency when every sourced channel is anchored and stays within the usable
+     * bandwidth at the new center.  Tuners carrying a traffic channel are not moved.
+     * @param centerFrequency to tune
+     * @return true if the tuner is now at the center frequency
+     */
+    public boolean recenter(long centerFrequency)
+    {
+        return false;
+    }
+
+    /**
+     * Indicates if any channel currently sourced by this manager is anchored (control or conventional).
+     */
+    public boolean hasAnchoredChannel()
+    {
+        for(TunerChannel tunerChannel: getTunerChannels())
+        {
+            if(tunerChannel.isAnchored())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Signals that the complex buffer provider has an error and can no long provider buffers.  The subclass should
      * implement procedures to gracefully shutdown any tuner channel sources that have been provisioned.
      * @param errorMessage describing the error state

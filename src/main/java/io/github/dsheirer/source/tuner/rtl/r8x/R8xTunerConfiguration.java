@@ -28,7 +28,11 @@ public abstract class R8xTunerConfiguration extends RTL2832TunerConfiguration
 {
     public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 3_180_000;
     public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1_782_030_000;
-    public static final double USABLE_BANDWIDTH_PERCENT = 0.98;
+    /**
+     * Share of the sample rate that decodes cleanly.  The R8x IF filter and the RTL-2832 decimation filter roll off
+     * ahead of the band edge, so channels in the outer part of the band lose decode margin.
+     */
+    public static final double USABLE_BANDWIDTH_PERCENT = 0.85;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
     /**
      * Default gain in tenths of a dB
