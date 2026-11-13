@@ -59,7 +59,7 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerSpectralDisplayManager;
 import io.github.dsheirer.spectrum.DisableSpectrumWaterfallMenuItem;
 import io.github.dsheirer.spectrum.ShowTunerMenuItem;
-import io.github.dsheirer.spectrum.SpectralDisplayPanel;
+import io.github.dsheirer.gui.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.DuplicateLibraryDetector;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
@@ -232,10 +232,13 @@ public class SDRTrunk implements Listener<TunerEvent>
                     mSettingsManager, mTunerManager, mUserPreferences, mNowPlayingDetailsVisible);
         }
 
-        mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, mTunerManager.getDiscoveredTunerModel());
+        if(!headless)
+        {
+            mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mTunerManager.getDiscoveredTunerModel());
+        }
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
-            mPlaylistManager, mSettingsManager, mTunerManager.getDiscoveredTunerModel());
+            mPlaylistManager, mTunerManager.getDiscoveredTunerModel());
         mTunerManager.getDiscoveredTunerModel().addListener(tunerSpectralDisplayManager);
         mTunerManager.getDiscoveredTunerModel().addListener(this);
 
@@ -640,14 +643,14 @@ public class SDRTrunk implements Listener<TunerEvent>
             (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
         mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
         mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
+        mLog.info("Stopping spectral display ...");
+        mSpectralPanel.dispose();
         mJavaFxWindowManager.shutdown();
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
         mAudioRecordingManager.stop();
         mResourceMonitor.stop();
 
-        mLog.info("Stopping spectral display ...");
-        mSpectralPanel.clearTuner();
         mLog.info("Stopping tuners ...");
         mTunerManager.stop();
         mLog.info("Shutdown complete.");
@@ -816,7 +819,7 @@ public class SDRTrunk implements Listener<TunerEvent>
                 updateTitle(null);
                 break;
             case NOTIFICATION_SHUTTING_DOWN:
-                Tuner currentTuner = mSpectralPanel.getTuner();
+                Tuner currentTuner = mSpectralPanel != null ? mSpectralPanel.getTuner() : null;
 
                 if(event.hasTuner() && event.getTuner().equals(currentTuner) || currentTuner == null)
                 {
