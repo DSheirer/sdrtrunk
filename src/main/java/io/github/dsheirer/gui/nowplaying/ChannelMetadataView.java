@@ -361,6 +361,10 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         columns.add(NowPlayingCells.column("tuner", "Tuner", null, Pos.CENTER,
             row -> getTunerName(row.getChannelMetadata()), Row::revisionProperty));
 
+        //Channel signal level in dB relative to the tuner's full scale
+        columns.add(NowPlayingCells.column("signal", "Signal", null, Pos.CENTER,
+            row -> getSignalLevel(row.getChannelMetadata()), Row::revisionProperty));
+
         //System and site labels from the channel configuration, hidden by default
         TableColumn<Row,String> system = NowPlayingCells.column("system", "System", null, Pos.CENTER,
             row -> toText(row.getChannelMetadata().getSystemConfigurationIdentifier()), Row::revisionProperty);
@@ -381,8 +385,8 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
             column.setSortable(false);
         }
 
-        //Column numbers in the Swing version of the table, for its stored column widths.  Talker, Tuner, System and Site are new
-        //columns.
+        //Column numbers in the Swing version of the table, for its stored column widths.  Talker, Tuner, Signal, System and
+        //Site are new columns.
         String[] swingColumns = {"status", "decoder", "from", "from.alias", "to", "to.alias", "channel", "frequency",
             "channel.name"};
 
@@ -397,6 +401,15 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         }
 
         return columns;
+    }
+
+    /**
+     * Channel signal level formatted in dB, or null before the first measurement.
+     */
+    private static String getSignalLevel(ChannelMetadata channelMetadata)
+    {
+        Double level = channelMetadata.getSignalLevel();
+        return level == null || level.isInfinite() ? null : String.format("%.1f dB", level);
     }
 
     /**
