@@ -64,11 +64,27 @@ public class RequestedTokens extends Token
     }
 
     /**
+     * Recognized requested token types, in the order that they appeared in the packet.
+     */
+    public List<TokenType> getRequestedTokens()
+    {
+        return mRequestedTokens;
+    }
+
+    /**
+     * Unrecognized requested token identifiers (hexadecimal), sorted.
+     */
+    public List<String> getUnrecognizedRequestedTokens()
+    {
+        return mUnrecognizedRequestedTokens;
+    }
+
+    /**
      * Indicates if this object has requested tokens.
      */
     public boolean hasRequestedTokens()
     {
-        return !mRequestedTokens.isEmpty();
+        return !mRequestedTokens.isEmpty() || !mUnrecognizedRequestedTokens.isEmpty();
     }
 
     @Override

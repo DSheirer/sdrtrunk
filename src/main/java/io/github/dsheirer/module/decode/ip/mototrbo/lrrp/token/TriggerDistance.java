@@ -24,21 +24,23 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 /**
  * LRRP Trigger Distance Token
  *
- * Total Length: 2 bytes
+ * Start Token: 0x78
+ * Total Length: 1 byte identifier plus a 7-bit variable length integer value (1-5 bytes)
+ *
+ * Distance in meters that the radio must move before it sends a triggered location report, e.g. 0x78 0x83 0x74 = 500.
  */
-public class TriggerDistance extends Token
+public class TriggerDistance extends VarIntToken
 {
-    private static final int[] DISTANCE = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
-
     /**
-     * Constructs an instance of a heading token.
+     * Constructs an instance of a trigger distance token.
      *
-     * @param message containing the heading
+     * @param message containing the token
      * @param offset to the start of the token
+     * @param remainingCharacterCount number of payload bytes remaining, counting from the token identifier
      */
-    public TriggerDistance(CorrectedBinaryMessage message, int offset)
+    public TriggerDistance(CorrectedBinaryMessage message, int offset, int remainingCharacterCount)
     {
-        super(message, offset);
+        super(message, offset, remainingCharacterCount);
     }
 
     @Override
@@ -52,12 +54,12 @@ public class TriggerDistance extends Token
      */
     public int getDistance()
     {
-        return getMessage().getInt(DISTANCE, getOffset());
+        return getValue();
     }
 
     @Override
     public String toString()
     {
-        return "TRIGGER DISTANCE:" + getDistance();
+        return "TRIGGER DISTANCE:" + getDistance() + " METERS";
     }
 }
