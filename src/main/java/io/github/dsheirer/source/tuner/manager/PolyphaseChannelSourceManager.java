@@ -203,11 +203,35 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         }
 
         //Strategy 1: reuse the current frequency if the channels fit
-        if(isValidCenterFrequency(channels, currentCenterFrequency))
+        if(isValidCenterFrequency(channels, currentCenterFrequency, false))
         {
             return currentCenterFrequency;
         }
 
+        //Prefer a center that keeps anchored channels away from the band edges, then accept any center that fits
+        Long protectedCenter = findCenterFrequency(channels, channelSetBandwidth, true);
+
+        if(protectedCenter != null)
+        {
+            return protectedCenter;
+        }
+
+        Long center = findCenterFrequency(channels, channelSetBandwidth, false);
+
+        if(center != null)
+        {
+            return center;
+        }
+
+        throw new IllegalArgumentException("Can't calculate valid center frequency for the channel set");
+    }
+
+    /**
+     * Searches for a center frequency that fits the channel set, or returns null when none fits.
+     * @param protectAnchored to keep anchored channels within the protected inner share of the bandwidth
+     */
+    private Long findCenterFrequency(SortedSet<TunerChannel> channels, long channelSetBandwidth, boolean protectAnchored)
+    {
         long bestIntegralFrequency = getIntegralFrequency(channels);
 
         double usableHalfBandwidth = mTunerController.getUsableHalfBandwidth();
@@ -217,7 +241,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         //center of the bandwidth
         long start = channels.first().getFrequency() - (int)mPolyphaseChannelManager.getChannelBandwidth();
 
-        if(isValidCenterFrequency(channels, start))
+        if(isValidCenterFrequency(channels, start, protectAnchored))
         {
             return start;
         }
@@ -226,7 +250,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         {
             start += (int)mPolyphaseChannelManager.getChannelBandwidth();
 
-            if(isValidCenterFrequency(channels, start))
+            if(isValidCenterFrequency(channels, start, protectAnchored))
             {
                 return start;
             }
@@ -245,7 +269,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         long availableTestBandwidth = mTunerController.getUsableBandwidth() - channelSetBandwidth;
         int availableTestChannels = (int)(availableTestBandwidth / mPolyphaseChannelManager.getChannelBandwidth()) + 1;
 
-        if(isValidCenterFrequency(channels,(long)startFrequency))
+        if(isValidCenterFrequency(channels, (long)startFrequency, protectAnchored))
         {
             return (long)startFrequency;
         }
@@ -256,7 +280,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         {
             long testFrequency = (long)(startFrequency - (currentChannel * mPolyphaseChannelManager.getChannelBandwidth()));
 
-            if(isValidCenterFrequency(channels, testFrequency))
+            if(isValidCenterFrequency(channels, testFrequency, protectAnchored))
             {
                 return testFrequency;
             }
@@ -269,22 +293,25 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         long testFrequency = channels.first().getMinFrequency() + mTunerController.getUsableHalfBandwidth();
         long minimumFrequency = testFrequency - availableTestBandwidth;
 
-        if(isValidCenterFrequency(channels,testFrequency))
+        if(isValidCenterFrequency(channels, testFrequency, protectAnchored))
         {
             return testFrequency;
         }
 
+        //The protected pass is a preference, so a coarser walk is enough
+        int step = protectAnchored ? 100 : 1;
+
         while(testFrequency >= minimumFrequency)
         {
-            testFrequency--;
+            testFrequency -= step;
 
-            if(isValidCenterFrequency(channels, testFrequency))
+            if(isValidCenterFrequency(channels, testFrequency, protectAnchored))
             {
                 return testFrequency;
             }
         }
 
-        throw new IllegalArgumentException("Can't calculate valid center frequency for the channel set");
+        return null;
     }
 
     @Override
@@ -308,13 +335,15 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      *
      * @param tunerChannels to test for the candidate center frequency
      * @param centerFrequency to test
+     * @param protectAnchored to require anchored channels to stay within the protected inner share of the bandwidth
      * @return true if the candidate center frequency is valid for the set of channels
      */
-    private boolean isValidCenterFrequency(SortedSet<TunerChannel> tunerChannels, long centerFrequency)
+    private boolean isValidCenterFrequency(SortedSet<TunerChannel> tunerChannels, long centerFrequency,
+                                           boolean protectAnchored)
     {
         for(TunerChannel tunerChannel: tunerChannels)
         {
-            if(!isValidCenterFrequency(tunerChannel, centerFrequency))
+            if(!isValidCenterFrequency(tunerChannel, centerFrequency, protectAnchored && tunerChannel.isAnchored()))
             {
                 return false;
             }
@@ -330,12 +359,15 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      *
      * @param tunerChannel to test for fit
      * @param centerFrequency to test against
+     * @param protect to require the channel to stay within the protected inner share of the bandwidth
      * @return true if the channel will fit when the tuner uses the specified center frequency
      */
-    private boolean isValidCenterFrequency(TunerChannel tunerChannel, long centerFrequency)
+    private boolean isValidCenterFrequency(TunerChannel tunerChannel, long centerFrequency, boolean protect)
     {
-        boolean fits = (tunerChannel.getMinFrequency() >= centerFrequency - mTunerController.getUsableHalfBandwidth()) &&
-            (tunerChannel.getMaxFrequency() <= centerFrequency + mTunerController.getUsableHalfBandwidth());
+        long halfBandwidth = protect ? (long)(mTunerController.getUsableHalfBandwidth() * ANCHORED_USABLE_FRACTION) :
+            mTunerController.getUsableHalfBandwidth();
+        boolean fits = (tunerChannel.getMinFrequency() >= centerFrequency - halfBandwidth) &&
+            (tunerChannel.getMaxFrequency() <= centerFrequency + halfBandwidth);
 
         if(fits && mTunerController.hasMiddleUnusableBandwidth())
         {
@@ -420,6 +452,80 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     public int getTunerChannelCount()
     {
         return mPolyphaseChannelManager.getTunerChannelCount();
+    }
+
+    @Override
+    public boolean canSourceWithoutRetune(TunerChannel tunerChannel)
+    {
+        mTunerController.getLock().lock();
+
+        try
+        {
+            if(!isTunable(tunerChannel))
+            {
+                return false;
+            }
+
+            SortedSet<TunerChannel> tunerChannels = getTunerChannels();
+            tunerChannels.add(tunerChannel);
+            long center = mTunerController.getFrequency();
+
+            //A new control or conventional channel only joins at the current center when it lands away from the edges
+            return canTune(tunerChannels) && isValidCenterFrequency(tunerChannels, center, false) &&
+                isValidCenterFrequency(tunerChannel, center, tunerChannel.isAnchored());
+        }
+        finally
+        {
+            mTunerController.getLock().unlock();
+        }
+    }
+
+    @Override
+    public boolean canRecenter()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean recenter(long centerFrequency)
+    {
+        mTunerController.getLock().lock();
+
+        try
+        {
+            if(mTunerController.getFrequency() == centerFrequency)
+            {
+                return true;
+            }
+
+            SortedSet<TunerChannel> tunerChannels = getTunerChannels();
+
+            for(TunerChannel tunerChannel: tunerChannels)
+            {
+                if(!tunerChannel.isAnchored())
+                {
+                    return false;
+                }
+            }
+
+            if(!mTunerController.canTune(centerFrequency) ||
+                (!tunerChannels.isEmpty() && !isValidCenterFrequency(tunerChannels, centerFrequency, false)))
+            {
+                return false;
+            }
+
+            mTunerController.setFrequency(centerFrequency);
+            return true;
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error moving tuner to planned center frequency [" + centerFrequency + "]", se);
+            return false;
+        }
+        finally
+        {
+            mTunerController.getLock().unlock();
+        }
     }
 
     /**
