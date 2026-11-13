@@ -71,6 +71,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     private IntegerTextField mSystemTextField;
     private IntegerTextField mNacTextField;
     private ToggleSwitch mIgnoreDataCallsButton;
+    private ToggleSwitch mIgnoreEncryptedCallsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private ToggleSwitch mJmbeAGCButton;
     private Slider mJmbeToneGainSlider;
@@ -141,6 +142,15 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setHalignment(directionLabel, HPos.LEFT);
             GridPane.setConstraints(directionLabel, 3, row);
             gridPane.getChildren().add(directionLabel);
+
+            GridPane.setConstraints(getIgnoreEncryptedCallsButton(), 4, row);
+            gridPane.getChildren().add(getIgnoreEncryptedCallsButton());
+
+            Label ignoreEncryptedLabel = new Label("Ignore Encrypted Calls");
+            ignoreEncryptedLabel.setLabelFor(getIgnoreEncryptedCallsButton());
+            GridPane.setHalignment(ignoreEncryptedLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreEncryptedLabel, 5, row);
+            gridPane.getChildren().add(ignoreEncryptedLabel);
 
             Label wacnLabel = new Label("WACN");
             wacnLabel.setLabelFor(getWacnTextField());
@@ -300,6 +310,21 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         return mEventLogConfigurationEditor;
     }
 
+    private ToggleSwitch getIgnoreEncryptedCallsButton()
+    {
+        if(mIgnoreEncryptedCallsButton == null)
+        {
+            mIgnoreEncryptedCallsButton = new AccessibleToggleSwitch();
+            mIgnoreEncryptedCallsButton.setDisable(true);
+            mIgnoreEncryptedCallsButton.setTooltip(new Tooltip("Don't tune a traffic channel when the channel grant indicates the call is encrypted.  " +
+                    "Phase 2: the channel is still tuned when the other timeslot has a clear call."));
+            mIgnoreEncryptedCallsButton.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreEncryptedCallsButton;
+    }
+
     private ToggleSwitch getIgnoreDataCallsButton()
     {
         if(mIgnoreDataCallsButton == null)
@@ -417,6 +442,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
 
             getIgnoreDataCallsButton().setDisable(false);
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
+            getIgnoreEncryptedCallsButton().setDisable(false);
+            getIgnoreEncryptedCallsButton().setSelected(decodeConfig.getIgnoreEncryptedCalls());
             getTrafficChannelPoolSizeSpinner().setDisable(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             getJmbeAGCButton().setSelected(decodeConfig.isAGC());
@@ -433,6 +460,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getSystemTextField().setDisable(true);
             getNacTextField().setDisable(true);
             getIgnoreDataCallsButton().setDisable(true);
+            getIgnoreEncryptedCallsButton().setDisable(true);
+            getIgnoreEncryptedCallsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().setDisable(true);
             getJmbeAGCButton().setDisable(true);
             getJmbeNoiseGainSlider().setDisable(true);
@@ -465,6 +494,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         int nac = getNacTextField().get();
         config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
+        config.setIgnoreEncryptedCalls(getIgnoreEncryptedCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
         config.setComfortNoiseGain((float)getJmbeNoiseGainSlider().getValue());
