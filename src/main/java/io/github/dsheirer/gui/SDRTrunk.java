@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ import io.github.dsheirer.source.tuner.ui.TunerSpectralDisplayManager;
 import io.github.dsheirer.spectrum.DisableSpectrumWaterfallMenuItem;
 import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
+import io.github.dsheirer.util.DuplicateLibraryDetector;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
@@ -81,6 +82,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.prefs.Preferences;
 import javafx.application.Platform;
@@ -152,6 +154,17 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
+
+        Map<String,List<String>> duplicateLibraries = DuplicateLibraryDetector.findDuplicates();
+
+        if(!duplicateLibraries.isEmpty())
+        {
+            mLog.warn("More than one version of these libraries is in the library folder [" +
+                    DuplicateLibraryDetector.getFolder(duplicateLibraries) + "].  This happens when a new version of " +
+                    "sdrtrunk is unzipped over an older one, and it can load the older library code.  Delete the " +
+                    "sdrtrunk folder and unzip the release into an empty folder.\n" +
+                    DuplicateLibraryDetector.describe(duplicateLibraries));
+        }
 
         mResourceMonitor = new ResourceMonitor(mUserPreferences);
 
@@ -252,6 +265,11 @@ public class SDRTrunk implements Listener<TunerEvent>
                     if(tuner != null)
                     {
                         updateTitle(tuner.getPreferredName());
+                    }
+
+                    if(!duplicateLibraries.isEmpty())
+                    {
+                        showDuplicateLibrariesDialog(duplicateLibraries);
                     }
                 }
 
@@ -907,6 +925,28 @@ public class SDRTrunk implements Listener<TunerEvent>
             });
         }
 
+    }
+
+    /**
+     * Warns the user that the library folder holds more than one version of some libraries, which happens when a new
+     * release is unzipped over an older one.  The launch scripts put every jar in the library folder on the class
+     * path, so the older library code can load instead of the newer code.
+     * @param duplicates library name to jar paths, from DuplicateLibraryDetector
+     */
+    private void showDuplicateLibrariesDialog(Map<String,List<String>> duplicates)
+    {
+        String message = "<html><body style='width: 450px'>" +
+                "<p>The sdrtrunk library folder has more than one version of these libraries:</p><br>" +
+                "<pre>" + DuplicateLibraryDetector.describe(duplicates) + "</pre>" +
+                "<p>This happens when a new version of sdrtrunk is unzipped over an older one. sdrtrunk can load " +
+                "the older library code, which can cause crashes or errors that the newer version fixed.</p><br>" +
+                "<p>Close sdrtrunk, delete the sdrtrunk folder that contains this library folder and unzip the " +
+                "release into a new, empty folder:</p><br>" +
+                "<p><b>" + DuplicateLibraryDetector.getFolder(duplicates) + "</b></p><br>" +
+                "<p>Your playlist and settings are stored in your user folder and won't be affected.</p>" +
+                "</body></html>";
+
+        JOptionPane.showMessageDialog(mMainGui, message, "Duplicate Library Versions", JOptionPane.WARNING_MESSAGE);
     }
 
     /**
