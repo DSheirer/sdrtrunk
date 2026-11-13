@@ -52,8 +52,44 @@ plugins {
     id 'org.beryx.runtime' version '2.0.1'
 }
 
-//Version is defined in gradle.properties so that we can CLI override it for nightly builds.
-version = project.findProperty('projectVersion')
+/**
+ * Version is derived from the most recent 'v<version>' git tag (e.g. v1.0.0-beta-1 -> 1.0.0-beta-1).  Commits after
+ * the tag produce a version like 1.0.0-beta-1-14-g4626d567 and uncommitted changes append '-dirty'.  The moving
+ * 'nightly' tag is ignored.  Override with -PprojectVersion=<version> (the nightly build uses 'nightly' so that the
+ * nightly release asset names stay the same).  Falls back to 'unknown' when built outside a git checkout.
+ */
+String gitDescribe = describeGitVersion()
+version = project.findProperty('projectVersion') ?: (gitDescribe ? gitDescribe.substring(1) : 'unknown')
+
+String describeGitVersion()
+{
+    try
+    {
+        def describe = providers.exec {
+            commandLine 'git', 'describe', '--tags', '--match', 'v[0-9]*', '--dirty'
+            ignoreExitValue = true
+        }
+
+        if(describe.result.get().exitValue == 0)
+        {
+            return describe.standardOutput.asText.get().trim()
+        }
+    }
+    catch(Exception e)
+    {
+        logger.warn("Unable to determine version from git tags: " + e.message)
+    }
+
+    return null
+}
+
+tasks.register('printVersion') {
+    description = 'Prints the project version'
+    def projectVersion = version
+    doLast {
+        println projectVersion
+    }
+}
 
 //Java 27 is required for this version of the Project Panama preview/incubator feature
 java {
@@ -109,7 +145,6 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.6.6'
     implementation 'ch.qos.logback:logback-core:1.6.6'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.23.0'
-    implementation 'com.fazecast:jSerialComm:2.11.4'
     implementation 'com.formdev:flatlaf:3.8'
     implementation 'com.formdev:flatlaf-intellij-themes:3.8' //Not imported - Theme.java loads these themes by class name
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
@@ -203,6 +238,7 @@ jar {
         attributes (
                 'Implementation-Title'  : 'sdrtrunk project',
                 'Implementation-Version' : archiveVersion,
+                'Git-Describe'          : gitDescribe ?: 'unknown',
                 'Created-By'            : "Gradle ${gradle.gradleVersion}",
                 'Build-Timestamp'       : new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
                 'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
@@ -279,37 +315,16 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
 }
 
 /**
- * Native library folders to keep in each runtime target image, keyed by the target name prefix.  The tuner libraries
- * (jRTL, jAirspy, etc.) package their native libraries under '<library>/native/<os>-<arch>/' and jSerialComm packages
- * them under '<OS>/<arch>/'.  All other operating system and architecture folders are removed from the target image.
- */
-def nativeFolders = [
-        'linux-aarch64'  : [tuner: 'linux-aarch64',   serial: 'Linux/armv8_64'],
-        'linux-x86_64'   : [tuner: 'linux-x86_64',    serial: 'Linux/x86_64'],
-        'osx-aarch64'    : [tuner: 'macos-aarch64',   serial: 'OSX/aarch64'],
-        'osx-x86_64'     : [tuner: 'macos-x86_64',    serial: 'OSX/x86_64'],
-        'windows-aarch64': [tuner: 'windows-aarch64', serial: 'Windows/aarch64'],
-        'windows-x86_64' : [tuner: 'windows-x86_64',  serial: 'Windows/x86_64']
-]
-
-/**
- * Top level folders that jSerialComm uses for its per-OS native libraries.
- */
-def serialOsFolders = ['Android', 'FreeBSD', 'Linux', 'OpenBSD', 'OSX', 'Solaris', 'Windows'] as Set
-
-/**
  * Rewrites the jar file without the native library folders for other operating systems and architectures.  Fails the
  * build if a jar that contains native libraries doesn't contain the folder for the target.
  * @param jar file to rewrite
- * @param keep native folders for the target (tuner and serial)
- * @param serialOsFolders jSerialComm top level OS folders
+ * @param keep native folder for the target
  * @return number of bytes removed from the jar
  */
-long stripJar(File jar, Map<String,String> keep, Set<String> serialOsFolders) {
+long stripJar(File jar, String keep) {
     def tunerPattern = ~/^[^\/]+\/native\/([^\/]+)\/.*/
-    def serialPrefix = keep.serial + '/'
     def removed = [] as Set
-    def hadTuner = false, keptTuner = false, hadSerial = false, keptSerial = false
+    def hadTuner = false, keptTuner = false
     File temp = new File(jar.parentFile, jar.name + '.tmp')
 
     new java.util.zip.ZipFile(jar).withCloseable { zip ->
@@ -317,23 +332,15 @@ long stripJar(File jar, Map<String,String> keep, Set<String> serialOsFolders) {
 
         entries.each { e ->
             def tuner = tunerPattern.matcher(e.name)
-            def top = e.name.contains('/') ? e.name.substring(0, e.name.indexOf('/')) : null
 
             if(tuner.matches()) {
                 hadTuner = true
-                if(tuner.group(1) == keep.tuner) { keptTuner = true } else { removed << e.name }
-            }
-            else if(top in serialOsFolders) {
-                hadSerial = true
-                if(e.name.startsWith(serialPrefix)) { keptSerial = true } else { removed << e.name }
+                if(tuner.group(1) == keep) { keptTuner = true } else { removed << e.name }
             }
         }
 
         if(hadTuner && !keptTuner) {
-            throw new GradleException("Native strip: ${jar.name} has no native/${keep.tuner} folder")
-        }
-        if(hadSerial && !keptSerial) {
-            throw new GradleException("Native strip: ${jar.name} has no ${keep.serial} folder")
+            throw new GradleException("Native strip: ${jar.name} has no native/${keep} folder")
         }
 
         if(!removed.isEmpty()) {
@@ -362,21 +369,18 @@ long stripJar(File jar, Map<String,String> keep, Set<String> serialOsFolders) {
 
 /**
  * Removes the native libraries for other operating systems and architectures from the jars in each runtime target
- * image, before the runtimeZip tasks package the images.
+ * image, before the runtimeZip tasks package the images.  The tuner libraries (jRTL, jAirspy, etc.) package their
+ * native libraries under '<library>/native/<os>-<arch>/', where the folder name matches the runtime target name
+ * '<os>-<arch>-v<version>' without the version suffix, except that the libraries use 'macos' where the target uses 'osx'.
  */
 tasks.named('runtime') {rt ->
     rt.doLast {
         rt.targetPlatforms.get().keySet().each { target ->
-            def key = nativeFolders.keySet().find { target.startsWith(it + '-') }
-
-            if(key == null) {
-                throw new GradleException("Native strip: no native folder mapping for runtime target [${target}]")
-            }
-
+            def nativeFolder = (target - "-v${version}").replaceFirst(/^osx-/, 'macos-')
             def lib = new File(rt.imageDir.asFile, "${project.name}-${target}/lib")
             long total = 0
             lib.listFiles({ File f -> f.name.endsWith('.jar') } as FileFilter).each { jar ->
-                total += stripJar(jar, nativeFolders[key], serialOsFolders)
+                total += stripJar(jar, nativeFolder)
             }
             logger.lifecycle("Native strip: removed ${String.format('%.1f', total / 1048576)} MB of other " +
                     "platform native libraries from [${target}]")

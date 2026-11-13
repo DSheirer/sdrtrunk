@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
@@ -50,7 +51,7 @@ public class ShowTunerMenuItem extends JMenuItem
                     public void run()
                     {
                         SystemProperties properties = SystemProperties.getInstance();
-                        properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
+                        properties.set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true);
                         mDiscoveredTunerModel.broadcast(new TunerEvent(mTuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
                     }
                 });

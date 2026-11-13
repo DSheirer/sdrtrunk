@@ -18,7 +18,10 @@
  */
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.gui.spectrum.SpectralDisplayPanel;
+import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
 import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.util.ThreadPool;
 import jiconfont.icons.font_awesome.FontAwesome;
 import io.github.dsheirer.gui.theme.ThemedFontIcon;
 
@@ -44,8 +47,8 @@ public class DisableSpectrumWaterfallMenuItem extends JMenuItem
 
         addActionListener(e -> {
             SystemProperties properties = SystemProperties.getInstance();
-            properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, false);
-            mSpectralDisplayPanel.clearTuner();
+            properties.set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, false);
+            ThreadPool.CACHED.submit(() -> mSpectralDisplayPanel.clearTuner());
         });
     }
 }

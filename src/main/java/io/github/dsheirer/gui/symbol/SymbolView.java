@@ -19,18 +19,23 @@
 
 package io.github.dsheirer.gui.symbol;
 
+import io.github.dsheirer.gui.spectrum.SpectralDisplayTheme;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.sample.Listener;
+import java.net.URL;
 import java.util.Arrays;
 import javafx.application.Platform;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.ScatterChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 /**
- * Chart display for received QPSK symbols
+ * Chart display for received QPSK symbols.  Colors follow a spectral display theme: the theme background, the
+ * spectrum trace color for the symbols, and the theme line color for the grid, axes and legend.
  */
 public class SymbolView extends ChannelView implements Listener<Float>
 {
@@ -57,12 +62,60 @@ public class SymbolView extends ChannelView implements Listener<Float>
             mSymbolSeries.getData().add(new XYChart.Data<>(x, 0));
         }
 
+        getStyleClass().add("symbol-view");
+        URL stylesheet = SymbolView.class.getResource("/spectral_display.css");
+
+        if(stylesheet != null)
+        {
+            getStylesheets().add(stylesheet.toExternalForm());
+        }
+
         mSymbolChart.getData().add(mSymbolSeries);
         mSymbolChart.setMaxHeight(Double.MAX_VALUE);
         mSymbolChart.setMaxWidth(Double.MAX_VALUE);
         mSymbolChart.setAnimated(false);
         VBox.setVgrow(mSymbolChart, Priority.ALWAYS);
         getChildren().add(mSymbolChart);
+    }
+
+    /**
+     * Applies the theme colors now and whenever the theme changes.  JavaFX thread only.
+     * @param theme to follow, for example the theme shared by the spectral displays
+     */
+    public void followTheme(ObservableValue<SpectralDisplayTheme> theme)
+    {
+        theme.addListener((ob, ov, nv) -> setTheme(nv));
+        setTheme(theme.getValue());
+    }
+
+    /**
+     * Applies the theme colors to the chart.  JavaFX thread only.
+     */
+    public void setTheme(SpectralDisplayTheme theme)
+    {
+        if(theme == null)
+        {
+            theme = SpectralDisplayTheme.getDefault();
+        }
+
+        Color line = theme.getLine();
+        Color text = Color.color(line.getRed(), line.getGreen(), line.getBlue());
+        Color trace = theme.getTrace();
+        Color symbol = Color.color(trace.getRed(), trace.getGreen(), trace.getBlue(),
+                Math.max(0.6, trace.getOpacity()));
+
+        //Looked-up colors used by the symbol-view rules in spectral_display.css
+        setStyle("symbol-background: " + toWeb(theme.getBackground()) + ";" +
+                "symbol-color: " + toWeb(symbol) + ";" +
+                "symbol-grid: " + toWeb(theme.getLine(0.35)) + ";" +
+                "symbol-text: " + toWeb(text) + ";");
+    }
+
+    private static String toWeb(Color color)
+    {
+        return String.format("#%02x%02x%02x%02x", Math.round(color.getRed() * 255),
+                Math.round(color.getGreen() * 255), Math.round(color.getBlue() * 255),
+                Math.round(color.getOpacity() * 255));
     }
 
     /**

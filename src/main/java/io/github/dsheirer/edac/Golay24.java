@@ -68,6 +68,29 @@ public class Golay24
      */
     public static int checkAndCorrect(CorrectedBinaryMessage message, int startIndex)
     {
+        //The correction below indexes the word from bit 0 and takes the parity over the whole message, so it is only
+        //correct for a message that is exactly the 24-bit word.  Decode any other word in a 24-bit copy.
+        if(startIndex != 0 || message.size() != 24)
+        {
+            CorrectedBinaryMessage word = new CorrectedBinaryMessage(24);
+            int original = message.getInt(startIndex, startIndex + 23);
+            word.load(0, 24, original);
+            int result = checkAndCorrectWord(word);
+            int corrected = word.getInt(0, 23);
+            message.load(startIndex, 24, corrected);
+            message.incrementCorrectedBitCount(Integer.bitCount(original ^ corrected));
+            return result;
+        }
+
+        return checkAndCorrectWord(message);
+    }
+
+    /**
+     * Error detection and correction of a message that is exactly one 24-bit word.
+     */
+    private static int checkAndCorrectWord(CorrectedBinaryMessage message)
+    {
+        int startIndex = 0;
         boolean parityError = message.cardinality() % 2 != 0;
 
         int syndrome = getSyndrome(message, startIndex);
