@@ -234,6 +234,7 @@ public class DecoderFactory
         if(channel.getChannelType() == ChannelType.STANDARD)
         {
             p25TrafficChannelManager = new P25TrafficChannelManager(channel);
+            p25TrafficChannelManager.setAliasList(aliasList);
         }
         else if(trafficChannelManager instanceof P25TrafficChannelManager p25)
         {
@@ -308,6 +309,7 @@ public class DecoderFactory
             if(channel.getChannelType() == ChannelType.STANDARD)
             {
                 P25TrafficChannelManager primaryTCM = new P25TrafficChannelManager(channel);
+                primaryTCM.setAliasList(aliasList);
                 modules.add(primaryTCM);
                 modules.add(new P25P1DecoderState(channel, primaryTCM));
             }
@@ -923,6 +925,7 @@ public class DecoderFactory
                     DecodeConfigP25Phase1 copyP25P1 = new DecodeConfigP25Phase1();
                     copyP25P1.setIgnoreDataCalls(originalP25P1.getIgnoreDataCalls());
                     copyP25P1.setIgnoreEncryptedCalls(originalP25P1.getIgnoreEncryptedCalls());
+                    copyP25P1.setIgnoreUnaliasedTalkgroups(originalP25P1.getIgnoreUnaliasedTalkgroups());
                     copyP25P1.setModulation(originalP25P1.getModulation());
                     copyP25P1.setTrafficChannelPoolSize(originalP25P1.getTrafficChannelPoolSize());
                     transferJMBESettings(originalP25P1, copyP25P1);
@@ -932,6 +935,7 @@ public class DecoderFactory
                     DecodeConfigP25Phase2 copyP25P2 = new DecodeConfigP25Phase2();
                     copyP25P2.setIgnoreDataCalls(originalP25P2.getIgnoreDataCalls());
                     copyP25P2.setIgnoreEncryptedCalls(originalP25P2.getIgnoreEncryptedCalls());
+                    copyP25P2.setIgnoreUnaliasedTalkgroups(originalP25P2.getIgnoreUnaliasedTalkgroups());
                     copyP25P2.setTrafficChannelPoolSize(originalP25P2.getTrafficChannelPoolSize());
                     transferJMBESettings(originalP25P2, copyP25P2);
 
