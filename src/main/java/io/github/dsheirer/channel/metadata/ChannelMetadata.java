@@ -332,10 +332,12 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
                                 if(mToIdentifier != null)
                                 {
                                     mToIdentifierAliases = mAliasList.getAliases(mToIdentifier);
+                                    broadcastUpdate(ChannelMetadataField.USER_TO);
                                 }
                                 if(mFromIdentifier != null)
                                 {
                                     mFromIdentifierAliases = mAliasList.getAliases(mFromIdentifier);
+                                    broadcastUpdate(ChannelMetadataField.USER_FROM);
                                 }
                             }
                         }
