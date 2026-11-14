@@ -24,6 +24,7 @@ import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
+import io.github.dsheirer.channel.metadata.SignalLevelMonitor;
 import io.github.dsheirer.channel.state.AbstractChannelState;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
@@ -477,6 +478,13 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences,
             request.getTrafficChannelManager(), request.getChannelDescriptor());
         processingChain.addModules(modules);
+
+        processingChain.addModule(new SignalLevelMonitor(level -> {
+            for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
+            {
+                channelMetadata.setSignalLevel(level);
+            }
+        }));
 
         //Post preload data from the request to the event bus.  Modules that can handle preload data will annotate
         //their processor method with @Subscribe to receive each specific preload data content class.
