@@ -27,6 +27,7 @@ import io.github.dsheirer.controller.config.Configuration;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.edacs.DecodeConfigEDACS;
 import io.github.dsheirer.module.decode.ltrnet.DecodeConfigLTRNet;
 import io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
@@ -41,6 +42,7 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = DecodeConfigAM.class, name = "decodeConfigAM"),
     @JsonSubTypes.Type(value = DecodeConfigDMR.class, name = "decodeConfigDMR"),
+    @JsonSubTypes.Type(value = DecodeConfigEDACS.class, name = "decodeConfigEDACS"),
     @JsonSubTypes.Type(value = DecodeConfigLTRNet.class, name = "decodeConfigLTRNet"),
     @JsonSubTypes.Type(value = DecodeConfigLTRStandard.class, name = "decodeConfigLTRStandard"),
     @JsonSubTypes.Type(value = DecodeConfigMPT1327.class, name = "decodeConfigMPT1327"),
