@@ -21,7 +21,9 @@ package io.github.dsheirer.gui.spectrum;
 
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
 import io.github.dsheirer.gui.spectrum.layer.ChannelLayer;
+import io.github.dsheirer.gui.spectrum.layer.RadioReferenceLayer;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.ISourceEventProcessor;
@@ -56,9 +58,11 @@ public class TunerSpectralDisplay extends DftSpectralDisplay implements ISourceE
     public static final String SETTINGS_PREFIX = "spectral.display";
     private static final String CHANNEL_DISPLAY = "channel.display";
     private static final String CHANNEL_HOVER_DETAILS = "channel.hover.details";
+    private static final String RADIO_REFERENCE_HOVER = "radioreference.hover";
     private static final String MESSAGE_NO_TUNER = "No tuner selected - choose a tuner in the display settings";
 
     private final ChannelLayer mChannelLayer;
+    private final RadioReferenceLayer mRadioReferenceLayer;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
     private final Object mTunerLock = new Object();
     private final ReadOnlyObjectWrapper<Tuner> mDisplayedTuner = new ReadOnlyObjectWrapper<>();
@@ -75,9 +79,12 @@ public class TunerSpectralDisplay extends DftSpectralDisplay implements ISourceE
     public TunerSpectralDisplay(PlaylistManager playlistManager, DiscoveredTunerModel discoveredTunerModel,
                                 boolean saveSettings)
     {
-        this(playlistManager != null ? playlistManager.getChannelModel() : null,
-                playlistManager != null ? playlistManager.getChannelProcessingManager() : null,
-                discoveredTunerModel, saveSettings);
+        this(new ChannelLayer(playlistManager != null ? playlistManager.getChannelModel() : null,
+                playlistManager != null ? playlistManager.getChannelProcessingManager() : null),
+            new RadioReferenceLayer(playlistManager != null && playlistManager.getRadioReference() != null ?
+                playlistManager.getRadioReference().getFrequencyIndex() : null,
+                playlistManager != null ? new RadioReferencePlaylistActions(playlistManager) : null),
+            discoveredTunerModel, saveSettings);
     }
 
     /**
@@ -90,14 +97,17 @@ public class TunerSpectralDisplay extends DftSpectralDisplay implements ISourceE
     public TunerSpectralDisplay(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
                                 DiscoveredTunerModel discoveredTunerModel, boolean saveSettings)
     {
-        this(new ChannelLayer(channelModel, channelProcessingManager), discoveredTunerModel, saveSettings);
+        this(new ChannelLayer(channelModel, channelProcessingManager), new RadioReferenceLayer(null, null),
+            discoveredTunerModel, saveSettings);
     }
 
-    private TunerSpectralDisplay(ChannelLayer channelLayer, DiscoveredTunerModel discoveredTunerModel,
-                                 boolean saveSettings)
+    private TunerSpectralDisplay(ChannelLayer channelLayer, RadioReferenceLayer radioReferenceLayer,
+                                 DiscoveredTunerModel discoveredTunerModel, boolean saveSettings)
     {
-        super(SETTINGS_PREFIX, saveSettings, channelLayer);
+        //The radio reference layer draws after the channel layer, so its card is on top
+        super(SETTINGS_PREFIX, saveSettings, channelLayer, radioReferenceLayer);
         mChannelLayer = channelLayer;
+        mRadioReferenceLayer = radioReferenceLayer;
         mDiscoveredTunerModel = discoveredTunerModel;
         getSpectralDisplay().messageProperty().set(MESSAGE_NO_TUNER);
 
@@ -108,6 +118,8 @@ public class TunerSpectralDisplay extends DftSpectralDisplay implements ISourceE
         mChannelLayer.hoverDetailsProperty().set(properties.get(key(CHANNEL_HOVER_DETAILS), true));
         mChannelLayer.channelDisplayProperty().addListener((ob, ov, nv) -> save(CHANNEL_DISPLAY, nv.name()));
         mChannelLayer.hoverDetailsProperty().addListener((ob, ov, nv) -> save(CHANNEL_HOVER_DETAILS, nv));
+        mRadioReferenceLayer.hoverCandidatesProperty().set(properties.get(key(RADIO_REFERENCE_HOVER), true));
+        mRadioReferenceLayer.hoverCandidatesProperty().addListener((ob, ov, nv) -> save(RADIO_REFERENCE_HOVER, nv));
 
         installConfigPanel();
     }

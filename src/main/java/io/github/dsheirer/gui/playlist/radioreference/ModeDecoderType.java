@@ -70,8 +70,28 @@ public enum ModeDecoderType
     }
 
     /**
-     * Lookup the entry that matches the mode
-     *
+     * Lookup the matching entry for a radio reference mode name, e.g. FMN
+     * @param name of the mode
+     * @return matching entry or UNKNOWN
+     */
+    public static ModeDecoderType fromName(String name)
+    {
+        if(name != null)
+        {
+            for(ModeDecoderType modeDecoderType : ModeDecoderType.values())
+            {
+                if(modeDecoderType.getValue().contentEquals(name.trim().toLowerCase()))
+                {
+                    return modeDecoderType;
+                }
+            }
+        }
+
+        return UNKNOWN;
+    }
+
+    /**
+     * Lookup the matching entry for the radio reference mode
      * @param mode to match
      * @return matching entry or UNKNOWN
      */

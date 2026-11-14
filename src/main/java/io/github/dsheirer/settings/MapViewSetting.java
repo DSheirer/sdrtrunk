@@ -22,7 +22,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
+/**
+ * Map view stored in the settings file by older versions of the application.  Only read so that settings files from
+ * older versions still load and their default view can be moved to the map preferences (MapPreference).  The settings
+ * manager drops map views after loading, so they aren't saved again.
+ */
 @JsonSubTypes.Type(value = MapViewSetting.class, name = "mapViewSetting")
+@Deprecated
 public class MapViewSetting extends Setting
 {
     private double mLatitude;

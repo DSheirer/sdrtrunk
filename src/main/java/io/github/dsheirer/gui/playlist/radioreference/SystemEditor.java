@@ -139,8 +139,9 @@ public class SystemEditor extends VBox
 
         if(systems != null && !systems.isEmpty())
         {
-            Collections.sort(systems, new SystemComparator());
+            //The systems list belongs to a cached state or county info shared with other callers, so sort the items
             getSystemComboBox().getItems().addAll(systems);
+            getSystemComboBox().getItems().sort(new SystemComparator());
 
             int preferredSystemId = mUserPreferences.getRadioReferencePreference().getPreferredSystemId(mLevel);
 
@@ -302,7 +303,16 @@ public class SystemEditor extends VBox
                         //have a county ID of 99,999 as observed from API (undocumented).
                         if(countyId > 0 && countyId != 99999)
                         {
-                            countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
+                            //The county name is only for display, so a failed lookup shouldn't fail the system load
+                            try
+                            {
+                                countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
+                            }
+                            catch(RadioReferenceException rre)
+                            {
+                                mLog.warn("Unable to retrieve county [" + countyId + "] for site [" +
+                                    site.getSiteNumber() + "] of system [" + system.getSystemId() + "] - " + rre.getMessage());
+                            }
                         }
 
                         enrichedSites.add(new EnrichedSite(site, countyInfo));

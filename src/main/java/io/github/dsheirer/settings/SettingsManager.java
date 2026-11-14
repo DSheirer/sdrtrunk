@@ -27,7 +27,6 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEvent;
 import io.github.dsheirer.util.ThreadPool;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +50,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
     private List<SettingChangeListener> mListeners = new ArrayList<>();
     private boolean mLoadingSettings = false;
     private AtomicBoolean mSettingsSavePending = new AtomicBoolean();
+    private MapViewSetting mLegacyMapView;
 
     public SettingsManager()
     {
@@ -198,32 +198,15 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         broadcastSettingChange(setting);
     }
 
-    public MapViewSetting getMapViewSetting(String name, GeoPosition position, int zoom)
+    /**
+     * Default map view read from a settings file written by an older version of the application, which stored the
+     * map view here.  The map view is stored in the map preferences now.
+     * @return map view, or null if the settings file didn't have one
+     */
+    @Deprecated
+    public MapViewSetting getLegacyMapView()
     {
-        MapViewSetting loc = mSettings.getMapViewSetting(name);
-
-        if(loc != null)
-        {
-            return loc;
-        }
-        else
-        {
-            MapViewSetting newLoc = new MapViewSetting(name, position, zoom);
-
-            addSetting(newLoc);
-
-            return newLoc;
-        }
-    }
-
-    public void setMapViewSetting(String name, GeoPosition position, int zoom)
-    {
-        MapViewSetting loc = getMapViewSetting(name, position, zoom);
-
-        loc.setGeoPosition(position);
-        loc.setZoom(zoom);
-
-        scheduleSettingsSave();
+        return mLegacyMapView;
     }
 
     private void save()
@@ -294,6 +277,21 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         if(mSettings == null)
         {
             mSettings = new Settings();
+        }
+
+        //Older versions stored the map view here.  Keep the default view so that it can be moved to the map
+        //preferences, and remove the map views so that they aren't saved again.
+        for(Setting setting: new ArrayList<>(mSettings.getSettings()))
+        {
+            if(setting instanceof MapViewSetting mapViewSetting)
+            {
+                if("Default".equals(mapViewSetting.getName()))
+                {
+                    mLegacyMapView = mapViewSetting;
+                }
+
+                mSettings.removeSetting(setting);
+            }
         }
 
         mLoadingSettings = false;

@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.spectrum.layer;
 
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -34,18 +35,22 @@ import io.github.dsheirer.gui.spectrum.SpectralDisplayLayer;
 import io.github.dsheirer.gui.spectrum.SpectralDisplayModel;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.util.ThreadPool;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
@@ -717,6 +722,12 @@ public class ChannelLayer extends SpectralDisplayLayer
                 if(tunerChannel != null && tunerChannel.getMinFrequency() <= frequency &&
                         frequency <= tunerChannel.getMaxFrequency())
                 {
+                    //Traffic channels are started and stopped by their decoder, not from the playlist
+                    if(!channel.isTrafficChannel() && mChannelProcessingManager != null)
+                    {
+                        items.add(createEnableItem(channel));
+                    }
+
                     MenuItem item = new MenuItem("View/Edit: " + channel.getShortTitle());
                     item.setOnAction(e -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
                     items.add(item);
@@ -726,6 +737,52 @@ public class ChannelLayer extends SpectralDisplayLayer
         }
 
         return items;
+    }
+
+    /**
+     * Menu item that starts the channel when it's disabled, or stops it when it's enabled, in the background
+     */
+    private MenuItem createEnableItem(Channel channel)
+    {
+        boolean processing = channel.isProcessing();
+        MenuItem item = new MenuItem((processing ? "Disable: " : "Enable: ") + channel.getShortTitle());
+        item.setOnAction(e -> ThreadPool.CACHED.execute(() -> {
+            try
+            {
+                if(processing)
+                {
+                    mChannelProcessingManager.stop(channel);
+                }
+                else
+                {
+                    mChannelProcessingManager.start(channel);
+                }
+            }
+            catch(ChannelException ce)
+            {
+                showError((processing ? "Can't stop " : "Can't start ") + channel.getShortTitle(), ce.getMessage());
+            }
+        }));
+        return item;
+    }
+
+    /**
+     * Shows an error alert over the display.  Can be called from any thread.
+     */
+    private void showError(String header, String message)
+    {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+            alert.setTitle("Channel");
+            alert.setHeaderText(header);
+
+            if(getSpectralDisplay() != null && getSpectralDisplay().getScene() != null)
+            {
+                alert.initOwner(getSpectralDisplay().getScene().getWindow());
+            }
+
+            alert.show();
+        });
     }
 
     /**

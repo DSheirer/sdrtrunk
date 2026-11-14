@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.spectrum.layer;
 
+import io.github.dsheirer.gui.spectrum.CursorReadout;
 import io.github.dsheirer.gui.spectrum.DisplayCursor;
 import io.github.dsheirer.gui.spectrum.DisplaySection;
 import io.github.dsheirer.gui.spectrum.RenderArea;
@@ -26,6 +27,7 @@ import io.github.dsheirer.gui.spectrum.SpectralDisplayTheme;
 import io.github.dsheirer.gui.spectrum.SpectralDisplayLayer;
 import io.github.dsheirer.gui.spectrum.SpectralDisplayModel;
 import java.text.DecimalFormat;
+import java.util.List;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -44,8 +46,6 @@ public class FrequencyLayer extends SpectralDisplayLayer
     private static final double INSET_PADDING = 8.0;
     private static final double MAJOR_TICK = 6.0;
     private static final double MINOR_TICK = 3.0;
-    private static final DecimalFormat CURSOR_FREQUENCY_FORMAT = new DecimalFormat("0.00000");
-    private static final DecimalFormat CURSOR_LEVEL_FORMAT = new DecimalFormat("0.0");
 
     private final Text mMeasure = new Text();
     private final double mTextHeight;
@@ -178,49 +178,34 @@ public class FrequencyLayer extends SpectralDisplayLayer
         gc.setLineWidth(1.0);
         gc.strokeLine(x, 0, x, area.plotHeight());
 
-        if(cursor.section() != section)
+        //Another layer may show the readout lines in a larger callout
+        if(cursor.section() != section || getSpectralDisplay().isCursorReadoutReplaced(cursor, area))
         {
             return;
         }
 
-        String frequency = CURSOR_FREQUENCY_FORMAT.format(cursor.frequency() / 1E6) + " MHz";
-        String level = null;
+        List<String> lines = CursorReadout.lines(cursor, area, model);
+        double textWidth = 0;
 
-        if(section == DisplaySection.SPECTRUM && cursor.y() <= area.plotHeight() && area.plotHeight() > 0)
+        for(String line: lines)
         {
-            double decibels = -(cursor.y() / area.plotHeight()) * model.getDynamicRange();
-            level = CURSOR_LEVEL_FORMAT.format(decibels) + " dBFS";
+            textWidth = Math.max(textWidth, measure(line));
         }
 
-        double textWidth = measure(frequency);
-
-        if(level != null)
-        {
-            textWidth = Math.max(textWidth, measure(level));
-        }
-
-        double lines = level != null ? 2 : 1;
         double boxWidth = textWidth + 8;
-        double boxHeight = (mTextHeight * lines) + 4;
-        double boxX = cursor.x() + 8;
-
-        if(boxX + boxWidth > area.width())
-        {
-            boxX = cursor.x() - 8 - boxWidth;
-        }
-
-        double boxY = Math.max(0, Math.min(area.plotHeight() - boxHeight, cursor.y() - boxHeight - 4));
+        double boxHeight = (mTextHeight * lines.size()) + 4;
+        double boxX = CursorReadout.x(cursor, boxWidth, area);
+        double boxY = CursorReadout.y(cursor, boxHeight, area);
         gc.setFill(getTheme().getBackground(0.7));
         gc.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 6, 6);
         gc.setFill(color);
         gc.setFont(FONT);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setTextBaseline(VPos.TOP);
-        gc.fillText(frequency, boxX + 4, boxY + 2);
 
-        if(level != null)
+        for(int index = 0; index < lines.size(); index++)
         {
-            gc.fillText(level, boxX + 4, boxY + 2 + mTextHeight);
+            gc.fillText(lines.get(index), boxX + 4, boxY + 2 + (index * mTextHeight));
         }
     }
 

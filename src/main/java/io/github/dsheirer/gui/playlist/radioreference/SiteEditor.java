@@ -247,118 +247,7 @@ public class SiteEditor extends GridPane
      */
     private DecodeConfiguration getDecodeConfiguration(DecoderType decoderType, Site site, SystemInformation systemInformation)
     {
-        if(decoderType == null)
-        {
-            return null;
-        }
-
-        switch(decoderType)
-        {
-            case DMR:
-                DecodeConfigDMR dmr = new DecodeConfigDMR();
-                List<TimeslotFrequency> timeslotFrequencies = mRadioReferenceDecoder
-                    .getTimeslotFrequencies(systemInformation, site);
-                dmr.setTimeslotMap(timeslotFrequencies);
-                return dmr;
-            case NXDN:
-                Flavor flavor = mRadioReferenceDecoder.getFlavor(systemInformation);
-
-                TransmissionMode mode = TransmissionMode.M4800;
-
-                /**
-                 * 9600 bps Flavors
-                 * ----------------------------
-                 * 29 - NEXEDGE 9600
-                 * 45 - Conventional Networked
-                 *
-                 * 4800 bps Flavors
-                 * ---------------------------
-                 * 11 - Narrowband Networked
-                 * 42 - NEXEDGE 4800
-                 * 44 - Icom IDAS Type C
-                 *
-                 * Type-D (also 4800 bps)  Flavors
-                 * ---------------------------
-                 * 36 - Icom IDAS Type D
-                 * 47 - Kenwood Type D
-                 */
-                mode = switch(flavor.getName())
-                {
-                    case "NEXEDGE 9600", "Conventional Networked" -> TransmissionMode.M9600;
-                    case "Icom IDAS Type D", "Kenwood Type D" -> TransmissionMode.TYPE_D;
-                    default -> TransmissionMode.M4800;
-                };
-
-                DecodeConfigNXDN nxdn = new DecodeConfigNXDN(mode);
-                List<ChannelFrequency> channelMap = mRadioReferenceDecoder.getChannelMap(systemInformation, site);
-                nxdn.setChannelMap(channelMap);
-                return nxdn;
-            case P25_PHASE1:
-                DecodeConfiguration p1config = DecoderFactory.getDecodeConfiguration(decoderType);
-
-                if(mRadioReferenceDecoder.isLSM(site))
-                {
-                    if(p1config instanceof DecodeConfigP25Phase1)
-                    {
-                        ((DecodeConfigP25Phase1)p1config).setModulation(Modulation.CQPSK);
-                    }
-                }
-                return p1config;
-            case P25_PHASE2:
-                DecodeConfigP25Phase2 config = new DecodeConfigP25Phase2();
-
-                int nac = 0;
-
-                if(site != null && site.getNac() != null)
-                {
-                    try
-                    {
-                        nac = Integer.parseInt(site.getNac(), 16);
-                    }
-                    catch(Exception e)
-                    {
-                        //Do nothing
-                    }
-                }
-
-                int wacn = 0;
-                int system = 0;
-
-                if(systemInformation != null && systemInformation.getRadioNetworks() != null &&
-                    !systemInformation.getRadioNetworks().isEmpty())
-                {
-                    RadioNetwork radioNetwork = systemInformation.getRadioNetworks().get(0);
-
-                    if(radioNetwork.getWacn() != null)
-                    {
-                        try
-                        {
-                            wacn = Integer.parseInt(radioNetwork.getWacn(), 16);
-                        }
-                        catch(Exception e)
-                        {
-                            //Do nothing
-                        }
-                    }
-
-                    if(radioNetwork.getSystemId() != null)
-                    {
-                        try
-                        {
-                            system = Integer.parseInt(radioNetwork.getSystemId(), 16);
-                        }
-                        catch(Exception e)
-                        {
-                            //Do nothing
-                        }
-                    }
-                }
-
-                config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
-                return config;
-            default:
-                return DecoderFactory.getDecodeConfiguration(decoderType);
-        }
+        return mRadioReferenceDecoder.getDecodeConfiguration(decoderType, site, systemInformation);
     }
 
     /**
@@ -621,7 +510,7 @@ public class SiteEditor extends GridPane
             if(controls.size() == 1)
             {
                 SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
-                sourceConfigTuner.setFrequency((long)(controls.get(0).getFrequency() * 1E6));
+                sourceConfigTuner.setFrequency(controls.get(0).getFrequencyHz());
                 channel.setSourceConfiguration(sourceConfigTuner);
             }
             else
@@ -630,7 +519,7 @@ public class SiteEditor extends GridPane
 
                 for(SiteFrequency control: controls)
                 {
-                    sourceConfig.addFrequency((long)(control.getFrequency() * 1E6));
+                    sourceConfig.addFrequency(control.getFrequencyHz());
                 }
 
                 channel.setSourceConfiguration(sourceConfig);
@@ -856,7 +745,7 @@ public class SiteEditor extends GridPane
 
     private static long getFrequency(SiteFrequency siteFrequency)
     {
-        return (long)(siteFrequency.getFrequency() * 1E6);
+        return siteFrequency.getFrequencyHz();
     }
 
     /**

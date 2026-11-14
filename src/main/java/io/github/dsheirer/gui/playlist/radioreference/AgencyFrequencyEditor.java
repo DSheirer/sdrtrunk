@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.Category;
 import io.github.dsheirer.rrapi.type.Frequency;
 import io.github.dsheirer.rrapi.type.Mode;
@@ -153,19 +154,18 @@ public class AgencyFrequencyEditor extends GridPane
     {
         clear();
 
-        if(categories != null)
-        {
-            Collections.sort(categories, new CategoryComparator());
-        }
-
         if(categories != null && !categories.isEmpty())
         {
+            //The categories list belongs to a cached agency or county info shared with other callers, so change a copy
+            List<Category> sorted = new ArrayList<>(categories);
+            sorted.sort(new CategoryComparator());
+
             // Only allow the combined list of all categories if there aren't that many
-            if (categories.size() < 10) {
-                categories.add(0, ALL_CATEGORIES);
+            if (sorted.size() < 10) {
+                sorted.add(0, ALL_CATEGORIES);
             }
-            getCategoryComboBox().getItems().addAll(categories);
-            getCategoryComboBox().getSelectionModel().select(categories.get(0));
+            getCategoryComboBox().getItems().addAll(sorted);
+            getCategoryComboBox().getSelectionModel().select(sorted.get(0));
         }
         else
         {
@@ -441,6 +441,17 @@ public class AgencyFrequencyEditor extends GridPane
 
                             Collections.sort(frequencies, new FrequencyComparator());
 
+                            //Load the cached modes map here so that the mode column doesn't call the service on the FX
+                            //thread.  On failure, the mode column shows an error and the frequencies are still listed.
+                            try
+                            {
+                                mRadioReference.getService().getModesMap();
+                            }
+                            catch(RadioReferenceException rre)
+                            {
+                                mLog.warn("Unable to retrieve radio reference modes - " + rre.getMessage());
+                            }
+
                             Platform.runLater(() -> {
                                 getFrequencyTableView().getItems().addAll(frequencies);
                                 setLoading(false);
@@ -449,7 +460,10 @@ public class AgencyFrequencyEditor extends GridPane
                         catch(Throwable t)
                         {
                             mLog.error("Error retrieving frequencies for subcategory [" + subCategory.getName() + "]", t);
-                            Platform.runLater(() -> new RadioReferenceUnavailableAlert(getSubCategoryComboBox()).showAndWait());
+                            Platform.runLater(() -> {
+                                setLoading(false);
+                                new RadioReferenceUnavailableAlert(getSubCategoryComboBox()).showAndWait();
+                            });
                         }
                     });
                 }

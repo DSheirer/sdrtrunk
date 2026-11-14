@@ -125,6 +125,18 @@ public abstract class SpectralDisplayLayer
     }
 
     /**
+     * Indicates if this layer draws its own callout in place of the cursor readout for the mouse position, so the
+     * frequency layer skips the readout.  The callout should start with the {@link CursorReadout} lines and use its
+     * placement.  Called on the JavaFX application thread before the layers draw the section under the mouse.
+     * @param cursor mouse position
+     * @param area of the section under the mouse
+     */
+    public boolean replacesCursorReadout(DisplayCursor cursor, RenderArea area)
+    {
+        return false;
+    }
+
+    /**
      * Context menu items for a right-click at the frequency.
      * @param section that was clicked
      * @param frequency under the mouse

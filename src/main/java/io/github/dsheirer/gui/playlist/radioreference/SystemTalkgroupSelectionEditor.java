@@ -264,9 +264,11 @@ public class SystemTalkgroupSelectionEditor extends GridPane
 
         if(talkgroups != null && !talkgroups.isEmpty())
         {
-            Collections.sort(talkgroups, Comparator.comparingInt(Talkgroup::getDecimalValue));
+            //The talkgroup list is shared by the caching service and is read-only, so sort a copy
+            List<Talkgroup> sorted = new ArrayList<>(talkgroups);
+            sorted.sort(Comparator.comparingInt(Talkgroup::getDecimalValue));
 
-            for(Talkgroup talkgroup: talkgroups)
+            for(Talkgroup talkgroup: sorted)
             {
                 mTalkgroupList.add(new AliasedTalkgroup(talkgroup, getAlias(talkgroup)));
             }

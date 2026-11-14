@@ -32,6 +32,7 @@ import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javax.swing.LookAndFeel;
@@ -69,6 +70,7 @@ public class ThemeManager
     private static final ThemeManager INSTANCE = new ThemeManager();
 
     private final Set<WeakReference<Scene>> mScenes = new LinkedHashSet<>();
+    private final AtomicBoolean mWindowListenerAttached = new AtomicBoolean();
     private final Set<WeakReference<java.awt.Component>> mSwingRoots = new LinkedHashSet<>();
     private final String mDarkStylesheetUrl;
     private volatile UserPreferences mUserPreferences;
@@ -135,7 +137,18 @@ public class ThemeManager
      */
     private void attachJavaFxWindowListener()
     {
+        if(mWindowListenerAttached.get())
+        {
+            return;
+        }
+
         Runnable attach = () -> {
+            //Attach once, even if several attempts were scheduled before the first one ran
+            if(!mWindowListenerAttached.compareAndSet(false, true))
+            {
+                return;
+            }
+
             try
             {
                 javafx.stage.Window.getWindows().addListener(
@@ -176,8 +189,9 @@ public class ThemeManager
             }
             catch(IllegalStateException ignored)
             {
-                //FX toolkit not started yet - first JFXPanel construction will start it; we
-                //re-attempt the attach lazily inside applyAll() via the Window.getWindows() walk.
+                //FX toolkit not started yet, which is the case when initialize() runs at application
+                //startup, before the first JFXPanel.  register() attaches the listener once the
+                //first JavaFX scene is registered, which happens after the toolkit starts.
             }
         }
     }
@@ -248,6 +262,9 @@ public class ThemeManager
             mScenes.add(new WeakReference<>(scene));
         }
 
+        //The toolkit is running once a scene exists, so attach the window listener if initialize()
+        //couldn't, so that ad-hoc dialogs and alerts are themed
+        attachJavaFxWindowListener();
         applyToScene(scene, isDarkMode());
     }
 
