@@ -285,6 +285,24 @@ public class SpectralDisplay extends StackPane
     }
 
     /**
+     * Indicates if a layer draws its own callout in place of the cursor readout for the mouse position.
+     * @param cursor mouse position
+     * @param area of the section under the mouse
+     */
+    public boolean isCursorReadoutReplaced(DisplayCursor cursor, RenderArea area)
+    {
+        for(SpectralDisplayLayer layer: mLayers)
+        {
+            if(layer.replacesCursorReadout(cursor, area))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Layers in drawing order.
      */
     public List<SpectralDisplayLayer> getLayers()

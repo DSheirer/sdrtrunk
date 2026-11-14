@@ -25,6 +25,7 @@ import io.github.dsheirer.channel.metadata.NowPlayingPanel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.icon.IconModel;
+import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
 import io.github.dsheirer.map.MapPanel;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -63,7 +64,9 @@ public class ControllerPanel extends JPanel
         mAudioPanel = new AudioPanel(iconModel, userPreferences, settingsManager, audioPlaybackManager,
             playlistManager.getAliasModel());
         mNowPlayingPanel = new NowPlayingPanel(playlistManager, iconModel, userPreferences, settingsManager, detailTabsVisible);
-        mMapPanel = new MapPanel(mapService, playlistManager.getAliasModel(), iconModel, settingsManager);
+        mMapPanel = new MapPanel(mapService, playlistManager.getAliasModel(), iconModel, userPreferences,
+            playlistManager.getRadioReference() != null ? playlistManager.getRadioReference().getFrequencyIndex() : null,
+            new RadioReferencePlaylistActions(playlistManager));
         mTunerManagerPanel = new TunerViewPanel(tunerManager, userPreferences);
 
         init();

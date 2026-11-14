@@ -82,5 +82,14 @@ dependencyResolutionManagement {
             metadataSources { artifact() }
             content { includeModule 'io.github.dsheirer', 'jbladerf' }
         }
+
+        //radio-reference-api is published as a GitHub release.  Its dependencies (jackson-dataformat-xml, slf4j-api)
+        //are not pulled in transitively and are declared directly in build.gradle
+        ivy {
+            url = 'https://github.com/DSheirer/radio-reference-api/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'radio-reference-api' }
+        }
     }
 }

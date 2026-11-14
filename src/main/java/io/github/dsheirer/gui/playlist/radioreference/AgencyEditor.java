@@ -39,7 +39,6 @@ import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -92,8 +91,9 @@ public class AgencyEditor extends VBox
 
         if(agencies != null && !agencies.isEmpty())
         {
-            Collections.sort(agencies, new AgencyComparator());
+            //The agencies list belongs to a cached state or county info shared with other callers, so sort the items
             getAgencyListView().getItems().addAll(agencies);
+            getAgencyListView().getItems().sort(new AgencyComparator());
 
             int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId(mLevel);
 

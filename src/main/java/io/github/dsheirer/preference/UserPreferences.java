@@ -28,6 +28,7 @@ import io.github.dsheirer.preference.duplicate.CallManagementPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.javafx.JavaFxPreferences;
+import io.github.dsheirer.preference.map.MapPreference;
 import io.github.dsheirer.preference.mp3.MP3Preference;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
@@ -62,6 +63,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private DirectoryPreference mDirectoryPreference;
     private CallManagementPreference mCallManagementPreference;
     private JmbeLibraryPreference mJmbeLibraryPreference;
+    private MapPreference mMapPreference;
     private MP3Preference mMP3Preference;
     private PlaybackPreference mPlaybackPreference;
     private PlaylistPreference mPlaylistPreference;
@@ -206,6 +208,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Map view preferences: the last center point and zoom level
+     */
+    public MapPreference getMapPreference()
+    {
+        return mMapPreference;
+    }
+
+    /**
      * Call management and duplicate call detection preferences
      */
     public CallManagementPreference getCallManagementPreference()
@@ -224,6 +234,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mDirectoryPreference = new DirectoryPreference(this::receive);
         mCallManagementPreference = new CallManagementPreference(this::receive);
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
+        mMapPreference = new MapPreference(this::receive);
         mMP3Preference = new MP3Preference(this::receive);
         mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);

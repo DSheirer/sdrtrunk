@@ -17,7 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.map;
 
-import io.github.dsheirer.settings.SettingsManager;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
@@ -33,14 +35,23 @@ import java.awt.geom.Point2D;
 public class MapMouseListener extends MouseInputAdapter implements MouseWheelListener
 {
 	private JXMapViewer mJXMapViewer;
-	private SettingsManager mSettingsManager;
+	private Consumer<GeoPosition> mMyLocationListener;
+	private Function<Point,List<JMenuItem>> mMenuItemProvider;
 	private Point mPreviousPoint;
 	private Point mCurrentPoint;
 
-	public MapMouseListener( JXMapViewer viewer, SettingsManager settingsManager )
+	/**
+	 * Constructs an instance
+	 * @param viewer map
+	 * @param myLocationListener receives the location chosen with the 'Set My Location Here' menu item
+	 * @param menuItemProvider of additional context menu items for the point that was right-clicked, listed first
+	 */
+	public MapMouseListener( JXMapViewer viewer, Consumer<GeoPosition> myLocationListener,
+							 Function<Point,List<JMenuItem>> menuItemProvider )
 	{
 		mJXMapViewer = viewer;
-		mSettingsManager = settingsManager;
+		mMyLocationListener = myLocationListener;
+		mMenuItemProvider = menuItemProvider;
 	}
 	
 	@Override
@@ -136,18 +147,27 @@ public class MapMouseListener extends MouseInputAdapter implements MouseWheelLis
 		else if( right )
 		{
 			JPopupMenu popup = new JPopupMenu();
+
+			if( mMenuItemProvider != null )
+			{
+				List<JMenuItem> items = mMenuItemProvider.apply( event.getPoint() );
+
+				if( items != null && !items.isEmpty() )
+				{
+					items.forEach( popup::add );
+					popup.addSeparator();
+				}
+			}
 			
-			JMenuItem mapViewItem = new JMenuItem( "Set Default Location & Zoom" );
+			JMenuItem mapViewItem = new JMenuItem( "Set My Location Here" );
+			mapViewItem.setToolTipText( "Sets your location, which is also used by the playlist editor's " +
+				"Radio Reference tab, to this point" );
 			mapViewItem.addActionListener( new ActionListener() 
 			{
 				@Override
                 public void actionPerformed( ActionEvent arg0 )
                 {
-					GeoPosition position = mJXMapViewer
-							.convertPointToGeoPosition( mCurrentPoint );
-					
-					mSettingsManager.setMapViewSetting( "Default", position, 
-							mJXMapViewer.getZoom() );
+					mMyLocationListener.accept( mJXMapViewer.convertPointToGeoPosition( mCurrentPoint ) );
                 }
 			} );
 			popup.add( mapViewItem );

@@ -20,7 +20,11 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.playlist.PlaylistManager;
+import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
@@ -31,6 +35,7 @@ import io.github.dsheirer.rrapi.type.CountyInfo;
 import io.github.dsheirer.rrapi.type.State;
 import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.service.radioreference.RadioReference;
+import io.github.dsheirer.service.radioreference.UserLocation;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -42,12 +47,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
@@ -58,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class RadioReferenceEditor extends BorderPane implements Consumer<AuthorizationInformation>
@@ -68,6 +74,10 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private PlaylistManager mPlaylistManager;
     private VBox mTopBox;
     private HBox mCredentialsBox;
+    private HBox mLocationBox;
+    private Label mLocationText;
+    private final AtomicLong mLocationRequest = new AtomicLong();
+    private volatile String mLocationKey;
     private Label mRRStatusText;
     private TextField mUserNameText;
     private TextField mAccountExpiresText;
@@ -113,20 +123,41 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             {
                 refreshCountries();
             }
+
+            //The preferred county fallback location needs a premium login
+            refreshLocation();
         });
+
+        refreshLocation();
+
+        //Updates the location when it's changed elsewhere, e.g. from the map
+        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    /**
+     * Refreshes the location text when the location or the preferred county changes
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.RADIO_REFERENCE)
+        {
+            RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+            String key = preference.getLocation() + "/" + preference.getPreferredCountyId();
+
+            if(!key.equals(mLocationKey))
+            {
+                mLocationKey = key;
+                Platform.runLater(this::refreshLocation);
+            }
+        }
     }
 
     private void login()
     {
-        if(mUserPreferences.getRadioReferencePreference().hasStoredCredentials())
-        {
-            AuthorizationInformation credentials = mUserPreferences.getRadioReferencePreference().getAuthorizationInformation();
-
-            if(credentials != null)
-            {
-                ThreadPool.CACHED.execute(() -> accept(credentials));
-            }
-        }
+        //Logs in on a background thread, unless the spectral display has already logged in
+        mRadioReference.loginWithStoredCredentials();
     }
 
     /**
@@ -354,7 +385,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mTopBox = new VBox();
             mTopBox.setSpacing(5);
             mTopBox.setPadding(new Insets(10,10,10,10));
-            mTopBox.getChildren().addAll(getCredentialsBox(), getComboBoxPane());
+            mTopBox.getChildren().addAll(getCredentialsBox(), getLocationBox(), getComboBoxPane());
         }
 
         return mTopBox;
@@ -416,13 +447,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mCredentialsBox = new HBox();
             mCredentialsBox.setAlignment(Pos.CENTER_RIGHT);
             mCredentialsBox.setSpacing(5.0);
-            Region leftFiller = new Region();
-            HBox.setHgrow(leftFiller, Priority.ALWAYS);
-            mCredentialsBox.getChildren().add(leftFiller);
             mCredentialsBox.getChildren().add(getRRPremiumReqText());
-            Region rightFiller = new Region();
-            HBox.setHgrow(rightFiller, Priority.ALWAYS);
-            mCredentialsBox.getChildren().add(rightFiller);
             mCredentialsBox.getChildren().add(new Label("User Name:"));
             mCredentialsBox.getChildren().add(getUserNameText());
             mCredentialsBox.getChildren().add(new Label("Expires:"));
@@ -446,8 +471,8 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                     Bindings.and(
                             mRadioReference.availableProperty(),
                             mRadioReference.premiumAccountProperty().not()));
-            mRRStatusText.setTextFill(Color.ORANGERED);
-            mRRStatusText.setStyle("-fx-font-weight: bold;"); // I guess
+            //Inline style, because the theme stylesheets override a label's text fill
+            mRRStatusText.setStyle("-fx-text-fill: orangered; -fx-font-weight: bold;");
         }
 
         return mRRStatusText;
@@ -725,11 +750,117 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                 if(selected != null)
                 {
                     mUserPreferences.getRadioReferencePreference().setPreferredCountyId(selected.getCountyId());
+                    refreshLocation();
                 }
             });
         }
 
         return mCountyComboBox;
+    }
+
+    /**
+     * Row that shows the user's location and a button to change it
+     */
+    private HBox getLocationBox()
+    {
+        if(mLocationBox == null)
+        {
+            mLocationBox = new HBox();
+            mLocationBox.setAlignment(Pos.CENTER_LEFT);
+            mLocationBox.setSpacing(5.0);
+
+            Button setLocationButton = new Button("My Location:");
+            setLocationButton.setOnAction(event -> {
+                LocationDialog dialog = new LocationDialog(mRadioReference,
+                    mUserPreferences.getRadioReferencePreference().getLocation(), getScene().getWindow());
+                //The map follows the location through the preference update
+                dialog.showAndWait().ifPresent(result -> {
+                    mUserPreferences.getRadioReferencePreference().setLocation(result.location());
+                    refreshLocation();
+                });
+            });
+
+            mLocationBox.getChildren().addAll(setLocationButton, getLocationText());
+        }
+
+        return mLocationBox;
+    }
+
+    private Label getLocationText()
+    {
+        if(mLocationText == null)
+        {
+            mLocationText = new Label();
+            mLocationText.setTooltip(new Tooltip("Your location is shown on the map and used to find nearby Radio " +
+                "Reference frequencies.  When it isn't set, the center of the selected county is used."));
+        }
+
+        return mLocationText;
+    }
+
+    /**
+     * Updates the location text: the user's location, or else the preferred county fallback, which is looked up in
+     * the background.
+     */
+    private void refreshLocation()
+    {
+        long request = mLocationRequest.incrementAndGet();
+        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+
+        if(location != null)
+        {
+            getLocationText().setText(location.describe());
+            return;
+        }
+
+        String notRanked = "Not set";
+
+        if(mUserPreferences.getRadioReferencePreference().getPreferredCountyId() <= 0 ||
+            !mRadioReference.premiumAccountProperty().get())
+        {
+            getLocationText().setText(notRanked);
+            return;
+        }
+
+        getLocationText().setText("Not set");
+
+        ThreadPool.CACHED.execute(() -> {
+            String text;
+
+            try
+            {
+                UserLocation userLocation = mRadioReference.getUserLocation();
+
+                if(userLocation == null)
+                {
+                    text = notRanked;
+                }
+                else if(userLocation.source() == UserLocation.Source.PREFERRED_COUNTY)
+                {
+                    text = "Not set - using the center of " + userLocation.description();
+                }
+                else
+                {
+                    //Set in the meantime - a newer refresh shows it
+                    return;
+                }
+            }
+            catch(RadioReferenceException rre)
+            {
+                mLog.warn("Unable to look up the preferred county location - " + rre.getMessage());
+                text = "Not set - unable to look up the selected county";
+            }
+
+            final String locationText = text;
+
+            Platform.runLater(() -> {
+                //A newer refresh supersedes this one
+                if(mLocationRequest.get() == request)
+                {
+                    getLocationText().setText(locationText);
+                }
+            });
+        });
     }
 
 

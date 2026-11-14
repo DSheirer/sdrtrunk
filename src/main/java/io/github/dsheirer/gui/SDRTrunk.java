@@ -51,6 +51,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.settings.MapViewSetting;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
@@ -183,6 +184,15 @@ public class SDRTrunk implements Listener<TunerEvent>
         mTunerManager.start();
 
         mSettingsManager = new SettingsManager();
+
+        //Older versions stored the map view in the settings file.  Move it to the map preferences once.
+        MapViewSetting legacyMapView = mSettingsManager.getLegacyMapView();
+
+        if(legacyMapView != null)
+        {
+            mUserPreferences.getMapPreference().migrateLegacyView(legacyMapView.getLatitude(),
+                legacyMapView.getLongitude(), legacyMapView.getZoom());
+        }
 
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);

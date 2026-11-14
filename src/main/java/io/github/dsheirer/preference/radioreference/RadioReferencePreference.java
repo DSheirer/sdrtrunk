@@ -31,6 +31,7 @@ import io.github.dsheirer.service.radioreference.RadioReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Locale;
 import java.util.prefs.Preferences;
 
 /**
@@ -58,6 +59,8 @@ public class RadioReferencePreference extends Preference
     private static final String SHOW_CHANNEL_EDITOR_COUNTY = "create.and.show.editor.county";
     private static final String ENCRYPTED_TALKGROUP_DO_NOT_MONITOR = "encrypted.talkgroup.import.do.not.monitor";
     private static final String CREATE_AND_SHOW_CHANNEL_EDITOR = "create.and.show.channel.editor";
+    private static final String LOCATION = "location";
+    private static final String LOCATION_LABEL = "location.label";
 
     private String mUserName;
     private String mPassword;
@@ -511,6 +514,118 @@ public class RadioReferencePreference extends Preference
     {
         mCreateAndShowChannelEditor = show;
         mPreferences.putBoolean(CREATE_AND_SHOW_CHANNEL_EDITOR, show);
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * User's location, for ranking radio reference results by distance.
+     * @param latitude in decimal degrees, -90 to 90
+     * @param longitude in decimal degrees, -180 to 180
+     * @param label describing the location, e.g. the city and zip code that it was looked up from, or null when the
+     * coordinates were entered by hand
+     */
+    public record Location(double latitude, double longitude, String label)
+    {
+        /**
+         * Constructs an instance
+         * @throws IllegalArgumentException if the coordinates are out of range
+         */
+        public Location
+        {
+            if(!isValid(latitude, longitude))
+            {
+                throw new IllegalArgumentException("Invalid location: " + latitude + ", " + longitude);
+            }
+
+            label = label == null || label.isBlank() ? null : label.trim();
+        }
+
+        /**
+         * Indicates if the coordinates are within range
+         * @param latitude in decimal degrees
+         * @param longitude in decimal degrees
+         * @return true if valid
+         */
+        public static boolean isValid(double latitude, double longitude)
+        {
+            return Double.isFinite(latitude) && Double.isFinite(longitude) && Math.abs(latitude) <= 90.0 &&
+                Math.abs(longitude) <= 180.0;
+        }
+
+        /**
+         * Coordinates for display
+         * @return text such as "43.0481, -76.1474"
+         */
+        public String coordinates()
+        {
+            return String.format(Locale.ROOT, "%.4f, %.4f", latitude, longitude);
+        }
+
+        /**
+         * Location for display
+         * @return text such as "Syracuse, New York 13202 (43.0481, -76.1474)", or the coordinates when there's no label
+         */
+        public String describe()
+        {
+            return label != null ? label + " (" + coordinates() + ")" : coordinates();
+        }
+    }
+
+    /**
+     * User's location, for ranking radio reference results by distance.  Can be called from any thread.
+     * @return location, or null if the user hasn't set one
+     */
+    public Location getLocation()
+    {
+        String value = mPreferences.get(LOCATION, null);
+
+        if(value != null)
+        {
+            String[] parts = value.split(",");
+
+            if(parts.length == 2)
+            {
+                try
+                {
+                    return new Location(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]),
+                        mPreferences.get(LOCATION_LABEL, null));
+                }
+                catch(IllegalArgumentException e)
+                {
+                    mLog.warn("Ignoring invalid stored radio reference location [" + value + "]");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sets the user's location
+     * @param location to store, or null to clear the location
+     */
+    public void setLocation(Location location)
+    {
+        if(location != null)
+        {
+            //Stored as one value so that a reader never sees the latitude of one location with the longitude of another
+            mPreferences.put(LOCATION, location.latitude() + "," + location.longitude());
+
+            if(location.label() != null)
+            {
+                mPreferences.put(LOCATION_LABEL, location.label());
+            }
+            else
+            {
+                mPreferences.remove(LOCATION_LABEL);
+            }
+        }
+        else
+        {
+            mPreferences.remove(LOCATION);
+            mPreferences.remove(LOCATION_LABEL);
+        }
+
         notifyPreferenceUpdated();
     }
 }

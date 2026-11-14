@@ -24,6 +24,7 @@ import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.service.radioreference.RadioReference;
+import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
@@ -49,7 +50,6 @@ import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.ConnectException;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
@@ -60,6 +60,8 @@ import java.util.Date;
 public class LoginDialog extends Dialog<AuthorizationInformation>
 {
     private final static Logger mLog = LoggerFactory.getLogger(LoginDialog.class);
+    private static final String TEST_CONNECTION = "Test Connection";
+    private static final String TESTING_CONNECTION = "Testing...";
     private UserPreferences mUserPreferences;
     private TextField mUserNameText;
     private PasswordField mPasswordField;
@@ -278,7 +280,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
     {
         if(mTestConnectionButton == null)
         {
-            mTestConnectionButton = new Button("Test Connection");
+            mTestConnectionButton = new Button(TEST_CONNECTION);
             mTestConnectionButton.setMaxWidth(Double.MAX_VALUE);
             mTestConnectionButton.setOnAction(new EventHandler<ActionEvent>()
             {
@@ -316,104 +318,137 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                         return;
                     }
 
-                    Platform.runLater(new Runnable()
-                    {
-                        @Override
-                        public void run()
+                    getTestConnectionButton().setText(TESTING_CONNECTION);
+
+                    //The test calls the web service, which can take up to the connect and request timeouts, so it runs
+                    //off the FX thread and the result is shown on the FX thread
+                    ThreadPool.CACHED.execute(() -> {
+                        RadioReference.LoginStatus loginStatus = null;
+                        Exception error = null;
+
+                        try
                         {
-                            boolean success = false;
-                            RadioReference.LoginStatus loginStatus;
-
-                            try
-                            {
-                                loginStatus = RadioReference.testConnectionWithExp(userName, password);
-
-                                if(loginStatus == RadioReference.LoginStatus.VALID_PREMIUM)
-                                {
-                                    getTestPassIcon().setVisible(true);
-                                    getTestFailIcon().setVisible(false);
-                                    getTestExpiredIcon().setVisible(false);
-                                    //Success is only shown as an icon, so report it in the button's accessible name
-                                    getTestConnectionButton().setAccessibleText("Test Connection: login successful");
-                                }
-                                else if (loginStatus == RadioReference.LoginStatus.EXPIRED_PREMIUM)
-                                {
-                                    getTestPassIcon().setVisible(false);
-                                    getTestFailIcon().setVisible(false);
-                                    getTestExpiredIcon().setVisible(true);
-
-                                    Alert alert = new Alert(Alert.AlertType.WARNING, "You do not have a valid Radio Reference Premium Subscription (it may have expired).", ButtonType.OK);
-                                    alert.setHeaderText("Expired Premium Account");
-                                    alert.setTitle("Radio Reference Account issue");
-                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                    alert.showAndWait();
-                                }
-                                else if (loginStatus == RadioReference.LoginStatus.INVALID_LOGIN)
-                                {
-                                    getTestPassIcon().setVisible(false);
-                                    getTestFailIcon().setVisible(true);
-                                    getTestExpiredIcon().setVisible(false);
-
-                                    Alert alert = new Alert(Alert.AlertType.ERROR, "Please verify username and password", ButtonType.OK);
-                                    alert.setHeaderText("Login Failed");
-                                    alert.setTitle("Test Failed");
-                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                    alert.showAndWait();
-                                    mLog.error("Login failed. Invalid username or password.  Can't login to radioreference.com");
-                                }
-                                else
-                                {
-                                    // Only way to get here is via an exception
-                                }
-                            }
-                            catch(RadioReferenceException rre)
-                            {
-
-                                // Set an error state
-                                getTestPassIcon().setVisible(false);
-                                getTestFailIcon().setVisible(true);
-                                getTestExpiredIcon().setVisible(false);
-
-                                if(rre.getCause() instanceof ConnectException)
-                                {
-                                    Alert alert = new Alert(Alert.AlertType.ERROR, "Please check network or radio reference availability", ButtonType.OK);
-                                    alert.setHeaderText("No Network Connection");
-                                    alert.setTitle("Test Failed");
-                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                    alert.showAndWait();
-                                    mLog.error("No network connection to radioreference.com");
-                                }
-                                else if(rre.hasFault())
-                                {
-                                    Fault fault = rre.getFault();
-
-                                    Alert alert = new Alert(Alert.AlertType.ERROR, fault.getFaultString(), ButtonType.OK);
-                                    alert.setHeaderText(fault.getFaultCode());
-                                    alert.setTitle("Test Failed");
-                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                    alert.showAndWait();
-                                    mLog.error("Test failed.  Fault [" + fault.toString() + "] Can't login to radioreference.com");
-                                }
-                                else
-                                {
-                                    Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + rre.getMessage(), ButtonType.OK);
-                                    alert.setHeaderText("Unknown Error");
-                                    alert.setTitle("Test Failed");
-                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                    alert.showAndWait();
-                                    mLog.error("Error testing connection to radioreference.com", rre);
-                                }
-                            }
-
-
-                            getTestConnectionButton().setDisable(false);
+                            loginStatus = RadioReference.testConnectionWithExp(userName, password);
                         }
+                        catch(Exception e)
+                        {
+                            error = e;
+                        }
+
+                        final RadioReference.LoginStatus status = loginStatus;
+                        final Exception exception = error;
+                        Platform.runLater(() -> showTestConnectionResult(status, exception));
                     });
                 }
             });
         }
 
         return mTestConnectionButton;
+    }
+
+    /**
+     * Shows the result of a connection test.  Must be called on the FX thread.
+     * @param loginStatus from the test, or null if the test failed with an error
+     * @param error from the test, or null
+     */
+    private void showTestConnectionResult(RadioReference.LoginStatus loginStatus, Exception error)
+    {
+        getTestConnectionButton().setText(TEST_CONNECTION);
+        getTestConnectionButton().setDisable(false);
+
+        //Results that arrive after the dialog closes are only logged
+        boolean showing = isShowing();
+
+        if(error != null)
+        {
+            // Set an error state
+            getTestPassIcon().setVisible(false);
+            getTestFailIcon().setVisible(true);
+            getTestExpiredIcon().setVisible(false);
+
+            RadioReferenceException.ErrorType errorType = error instanceof RadioReferenceException rre ?
+                rre.getErrorType() : RadioReferenceException.ErrorType.UNKNOWN;
+
+            //The service has a 10 second connect timeout, so an unreachable service is reported as TIMEOUT as well
+            //as NETWORK
+            if(errorType == RadioReferenceException.ErrorType.NETWORK ||
+               errorType == RadioReferenceException.ErrorType.TIMEOUT)
+            {
+                mLog.error("No network connection to radioreference.com - " + error.getMessage());
+
+                if(showing)
+                {
+                    showTestFailedAlert(Alert.AlertType.ERROR, "No Network Connection",
+                        "Please check network or radio reference availability");
+                }
+            }
+            else if(error instanceof RadioReferenceException rre && rre.hasFault())
+            {
+                Fault fault = rre.getFault();
+                mLog.error("Test failed.  Fault [" + fault.toString() + "] Can't login to radioreference.com");
+
+                if(showing)
+                {
+                    showTestFailedAlert(Alert.AlertType.ERROR, fault.getFaultCode(), fault.getFaultString());
+                }
+            }
+            else
+            {
+                mLog.error("Error testing connection to radioreference.com", error);
+
+                if(showing)
+                {
+                    showTestFailedAlert(Alert.AlertType.ERROR, "Unknown Error", "Error: " + error.getMessage());
+                }
+            }
+        }
+        else if(loginStatus == RadioReference.LoginStatus.VALID_PREMIUM)
+        {
+            getTestPassIcon().setVisible(true);
+            getTestFailIcon().setVisible(false);
+            getTestExpiredIcon().setVisible(false);
+            //Success is only shown as an icon, so report it in the button's accessible name
+            getTestConnectionButton().setAccessibleText("Test Connection: login successful");
+        }
+        else if(loginStatus == RadioReference.LoginStatus.EXPIRED_PREMIUM)
+        {
+            getTestPassIcon().setVisible(false);
+            getTestFailIcon().setVisible(false);
+            getTestExpiredIcon().setVisible(true);
+
+            if(showing)
+            {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "You do not have a valid Radio Reference Premium Subscription (it may have expired).", ButtonType.OK);
+                alert.setHeaderText("Expired Premium Account");
+                alert.setTitle("Radio Reference Account issue");
+                alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
+                alert.showAndWait();
+            }
+        }
+        else if(loginStatus == RadioReference.LoginStatus.INVALID_LOGIN)
+        {
+            getTestPassIcon().setVisible(false);
+            getTestFailIcon().setVisible(true);
+            getTestExpiredIcon().setVisible(false);
+            mLog.error("Login failed. Invalid username or password.  Can't login to radioreference.com");
+
+            if(showing)
+            {
+                showTestFailedAlert(Alert.AlertType.ERROR, "Login Failed", "Please verify username and password");
+            }
+        }
+    }
+
+    /**
+     * Shows an alert for a failed connection test.  Must be called on the FX thread.
+     */
+    private void showTestFailedAlert(Alert.AlertType alertType, String header, String content)
+    {
+        Alert alert = new Alert(alertType, content, ButtonType.OK);
+        alert.setHeaderText(header);
+        alert.setTitle("Test Failed");
+        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
+        alert.showAndWait();
     }
 
     private IconNode getTestPassIcon()

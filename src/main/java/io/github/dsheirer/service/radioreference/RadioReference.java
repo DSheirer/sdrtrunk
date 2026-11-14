@@ -21,9 +21,9 @@ package io.github.dsheirer.service.radioreference;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
-import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.CountryInfo;
 import io.github.dsheirer.rrapi.type.County;
@@ -32,6 +32,8 @@ import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.State;
 import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.rrapi.type.UserInfo;
+import io.github.dsheirer.rrapi.type.ZipInfo;
+import io.github.dsheirer.util.ThreadPool;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -39,6 +41,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -57,12 +62,14 @@ public class RadioReference
     private RadioReferenceService mRadioReferenceService;
     private UserPreferences mUserPreferences;
     private AuthorizationInformation mAuthorizationInformation;
+    private final AtomicLong mLoginRequest = new AtomicLong();
+    private final RadioReferenceFrequencyIndex mFrequencyIndex;
     private StringProperty mUserName = new SimpleStringProperty();
     private StringProperty mPassword = new SimpleStringProperty();
     private StringProperty mAccountExpiresProperty = new SimpleStringProperty();
     private BooleanProperty mAvailable = new SimpleBooleanProperty();
     private BooleanProperty mPremiumAccount = new SimpleBooleanProperty();
-    private LoginStatus mLoginStatus = LoginStatus.UNKNOWN;
+    private volatile LoginStatus mLoginStatus = LoginStatus.UNKNOWN;
 
     /**
      * Enum to determine "validity" of a RR Login
@@ -82,10 +89,47 @@ public class RadioReference
     public RadioReference(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
+        mFrequencyIndex = new RadioReferenceFrequencyIndex(this, userPreferences);
     }
 
     /**
-     * Externally monitored and controlled status indicator for the service logged-on state
+     * User preferences, for the location, credentials and talkgroup formats
+     */
+    public UserPreferences getUserPreferences()
+    {
+        return mUserPreferences;
+    }
+
+    /**
+     * Index of the radio reference frequencies near the user's location.  Idle until started.
+     */
+    public RadioReferenceFrequencyIndex getFrequencyIndex()
+    {
+        return mFrequencyIndex;
+    }
+
+    /**
+     * Logs in with the credentials stored in the user preferences, if there are any and no login has been made yet.
+     * Logs in on a background thread and updates the properties on the FX thread, so the JavaFX toolkit must be
+     * running.
+     */
+    public void loginWithStoredCredentials()
+    {
+        RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+
+        if(mLoginRequest.get() == 0 && preference.hasStoredCredentials())
+        {
+            AuthorizationInformation credentials = preference.getAuthorizationInformation();
+
+            if(credentials != null)
+            {
+                setAuthorizationInformation(credentials);
+            }
+        }
+    }
+
+    /**
+     * Externally monitored and controlled status indicator for the service logged-on state.  Updated on the FX thread.
      */
     public BooleanProperty availableProperty()
     {
@@ -93,7 +137,7 @@ public class RadioReference
     }
 
     /**
-     * Externally monitored and controlled status indicator for a Premium RR Account
+     * Externally monitored and controlled status indicator for a Premium RR Account.  Updated on the FX thread.
      */
     public BooleanProperty premiumAccountProperty()
     {
@@ -141,7 +185,7 @@ public class RadioReference
      * @return service
      * @throws RadioReferenceException if there is an issue creating the service (ie login credentials missing)
      */
-    public RadioReferenceService getService() throws RadioReferenceException
+    public synchronized RadioReferenceService getService() throws RadioReferenceException
     {
         if(mRadioReferenceService == null)
         {
@@ -160,6 +204,102 @@ public class RadioReference
         }
 
         return mRadioReferenceService;
+    }
+
+    /**
+     * Location to rank radio reference results by distance from the user: the location set in the preferences, or
+     * else the center of the preferred county.  Calls the web service for the preferred county, so don't call this
+     * on the FX thread.
+     * @return location, or null if the user hasn't set a location and there's no preferred county with a location, or
+     * the account can't access the service
+     * @throws RadioReferenceException if the preferred county lookup fails
+     */
+    public UserLocation getUserLocation() throws RadioReferenceException
+    {
+        RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+        RadioReferencePreference.Location location = preference.getLocation();
+
+        if(location != null)
+        {
+            return new UserLocation(location.latitude(), location.longitude(), location.label(),
+                UserLocation.Source.USER);
+        }
+
+        int countyId = preference.getPreferredCountyId();
+
+        if(countyId > 0 && premiumAccountProperty().get())
+        {
+            CountyInfo countyInfo = getService().getCountyInfo(countyId);
+
+            if(countyInfo != null && countyInfo.getCoverage().hasLocation())
+            {
+                return new UserLocation(countyInfo.getLatitude(), countyInfo.getLongitude(), countyInfo.getName(),
+                    UserLocation.Source.PREFERRED_COUNTY);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Looks up the location of a United States zip code
+     * @param zipcode five digit zip code
+     * @return location with a label naming the city, state and zip code
+     * @throws RadioReferenceException if the lookup fails or the service has no location for the zip code
+     */
+    public RadioReferencePreference.Location lookupZipcode(int zipcode) throws RadioReferenceException
+    {
+        RadioReferenceService service = getService();
+        ZipInfo zipInfo = service.getZipcodeInfo(zipcode);
+        String zip = String.format("%05d", zipcode);
+
+        if(zipInfo != null)
+        {
+            try
+            {
+                double latitude = Double.parseDouble(zipInfo.getLatitude().trim());
+                double longitude = Double.parseDouble(zipInfo.getLongitude().trim());
+
+                //The service returns zeros for some unknown zip codes
+                if(RadioReferencePreference.Location.isValid(latitude, longitude) && (latitude != 0.0 || longitude != 0.0))
+                {
+                    String state = null;
+
+                    try
+                    {
+                        StateInfo stateInfo = service.getStateInfo(zipInfo.getStateId());
+                        state = stateInfo != null ? stateInfo.getName() : null;
+                    }
+                    catch(RadioReferenceException rre)
+                    {
+                        //The state name is only for the label
+                        mLog.debug("Unable to look up state [" + zipInfo.getStateId() + "] for zip code " + zip);
+                    }
+
+                    StringBuilder label = new StringBuilder();
+
+                    if(zipInfo.getCity() != null && !zipInfo.getCity().isBlank())
+                    {
+                        label.append(zipInfo.getCity().trim()).append(state != null ? ", " : " ");
+                    }
+
+                    if(state != null)
+                    {
+                        label.append(state).append(" ");
+                    }
+
+                    label.append(zip);
+                    return new RadioReferencePreference.Location(latitude, longitude, label.toString());
+                }
+            }
+            catch(NullPointerException | NumberFormatException e)
+            {
+                //Fall through - no usable coordinates
+            }
+        }
+
+        throw new RadioReferenceException(RadioReferenceException.ErrorType.INVALID_REQUEST,
+            "Radio Reference has no location for zip code " + zip);
     }
 
     /**
@@ -207,23 +347,12 @@ public class RadioReference
         {
             mLog.error("Radio Reference Test Connection Failed - user [" + userName + "] error [" + rre.getMessage() + "]");
 
-            if (rre.hasFault())
+            if(rre.getErrorType() == RadioReferenceException.ErrorType.AUTHENTICATION)
             {
-                Fault fault = rre.getFault();
+                return LoginStatus.INVALID_LOGIN;
+            }
 
-                if (fault.getFaultCode() != null && fault.getFaultCode().contentEquals("AUTH"))
-                {
-                    return LoginStatus.INVALID_LOGIN;
-                }
-                else
-                {
-                    throw rre;
-                }
-            }
-            else
-            {
-                throw rre;
-            }
+            throw rre;
         }
     }
 
@@ -274,47 +403,27 @@ public class RadioReference
     }
 
     /**
-     * Login with credentials, and update properties based on the login status
+     * Logs in with the current credentials on the calling thread, then updates the login status and the properties on
+     * the FX thread, unless a newer login request has started in the meantime.
+     * @param request number of this login request
+     * @param result to complete with the login status once the properties are updated
      */
-    private void login()
+    private void login(long request, CompletableFuture<LoginStatus> result)
     {
+        UserInfo userInfo = null;
+        LoginStatus loginStatus;
+
         try
         {
-            UserInfo userInfo = getService().getUserInfo();
-
-            if(userInfo != null)
-            {
-                accountExpiresProperty().setValue(userInfo.getExpirationDate());
-                mLoginStatus = CheckExpDate(userInfo.getExpirationDate());
-            }
-            else
-            {
-                accountExpiresProperty().setValue(null);
-                mLoginStatus = LoginStatus.UNKNOWN;
-            }
-
-            if(mLoginStatus == LoginStatus.VALID_PREMIUM)
-            {
-                availableProperty().set(true);
-                premiumAccountProperty().set(true);
-            }
-            else if (mLoginStatus == LoginStatus.EXPIRED_PREMIUM)
-            {
-                availableProperty().set(true);
-                premiumAccountProperty().set(false);
-            }
-            else
-            {
-                availableProperty().set(false);
-                premiumAccountProperty().set(false);
-            }
+            userInfo = getService().getUserInfo();
+            loginStatus = userInfo != null ? CheckExpDate(userInfo.getExpirationDate()) : LoginStatus.UNKNOWN;
 
             if(userInfo != null)
             {
                 mLog.info("Radio Reference Account - User:" + userInfo.getUserName() +
                         " Expires:" + userInfo.getExpirationDate() +
-                        " Login Status:" + mLoginStatus +
-                        " Premium Access Enabled:" + premiumAccountProperty().get());
+                        " Login Status:" + loginStatus +
+                        " Premium Access Enabled:" + (loginStatus == LoginStatus.VALID_PREMIUM));
             }
             else
             {
@@ -323,12 +432,32 @@ public class RadioReference
         }
         catch(RadioReferenceException rre)
         {
-            accountExpiresProperty().setValue(null);
-            mLoginStatus = LoginStatus.UNKNOWN;
-            availableProperty().set(false);
-            premiumAccountProperty().set(false);
+            loginStatus = rre.getErrorType() == RadioReferenceException.ErrorType.AUTHENTICATION ?
+                LoginStatus.INVALID_LOGIN : LoginStatus.UNKNOWN;
             mLog.error("Error checking radio reference premium account status.  Disabling premium access.  Error: " + rre.getMessage());
         }
+        catch(RuntimeException re)
+        {
+            //Always update the properties and complete the result, whatever the error
+            loginStatus = LoginStatus.UNKNOWN;
+            mLog.error("Error checking radio reference premium account status.  Disabling premium access.", re);
+        }
+
+        final String expirationDate = userInfo != null ? userInfo.getExpirationDate() : null;
+        final LoginStatus status = loginStatus;
+
+        Platform.runLater(() -> {
+            //A newer login request supersedes this one
+            if(mLoginRequest.get() == request)
+            {
+                mLoginStatus = status;
+                accountExpiresProperty().setValue(expirationDate);
+                availableProperty().set(status == LoginStatus.VALID_PREMIUM || status == LoginStatus.EXPIRED_PREMIUM);
+                premiumAccountProperty().set(status == LoginStatus.VALID_PREMIUM);
+            }
+
+            result.complete(status);
+        });
     }
 
     /**
@@ -346,28 +475,36 @@ public class RadioReference
      * Authorization Information object for use with radio reference service
      * @return instance or null if the user credentials are not set
      */
-    private AuthorizationInformation getAuthorizationInformation()
+    private synchronized AuthorizationInformation getAuthorizationInformation()
     {
         return mAuthorizationInformation;
     }
 
     /**
-     * Applies the credentials and attempts to login to the radio reference service
-     * @param authorizationInformation
+     * Applies the credentials and logs in to the radio reference service in the background.  The properties are
+     * updated on the FX thread, so the JavaFX toolkit must be running.  Can be called from any thread.
+     * @param authorizationInformation credentials
+     * @return future that completes with the login status, on the FX thread, once the properties are updated
      */
-    public void setAuthorizationInformation(AuthorizationInformation authorizationInformation)
+    public CompletableFuture<LoginStatus> setAuthorizationInformation(AuthorizationInformation authorizationInformation)
     {
-        mAuthorizationInformation = authorizationInformation;
-        mUserName.setValue(authorizationInformation.getUserName());
-        mPassword.setValue(authorizationInformation.getPassword());
-
-        //Set the service to null so that the next call to getService() will recreate it
-        if(mRadioReferenceService != null)
+        synchronized(this)
         {
+            mAuthorizationInformation = authorizationInformation;
+            //Set the service to null so that the next call to getService() will recreate it with the new credentials
             mRadioReferenceService = null;
         }
 
-        login();
+        long request = mLoginRequest.incrementAndGet();
+        CompletableFuture<LoginStatus> result = new CompletableFuture<>();
+
+        Platform.runLater(() -> {
+            mUserName.setValue(authorizationInformation.getUserName());
+            mPassword.setValue(authorizationInformation.getPassword());
+        });
+
+        ThreadPool.CACHED.execute(() -> login(request, result));
+        return result;
     }
 
     public static void main(String[] args)
@@ -387,7 +524,9 @@ public class RadioReference
             credentials = getAuthorizatonInformation(username, password);
         }
 
-        radioReference.setAuthorizationInformation(credentials);
+        //Login updates the properties on the FX thread
+        Platform.startup(() -> {});
+        radioReference.setAuthorizationInformation(credentials).join();
 
         if(radioReference.availableProperty().get())
         {
@@ -438,5 +577,7 @@ public class RadioReference
                 mLog.error("Error", rre);
             }
         }
+
+        Platform.exit();
     }
 }

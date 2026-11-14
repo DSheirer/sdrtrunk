@@ -168,7 +168,7 @@ dependencies {
     implementation 'io.github.dsheirer:jlimesdr:25.1.0.2' //LimeSDR tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jrtl:1.4.0.3' //RTL-SDR tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jsdrplay:3.15.3' //SDRplay RSP tuners - GitHub release, see settings.gradle
-    implementation 'io.github.dsheirer:radio-reference-api:18.0.0'
+    implementation 'io.github.dsheirer:radio-reference-api:18.1.0' //RadioReference SOAP API - GitHub release, see settings.gradle
     implementation 'org.apache.commons:commons-compress:1.28.0' //Not used directly - overrides the vulnerable 1.21 version from jarchivelib
     implementation 'org.apache.commons:commons-lang3:3.21.0'
     implementation 'org.apache.commons:commons-math3:3.6.1'

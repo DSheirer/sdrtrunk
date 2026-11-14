@@ -204,7 +204,7 @@ public class FrequencyEditor extends VBox
 
         if(item != null)
         {
-            mFrequency = (long)(item.getDownlink() * 1E6);
+            mFrequency = item.getDownlinkHz();
             getAlphaTagTextField().setText(item.getAlphaTag());
             getFrequencyTextField().setText(FREQUENCY_FORMATTER.format(item.getDownlink()));
             getToneTextField().setText(item.getTone());
@@ -413,46 +413,7 @@ public class FrequencyEditor extends VBox
      */
     private Channel createChannel(ModeDecoderType modeDecoderType, long frequency, String system, String site, String name)
     {
-        if(modeDecoderType.hasDecoderType())
-        {
-            Channel channel = new Channel();
-            channel.setSystem(system);
-            channel.setSite(site);
-            channel.setName(name);
-            SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
-            sourceConfigTuner.setFrequency(frequency);
-            channel.setSourceConfiguration(sourceConfigTuner);
-            DecodeConfiguration decodeConfiguration = DecoderFactory.getDecodeConfiguration(modeDecoderType.getDecoderType());
-
-            if(decodeConfiguration instanceof DecodeConfigNBFM && modeDecoderType == ModeDecoderType.FM)
-            {
-                ((DecodeConfigNBFM)decodeConfiguration).setBandwidth(DecodeConfigNBFM.Bandwidth.BW_25_0);
-            }
-            else if(decodeConfiguration instanceof DecodeConfigP25Phase1)
-            {
-                ((DecodeConfigP25Phase1)decodeConfiguration).setModulation(Modulation.C4FM);
-            }
-            else if(decodeConfiguration instanceof DecodeConfigNXDN nxdn)
-            {
-                if(modeDecoderType == ModeDecoderType.NXDN48)
-                {
-                    nxdn.setTransmissionMode(TransmissionMode.M4800);
-                }
-                else if(modeDecoderType == ModeDecoderType.NXDN96)
-                {
-                    nxdn.setTransmissionMode(TransmissionMode.M9600);
-                }
-            }
-
-            channel.setDecodeConfiguration(decodeConfiguration);
-            return channel;
-        }
-        else
-        {
-            mLog.warn("Can't create channel configuration for [" + modeDecoderType.name() + "] no supported decoder type");
-        }
-
-        return null;
+        return RadioReferenceChannelFactory.conventional(modeDecoderType, frequency, system, site, name);
     }
 
     private TextField getSystemTextField()

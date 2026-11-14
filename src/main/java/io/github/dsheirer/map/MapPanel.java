@@ -18,17 +18,30 @@
  */
 package io.github.dsheirer.map;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.settings.MapViewSetting;
-import io.github.dsheirer.settings.SettingsManager;
+import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.map.MapPreference;
+import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
+import io.github.dsheirer.service.radioreference.RadioReferenceFrequencyIndex;
+import io.github.dsheirer.service.radioreference.SiteRecord;
 import java.awt.EventQueue;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import net.miginfocom.swing.MigLayout;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.OSMTileFactoryInfo;
@@ -37,11 +50,14 @@ import org.jdesktop.swingx.input.ZoomMouseWheelListenerCursor;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
+import org.jdesktop.swingx.painter.CompoundPainter;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -49,6 +65,9 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
+import javax.swing.ToolTipManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -61,12 +80,28 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
 
     private static final int ZOOM_MINIMUM = 1;
     private static final int ZOOM_MAXIMUM = 16;
+    //Delay after the last pan or zoom before the map view is stored
+    private static final int SAVE_VIEW_DELAY_MS = 500;
 
     private static final String FOLLOW = "Follow";
     private static final String UNFOLLOW = "Unfollow";
     private static final String SELECT_A_TRACK = "(select a track)";
     private static final String NO_SYSTEM_NAME = "(no system name)";
-    private SettingsManager mSettingsManager;
+    private static final String LOCATION_NOT_SET = "Not set";
+    private Timer mSaveViewTimer;
+    private final RadioReferenceFrequencyIndex mFrequencyIndex;
+    private final RadioReferenceSitePainter mSitePainter;
+    private final RadioReferencePlaylistActions mPlaylistActions;
+    private JCheckBox mShowSitesCheckBox;
+    private JLabel mSiteCountLabel;
+    private int mDefaultTooltipDismissDelay = -1;
+    private UserPreferences mUserPreferences;
+    private final UserLocationPainter mUserLocationPainter = new UserLocationPainter();
+    private JLabel mUserLocationLabel;
+    private JButton mSetUserLocationButton;
+    private JButton mCenterOnUserLocationButton;
+    //Location most recently chosen on the map, which doesn't re-center the map when the preference update arrives
+    private GeoPosition mMapChosenPosition;
     private MapService mMapService;
     private JXMapViewer mMapViewer;
     private PlottableEntityPainter mMapPainter;
@@ -93,15 +128,354 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
      * @param mapService for accessing entities to plot
      * @param aliasModel for alias lookup
      * @param iconModel for icon lookup
-     * @param settingsManager for user specified options/settings.
+     * @param userPreferences for the map view and the user's location, which is shared with the radio reference editor
+     * @param frequencyIndex of the radio reference frequencies near the user, for the trunked system sites, or null
+     * @param playlistActions to add sites to the playlist or enable their channels, or null
      */
-    public MapPanel(MapService mapService, AliasModel aliasModel, IconModel iconModel, SettingsManager settingsManager)
+    public MapPanel(MapService mapService, AliasModel aliasModel, IconModel iconModel, UserPreferences userPreferences,
+                    RadioReferenceFrequencyIndex frequencyIndex, RadioReferencePlaylistActions playlistActions)
     {
-        mSettingsManager = settingsManager;
+        mUserPreferences = userPreferences;
+        mFrequencyIndex = frequencyIndex;
+        mPlaylistActions = playlistActions;
+        mSitePainter = new RadioReferenceSitePainter(frequencyIndex != null ? frequencyIndex::getSites :
+            Collections::emptyList);
+        mSitePainter.setShowSites(userPreferences.getMapPreference().isShowRadioReferenceSites());
         mMapService = mapService;
         mMapPainter = new PlottableEntityPainter(aliasModel, iconModel);
 
         init();
+
+        //Show the stored location without moving the map, which starts at the stored default location
+        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        mUserLocationPainter.setPosition(location != null ? toGeoPosition(location) : null);
+        updateUserLocationLabel(location);
+
+        if(mFrequencyIndex != null)
+        {
+            //The index fills in the background
+            mFrequencyIndex.addUpdateListener(() -> EventQueue.invokeLater(this::sitesUpdated));
+        }
+
+        sitesUpdated();
+        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    /**
+     * Updates the site count and repaints the sites.  Call on the Swing thread.
+     */
+    private void sitesUpdated()
+    {
+        int count = mFrequencyIndex != null ? mFrequencyIndex.getSites().size() : 0;
+        getSiteCountLabel().setText(count == 1 ? "1 site" : count + " sites");
+        getMapViewer().repaint();
+    }
+
+    private JCheckBox getShowSitesCheckBox()
+    {
+        if(mShowSitesCheckBox == null)
+        {
+            mShowSitesCheckBox = new JCheckBox("Radio Reference Sites", mSitePainter.isShowSites());
+            mShowSitesCheckBox.setEnabled(mFrequencyIndex != null);
+            mShowSitesCheckBox.setToolTipText("Show the trunked radio system sites within " +
+                (int)RadioReferenceFrequencyIndex.RADIUS_KILOMETERS + " km of your location.  Requires a premium " +
+                "Radio Reference login and your location.");
+            mShowSitesCheckBox.addActionListener(e -> {
+                boolean show = mShowSitesCheckBox.isSelected();
+                mSitePainter.setShowSites(show);
+                mUserPreferences.getMapPreference().setShowRadioReferenceSites(show);
+                getMapViewer().repaint();
+            });
+        }
+
+        return mShowSitesCheckBox;
+    }
+
+    private JLabel getSiteCountLabel()
+    {
+        if(mSiteCountLabel == null)
+        {
+            mSiteCountLabel = new JLabel();
+        }
+
+        return mSiteCountLabel;
+    }
+
+    /**
+     * Context menu items for the radio reference sites under the point: add a site to the playlist and start it, or
+     * enable or disable the playlist channel that already decodes it
+     */
+    private List<JMenuItem> getSiteMenuItems(Point point)
+    {
+        List<JMenuItem> items = new ArrayList<>();
+
+        if(mPlaylistActions == null)
+        {
+            return items;
+        }
+
+        List<SiteRecord> sites = mSitePainter.getSitesAt(getMapViewer(), point);
+
+        for(SiteRecord site: sites.subList(0, Math.min(sites.size(), 3)))
+        {
+            String label = site.systemName() + " \u00B7 Site " + site.siteNumber() +
+                (site.description() != null ? " " + site.description() : "");
+            String unsupported = RadioReferencePlaylistActions.getUnsupportedReason(site);
+
+            if(unsupported != null)
+            {
+                JMenuItem item = new JMenuItem(label + " \u2013 " + unsupported);
+                item.setEnabled(false);
+                items.add(item);
+                continue;
+            }
+
+            if(RadioReferencePlaylistActions.isRepeaterSite(site))
+            {
+                addRepeaterSiteItems(items, site, label);
+                continue;
+            }
+
+            Channel existing = mPlaylistActions.findSiteChannel(site);
+
+            if(existing != null)
+            {
+                boolean processing = existing.isProcessing();
+                JMenuItem item = new JMenuItem((processing ? "Disable: " : "Enable: ") + existing.getShortTitle());
+                item.addActionListener(e -> {
+                    if(processing)
+                    {
+                        mPlaylistActions.disable(existing, this::showSiteError);
+                    }
+                    else
+                    {
+                        mPlaylistActions.enable(existing, this::showSiteError);
+                    }
+                });
+                items.add(item);
+            }
+            else
+            {
+                JMenuItem item = new JMenuItem("Add and Start: " + label);
+                item.addActionListener(e -> mPlaylistActions.addSite(site, this::showSiteError));
+                items.add(item);
+            }
+        }
+
+        return items;
+    }
+
+    /**
+     * Menu items for a site whose repeaters each have a channel (LTR): add and start the repeaters that aren't in the
+     * playlist, and enable or disable the site's channels
+     */
+    private void addRepeaterSiteItems(List<JMenuItem> items, SiteRecord site, String label)
+    {
+        List<Channel> existing = mPlaylistActions.findSiteChannels(site);
+        int missing = mPlaylistActions.getMissingRepeaterFrequencies(site).size();
+        boolean anyDecoding = existing.stream().anyMatch(Channel::isProcessing);
+        boolean anyStopped = existing.stream().anyMatch(channel -> !channel.isProcessing());
+
+        if(missing > 0)
+        {
+            JMenuItem item = new JMenuItem("Add and Start: " + label + " (" + missing + " repeater" +
+                (missing > 1 ? "s" : "") + ")");
+            item.addActionListener(e -> mPlaylistActions.addSite(site, this::showSiteError));
+            items.add(item);
+        }
+        else if(anyStopped)
+        {
+            JMenuItem item = new JMenuItem("Enable: " + label + " (" + existing.size() + " channels)");
+            item.addActionListener(e -> mPlaylistActions.enableAll(existing, this::showSiteError));
+            items.add(item);
+        }
+
+        if(anyDecoding)
+        {
+            long decoding = existing.stream().filter(Channel::isProcessing).count();
+            JMenuItem item = new JMenuItem("Disable: " + label + " (" + decoding + " channel" +
+                (decoding > 1 ? "s" : "") + ")");
+            item.addActionListener(e -> mPlaylistActions.disableAll(existing, this::showSiteError));
+            items.add(item);
+        }
+    }
+
+    /**
+     * Shows an error from a site action.  Can be called from any thread.
+     */
+    private void showSiteError(String message)
+    {
+        EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(this, message, "Radio Reference",
+            JOptionPane.ERROR_MESSAGE));
+    }
+
+    /**
+     * Card for the radio reference sites under the point, or null when there are none
+     */
+    private String getSiteCard(Point point)
+    {
+        List<SiteRecord> sites = mSitePainter.getSitesAt(getMapViewer(), point);
+        return sites.isEmpty() ? null : RadioReferenceSiteCard.html(sites,
+            mUserPreferences.getRadioReferencePreference().getLocation());
+    }
+
+    /**
+     * Updates the user's location on the map when it changes, here or in the radio reference editor
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.RADIO_REFERENCE)
+        {
+            EventQueue.invokeLater(this::updateUserLocation);
+        }
+    }
+
+    /**
+     * Shows the user's location on the map.  When the location changes, the map centers on it, unless it was chosen on
+     * the map.  Clearing the location removes the pin and leaves the map as is.  Call on the Swing thread.
+     */
+    private void updateUserLocation()
+    {
+        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        GeoPosition position = location != null ? toGeoPosition(location) : null;
+        updateUserLocationLabel(location);
+
+        if(!Objects.equals(position, mUserLocationPainter.getPosition()))
+        {
+            mUserLocationPainter.setPosition(position);
+
+            //A location chosen on the map is already in view
+            if(position != null && !position.equals(mMapChosenPosition))
+            {
+                getMapViewer().setAddressLocation(position);
+            }
+
+            mMapChosenPosition = null;
+
+            getMapViewer().repaint();
+        }
+    }
+
+    private void updateUserLocationLabel(RadioReferencePreference.Location location)
+    {
+        getUserLocationLabel().setText(location != null ? location.coordinates() : LOCATION_NOT_SET);
+        getCenterOnUserLocationButton().setEnabled(location != null);
+        getUserLocationLabel().setToolTipText(location != null ? location.describe() :
+            "Set your location with the Set Current button or in the playlist editor's Radio Reference tab");
+    }
+
+    private JLabel getUserLocationLabel()
+    {
+        if(mUserLocationLabel == null)
+        {
+            mUserLocationLabel = new JLabel(LOCATION_NOT_SET);
+        }
+
+        return mUserLocationLabel;
+    }
+
+    /**
+     * Button that sets the user's location to the center of the map
+     */
+    private JButton getSetUserLocationButton()
+    {
+        if(mSetUserLocationButton == null)
+        {
+            mSetUserLocationButton = new JButton("Set Current");
+            mSetUserLocationButton.setToolTipText("Sets your location, which is also used by the playlist editor's " +
+                "Radio Reference tab, to the center of the map");
+            mSetUserLocationButton.addActionListener(e -> setUserLocation(getMapViewer().getCenterPosition()));
+        }
+
+        return mSetUserLocationButton;
+    }
+
+    /**
+     * Button that centers the map on the user's location.  Enabled when the location is set.
+     */
+    private JButton getCenterOnUserLocationButton()
+    {
+        if(mCenterOnUserLocationButton == null)
+        {
+            mCenterOnUserLocationButton = new JButton("Center On");
+            mCenterOnUserLocationButton.setToolTipText("Centers the map on your location");
+            mCenterOnUserLocationButton.setEnabled(false);
+            mCenterOnUserLocationButton.addActionListener(e -> {
+                GeoPosition position = mUserLocationPainter.getPosition();
+
+                if(position != null)
+                {
+                    getMapViewer().setCenterPosition(position);
+                }
+            });
+        }
+
+        return mCenterOnUserLocationButton;
+    }
+
+    /**
+     * Sets the user's location to a point chosen on the map, with the Set Current button or the map's 'Set My Location
+     * Here' menu item.  The pin, the location label and the radio reference editor follow through the preference
+     * update.  The map isn't re-centered, since the point is already in view.
+     * Call on the Swing thread.
+     * @param position chosen on the map
+     */
+    private void setUserLocation(GeoPosition position)
+    {
+        double latitude = round(position.getLatitude());
+        double longitude = round(normalizeLongitude(position.getLongitude()));
+
+        if(RadioReferencePreference.Location.isValid(latitude, longitude))
+        {
+            mMapChosenPosition = new GeoPosition(latitude, longitude);
+            mUserPreferences.getRadioReferencePreference()
+                .setLocation(new RadioReferencePreference.Location(latitude, longitude, null));
+        }
+    }
+
+    /**
+     * Stores the map's center point and zoom level, so the map shows the same view when the application starts.
+     * Call on the Swing thread.
+     */
+    private void saveView()
+    {
+        GeoPosition center = getMapViewer().getCenterPosition();
+        MapPreference preference = mUserPreferences.getMapPreference();
+
+        try
+        {
+            preference.setCenter(new MapPreference.Center(round(center.getLatitude()),
+                round(normalizeLongitude(center.getLongitude()))));
+        }
+        catch(IllegalArgumentException e)
+        {
+            //Not a storable position - keep the previous center
+        }
+
+        preference.setZoom(getMapViewer().getZoom());
+    }
+
+    /**
+     * Wraps a longitude into -180 to 180 degrees, since the map can be panned past +/-180 degrees
+     */
+    private static double normalizeLongitude(double longitude)
+    {
+        return ((longitude + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+    }
+
+    /**
+     * Rounds degrees to six decimal places (about 0.1 meter)
+     */
+    private static double round(double degrees)
+    {
+        return Math.round(degrees * 1_000_000.0) / 1_000_000.0;
+    }
+
+    private static GeoPosition toGeoPosition(RadioReferencePreference.Location location)
+    {
+        return new GeoPosition(location.latitude(), location.longitude());
     }
 
     private void init()
@@ -111,15 +485,23 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
 
         JPanel cp = new JPanel();
         cp.setLayout(new MigLayout("insets 5", "[grow,fill][grow,fill][grow,fill]",
-                "[grow,fill][][][][][][grow,fill][]"));
-        cp.add(new JScrollPane(getPlottedTracksTable()), "span 3,wrap");
+                "[][][][][grow,fill][][][][][][grow,fill][]"));
 
-        cp.add(getMapZoomSpinner());
-        JPanel zoomCenterPanel = new JPanel();
-        zoomCenterPanel.setLayout(new MigLayout("insets 0", "[]5[grow,fill]", ""));
-        zoomCenterPanel.add(new JLabel("Zoom"));
-        zoomCenterPanel.add(getCenterOnSelectedCheckBox());
-        cp.add(zoomCenterPanel, "span 2, wrap");
+        //The columns stretch the labels to the column width, so the label aligns its own text
+        cp.add(new JLabel("My Location:", SwingConstants.RIGHT), "align right");
+        cp.add(getUserLocationLabel(), "span 2, wrap");
+
+        cp.add(getSetUserLocationButton());
+        cp.add(getCenterOnUserLocationButton(), "wrap");
+
+        cp.add(new JLabel("Zoom:", SwingConstants.RIGHT), "align right");
+        //Spinner at its natural width, rather than filling the column
+        cp.add(getMapZoomSpinner(), "wmax pref, wrap");
+
+        cp.add(getShowSitesCheckBox(), "span 2");
+        cp.add(getSiteCountLabel(), "wrap");
+
+        cp.add(new JScrollPane(getPlottedTracksTable()), "span 3,wrap");
 
         cp.add(getDeleteTrackButton());
         cp.add(getDeleteAllTracksButton());
@@ -132,7 +514,9 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
         cp.add(getTrackHistoryLengthComboBox());
         cp.add(new JLabel("Track History Length"), "span 2, wrap");
 
-        cp.add(new JLabel("Selected System:"), "align right");
+        cp.add(getCenterOnSelectedCheckBox(), "span 3, wrap");
+
+        cp.add(new JLabel("Selected System:", SwingConstants.RIGHT), "align right");
         cp.add(getSelectedTrackSystemLabel(), "span 2, wrap");
 
         cp.add(new JScrollPane(getTrackHistoryTable()), "span 3,wrap");
@@ -526,12 +910,47 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
     {
         if(mMapViewer == null)
         {
-            mMapViewer = new JXMapViewer();
+            //The tooltip is the card of the radio reference sites under the mouse
+            mMapViewer = new JXMapViewer()
+            {
+                @Override
+                public String getToolTipText(MouseEvent event)
+                {
+                    return getSiteCard(event.getPoint());
+                }
+
+                @Override
+                public Point getToolTipLocation(MouseEvent event)
+                {
+                    return new Point(event.getX() + 16, event.getY() + 16);
+                }
+            };
+            ToolTipManager.sharedInstance().registerComponent(mMapViewer);
+            //Keep the card up long enough to read the channels while the mouse is over the map
+            mMapViewer.addMouseListener(new MouseAdapter()
+            {
+                @Override
+                public void mouseEntered(MouseEvent event)
+                {
+                    mDefaultTooltipDismissDelay = ToolTipManager.sharedInstance().getDismissDelay();
+                    ToolTipManager.sharedInstance().setDismissDelay(60_000);
+                }
+
+                @Override
+                public void mouseExited(MouseEvent event)
+                {
+                    if(mDefaultTooltipDismissDelay >= 0)
+                    {
+                        ToolTipManager.sharedInstance().setDismissDelay(mDefaultTooltipDismissDelay);
+                    }
+                }
+            });
 
             /**
              * Set the entity painter as the overlay painter and register this panel to receive new messages (plots)
              */
-            mMapViewer.setOverlayPainter(mMapPainter);
+            //Radio reference sites under the tracks, and the user's location pin over the tracks
+            mMapViewer.setOverlayPainter(new CompoundPainter<>(mSitePainter, mMapPainter, mUserLocationPainter));
 
             /**
              * Map image source
@@ -546,20 +965,46 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
             tileFactory.setThreadPoolSize(8);
 
             /**
-             * Set initial location and zoom for the map upon display
+             * Set initial location and zoom for the map upon display: the last view, or else the user's location, or
+             * else Syracuse, NY.
              */
-            GeoPosition syracuse = new GeoPosition(43.048, -76.147);
-            int zoom = 7;
+            MapPreference mapPreference = mUserPreferences.getMapPreference();
+            MapPreference.Center center = mapPreference.getCenter();
+            RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+            GeoPosition initial;
 
-            MapViewSetting view = mSettingsManager.getMapViewSetting("Default", syracuse, zoom);
+            if(center != null)
+            {
+                initial = new GeoPosition(center.latitude(), center.longitude());
+            }
+            else if(location != null)
+            {
+                initial = toGeoPosition(location);
+            }
+            else
+            {
+                initial = new GeoPosition(43.048, -76.147);
+            }
 
-            mMapViewer.setAddressLocation(view.getGeoPosition());
-            mMapZoomSpinnerModel.setValue(view.getZoom());
+            //Set the zoom on the map too: the spinner doesn't update the map when the value equals its initial value
+            mMapViewer.setZoom(mapPreference.getZoom());
+            mMapViewer.setAddressLocation(initial);
+            mMapZoomSpinnerModel.setValue(mapPreference.getZoom());
+
+            //Remember the view after each pan or zoom, once the map stops moving
+            mSaveViewTimer = new Timer(SAVE_VIEW_DELAY_MS, e -> saveView());
+            mSaveViewTimer.setRepeats(false);
+            mMapViewer.addPropertyChangeListener(event -> {
+                if("centerPosition".equals(event.getPropertyName()) || "zoom".equals(event.getPropertyName()))
+                {
+                    mSaveViewTimer.restart();
+                }
+            });
 
             /**
              * Add a mouse adapter for panning and scrolling
              */
-            MapMouseListener listener = new MapMouseListener(mMapViewer, mSettingsManager);
+            MapMouseListener listener = new MapMouseListener(mMapViewer, this::setUserLocation, this::getSiteMenuItems);
             mMapViewer.addMouseListener(listener);
             mMapViewer.addMouseMotionListener(listener);
 
