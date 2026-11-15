@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,33 +22,25 @@ package io.github.dsheirer.module.decode.dmr.message.voice;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
 import java.util.HashSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * DMR Voice Frame B-F Embedded Signalling Chunk
  */
 public class EMB
 {
-    private final static Logger mLog = LoggerFactory.getLogger(EMB.class);
-    private static final int[] VALID_WORDS = new int[]{
-        0x0000, 0x0273, 0x04E5, 0x0696, 0x09C9, 0x0BBA, 0x0D2C, 0x0F5F, 0x11E2, 0x1391, 0x1507, 0x1774, 0x182B, 0x1A58,
-        0x1CCE, 0x1EBD, 0x21B7, 0x23C4, 0x2552, 0x2721, 0x287E, 0x2A0D, 0x2C9B, 0x2EE8, 0x3055, 0x3226, 0x34B0, 0x36C3,
-        0x399C, 0x3BEF, 0x3D79, 0x3F0A, 0x411E, 0x436D, 0x45FB, 0x4788, 0x48D7, 0x4AA4, 0x4C32, 0x4E41, 0x50FC, 0x528F,
-        0x5419, 0x566A, 0x5935, 0x5B46, 0x5DD0, 0x5FA3, 0x60A9, 0x62DA, 0x644C, 0x663F, 0x6960, 0x6B13, 0x6D85, 0x6FF6,
-        0x714B, 0x7338, 0x75AE, 0x77DD, 0x7882, 0x7AF1, 0x7C67, 0x7E14, 0x804F, 0x823C, 0x84AA, 0x86D9, 0x8986, 0x8BF5,
-        0x8D63, 0x8F10, 0x91AD, 0x93DE, 0x9548, 0x973B, 0x9864, 0x9A17, 0x9C81, 0x9EF2, 0xA1F8, 0xA38B, 0xA51D, 0xA76E,
-        0xA831, 0xAA42, 0xACD4, 0xAEA7, 0xB01A, 0xB269, 0xB4FF, 0xB68C, 0xB9D3, 0xBBA0, 0xBD36, 0xBF45, 0xC151, 0xC322,
-        0xC5B4, 0xC7C7, 0xC898, 0xCAEB, 0xCC7D, 0xCE0E, 0xD0B3, 0xD2C0, 0xD456, 0xD625, 0xD97A, 0xDB09, 0xDD9F, 0xDFEC,
-        0xE0E6, 0xE295, 0xE403, 0xE670, 0xE92F, 0xEB5C, 0xEDCA, 0xEFB9, 0xF104, 0xF377, 0xF5E1, 0xF792, 0xF8CD, 0xFABE,
-        0xFC28, 0xFE5B};
+    //Quadratic Residue (17,9) generator polynomial g(x) = x^8 + x^5 + x^4 + x^3 + 1, shortened to (16,7) after
+    //appending an even parity bit.
+    private static final int GENERATOR = 0x139;
+    private static final int INFORMATION_WORD_COUNT = 128;
+    private static final int[] VALID_WORDS = new int[INFORMATION_WORD_COUNT];
     private static final HashSet<Integer> WORD_SET = new HashSet<>();
 
     static
     {
-        for(int word: VALID_WORDS)
+        for(int information = 0; information < INFORMATION_WORD_COUNT; information++)
         {
-            WORD_SET.add(word);
+            VALID_WORDS[information] = encode(information);
+            WORD_SET.add(VALID_WORDS[information]);
         }
     }
 
@@ -56,8 +48,9 @@ public class EMB
     private static final int[] COLOR_CODE = new int[]{0, 1, 2, 3};
     private static final int ENCRYPTION_PI = 4;
     private static final int[] LINK_CONTROL_START_STOP = new int[]{5, 6};
-    //Maximum bit errors between the hard decision and the soft decision (maximum likelihood) word for validity.
-    private static final int SOFT_DECISION_MAX_BIT_ERRORS = 2;
+    //Maximum correctable bit errors for a minimum Hamming distance 6 code: (6 - 1) / 2 = 2.  Any decode that differs
+    //from the received word by more than this is ambiguous and is flagged invalid by both the hard and soft decoders.
+    private static final int MAX_CORRECTABLE_BIT_ERRORS = 2;
 
     private CorrectedBinaryMessage mMessage;
     private boolean mValid = true;
@@ -94,8 +87,42 @@ public class EMB
     }
 
     /**
+     * Encodes the 7-bit information word (color code, privacy indicator and LCSS) into the 16-bit QR(16,7,6)
+     * codeword: 7 information bits, followed by the 8 bit remainder of the information word times x^8 divided by the
+     * generator polynomial, followed by an even parity bit over the preceding 15 bits.
+     * @param information word in the range 0-127
+     * @return codeword
+     */
+    static int encode(int information)
+    {
+        int remainder = information << 8;
+
+        for(int bit = 14; bit >= 8; bit--)
+        {
+            if((remainder & (1 << bit)) != 0)
+            {
+                remainder ^= GENERATOR << (bit - 8);
+            }
+        }
+
+        int word = (information << 8) | remainder;
+        return (word << 1) | (Integer.bitCount(word) & 1);
+    }
+
+    /**
+     * Copy of the 128 valid codewords, indexed by information word.
+     */
+    static int[] getValidWords()
+    {
+        return VALID_WORDS.clone();
+    }
+
+    /**
      * Maximum likelihood soft decision decoding against all valid words.  Selects the valid word with the lowest sum
-     * of soft bit magnitudes for the bit positions where the valid word differs from the hard decision.
+     * of soft bit magnitudes for the bit positions where the valid word differs from the hard decision.  The message
+     * is always set to the selected word, but it is only flagged valid when the selected word is within the
+     * correctable bit error count.  Beyond that count, the selected word is still the best estimate available and is
+     * a better source for the LCSS used to assemble the embedded full link control fragments than the received bits.
      * @param softBits for the 16 transmitted bits.
      */
     private void decodeSoft(float[] softBits)
@@ -132,18 +159,20 @@ public class EMB
             getMessage().setCorrectedBitCount(bitErrors);
         }
 
-        mValid = bitErrors <= SOFT_DECISION_MAX_BIT_ERRORS;
+        mValid = bitErrors <= MAX_CORRECTABLE_BIT_ERRORS;
     }
 
     /**
      * Checks the EMB word using the Quadratic Residue(16,7,6) code as detailed in TS 102 361-1 B.3.2.
      *
      * Implementation Notes:
-     * There are 7 information bits protected by 9 parity bits with a Hamming distance of 6 meaning that this code can
-     * correct up to 3 bit errors.  The VALID_WORDS constant is a list of all possible (128) valid words precalculated
-     * with their corresponding QR checksum values.  When performing a CRC check, if the complete 16-bit value matches
-     * any of these valid words, then the value has no errors.  Otherwise, XOR the received value against all valid
-     * words and select any valid word that differs from the received word by no more than 3 bit position differences.
+     * There are 7 information bits protected by 9 parity bits with a minimum Hamming distance of 6 meaning that this
+     * code can correct up to 2 bit errors and detect 3 bit errors.  The VALID_WORDS constant is a list of all
+     * possible (128) valid words.  If the complete 16-bit value matches any of these valid words, then the value has
+     * no errors.  Otherwise, select the valid word that differs from the received word by no more than 2 bit
+     * positions.  The distance 6 guarantees that there is at most one such word.  When there is no such word, the
+     * message is left unchanged and flagged invalid.  Unlike the soft decoder, there is no unique best estimate at 3
+     * or more bit errors, and the received bits are as likely to hold the correct LCSS as the nearest valid word.
      */
     private void checkCRC()
     {
@@ -155,17 +184,15 @@ public class EMB
             return;
         }
 
-        int bitErrors = 0;
-
         for(int validWord: VALID_WORDS)
         {
-            bitErrors = Integer.bitCount(word ^ validWord);
+            int bitErrors = Integer.bitCount(word ^ validWord);
 
-            if(bitErrors <= 3)
+            if(bitErrors <= MAX_CORRECTABLE_BIT_ERRORS)
             {
                 getMessage().setInt(validWord, WORD);
                 getMessage().setCorrectedBitCount(bitErrors);
-                mValid = bitErrors <= 1;  //Only accept up to 1 bit error for validity
+                mValid = true;
                 return;
             }
         }
@@ -222,24 +249,5 @@ public class EMB
         sb.append(getLCSS());
         sb.append("CC:").append(getColorCode());
         return sb.toString();
-    }
-
-    public static void main(String[] args)
-    {
-        CorrectedBinaryMessage m = new CorrectedBinaryMessage(16);
-
-        for(int x = 0; x < Math.pow(2, 16); x++)
-        {
-            m.setInt(x, WORD);
-
-            EMB emb = new EMB(m);
-
-            if(!emb.isValid())
-            {
-                mLog.debug("Invalid: " + x);
-            }
-        }
-
-
     }
 }

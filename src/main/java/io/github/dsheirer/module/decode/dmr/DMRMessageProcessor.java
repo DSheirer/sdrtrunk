@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -181,7 +181,10 @@ public class DMRMessageProcessor implements Listener<IMessage>
         //Now that the message has been (potentially) enriched, dispatch it to the modules
         dispatch(message);
 
-        //Extract the Full Link Control message fragment from the Voice with embedded signalling message
+        //Extract the Full Link Control message fragment from the Voice with embedded signalling message.  The LCSS is
+        //used even when the EMB is flagged invalid: the soft decision best estimate is usually correct and the
+        //assembled message is validated by its own BPTC and checksum, while discarding these fragments loses valid
+        //FLC messages on weak signals.
         if(message instanceof VoiceEMBMessage voice)
         {
             if(message.getTimeslot() == 1)
