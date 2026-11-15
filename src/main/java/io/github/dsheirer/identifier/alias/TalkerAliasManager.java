@@ -19,7 +19,9 @@
 
 package io.github.dsheirer.identifier.alias;
 
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
@@ -114,6 +116,16 @@ public class TalkerAliasManager
                 mic.update(alias);
             }
         }
+    }
+
+    /**
+     * Current FROM radio in the identifier collection
+     * @param identifierCollection to inspect
+     * @return FROM radio identifier, or null
+     */
+    public static Identifier getFromRadio(IdentifierCollection identifierCollection)
+    {
+        return identifierCollection.getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
     }
 
     /**

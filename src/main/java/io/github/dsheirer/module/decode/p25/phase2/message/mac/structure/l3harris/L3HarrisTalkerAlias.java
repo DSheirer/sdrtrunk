@@ -75,19 +75,22 @@ public class L3HarrisTalkerAlias extends MacStructureVendor
     {
         if(mAliasIdentifier == null)
         {
-            int length = getLength() - 2;
+            //The alias fills the rest of the structure after the opcode, vendor and length octets
+            int start = ALIAS_START + getOffset();
+            int end = Math.min(getOffset() + getLength() * 8, getMessage().size());
 
-            if(length > 0)
+            if(end > start)
             {
-                length *= 8;
-                length += getOffset();
+                byte[] bytes = getMessage().getSubMessage(start, end).getBytes();
+                int length = 0;
 
-                if(length > getMessage().size())
+                //The alias is padded with zero bytes
+                while(length < bytes.length && bytes[length] != 0)
                 {
-                    length = getMessage().size();
+                    length++;
                 }
 
-                String alias = new String(getMessage().getSubMessage(ALIAS_START + getOffset(), length).getBytes()).trim();
+                String alias = new String(bytes, 0, length).trim();
                 mAliasIdentifier = P25TalkerAliasIdentifier.create(alias);
             }
         }

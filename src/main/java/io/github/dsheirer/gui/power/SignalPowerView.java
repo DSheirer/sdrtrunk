@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,99 +21,109 @@ package io.github.dsheirer.gui.power;
 
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.squelch.ISquelchConfiguration;
-import io.github.dsheirer.gui.control.DbPowerMeter;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.source.SourceEvent;
-import java.awt.EventQueue;
 import java.text.DecimalFormat;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
-import net.miginfocom.swing.MigLayout;
-
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import jiconfont.javafx.IconNode;
 
 /**
- * Swing view for displaying signal power measurements with integrated squelch control.
+ * Signal power meter with squelch threshold controls for the AM decoder.
  */
-public class SignalPowerView extends JPanel
+public class SignalPowerView extends HBox
 {
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
     private static final String NOT_AVAILABLE = "Not Available";
-    private final DbPowerMeter mPowerMeter = new DbPowerMeter();
-    private final PeakMonitor mPeakMonitor = new PeakMonitor(DbPowerMeter.DEFAULT_MINIMUM_POWER);
-    private final JLabel mPowerLabel;
-    private final JLabel mPeakLabel;
-    private final JLabel mSquelchLabel;
-    private final JLabel mSquelchValueLabel;
-    private final JButton mSquelchUpButton;
-    private final JButton mSquelchDownButton;
-    private final JCheckBox mSquelchAutoTrackCheckBox;
-    private double mSquelchThreshold;
+    private final PowerMeter mPowerMeter = new PowerMeter();
+    private final PeakMonitor mPeakMonitor = new PeakMonitor(PowerMeter.DEFAULT_MINIMUM_POWER);
+    private final Label mPowerLabel = new Label("0");
+    private final Label mPeakLabel = new Label("0");
+    private final Label mSquelchLabel = new Label("Squelch:");
+    private final Label mSquelchValueLabel = new Label(NOT_AVAILABLE);
+    private final Button mSquelchUpButton = new Button();
+    private final Button mSquelchDownButton = new Button();
+    private final CheckBox mSquelchAutoTrackCheckBox = new CheckBox("Auto Track");
+    private final AtomicBoolean mPowerUpdatePending = new AtomicBoolean();
+    private volatile double mPower;
+    private volatile double mPeak;
+    private volatile double mSquelchThreshold;
     private final PlaylistManager mPlaylistManager;
-    private ProcessingChain mProcessingChain;
+    private volatile ProcessingChain mProcessingChain;
 
+    /**
+     * Constructs an instance.  Construct on the JavaFX application thread.
+     * @param playlistManager for saving squelch changes to the channel configuration
+     */
     public SignalPowerView(PlaylistManager playlistManager)
     {
+        super(10);
         mPlaylistManager = playlistManager;
+        setPadding(new Insets(5));
 
-        setLayout(new MigLayout("", "[][][][grow,fill]", "[grow,fill]"));
+        Label meterTitle = new Label("Power (dB)");
         mPowerMeter.setPeakVisible(true);
         mPowerMeter.setSquelchThresholdVisible(true);
-        add(mPowerMeter);
+        //Follow the themed label text color and font so that the meter is readable in light and dark themes
+        mPowerMeter.foregroundProperty().bind(meterTitle.textFillProperty());
+        mPowerMeter.fontProperty().bind(meterTitle.fontProperty());
+        VBox.setVgrow(mPowerMeter, Priority.ALWAYS);
+        VBox meterBox = new VBox(3, meterTitle, mPowerMeter);
+        meterBox.setMinWidth(90);
 
-        JPanel valuePanel = new JPanel();
-        valuePanel.setLayout(new MigLayout("", "[right][left][][]", ""));
+        mPeakLabel.setTooltip(new Tooltip("Current peak power level in decibels."));
+        mPowerLabel.setTooltip(new Tooltip("Current Power level in decibels"));
+        mSquelchValueLabel.setTooltip(new Tooltip("Squelch threshold value in decibels"));
 
-        mPeakLabel = new JLabel("0");
-        mPeakLabel.setToolTipText("Current peak power level in decibels.");
-        valuePanel.add(new JLabel("Peak:"));
-        valuePanel.add(mPeakLabel, "wrap");
+        mSquelchUpButton.setGraphic(icon(FontAwesome.ANGLE_UP));
+        mSquelchUpButton.setTooltip(new Tooltip("Increases the squelch threshold value"));
+        mSquelchUpButton.setOnAction(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold + 1)));
 
-        mPowerLabel = new JLabel("0");
-        mPowerLabel.setToolTipText("Current Power level in decibels");
-        valuePanel.add(new JLabel("Power:"));
-        valuePanel.add(mPowerLabel, "wrap");
+        mSquelchDownButton.setGraphic(icon(FontAwesome.ANGLE_DOWN));
+        mSquelchDownButton.setTooltip(new Tooltip("Decreases the squelch threshold value."));
+        mSquelchDownButton.setOnAction(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold - 1)));
 
-        mSquelchLabel = new JLabel("Squelch:");
-        mSquelchLabel.setEnabled(false);
-        valuePanel.add(mSquelchLabel);
-        mSquelchValueLabel = new JLabel(NOT_AVAILABLE);
-        mSquelchValueLabel.setToolTipText("Squelch threshold value in decibels");
-        mSquelchValueLabel.setEnabled(false);
-        valuePanel.add(mSquelchValueLabel, "wrap");
-
-        IconFontSwing.register(FontAwesome.getIconFont());
-        Icon iconUp = IconFontSwing.buildIcon(FontAwesome.ANGLE_UP, 12);
-        mSquelchUpButton = new JButton(iconUp);
-        mSquelchUpButton.setToolTipText("Increases the squelch threshold value");
-        mSquelchUpButton.setEnabled(false);
-        mSquelchUpButton.addActionListener(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold + 1)));
-        valuePanel.add(mSquelchUpButton);
-
-        Icon iconDown = IconFontSwing.buildIcon(FontAwesome.ANGLE_DOWN, 12);
-        mSquelchDownButton = new JButton(iconDown);
-        mSquelchDownButton.setToolTipText("Decreases the squelch threshold value.");
-        mSquelchDownButton.setEnabled(false);
-        mSquelchDownButton.addActionListener(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold - 1)));
-        valuePanel.add(mSquelchDownButton, "wrap");
-
-        mSquelchAutoTrackCheckBox = new JCheckBox("Auto Track");
-        mSquelchAutoTrackCheckBox.setToolTipText("Enable or disable monitoring of the noise floor to auto-adjust the " +
-                "squelch threshold value maintaining a consistent level/buffer above the noise floor");
-        mSquelchAutoTrackCheckBox.setEnabled(false);
-        mSquelchAutoTrackCheckBox.addActionListener(e ->
-        {
+        mSquelchAutoTrackCheckBox.setTooltip(new Tooltip("Enable or disable monitoring of the noise floor to " +
+            "auto-adjust the squelch threshold value maintaining a consistent level/buffer above the noise floor"));
+        mSquelchAutoTrackCheckBox.setOnAction(e -> {
             broadcast(SourceEvent.requestSquelchAutoTrack(mSquelchAutoTrackCheckBox.isSelected()));
             setConfigSquelchAutoTrack(mSquelchAutoTrackCheckBox.isSelected());
         });
-        valuePanel.add(mSquelchAutoTrackCheckBox, "span,left");
 
-        add(valuePanel);
+        GridPane values = new GridPane();
+        values.setHgap(5);
+        values.setVgap(5);
+        values.add(new Label("Peak:"), 0, 0);
+        values.add(mPeakLabel, 1, 0);
+        values.add(new Label("Power:"), 0, 1);
+        values.add(mPowerLabel, 1, 1);
+        values.add(mSquelchLabel, 0, 2);
+        values.add(mSquelchValueLabel, 1, 2);
+        values.add(new HBox(3, mSquelchUpButton, mSquelchDownButton), 0, 3, 2, 1);
+        values.add(mSquelchAutoTrackCheckBox, 0, 4, 2, 1);
+        values.setAlignment(Pos.TOP_LEFT);
+
+        getChildren().addAll(meterBox, values);
+        reset();
+    }
+
+    private IconNode icon(FontAwesome fontAwesome)
+    {
+        IconNode iconNode = new IconNode(fontAwesome);
+        iconNode.fillProperty().bind(mSquelchLabel.textFillProperty());
+        return iconNode;
     }
 
     /**
@@ -125,9 +135,11 @@ public class SignalPowerView extends JPanel
      */
     private void setConfigSquelchThreshold(int threshold)
     {
-        if(mProcessingChain != null)
+        ProcessingChain processingChain = mProcessingChain;
+
+        if(processingChain != null)
         {
-            Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
+            Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(processingChain);
 
             if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration configuration)
             {
@@ -154,15 +166,16 @@ public class SignalPowerView extends JPanel
 
     private void broadcast(SourceEvent sourceEvent)
     {
-        if(mProcessingChain != null)
+        ProcessingChain processingChain = mProcessingChain;
+
+        if(processingChain != null)
         {
-            mProcessingChain.broadcast(sourceEvent);
+            processingChain.broadcast(sourceEvent);
         }
     }
 
     /**
-     * Resets controls when changing processing chain source.  Note: this must be called on the Swing
-     * dispatch thread because it directly invokes swing components.
+     * Resets controls when changing processing chain source.  Call on the JavaFX application thread.
      */
     private void reset()
     {
@@ -170,44 +183,53 @@ public class SignalPowerView extends JPanel
         mPowerMeter.reset();
         mPeakLabel.setText("0");
         mPowerLabel.setText("0");
-        mSquelchLabel.setEnabled(false);
-        mSquelchValueLabel.setText("Not Available");
-        mSquelchValueLabel.setEnabled(false);
-        mSquelchUpButton.setEnabled(false);
-        mSquelchDownButton.setEnabled(false);
-        mSquelchAutoTrackCheckBox.setEnabled(false);
+        mSquelchLabel.setDisable(true);
+        mSquelchValueLabel.setText(NOT_AVAILABLE);
+        mSquelchValueLabel.setDisable(true);
+        mSquelchUpButton.setDisable(true);
+        mSquelchDownButton.setDisable(true);
+        mSquelchAutoTrackCheckBox.setDisable(true);
         mSquelchAutoTrackCheckBox.setSelected(false);
     }
 
+    /**
+     * Processes power and squelch source events from the processing chain.  Can be called from any thread.
+     */
     public void receive(SourceEvent sourceEvent)
     {
         switch(sourceEvent.getEvent())
         {
             case NOTIFICATION_CHANNEL_POWER ->
             {
-                final double power = sourceEvent.getValue().doubleValue();
-                final double peak = mPeakMonitor.process(power);
+                mPower = sourceEvent.getValue().doubleValue();
+                mPeak = mPeakMonitor.process(mPower);
 
-                EventQueue.invokeLater(() -> {
-                    mPowerMeter.setPower(power);
-                    mPowerLabel.setText(DECIMAL_FORMAT.format(power));
-
-                    mPowerMeter.setPeak(peak);
-                    mPeakLabel.setText(DECIMAL_FORMAT.format(peak));
-                });
+                //Power notifications are frequent, so combine the updates that arrive while one is pending
+                if(mPowerUpdatePending.compareAndSet(false, true))
+                {
+                    Platform.runLater(() -> {
+                        mPowerUpdatePending.set(false);
+                        double power = mPower;
+                        double peak = mPeak;
+                        mPowerMeter.setPower(power);
+                        mPowerLabel.setText(DECIMAL_FORMAT.format(power));
+                        mPowerMeter.setPeak(peak);
+                        mPeakLabel.setText(DECIMAL_FORMAT.format(peak));
+                    });
+                }
             }
             case NOTIFICATION_SQUELCH_THRESHOLD ->
             {
                 final double threshold = sourceEvent.getValue().doubleValue();
                 mSquelchThreshold = threshold;
 
-                EventQueue.invokeLater(() -> {
+                Platform.runLater(() -> {
                     mPowerMeter.setSquelchThreshold(threshold);
-                    mSquelchLabel.setEnabled(true);
-                    mSquelchValueLabel.setEnabled(true);
+                    mSquelchLabel.setDisable(false);
+                    mSquelchValueLabel.setDisable(false);
                     mSquelchValueLabel.setText(DECIMAL_FORMAT.format(threshold));
-                    mSquelchDownButton.setEnabled(true);
-                    mSquelchUpButton.setEnabled(true);
+                    mSquelchDownButton.setDisable(false);
+                    mSquelchUpButton.setDisable(false);
                 });
             }
             case NOTIFICATION_SQUELCH_USER_THRESHOLD ->
@@ -215,16 +237,16 @@ public class SignalPowerView extends JPanel
             case NOTIFICATION_SQUELCH_AUTO_TRACK ->
             {
                 boolean autoTrack = sourceEvent.getValue().intValue() == 1;
-                EventQueue.invokeLater(() -> {
+                Platform.runLater(() -> {
                     mSquelchAutoTrackCheckBox.setSelected(autoTrack);
-                    mSquelchAutoTrackCheckBox.setEnabled(true);
+                    mSquelchAutoTrackCheckBox.setDisable(false);
                 });
             }
         }
     }
 
     /**
-     * Sets the processing chain for this view
+     * Sets the processing chain for this view.  Call on the JavaFX application thread.
      */
     public void setProcessingChain(ProcessingChain processingChain)
     {

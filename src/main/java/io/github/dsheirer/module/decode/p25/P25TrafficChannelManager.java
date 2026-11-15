@@ -19,20 +19,24 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
-import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
+import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
@@ -934,6 +938,43 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                 tracker.updateDurationTraffic(timestamp);
                 broadcast(tracker);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+    }
+
+    /**
+     * Adds a talker alias that completed after the call ended (e.g. a P25 Phase 1 L3Harris talker alias in the TDULC
+     * messages) to the call event that just ended on the frequency and timeslot, when that event's FROM radio is the
+     * talker.  The event duration isn't changed.
+     *
+     * @param frequency of the traffic channel
+     * @param timeslot of the traffic channel (TIMESLOT_1 for Phase 1)
+     * @param radio that the talker alias belongs to
+     * @param talkerAlias to add
+     */
+    public void processTrafficTalkerAliasAfterCall(long frequency, int timeslot, RadioIdentifier radio,
+                                                   Identifier talkerAlias)
+    {
+        mLock.lock();
+
+        try
+        {
+            P25ChannelEventTracker tracker = getTracker(frequency, timeslot);
+
+            if(tracker != null && tracker.isComplete() && radio != null && talkerAlias != null)
+            {
+                Identifier from = tracker.getEvent().getIdentifierCollection()
+                        .getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
+
+                if(from instanceof RadioIdentifier eventRadio && eventRadio.getValue().equals(radio.getValue()))
+                {
+                    tracker.addIdentifierIfMissing(talkerAlias);
+                    broadcast(tracker);
+                }
             }
         }
         finally

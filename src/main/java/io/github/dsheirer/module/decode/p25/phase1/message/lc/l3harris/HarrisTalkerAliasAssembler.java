@@ -103,9 +103,10 @@ public class HarrisTalkerAliasAssembler
     {
         if(mBlock1 != null && mBlock2 != null)
         {
-            String fragment2 = mBlock2.getPayloadFragmentString();
-            String fragment3 = mBlock3 != null ? mBlock3.getPayloadFragmentString() : null;
-            String fragment4 = mBlock4 != null ? mBlock4.getPayloadFragmentString() : null;
+            //Untrimmed, so that a space at the start or end of a fragment is kept within the alias
+            String fragment2 = mBlock2.getPayloadFragmentText();
+            String fragment3 = mBlock3 != null ? mBlock3.getPayloadFragmentText() : null;
+            String fragment4 = mBlock4 != null ? mBlock4.getPayloadFragmentText() : null;
             return new LCHarrisTalkerAliasComplete(mBlock1.getMessage(), fragment2, fragment3, fragment4, mTimestamp);
         }
 
