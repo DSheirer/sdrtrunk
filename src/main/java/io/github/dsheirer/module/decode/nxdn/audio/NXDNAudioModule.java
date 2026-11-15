@@ -22,7 +22,6 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
-import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
@@ -41,7 +40,6 @@ import java.util.List;
 public class NXDNAudioModule extends AmbeAudioModule
 {
     private final SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-    private final NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private final List<Audio> mCachedAudioMessages = new ArrayList<>();
     private boolean mEncryptedCall = false;
     private boolean mEncryptedCallStateEstablished = false;
@@ -142,9 +140,7 @@ public class NXDNAudioModule extends AmbeAudioModule
         {
             for(byte[] frame : audio.getAudioFrames())
             {
-                float[] generatedAudio = getAudioCodec().getAudio(frame);
-                generatedAudio = mGain.apply(generatedAudio);
-                addAudio(generatedAudio);
+                addAudio(getAudioCodec().getAudio(frame));
             }
         }
         else
