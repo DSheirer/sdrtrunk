@@ -99,7 +99,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     }
 
     /**
-     * Processes DMR AMBE audio frames and signalling messages.
+     * Processes DMR AMBE audio frames and signaling messages.
      */
     public void receive(IMessage message)
     {
@@ -166,7 +166,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
 
             //Queue or process audio frames.  Note: audio frames are held/queued until encrypted state is established
             //before any audio is generated for the audio segment.
-            if(message instanceof VoiceMessage voiceMessage)
+            if(message instanceof VoiceMessage voiceMessage && voiceMessage.isValid())
             {
                 if(mEncryptedCallStateEstablished && mEncryptedCall)
                 {
@@ -181,7 +181,12 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                     }
                 }
             }
-            else if(message instanceof Terminator)
+            else if(message instanceof VoiceHeader voiceHeader && voiceHeader.isValid())
+            {
+                //Clear any queued audio frames received prior to the voice header
+                mQueuedAmbeFrames.clear();
+            }
+            else if(message instanceof Terminator terminator && terminator.isValid())
             {
                 reset();
             }
