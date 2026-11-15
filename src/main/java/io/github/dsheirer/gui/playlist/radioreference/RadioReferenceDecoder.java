@@ -500,7 +500,8 @@ public class RadioReferenceDecoder
                 return Protocol.NXDN;
             case "EDACS":
                 //EDACS narrowband and SCAT are not supported
-                if(flavor != null && (flavor.getName().contentEquals("Narrowband") || flavor.getName().contentEquals("SCAT")))
+                if(flavor != null && flavor.getName() != null &&
+                    (flavor.getName().contains("Narrowband") || flavor.getName().contains("SCAT")))
                 {
                     break;
                 }
@@ -583,7 +584,8 @@ public class RadioReferenceDecoder
 
                 case "EDACS":
                     //EDACS narrowband and SCAT are not supported
-                    if(flavor != null && (flavor.getName().contentEquals("Narrowband") || flavor.getName().contentEquals("SCAT")))
+                    if(flavor != null && flavor.getName() != null &&
+                        (flavor.getName().contains("Narrowband") || flavor.getName().contains("SCAT")))
                     {
                         break;
                     }
