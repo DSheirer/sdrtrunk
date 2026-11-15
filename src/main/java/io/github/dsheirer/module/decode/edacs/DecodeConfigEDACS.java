@@ -51,7 +51,12 @@ public class DecodeConfigEDACS extends DecodeConfiguration
     public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 2000;
     public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
     private String mLcnFrequencies = "";
-    private VoiceMode mVoiceMode = VoiceMode.ANALOG;
+    /**
+     * Voice mode for a new configuration.  Auto follows the grant, so a ProVoice call is never sent to the analog
+     * decoder, where it is heard as a burst of noise.
+     */
+    public static final VoiceMode VOICE_MODE_DEFAULT = VoiceMode.AUTO;
+    private VoiceMode mVoiceMode = VOICE_MODE_DEFAULT;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT_EDACS;
 
     /**
@@ -107,7 +112,7 @@ public class DecodeConfigEDACS extends DecodeConfiguration
 
     public void setVoiceMode(VoiceMode mode)
     {
-        mVoiceMode = mode != null ? mode : VoiceMode.ANALOG;
+        mVoiceMode = mode != null ? mode : VOICE_MODE_DEFAULT;
     }
 
     /**

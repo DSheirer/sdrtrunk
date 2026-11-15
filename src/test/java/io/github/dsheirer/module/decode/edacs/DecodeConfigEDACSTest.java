@@ -29,6 +29,19 @@ import org.junit.jupiter.api.Test;
 class DecodeConfigEDACSTest
 {
     @Test
+    void voiceModeDefaultsToAuto()
+    {
+        //Auto follows the grant.  Analog as the default would play ProVoice calls through the analog decoder.
+        DecodeConfigEDACS config = new DecodeConfigEDACS();
+        assertEquals(DecodeConfigEDACS.VoiceMode.AUTO, config.getVoiceMode());
+        assertEquals(DecodeConfigEDACS.VoiceMode.PROVOICE, config.resolveVoiceMode(true));
+        assertEquals(DecodeConfigEDACS.VoiceMode.ANALOG, config.resolveVoiceMode(false));
+
+        config.setVoiceMode(null);
+        assertEquals(DecodeConfigEDACS.VoiceMode.AUTO, config.getVoiceMode());
+    }
+
+    @Test
     void voiceMarkerDefaultsToTheKnownValue()
     {
         DecodeConfigEDACS config = new DecodeConfigEDACS();

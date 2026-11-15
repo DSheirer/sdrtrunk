@@ -172,7 +172,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
         {
             mVoiceModeComboBox = new ComboBox<>();
             mVoiceModeComboBox.getItems().addAll(DecodeConfigEDACS.VoiceMode.values());
-            mVoiceModeComboBox.getSelectionModel().select(DecodeConfigEDACS.VoiceMode.ANALOG);
+            mVoiceModeComboBox.getSelectionModel().select(DecodeConfigEDACS.VOICE_MODE_DEFAULT);
             mVoiceModeComboBox.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
@@ -348,7 +348,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
         {
             mLcnFrequencyEditor.setText("");
             getVoiceMarkerTextField().setText(DecodeConfigEDACS.PROVOICE_VOICE_MARKER_DEFAULT);
-            getVoiceModeComboBox().getSelectionModel().select(DecodeConfigEDACS.VoiceMode.ANALOG);
+            getVoiceModeComboBox().getSelectionModel().select(DecodeConfigEDACS.VOICE_MODE_DEFAULT);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(DecodeConfigEDACS.TRAFFIC_CHANNEL_LIMIT_DEFAULT_EDACS);
         }
     }
