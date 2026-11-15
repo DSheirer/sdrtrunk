@@ -180,6 +180,10 @@ public class MotorolaTypeIIConfigurationEditor extends ChannelConfigurationEdito
             GridPane.setConstraints(obtHelpLabel, 0, row + 1, 4, 1);
             gridPane.getChildren().add(obtHelpLabel);
 
+            Label analogOnlyLabel = new Label("Analog voice only. Digital voice calls are listed as events and not played.");
+            GridPane.setConstraints(analogOnlyLabel, 0, row + 2, 4, 1);
+            gridPane.getChildren().add(analogOnlyLabel);
+
             updateObtFieldsVisibility();
 
             mDecoderPane.setContent(gridPane);

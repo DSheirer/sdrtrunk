@@ -125,7 +125,10 @@ public class MotorolaTypeIITrafficChannelManager extends TrafficChannelManager i
 
         mChannelGrantEventMap.put(channel, grantEvent);
 
-        //Digital voice isn't decoded.  The analog decoder would play it as noise, so the call is reported only.
+        //Analog voice only.  Digital voice isn't decoded and the analog decoder would play it as noise, so a digital
+        //call is reported and not followed.  To add it, start a traffic channel here for the digital grant and have
+        //DecoderFactory.processMotorolaTypeII build the P25 Phase 1 decoder, decoder state and JMBE audio module
+        //for that channel in place of the NBFM ones.  Untested: needs a recording of a digital call to work from.
         if(message.getMessageType() == MotorolaTypeIIMessageType.DIGITAL_GROUP_GRANT ||
             message.getMessageType() == MotorolaTypeIIMessageType.DIGITAL_PRIVATE_CALL)
         {
