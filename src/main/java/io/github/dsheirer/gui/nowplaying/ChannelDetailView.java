@@ -56,7 +56,7 @@ public class ChannelDetailView extends VBox implements Listener<ProcessingChain>
 
         Button refreshButton = new Button("Refresh");
         refreshButton.setTooltip(new Tooltip("Update the channel details"));
-        refreshButton.setOnAction(event -> receive(mProcessingChain));
+        refreshButton.setOnAction(event -> refresh());
 
         HBox labels = new HBox(5, new Label("System:"), grow(mSystemLabel), new Label("Site:"), grow(mSiteLabel),
             new Label("Channel Name:"), grow(mNameLabel), refreshButton);
@@ -66,6 +66,14 @@ public class ChannelDetailView extends VBox implements Listener<ProcessingChain>
         mDetailTextArea.setEditable(false);
         VBox.setVgrow(mDetailTextArea, Priority.ALWAYS);
         getChildren().addAll(labels, mDetailTextArea);
+    }
+
+    /**
+     * Updates the details for the currently selected channel.  Call on the JavaFX application thread.
+     */
+    public void refresh()
+    {
+        receive(mProcessingChain);
     }
 
     private static Label grow(Label label)

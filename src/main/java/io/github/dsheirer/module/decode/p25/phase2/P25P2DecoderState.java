@@ -22,19 +22,21 @@ import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
-import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.channel.state.TimeslotDecoderState;
-import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.alias.P25TalkerAliasIdentifier;
+import io.github.dsheirer.identifier.alias.TalkerAliasIdentifier;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.alias.TalkerAliasTracker;
 import io.github.dsheirer.identifier.encryption.EncryptionKey;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
@@ -147,6 +149,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     private PatchGroupManager mPatchGroupManager;
     private P25P2NetworkConfigurationMonitor mNetworkConfigurationMonitor = new P25P2NetworkConfigurationMonitor();
     private P25TrafficChannelManager mTrafficChannelManager;
+    //Keeps the talker alias matched to the talking radio and assigns received talker aliases to the right radio
+    private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
+            this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.NEXT_TALKER);
     private int mEndPttOnFacchCounter = 0;
 
     /**
@@ -190,6 +195,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      */
     protected void resetState()
     {
+        mTalkerAliasTracker.callEnded();
         super.resetState();
         mTrafficChannelManager.processP2TrafficCallEnd(getCurrentFrequency(), getTimeslot(), System.currentTimeMillis(), "RESET STATE INVOKED");
         mEndPttOnFacchCounter = 0;
@@ -239,6 +245,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
                 }
 
+                mTalkerAliasTracker.callActivity(message.getTimestamp());
+
                 //If we're tracking the call event, update the duration on it
                 mTrafficChannelManager.processP2TrafficVoice(getCurrentFrequency(), getTimeslot(), message.getTimestamp());
             }
@@ -265,7 +273,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             }
             else if(message instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
             {
-                mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
+                //Motorola talker aliases identify their radio
+                processTalkerAlias(tac.getAlias(), tac.getRadio(), tac.getTimestamp());
             }
         }
     }
@@ -285,6 +294,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case MAC_6_HANGTIME:
                 //During hangtime, the from talker is no longer involved in the call ... remove it because sometimes
                 //we don't get the end PTT to signal the end.
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(Role.FROM);
                 break;
         }
@@ -763,7 +773,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
             }
 
-            mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
+            mTalkerAliasTracker.update();
 
             continueState(State.ACTIVE);
         }
@@ -1103,14 +1113,15 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
         }
 
-        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
-
         if(message.getMacPduType() == MacPduType.MAC_3_IDLE || message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
         {
+            mTalkerAliasTracker.update();
             continueState(State.ACTIVE);
         }
         else
         {
+            mTalkerAliasTracker.callActivity(message.getTimestamp());
+
             if(mac instanceof IServiceOptionsProvider sop)
             {
                 IChannelDescriptor currentChannel = mTrafficChannelManager.processP2TrafficCurrentUser(getCurrentFrequency(),
@@ -1153,7 +1164,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             getIdentifierCollection().update(mPatchGroupManager.update(identifier, message.getTimestamp()));
         }
 
-        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
+        mTalkerAliasTracker.callActivity(message.getTimestamp());
 
         if(mac instanceof PushToTalk ptt)
         {
@@ -1225,6 +1236,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof EndPushToTalk)
         {
             //No matter what, remove the FROM identifier on end PTT.
+            mTalkerAliasTracker.callEnded();
             getIdentifierCollection().remove(Role.FROM);
 
             //Only reset the identifiers if the call event is closed out, otherwise we might have a timing issue
@@ -1519,6 +1531,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof MacRelease mr)
         {
             mTrafficChannelManager.processP2TrafficCallEnd(getCurrentFrequency(), getTimeslot(), message.getTimestamp(), "MAC RELEASE: " + mac.toString());
+            mTalkerAliasTracker.callEnded();
             getIdentifierCollection().remove(IdentifierClass.USER);
             broadcast(message, mac, DecodeEventType.COMMAND,
                     (mr.isForcedPreemption() ? "FORCED " : "") + "CALL PREEMPTION" +
@@ -1720,17 +1733,34 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     {
         if(mac instanceof L3HarrisTalkerAlias talkerAlias)
         {
-            P25TalkerAliasIdentifier alias = talkerAlias.getAlias();
-            getIdentifierCollection().update(alias);
-            mTrafficChannelManager.processP2TrafficCurrentUser(getCurrentFrequency(), getTimeslot(), alias, message.getTimestamp());
+            processTalkerAlias(talkerAlias.getAlias(), null, message.getTimestamp());
+        }
+    }
 
-            //Add the alias to the talker alias manager if we know the associated radio
-            Identifier from = getIdentifierCollection().getFromIdentifier();
+    /**
+     * Talker alias manager shared with the traffic channel manager
+     */
+    private TalkerAliasManager getTalkerAliasManager()
+    {
+        return mTrafficChannelManager.getTalkerAliasManager();
+    }
 
-            if(from instanceof RadioIdentifier ri)
-            {
-                mTrafficChannelManager.getTalkerAliasManager().update(ri, alias);
-            }
+    /**
+     * Processes a talker alias: stores it for its radio and adds it to the call that it belongs to.
+     * @param talkerAlias that was received
+     * @param radio identified by the alias message, or null when the alias belongs to the talker of the current or
+     * just ended call
+     * @param timestamp of the message
+     */
+    private void processTalkerAlias(TalkerAliasIdentifier talkerAlias, RadioIdentifier radio, long timestamp)
+    {
+        switch(mTalkerAliasTracker.received(talkerAlias, radio, timestamp))
+        {
+            case CURRENT_CALL -> mTrafficChannelManager.processP2TrafficCurrentUser(getCurrentFrequency(), getTimeslot(),
+                    talkerAlias, timestamp);
+            case ENDED_CALL -> mTrafficChannelManager.processTrafficTalkerAliasAfterCall(getCurrentFrequency(),
+                    getTimeslot(), mTalkerAliasTracker.getEndedCallRadio(), talkerAlias);
+            default -> {} //Stored for the radio, for the radio's next call
         }
     }
 
@@ -1855,6 +1885,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             {
                 case REQUEST_RESET:
                     resetState();
+                    mTalkerAliasTracker.reset();
                     mNetworkConfigurationMonitor.reset();
                     break;
                 case NOTIFICATION_SOURCE_FREQUENCY:

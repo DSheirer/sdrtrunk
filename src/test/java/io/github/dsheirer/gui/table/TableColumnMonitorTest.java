@@ -196,6 +196,23 @@ public class TableColumnMonitorTest
     }
 
     @Test
+    public void columnAddedBetweenStoredColumnsTakesItsDefaultPosition() throws Exception
+    {
+        onFx(() -> {
+            //Stored by a version without the 'talker' column, with the user's order and a hidden column
+            mPreferences.put(KEY + ".column.order", "status,from,from.alias,to");
+            mPreferences.put(KEY + ".column.hidden", "to");
+            TableView<String> table = createTable("status", "from", "talker", "from.alias", "to");
+            TableColumnMonitor<String> monitor = monitor(table);
+            assertEquals(List.of("status", "from", "talker", "from.alias", "to"), ids(table));
+            assertEquals(List.of("status", "from", "talker", "from.alias"), visibleIds(table));
+
+            monitor.reset();
+            assertEquals(List.of("status", "from", "talker", "from.alias", "to"), visibleIds(table));
+        });
+    }
+
+    @Test
     public void lastVisibleColumnCantBeHidden() throws Exception
     {
         onFx(() -> {

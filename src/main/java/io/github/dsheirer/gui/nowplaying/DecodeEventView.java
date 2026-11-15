@@ -26,6 +26,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.gui.table.TableColumnMonitor;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
@@ -188,6 +189,10 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
             row -> formatIdentifiers(row.getItem().getIdentifierCollection(), Role.FROM, userPreferences),
             Row::revisionProperty));
 
+        //Talker alias sent over the air by the radio (e.g. DMR, P25 or NXDN)
+        columns.add(NowPlayingCells.column("talker", "Talker", null, Pos.CENTER,
+            row -> getTalkerAlias(row.getItem().getIdentifierCollection()), Row::revisionProperty));
+
         TableColumn<Row<IDecodeEvent>,AliasDisplay> fromAlias = NowPlayingCells.column("from.alias", "Alias",
             "From Alias", Pos.CENTER, row -> getAliases(row.getItem().getIdentifierCollection(), Role.FROM, aliasModel),
             Row::revisionProperty);
@@ -220,7 +225,52 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
         columns.add(NowPlayingCells.column("details", "Details", null, Pos.CENTER_LEFT,
             row -> row.getItem().getDetails(), Row::revisionProperty));
 
+        //Column numbers in the Swing version of the table, for its stored column widths.  Talker is a new column.
+        List<String> swingColumns = List.of("time", "duration", "event", "from", "from.alias", "to", "to.alias",
+            "channel", "frequency", "details");
+
+        for(TableColumn<Row<IDecodeEvent>,?> column: columns)
+        {
+            if(swingColumns.contains(column.getId()))
+            {
+                TableColumnMonitor.setLegacyIndex(column, swingColumns.indexOf(column.getId()));
+            }
+        }
+
         return columns;
+    }
+
+    /**
+     * Talker alias(es) in the identifier collection
+     */
+    private static String getTalkerAlias(IdentifierCollection identifierCollection)
+    {
+        if(identifierCollection == null)
+        {
+            return null;
+        }
+
+        List<String> aliases = new ArrayList<>();
+
+        for(Identifier identifier: identifierCollection.getIdentifiers(Form.TALKER_ALIAS))
+        {
+            if(identifier.getValue() != null)
+            {
+                aliases.add(identifier.getValue().toString());
+            }
+        }
+
+        return aliases.isEmpty() ? null : String.join(",", aliases);
+    }
+
+    /**
+     * Identifiers with the role, without talker aliases, which have their own column
+     */
+    private static List<Identifier> getIdentifiers(IdentifierCollection identifierCollection, Role role)
+    {
+        List<Identifier> identifiers = new ArrayList<>(identifierCollection.getIdentifiers(role));
+        identifiers.removeIf(identifier -> identifier.getForm() == Form.TALKER_ALIAS);
+        return identifiers;
     }
 
     /**
@@ -278,7 +328,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
             return null;
         }
 
-        List<Identifier> identifiers = identifierCollection.getIdentifiers(role);
+        List<Identifier> identifiers = getIdentifiers(identifierCollection, role);
 
         if(identifiers == null || identifiers.isEmpty())
         {
@@ -319,7 +369,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
             return null;
         }
 
-        List<Identifier> identifiers = identifierCollection.getIdentifiers(role);
+        List<Identifier> identifiers = getIdentifiers(identifierCollection, role);
 
         if(identifiers == null || identifiers.isEmpty())
         {

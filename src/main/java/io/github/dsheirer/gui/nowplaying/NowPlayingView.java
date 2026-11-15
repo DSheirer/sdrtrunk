@@ -62,14 +62,22 @@ public class NowPlayingView extends SplitPane
         mMessageActivityView = new MessageActivityView(userPreferences);
         mChannelSpectrumView = new ChannelSpectrumView(playlistManager);
 
+        Tab detailsTab = new Tab("Details", mChannelDetailView);
         Tab channelTab = new Tab("Channel", mChannelSpectrumView);
-        mTabPane.getTabs().addAll(new Tab("Details", mChannelDetailView), new Tab("Events", mDecodeEventView),
+        mTabPane.getTabs().addAll(detailsTab, new Tab("Events", mDecodeEventView),
             new Tab("Messages", mMessageActivityView), channelTab);
         mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
         //Turn the channel spectrum processing on only while the channel tab is selected
-        mTabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, newTab) ->
-            mChannelSpectrumView.setPanelVisible(newTab == channelTab));
+        mTabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, newTab) -> {
+            mChannelSpectrumView.setPanelVisible(newTab == channelTab);
+
+            //Show current details each time the user opens the details tab
+            if(newTab == detailsTab)
+            {
+                mChannelDetailView.refresh();
+            }
+        });
 
         mChannelMetadataView.addProcessingChainSelectionListener(mChannelDetailView);
         mChannelMetadataView.addProcessingChainSelectionListener(mDecodeEventView);

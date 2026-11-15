@@ -20,12 +20,12 @@ package io.github.dsheirer.module.decode.dmr;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
-import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.channel.state.TimeslotDecoderState;
-import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
@@ -33,9 +33,10 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.alias.DmrTalkerAliasIdentifier;
+import io.github.dsheirer.identifier.alias.TalkerAliasIdentifier;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.alias.TalkerAliasTracker;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
-import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.EmptyTimeslotPlaceholderMessage;
@@ -126,6 +127,11 @@ public class DMRDecoderState extends TimeslotDecoderState
     private DMRNetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
+    //Call event of the call that just ended, for a talker alias that completes after the call ends
+    private DecodeEvent mEndedCallEvent;
+    //Keeps the talker alias matched to the talking radio and assigns received talker aliases to the right radio
+    private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
+            this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.PREVIOUS_TALKER);
     private boolean mIgnoreCRCChecksums;
     private DMRDecoderState mSisterDecoderState;
 
@@ -1315,21 +1321,51 @@ public class DMRDecoderState extends TimeslotDecoderState
             case FULL_STANDARD_TALKER_ALIAS_COMPLETE:
                 if(message instanceof TalkerAliasComplete tac && tac.hasTalkerAliasIdentifier())
                 {
-                    getIdentifierCollection().update(tac.getTalkerAliasIdentifier());
-
-                    Identifier fromRadio = getIdentifierCollection().getFromIdentifier();
-
-                    if(hasTrafficChannelManager() && fromRadio instanceof RadioIdentifier radio)
-                    {
-                        mTrafficChannelManager.getTalkerAliasManager().update(radio, tac.getTalkerAliasIdentifier());
-                    }
-
-                    if(mCurrentCallEvent != null)
-                    {
-                        broadcast(mCurrentCallEvent);
-                    }
+                    processTalkerAlias(tac.getTalkerAliasIdentifier(), tac.getTimestamp());
                 }
                 break;
+        }
+    }
+
+    /**
+     * Talker alias manager shared with the traffic channel manager, or null when there's no traffic channel manager.
+     */
+    private TalkerAliasManager getTalkerAliasManager()
+    {
+        return hasTrafficChannelManager() ? mTrafficChannelManager.getTalkerAliasManager() : null;
+    }
+
+    /**
+     * Processes a talker alias: stores it for the talking radio and adds it to the call that it belongs to.
+     * @param talkerAlias that was received
+     * @param timestamp of the message
+     */
+    private void processTalkerAlias(TalkerAliasIdentifier talkerAlias, long timestamp)
+    {
+        switch(mTalkerAliasTracker.received(talkerAlias, null, timestamp))
+        {
+            case CURRENT_CALL ->
+            {
+                if(mCurrentCallEvent != null)
+                {
+                    mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
+                    broadcast(mCurrentCallEvent);
+                }
+            }
+            case ENDED_CALL ->
+            {
+                //Alias completed after the call ended: add it to that call's event when it's the same talker
+                if(mEndedCallEvent != null && TalkerAliasTracker.isSameRadio(mTalkerAliasTracker.getEndedCallRadio(),
+                        mEndedCallEvent.getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM)))
+                {
+                    MutableIdentifierCollection mic = new MutableIdentifierCollection(
+                            mEndedCallEvent.getIdentifierCollection().getIdentifiers());
+                    mic.update(talkerAlias);
+                    mEndedCallEvent.setIdentifierCollection(mic);
+                    broadcast(mEndedCallEvent);
+                }
+            }
+            default -> {} //Stored for the radio, for the radio's next call
         }
     }
 
@@ -1340,6 +1376,8 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void updateEncryptedCall(EmbeddedEncryptionParameters embeddedEncryptionParameters, boolean isGroup, long timestamp)
     {
+        mTalkerAliasTracker.callActivity(timestamp);
+
         if(mCurrentCallEvent != null)
         {
             String details = mCurrentCallEvent.getDetails();;
@@ -1377,6 +1415,9 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void updateCurrentCall(DecodeEventType type, String details, long timestamp)
     {
+        //Keep the talker alias matched to the talking radio before the call event copies the identifiers
+        mTalkerAliasTracker.callActivity(timestamp);
+
         Event event = (mCurrentCallEvent == null ? Event.START : Event.CONTINUATION);
 
         //Create a repeater channel descriptor if we don't have one
@@ -1428,10 +1469,12 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
+            mEndedCallEvent = mCurrentCallEvent;
             mCurrentCallEvent = null;
         }
 
-        getIdentifierCollection().remove(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
+        //Remembers the talker for a talker alias that completes after the call, and removes the talker alias
+        mTalkerAliasTracker.callEnded();
         getIdentifierCollection().remove(IdentifierClass.USER, Form.TONE, Role.FROM);
     }
 

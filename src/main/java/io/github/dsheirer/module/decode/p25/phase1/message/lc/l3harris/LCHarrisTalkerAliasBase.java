@@ -62,6 +62,16 @@ public abstract class LCHarrisTalkerAliasBase extends LinkControlWord
     }
 
     /**
+     * Payload fragment as a string, including leading and trailing spaces, for joining the fragments of an alias.
+     * A space at the start or end of a fragment can be a space within the alias.
+     * @return fragment
+     */
+    public String getPayloadFragmentText()
+    {
+        return new String(getPayloadFragment().toByteArray());
+    }
+
+    /**
      * List of identifiers contained in this message
      */
     @Override

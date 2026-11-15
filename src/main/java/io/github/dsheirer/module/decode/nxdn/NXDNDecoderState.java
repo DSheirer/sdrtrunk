@@ -24,17 +24,19 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.alias.TalkerAliasTracker;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkerAliasIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
@@ -86,6 +88,9 @@ public class NXDNDecoderState extends DecoderState
     private final Channel mChannel;
     private final NXDNNetworkConfigurationMonitor mNetworkConfigurationMonitor = new NXDNNetworkConfigurationMonitor();
     private final NXDNTrafficChannelManager mTrafficChannelManager;
+    //Keeps the talker alias matched to the talking radio and assigns received talker aliases to the right radio
+    private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
+            this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.PREVIOUS_TALKER);
     private boolean mEncryptedCallStateDetermined = false;
     private boolean mEncryptedCall = false;
     private int mDisconnectResponseCount = 0;
@@ -139,7 +144,9 @@ public class NXDNDecoderState extends DecoderState
         switch(event.getEvent())
         {
             case REQUEST_RESET:
+                mTalkerAliasTracker.callEnded();
                 resetState();
+                mTalkerAliasTracker.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 setCurrentFrequency(event.getFrequency());
@@ -187,6 +194,32 @@ public class NXDNDecoderState extends DecoderState
             {
                 processPacketMessage(packetMessage);
             }
+        }
+    }
+
+    /**
+     * Talker alias manager shared with the traffic channel manager, or null when there's no traffic channel manager.
+     */
+    private TalkerAliasManager getTalkerAliasManager()
+    {
+        return hasTrafficChannelManager() ? mTrafficChannelManager.getTalkerAliasManager() : null;
+    }
+
+    /**
+     * Processes a talker alias: stores it for the talking radio and adds it to the call that it belongs to.
+     * @param talkerAlias that was received
+     * @param timestamp of the message
+     */
+    private void processTalkerAlias(NXDNTalkerAliasIdentifier talkerAlias, long timestamp)
+    {
+        TalkerAliasTracker.Assignment assignment = mTalkerAliasTracker.received(talkerAlias, null, timestamp);
+
+        if(hasTrafficChannelManager() && (assignment == TalkerAliasTracker.Assignment.CURRENT_CALL ||
+                assignment == TalkerAliasTracker.Assignment.ENDED_CALL))
+        {
+            RadioIdentifier radio = assignment == TalkerAliasTracker.Assignment.ENDED_CALL ?
+                    mTalkerAliasTracker.getEndedCallRadio() : mTalkerAliasTracker.getCurrentRadio();
+            mTrafficChannelManager.processTalkerAlias(getCurrentChannel(), talkerAlias, radio, timestamp);
         }
     }
 
@@ -265,6 +298,9 @@ public class NXDNDecoderState extends DecoderState
                 {
                     mIdleDuringCallCount = 0;
                     getIdentifierCollection().update(vc.getIdentifiers());
+                    //Keep the talker alias matched to the radio that is talking
+                    mTalkerAliasTracker.callActivity(vc.getTimestamp());
+
                     mEncryptedCallStateDetermined = true;
                     mEncryptedCall = vc.getEncryptionKeyIdentifier().isEncrypted();
                     state = mEncryptedCall ? State.ENCRYPTED : State.CALL;
@@ -326,6 +362,7 @@ public class NXDNDecoderState extends DecoderState
                 mEncryptedCall = false;
                 mIdleDuringCallCount = IDLE_DURING_CALL_MAX_COUNT;
                 //Only remove the FROM identifier, anticipating a continuation call for the same talkgroup
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(Role.FROM);
                 break;
             case CONTROL_OUT_09_CC_DATA_CALL_RESPONSE:
@@ -404,6 +441,7 @@ public class NXDNDecoderState extends DecoderState
                 mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 mDisconnectResponseCount++;
 
@@ -424,6 +462,7 @@ public class NXDNDecoderState extends DecoderState
             case CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION:
             case CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION:
                 mNetworkConfigurationMonitor.process(layer3);
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 break;
             case CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
@@ -645,12 +684,7 @@ public class NXDNDecoderState extends DecoderState
                 {
                     state = State.CALL;
                     event = DecoderStateEvent.Event.CONTINUATION;
-                    var radio = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
-
-                    if(radio instanceof RadioIdentifier ri)
-                    {
-                        mTrafficChannelManager.processTalkerAlias(getCurrentChannel(), tac.getTalkerAlias(), ri, tac.getTimestamp());
-                    }
+                    processTalkerAlias(tac.getTalkerAlias(), tac.getTimestamp());
                 }
                 break;
 

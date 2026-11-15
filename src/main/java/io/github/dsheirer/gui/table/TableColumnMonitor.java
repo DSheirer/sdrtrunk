@@ -50,6 +50,11 @@ public class TableColumnMonitor<S>
      * column header text doesn't identify the column by itself (e.g. two columns titled 'Alias').
      */
     public static final String CONFIGURATION_NAME = "column.configuration.name";
+    /**
+     * Column property that holds the column number of the column in the Swing version of the table, for the stored
+     * Swing column widths.
+     */
+    public static final String LEGACY_INDEX = "column.legacy.index";
     private static final String ORDER = ".column.order";
     private static final String HIDDEN = ".column.hidden";
     private static final String WIDTH = ".column.width.";
@@ -184,6 +189,18 @@ public class TableColumnMonitor<S>
     public static void setName(TableColumn<?,?> column, String name)
     {
         column.getProperties().put(CONFIGURATION_NAME, name);
+    }
+
+    /**
+     * Sets the column number of the column in the Swing version of the table, for migrating the Swing column width.
+     * When any column of a table has a legacy index, only those columns use Swing column widths.  Otherwise, the
+     * default column index is the Swing column number.
+     * @param column to set
+     * @param index of the column in the Swing table
+     */
+    public static void setLegacyIndex(TableColumn<?,?> column, int index)
+    {
+        column.getProperties().put(LEGACY_INDEX, index);
     }
 
     /**
@@ -326,14 +343,19 @@ public class TableColumnMonitor<S>
                 }
             }
 
+            boolean hasLegacyIndexes = mDefaultOrder.stream()
+                .anyMatch(column -> column.getProperties().containsKey(LEGACY_INDEX));
+
             for(int x = 0; x < mDefaultOrder.size(); x++)
             {
                 TableColumn<S,?> column = mDefaultOrder.get(x);
                 double width = mPreferences.getDouble(getWidthKey(column), Double.NaN);
+                Integer legacyIndex = column.getProperties().get(LEGACY_INDEX) instanceof Integer index ? index :
+                    (hasLegacyIndexes ? null : x);
 
-                if(Double.isNaN(width) && swingPreference != null && swingKey != null)
+                if(Double.isNaN(width) && swingPreference != null && swingKey != null && legacyIndex != null)
                 {
-                    int swingWidth = swingPreference.getInt(swingKey + ".column." + x, Integer.MAX_VALUE);
+                    int swingWidth = swingPreference.getInt(swingKey + ".column." + legacyIndex, Integer.MAX_VALUE);
 
                     if(swingWidth != Integer.MAX_VALUE && swingWidth > 0)
                     {

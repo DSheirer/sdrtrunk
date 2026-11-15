@@ -42,6 +42,7 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -315,19 +316,15 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
 
         columns.add(NowPlayingCells.column("from", "From", null, Pos.CENTER,
             row -> {
-                ChannelMetadata metadata = row.getChannelMetadata();
-                String text = mTalkgroupFormatPreference.format(metadata.getFromIdentifier());
+                String text = mTalkgroupFormatPreference.format(row.getChannelMetadata().getFromIdentifier());
+                return text == null || text.isEmpty() ? EMPTY_IDENTIFIER : text;
+            }, Row::revisionProperty));
 
-                if(text == null || text.isEmpty())
-                {
-                    return EMPTY_IDENTIFIER;
-                }
-                else if(metadata.hasTalkerAliasIdentifier())
-                {
-                    return text + " " + metadata.getTalkerAliasIdentifier();
-                }
-
-                return text;
+        //Talker alias sent over the air by the radio (e.g. DMR or P25)
+        columns.add(NowPlayingCells.column("talker", "Talker", null, Pos.CENTER,
+            row -> {
+                Identifier talkerAlias = row.getChannelMetadata().getTalkerAliasIdentifier();
+                return talkerAlias != null && talkerAlias.getValue() != null ? talkerAlias.getValue().toString() : null;
             }, Row::revisionProperty));
 
         TableColumn<Row,AliasDisplay> fromAlias = NowPlayingCells.column("from.alias", "Alias", "From Alias",
@@ -366,6 +363,20 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         for(TableColumn<Row,?> column: columns)
         {
             column.setSortable(false);
+        }
+
+        //Column numbers in the Swing version of the table, for its stored column widths.  Talker is a new column.
+        String[] swingColumns = {"status", "decoder", "from", "from.alias", "to", "to.alias", "channel", "frequency",
+            "channel.name"};
+
+        for(TableColumn<Row,?> column: columns)
+        {
+            int swingColumn = Arrays.asList(swingColumns).indexOf(column.getId());
+
+            if(swingColumn >= 0)
+            {
+                TableColumnMonitor.setLegacyIndex(column, swingColumn);
+            }
         }
 
         return columns;
