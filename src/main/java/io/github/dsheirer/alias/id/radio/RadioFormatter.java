@@ -44,6 +44,7 @@ public class RadioFormatter
     {
         mFormatterMap.put(Protocol.APCO25, new APCO25TalkgroupFormatter());
         mFormatterMap.put(Protocol.DMR, new DMRTalkgroupFormatter());
+        mFormatterMap.put(Protocol.MOTOROLA_TYPE_II, new APCO25TalkgroupFormatter());
         mFormatterMap.put(Protocol.NXDN, new NXDNTalkgroupFormatter());
         mFormatterMap.put(Protocol.UNKNOWN, new UnknownTalkgroupFormatter());
     }

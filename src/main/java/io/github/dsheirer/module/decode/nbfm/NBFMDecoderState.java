@@ -27,6 +27,7 @@ import io.github.dsheirer.identifier.string.SimpleStringIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.analog.AnalogDecoderState;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.module.decode.squelch.ctcss.CTCSSMessage;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSMessage;
 import io.github.dsheirer.module.decode.squelch.SquelchDecoderConfig;
@@ -46,6 +47,7 @@ public class NBFMDecoderState extends AnalogDecoderState
     private String mChannelName;
     private Identifier mChannelNameIdentifier;
     private Identifier mTalkgroupIdentifier;
+    private Protocol mProtocol = Protocol.UNKNOWN;
 
     // Tone filter configuration (from DecodeConfigNBFM)
     private boolean mSquelchDecoderEnabled = false;
@@ -64,9 +66,16 @@ public class NBFMDecoderState extends AnalogDecoderState
      */
     public NBFMDecoderState(String channelName, DecodeConfigNBFM decodeConfig)
     {
+        this(channelName, decodeConfig, true, Protocol.UNKNOWN);
+    }
+
+    public NBFMDecoderState(String channelName, DecodeConfigNBFM decodeConfig, boolean useConfiguredTalkgroup,
+                            Protocol protocol)
+    {
         mChannelName = (channelName != null && !channelName.isEmpty()) ? channelName : "NBFM CHANNEL";
         mChannelNameIdentifier = new SimpleStringIdentifier(mChannelName, IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
-        mTalkgroupIdentifier = new NBFMTalkgroup(decodeConfig.getTalkgroup());
+        mTalkgroupIdentifier = useConfiguredTalkgroup ? new NBFMTalkgroup(decodeConfig.getTalkgroup()) : null;
+        mProtocol = protocol != null ? protocol : Protocol.UNKNOWN;
 
         mSquelchDecoderEnabled = decodeConfig.isSquelchDecoderEnabled();
         if(mSquelchDecoderEnabled && decodeConfig.getSquelchDecoders() != null)
@@ -175,6 +184,12 @@ public class NBFMDecoderState extends AnalogDecoderState
     /**
      *  Provides information for UI display in Now Playing panel.
      */
+    @Override
+    protected Protocol getProtocol()
+    {
+        return mProtocol;
+    }
+
     @Override
     public String getActivitySummary()
     {

@@ -75,6 +75,14 @@ import io.github.dsheirer.module.decode.ltrstandard.LTRStandardMessageFilter;
 import io.github.dsheirer.module.decode.mdc1200.MDCDecoder;
 import io.github.dsheirer.module.decode.mdc1200.MDCDecoderState;
 import io.github.dsheirer.module.decode.mdc1200.MDCMessageFilter;
+import io.github.dsheirer.module.decode.moto.AnalogDeemphasis;
+import io.github.dsheirer.module.decode.moto.BandplanType;
+import io.github.dsheirer.module.decode.moto.DecodeConfigMotorolaTypeII;
+import io.github.dsheirer.module.decode.moto.MotorolaTypeIIAnalogAudioFilter;
+import io.github.dsheirer.module.decode.moto.MotorolaTypeIIDecoder;
+import io.github.dsheirer.module.decode.moto.MotorolaTypeIIDecoderState;
+import io.github.dsheirer.module.decode.moto.MotorolaTypeIITrafficChannelManager;
+import io.github.dsheirer.module.decode.moto.MotorolaTypeIITrafficDecoderState;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderState;
@@ -206,11 +214,48 @@ public class DecoderFactory
             case P25_PHASE2:
                 processP25Phase2(channel, userPreferences, modules, aliasList, trafficChannelManager, channelDescriptor);
                 break;
+            case MOTOROLA_TYPE_II:
+                processMotorolaTypeII(channel, userPreferences, modules, aliasList,
+                    (DecodeConfigMotorolaTypeII) decodeConfig, trafficChannelManager, channelDescriptor);
+                break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
         }
 
         return modules;
+    }
+
+    /**
+     * Creates decoder modules for Motorola Type II trunking (Smartnet/SmartZone).
+     */
+    private static void processMotorolaTypeII(Channel channel, UserPreferences userPreferences,
+                                               List<Module> modules, AliasList aliasList,
+                                               DecodeConfigMotorolaTypeII decodeConfig,
+                                               TrafficChannelManager trafficChannelManager,
+                                               IChannelDescriptor channelDescriptor)
+    {
+        if(channel.isTrafficChannel())
+        {
+            DecodeConfigNBFM nbfmConfig = new DecodeConfigNBFM();
+            modules.add(new NBFMDecoder(nbfmConfig));
+            modules.add(new MotorolaTypeIITrafficDecoderState(channel.getName(), nbfmConfig));
+            List<AbstractAudioFilter> filterList = new ArrayList<>();
+            filterList.add(new HighPassAudioFilter());
+
+            if(decodeConfig.getAnalogDeemphasis() != AnalogDeemphasis.NONE)
+            {
+                filterList.add(new MotorolaTypeIIAnalogAudioFilter(decodeConfig.getAnalogDeemphasis()));
+            }
+            modules.add(new AudioModule(aliasList, 0, 60000, filterList));
+        }
+        else
+        {
+            modules.add(new MotorolaTypeIIDecoder(decodeConfig));
+            MotorolaTypeIITrafficChannelManager tcm = new MotorolaTypeIITrafficChannelManager(channel, decodeConfig);
+            modules.add(tcm);
+            modules.add(new MotorolaTypeIIDecoderState(channel, tcm));
+            // No AudioModule on control channel - CC is data-only, audio belongs on traffic channels
+        }
     }
 
     /**
@@ -848,6 +893,8 @@ public class DecoderFactory
                 return new DecodeConfigNBFM();
             case NXDN:
                 return new DecodeConfigNXDN();
+            case MOTOROLA_TYPE_II:
+                return new DecodeConfigMotorolaTypeII();
             case PASSPORT:
                 return new DecodeConfigPassport();
             case P25_PHASE1:
@@ -940,6 +987,19 @@ public class DecoderFactory
                         copyP25P2.setScrambleParameters(originalP25P2.getScrambleParameters().copy());
                     }
                     return copyP25P2;
+                case MOTOROLA_TYPE_II:
+                    DecodeConfigMotorolaTypeII originalMoto = (DecodeConfigMotorolaTypeII)config;
+                    DecodeConfigMotorolaTypeII copyMoto = new DecodeConfigMotorolaTypeII();
+                    copyMoto.setBandplanType(originalMoto.getBandplanType());
+                    copyMoto.setTrafficChannelPoolSize(originalMoto.getTrafficChannelPoolSize());
+                    copyMoto.setAnalogDeemphasis(originalMoto.getAnalogDeemphasis());
+                    if(originalMoto.getBandplanType() == BandplanType.OBT)
+                    {
+                        copyMoto.setObtBaseFrequency(originalMoto.getObtBaseFrequency());
+                        copyMoto.setObtSpacing(originalMoto.getObtSpacing());
+                        copyMoto.setObtOffset(originalMoto.getObtOffset());
+                    }
+                    return copyMoto;
                 case PASSPORT:
                     return new DecodeConfigPassport();
                 default:

@@ -96,8 +96,10 @@ public class RadioReferencePlaylistActionsTest
         assertTrue(RadioReferencePlaylistActions.getSiteDecoderTypes(site("DMR Tier III", "Control"))
             .contains(DecoderType.DMR));
         assertTrue(RadioReferencePlaylistActions.isSupported(site("NXDN NEXEDGE 4800", "Control")));
-        assertFalse(RadioReferencePlaylistActions.isSupported(site("Motorola Type II Smartnet", "Control")),
-            "Motorola control channels aren't decoded");
+        assertTrue(RadioReferencePlaylistActions.getSiteDecoderTypes(site("Motorola Type II Smartnet", "Control"))
+            .contains(DecoderType.MOTOROLA_TYPE_II));
+        assertFalse(RadioReferencePlaylistActions.isSupported(site("TETRA", "Control")),
+            "TETRA control channels aren't decoded");
         assertFalse(RadioReferencePlaylistActions.isSupported(site("Project 25 Phase I", "", "")),
             "no control channel listed");
     }
@@ -112,8 +114,8 @@ public class RadioReferencePlaylistActionsTest
         assertEquals(List.of(851_000_000L, 851_250_000L, 851_500_000L),
             RadioReferencePlaylistActions.getSiteFrequencies(ltr));
 
-        assertEquals("Motorola Type II Smartnet isn't supported",
-            RadioReferencePlaylistActions.getUnsupportedReason(site("Motorola Type II Smartnet", "Control")));
+        assertEquals("TETRA isn't supported",
+            RadioReferencePlaylistActions.getUnsupportedReason(site("TETRA", "Control")));
         assertEquals("Radio Reference lists no control channel",
             RadioReferencePlaylistActions.getUnsupportedReason(site("Project 25 Phase I", "", "")));
     }
@@ -254,7 +256,51 @@ public class RadioReferencePlaylistActionsTest
         RadioReferenceDecoder motorolaDecoder = new RadioReferenceDecoder(null, Map.of(1, motorola),
             Map.of(2, phase2), Map.of(3, voice), Map.of());
         assertNull(RadioReferenceChannelFactory.trunkedSite(motorolaDecoder, system, new SystemInformation(), site),
-            "Motorola Type II control channel");
+            "Motorola Type II control channel with APCO25 voice channels");
+    }
+
+    @Test
+    void motorolaTypeIIAnalogSiteChannel()
+    {
+        Type motorola = new Type();
+        motorola.setTypeId(1);
+        motorola.setName("Motorola");
+        Flavor smartnet = new Flavor();
+        smartnet.setFlavorId(2);
+        smartnet.setName("Type II Smartnet");
+        Voice analog = new Voice();
+        analog.setVoiceId(3);
+        analog.setName("Analog");
+        RadioReferenceDecoder decoder = new RadioReferenceDecoder(null, Map.of(1, motorola), Map.of(2, smartnet),
+            Map.of(3, analog), Map.of());
+
+        io.github.dsheirer.rrapi.type.System system = new io.github.dsheirer.rrapi.type.System();
+        system.setSystemId(43);
+        system.setName("Analog Smartnet");
+        system.setTypeId(1);
+        system.setFlavorId(2);
+        system.setVoiceId(3);
+
+        Site site = new Site();
+        site.setSiteNumber(1);
+        site.setDescription("Simulcast");
+        site.setSiteFrequencies(List.of(frequency(856.7125, ""), frequency(854.5625, "d"), frequency(855.2125, "a")));
+
+        Channel channel = RadioReferenceChannelFactory.trunkedSite(decoder, system, new SystemInformation(), site);
+
+        assertEquals(DecoderType.MOTOROLA_TYPE_II, channel.getDecodeConfiguration().getDecoderType());
+        assertEquals(List.of(854_562_500L, 855_212_500L),
+            RadioReferencePlaylistActions.getFrequencies(channel.getSourceConfiguration()), "control, then alternate");
+
+        Voice mixed = new Voice();
+        mixed.setVoiceId(3);
+        mixed.setName("Analog and APCO-25 Common Air Interface");
+        RadioReferenceDecoder mixedDecoder = new RadioReferenceDecoder(null, Map.of(1, motorola), Map.of(2, smartnet),
+            Map.of(3, mixed), Map.of());
+        Channel mixedChannel = RadioReferenceChannelFactory.trunkedSite(mixedDecoder, system, new SystemInformation(),
+            site);
+        assertEquals(DecoderType.MOTOROLA_TYPE_II, mixedChannel.getDecodeConfiguration().getDecoderType(),
+            "analog calls of a mixed analog and APCO25 system are followed");
     }
 
     private static SiteFrequency frequency(double megahertz, String use)

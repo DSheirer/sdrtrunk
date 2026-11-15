@@ -28,6 +28,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.identifier.channel.StandardChannel;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
@@ -54,6 +55,11 @@ public abstract class AnalogDecoderState extends DecoderState implements ISource
     protected abstract Identifier getChannelNameIdentifier();
 
     protected abstract Identifier getTalkgroupIdentifier();
+
+    protected Protocol getProtocol()
+    {
+        return Protocol.UNKNOWN;
+    }
 
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
@@ -105,6 +111,7 @@ public abstract class AnalogDecoderState extends DecoderState implements ISource
                     .channel(mChannelDescriptor)
                     .details(getDecoderType().name())
                     .identifiers(new IdentifierCollection(getIdentifierCollection().getIdentifiers()))
+                    .protocol(getProtocol())
                     .build();
 
             broadcast(mDecodeEvent);

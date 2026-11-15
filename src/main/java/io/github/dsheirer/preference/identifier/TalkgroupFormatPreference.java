@@ -149,6 +149,7 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
             case DMR:
             case MDC1200:
+            case MOTOROLA_TYPE_II:
             case NBFM:
             case NXDN:
             case PASSPORT:
@@ -173,6 +174,7 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
             case DMR:
             case MDC1200:
+            case MOTOROLA_TYPE_II:
             case NBFM:
             case NXDN:
             case PASSPORT:
@@ -198,6 +200,7 @@ public class TalkgroupFormatPreference extends Preference
             case LTR:
             case LTR_NET:
             case MPT1327:
+            case MOTOROLA_TYPE_II:
             case NBFM:
             case NXDN:
                 return true;
@@ -340,6 +343,9 @@ public class TalkgroupFormatPreference extends Preference
             case MDC1200:
                 return MDC1200TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MDC1200),
                     isTalkgroupFixedWidth(Protocol.MDC1200));
+            case MOTOROLA_TYPE_II:
+                return APCO25TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MOTOROLA_TYPE_II),
+                    isTalkgroupFixedWidth(Protocol.MOTOROLA_TYPE_II));
             case MPT1327:
                 return MPT1327TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MPT1327),
                     isTalkgroupFixedWidth(Protocol.MPT1327));
@@ -370,6 +376,9 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
                 return APCO25TalkgroupFormatter.format(patchGroupIdentifier, getTalkgroupFormat(Protocol.APCO25),
                     isTalkgroupFixedWidth(Protocol.APCO25));
+            case MOTOROLA_TYPE_II:
+                return APCO25TalkgroupFormatter.format(patchGroupIdentifier, getTalkgroupFormat(Protocol.MOTOROLA_TYPE_II),
+                    isTalkgroupFixedWidth(Protocol.MOTOROLA_TYPE_II));
             default:
                 return patchGroupIdentifier.toString();
         }
@@ -391,6 +400,9 @@ public class TalkgroupFormatPreference extends Preference
             case DMR:
                 return DMRTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.DMR),
                     isTalkgroupFixedWidth(Protocol.DMR));
+            case MOTOROLA_TYPE_II:
+                return APCO25TalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.MOTOROLA_TYPE_II),
+                    isTalkgroupFixedWidth(Protocol.MOTOROLA_TYPE_II));
             case NXDN:
                 return NXDNTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.NXDN),
                         isTalkgroupFixedWidth(Protocol.NXDN));

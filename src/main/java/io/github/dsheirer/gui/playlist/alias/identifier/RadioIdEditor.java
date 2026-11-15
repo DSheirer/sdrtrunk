@@ -244,6 +244,10 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
             "Format: 0 - 16777215"));
         mRadioDetails.add(new RadioDetail(Protocol.DMR, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFFFF),
             "Format: 0 - FFFFFF"));
+        mRadioDetails.add(new RadioDetail(Protocol.MOTOROLA_TYPE_II, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
+            "Format: 0 - 65535"));
+        mRadioDetails.add(new RadioDetail(Protocol.MOTOROLA_TYPE_II, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
+            "Format: 0 - FFFF"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
                 "Format: 1 - 65,535"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),

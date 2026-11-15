@@ -45,6 +45,8 @@ public enum TalkgroupFormat
         "MDC-1200 valid value range is 1-65,535"),
     MPT1327("###-####", 1, 0x7FFFFF, "000-0001 to 127-8192",
         "<html>MPT-1327 valid ranges are 0-127(prefix)<br>and 1-8192(ident) (ie. 000-0001 to 127-8192)"),
+    MOTOROLA_TYPE_II("*****", 0, 0xFFFF, "0 to 65,535",
+        "Motorola Type II talkgroup valid value range is 0-65,535"),
     NBFM("*****", 1, 0xFFFF, "1 to 65,535",
             "NBFM valid value range is 1-65,535"),
     NXDN("*****", 0, 0xFFFF, "0 to 65,535",
@@ -136,6 +138,8 @@ public enum TalkgroupFormat
                 return MDC1200;
             case MPT1327:
                 return MPT1327;
+            case MOTOROLA_TYPE_II:
+                return MOTOROLA_TYPE_II;
             case NBFM:
                 return NBFM;
             case NXDN:

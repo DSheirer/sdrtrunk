@@ -35,6 +35,8 @@ public enum RadioFormat
         "<html>APCO25 valid range is 0 to 16,777,215"),
     DMR("********", 0, 0xFFFFFF, "0 to 16,777,215",
         "<html>DMR unit id valid range is 0 to 16,777,215"),
+    MOTOROLA_TYPE_II("*****", 0, 0xFFFF, "0 to 65,535",
+        "<html>Motorola Type II radio id valid range is 0 to 65,535"),
     NXDN("*****", 1, 0xFFFF, "1 to 65,535", "NXDN valid range is 1 to 65,535"),
     PASSPORT("********", 0, 0x7FFFFF, "0 to 8,388,607",
         "<html>PASSPORT valid range is 0 to 8,388,607"),
@@ -114,6 +116,8 @@ public enum RadioFormat
                 return APCO25;
             case DMR:
                 return DMR;
+            case MOTOROLA_TYPE_II:
+                return MOTOROLA_TYPE_II;
             case NXDN:
                 return NXDN;
             case PASSPORT:
