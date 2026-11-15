@@ -134,7 +134,7 @@ public class BPTC_196_96SoftTest
         Random random = new Random(2);
         CorrectedBinaryMessage codeword = createCodeword(random);
         CorrectedBinaryMessage copy = new CorrectedBinaryMessage(codeword);
-        assertTrue(BPTC_196_96.correct(copy, true));
+        assertTrue(BPTC_196_96.correct(copy));
         assertEquals(codeword, copy);
 
         float[] softBits = new float[196];
@@ -185,7 +185,7 @@ public class BPTC_196_96SoftTest
                 hard.flip(error);
             }
 
-            if(!BPTC_196_96.correct(hard, true) || !hard.equals(codeword))
+            if(!BPTC_196_96.correct(hard) || !hard.equals(codeword))
             {
                 hardFailures++;
             }

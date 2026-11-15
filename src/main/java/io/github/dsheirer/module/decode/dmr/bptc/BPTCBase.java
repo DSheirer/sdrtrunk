@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,127 +21,222 @@ package io.github.dsheirer.module.decode.dmr.bptc;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.IHamming;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import io.github.dsheirer.edac.ProductCodeDecoder;
+import java.util.Arrays;
 
 /**
- * Block Product Turbo Code (BPTC) base implementation for BPTC codes using simple even parity column checks.
+ * Block Product Turbo Code (BPTC) base implementation for BPTC codes where each row is a Hamming codeword and each
+ * column has even parity (ie the final row is the column parity row).  Bits are ordered row by row.
+ *
+ * Uses hard decision minimum distance decoding that corrects every error pattern up to half the product code minimum
+ * distance and most patterns up to the maximum error count.  Optionally falls back to row erasure decoding when the
+ * minimum distance decoder can't correct the message.
  */
 public abstract class BPTCBase
 {
     public static int ERRORS_NOT_CORRECTED = -2;
-    private IHamming mHamming;
-    private int mColumnCount;
-    private int mRowCount;
+    private final ProductCodeDecoder mDecoder;
+    private final int[] mRowChecks;
+    private final int[] mRowErrorColumns;
+    private final int mColumnCount;
+    private final int mRowCount;
+    private final int mFallbackMaximumErrors;
 
     /**
      * Constructs an instance
-     * @param hamming to provide row checking using the correct Hamming error detection and correction algorithm.
-     * @param column count
-     * @param row count
+     * @param rowChecks parity check matrix column for each bit position of the row (Hamming) code, where the array
+     * length is the column count.
+     * @param rowCount number of rows, including the column parity row.
+     * @param maximumErrors maximum number of bit errors to correct with minimum distance decoding.
+     * @param fallbackMaximumErrors maximum number of bit errors to correct with row erasure decoding when the minimum
+     * distance decoder can't correct the message, or 0 to disable the fallback.
      */
-    public BPTCBase(IHamming hamming, int columnCount, int rowCount)
+    public BPTCBase(int[] rowChecks, int rowCount, int maximumErrors, int fallbackMaximumErrors)
     {
-        mHamming = hamming;
-        mColumnCount = columnCount;
+        mRowChecks = rowChecks.clone();
+        mColumnCount = rowChecks.length;
         mRowCount = rowCount;
+        mFallbackMaximumErrors = fallbackMaximumErrors;
+        int[] columnChecks = new int[rowCount];
+        Arrays.fill(columnChecks, 1);
+        mDecoder = new ProductCodeDecoder(rowChecks, columnChecks, maximumErrors);
+
+        //Single bit error locator for the row code: column for each syndrome, or -1
+        int combined = 0;
+
+        for(int check: rowChecks)
+        {
+            combined |= check;
+        }
+
+        mRowErrorColumns = new int[Integer.highestOneBit(combined) << 1];
+        Arrays.fill(mRowErrorColumns, -1);
+
+        for(int column = 0; column < mColumnCount; column++)
+        {
+            mRowErrorColumns[rowChecks[column]] = column;
+        }
     }
 
     /**
-     * Used by the correct() method to employ an optional attempt to correct multiple row, two-bit errors where each
-     * set of row errors don't shadow each other based on a test where the column cardinality is twice the row
-     * cardinality.  This is probably not mathematically correct and should only be enabled when the decoded message
-     * payload has a good CRC check after the extraction (ie. only use for FLC).
-     * @return true if enabled, false (default) otherwise
-     */
-    protected boolean canCorrectMultiRow2BitErrors()
-    {
-        return false;
-    }
-
-    /**
-     * Performs error detection and correction.
+     * Performs error detection and correction.  When corrected, the corrected bit count is incremented by the number
+     * of corrected bits.  Otherwise, the message is unchanged and the corrected bit count is set to ERRORS_NOT_CORRECTED.
      * @param message to correct
      * @return true if the message was corrected or false if there are uncorrectable errors.
      */
     public boolean correct(CorrectedBinaryMessage message)
     {
-        BinaryMessage columns = getColumnErrors(message);
-        BinaryMessage rows = getRowErrors(message);
+        int[] rows = new int[mRowCount];
 
-        if(columns.isEmpty() && rows.isEmpty())
+        for(int row = 0; row < mRowCount; row++)
         {
-            return true;
+            rows[row] = getRow(row, message);
         }
 
-        List<Integer> correctedIndexes = new ArrayList<>();
+        int corrected = mDecoder.decode(rows);
 
-        //1: fix non-shadowed single bit errors in each row
-        for(int row = rows.nextSetBit(0); row >= 0 && row < mRowCount; row = rows.nextSetBit(row + 1))
+        if(corrected == ProductCodeDecoder.UNCORRECTABLE && mFallbackMaximumErrors > 0)
         {
-            int index = correct1BitErrors(row, message, rows);
+            corrected = correctRowErasure(rows);
+        }
 
-            if(index >= 0)
+        if(corrected == ProductCodeDecoder.UNCORRECTABLE)
+        {
+            message.setCorrectedBitCount(ERRORS_NOT_CORRECTED);
+            return false;
+        }
+
+        if(corrected > 0)
+        {
+            for(int row = 0; row < mRowCount; row++)
             {
-                correctedIndexes.add(index);
-            }
-        }
-
-        //Refresh the column errors
-        columns = getColumnErrors(message);
-
-        if(columns.isEmpty() && rows.isEmpty())
-        {
-            message.incrementCorrectedBitCount(correctedIndexes.size());
-            return true;
-        }
-
-        //2: fix non-shadowed multi bit errors (up to 2) in each row
-        if(columns.cardinality() <= 2)
-        {
-            for(int row = rows.nextSetBit(0); row >= 0 && row < mRowCount; row = rows.nextSetBit(row + 1))
-            {
-                List<Integer> solution = correctMultiBitErrors(row, message, columns, rows);
-
-                if(solution.size() > 0)
+                for(int column = 0; column < mColumnCount; column++)
                 {
-                    correctedIndexes.addAll(solution);
+                    message.set(row * mColumnCount + column, (rows[row] & (1 << column)) != 0);
+                }
+            }
+
+            message.incrementCorrectedBitCount(corrected);
+        }
+
+        return true;
+    }
+
+    /**
+     * Row erasure decoding fallback for messages that the minimum distance decoder can't correct (more bit errors than
+     * the maximum, or equidistant from more than one codeword).  Corrects single bit errors in each row and then
+     * recomputes one row from the column parity of the other rows, choosing the row that produces the nearest
+     * codeword.  Real-world messages can have bit errors that this corrects beyond the minimum distance decoder maximum.
+     * @param rows to correct, unchanged when uncorrectable.
+     * @return number of corrected bit errors, or UNCORRECTABLE.
+     */
+    private int correctRowErasure(int[] rows)
+    {
+        int[] decoded = rows.clone();
+        int failedRow = -1;
+
+        for(int row = 0; row < mRowCount; row++)
+        {
+            int syndrome = ProductCodeDecoder.getSyndrome(rows[row], mRowChecks);
+
+            if(syndrome != 0)
+            {
+                int column = mRowErrorColumns[syndrome];
+
+                if(column >= 0)
+                {
+                    decoded[row] ^= 1 << column;
+                }
+                else if(failedRow >= 0)
+                {
+                    return ProductCodeDecoder.UNCORRECTABLE; //More than one row with uncorrectable errors
+                }
+                else
+                {
+                    failedRow = row;
                 }
             }
         }
 
-        //3: fix single row, multi-column errors
-        if(rows.cardinality() == 1 && !columns.isEmpty())
-        {
-            List<Integer> solution = correctMultiBitErrors(rows.nextSetBit(0), message, columns, rows);
+        int[] best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        boolean tie = false;
 
-            if(!solution.isEmpty())
+        for(int erased = 0; erased < mRowCount; erased++)
+        {
+            if(failedRow >= 0 && erased != failedRow)
             {
-                correctedIndexes.addAll(solution);
+                continue;
+            }
+
+            int[] candidate = decoded.clone();
+            int parity = 0;
+
+            for(int row = 0; row < mRowCount; row++)
+            {
+                if(row != erased)
+                {
+                    parity ^= candidate[row];
+                }
+            }
+
+            candidate[erased] = parity;
+            int distance = 0;
+
+            for(int row = 0; row < mRowCount; row++)
+            {
+                distance += Integer.bitCount(candidate[row] ^ rows[row]);
+            }
+
+            if(distance < bestDistance)
+            {
+                best = candidate;
+                bestDistance = distance;
+                tie = false;
+            }
+            else if(distance == bestDistance && !Arrays.equals(candidate, best))
+            {
+                tie = true;
             }
         }
 
-        //4: fix one or more rows that each have 2 bit errors, not shadowing each other.
-        if(canCorrectMultiRow2BitErrors() && rows.cardinality() > 0 && columns.cardinality() / rows.cardinality() == 2)
+        if(tie || bestDistance > mFallbackMaximumErrors)
         {
-            List<Integer> solution = correctMultipleRowTwoBitErrorsNotShadowing(columns, rows, message);
+            return ProductCodeDecoder.UNCORRECTABLE;
+        }
 
-            if(!solution.isEmpty())
+        System.arraycopy(best, 0, rows, 0, mRowCount);
+        return bestDistance;
+    }
+
+    /**
+     * Row word from the message, where bit i is the bit in column i.
+     */
+    private int getRow(int row, BinaryMessage message)
+    {
+        int word = 0;
+        int offset = row * mColumnCount;
+
+        for(int column = 0; column < mColumnCount; column++)
+        {
+            if(message.get(offset + column))
             {
-                correctedIndexes.addAll(solution);
+                word |= 1 << column;
             }
         }
 
-        if(columns.isEmpty() && rows.isEmpty())
-        {
-            message.incrementCorrectedBitCount(correctedIndexes.size());
-            return true;
-        }
+        return word;
+    }
 
-        message.setCorrectedBitCount(ERRORS_NOT_CORRECTED);
-        return false;
+    /**
+     * Calculates the row (Hamming) syndrome.
+     * @param row to check
+     * @param message containing bits to check
+     * @return syndrome, zero when the row is a valid codeword.
+     */
+    private int getRowSyndrome(int row, BinaryMessage message)
+    {
+        return ProductCodeDecoder.getSyndrome(getRow(row, message), mRowChecks);
     }
 
     /**
@@ -162,49 +257,6 @@ public abstract class BPTCBase
     }
 
     /**
-     * Calculates the column from the bit index/offset
-     * @param index for a bit
-     * @return column that contains the index
-     */
-    public int getColumn(int index)
-    {
-        return index % mColumnCount;
-    }
-
-    /**
-     * Calculates the index for a bit that exists at the row and column.
-     * @param column for the bit.
-     * @param row for the bit
-     * @return index for the bit.
-     */
-    public int getIndex(int column, int row)
-    {
-        return row * mColumnCount + column;
-    }
-
-    /**
-     * Checks the row for bit errors.
-     * @param row to check
-     * @param message containing bits to check
-     * @return true if the row passes the Hamming check or false if not.
-     */
-    private boolean isRowCorrect(int row, CorrectedBinaryMessage message)
-    {
-        return mHamming.getErrorIndex(message, row * mColumnCount) == IHamming.NO_ERRORS;
-    }
-
-    /**
-     * Calculates the index for the bit error in the message
-     * @param row to check
-     * @param message with bits
-     * @return error index in the range 0-195, or -1 if the message row has no bit errors.
-     */
-    private int getRowErrorIndex(int row, CorrectedBinaryMessage message)
-    {
-        return mHamming.getErrorIndex(message, row * mColumnCount);
-    }
-
-    /**
      * Returns a bit map indicating the row errors.
      * @param message containing rows.
      * @return row error map
@@ -215,7 +267,7 @@ public abstract class BPTCBase
 
         for(int row = 0; row < mRowCount; row++)
         {
-            rows.set(row, !isRowCorrect(row, message));
+            rows.set(row, getRowSyndrome(row, message) != 0);
         }
 
         return rows;
@@ -236,191 +288,6 @@ public abstract class BPTCBase
         }
 
         return columns;
-    }
-
-    /**
-     * Calculates the indices that make up the intersections of the row and column errors.
-     * @param rows bitmap indicating rows with errors
-     * @param columns bitmap indicating columns with errors
-     * @return set of intersection indices.
-     */
-    public List<Integer> getIntersectionIndices(BinaryMessage columns, BinaryMessage rows)
-    {
-        List<Integer> intersections = new ArrayList<>();
-
-        for(int row = rows.nextSetBit(0); row >= 0 && row < mRowCount; row = rows.nextSetBit(row + 1))
-        {
-            for(int column = columns.nextSetBit(0); column >= 0 && column < mColumnCount; column = columns.nextSetBit(column + 1))
-            {
-                intersections.add(getIndex(column, row));
-            }
-        }
-
-        return intersections;
-    }
-
-    /**
-     * Calculates the indices that make up the intersections of the row and column errors.
-     * @param rows bitmap indicating rows with errors
-     * @param columns bitmap indicating columns with errors
-     * @return set of intersection indices.
-     */
-    public List<Integer> getIntersectionIndices(BinaryMessage columns, int row)
-    {
-        List<Integer> intersections = new ArrayList<>();
-
-        for(int column = columns.nextSetBit(0); column >= 0 && column < mColumnCount; column = columns.nextSetBit(column + 1))
-        {
-            intersections.add(getIndex(column, row));
-        }
-
-        return intersections;
-    }
-
-    /**
-     * Correct multiple rows with two-bit errors each where the error columns are not shadowing each other.
-     * @param columns error map
-     * @param rows error map
-     * @param message to correct
-     * @return corrected indices
-     */
-    public List<Integer> correctMultipleRowTwoBitErrorsNotShadowing(BinaryMessage columns, BinaryMessage rows,
-                                                                    CorrectedBinaryMessage message)
-    {
-        List<Integer> solution = new ArrayList<>();
-
-        for(int row = rows.nextSetBit(0); row >= 0 && row < mRowCount; row = rows.nextSetBit(row + 1))
-        {
-            for(int column1 = columns.nextSetBit(0); column1 >= 0; column1 = columns.nextSetBit(column1 + 1))
-            {
-                for(int column2 = columns.nextSetBit(column1 + 1); column2 >= 0; column2 = columns.nextSetBit(column2 + 1))
-                {
-                    int index1 = getIndex(column1, row);
-                    int index2 = getIndex(column2, row);
-                    message.flip(index1);
-                    message.flip(index2);
-
-                    if(isRowCorrect(row, message))
-                    {
-                        solution.add(index1);
-                        solution.add(index2);
-                        columns.clear(column1);
-                        columns.clear(column2);
-                        rows.clear(row);
-                        column1 = mColumnCount;
-                        column2 = mColumnCount;
-                    }
-                    else
-                    {
-                        message.flip(index1);
-                        message.flip(index2);
-                    }
-                }
-            }
-        }
-
-        return solution;
-    }
-
-    /**
-     * Corrects single bit errors in each row using only the Hamming error index.
-     * @param row to correct
-     * @param message with bits
-     * @param rows error flag set
-     * @return bit index that was corrected or -2 if the error was not corrected
-     */
-    public int correct1BitErrors(int row, CorrectedBinaryMessage message, BinaryMessage rows)
-    {
-        int index = getRowErrorIndex(row, message);
-
-        if(index >= 0 && index < IHamming.MULTIPLE_ERRORS)
-        {
-            message.flip(index);
-
-            if(isRowCorrect(row, message))
-            {
-                rows.clear(row);
-                return index;
-            }
-
-            message.flip(index);
-        }
-
-        return ERRORS_NOT_CORRECTED;
-    }
-
-    /**
-     * Corrects multiple bit errors in a single row when all other rows are corrected first, by flipping the
-     * bits in the row that show errors in the columns and testing the solution.
-     * @param row to correct
-     * @param message with bits
-     * @param columns bit error matrix
-     * @param rows bit error matrix
-     * @return solution or an empty list if no solution.
-     */
-    public List<Integer> correctMultiBitErrors(int row, CorrectedBinaryMessage message, BinaryMessage columns,
-                                               BinaryMessage rows)
-    {
-        //Test flipping bits in the row everywhere that we have a column error
-        List<Integer> testFlips = new ArrayList<>();
-
-        for(int column = columns.nextSetBit(0); column >= 0 && column < mColumnCount;
-            column = columns.nextSetBit(column + 1))
-        {
-            int toFlip = getIndex(column, row);
-            message.flip(toFlip);
-            testFlips.add(toFlip);
-        }
-
-        if(!isRowCorrect(row, message))
-        {
-            int index = getRowErrorIndex(row, message);
-
-            if(index >= 0 && index < IHamming.MULTIPLE_ERRORS)
-            {
-                message.flip(index);
-
-                if(testFlips.contains(index))
-                {
-                    testFlips.removeIf(value -> value == index);
-                }
-                else
-                {
-                    testFlips.add(index);
-                }
-            }
-        }
-
-        if(isRowCorrect(row, message))
-        {
-            //Check the columns also
-
-            boolean columnsCorrect = true;
-
-            for(Integer flip: testFlips)
-            {
-                columnsCorrect &= isColumnCorrect(getColumn(flip), message);
-            }
-
-            if(columnsCorrect)
-            {
-                rows.clear(row);
-
-                for(Integer flip: testFlips)
-                {
-                    columns.clear(getColumn(flip));
-                }
-
-                return testFlips;
-            }
-        }
-
-        for(Integer flip: testFlips)
-        {
-            message.flip(flip);
-        }
-
-        return Collections.emptyList();
     }
 
     public void logErrorMap(CorrectedBinaryMessage message)
@@ -456,15 +323,10 @@ public abstract class BPTCBase
             int offset = row * mColumnCount;
             sb.append(" Row ").append(row).append(": ");
             sb.append(message.getSubMessage(offset, offset + mColumnCount));
-            int index = getRowErrorIndex(row, message);
-            if(index != IHamming.NO_ERRORS)
+            int syndrome = getRowSyndrome(row, message);
+            if(syndrome != 0)
             {
-                sb.append(" < Index:").append(index);
-
-                if(index == IHamming.MULTIPLE_ERRORS)
-                {
-                    sb.append(" (2+ bit errors)");
-                }
+                sb.append(" < Syndrome:0x").append(Integer.toHexString(syndrome).toUpperCase());
             }
             sb.append("\n");
         }

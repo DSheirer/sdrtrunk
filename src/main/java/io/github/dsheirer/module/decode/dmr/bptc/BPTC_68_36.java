@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.dmr.bptc;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Hamming17;
+import io.github.dsheirer.edac.ProductCodeDecoder;
 import io.github.dsheirer.edac.soft.SoftBlockCode;
 import io.github.dsheirer.edac.soft.SoftProductCodeDecoder;
 
@@ -33,6 +34,15 @@ public class BPTC_68_36 extends BPTCBase
     private static final int LENGTH = 68;
     private static final int ROW_COUNT = 4;
     private static final int COLUMN_COUNT = 17;
+    //Maximum number of bit errors corrected by the hard decision minimum distance decoder.  The product code minimum
+    //distance of 6 guarantees correction of 2 bit errors.  Miscorrections are rejected by the CRC-8 check, which then
+    //retries with soft decision decoding.
+    private static final int HARD_MAXIMUM_ERRORS = 4;
+    //Maximum number of bit errors corrected by the row erasure fallback decoder, when the minimum distance decoder
+    //can't correct the message.  Recording testing: recovered 19 of 22 CRC verified messages (at 6 dB SNR) lost by the
+    //minimum distance decoder alone, which soft decision decoding didn't recover.  Random noise acceptance before the
+    //CRC-8 check: 1.4% versus 34% without a maximum.
+    private static final int FALLBACK_MAXIMUM_ERRORS = 7;
     //Maximum correction cost (sum of the normalized channel soft bit magnitudes for the corrected bits) for a soft
     //decision result.  No limit is applied since the CRC-8 check rejects most false decodes.  Noise injection testing:
     //754 correct and 2 false soft decisions, where the false decisions had costs within the range of the correct
@@ -63,7 +73,8 @@ public class BPTC_68_36 extends BPTCBase
 
     public BPTC_68_36()
     {
-        super(new Hamming17(), 17, 4);
+        super(ProductCodeDecoder.getParityChecks(COLUMN_COUNT, message -> Hamming17.getSyndrome(message, 0)), ROW_COUNT,
+                HARD_MAXIMUM_ERRORS, FALLBACK_MAXIMUM_ERRORS);
     }
 
     /**
