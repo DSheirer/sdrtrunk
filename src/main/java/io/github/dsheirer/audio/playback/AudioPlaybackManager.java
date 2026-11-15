@@ -233,17 +233,11 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
                 try
                 {
-                    //Assign empty audio outputs first
-                    for(AudioChannel audioChannel: mAudioOutput.getAudioProvider().getAudioChannels())
+                    assignToAudioChannels(mAudioSegments, mAudioOutput.getAudioProvider().getAudioChannels());
+
+                    if(mAudioSegments.isEmpty())
                     {
-                        if(audioChannel.isEmpty())
-                        {
-                            audioChannel.play(mAudioSegments.removeFirst());
-                            if(mAudioSegments.isEmpty())
-                            {
-                                return;
-                            }
-                        }
+                        return;
                     }
 
                     replaceLowerPriorityQueuedSegments(mAudioSegments, mAudioOutput.getAudioProvider().getAudioChannels());
@@ -266,6 +260,43 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     it.remove();
                     audioSegment.decrementConsumerCount();
                 }
+            }
+        }
+    }
+
+    /**
+     * Assigns waiting audio segments to the audio channels.  Idle channels are assigned first, so that a call is not
+     * queued behind the call playing on one channel while another channel is silent.  Any audio segments that remain
+     * are then queued on the channels that are playing with nothing queued.
+     *
+     * @param waiting audio segments, sorted by playback priority.  Assigned segments are removed.
+     * @param audioChannels to assign to.
+     */
+    static void assignToAudioChannels(List<AudioSegment> waiting, List<AudioChannel> audioChannels)
+    {
+        for(AudioChannel audioChannel: audioChannels)
+        {
+            if(waiting.isEmpty())
+            {
+                return;
+            }
+
+            if(audioChannel.isIdle())
+            {
+                audioChannel.play(waiting.removeFirst());
+            }
+        }
+
+        for(AudioChannel audioChannel: audioChannels)
+        {
+            if(waiting.isEmpty())
+            {
+                return;
+            }
+
+            if(audioChannel.isEmpty())
+            {
+                audioChannel.play(waiting.removeFirst());
             }
         }
     }

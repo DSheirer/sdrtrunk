@@ -59,7 +59,8 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     private final UserPreferences mUserPreferences;
     private final String mChannelName;
 
-    private AudioSegment mCurrentAudioSegment;
+    //Written by the audio playback thread and read by the audio manager thread when it assigns audio segments.
+    private volatile AudioSegment mCurrentAudioSegment;
     private Listener<IdentifierCollection> mIdentifierCollectionListener;
     private boolean mDropDuplicates;
     private boolean mMetadataSent = false;
@@ -405,6 +406,15 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     public boolean isEmpty()
     {
         return mAudioSegmentQueue.isEmpty();
+    }
+
+    /**
+     * Indicates if this audio output is neither playing an audio segment nor has one queued for playback.
+     * @return true if idle
+     */
+    public boolean isIdle()
+    {
+        return mCurrentAudioSegment == null && mAudioSegmentQueue.isEmpty();
     }
 
     /**
