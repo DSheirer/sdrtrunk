@@ -90,6 +90,15 @@ public class TestTunerController extends TunerController
         //No-op
     }
 
+    /**
+     * Disables the generic sample drop monitor since the generated test sample stream is not a hardware sample stream.
+     */
+    @Override
+    protected boolean isSampleDropMonitorSupported()
+    {
+        return false;
+    }
+
     @Override
     public TunerType getTunerType()
     {

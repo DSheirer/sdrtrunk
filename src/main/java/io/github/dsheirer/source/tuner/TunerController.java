@@ -63,6 +63,8 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     private ITunerErrorListener mTunerErrorListener;
     private static final DecimalFormat DF = new DecimalFormat("0.000");
     protected TunerFrequencyErrorManager mTunerFrequencyErrorManager;
+    private final SampleDropMonitor mSampleDropMonitor;
+    private volatile String mSampleDropMonitorTunerName;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -75,6 +77,39 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         mFrequencyController = new FrequencyController(this);
         mSourceEventListener = new SourceEventListenerToProcessorAdapter(this);
         mTunerFrequencyErrorManager = new TunerFrequencyErrorManager(this);
+        mSampleDropMonitor = isSampleDropMonitorSupported() ? new SampleDropMonitor(this::getSampleDropMonitorTunerName,
+                this::getSampleRate) : null;
+    }
+
+    /**
+     * Indicates if the tuner's sample stream should be monitored for dropped samples by counting the samples delivered
+     * against the sample rate.  Override to disable for sources that aren't real-time (ie recordings) or for tuners
+     * that detect dropped samples from hardware sample counters or timestamps.
+     *
+     * Note: invoked from this class's constructor, so overrides must not depend on subclass state.
+     * @return true to monitor (default).
+     */
+    protected boolean isSampleDropMonitorSupported()
+    {
+        return true;
+    }
+
+    /**
+     * Sets the tuner name used when logging dropped sample warnings.
+     * @param tunerName to log
+     */
+    public void setSampleDropMonitorTunerName(String tunerName)
+    {
+        mSampleDropMonitorTunerName = tunerName;
+    }
+
+    /**
+     * Tuner name for dropped sample warnings: the name set by the tuner, or the tuner type.
+     */
+    private String getSampleDropMonitorTunerName()
+    {
+        String name = mSampleDropMonitorTunerName;
+        return name != null ? name : String.valueOf(getTunerType());
     }
 
     /**
@@ -684,6 +719,11 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     protected void broadcast(INativeBuffer complexSamples)
     {
+        if(mSampleDropMonitor != null)
+        {
+            mSampleDropMonitor.process(complexSamples.sampleCount());
+        }
+
         //Note: unprotected access to the broadcaster ... the broadcaster uses thread-save internal list
         mNativeBufferBroadcaster.broadcast(complexSamples);
     }
