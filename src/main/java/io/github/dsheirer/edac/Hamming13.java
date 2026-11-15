@@ -37,7 +37,8 @@ public class Hamming13
      *
      * @param message containing a Hamming protected word
      * @param offset to the start of the protected word
-     * @return message index for an error bit or -1 if no errors are detected.
+     * @return message index for an error bit, -1 if no errors are detected, or 1000 if more than one bit error is
+     * detected.
      */
     public static int getErrorIndex(BinaryMessage message, int offset)
     {
@@ -45,7 +46,8 @@ public class Hamming13
 
         if(syndrome > 0)
         {
-            return offset + ERROR_INDEX[syndrome];
+            int errorIndex = ERROR_INDEX[syndrome];
+            return errorIndex >= 0 ? offset + errorIndex : IHamming.MULTIPLE_ERRORS;
         }
 
         return IHamming.NO_ERRORS;

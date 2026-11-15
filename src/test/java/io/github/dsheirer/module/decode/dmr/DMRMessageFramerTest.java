@@ -113,10 +113,10 @@ public class DMRMessageFramerTest
             boolean[] burst = createBurst(bptc, COLOR_CODE, DataType.SLOT_IDLE);
             float[] softSymbols = toSoftSymbols(burst);
 
-            //Add 10 low reliability payload symbol errors
+            //Add 14 low reliability payload symbol errors, which usually exceed the hard decision decoder capability
             Set<Integer> errors = new HashSet<>();
 
-            while(errors.size() < 10)
+            while(errors.size() < 14)
             {
                 errors.add(payloadDibits.get(random.nextInt(payloadDibits.size())));
             }
