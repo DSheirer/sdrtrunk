@@ -552,7 +552,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         {
             NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
             MutableIdentifierCollection ic = getMergedIdentifierCollection(identifiers);
-            mTalkerAliasManager.enrich(ic);
+            //Apply the stored talker alias for the radio (enrich() returns a copy, so update the collection in place)
+            mTalkerAliasManager.enrichMutable(ic);
             if(tracker != null)
             {
                 if(tracker.isSameCallCheckingToAndFrom(ic, timestamp))
