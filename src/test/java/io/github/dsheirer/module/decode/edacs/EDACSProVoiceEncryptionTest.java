@@ -19,9 +19,12 @@
 
 package io.github.dsheirer.module.decode.edacs;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.dsheirer.audio.codec.mbe.MBECallSequence;
 import io.github.dsheirer.module.decode.edacs.message.EDACSProVoiceMessage;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -60,6 +63,28 @@ class EDACSProVoiceEncryptionTest
     {
         //Signalling frame at the start of a clear call on a clear system (marker AA55 instead of the voice marker)
         assertFalse(frame(0xA80004C7C9FE57FFL, 0xAA55).isEncrypted());
+    }
+
+    @Test
+    void encryptedCallSequenceCarriesTheIv()
+    {
+        MBECallSequence sequence = new MBECallSequence(EDACSProVoiceCallSequenceRecorder.PROTOCOL);
+        EDACSProVoiceCallSequenceRecorder.addFrames(sequence, frame(ENCRYPTED[2]), true);
+        assertTrue(sequence.isEncrypted());
+        assertEquals(4, sequence.getVoiceFrames().size());
+        assertEquals("3C22D9F7ED84F6ED", sequence.getVoiceFrames().get(0).getMessageIndicator(),
+            "the IV is written before the 4 voice frames of each ProVoice frame");
+        assertNull(sequence.getVoiceFrames().get(1).getMessageIndicator());
+    }
+
+    @Test
+    void clearCallSequenceHasNoIv()
+    {
+        MBECallSequence sequence = new MBECallSequence(EDACSProVoiceCallSequenceRecorder.PROTOCOL);
+        EDACSProVoiceCallSequenceRecorder.addFrames(sequence, frame(CLEAR[0]), false);
+        assertFalse(sequence.isEncrypted());
+        assertEquals(4, sequence.getVoiceFrames().size());
+        assertNull(sequence.getVoiceFrames().get(0).getMessageIndicator());
     }
 
     @Test
