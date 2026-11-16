@@ -45,9 +45,21 @@ class EDACSProVoiceEncryptionTest
 
     private static EDACSProVoiceMessage frame(long iv)
     {
+        return frame(iv, 0x2175);
+    }
+
+    private static EDACSProVoiceMessage frame(long iv, int marker)
+    {
         byte[] imbe = new byte[18];
-        return new EDACSProVoiceMessage(imbe, imbe, imbe, imbe, new int[4][7][24], new boolean[0], 0, 0x2175,
+        return new EDACSProVoiceMessage(imbe, imbe, imbe, imbe, new int[4][7][24], new boolean[0], 0, marker,
             "SYNC3_INVERTED", 0, Collections.emptyList(), 0x2175, iv);
+    }
+
+    @Test
+    void signallingFramesAreNotEncrypted()
+    {
+        //Signalling frame at the start of a clear call on a clear system (marker AA55 instead of the voice marker)
+        assertFalse(frame(0xA80004C7C9FE57FFL, 0xAA55).isEncrypted());
     }
 
     @Test

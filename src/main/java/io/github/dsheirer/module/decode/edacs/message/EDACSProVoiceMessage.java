@@ -161,12 +161,14 @@ public class EDACSProVoiceMessage implements IMessage
     }
 
     /**
-     * Indicates if this frame's IV field is far enough from the clear value to be an encrypted frame.  A single frame
-     * can be corrupted, so callers decide a call is encrypted from consecutive encrypted frames.
+     * Indicates if this is a voice frame whose IV field is far enough from the clear value to be an encrypted frame.
+     * A single frame can be corrupted, so callers decide a call is encrypted from consecutive encrypted frames.
+     * Signalling frames (no voice marker) are never encrypted: their header bits carry other content even on clear
+     * calls.
      */
     public boolean isEncrypted()
     {
-        return Long.bitCount(mIv ^ CLEAR_IV) >= ENCRYPTED_IV_MINIMUM_BIT_DIFFERENCE;
+        return isVoice() && Long.bitCount(mIv ^ CLEAR_IV) >= ENCRYPTED_IV_MINIMUM_BIT_DIFFERENCE;
     }
 
     /**
