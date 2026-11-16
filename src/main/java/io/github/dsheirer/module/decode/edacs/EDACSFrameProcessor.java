@@ -80,7 +80,24 @@ public class EDACSFrameProcessor
     private boolean mInvertPayload = false;
 
     private final EDACSVoter mVoter = new EDACSVoter();
+    private final boolean mEsk;
 
+    /**
+     * Constructs an instance for a control channel that does not use EDACS Security Key (ESK).
+     */
+    public EDACSFrameProcessor()
+    {
+        this(false);
+    }
+
+    /**
+     * Constructs an instance
+     * @param esk true if the control channel uses EDACS Security Key (ESK)
+     */
+    public EDACSFrameProcessor(boolean esk)
+    {
+        mEsk = esk;
+    }
 
     /**
      * Feeds a single demodulated bit to the frame processor. Bit value 1
@@ -149,7 +166,7 @@ public class EDACSFrameProcessor
             return;
         }
 
-        EDACSMessage message = EDACSMessageFactory.create(data1, data2, System.currentTimeMillis());
+        EDACSMessage message = EDACSMessageFactory.create(data1, data2, System.currentTimeMillis(), mEsk);
 
         if(message == null)
         {

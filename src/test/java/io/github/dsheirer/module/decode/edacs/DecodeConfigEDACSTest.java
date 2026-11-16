@@ -42,6 +42,13 @@ class DecodeConfigEDACSTest
     }
 
     @Test
+    void eskDefaultsToOff()
+    {
+        //A playlist saved before the setting existed has no esk attribute and must keep decoding as before
+        assertEquals(false, new DecodeConfigEDACS().isEsk());
+    }
+
+    @Test
     void voiceMarkerDefaultsToTheKnownValue()
     {
         DecodeConfigEDACS config = new DecodeConfigEDACS();

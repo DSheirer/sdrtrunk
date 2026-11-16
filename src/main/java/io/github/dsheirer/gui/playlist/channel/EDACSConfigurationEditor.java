@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
@@ -48,8 +49,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +75,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
     private ComboBox<DecodeConfigEDACS.VoiceMode> mVoiceModeComboBox;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private TextField mVoiceMarkerTextField;
+    private ToggleSwitch mEskButton;
 
     public EDACSConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
@@ -151,6 +155,14 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getVoiceMarkerTextField(), 1, 2);
             voiceGrid.getChildren().add(getVoiceMarkerTextField());
 
+            Label eskLabel = new Label("ESK");
+            GridPane.setHalignment(eskLabel, HPos.RIGHT);
+            GridPane.setConstraints(eskLabel, 0, 3);
+            voiceGrid.getChildren().add(eskLabel);
+
+            GridPane.setConstraints(getEskButton(), 1, 3);
+            voiceGrid.getChildren().add(getEskButton());
+
             vbox.getChildren().add(voiceGrid);
 
             Label scopeLabel = new Label("Tested on EDACS Extended Addressing (EA) with ProVoice voice only. Standard/Networked " +
@@ -198,6 +210,21 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
         }
 
         return mVoiceMarkerTextField;
+    }
+
+    private ToggleSwitch getEskButton()
+    {
+        if(mEskButton == null)
+        {
+            mEskButton = new AccessibleToggleSwitch();
+            mEskButton.setTooltip(new Tooltip(
+                    "Turn on for a system that uses EDACS Security Key (ESK). ESK changes the control channel " +
+                    "message types, not the voice. If the control channel decodes but no calls are followed, try " +
+                    "the other setting."));
+            mEskButton.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mEskButton;
     }
 
     private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
@@ -335,6 +362,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
         getVoiceModeComboBox().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
         getVoiceMarkerTextField().setDisable(config == null);
+        getEskButton().setDisable(config == null);
 
         if(config instanceof DecodeConfigEDACS decodeConfigEDACS)
         {
@@ -343,6 +371,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
             mLcnFrequencyEditor.setText(freqs != null ? freqs.replace(",", "\n") : "");
             getVoiceModeComboBox().getSelectionModel().select(decodeConfigEDACS.getVoiceMode());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfigEDACS.getTrafficChannelPoolSize());
+            getEskButton().setSelected(decodeConfigEDACS.isEsk());
         }
         else
         {
@@ -350,6 +379,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
             getVoiceMarkerTextField().setText(DecodeConfigEDACS.PROVOICE_VOICE_MARKER_DEFAULT);
             getVoiceModeComboBox().getSelectionModel().select(DecodeConfigEDACS.VOICE_MODE_DEFAULT);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(DecodeConfigEDACS.TRAFFIC_CHANNEL_LIMIT_DEFAULT_EDACS);
+            getEskButton().setSelected(false);
         }
     }
 
@@ -374,6 +404,7 @@ public class EDACSConfigurationEditor extends ChannelConfigurationEditor
         config.setVoiceMode(getVoiceModeComboBox().getSelectionModel().getSelectedItem());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setProVoiceVoiceMarker(getVoiceMarkerTextField().getText());
+        config.setEsk(getEskButton().isSelected());
 
         getItem().setDecodeConfiguration(config);
     }

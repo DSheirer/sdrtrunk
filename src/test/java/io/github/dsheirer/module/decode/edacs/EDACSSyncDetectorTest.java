@@ -92,9 +92,59 @@ class EDACSSyncDetectorTest
 
     private static List<IMessage> decode(float[] samples)
     {
+        return decode(samples, false);
+    }
+
+    private static List<IMessage> decode(float[] samples, boolean esk)
+    {
         List<IMessage> messages = new ArrayList<>();
-        new EDACSSyncDetector().process(samples, messages::add);
+        new EDACSSyncDetector(esk).process(samples, messages::add);
         return messages;
+    }
+
+    /** ESK mask positioned over the first 8 bits of a 28-bit message */
+    private static final long ESK = (long)DecodeConfigEDACS.ESK_MASK << 20;
+
+    /** Digital (ProVoice) group call assignment: MT1 0x03, LCN 5, talkgroup 1234 */
+    private static final long DIGITAL_GROUP_CALL = (0x03L << 23) | (5L << 17) | 1234L;
+
+    /** Analog group call assignment: MT1 0x06, LCN 5, talkgroup 1234 */
+    private static final long ANALOG_GROUP_CALL = (0x06L << 23) | (5L << 17) | 1234L;
+
+    /** Second message of a group call: source radio 5678 */
+    private static final long SOURCE = 5678L;
+
+    private static EDACSMessage first(long data1, long data2, boolean esk)
+    {
+        return (EDACSMessage)decode(samples(frame(data1, data2), 2, 0), esk).getFirst();
+    }
+
+    @Test
+    void eskSettingRecoversAMaskedGroupCall()
+    {
+        //These frames are masked by this test, not captured from an ESK system
+        EDACSMessage plain = first(DIGITAL_GROUP_CALL, SOURCE, false);
+        EDACSMessage masked = first(DIGITAL_GROUP_CALL ^ ESK, SOURCE ^ ESK, true);
+
+        assertEquals(EDACSMessageType.DIGITAL_GROUP_CALL, plain.getMessageType());
+        assertEquals(EDACSMessageType.DIGITAL_GROUP_CALL, masked.getMessageType());
+        assertEquals(5, masked.getLCN());
+        assertEquals(1234, masked.getGroup());
+        assertEquals(5678, masked.getSource());
+    }
+
+    @Test
+    void wrongEskSettingDoesNotProduceGroupCalls()
+    {
+        //ESK system with the setting off: MT1 0x03 is sent as 0x17, which is not a known message type
+        assertEquals(EDACSMessageType.UNKNOWN, first(DIGITAL_GROUP_CALL ^ ESK, SOURCE ^ ESK, false).getMessageType());
+
+        //ESK system with the setting off: MT1 0x06 is sent as 0x12, which reads as a channel assignment
+        assertEquals(EDACSMessageType.CHANNEL_ASSIGNMENT,
+                first(ANALOG_GROUP_CALL ^ ESK, SOURCE ^ ESK, false).getMessageType());
+
+        //System without ESK with the setting on
+        assertEquals(EDACSMessageType.UNKNOWN, first(DIGITAL_GROUP_CALL, SOURCE, true).getMessageType());
     }
 
     @Test

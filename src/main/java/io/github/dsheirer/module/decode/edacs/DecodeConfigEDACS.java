@@ -69,6 +69,14 @@ public class DecodeConfigEDACS extends DecodeConfiguration
     public static final int PROVOICE_VOICE_MARKER_NONE = -1;
     private String mProVoiceVoiceMarker = PROVOICE_VOICE_MARKER_DEFAULT;
 
+    /**
+     * Value that an EDACS Security Key (ESK) system XORs with the first 8 bits of each 28-bit control channel
+     * message.  This is the value DSD-FME (edacs-fme.c) and the RadioReference wiki give.  It has not been checked
+     * against a live ESK system.
+     */
+    public static final int ESK_MASK = 0xA0;
+    private boolean mEsk = false;
+
     public enum VoiceMode
     {
         /** Analog FM only (NBFM) */
@@ -220,6 +228,23 @@ public class DecodeConfigEDACS extends DecodeConfiguration
 
         String trimmed = marker.trim().toUpperCase();
         mProVoiceVoiceMarker = trimmed.matches("[0-9A-F]{1,4}") ? trimmed : "";
+    }
+
+    /**
+     * Indicates if the system uses EDACS Security Key (ESK).  An ESK control channel carries the same messages with
+     * the message type bits changed by a fixed mask: see {@link #ESK_MASK}.  Voice is not affected.  There is no
+     * reliable way to detect ESK from the control channel, since masked message types are also valid unmasked
+     * types, so the user sets it.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "esk")
+    public boolean isEsk()
+    {
+        return mEsk;
+    }
+
+    public void setEsk(boolean esk)
+    {
+        mEsk = esk;
     }
 
     /**

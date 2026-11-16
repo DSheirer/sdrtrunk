@@ -68,8 +68,17 @@ public class EDACSDecoder extends Decoder implements IComplexSamplesListener, Li
 
     public EDACSDecoder()
     {
+        this(false);
+    }
+
+    /**
+     * Constructs an instance
+     * @param esk true if the control channel uses EDACS Security Key (ESK)
+     */
+    public EDACSDecoder(boolean esk)
+    {
         mFMDemodulator = FmDemodulatorFactory.getFmDemodulator();
-        mSyncDetector = new EDACSSyncDetector();
+        mSyncDetector = new EDACSSyncDetector(esk);
     }
 
     @Override

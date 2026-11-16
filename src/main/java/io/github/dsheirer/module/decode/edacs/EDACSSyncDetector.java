@@ -62,8 +62,20 @@ public class EDACSSyncDetector
     private boolean mLocked;
     private double mAfc;
 
+    private final boolean mEsk;
+
     public EDACSSyncDetector()
     {
+        this(false);
+    }
+
+    /**
+     * Constructs an instance
+     * @param esk true if the control channel uses EDACS Security Key (ESK)
+     */
+    public EDACSSyncDetector(boolean esk)
+    {
+        mEsk = esk;
         reset();
     }
 
@@ -74,7 +86,7 @@ public class EDACSSyncDetector
     {
         for(int x = 0; x < mPhaseFrameProcessors.length; x++)
         {
-            mPhaseFrameProcessors[x] = new EDACSFrameProcessor();
+            mPhaseFrameProcessors[x] = new EDACSFrameProcessor(mEsk);
         }
 
         mSampleIndex = 0;

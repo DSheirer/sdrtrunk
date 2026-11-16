@@ -48,8 +48,27 @@ public class EDACSMessageFactory
 
     public static EDACSMessage create(CorrectedBinaryMessage data, CorrectedBinaryMessage data2, long timestamp)
     {
+        return create(data, data2, timestamp, false);
+    }
+
+    /**
+     * Creates a message.
+     * @param esk true for an EDACS Security Key (ESK) control channel.  The ESK mask is removed from both 28-bit
+     * messages before they are parsed, as DSD-FME edacs-fme.c does.  The mask is applied after error correction, so
+     * the stored message bits stay as they were received.
+     */
+    public static EDACSMessage create(CorrectedBinaryMessage data, CorrectedBinaryMessage data2, long timestamp,
+                                      boolean esk)
+    {
         int msg_1 = getInt(data, 0, 28);
         int msg_2 = data2 != null ? getInt(data2, 0, 28) : 0;
+
+        if(esk)
+        {
+            int mask = DecodeConfigEDACS.ESK_MASK << 20;
+            msg_1 ^= mask;
+            msg_2 ^= mask;
+        }
 
         int mt1 = (msg_1 >> 23) & 0x1F;
         int mt2 = (msg_1 >> 19) & 0x0F;
