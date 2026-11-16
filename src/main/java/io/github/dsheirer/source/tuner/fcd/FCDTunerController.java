@@ -99,7 +99,7 @@ public abstract class FCDTunerController extends TunerController
         mComplexMixer = new ComplexMixer(mixerTDL, tunerType.getAudioFormat(), tunerType.getDisplayString(),
                 new ComplexShortAdapter());
         mComplexMixer.setBufferSampleCount(getBufferSampleCount());
-        mComplexMixer.setBufferListener(mNativeBufferBroadcaster);
+        mComplexMixer.setBufferListener(this);
     }
 
     @Override

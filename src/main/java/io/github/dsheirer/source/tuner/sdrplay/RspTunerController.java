@@ -130,7 +130,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
 
         for(RspNativeBuffer buffer: buffers)
         {
-            mNativeBufferBroadcaster.broadcast(buffer);
+            broadcast(buffer);
         }
     }
 

@@ -129,6 +129,15 @@ public class RecordingTunerController extends TunerController
         }
     }
 
+    /**
+     * Disables the generic sample drop monitor since recordings are replayed and not limited to a real-time sample rate.
+     */
+    @Override
+    protected boolean isSampleDropMonitorSupported()
+    {
+        return false;
+    }
+
     @Override
     public TunerType getTunerType()
     {
