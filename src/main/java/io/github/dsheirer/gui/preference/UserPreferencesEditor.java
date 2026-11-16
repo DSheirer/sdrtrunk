@@ -200,6 +200,8 @@ public class UserPreferencesEditor extends BorderPane
             treeRoot.getChildren().add(storageItem);
             storageItem.setExpanded(true);
 
+            treeRoot.getChildren().add(new TreeItem(PreferenceEditorType.THINLINE_RADIO));
+
             TreeItem<String> sourceItem = new TreeItem<>("Source");
             sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNERS));
             treeRoot.getChildren().add(sourceItem);

@@ -20,6 +20,7 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
@@ -304,6 +305,46 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         }
 
         return null;
+    }
+
+    /**
+     * A streaming audio segment has started. Core streams report it before the file exists.
+     */
+    void coreSegmentStarted(AudioSegment segment)
+    {
+        if(segment == null || segment.getBroadcastChannels() == null)
+        {
+            return;
+        }
+
+        for(BroadcastChannel channel: segment.getBroadcastChannels())
+        {
+            AbstractAudioBroadcaster broadcaster = getBroadcaster(channel.getChannelName());
+            if(broadcaster instanceof CoreCallListener coreBroadcaster)
+            {
+                coreBroadcaster.callStarted(segment);
+            }
+        }
+    }
+
+    /**
+     * The segment ended without a recording for some core streams to upload. Every core stream is told, because the
+     * segment's channels can change after the start was announced; streams that never announced it ignore the drop.
+     */
+    void coreSegmentDropped(AudioSegment segment)
+    {
+        if(segment == null)
+        {
+            return;
+        }
+
+        for(AbstractAudioBroadcaster broadcaster: List.copyOf(mBroadcasterMap.values()))
+        {
+            if(broadcaster instanceof CoreCallListener coreBroadcaster)
+            {
+                coreBroadcaster.callDropped(segment);
+            }
+        }
     }
 
     @Override

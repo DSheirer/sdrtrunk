@@ -38,7 +38,9 @@ import io.github.dsheirer.util.TimeStamp;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -62,6 +64,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     private UserPreferences mUserPreferences;
     private ScheduledFuture<?> mAudioSegmentProcessorFuture;
     private int mNextRecordingNumber = 1;
+    private final Set<AudioSegment> mCoreAnnounced = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
 
     /**
      * Constructs an instance
@@ -82,6 +85,16 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     @Override
     public void receive(AudioSegment audioSegment)
     {
+        //Core coordinates sites on call.started, so it goes out now rather than on the next 250ms pass. This runs
+        //before the segment is queued so the pass that completes it always sees the start already sent.
+        try
+        {
+            announceCoreStart(audioSegment);
+        }
+        catch(Throwable t)
+        {
+            mLog.error("Error announcing core call start", t);
+        }
         mNewAudioSegments.add(audioSegment);
     }
 
@@ -135,10 +148,12 @@ public class AudioStreamingManager implements Listener<AudioSegment>
         while(it.hasNext())
         {
             audioSegment = it.next();
+            announceCoreStart(audioSegment);
 
             if(audioSegment.isDuplicate() && mUserPreferences.getCallManagementPreference().isDuplicateStreamingSuppressionEnabled())
             {
                 it.remove();
+                announceCoreDrop(audioSegment);
                 audioSegment.decrementConsumerCount();
             }
             else if(audioSegment.completeProperty().get())
@@ -202,10 +217,36 @@ public class AudioStreamingManager implements Listener<AudioSegment>
                     {
                         processAudioSegment(audioSegment, identifiers, audioSegment.getBroadcastChannels());
                     }
+                    //Core streams that just received a recording have claimed this segment, so the drop only
+                    //reaches Core streams that announced it and got nothing, such as a patch member with no alias.
+                    announceCoreDrop(audioSegment);
                 }
 
+                else
+                {
+                    announceCoreDrop(audioSegment);
+                }
                 audioSegment.decrementConsumerCount();
             }
+        }
+    }
+
+    private void announceCoreStart(AudioSegment audioSegment)
+    {
+        //Stream aliases can arrive with a later identifier update, so each pass re-offers the segment and each
+        //Core stream ignores a segment it already announced.
+        if(audioSegment.hasBroadcastChannels() && mAudioRecordingListener instanceof BroadcastModel broadcastModel)
+        {
+            mCoreAnnounced.add(audioSegment);
+            broadcastModel.coreSegmentStarted(audioSegment);
+        }
+    }
+
+    private void announceCoreDrop(AudioSegment audioSegment)
+    {
+        if(mCoreAnnounced.remove(audioSegment) && mAudioRecordingListener instanceof BroadcastModel broadcastModel)
+        {
+            broadcastModel.coreSegmentDropped(audioSegment);
         }
     }
 
@@ -216,7 +257,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
      * @param identifierCollection to use for the streamed audio recording.
      * @param broadcastChannels to receive the audio recording
      */
-    private void processAudioSegment(AudioSegment audioSegment, IdentifierCollection identifierCollection,
+    private boolean processAudioSegment(AudioSegment audioSegment, IdentifierCollection identifierCollection,
                                      Set<BroadcastChannel> broadcastChannels)
     {
         Path path = getTemporaryRecordingPath();
@@ -235,12 +276,15 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
             AudioRecording audioRecording = new AudioRecording(path, broadcastChannels, identifierCollection,
                     audioSegment.getStartTimestamp(), length);
+            audioRecording.setSourceSegment(audioSegment);
             mAudioRecordingListener.receive(audioRecording);
+            return true;
         }
         catch(IOException ioe)
         {
             mLog.error("Error recording temporary stream MP3");
         }
+        return false;
     }
 
     /**

@@ -28,6 +28,7 @@ import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.mp3.MP3PreferenceEditor;
 import io.github.dsheirer.gui.preference.playback.PlaybackPreferenceEditor;
 import io.github.dsheirer.gui.preference.record.RecordPreferenceEditor;
+import io.github.dsheirer.gui.preference.thinline.ThinlineRadioPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.scene.Node;
@@ -63,6 +64,8 @@ public class PreferenceEditorFactory
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:
                 return new TalkgroupFormatPreferenceEditor(userPreferences);
+            case THINLINE_RADIO:
+                return new ThinlineRadioPreferenceEditor(userPreferences);
             case VECTOR_CALIBRATION:
                 return new VectorCalibrationPreferenceEditor(userPreferences);
         }

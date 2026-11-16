@@ -19,6 +19,7 @@
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ public class AudioRecording implements Comparable<AudioRecording>
     private AtomicInteger mPendingReplayCount = new AtomicInteger();
     private IdentifierCollection mIdentifierCollection;
     private Collection<BroadcastChannel> mBroadcastChannels;
+    private AudioSegment mSourceSegment;
 
     /**
      * Audio recording that is ready to be streamed
@@ -62,6 +64,19 @@ public class AudioRecording implements Comparable<AudioRecording>
     public Path getPath()
     {
         return mPath;
+    }
+
+    /**
+     * Audio segment this recording was made from. Used to pair a core call.started with call.ready.
+     */
+    public void setSourceSegment(AudioSegment sourceSegment)
+    {
+        mSourceSegment = sourceSegment;
+    }
+
+    public AudioSegment getSourceSegment()
+    {
+        return mSourceSegment;
     }
 
     /**

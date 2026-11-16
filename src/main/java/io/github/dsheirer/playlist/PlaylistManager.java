@@ -219,6 +219,11 @@ public class PlaylistManager implements Listener<ChannelEvent>
     /**
      * Alias model managed by this playlist manager
      */
+    public UserPreferences getUserPreferences()
+    {
+        return mUserPreferences;
+    }
+
     public AliasModel getAliasModel()
     {
         return mAliasModel;
