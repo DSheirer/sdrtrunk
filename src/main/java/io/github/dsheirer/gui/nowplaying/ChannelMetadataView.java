@@ -361,6 +361,17 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         columns.add(NowPlayingCells.column("tuner", "Tuner", null, Pos.CENTER,
             row -> getTunerName(row.getChannelMetadata()), Row::revisionProperty));
 
+        //System and site labels from the channel configuration, hidden by default
+        TableColumn<Row,String> system = NowPlayingCells.column("system", "System", null, Pos.CENTER,
+            row -> toText(row.getChannelMetadata().getSystemConfigurationIdentifier()), Row::revisionProperty);
+        system.setVisible(false);
+        columns.add(system);
+
+        TableColumn<Row,String> site = NowPlayingCells.column("site", "Site", null, Pos.CENTER,
+            row -> toText(row.getChannelMetadata().getSiteConfigurationIdentifier()), Row::revisionProperty);
+        site.setVisible(false);
+        columns.add(site);
+
         columns.add(NowPlayingCells.column("channel.name", "Channel Name", null, Pos.CENTER,
             row -> toText(row.getChannelMetadata().getChannelNameConfigurationIdentifier()), Row::revisionProperty));
 
@@ -370,7 +381,8 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
             column.setSortable(false);
         }
 
-        //Column numbers in the Swing version of the table, for its stored column widths.  Talker and Tuner are new columns.
+        //Column numbers in the Swing version of the table, for its stored column widths.  Talker, Tuner, System and Site are new
+        //columns.
         String[] swingColumns = {"status", "decoder", "from", "from.alias", "to", "to.alias", "channel", "frequency",
             "channel.name"};
 

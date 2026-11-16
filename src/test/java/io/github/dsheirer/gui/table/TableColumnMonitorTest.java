@@ -213,6 +213,27 @@ public class TableColumnMonitorTest
     }
 
     @Test
+    public void newHiddenByDefaultColumnStaysHidden() throws Exception
+    {
+        onFx(() -> {
+            //Stored by a version without the hidden by default 'site' column and without the known columns
+            mPreferences.put(KEY + ".column.hidden", "a");
+            TableView<String> table = createTable("a", "b", "site");
+            table.getColumns().get(2).setVisible(false);
+            monitor(table);
+            assertEquals(List.of("b"), visibleIds(table));
+
+            //The user shows the column, which is kept in the next session
+            table.getColumns().get(2).setVisible(true);
+            TableView<String> restored = createTable("a", "b", "site", "system");
+            restored.getColumns().get(2).setVisible(false);
+            restored.getColumns().get(3).setVisible(false);
+            monitor(restored);
+            assertEquals(List.of("b", "site"), visibleIds(restored));
+        });
+    }
+
+    @Test
     public void lastVisibleColumnCantBeHidden() throws Exception
     {
         onFx(() -> {
