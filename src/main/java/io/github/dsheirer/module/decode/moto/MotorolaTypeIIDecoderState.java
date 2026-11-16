@@ -164,7 +164,7 @@ public class MotorolaTypeIIDecoderState extends DecoderState
     private void processChannelGrant(MotorolaTypeIIMessage message)
     {
         int channelNumber = message.getChannelNumber();
-        int talkgroup = message.getAddress();
+        int talkgroup = message.getTalkgroup();
         double frequencyMHz = mBandplan.getDownlinkFrequency(channelNumber);
 
         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -173,6 +173,7 @@ public class MotorolaTypeIIDecoderState extends DecoderState
 
         MotorolaTypeIIChannel channel = new MotorolaTypeIIChannel(channelNumber, mBandplan);
 
+        String options = message.getCallOptions().isEmpty() ? "" : message.getCallOptions() + " ";
         String mode = message.getMessageType() == MotorolaTypeIIMessageType.DIGITAL_GROUP_GRANT ||
                 message.getMessageType() == MotorolaTypeIIMessageType.DIGITAL_PRIVATE_CALL ? "DIGITAL" : "ANALOG";
         boolean privateCall = message.getMessageType() == MotorolaTypeIIMessageType.ANALOG_PRIVATE_CALL ||
@@ -180,10 +181,11 @@ public class MotorolaTypeIIDecoderState extends DecoderState
         String callType = privateCall ? "Private Call" : "Group Grant";
         String addressLabel = privateCall ? " TO:" : " TG:";
         String freqStr = frequencyMHz > 0 ? String.format("%.4f MHz", frequencyMHz) : "unknown freq";
-        DecodeEvent event = DecodeEvent.builder(DecodeEventType.CALL, message.getTimestamp())
+        DecodeEvent event = DecodeEvent.builder(message.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                        DecodeEventType.CALL, message.getTimestamp())
                 .channel(channel)
                 .identifiers(ic)
-                .details(mode + " " + callType + " CH:" + String.format("0x%03X", channelNumber) +
+                .details(options + mode + " " + callType + " CH:" + String.format("0x%03X", channelNumber) +
                         addressLabel + String.format("0x%04X", talkgroup) + " " + freqStr)
                 .protocol(io.github.dsheirer.protocol.Protocol.MOTOROLA_TYPE_II)
                 .build();
@@ -201,7 +203,7 @@ public class MotorolaTypeIIDecoderState extends DecoderState
     private void processGroupUpdate(MotorolaTypeIIMessage message)
     {
         int channelNumber = message.getChannelNumber();
-        int talkgroup = message.getAddress();
+        int talkgroup = message.getTalkgroup();
         double frequencyMHz = mBandplan.getDownlinkFrequency(channelNumber);
 
         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -214,7 +216,8 @@ public class MotorolaTypeIIDecoderState extends DecoderState
         DecodeEvent event = DecodeEvent.builder(DecodeEventType.CALL_IN_PROGRESS, message.getTimestamp())
                 .channel(channel)
                 .identifiers(ic)
-                .details("Group Update TG:" + String.format("0x%04X", talkgroup) + 
+                .details((message.getCallOptions().isEmpty() ? "" : message.getCallOptions() + " ") +
+                        "Group Update TG:" + String.format("0x%04X", talkgroup) + 
                          " CH:" + String.format("0x%03X", channelNumber) + " " + freqStr)
                 .protocol(io.github.dsheirer.protocol.Protocol.MOTOROLA_TYPE_II)
                 .build();

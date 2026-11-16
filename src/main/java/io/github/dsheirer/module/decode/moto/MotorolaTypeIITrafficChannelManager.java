@@ -58,6 +58,7 @@ public class MotorolaTypeIITrafficChannelManager extends TrafficChannelManager i
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
     public static final String DIGITAL_VOICE_NOT_SUPPORTED = "DIGITAL VOICE NOT SUPPORTED";
+    public static final String ENCRYPTED = "ENCRYPTED";
 
     private Queue<Channel> mAvailableTrafficChannelQueue = new ConcurrentLinkedQueue<>();
     private List<Channel> mManagedTrafficChannels;
@@ -103,7 +104,9 @@ public class MotorolaTypeIITrafficChannelManager extends TrafficChannelManager i
 
         if(existingEvent != null)
         {
-            if(isSameTalkgroup(identifierCollection, existingEvent.getIdentifierCollection()))
+            //A call that changes between clear and encrypted keeps its talkgroup, so that change is checked as well
+            if(isSameTalkgroup(identifierCollection, existingEvent.getIdentifierCollection()) &&
+                message.isEncrypted() == (existingEvent.getEventType() == DecodeEventType.CALL_GROUP_ENCRYPTED))
             {
                 existingEvent.update(message.getTimestamp());
                 broadcast(existingEvent);
@@ -116,14 +119,25 @@ public class MotorolaTypeIITrafficChannelManager extends TrafficChannelManager i
             }
         }
 
-        DecodeEvent grantEvent = DecodeEvent.builder(DecodeEventType.CALL, message.getTimestamp())
+        DecodeEvent grantEvent = DecodeEvent.builder(message.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                        DecodeEventType.CALL, message.getTimestamp())
                 .channel(channel)
-                .details("Traffic Channel Grant")
+                .details(message.getCallOptions().isEmpty() ? "Traffic Channel Grant" :
+                        "Traffic Channel Grant " + message.getCallOptions())
                 .identifiers(identifierCollection)
                 .protocol(io.github.dsheirer.protocol.Protocol.MOTOROLA_TYPE_II)
                 .build();
 
         mChannelGrantEventMap.put(channel, grantEvent);
+
+        //Encrypted (SECURENET) voice is a 12 kbit/s digital signal that the analog decoder would play as noise, so
+        //the call is reported and not followed.
+        if(message.isEncrypted())
+        {
+            grantEvent.setDetails(message.getCallOptions());
+            broadcast(grantEvent);
+            return;
+        }
 
         //Analog voice only.  Digital voice isn't decoded and the analog decoder would play it as noise, so a digital
         //call is reported and not followed.  To add it, start a traffic channel here for the digital grant and have
