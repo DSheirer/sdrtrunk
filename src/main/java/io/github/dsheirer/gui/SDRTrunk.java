@@ -840,11 +840,16 @@ public class SDRTrunk implements Listener<TunerEvent>
     }
 
     /**
-     * Updates the title bar with the tuner name
+     * Updates the title bar with the tuner name.  No-op when running headless (no main window).
      * @param tunerName optional
      */
     private void updateTitle(String tunerName)
     {
+        if(mMainGui == null)
+        {
+            return;
+        }
+
         if(tunerName != null)
         {
             mMainGui.setTitle(mTitle + " - " + tunerName);
