@@ -44,6 +44,7 @@ public class EDACSProVoiceAudioModule extends JmbeAudioModule
     private static final String PROVOICE_CODEC = "PROVOICE";
 
     private final SquelchStateListener mSquelchStateListener = new SquelchStateListener();
+    private final EDACSProVoiceEncryptionTracker mEncryptionTracker = new EDACSProVoiceEncryptionTracker();
     private int mDecodeErrors = 0;
     private long mLastDecodeErrorLogTimestamp = 0;
 
@@ -68,6 +69,7 @@ public class EDACSProVoiceAudioModule extends JmbeAudioModule
     public void reset()
     {
         getIdentifierCollection().clear();
+        mEncryptionTracker.reset();
     }
 
     @Override
@@ -80,6 +82,13 @@ public class EDACSProVoiceAudioModule extends JmbeAudioModule
     {
         if(hasAudioCodec() && message instanceof EDACSProVoiceMessage pv && pv.isValid())
         {
+            //Encrypted voice is never played: neither a frame whose IV field is encrypted (before the call has enough
+            //consecutive encrypted frames to be called encrypted) nor any frame once the call is found encrypted.
+            if(mEncryptionTracker.process(pv) || pv.isEncrypted())
+            {
+                return;
+            }
+
             for(byte[] frame : pv.getPackedImbe7100Frames())
             {
                 try
@@ -117,6 +126,7 @@ public class EDACSProVoiceAudioModule extends JmbeAudioModule
             if(event.getSquelchState() == SquelchState.SQUELCH)
             {
                 closeAudioSegment();
+                mEncryptionTracker.reset();
             }
         }
     }

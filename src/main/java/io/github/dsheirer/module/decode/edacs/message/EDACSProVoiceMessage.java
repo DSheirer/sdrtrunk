@@ -35,6 +35,19 @@ public class EDACSProVoiceMessage implements IMessage
 {
     private static final int DEFAULT_VOICE_MARKER = 0x2175;
     private static final int VOICE_MARKER_MAXIMUM_BIT_ERRORS = 3;
+
+    /**
+     * Value of the 64-bit encryption initialization vector (IV) field on clear voice.  The field changes on every
+     * frame of an encrypted call, where it is the cipher's IV (per the DSD-FME maintainer).
+     */
+    public static final long CLEAR_IV = 0x6969696969696969L;
+
+    /**
+     * Minimum number of IV bits that differ from {@link #CLEAR_IV} for a frame to be treated as encrypted.  Measured
+     * on recordings of Extended Addressing systems: clear frames differed by 0-15 bits (weak signal included) and
+     * encrypted frames by 22-39 bits, where a random value averages 32.
+     */
+    public static final int ENCRYPTED_IV_MINIMUM_BIT_DIFFERENCE = 18;
     private final int mVoiceMarker;
 
     private final byte[][] mImbeFrames = new byte[4][];
@@ -42,6 +55,7 @@ public class EDACSProVoiceMessage implements IMessage
     private final boolean[] mFrameBits;
     private final int mLid;
     private final int mBfMarker;
+    private final long mIv;
     private final String mSyncPattern;
     private final long mTimestamp;
     private final List<Identifier> mIdentifiers;
@@ -54,15 +68,25 @@ public class EDACSProVoiceMessage implements IMessage
                 timestamp, Collections.emptyList(), DEFAULT_VOICE_MARKER);
     }
 
+    public EDACSProVoiceMessage(byte[] imbeFrame1, byte[] imbeFrame2, byte[] imbeFrame3, byte[] imbeFrame4,
+                                int[][][] imbeGrids, boolean[] frameBits, int lid, int bfMarker,
+                                String syncPattern, long timestamp, List<Identifier> identifiers, int voiceMarker)
+    {
+        this(imbeFrame1, imbeFrame2, imbeFrame3, imbeFrame4, imbeGrids, frameBits, lid, bfMarker, syncPattern,
+                timestamp, identifiers, voiceMarker, CLEAR_IV);
+    }
+
     /**
      * Constructs an instance
      * @param voiceMarker that voice frames carry on this system, or a negative value to treat every frame as voice.
      */
     public EDACSProVoiceMessage(byte[] imbeFrame1, byte[] imbeFrame2, byte[] imbeFrame3, byte[] imbeFrame4,
                                 int[][][] imbeGrids, boolean[] frameBits, int lid, int bfMarker,
-                                String syncPattern, long timestamp, List<Identifier> identifiers, int voiceMarker)
+                                String syncPattern, long timestamp, List<Identifier> identifiers, int voiceMarker,
+                                long iv)
     {
         mVoiceMarker = voiceMarker;
+        mIv = iv;
         mImbeFrames[0] = imbeFrame1;
         mImbeFrames[1] = imbeFrame2;
         mImbeFrames[2] = imbeFrame3;
@@ -118,9 +142,31 @@ public class EDACSProVoiceMessage implements IMessage
         return bytes;
     }
 
+    /**
+     * The 16 bits that DSD-FME labels LID.  On Extended Addressing systems these are the middle 16 bits of the
+     * encryption IV field ({@link #getIv()}), not a radio ID: 0x6969 on clear voice and random on encrypted voice.
+     */
     public int getLid()
     {
         return mLid;
+    }
+
+    /**
+     * 64-bit encryption initialization vector (IV) field: the 64 bits that follow the 32 bits after the sync word.
+     * Reads {@link #CLEAR_IV} on clear voice.
+     */
+    public long getIv()
+    {
+        return mIv;
+    }
+
+    /**
+     * Indicates if this frame's IV field is far enough from the clear value to be an encrypted frame.  A single frame
+     * can be corrupted, so callers decide a call is encrypted from consecutive encrypted frames.
+     */
+    public boolean isEncrypted()
+    {
+        return Long.bitCount(mIv ^ CLEAR_IV) >= ENCRYPTED_IV_MINIMUM_BIT_DIFFERENCE;
     }
 
     /**
@@ -171,8 +217,8 @@ public class EDACSProVoiceMessage implements IMessage
     @Override
     public String toString()
     {
-        return String.format("PROVOICE %s MARKER:%04X LID:%04X %s", isVoice() ? "VOICE" : "SIGNALLING", mBfMarker,
-            mLid, mSyncPattern);
+        return String.format("PROVOICE %s%s MARKER:%04X IV:%016X %s", isVoice() ? "VOICE" : "SIGNALLING",
+            isEncrypted() ? " ENCRYPTED" : "", mBfMarker, mIv, mSyncPattern);
     }
 
     @Override

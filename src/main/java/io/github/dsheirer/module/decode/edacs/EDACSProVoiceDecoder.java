@@ -81,6 +81,13 @@ public class EDACSProVoiceDecoder extends Decoder implements IComplexSamplesList
 
     private static final int SYNC_BITS = 32;
     private static final int HEADER_BITS = 64 + 16 + 64;
+
+    /**
+     * Encryption IV field: 64 bits that start 32 bits into the header (the first 32 header bits repeat the sync
+     * prefix and TX/RX bytes).  It spans the LID and reads 0x6969696969696969 on clear voice.
+     */
+    private static final int IV_OFFSET = SYNC_BITS + 32;
+    private static final int IV_BITS = 64;
     private static final int IMBE_BITS_PER_FRAME = 142;
     private static final int SPACER_BITS = 2;
     private static final int BF_BITS = 16;
@@ -431,6 +438,7 @@ public class EDACSProVoiceDecoder extends Decoder implements IComplexSamplesList
 
         int lid = readLid();
         int bfMarker = readInt(BF_OFFSET, BF_BITS);
+        long iv = readLong(IV_OFFSET, IV_BITS);
         boolean[] frameBits = readFrameBits();
         int[] offset = new int[] { SYNC_BITS + HEADER_BITS };
         int[][] grid1 = new int[7][24];
@@ -448,7 +456,7 @@ public class EDACSProVoiceDecoder extends Decoder implements IComplexSamplesList
 
         EDACSProVoiceMessage message = new EDACSProVoiceMessage(imbe1, imbe2, imbe3, imbe4,
                 new int[][][] { grid1, grid2, grid3, grid4 }, frameBits, lid, bfMarker, syncPattern,
-                System.currentTimeMillis(), mIdentifierCollection.getIdentifiers(), mVoiceMarker);
+                System.currentTimeMillis(), mIdentifierCollection.getIdentifiers(), mVoiceMarker, iv);
 
         if(mCandidate == null)
         {
@@ -549,6 +557,19 @@ public class EDACSProVoiceDecoder extends Decoder implements IComplexSamplesList
             result[i] = mFrameBits[(startIndex + i) % mFrameBits.length];
         }
         return result;
+    }
+
+    private long readLong(int bitOffset, int bitCount)
+    {
+        long value = 0;
+        for(int i = 0; i < bitCount; i++)
+        {
+            if(readDataBit(bitOffset + i))
+            {
+                value |= (1L << (bitCount - 1 - i));
+            }
+        }
+        return value;
     }
 
     private int readInt(int bitOffset, int bitCount)

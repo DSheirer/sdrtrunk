@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.edacs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.edacs.message.EDACSProVoiceEndMessage;
@@ -38,6 +39,7 @@ class EDACSProVoiceDecoderTest
     private static final String SYNC = "13131333111311311133113311331133";
     private static final int FRAME_PERIOD_BITS = 768;
     private static final int MARKER_OFFSET = 464;
+    private static final int IV_OFFSET = 64;
     private static final int VOICE_MARKER = 0x2175;
     private static final int SIGNALLING_MARKER = 0xAA55;
     private static final int SAMPLES_PER_SYMBOL = 5;
@@ -98,6 +100,24 @@ class EDACSProVoiceDecoderTest
         List<IMessage> messages = new ArrayList<>();
         decoder.process(samples, messages::add);
         return messages;
+    }
+
+    /**
+     * Creates frames that carry the IV field value.
+     */
+    private static boolean[] frames(int count, int marker, long iv)
+    {
+        boolean[] bits = frames(count, marker);
+
+        for(int frame = 0; frame < count; frame++)
+        {
+            for(int x = 0; x < 64; x++)
+            {
+                bits[frame * FRAME_PERIOD_BITS + IV_OFFSET + x] = ((iv >>> (63 - x)) & 1) == 1;
+            }
+        }
+
+        return bits;
     }
 
     private static long voiceFrames(List<IMessage> messages)
@@ -175,6 +195,30 @@ class EDACSProVoiceDecoderTest
         assertEquals(1, messages.stream().filter(m -> m instanceof EDACSProVoiceEndMessage).count());
         assertEquals(EDACSProVoiceEndMessage.class, messages.get(messages.size() - 1).getClass(),
             "the end of transmission follows the last voice frame");
+    }
+
+    @Test
+    void readsTheEncryptionIvField()
+    {
+        List<IMessage> clear = decode(new EDACSProVoiceDecoder(),
+            samples(frames(FRAMES, VOICE_MARKER, EDACSProVoiceMessage.CLEAR_IV), 0));
+        assertEquals(FRAMES, voiceFrames(clear));
+
+        for(IMessage message : clear)
+        {
+            if(message instanceof EDACSProVoiceMessage voice)
+            {
+                assertEquals(EDACSProVoiceMessage.CLEAR_IV, voice.getIv());
+                assertEquals(0x6969, voice.getLid(), "the LID is the middle of the IV field");
+                assertFalse(voice.isEncrypted());
+            }
+        }
+
+        //Encrypted IV value from a recording of an encrypted call
+        List<IMessage> encrypted = decode(new EDACSProVoiceDecoder(),
+            samples(frames(FRAMES, VOICE_MARKER, 0x3C22D9F7ED84F6EDL), 0));
+        assertEquals(FRAMES, encrypted.stream()
+            .filter(m -> m instanceof EDACSProVoiceMessage voice && voice.isEncrypted()).count());
     }
 
     @Test

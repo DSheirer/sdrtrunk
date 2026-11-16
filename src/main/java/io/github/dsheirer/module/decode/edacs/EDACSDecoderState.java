@@ -55,6 +55,7 @@ public class EDACSDecoderState extends DecoderState implements IMessageListener
     private boolean mSiteIdDecoded;
     private boolean mCcLcnDecoded;
 
+    private final EDACSProVoiceEncryptionTracker mEncryptionTracker = new EDACSProVoiceEncryptionTracker();
     private int mTotalMessagesDecoded;
     private int mBchErrors;
 
@@ -216,6 +217,7 @@ public class EDACSDecoderState extends DecoderState implements IMessageListener
             mTrafficChannelManager.processTrafficChannelDrop(getCurrentFrequency(), timestamp);
         }
 
+        mEncryptionTracker.reset();
         broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
     }
 
@@ -228,13 +230,22 @@ public class EDACSDecoderState extends DecoderState implements IMessageListener
             return;
         }
 
+        boolean wasEncrypted = mEncryptionTracker.isEncrypted();
+        boolean encrypted = mEncryptionTracker.process(message);
+
         //The control channel's traffic channel manager owns the call event (as P25 does) - report activity to it
         if(mTrafficChannelManager != null)
         {
+            if(encrypted && !wasEncrypted)
+            {
+                mTrafficChannelManager.processTrafficEncrypted(getCurrentFrequency());
+            }
+
             mTrafficChannelManager.processTrafficVoice(getCurrentFrequency(), message.getTimestamp());
         }
 
-        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+        //ENCRYPTED squelches the channel (StateMonitoringSquelchController only unsquelches on CALL)
+        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, encrypted ? State.ENCRYPTED : State.CALL));
     }
 
     private void processSystemInfo(EDACSMessage message)
@@ -327,5 +338,6 @@ public class EDACSDecoderState extends DecoderState implements IMessageListener
     protected void resetState()
     {
         super.resetState();
+        mEncryptionTracker.reset();
     }
 }

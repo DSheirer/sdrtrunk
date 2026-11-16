@@ -72,6 +72,7 @@ public class EDACSTrafficChannelManager extends TrafficChannelManager implements
 
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
+    public static final String ENCRYPTED = "ENCRYPTED";
     private static final long CALL_STALE_MS = 3000;
     private static final long STALE_EVENT_THRESHOLD_MS = 3000; //Same as ChannelEventTracker
     private static final long CALL_TEARDOWN_MS = 5000;
@@ -437,6 +438,29 @@ public class EDACSTrafficChannelManager extends TrafficChannelManager implements
             {
                 entry.getValue().update(timestamp);
                 broadcastGrantUpdate(entry.getKey(), entry.getValue(), timestamp);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Marks the call event for the traffic channel at the frequency as encrypted, once the traffic channel finds its
+     * voice frames encrypted.
+     * @param frequency of the traffic channel
+     */
+    public synchronized void processTrafficEncrypted(long frequency)
+    {
+        for(Map.Entry<EDACSChannel, DecodeEvent> entry : mChannelGrantEventMap.entrySet())
+        {
+            if(entry.getKey().getDownlinkFrequency() == frequency)
+            {
+                DecodeEvent event = entry.getValue();
+                String details = event.getDetails();
+
+                if(details == null || !details.startsWith(ENCRYPTED))
+                {
+                    event.setDetails(details == null ? ENCRYPTED : ENCRYPTED + " - " + details);
+                }
                 return;
             }
         }

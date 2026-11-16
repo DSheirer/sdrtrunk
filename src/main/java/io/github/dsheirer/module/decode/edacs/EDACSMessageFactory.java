@@ -220,17 +220,31 @@ public class EDACSMessageFactory
             }
             case 0xC: // Dynamic Regroup Detail (SP-WGID, patches)
             {
-                // DSD-FME extracts SP-WGID, Target, One-Way Group Patch Delete TGA
-                // Layout varies; the high bits identify the operation
-                int op = (msg_1 >> 15) & 0x1F; // coarse operation code
-                int wgid = msg_1 & 0x7FFF;
+                //Field layout per DSD-FME edacs-fme.c, which reverse engineered it from live systems using the L3Harris
+                //P25 regroup messages as a guide.  MT1 and MT2 are the top 9 bits of msg_1 (bits 27-19), so the
+                //option starts at bit 18.  Option is 7 for an active patch.  A message whose target is the supergroup
+                //itself deletes the patch.  SSN differs per site for the same supergroup.
+                int option = (msg_1 >> 16) & 0x7;
+                int wgid = msg_1 & 0xFF;
+                int ssn = (msg_2 >> 23) & 0x1F;
                 int target = msg_2 & 0xFFFFF;
                 message.setMessageType(EDACSMessageType.DYNAMIC_REGROUP_DETAIL);
                 message.setGroup(wgid);
                 message.setTarget(target);
-                details.append("SP-WGID:").append(wgid)
-                        .append(" Target:").append(target)
-                        .append(" Op:").append(op);
+                message.setRegroupOption(option);
+                message.setRegroupSsn(ssn);
+                details.append("SP-WGID:").append(wgid);
+
+                if(message.isRegroupDelete())
+                {
+                    details.append(" Patch Delete");
+                }
+                else
+                {
+                    details.append(" Target:").append(target)
+                            .append(" Opt:").append(option)
+                            .append(" SSN:").append(String.format("%02X", ssn));
+                }
                 break;
             }
             default:

@@ -83,6 +83,10 @@ public class EDACSMessage extends Message
     private int mResident2;
     private int mActive2;
 
+    /** Dynamic regroup detail fields */
+    private int mRegroupOption;
+    private int mRegroupSsn;
+
     public EDACSMessage(EDACSMessageType messageType, CorrectedBinaryMessage data, long timestamp)
     {
         this(messageType, data, null, timestamp);
@@ -125,6 +129,23 @@ public class EDACSMessage extends Message
 
     public int getTarget() { return mTarget; }
     public void setTarget(int target) { mTarget = target; }
+
+    /** Dynamic regroup detail option field: 7 for an active patch, 0 when a patch is deleted */
+    public int getRegroupOption() { return mRegroupOption; }
+    public void setRegroupOption(int option) { mRegroupOption = option; }
+
+    /** Dynamic regroup detail SSN field, which differs per site for the same supergroup */
+    public int getRegroupSsn() { return mRegroupSsn; }
+    public void setRegroupSsn(int ssn) { mRegroupSsn = ssn; }
+
+    /**
+     * Indicates if this dynamic regroup detail deletes the patch: DSD-FME treats a message whose target is the
+     * supergroup itself as a delete.
+     */
+    public boolean isRegroupDelete()
+    {
+        return mMessageType == EDACSMessageType.DYNAMIC_REGROUP_DETAIL && mTarget == mGroup;
+    }
 
     public int getLCN() { return mLCN; }
     public void setLCN(int lcn) { mLCN = lcn; }
