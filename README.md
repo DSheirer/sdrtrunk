@@ -1,7 +1,30 @@
 ![Gradle Build](https://github.com/dsheirer/sdrtrunk/actions/workflows/gradle.yml/badge.svg)
 ![Nightly Release](https://github.com/dsheirer/sdrtrunk/actions/workflows/nightly.yml/badge.svg)
+[![Latest Release](https://img.shields.io/github/v/release/DSheirer/sdrtrunk?label=release)](https://github.com/DSheirer/sdrtrunk/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/DSheirer/sdrtrunk/total)](https://github.com/DSheirer/sdrtrunk/releases)
+[![License](https://img.shields.io/github/license/DSheirer/sdrtrunk)](LICENSE)
+[![Discord](https://img.shields.io/badge/chat-on%20Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/HJQaKYE)
 
-# MacOS Tahoe 26.1 Users - Attention:
+# sdrtrunk
+A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
+
+> ## 📖 [Read the sdrtrunk User Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)
+> New to sdrtrunk? Start with the **[Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/Getting-Started)** guide,
+> then use the **[User Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)** and
+> **[How-To Guides](https://github.com/DSheirer/sdrtrunk/wiki/How-To-Guides)** to set up tuners, playlists, aliases and streaming.
+
+* [Help/Wiki Home Page](https://github.com/DSheirer/sdrtrunk/wiki)
+* [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/Getting-Started)
+* [User Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)
+* [How-To Guides](https://github.com/DSheirer/sdrtrunk/wiki/How-To-Guides)
+* [FAQ](https://github.com/DSheirer/sdrtrunk/wiki/FAQ)
+* [Download](https://github.com/DSheirer/sdrtrunk/releases)
+* [Support](https://github.com/DSheirer/sdrtrunk/wiki/Support)
+
+![sdrtrunk primary application window decoding a P25 trunked radio system](https://github.com/DSheirer/sdrtrunk/wiki/images/application_overview.png)
+**Figure 1:** sdrtrunk decoding a P25 Phase 1 simulcast trunked radio system
+
+## MacOS Tahoe 26.1 Users - Attention
 Changes to USB support in Tahoe version 26.x cause sdrtrunk to fail to launch.  Do the following to install the latest libusb and create a symbolic link and then use the nightly build which includes an updated usb4java native library for Tahoe with ARM processor.  There may still be issue(s) with MacOS accessing your USB SDR tuners.
 
 ```
@@ -18,18 +41,6 @@ Finally, create a symbolic link from the installed library to the place where us
 ```
 sudo ln -s /opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib /opt/local/lib/libusb-1.0.0.dylib
 ```
-
-# sdrtrunk
-A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
-
-* [Help/Wiki Home Page](https://github.com/DSheirer/sdrtrunk/wiki)
-* [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/Getting-Started)
-* [User's Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)
-* [Download](https://github.com/DSheirer/sdrtrunk/releases)
-* [Support](https://github.com/DSheirer/sdrtrunk/wiki/Support)
-
-![sdrtrunk Application](https://github.com/DSheirer/sdrtrunk/wiki/images/sdrtrunk.png)
-**Figure 1:** sdrtrunk Application Screenshot
 
 ## Download the Latest Release
 All release versions of sdrtrunk are available from the [releases](https://github.com/DSheirer/sdrtrunk/releases) tab.
