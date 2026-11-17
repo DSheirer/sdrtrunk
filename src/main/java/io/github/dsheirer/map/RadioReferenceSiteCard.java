@@ -24,8 +24,10 @@ import io.github.dsheirer.rrapi.type.Coverage;
 import io.github.dsheirer.service.radioreference.DistanceFormat;
 import io.github.dsheirer.service.radioreference.SiteRecord;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * HTML card with the details of radio reference trunked system sites, shown when the mouse is over a site's tower on
@@ -50,7 +52,8 @@ public final class RadioReferenceSiteCard
      */
     public static String html(List<SiteRecord> sites, RadioReferencePreference.Location location)
     {
-        DecimalFormat frequencyFormat = new DecimalFormat("0.00000");
+        DecimalFormat frequencyFormat = new DecimalFormat("0.00000",
+            DecimalFormatSymbols.getInstance(Locale.ROOT));
         StringBuilder sb = new StringBuilder("<html><body style='padding:3px'>");
         int shown = Math.min(sites.size(), MAX_SITES);
 

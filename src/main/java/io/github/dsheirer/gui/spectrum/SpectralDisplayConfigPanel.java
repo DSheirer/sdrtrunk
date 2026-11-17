@@ -69,8 +69,10 @@ public class SpectralDisplayConfigPanel extends VBox
     private static final String STYLESHEET = "/spectral_display.css";
     private static final double PANEL_WIDTH = 360;
     private static final double SWITCH_WIDTH = 40;
-    private static final java.text.DecimalFormat RESOLUTION_HZ_FORMAT = new java.text.DecimalFormat("0.#");
-    private static final java.text.DecimalFormat RESOLUTION_KHZ_FORMAT = new java.text.DecimalFormat("0.##");
+    private static final java.text.DecimalFormat RESOLUTION_HZ_FORMAT = new java.text.DecimalFormat("0.#",
+        java.text.DecimalFormatSymbols.getInstance(java.util.Locale.ROOT));
+    private static final java.text.DecimalFormat RESOLUTION_KHZ_FORMAT = new java.text.DecimalFormat("0.##",
+        java.text.DecimalFormatSymbols.getInstance(java.util.Locale.ROOT));
     private static final Duration COLLAPSE_DELAY = Duration.millis(500);
     private static final Duration FADE_DURATION = Duration.millis(150);
 
