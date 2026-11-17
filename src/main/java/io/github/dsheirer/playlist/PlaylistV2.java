@@ -24,6 +24,7 @@ package io.github.dsheirer.playlist;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasListConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
@@ -36,6 +37,7 @@ public class PlaylistV2
 {
     private int mVersion = PlaylistManager.PLAYLIST_CURRENT_VERSION;
     private List<Alias> mAliases = new ArrayList<>();
+    private List<AliasListConfiguration> mAliasListConfigurations = new ArrayList<>();
     private List<BroadcastConfiguration> mBroadcastConfigurations = new ArrayList<>();
     private List<Channel> mChannels = new ArrayList<>();
     private List<ChannelMap> mChannelMaps = new ArrayList<>();
@@ -70,6 +72,20 @@ public class PlaylistV2
     public void setAliases(List<Alias> aliases)
     {
         mAliases = aliases;
+    }
+
+    /**
+     * Alias list settings, like Radio Reference system tracking.  Older playlists don't have these.
+     */
+    @JacksonXmlProperty(isAttribute = false, localName = "alias_list")
+    public List<AliasListConfiguration> getAliasListConfigurations()
+    {
+        return mAliasListConfigurations;
+    }
+
+    public void setAliasListConfigurations(List<AliasListConfiguration> configurations)
+    {
+        mAliasListConfigurations = configurations != null ? configurations : new ArrayList<>();
     }
 
     @JacksonXmlProperty(isAttribute = false, localName = "channel")

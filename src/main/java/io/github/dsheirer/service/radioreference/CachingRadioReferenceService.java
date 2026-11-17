@@ -149,6 +149,17 @@ public class CachingRadioReferenceService extends RadioReferenceService
     }
 
     /**
+     * Discards the cached system information and talkgroups for the system so that the next request reads current
+     * values from the web service.
+     * @param systemId to discard
+     */
+    public void invalidateSystem(int systemId)
+    {
+        mSystemInfoCache.invalidate(systemId);
+        mTalkgroupCache.invalidate(systemId);
+    }
+
+    /**
      * Loads a value from the web service
      */
     @FunctionalInterface
