@@ -148,6 +148,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     /**
      * Talker alias manager
      */
+    @Override
     public TalkerAliasManager getTalkerAliasManager()
     {
         return mTalkerAliasManager;
