@@ -123,6 +123,8 @@ public class RadioReferenceFrequencyIndex
     });
     private volatile NavigableMap<Long,List<FrequencyCandidate>> mFrequencies = Collections.emptyNavigableMap();
     private volatile List<SiteRecord> mSites = Collections.emptyList();
+    //Key of the source (county:123 or agency:789) that lists each conventional frequency
+    private volatile Map<FrequencyCandidate,String> mSourceKeys = Collections.emptyMap();
     private final List<Runnable> mUpdateListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
     private volatile BuildParameters mParameters;
     private volatile long mRefreshed;
@@ -308,6 +310,7 @@ public class RadioReferenceFrequencyIndex
             stopBuild();
             mFrequencies = Collections.emptyNavigableMap();
             mSites = Collections.emptyList();
+            mSourceKeys = Collections.emptyMap();
             mParameters = null;
             notifyUpdated();
             setStatus("Set your location in the playlist editor's Radio Reference tab");
@@ -1106,6 +1109,16 @@ public class RadioReferenceFrequencyIndex
     }
 
     /**
+     * Key of the radio reference source that lists the conventional frequency: county:123 for a county's frequencies
+     * or agency:789 for an agency's frequencies.  Can be called from any thread.
+     * @return key, or null when the index doesn't have the candidate or it's a trunked site frequency
+     */
+    public String getSourceKey(FrequencyCandidate candidate)
+    {
+        return candidate != null ? mSourceKeys.get(candidate) : null;
+    }
+
+    /**
      * Site record by system and site id
      * @return site, or null when the index doesn't have it
      */
@@ -1280,13 +1293,23 @@ public class RadioReferenceFrequencyIndex
         {
             mFrequencies = toFrequencies(sources);
             List<SiteRecord> sites = new ArrayList<>();
+            Map<FrequencyCandidate,String> sourceKeys = new HashMap<>();
 
             for(Source source: sources)
             {
                 sites.addAll(nonNull(source.sites()));
+
+                if(!source.isSystem())
+                {
+                    for(FrequencyCandidate candidate: nonNull(source.candidates()))
+                    {
+                        sourceKeys.putIfAbsent(candidate, source.key());
+                    }
+                }
             }
 
             mSites = Collections.unmodifiableList(sites);
+            mSourceKeys = Collections.unmodifiableMap(sourceKeys);
             notifyUpdated();
         }
     }

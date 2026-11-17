@@ -68,6 +68,21 @@ public class AgencyFrequencyEditor extends GridPane
     private Level mLevel;
     private ComboBox<Category> mCategoryComboBox;
     private ComboBox<SubCategory> mSubCategoryComboBox;
+    private FrequencyTarget mPendingFrequency;
+    private boolean mLoadingFrequencies;
+
+    /**
+     * Frequency to select in the editor
+     * @param category name, or null
+     * @param subCategory name, or null
+     * @param frequencyHz downlink frequency
+     * @param description of the frequency, or null
+     * @param alphaTag of the frequency, or null
+     */
+    public record FrequencyTarget(String category, String subCategory, long frequencyHz, String description,
+                                  String alphaTag)
+    {
+    }
     private TableView<Frequency> mFrequencyTableView;
     private Label mPlaceholderLabel;
     private ProgressIndicator mProgressIndicator;
@@ -165,11 +180,124 @@ public class AgencyFrequencyEditor extends GridPane
                 sorted.add(0, ALL_CATEGORIES);
             }
             getCategoryComboBox().getItems().addAll(sorted);
-            getCategoryComboBox().getSelectionModel().select(sorted.get(0));
+
+            if(mPendingFrequency == null || !selectPendingFrequency())
+            {
+                getCategoryComboBox().getSelectionModel().select(sorted.get(0));
+            }
         }
         else
         {
             setLoading(false);
+        }
+    }
+
+    /**
+     * Selects the frequency in its category and subcategory, now or once the categories are set
+     */
+    public void viewFrequency(FrequencyTarget target)
+    {
+        mPendingFrequency = target;
+
+        if(!getCategoryComboBox().getItems().isEmpty())
+        {
+            selectPendingFrequency();
+        }
+    }
+
+    /**
+     * Selects the pending frequency's category and subcategory, which loads the frequencies, or selects the frequency
+     * when they're already shown.
+     * @return false when the categories don't include the frequency's category
+     */
+    private boolean selectPendingFrequency()
+    {
+        FrequencyTarget target = mPendingFrequency;
+        Category category = null;
+
+        for(Category candidate: getCategoryComboBox().getItems())
+        {
+            if(candidate != ALL_CATEGORIES && candidate.getName() != null &&
+                candidate.getName().equals(target.category()))
+            {
+                category = candidate;
+            }
+        }
+
+        if(category == null)
+        {
+            mPendingFrequency = null;
+            return false;
+        }
+
+        if(getCategoryComboBox().getValue() != category)
+        {
+            getCategoryComboBox().getSelectionModel().select(category);
+        }
+
+        SubCategory subCategory = null;
+
+        for(SubCategory candidate: getSubCategoryComboBox().getItems())
+        {
+            if(candidate != ALL_SUB_CATEGORIES && candidate.getName() != null &&
+                candidate.getName().equals(target.subCategory()))
+            {
+                subCategory = candidate;
+            }
+        }
+
+        if(subCategory != null && getSubCategoryComboBox().getValue() != subCategory)
+        {
+            //Loading the subcategory frequencies selects the frequency
+            getSubCategoryComboBox().getSelectionModel().select(subCategory);
+        }
+        else if(!mLoadingFrequencies)
+        {
+            selectFrequency();
+        }
+
+        return true;
+    }
+
+    /**
+     * Selects the pending frequency in the frequencies table: the one with the same description or alpha tag, or else
+     * the first one with the same frequency
+     */
+    private void selectFrequency()
+    {
+        FrequencyTarget target = mPendingFrequency;
+        mPendingFrequency = null;
+
+        if(target == null)
+        {
+            return;
+        }
+
+        Frequency match = null;
+
+        for(Frequency frequency: getFrequencyTableView().getItems())
+        {
+            if(frequency.getDownlinkHz() == target.frequencyHz())
+            {
+                boolean same = (target.description() != null && target.description().equals(frequency.getDescription())) ||
+                    (target.alphaTag() != null && target.alphaTag().equals(frequency.getAlphaTag()));
+
+                if(same)
+                {
+                    match = frequency;
+                    break;
+                }
+                else if(match == null)
+                {
+                    match = frequency;
+                }
+            }
+        }
+
+        if(match != null)
+        {
+            getFrequencyTableView().getSelectionModel().select(match);
+            getFrequencyTableView().scrollTo(match);
         }
     }
 
@@ -400,6 +528,7 @@ public class AgencyFrequencyEditor extends GridPane
                 getFrequencyTableView().getItems().clear();
 
                 SubCategory subCategory = mSubCategoryComboBox.getValue();
+                mLoadingFrequencies = subCategory != null;
 
                 if(subCategory != null)
                 {
@@ -453,14 +582,23 @@ public class AgencyFrequencyEditor extends GridPane
                             }
 
                             Platform.runLater(() -> {
+                                //Another subcategory was selected while loading - its frequencies are shown instead
+                                if(getSubCategoryComboBox().getValue() != subCategory)
+                                {
+                                    return;
+                                }
+
+                                mLoadingFrequencies = false;
                                 getFrequencyTableView().getItems().addAll(frequencies);
                                 setLoading(false);
+                                selectFrequency();
                             });
                         }
                         catch(Throwable t)
                         {
                             mLog.error("Error retrieving frequencies for subcategory [" + subCategory.getName() + "]", t);
                             Platform.runLater(() -> {
+                                mLoadingFrequencies = false;
                                 setLoading(false);
                                 new RadioReferenceUnavailableAlert(getSubCategoryComboBox()).showAndWait();
                             });

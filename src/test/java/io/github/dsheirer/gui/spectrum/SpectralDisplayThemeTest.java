@@ -69,4 +69,23 @@ public class SpectralDisplayThemeTest
         SpectralDisplayTheme theme = SpectralDisplayTheme.CLASSIC;
         assertEquals(theme.getWaterfallColor(255), theme.getWaterfallColor((byte)255));
     }
+
+    @Test
+    void channelMenuColorsAreReadableAndDistinct()
+    {
+        for(SpectralDisplayTheme theme: SpectralDisplayTheme.values())
+        {
+            javafx.scene.paint.Color background = theme.getBackground();
+            javafx.scene.paint.Color active = theme.getChannelActive();
+            javafx.scene.paint.Color inactive = theme.getChannelInactive();
+            javafx.scene.paint.Color text = theme.getText();
+
+            //Readable without the menu having to adjust them
+            assertTrue(ChannelMenus.contrast(active, background) >= 3.0, theme + " active contrast");
+            assertTrue(ChannelMenus.contrast(inactive, background) >= 3.0, theme + " inactive contrast");
+            assertTrue(ChannelMenus.contrast(text, background) >= 4.5, theme + " text contrast");
+            assertTrue(!active.equals(inactive) && !active.equals(text) && !inactive.equals(text),
+                theme + " colors differ");
+        }
+    }
 }

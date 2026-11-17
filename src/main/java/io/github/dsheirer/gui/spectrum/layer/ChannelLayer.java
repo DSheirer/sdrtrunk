@@ -24,8 +24,8 @@ import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
+import io.github.dsheirer.gui.spectrum.ChannelCardEntry;
+import io.github.dsheirer.gui.spectrum.ChannelMenus;
 import io.github.dsheirer.gui.spectrum.ConfigurationRow;
 import io.github.dsheirer.gui.spectrum.DisplayCursor;
 import io.github.dsheirer.gui.spectrum.DisplaySection;
@@ -56,7 +56,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
@@ -66,24 +65,20 @@ import javafx.scene.text.TextAlignment;
  * decoder.  Processing and selected channels use their own colors.  When the decoder applies a frequency correction,
  * a bracket at the bottom of the box shows the corrected channel position and the PPM error.
  *
- * When the zoom level is too low for a channel's labels to fit in its box, moving the mouse over the channel shows a
- * popout card near the bottom of the spectrum (or the waterfall) with the channel name, system, site, decoder,
- * frequency and state.  The popout can be turned off with the hover details setting.
+ * When the zoom level is too low for a channel's labels to fit in its box, resting the mouse over the channel lists
+ * it in the Channels hover card (drawn by {@link ChannelCardLayer}) with its system, site, decoder, frequency and
+ * state.  This can be turned off with the hover details setting.
  *
- * Right-clicking a channel adds a menu item to view or edit the channel in the playlist editor.
+ * Right-clicking a channel lists it in the Channels context menu, to enable or disable it or view or edit it in the
+ * playlist editor.
  */
 public class ChannelLayer extends SpectralDisplayLayer
 {
     private static final Font FONT = Font.font(11);
     private static final DecimalFormat PPM_FORMAT = new DecimalFormat("0.0");
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
-    private static final Font POPOUT_TITLE_FONT = Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, 11);
     private static final double MIN_LABEL_BOX_WIDTH = 12;
-    private static final double POPOUT_MIN_HIT_WIDTH = 10;
-    private static final double POPOUT_PADDING = 6;
-    private static final double POPOUT_GAP = 5;
-    private static final double POPOUT_SWATCH = 8;
-    private static final int POPOUT_MAX_CHANNELS = 4;
+    private static final double MIN_HIT_WIDTH = 10;
 
     /**
      * Which channels the layer shows.
@@ -382,130 +377,22 @@ public class ChannelLayer extends SpectralDisplayLayer
                 }
             }
         }
-
-        renderPopout(gc, area, DisplaySection.SPECTRUM);
-    }
-
-    @Override
-    public void renderWaterfall(GraphicsContext gc, RenderArea area)
-    {
-        renderPopout(gc, area, DisplaySection.WATERFALL);
     }
 
     /**
-     * Draws a card near the bottom of the section under the mouse with the details of each channel under the mouse
-     * whose labels don't fit in its box at the current zoom.  The card moves to the top of the section when the mouse
-     * is over the bottom of the section.
+     * Card entries for the channels under the mouse.  A channel whose labels don't fit in its box at the current
+     * zoom prompts the card.  The hit area of a narrow channel is widened so it can be found with the mouse.
      */
-    private void renderPopout(GraphicsContext gc, RenderArea area, DisplaySection section)
+    @Override
+    public List<ChannelCardEntry> getCardEntries(DisplayCursor cursor, RenderArea area)
     {
         SpectralDisplayModel model = getModel();
-        DisplayCursor cursor = getSpectralDisplay().getDisplayCursor();
+        List<ChannelCardEntry> entries = new ArrayList<>();
 
-        if(!mHoverDetails.get() || model == null || !model.hasSource() || cursor == null ||
-                cursor.section() != section || mChannelDisplay.get() == ChannelDisplay.NONE)
+        if(!mHoverDetails.get() || model == null || mChannelDisplay.get() == ChannelDisplay.NONE)
         {
-            return;
+            return entries;
         }
-
-        List<PopoutEntry> entries = getPopoutEntries(model, area, cursor.x());
-
-        if(entries.isEmpty())
-        {
-            return;
-        }
-
-        SpectralDisplayTheme theme = getSpectralDisplay().getTheme();
-        int shown = Math.min(entries.size(), POPOUT_MAX_CHANNELS);
-        String more = entries.size() > shown ? "+ " + (entries.size() - shown) + " more" : null;
-
-        //Measure the card
-        double textWidth = 0;
-        int lineCount = 0;
-
-        for(int x = 0; x < shown; x++)
-        {
-            PopoutEntry entry = entries.get(x);
-            textWidth = Math.max(textWidth, measure(entry.title(), POPOUT_TITLE_FONT) + POPOUT_SWATCH + 5);
-
-            for(String line: entry.details())
-            {
-                textWidth = Math.max(textWidth, measure(line, FONT));
-            }
-
-            lineCount += 1 + entry.details().size();
-        }
-
-        if(more != null)
-        {
-            textWidth = Math.max(textWidth, measure(more, FONT));
-            lineCount++;
-        }
-
-        double width = textWidth + (POPOUT_PADDING * 2);
-        double height = (lineCount * mTextHeight) + ((shown - 1) * POPOUT_GAP) + (POPOUT_PADDING * 2);
-        double bottom = section == DisplaySection.SPECTRUM ? area.plotHeight() : area.height();
-        double x = Math.max(4, Math.min(area.width() - width - 4, cursor.x() - (width / 2.0)));
-        double y = bottom - height - 6;
-
-        //Keep the card out from under the mouse
-        if(cursor.y() >= y - 4)
-        {
-            y = 6;
-        }
-
-        if(y < 0 || width > area.width())
-        {
-            return;
-        }
-
-        gc.setFill(theme.getBackground(0.88));
-        gc.fillRoundRect(x, y, width, height, 8, 8);
-        gc.setStroke(opaque(theme.getLine()));
-        gc.setLineWidth(1.0);
-        gc.strokeRoundRect(Math.floor(x) + 0.5, Math.floor(y) + 0.5, width, height, 8, 8);
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setTextBaseline(VPos.TOP);
-
-        double lineY = y + POPOUT_PADDING;
-        double textX = x + POPOUT_PADDING;
-
-        for(int index = 0; index < shown; index++)
-        {
-            PopoutEntry entry = entries.get(index);
-            double swatchY = lineY + ((mTextHeight - POPOUT_SWATCH) / 2.0);
-            gc.setFill(opaque(entry.color()));
-            gc.fillRect(textX, swatchY, POPOUT_SWATCH, POPOUT_SWATCH);
-            gc.setFill(theme.getCursor());
-            gc.setFont(POPOUT_TITLE_FONT);
-            gc.fillText(entry.title(), textX + POPOUT_SWATCH + 5, lineY);
-            lineY += mTextHeight;
-            gc.setFill(opaque(theme.getLine()));
-            gc.setFont(FONT);
-
-            for(String line: entry.details())
-            {
-                gc.fillText(line, textX, lineY);
-                lineY += mTextHeight;
-            }
-
-            lineY += POPOUT_GAP;
-        }
-
-        if(more != null)
-        {
-            gc.fillText(more, textX, lineY - POPOUT_GAP);
-        }
-    }
-
-    /**
-     * Channels under the screen x position whose labels don't fit in the channel box.  The hit area of a narrow
-     * channel is widened so it can be found with the mouse.
-     */
-    private List<PopoutEntry> getPopoutEntries(SpectralDisplayModel model, RenderArea area, double cursorX)
-    {
-        List<PopoutEntry> entries = new ArrayList<>();
-        SpectralDisplayTheme theme = getSpectralDisplay().getTheme();
 
         for(Channel channel: getChannels(model))
         {
@@ -523,38 +410,14 @@ public class ChannelLayer extends SpectralDisplayLayer
                     continue;
                 }
 
-                double hitWidth = Math.max(POPOUT_MIN_HIT_WIDTH, box.width());
+                double hitWidth = Math.max(MIN_HIT_WIDTH, box.width());
                 double hitStart = box.center() - (hitWidth / 2.0);
 
-                if(cursorX < hitStart || cursorX > hitStart + hitWidth || labelsFit(channel, box))
+                if(cursor.x() >= hitStart && cursor.x() <= hitStart + hitWidth)
                 {
-                    continue;
+                    entries.add(ChannelMenus.createCardEntry(channel, tunerChannel, !labelsFit(channel, box)));
+                    break;
                 }
-
-                List<String> details = new ArrayList<>();
-                String systemSite = join(channel.hasSystem() ? channel.getSystem() : null,
-                        channel.hasSite() ? channel.getSite() : null);
-
-                if(systemSite != null)
-                {
-                    details.add(systemSite);
-                }
-
-                String state = channel.isProcessing() ? "Enabled" : "Disabled";
-
-                if(channel.isSelected())
-                {
-                    state += ", Selected";
-                }
-
-                details.add(join(channel.getDecodeConfiguration().getDecoderType().getShortDisplayString(),
-                        FREQUENCY_FORMAT.format(tunerChannel.getFrequency() / 1E6) + " MHz", state));
-
-                Color color = channel.isSelected() ? theme.getChannelSelected() :
-                        channel.isProcessing() ? theme.getChannelProcessing() : theme.getChannel();
-                entries.add(new PopoutEntry(channel.getName() != null ? channel.getName() : "(unnamed)", details,
-                        color));
-                break;
             }
         }
 
@@ -723,14 +586,9 @@ public class ChannelLayer extends SpectralDisplayLayer
                         frequency <= tunerChannel.getMaxFrequency())
                 {
                     //Traffic channels are started and stopped by their decoder, not from the playlist
-                    if(!channel.isTrafficChannel() && mChannelProcessingManager != null)
-                    {
-                        items.add(createEnableItem(channel));
-                    }
-
-                    MenuItem item = new MenuItem("View/Edit: " + channel.getShortTitle());
-                    item.setOnAction(e -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
-                    items.add(item);
+                    Runnable toggle = !channel.isTrafficChannel() && mChannelProcessingManager != null ?
+                            () -> toggle(channel) : null;
+                    items.add(ChannelMenus.createChannelEntry(channel, tunerChannel, toggle));
                     break;
                 }
             }
@@ -739,14 +597,20 @@ public class ChannelLayer extends SpectralDisplayLayer
         return items;
     }
 
+    @Override
+    public String getContextMenuSection()
+    {
+        return ChannelMenus.SECTION;
+    }
+
     /**
-     * Menu item that starts the channel when it's disabled, or stops it when it's enabled, in the background
+     * Stops the channel when it's processing, otherwise starts it
      */
-    private MenuItem createEnableItem(Channel channel)
+    private void toggle(Channel channel)
     {
         boolean processing = channel.isProcessing();
-        MenuItem item = new MenuItem((processing ? "Disable: " : "Enable: ") + channel.getShortTitle());
-        item.setOnAction(e -> ThreadPool.CACHED.execute(() -> {
+
+        ThreadPool.CACHED.execute(() -> {
             try
             {
                 if(processing)
@@ -762,8 +626,7 @@ public class ChannelLayer extends SpectralDisplayLayer
             {
                 showError((processing ? "Can't stop " : "Can't start ") + channel.getShortTitle(), ce.getMessage());
             }
-        }));
-        return item;
+        });
     }
 
     /**
@@ -792,10 +655,4 @@ public class ChannelLayer extends SpectralDisplayLayer
     {
     }
 
-    /**
-     * Channel details for the popout card.
-     */
-    private record PopoutEntry(String title, List<String> details, Color color)
-    {
-    }
 }

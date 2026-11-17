@@ -20,6 +20,12 @@
 package io.github.dsheirer.gui.spectrum;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -1120,15 +1126,53 @@ public class SpectralDisplay extends StackPane
         double xFraction = width > 0 ? event.getX() / width : 0.5;
         ContextMenu menu = new ContextMenu();
 
+        //Items of the layers grouped by section, in layer order.  A layer without a section is a group of its own.
+        Map<Object,List<MenuItem>> groups = new LinkedHashMap<>();
+        Map<Object,Map<Object,MenuItem>> listed = new HashMap<>();
+
         for(SpectralDisplayLayer layer: mLayers)
         {
             List<MenuItem> items = layer.getContextMenuItems(pane.getSection(), frequency);
 
-            if(items != null && !items.isEmpty())
+            if(items == null || items.isEmpty())
             {
-                menu.getItems().addAll(items);
-                menu.getItems().add(new SeparatorMenuItem());
+                continue;
             }
+
+            Object key = layer.getContextMenuSection() != null ? layer.getContextMenuSection() : layer;
+            List<MenuItem> group = groups.computeIfAbsent(key, k -> new ArrayList<>());
+            Map<Object,MenuItem> keys = listed.computeIfAbsent(key, k -> new IdentityHashMap<>());
+
+            for(MenuItem item: items)
+            {
+                MenuItem earlier = item.getUserData() != null ? keys.get(item.getUserData()) : null;
+
+                if(earlier != null)
+                {
+                    //The same channel from another layer is listed once, with the other layer's options added
+                    mergeOptions(earlier, item);
+                }
+                else
+                {
+                    if(item.getUserData() != null)
+                    {
+                        keys.put(item.getUserData(), item);
+                    }
+
+                    group.add(item);
+                }
+            }
+        }
+
+        for(Map.Entry<Object,List<MenuItem>> group: groups.entrySet())
+        {
+            if(group.getKey() instanceof String section)
+            {
+                menu.getItems().add(SpectralDisplayLayer.createSectionHeader(section));
+            }
+
+            menu.getItems().addAll(group.getValue());
+            menu.getItems().add(new SeparatorMenuItem());
         }
 
         Menu zoomMenu = new Menu("Zoom");
@@ -1154,9 +1198,95 @@ public class SpectralDisplay extends StackPane
             menu.getItems().add(pause);
         }
 
+        alignLabels(menu.getItems());
+        ChannelMenus.style(menu, getTheme());
         mContextMenu = menu;
         menu.show(pane, event.getScreenX(), event.getScreenY());
         event.consume();
+    }
+
+    /**
+     * Adds the submenu options of a later entry for the same channel that the earlier entry doesn't have, e.g. the
+     * radio reference layer's option to view a playlist channel's listing.  When the later entry has all of the
+     * earlier entry's options, the earlier entry takes the later entry's options in their order, otherwise the
+     * missing options are added after a separator.
+     */
+    private static void mergeOptions(MenuItem earlier, MenuItem later)
+    {
+        if(!(earlier instanceof Menu earlierMenu) || !(later instanceof Menu laterMenu))
+        {
+            return;
+        }
+
+        Set<String> earlierTexts = getOptionTexts(earlierMenu);
+        Set<String> laterTexts = getOptionTexts(laterMenu);
+
+        if(laterTexts.containsAll(earlierTexts))
+        {
+            if(laterTexts.size() > earlierTexts.size())
+            {
+                //Items belong to one menu, so they're moved
+                List<MenuItem> options = new ArrayList<>(laterMenu.getItems());
+                laterMenu.getItems().clear();
+                earlierMenu.getItems().setAll(options);
+            }
+
+            return;
+        }
+
+        List<MenuItem> added = new ArrayList<>();
+
+        for(MenuItem option: laterMenu.getItems())
+        {
+            if(!(option instanceof SeparatorMenuItem) && option.getText() != null &&
+                !earlierTexts.contains(option.getText()))
+            {
+                added.add(option);
+            }
+        }
+
+        if(!added.isEmpty())
+        {
+            laterMenu.getItems().removeAll(added);
+            earlierMenu.getItems().add(ChannelMenus.createSeparator());
+            earlierMenu.getItems().addAll(added);
+        }
+    }
+
+    private static Set<String> getOptionTexts(Menu menu)
+    {
+        Set<String> texts = new HashSet<>();
+
+        for(MenuItem option: menu.getItems())
+        {
+            if(!(option instanceof SeparatorMenuItem) && option.getText() != null)
+            {
+                texts.add(option.getText());
+            }
+        }
+
+        return texts;
+    }
+
+    /**
+     * A context menu places item text in a column after the widest graphic, so when a layer's items show their
+     * content as a graphic, the text of the other items is moved into a graphic too, to line up on the left.
+     */
+    private static void alignLabels(List<MenuItem> items)
+    {
+        if(items.stream().noneMatch(item -> item.getGraphic() != null && !(item instanceof SeparatorMenuItem)))
+        {
+            return;
+        }
+
+        for(MenuItem item: items)
+        {
+            if(item.getGraphic() == null && item.getText() != null && !(item instanceof SeparatorMenuItem))
+            {
+                item.setGraphic(new Label(item.getText()));
+                item.setText(null);
+            }
+        }
     }
 
     /**
