@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
+import io.github.dsheirer.alias.AliasListConfiguration;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -45,6 +46,7 @@ import io.github.dsheirer.rrapi.type.Site;
 import io.github.dsheirer.rrapi.type.SiteFrequency;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
+import io.github.dsheirer.service.radioreference.AliasListSynchronizer;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import java.text.DecimalFormat;
@@ -55,6 +57,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javafx.animation.RotateTransition;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -75,6 +78,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -120,6 +124,7 @@ public class SiteEditor extends GridPane
     private SystemInformation mCurrentSystemInformation;
     private ComboBox mAliasListNameComboBox;
     private Button mNewAliasListButton;
+    private Button mNewSystemAliasListButton;
     private Label mP25ControlLabel;
     private SegmentedButton mP25ControlSegmentedButton;
     private ToggleButton mFdmaControlToggleButton;
@@ -222,8 +227,12 @@ public class SiteEditor extends GridPane
         GridPane.setHgrow(getAliasListNameComboBox(), Priority.ALWAYS);
         getChildren().add(getAliasListNameComboBox());
 
-        GridPane.setConstraints(getNewAliasListButton(), 2, ++row);
-        getChildren().add(getNewAliasListButton());
+        HBox aliasListButtonsBox = new HBox();
+        aliasListButtonsBox.setAlignment(Pos.CENTER_LEFT);
+        aliasListButtonsBox.setSpacing(10);
+        aliasListButtonsBox.getChildren().addAll(getNewAliasListButton(), getNewSystemAliasListButton());
+        GridPane.setConstraints(aliasListButtonsBox, 2, ++row);
+        getChildren().add(aliasListButtonsBox);
 
         HBox createBox = new HBox();
         createBox.setAlignment(Pos.CENTER_LEFT);
@@ -278,6 +287,18 @@ public class SiteEditor extends GridPane
         getGoToChannelEditorCheckBox().setDisable(disable || !supported);
         getAliasListNameComboBox().setDisable(disable || !supported);
         getNewAliasListButton().setDisable(disable || !supported);
+        getNewSystemAliasListButton().setDisable(disable || !supported || system == null);
+
+        //Select an alias list that tracks this site's system, if there is one
+        if(system != null)
+        {
+            String trackingAliasList = mPlaylistManager.getAliasModel().getAliasListNameTracking(system.getSystemId());
+
+            if(trackingAliasList != null)
+            {
+                getAliasListNameComboBox().getSelectionModel().select(trackingAliasList);
+            }
+        }
 
         getCreateChannelConfigurationButton().setVisible(false);
         getGoToChannelEditorCheckBox().setVisible(false);
@@ -876,6 +897,97 @@ public class SiteEditor extends GridPane
         }
 
         return mNewAliasListButton;
+    }
+
+    /**
+     * Button to create an alias list that tracks the talkgroups of the current system on Radio Reference.
+     */
+    private Button getNewSystemAliasListButton()
+    {
+        if(mNewSystemAliasListButton == null)
+        {
+            mNewSystemAliasListButton = new Button("New Alias List For System");
+            mNewSystemAliasListButton.setTooltip(new Tooltip("Create an alias list with the system's talkgroups " +
+                "that tracks the system on Radio Reference and automatically adds or updates talkgroup aliases"));
+            mNewSystemAliasListButton.setDisable(true);
+            mNewSystemAliasListButton.setOnAction(event -> createSystemAliasList());
+        }
+
+        return mNewSystemAliasListButton;
+    }
+
+    /**
+     * Prompts for a name and creates an alias list that tracks the current system, then imports the talkgroups.
+     */
+    private void createSystemAliasList()
+    {
+        if(mCurrentSystem == null)
+        {
+            return;
+        }
+
+        String systemName = mCurrentSystem.getName() != null ? mCurrentSystem.getName().trim() : "";
+
+        if(systemName.length() > 25)
+        {
+            systemName = systemName.substring(0, 25).trim();
+        }
+
+        TextInputDialog dialog = new TextInputDialog(systemName);
+        dialog.setTitle("Create New Alias List For System");
+        dialog.setHeaderText("Create an alias list that tracks the talkgroups for " + mCurrentSystem.getName() +
+            ".\nPlease enter an alias list name (max 25 chars).");
+        dialog.setContentText("Name:");
+        dialog.getEditor().setTextFormatter(new TextFormatter<String>(new MaxLengthUnaryOperator(25)));
+        dialog.initOwner(getNewSystemAliasListButton().getScene().getWindow());
+        Optional<String> result = dialog.showAndWait();
+
+        if(result.isEmpty() || result.get().trim().isEmpty())
+        {
+            return;
+        }
+
+        String name = result.get().trim();
+        AliasModel aliasModel = mPlaylistManager.getAliasModel();
+
+        if(name.equals(AliasModel.NO_ALIAS_LIST) || aliasModel.aliasListNames().contains(name))
+        {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "An alias list named [" + name +
+                "] already exists.  Please choose another name.", ButtonType.OK);
+            alert.setTitle("Create New Alias List For System");
+            alert.setHeaderText("Alias List Exists");
+            alert.initOwner(getNewSystemAliasListButton().getScene().getWindow());
+            alert.showAndWait();
+            return;
+        }
+
+        AliasListConfiguration configuration = aliasModel.getOrCreateAliasListConfiguration(name);
+        configuration.track(mCurrentSystem.getSystemId(), mCurrentSystem.getName());
+        configuration.setAutoUpdate(true);
+        getAliasListNameComboBox().getSelectionModel().select(name);
+
+        getNewSystemAliasListButton().setDisable(true);
+
+        mPlaylistManager.getAliasListSynchronizer().refresh(configuration)
+            .whenComplete((syncResult, throwable) -> Platform.runLater(() -> {
+                getNewSystemAliasListButton().setDisable(mCurrentSystem == null);
+
+                if(throwable != null)
+                {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Alias list [" + name + "] was created, but the " +
+                        "talkgroups couldn't be imported from Radio Reference.  Use Refresh Now in the Aliases tab " +
+                        "to try again.\n\n" + AliasListSynchronizer.getMessage(throwable), ButtonType.OK);
+                    alert.setTitle("Create New Alias List For System");
+                    alert.setHeaderText("Talkgroup Import Failed");
+
+                    if(getScene() != null)
+                    {
+                        alert.initOwner(getScene().getWindow());
+                    }
+
+                    alert.show();
+                }
+            }));
     }
 
     private Label getProtocolNotSupportedLabel()
