@@ -79,9 +79,11 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private static final int MAXIMUM_QUEUED_BATCHES = 50;
 
     /**
-     * Maximum batch sample arrays held for reuse: the queued IFFT batches plus the batches queued for channel output.
+     * Maximum batch sample arrays held for reuse: the queued IFFT batches plus the batch being filled and the batch
+     * being transformed.  Channel output processors copy their channels from a batch instead of retaining it, so no
+     * other batches are held.
      */
-    private static final int MAXIMUM_POOLED_BATCHES = 2 * MAXIMUM_QUEUED_BATCHES;
+    private static final int MAXIMUM_POOLED_BATCHES = MAXIMUM_QUEUED_BATCHES + 2;
 
     //Sized to process 40 times per second
     private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(25);

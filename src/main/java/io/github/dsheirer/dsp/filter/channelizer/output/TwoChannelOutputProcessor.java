@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
  */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.channelizer.ChannelResultsBatch;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
+import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +29,6 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
     private TwoChannelMixerAssembler mMixerAssembler;
-    private int mChannelOffset1;
-    private int mChannelOffset2;
 
     /**
      * Processor to extract two channels from a polyphase channelizer, synthesize/recombine the channels, apply
@@ -60,7 +58,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     {
         StringBuilder sb = new StringBuilder();
         sb.append("Two Channel Output Processor");
-        sb.append("\n\tIndices (doubled) 1 [").append(mChannelOffset1).append("] 2 [").append(mChannelOffset2).append("]");
+        sb.append("\n\tIndices (doubled) ").append(Arrays.toString(getChannelOffsets()));
         sb.append("\n\tMixer Assembler: ").append(mMixerAssembler.getStateDescription());
         return sb.toString();
     }
@@ -98,45 +96,32 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 
         //Set the channelized output results offsets to twice the channel index to account for each channel having
         //an I/Q pair
-        int channelOffset1 = indexes.get(0) * 2;
-        int channelOffset2 = indexes.get(1) * 2;
-
-        enqueueUpdate(() -> {
-            mChannelOffset1 = channelOffset1;
-            mChannelOffset2 = channelOffset2;
-        });
+        setChannelOffsets(indexes.get(0) * 2, indexes.get(1) * 2);
     }
 
     /**
-     * Extract the channel from the channel results array, apply frequency translation, and deliver the
-     * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
+     * Synthesizes the two copied channels, applies frequency translation, and delivers the frequency-corrected channel
+     * I/Q sample set to the complex sample listener.
      *
-     * @param channelResults to process containing blocks of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param samples containing an I/Q pair for each of the two channels per block (I1,Q1,I2,Q2 ...)
+     * @param blockCount number of blocks
      */
     @Override
-    public void process(ChannelResultsBatch channelResults)
+    public void process(float[] samples, int blockCount)
     {
-        float[] samples = channelResults.getSamples();
-        int blockLength = channelResults.getBlockLength();
-        int blockCount = channelResults.getBlockCount();
-        int channelOffset1 = mChannelOffset1;
-        int channelOffset2 = mChannelOffset2;
-
         //Translate channel 2 up by FS/2 (multiply by (-1)^n) so that it sits adjacent to channel 1 for synthesis.  The
         //channelizer dispatches even-sized batches, so the index within the batch carries the absolute block parity.
         for(int x = 0; x < blockCount; x++)
         {
-            int block = x * blockLength;
+            int block = x * 4;
 
             if((x & 1) == 0)
             {
-                mMixerAssembler.receive(samples[block + channelOffset1], samples[block + channelOffset1 + 1],
-                        samples[block + channelOffset2], samples[block + channelOffset2 + 1]);
+                mMixerAssembler.receive(samples[block], samples[block + 1], samples[block + 2], samples[block + 3]);
             }
             else
             {
-                mMixerAssembler.receive(samples[block + channelOffset1], samples[block + channelOffset1 + 1],
-                        -samples[block + channelOffset2], -samples[block + channelOffset2 + 1]);
+                mMixerAssembler.receive(samples[block], samples[block + 1], -samples[block + 2], -samples[block + 3]);
             }
 
             if(mMixerAssembler.hasBuffer())

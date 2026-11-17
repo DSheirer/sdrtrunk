@@ -68,7 +68,12 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final double CHANNEL_OVERSAMPLING = 2.0;
     private static final int POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL = 9;
-    private static final int MAXIMUM_QUEUED_NATIVE_BUFFERS = 500;
+    /**
+     * Maximum duration of queued native buffers awaiting the channelizer.  The queue is bounded by sample count instead
+     * of buffer count because tuner buffer sizes vary widely, for example about 1,000 samples per RSP buffer and 32,768
+     * samples per RTL-SDR buffer, so that each tuner can absorb a processing delay of the same duration.
+     */
+    private static final double MAXIMUM_QUEUED_SECONDS = 1.0;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private TunerController mTunerController;
@@ -78,7 +83,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
     private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
     private NativeBufferReceiver mNativeBufferReceiver = new NativeBufferReceiver();
-    private Dispatcher mBufferDispatcher;
+    private Dispatcher<INativeBuffer> mBufferDispatcher;
     private boolean mRunning = true;
 
     /**
@@ -99,8 +104,19 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         mChannelCalculator = new ChannelCalculator(tunerController.getSampleRate(), channelCount,
                 tunerController.getFrequency(), CHANNEL_OVERSAMPLING);
-        mBufferDispatcher = new Dispatcher("sdrtrunk polyphase buffer processor", 10, MAXIMUM_QUEUED_NATIVE_BUFFERS);
+        mBufferDispatcher = new Dispatcher<>("sdrtrunk polyphase buffer processor", 10, INativeBuffer::sampleCount,
+                getMaximumQueuedSamples(tunerController.getSampleRate()));
         mBufferDispatcher.setListener(mNativeBufferReceiver);
+    }
+
+    /**
+     * Calculates the maximum number of queued samples for the buffer dispatcher.
+     * @param sampleRate of the tuner
+     * @return maximum queued samples, at least one
+     */
+    private static long getMaximumQueuedSamples(double sampleRate)
+    {
+        return Math.max(1, (long)(sampleRate * MAXIMUM_QUEUED_SECONDS));
     }
 
     /**
@@ -278,6 +294,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 double sampleRate = sourceEvent.getValue().doubleValue();
                 int channelCount = ComplexPolyphaseChannelizerM2.getChannelCount(sampleRate);
                 mChannelCalculator.setRates(sampleRate, channelCount);
+                mBufferDispatcher.setMaximumQueuedWeight(getMaximumQueuedSamples(sampleRate));
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
