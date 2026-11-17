@@ -156,6 +156,41 @@ public class SystemEditor extends VBox
         }
     }
 
+    /**
+     * Prepares to show the system with the site selected when the systems are next set.
+     * @param systemId of the system
+     * @param siteId to select, or -1 for none
+     */
+    public void prepareView(int systemId, int siteId)
+    {
+        mUserPreferences.getRadioReferencePreference().setPreferredSystemId(systemId, mLevel);
+        getTabPane().getSelectionModel().select(getSystemTab());
+        getSystemSiteSelectionEditor().viewSite(systemId, siteId);
+    }
+
+    /**
+     * Shows the system with the site selected
+     * @param systemId of the system
+     * @param siteId to select, or -1 for none
+     * @return false when the editor doesn't list the system
+     */
+    public boolean view(int systemId, int siteId)
+    {
+        prepareView(systemId, siteId);
+
+        for(System system: getSystemComboBox().getItems())
+        {
+            if(system.getSystemId() == systemId)
+            {
+                //Selecting the shown system again doesn't reload it - the site is selected in the shown system
+                getSystemComboBox().getSelectionModel().select(system);
+                return true;
+            }
+        }
+
+        return getSystemComboBox().getItems().isEmpty();
+    }
+
     private TabPane getTabPane()
     {
         if(mTabPane == null)

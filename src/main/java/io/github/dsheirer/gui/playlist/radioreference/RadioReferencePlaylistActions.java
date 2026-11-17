@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Playlist actions for radio reference frequencies and trunked system sites: find the playlist channel that already
- * decodes a frequency or site, enable or disable it, or add a channel and start it.  A frequency or site that already
+ * decodes a frequency or site, enable or disable it, or add a channel and optionally start it.  A frequency or site that already
  * has a playlist channel with the same protocol isn't added again.
  *
  * The add, enable and disable actions run in the background and report errors to the caller's error handler, on the
@@ -453,6 +453,17 @@ public class RadioReferencePlaylistActions
      */
     public void addSite(SiteRecord siteRecord, Long firstFrequency, Consumer<String> onError)
     {
+        addSite(siteRecord, firstFrequency, true, onError);
+    }
+
+    /**
+     * Adds playlist channels for the trunked system site, like {@link #addSite(SiteRecord, Long, Consumer)}, and
+     * optionally starts them.
+     * @param firstFrequency to start the new control channel on, e.g. the frequency the user picked, or null
+     * @param start true to start the new channels, or the site's existing channels
+     */
+    public void addSite(SiteRecord siteRecord, Long firstFrequency, boolean start, Consumer<String> onError)
+    {
         ThreadPool.CACHED.execute(() -> {
             SiteDetails details = getSiteDetails(siteRecord, onError);
 
@@ -475,14 +486,21 @@ public class RadioReferencePlaylistActions
                     return;
                 }
 
-                enableAll(existing, onError);
+                if(start)
+                {
+                    enableAll(existing, onError);
+                }
 
                 //The channel model's list backs the playlist editor, so it's changed on the JavaFX thread
                 Platform.runLater(() -> {
                     for(Channel channel: channels)
                     {
                         mPlaylistManager.getChannelModel().addChannel(channel);
-                        enable(channel, onError);
+
+                        if(start)
+                        {
+                            enable(channel, onError);
+                        }
                     }
                 });
                 return;
@@ -499,7 +517,7 @@ public class RadioReferencePlaylistActions
                 return;
             }
 
-            addAndStart(channel, onError);
+            add(channel, start, onError);
         });
     }
 
@@ -507,6 +525,16 @@ public class RadioReferencePlaylistActions
      * Adds a playlist channel for one repeater of a repeater site (LTR) and starts it, or starts its existing channel
      */
     public void addRepeater(SiteRecord siteRecord, long frequency, Consumer<String> onError)
+    {
+        addRepeater(siteRecord, frequency, true, onError);
+    }
+
+    /**
+     * Adds a playlist channel for one repeater of a repeater site (LTR) unless the playlist has one, and optionally
+     * starts the channel
+     * @param start true to start the new or existing channel
+     */
+    public void addRepeater(SiteRecord siteRecord, long frequency, boolean start, Consumer<String> onError)
     {
         ThreadPool.CACHED.execute(() -> {
             SiteDetails details = getSiteDetails(siteRecord, onError);
@@ -526,7 +554,7 @@ public class RadioReferencePlaylistActions
                 return;
             }
 
-            addAndStart(channels.get(0), onError);
+            add(channels.get(0), start, onError);
         });
     }
 
@@ -534,6 +562,16 @@ public class RadioReferencePlaylistActions
      * Adds a playlist channel for the conventional frequency and starts it, or starts the existing channel
      */
     public void addConventional(FrequencyCandidate candidate, Consumer<String> onError)
+    {
+        addConventional(candidate, true, onError);
+    }
+
+    /**
+     * Adds a playlist channel for the conventional frequency unless the playlist has one, and optionally starts the
+     * channel
+     * @param start true to start the new or existing channel
+     */
+    public void addConventional(FrequencyCandidate candidate, boolean start, Consumer<String> onError)
     {
         ModeDecoderType mode = ModeDecoderType.fromName(candidate.mode());
         String[] source = candidate.source() != null ? candidate.source().split(" › ") : new String[0];
@@ -550,28 +588,36 @@ public class RadioReferencePlaylistActions
             return;
         }
 
-        addAndStart(channel, onError);
+        add(channel, start, onError);
     }
 
     /**
-     * Adds the channel to the playlist and starts it, unless the playlist already has a channel for its frequencies
-     * and protocol, which is started instead
+     * Adds the channel to the playlist and optionally starts it, unless the playlist already has a channel for its
+     * frequencies and protocol, which is started instead when starting
      */
-    private void addAndStart(Channel channel, Consumer<String> onError)
+    private void add(Channel channel, boolean start, Consumer<String> onError)
     {
         Channel existing = findChannel(getFrequencies(channel.getSourceConfiguration()),
             getProtocolFamily(channel.getDecodeConfiguration().getDecoderType()));
 
         if(existing != null)
         {
-            enable(existing, onError);
+            if(start)
+            {
+                enable(existing, onError);
+            }
+
             return;
         }
 
         //The channel model's list backs the playlist editor, so it's changed on the JavaFX thread
         Platform.runLater(() -> {
             mPlaylistManager.getChannelModel().addChannel(channel);
-            enable(channel, onError);
+
+            if(start)
+            {
+                enable(channel, onError);
+            }
         });
     }
 

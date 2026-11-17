@@ -240,6 +240,74 @@ public enum SpectralDisplayTheme
     }
 
     /**
+     * Text color for an active (enabled) playlist channel in the Channels menu and card: a green that reads as
+     * active on the theme's background, or the theme's own highlight in the monochrome themes.  Red/green color
+     * blind themes use a yellowish green and blue/yellow color blind themes a green that stays distinct from
+     * {@link #getChannelInactive()}.
+     */
+    public Color getChannelActive()
+    {
+        return Color.web(switch(this)
+        {
+            case CLASSIC -> "#33E633";
+            case DARK -> "#66BB6A";
+            case MEDIUM -> "#81C784";
+            case LIGHT -> "#2E7D32";
+            case GREEN_PHOSPHOR -> "#66FF8C";
+            case AMBER -> "#FFC233";
+            case GRAYSCALE -> "#FFFFFF";
+            case HIGH_CONTRAST_DARK -> "#00FF00";
+            case HIGH_CONTRAST_LIGHT -> "#006400";
+            case VIRIDIS -> "#6DCD59";
+            case CIVIDIS -> "#B4DE2C";
+            case INFERNO -> "#4CC764";
+        });
+    }
+
+    /**
+     * Text color for an inactive (disabled) playlist channel in the Channels menu and card: a blue that reads as
+     * inactive on the theme's background, or a dimmed shade in the monochrome themes.  The blue/yellow color blind
+     * theme uses a pink, since blue and green look alike there.
+     */
+    public Color getChannelInactive()
+    {
+        return Color.web(switch(this)
+        {
+            case CLASSIC -> "#4D9FFF";
+            case DARK -> "#64B5F6";
+            case MEDIUM -> "#90CAF9";
+            case LIGHT -> "#1565C0";
+            case GREEN_PHOSPHOR -> "#3FAF5C";
+            case AMBER -> "#B07A10";
+            case GRAYSCALE -> "#8C8C8C";
+            case HIGH_CONTRAST_DARK -> "#00BFFF";
+            case HIGH_CONTRAST_LIGHT -> "#0000C0";
+            case VIRIDIS -> "#5B9BF0";
+            case CIVIDIS -> "#56B4E9";
+            case INFERNO -> "#E879C6";
+        });
+    }
+
+    /**
+     * Plain text color on the theme's background, e.g. for menu entries that aren't highlighted
+     */
+    public Color getText()
+    {
+        return Color.web(switch(this)
+        {
+            case CLASSIC, HIGH_CONTRAST_DARK -> "#FFFFFF";
+            case DARK -> "#E6E8EB";
+            case MEDIUM -> "#F0F4F8";
+            case LIGHT -> "#212529";
+            case GREEN_PHOSPHOR -> "#CCFFCC";
+            case AMBER -> "#FFF0C2";
+            case GRAYSCALE -> "#D0D0D0";
+            case HIGH_CONTRAST_LIGHT -> "#000000";
+            case VIRIDIS, CIVIDIS, INFERNO -> "#E8E8EE";
+        });
+    }
+
+    /**
      * ARGB color for the waterfall intensity index (0 - 255).
      */
     public int getWaterfallColor(int index)

@@ -148,6 +148,44 @@ public abstract class SpectralDisplayLayer
     }
 
     /**
+     * Channels at the mouse position for the display's Channels hover card (see
+     * {@link io.github.dsheirer.gui.spectrum.layer.ChannelCardLayer}).  Called on the JavaFX application thread while
+     * the mouse rests over the display, so it should be quick.
+     * @param cursor mouse position
+     * @param area of the section under the mouse
+     * @return entries, or an empty list
+     */
+    public List<ChannelCardEntry> getCardEntries(DisplayCursor cursor, RenderArea area)
+    {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Context menu section of this layer's items.  The items of layers with the same section are listed together
+     * under a header with the section name, each item once: an item whose user data is the same object as an earlier
+     * item's in the section is left out.
+     * @return section name, or null for items of their own without a header
+     */
+    public String getContextMenuSection()
+    {
+        return null;
+    }
+
+    /**
+     * Section header for context menu items: an inactive item with smaller bold text in the theme's text color,
+     * slightly faded.  Inline styles, since the application theme's stylesheets are added to each popup's scene.
+     * @param title of the section
+     */
+    public static MenuItem createSectionHeader(String title)
+    {
+        MenuItem header = new MenuItem(title);
+        header.setDisable(true);
+        header.getStyleClass().add("spectral-menu-section-header");
+        header.setStyle("-fx-opacity: 0.6; -fx-font-size: 0.85em; -fx-font-weight: bold;");
+        return header;
+    }
+
+    /**
      * Title of this layer's section in the configuration panel, or null to place the layer's rows in the panel's
      * Display section instead of a section of their own.
      */
