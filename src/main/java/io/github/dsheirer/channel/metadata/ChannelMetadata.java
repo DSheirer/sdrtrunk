@@ -62,6 +62,7 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     private Identifier mToIdentifier;
     private List<Alias> mToIdentifierAliases;
     private Integer mTimeslot;
+    private volatile Double mSignalLevel;
 
     private IChannelMetadataUpdateListener mIChannelMetadataUpdateListener;
     private AliasModel mAliasModel;
@@ -85,6 +86,28 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     public ChannelMetadata(AliasModel aliasModel)
     {
         this(aliasModel, null);
+    }
+
+    /**
+     * Channel signal level in dBFS, or null before the first measurement.
+     */
+    public Double getSignalLevel()
+    {
+        return mSignalLevel;
+    }
+
+    /**
+     * Updates the channel signal level in dBFS.
+     */
+    public void setSignalLevel(double level)
+    {
+        Double previous = mSignalLevel;
+        mSignalLevel = level;
+
+        if(previous == null || Math.round(previous * 10) != Math.round(level * 10))
+        {
+            broadcastUpdate(ChannelMetadataField.SIGNAL_LEVEL);
+        }
     }
 
     /**
