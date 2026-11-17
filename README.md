@@ -4,6 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/DSheirer/sdrtrunk/total)](https://github.com/DSheirer/sdrtrunk/releases)
 [![License](https://img.shields.io/github/license/DSheirer/sdrtrunk)](LICENSE)
 [![Discord](https://img.shields.io/badge/chat-on%20Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/HJQaKYE)
+[![support-google_groups-blue](https://img.shields.io/badge/support-google_groups-blue)](https://groups.google.com/g/sdrtrunk)
 
 # sdrtrunk
 A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
