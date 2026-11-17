@@ -71,6 +71,8 @@ public class ChannelConfigurationEditorFactory
                 return new P25P1ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             case P25_PHASE2:
                 return new P25P2ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+            case MOTOROLA_TYPE_II:
+                return new MotorolaTypeIIConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
             default:
                 if(decoderType != null && !mLoggedUnrecognizedTypes.contains(decoderType))
                 {

@@ -36,6 +36,7 @@ import io.github.dsheirer.identifier.talkgroup.UnknownTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
+import io.github.dsheirer.module.decode.moto.identifier.MotorolaTypeIITalkgroup;
 import io.github.dsheirer.module.decode.mpt1327.identifier.MPT1327Talkgroup;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
@@ -165,6 +166,8 @@ public class RadioReferenceDecoder
                 return LTRTalkgroup.create(value);
             case MPT1327:
                 return MPT1327Talkgroup.createTo(value);
+            case MOTOROLA_TYPE_II:
+                return new MotorolaTypeIITalkgroup(value);
             case NXDN:
                 return NXDNTalkgroupIdentifier.createTo(value);
             case PASSPORT:
@@ -314,6 +317,18 @@ public class RadioReferenceDecoder
     public boolean isLTR(System system)
     {
         return getType(system) != null && getType(system).getName().toLowerCase().contentEquals("ltr");
+    }
+
+    /**
+     * Indicates if the voice type is one that the Motorola Type II decoder follows: analog, or analog mixed with
+     * APCO25.  The decoder follows the analog calls of a mixed system and reports the APCO25 calls without
+     * decoding them.  A system that is exclusively APCO25 voice is handled as a hybrid system.
+     */
+    private static boolean isMotorolaTypeIIVoice(Voice voice)
+    {
+        return voice != null && voice.getName() != null &&
+            (voice.getName().contentEquals("Analog") || voice.getName().contentEquals("Analog/FM") ||
+             voice.getName().contentEquals("Analog and APCO-25 Common Air Interface"));
     }
 
     /**
@@ -489,8 +504,11 @@ public class RadioReferenceDecoder
             case "Project 25":
                 return Protocol.APCO25;
             case "Motorola":
-                if(voice.getName().contentEquals("Analog and APCO-25 Common Air Interface") ||
-                    voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
+                if(isMotorolaTypeIIVoice(voice))
+                {
+                    return Protocol.MOTOROLA_TYPE_II;
+                }
+                else if(voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
                 {
                     return Protocol.APCO25;
                 }
@@ -565,8 +583,11 @@ public class RadioReferenceDecoder
                     }
                     break;
                 case "Motorola":
-                    if(voice.getName().contentEquals("Analog and APCO-25 Common Air Interface") ||
-                        voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
+                    if(isMotorolaTypeIIVoice(voice))
+                    {
+                        return DecoderType.MOTOROLA_TYPE_II;
+                    }
+                    else if(voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
                     {
                         return DecoderType.P25_PHASE1;
                     }

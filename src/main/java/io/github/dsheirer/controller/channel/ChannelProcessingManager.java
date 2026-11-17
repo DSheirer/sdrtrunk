@@ -533,6 +533,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
                         IdentifierUpdateNotification.Operation.ADD, request.getIdentifierCollection().getTimeslot());
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                    //Ensure traffic decoder states have grant identifiers before the source can open squelch.
+                    processingChain.receive(notification);
                 }
                 else
                 {
@@ -540,6 +542,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
                         IdentifierUpdateNotification.Operation.ADD, 0);
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                    //Ensure traffic decoder states have grant identifiers before the source can open squelch.
+                    processingChain.receive(notification);
                 }
             }
         }

@@ -114,8 +114,12 @@ public class RadioReferencePlaylistActions
         {
             return EnumSet.of(DecoderType.MPT1327);
         }
+        else if(protocol.startsWith("motorola"))
+        {
+            return EnumSet.of(DecoderType.MOTOROLA_TYPE_II);
+        }
 
-        //Motorola Type II, EDACS and other control channels aren't supported
+        //EDACS and other control channels aren't supported
         return EnumSet.noneOf(DecoderType.class);
     }
 
