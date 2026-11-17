@@ -375,14 +375,18 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         columns.add(NowPlayingCells.column("channel.name", "Channel Name", null, Pos.CENTER,
             row -> toText(row.getChannelMetadata().getChannelNameConfigurationIdentifier()), Row::revisionProperty));
 
+        //Alias list from the channel configuration
+        columns.add(NowPlayingCells.column("alias.list", "Alias List", null, Pos.CENTER,
+            row -> toText(row.getChannelMetadata().getAliasListConfigurationIdentifier()), Row::revisionProperty));
+
         //The channel rows are in channel start order, the same as the Swing version of the table
         for(TableColumn<Row,?> column: columns)
         {
             column.setSortable(false);
         }
 
-        //Column numbers in the Swing version of the table, for its stored column widths.  Talker, Tuner, System and Site are new
-        //columns.
+        //Column numbers in the Swing version of the table, for its stored column widths.  Talker, Tuner, System, Site and Alias
+        //List are new columns.
         String[] swingColumns = {"status", "decoder", "from", "from.alias", "to", "to.alias", "channel", "frequency",
             "channel.name"};
 
