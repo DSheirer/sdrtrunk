@@ -1,6 +1,5 @@
 package io.github.dsheirer.map;
 
-import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 /**
  * Timestamped geo position

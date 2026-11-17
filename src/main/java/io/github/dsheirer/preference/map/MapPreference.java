@@ -40,6 +40,15 @@ public class MapPreference extends Preference
      */
     public static final int DEFAULT_ZOOM = 7;
 
+    /**
+     * Range of OpenStreetMap tile zoom levels the map shows
+     */
+    public static final int MINIMUM_TILE_ZOOM = 2;
+    public static final int MAXIMUM_TILE_ZOOM = 19;
+    /**
+     * Tile zoom level plus the stored zoom level, for the original Swing map viewer's inverted zoom scale
+     */
+    private static final int TILE_ZOOM_OFFSET = 19;
     private static final String CENTER = "center";
     private static final String ZOOM = "zoom";
     private static final String SHOW_RADIO_REFERENCE_SITES = "show.radioreference.sites";
@@ -143,6 +152,27 @@ public class MapPreference extends Preference
             mPreferences.putInt(ZOOM, zoom);
             notifyPreferenceUpdated();
         }
+    }
+
+    /**
+     * Last zoom level of the map as an OpenStreetMap tile zoom level, where 0 shows the whole world in one tile and
+     * higher levels are closer.  The stored zoom level uses the inverted scale of the original Swing map viewer,
+     * where the tile zoom level is {@link #TILE_ZOOM_OFFSET} minus the stored level, so existing views carry over.
+     * Can be called from any thread.
+     * @return tile zoom level, {@link #MINIMUM_TILE_ZOOM} to {@link #MAXIMUM_TILE_ZOOM}
+     */
+    public int getTileZoom()
+    {
+        return Math.clamp(TILE_ZOOM_OFFSET - getZoom(), MINIMUM_TILE_ZOOM, MAXIMUM_TILE_ZOOM);
+    }
+
+    /**
+     * Stores the zoom level of the map as an OpenStreetMap tile zoom level
+     * @param tileZoom level, clamped to {@link #MINIMUM_TILE_ZOOM} to {@link #MAXIMUM_TILE_ZOOM}
+     */
+    public void setTileZoom(int tileZoom)
+    {
+        setZoom(TILE_ZOOM_OFFSET - Math.clamp(tileZoom, MINIMUM_TILE_ZOOM, MAXIMUM_TILE_ZOOM));
     }
 
     /**

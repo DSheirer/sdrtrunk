@@ -20,7 +20,7 @@ package io.github.dsheirer.settings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 /**
  * Map view stored in the settings file by older versions of the application.  Only read so that settings files from
