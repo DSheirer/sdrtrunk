@@ -502,10 +502,10 @@ public class ThemeManager
                .append("-fx-background-color: ").append(accent).append(";")
                .append("}");
 
-            //URL-encode the body; java.net.URLEncoder is fine for our restricted charset.
-            String encoded = java.net.URLEncoder.encode(css.toString(),
-                    java.nio.charset.StandardCharsets.UTF_8);
-            return "data:text/css," + encoded;
+            //Base64-encode the body.  Don't use URLEncoder: it is form encoding and turns spaces
+            //into '+', which a data URL doesn't decode, so JavaFX silently drops the whole sheet.
+            return "data:text/css;base64," + java.util.Base64.getEncoder().encodeToString(
+                    css.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
         catch(Throwable t)
         {
