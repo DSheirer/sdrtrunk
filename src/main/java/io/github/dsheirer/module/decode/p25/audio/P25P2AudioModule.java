@@ -21,7 +21,6 @@ package io.github.dsheirer.module.decode.p25.audio;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
-import io.github.dsheirer.audio.codec.mbe.MbeFrameErrors;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.bits.BinaryMessage;
@@ -49,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import jmbe.frame.CorrectedAMBEFrame;
 import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,9 +188,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
                 try
                 {
-                    IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
+                    CorrectedAMBEFrame correctedFrame = CorrectedAMBEFrame.correct(voiceFrameBytes);
+                    IAudioWithMetadata audioWithMetadata = getAudioWithMetadata(correctedFrame, voiceFrameBytes);
                     addAudio(audioWithMetadata.getAudio());
-                    addVoiceFrameErrors(MbeFrameErrors.ambe(voiceFrameBytes));
+                    addVoiceFrameErrors(correctedFrame.getErrors()[0]);
                     processMetadata(audioWithMetadata, timestamp);
                 }
                 catch(Exception e)

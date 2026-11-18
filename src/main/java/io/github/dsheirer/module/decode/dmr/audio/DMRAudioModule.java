@@ -20,7 +20,6 @@ package io.github.dsheirer.module.decode.dmr.audio;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
-import io.github.dsheirer.audio.codec.mbe.MbeFrameErrors;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -48,6 +47,7 @@ import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import jmbe.frame.CorrectedAMBEFrame;
 import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -237,9 +237,10 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     {
         try
         {
-            IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(frame);
+            CorrectedAMBEFrame correctedFrame = CorrectedAMBEFrame.correct(frame);
+            IAudioWithMetadata audioWithMetadata = getAudioWithMetadata(correctedFrame, frame);
             addAudio(audioWithMetadata.getAudio());
-            addVoiceFrameErrors(MbeFrameErrors.ambe(frame));
+            addVoiceFrameErrors(correctedFrame.getErrors()[0]);
             processMetadata(audioWithMetadata, timestamp);
         }
         catch(Exception e)

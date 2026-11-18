@@ -17,24 +17,37 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.audio.codec.mbe;
+package io.github.dsheirer.audio;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.dsheirer.alias.AliasList;
+import jmbe.frame.CorrectedAMBEFrame;
+import jmbe.frame.CorrectedIMBEFrame;
 import org.junit.jupiter.api.Test;
 
-public class MbeFrameErrorsTest
+public class VoiceQualityTest
 {
     private static void flip(byte[] frame, int bit)
     {
         frame[bit / 8] ^= (byte)(0x80 >>> (bit % 8));
     }
 
-    @Test
-    public void cleanFramesHaveNoErrors()
+    private static int imbeC0Errors(byte[] frame)
     {
-        assertEquals(0, MbeFrameErrors.imbe(new byte[18]));
-        assertEquals(0, MbeFrameErrors.ambe(new byte[9]));
+        return CorrectedIMBEFrame.correct(frame).getErrors()[0];
+    }
+
+    private static int ambeC0Errors(byte[] frame)
+    {
+        return CorrectedAMBEFrame.correct(frame).getErrors()[0];
+    }
+
+    @Test
+    public void cleanFramesHaveNoFirstBlockErrors()
+    {
+        assertEquals(0, imbeC0Errors(new byte[18]));
+        assertEquals(0, ambeC0Errors(new byte[9]));
     }
 
     @Test
@@ -42,9 +55,9 @@ public class MbeFrameErrorsTest
     {
         byte[] frame = new byte[18];
         flip(frame, 0);
-        assertEquals(1, MbeFrameErrors.imbe(frame));
+        assertEquals(1, imbeC0Errors(frame));
         flip(frame, 7);
-        assertEquals(2, MbeFrameErrors.imbe(frame));
+        assertEquals(2, imbeC0Errors(frame));
     }
 
     @Test
@@ -52,7 +65,7 @@ public class MbeFrameErrorsTest
     {
         byte[] frame = new byte[18];
         flip(frame, 1);
-        assertEquals(0, MbeFrameErrors.imbe(frame));
+        assertEquals(0, imbeC0Errors(frame));
     }
 
     @Test
@@ -60,10 +73,10 @@ public class MbeFrameErrorsTest
     {
         byte[] frame = new byte[9];
         flip(frame, 0);
-        assertEquals(1, MbeFrameErrors.ambe(frame));
+        assertEquals(1, ambeC0Errors(frame));
         flip(frame, 4);
         flip(frame, 8);
-        assertEquals(3, MbeFrameErrors.ambe(frame));
+        assertEquals(3, ambeC0Errors(frame));
     }
 
     @Test
@@ -71,13 +84,21 @@ public class MbeFrameErrorsTest
     {
         byte[] frame = new byte[9];
         flip(frame, 2);
-        assertEquals(0, MbeFrameErrors.ambe(frame));
+        assertEquals(0, ambeC0Errors(frame));
     }
 
     @Test
-    public void malformedFramesAreSkipped()
+    public void voiceQualityIsThePercentOfFramesWithAtMostOneError()
     {
-        assertEquals(-1, MbeFrameErrors.imbe(new byte[4]));
-        assertEquals(-1, MbeFrameErrors.ambe(null));
+        AudioSegment segment = new AudioSegment(new AliasList("test"), 0);
+        assertEquals(-1, segment.getVoiceQuality());
+
+        segment.addVoiceFrame(0);
+        segment.addVoiceFrame(1);
+        segment.addVoiceFrame(2);
+        segment.addVoiceFrame(4);
+
+        assertEquals(4, segment.getVoiceFrameCount());
+        assertEquals(50, segment.getVoiceQuality());
     }
 }
