@@ -145,6 +145,7 @@ public class TalkerAliasAutoAdderTest
     {
         Alias alias = new Alias("Portables");
         alias.setAliasListName(LIST);
+        alias.setGroup(TalkerAliasAutoAdder.ALIAS_GROUP);
         alias.addAliasID(new Radio(Protocol.APCO25, 1234));
         alias.addAliasID(new Radio(Protocol.APCO25, 5678));
         mAliasModel.addAlias(alias);
@@ -156,18 +157,79 @@ public class TalkerAliasAutoAdderTest
     }
 
     @Test
-    public void userAliasForRadioIsRenamed()
+    public void userAliasOutsideManagedGroupIsPreserved()
     {
-        Alias alias = new Alias("Old Name");
+        Alias alias = new Alias("Custom Name");
         alias.setAliasListName(LIST);
+        alias.setGroup("Apparatus");
         alias.addAliasID(new Radio(Protocol.APCO25, 1234));
-        alias.addAliasID(new io.github.dsheirer.alias.id.priority.Priority(1));
+        io.github.dsheirer.alias.id.priority.Priority priority = new io.github.dsheirer.alias.id.priority.Priority(1);
+        alias.addAliasID(priority);
         mAliasModel.addAlias(alias);
 
         decode(RADIO, "ENGINE 12");
         decode(RADIO, "ENGINE 12");
         assertEquals(1, aliases().size());
+        assertEquals(alias, alias(RADIO));
+        assertEquals("Custom Name", alias.getName());
+        assertEquals("Apparatus", alias.getGroup());
+        assertTrue(alias.getAliasIdentifiers().contains(priority));
+    }
+
+    @Test
+    public void ungroupedUserAliasIsPreserved()
+    {
+        Alias alias = new Alias("Custom Name");
+        alias.setAliasListName(LIST);
+        alias.addAliasID(new Radio(Protocol.APCO25, 1234));
+        mAliasModel.addAlias(alias);
+
+        decode(RADIO, "ENGINE 12");
+        decode(RADIO, "ENGINE 12");
+        assertEquals(1, aliases().size());
+        assertEquals("Custom Name", alias.getName());
+        assertNull(alias.getGroup());
+    }
+
+    @Test
+    public void managedAliasForRadioIsRenamedAndKeepsAudioSettings()
+    {
+        Alias alias = new Alias("Old Name");
+        alias.setAliasListName(LIST);
+        alias.setGroup(TalkerAliasAutoAdder.ALIAS_GROUP);
+        alias.addAliasID(new Radio(Protocol.APCO25, 1234));
+        io.github.dsheirer.alias.id.priority.Priority priority = new io.github.dsheirer.alias.id.priority.Priority(1);
+        alias.addAliasID(priority);
+        mAliasModel.addAlias(alias);
+
+        decode(RADIO, "ENGINE 12");
+        assertEquals("Old Name", alias.getName());
+        decode(RADIO, "ENGINE 12");
+        assertEquals(1, aliases().size());
         assertEquals("ENGINE 12", alias.getName());
+        assertEquals(TalkerAliasAutoAdder.ALIAS_GROUP, alias.getGroup());
+        assertTrue(alias.getAliasIdentifiers().contains(priority));
+    }
+
+    @Test
+    public void movingAliasOutOfManagedGroupProtectsCustomName()
+    {
+        decode(RADIO, "ENGINE 12");
+        Alias alias = alias(RADIO);
+        alias.setGroup("Apparatus");
+        alias.setName("Custom Name");
+
+        decode(RADIO, "LADDER 3");
+        decode(RADIO, "LADDER 3");
+        assertEquals(1, aliases().size());
+        assertEquals("Custom Name", alias.getName());
+        assertEquals("Apparatus", alias.getGroup());
+
+        //Moving it back opts it into automatic maintenance again.
+        alias.setGroup(TalkerAliasAutoAdder.ALIAS_GROUP);
+        decode(RADIO, "RESCUE 5");
+        decode(RADIO, "RESCUE 5");
+        assertEquals("RESCUE 5", alias.getName());
     }
 
     @Test

@@ -27,8 +27,10 @@ import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
-import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallWithOptionalLocation;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.Information1;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.InitializationVectorPart1;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CipherType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
@@ -100,11 +102,18 @@ public class NXDNAudioModule extends AmbeAudioModule
                     mAudioCodec = voiceCall.getCallOption().getCodec();
                     processCachedAudio();
                 }
-                else if(message instanceof VoiceCallWithOptionalLocation voiceCall)
+                //Note: VoiceCallWithOptionalLocation subclasses (request, response, assignment, etc.) don't carry the
+                //cipher type and key ID, so they can't be used to establish the encryption state.
+                else if(!mEncryptedCallStateEstablished && message instanceof Information1 info1 &&
+                        info1.getLICH().hasAudio())
                 {
-                    mEncryptedCall = voiceCall.getEncryptionKeyIdentifier().isEncrypted();
+                    //Type-D only sends the VOICE CALL message at the start of the call.  Use the SCCH call info or
+                    //initialization vector from a voice frame to establish the encryption state when we join a call
+                    //late, or when the VOICE CALL message was missed.  Type-D only supports AMBE+ half-rate.
+                    mEncryptedCall = info1 instanceof InitializationVectorPart1 ||
+                            info1.getCipherType() != CipherType.UNENCRYPTED;
                     mEncryptedCallStateEstablished = true;
-                    mAudioCodec = voiceCall.getCallOption().getCodec();
+                    mAudioCodec = AudioCodec.HALF_RATE;
                     processCachedAudio();
                 }
                 else if(message instanceof Disconnect || message instanceof TransmissionRelease)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.Dispatcher;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
@@ -34,12 +35,20 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
     /**
-     * Maximum queued channel results batches, about one second of samples.  A full batch is dropped when this channel
+     * Maximum queued channel sample batches, about one second of samples.  A full batch is dropped when this channel
      * falls behind, which preserves the even-sized batch block parity that two-channel synthesis relies on.
      */
     private static final int MAXIMUM_QUEUED_BATCHES = 50;
 
-    private Dispatcher<QueuedChannelResults> mChannelResultsDispatcher;
+    /**
+     * Maximum channel sample arrays held for reuse: the queued batches plus the batch being processed and the batch
+     * being copied.
+     */
+    private static final int MAXIMUM_POOLED_ARRAYS = MAXIMUM_QUEUED_BATCHES + 2;
+
+    private Dispatcher<QueuedChannelSamples> mChannelSamplesDispatcher;
+    private final Queue<float[]> mSamplePool = new ArrayBlockingQueue<>(MAXIMUM_POOLED_ARRAYS);
+    private volatile int[] mChannelOffsets = new int[0];
     private final Queue<PendingUpdate> mPendingUpdates = new ConcurrentLinkedQueue<>();
     private final AtomicLong mBatchSequence = new AtomicLong();
     private HeartbeatManager mHeartbeatManager;
@@ -60,23 +69,43 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mInputChannelCount = inputChannelCount;
         //Process 1/10th of the sample rate per second at a rate of 20 times a second (200% of anticipated rate)
         mHeartbeatManager = heartbeatManager;
-        mChannelResultsDispatcher = new Dispatcher(threadName,50, mHeartbeatManager, MAXIMUM_QUEUED_BATCHES);
-        mChannelResultsDispatcher.setListener(queued -> {
+        mChannelSamplesDispatcher = new Dispatcher<>(threadName,50, mHeartbeatManager, MAXIMUM_QUEUED_BATCHES);
+        mChannelSamplesDispatcher.setListener(queued -> {
             try
             {
                 applyPendingUpdates(queued.sequence());
-                mCurrentSampleTimestamp = queued.channelResults().getTimestamp();
-                process(queued.channelResults());
+                mCurrentSampleTimestamp = queued.timestamp();
+                process(queued.samples(), queued.blockCount());
             }
             catch(Throwable t)
             {
-                mLog.error("Error processing channel results", t);
+                mLog.error("Error processing channel samples", t);
             }
             finally
             {
-                queued.channelResults().release();
+                mSamplePool.offer(queued.samples());
             }
         });
+    }
+
+    /**
+     * Sets the I/Q offsets within each channel results block for the polyphase channel(s) that this processor copies.
+     * The offsets take effect at the first channel results batch received after this method is invoked, the same as a
+     * change queued with enqueueUpdate(), so a change of offsets and of the mixer frequency apply to the same batch.
+     * This should only be invoked on the thread that delivers channel results, or before results are delivered.
+     * @param offsets for each polyphase channel, which is twice the channel index.
+     */
+    protected void setChannelOffsets(int... offsets)
+    {
+        mChannelOffsets = offsets.clone();
+    }
+
+    /**
+     * Current I/Q offsets within each channel results block for the polyphase channel(s) that this processor copies.
+     */
+    protected int[] getChannelOffsets()
+    {
+        return mChannelOffsets.clone();
     }
 
     /**
@@ -119,13 +148,13 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     @Override
     public void start()
     {
-        mChannelResultsDispatcher.start();
+        mChannelSamplesDispatcher.start();
     }
 
     @Override
     public void stop()
     {
-        mChannelResultsDispatcher.stop();
+        mChannelSamplesDispatcher.stop();
     }
 
     /**
@@ -147,22 +176,66 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     {
     }
 
+    /**
+     * Copies this processor's polyphase channel(s) from the channel results batch and queues the copy for processing on
+     * the dispatcher thread.  The copy is small (about 8 kB per polyphase channel for a 1024 block batch), so the batch
+     * isn't retained beyond this method and its large shared sample array returns to the channelizer's pool as soon as
+     * the channelizer has dispatched it to every channel.  A slow channel then queues only its own samples.
+     *
+     * @param channelResults batch to copy from
+     */
     @Override
     public void receiveChannelResults(ChannelResultsBatch channelResults)
     {
-        channelResults.retain();
+        long sequence = mBatchSequence.incrementAndGet();
 
-        if(!mChannelResultsDispatcher.offer(new QueuedChannelResults(channelResults, mBatchSequence.incrementAndGet())))
+        if(!mChannelSamplesDispatcher.isRunning())
         {
-            channelResults.release();
+            return;
+        }
+
+        int[] offsets = mChannelOffsets;
+        float[] source = channelResults.getSamples();
+        int blockLength = channelResults.getBlockLength();
+        int blockCount = channelResults.getBlockCount();
+        float[] samples = getPooledArray(blockCount * offsets.length * 2);
+        int pointer = 0;
+
+        for(int block = 0; block < blockCount; block++)
+        {
+            int blockOffset = block * blockLength;
+
+            for(int offset : offsets)
+            {
+                samples[pointer++] = source[blockOffset + offset];
+                samples[pointer++] = source[blockOffset + offset + 1];
+            }
+        }
+
+        if(!mChannelSamplesDispatcher.offer(new QueuedChannelSamples(samples, blockCount, channelResults.getTimestamp(),
+            sequence)))
+        {
+            mSamplePool.offer(samples);
         }
     }
 
     /**
-     * Sub-class implementation to process one polyphase channelizer results batch.
-     * @param channelResults to process
+     * Provides a reused sample array of the requested length when one is available, or a new array.
      */
-    public abstract void process(ChannelResultsBatch channelResults);
+    private float[] getPooledArray(int length)
+    {
+        float[] samples = mSamplePool.poll();
+        return samples != null && samples.length == length ? samples : new float[length];
+    }
+
+    /**
+     * Sub-class implementation to process one batch of copied channel samples.
+     * @param samples for each block in order, with the I/Q pair of each polyphase channel in the order of the channel
+     * offsets, for example I1,Q1,I2,Q2 per block for two channels.
+     * @param blockCount number of blocks.  Batches start on an even block index, so the index of a block within this
+     * batch has the same parity as its absolute block index.
+     */
+    public abstract void process(float[] samples, int blockCount);
 
     @Override
     public int getInputChannelCount()
@@ -171,9 +244,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     }
 
     /**
-     * Channel results batch and its position in the sequence of received batches.
+     * Copied channel samples with the timestamp of the batch they were copied from and the batch's position in the
+     * sequence of received batches.
      */
-    private record QueuedChannelResults(ChannelResultsBatch channelResults, long sequence) {}
+    private record QueuedChannelSamples(float[] samples, int blockCount, long timestamp, long sequence) {}
 
     /**
      * Configuration change and the sequence number of the last batch received before the change was requested.
