@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
  */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.channelizer.ChannelResultsBatch;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
+import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,6 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(OneChannelOutputProcessor.class);
     private final OneChannelMixerAssembler mMixerAssembler;
-    private int mChannelOffset;
 
     /**
      * Processor to extract a single channel from a polyphase channelizer and produce an output I/Q complex sample
@@ -55,7 +54,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
     {
         StringBuilder sb = new StringBuilder();
         sb.append("One Channel Output Processor");
-        sb.append("\n\tIndex (doubled) [").append(mChannelOffset).append("]");
+        sb.append("\n\tIndex (doubled) ").append(Arrays.toString(getChannelOffsets()));
         sb.append("\n\tMixer Assembler: none");
         return sb.toString();
     }
@@ -81,8 +80,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
 
         //Set the channelized output results offset to twice the channel index to account for each channel having
         //an I/Q pair
-        int channelOffset = indexes.get(0) * 2;
-        enqueueUpdate(() -> mChannelOffset = channelOffset);
+        setChannelOffsets(indexes.get(0) * 2);
     }
 
     @Override
@@ -92,19 +90,18 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
     }
 
     /**
-     * Extract the channel from the channel results array and pass to the assembler.  The assembler will
-     * apply frequency translation and gain and indicate when a buffer is fully assembled.
+     * Passes the copied channel samples to the assembler.  The assembler will apply frequency translation and gain and
+     * indicate when a buffer is fully assembled.
      *
-     * @param channelResults to process containing blocks of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param samples containing an I/Q pair for each block (I0,Q0,I1,Q1...In,Qn)
+     * @param blockCount number of blocks
      */
     @Override
-    public void process(ChannelResultsBatch channelResults)
+    public void process(float[] samples, int blockCount)
     {
-        float[] samples = channelResults.getSamples();
-        int blockLength = channelResults.getBlockLength();
-        int channelOffset = mChannelOffset;
+        int length = blockCount * 2;
 
-        for(int index = channelOffset; index < samples.length; index += blockLength)
+        for(int index = 0; index < length; index += 2)
         {
             mMixerAssembler.receive(samples[index], samples[index + 1]);
 

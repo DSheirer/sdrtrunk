@@ -180,7 +180,8 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     /**
      * Performs the output processor update.  This method must be invoked on the channel results calling thread so that
      * replacing the output processor doesn't overlap with delivery of channel results to it.  The output processor
-     * applies the configuration changes on its own dispatcher thread.
+     * applies channel index changes as it copies the next batch, and applies mixer and filter changes on its own
+     * dispatcher thread at that same batch.
      * @param channelCalculator for updates
      * @param filterManager for updates
      * @throws IllegalArgumentException if there's an issue.

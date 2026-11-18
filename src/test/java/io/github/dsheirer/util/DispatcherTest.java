@@ -125,4 +125,60 @@ public class DispatcherTest
 
         assertEquals(101, received.size());
     }
+
+    /**
+     * Test: a weight-bounded queue drops elements that would exceed the maximum weight and keeps lighter ones.
+     */
+    @Test
+    void weightBoundedQueueDropsElementsOverMaximumWeight() throws Exception
+    {
+        //Each element weighs its own value: 1 + 2 + 3 = 6 is queued, then 4 would exceed 6 and is dropped, then 0 fits
+        Dispatcher<Integer> dispatcher = new Dispatcher<>("test", 1, Integer::longValue, 6);
+        List<Integer> received = dispatchWhileBlocked(dispatcher, 4);
+        dispatcher.receive(0);
+        awaitSize(received, 5);
+        Thread.sleep(50);
+        dispatcher.stop();
+
+        assertEquals(List.of(0, 1, 2, 3, 0), received);
+    }
+
+    /**
+     * Test: an element heavier than the maximum weight is delivered when nothing else is queued.
+     */
+    @Test
+    void weightBoundedQueueAcceptsHeavyElementWhenEmpty() throws Exception
+    {
+        Dispatcher<Integer> dispatcher = new Dispatcher<>("test", 1, Integer::longValue, 6);
+        List<Integer> received = dispatchWhileBlocked(dispatcher, 0);
+        dispatcher.receive(100);
+        dispatcher.receive(1);
+        awaitSize(received, 2);
+        Thread.sleep(50);
+        dispatcher.stop();
+
+        assertEquals(List.of(0, 100), received);
+    }
+
+    /**
+     * Test: processed elements release their weight so that the queue accepts new elements after an overflow.
+     */
+    @Test
+    void weightBoundedQueueRecoversAfterOverflow() throws Exception
+    {
+        Dispatcher<Integer> dispatcher = new Dispatcher<>("test", 1, Integer::longValue, 6);
+        List<Integer> received = dispatchWhileBlocked(dispatcher, 10);
+        awaitSize(received, 4);
+        Thread.sleep(50);
+
+        for(int x = 0; x < 3; x++)
+        {
+            dispatcher.receive(5);
+            awaitSize(received, 5 + x);
+        }
+
+        dispatcher.stop();
+
+        assertEquals(List.of(0, 1, 2, 3, 5, 5, 5), received);
+    }
 }
