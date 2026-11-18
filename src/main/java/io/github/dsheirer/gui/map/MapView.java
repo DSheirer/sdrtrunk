@@ -40,6 +40,8 @@ import io.github.dsheirer.preference.map.MapPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.service.radioreference.RadioReferenceFrequencyIndex;
 import io.github.dsheirer.service.radioreference.SiteRecord;
+import java.awt.Desktop;
+import java.net.URI;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -61,15 +63,20 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseEvent;
@@ -81,6 +88,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Map tab: plotted tracks of the radios that reported locations, the user's location and the radio reference trunked
@@ -101,6 +110,7 @@ public class MapView extends SplitPane
     private static final String SELECT_A_TRACK = "(select a track)";
     private static final String NO_SYSTEM_NAME = "(no system name)";
     private static final String LOCATION_NOT_SET = "Not set";
+    private static final Logger mLog = LoggerFactory.getLogger(MapView.class);
 
     private final MapService mMapService;
     private final PlottableEntityModel mEntityModel;
@@ -134,6 +144,9 @@ public class MapView extends SplitPane
     private final CheckBox mCenterOnSelectedCheckBox = new CheckBox("Center on Selection");
     private final Label mSelectedTrackSystemLabel = new Label(SELECT_A_TRACK);
     private final TableView<TimestampedGeoPosition> mHistoryTable = new TableView<>(mHistory);
+    private final ComboBox<TileChoice> mTileServerComboBox = new ComboBox<>();
+    private final TextField mTileServerKeyField = new TextField();
+    private final Hyperlink mTileServerKeyLink = new Hyperlink("Get a free key");
 
     private PlottableEntityHistory mSelectedTrack;
     private PlottableEntityHistory mFollowedTrack;
@@ -184,7 +197,10 @@ public class MapView extends SplitPane
         StackPane mapPane = new StackPane(mMap, mCardPane);
         mapPane.setMinSize(0, 0);
 
-        VBox controls = createControls();
+        initTileServerControls();
+        updateTileSource();
+
+        TabPane controls = createControls();
         SplitPane.setResizableWithParent(controls, false);
         getItems().addAll(controls, mapPane);
 
@@ -421,16 +437,33 @@ public class MapView extends SplitPane
         });
     }
 
-    private VBox createControls()
+    /**
+     * Tabs beside the map: Settings for how the map looks, and Tracks for the plotted tracks
+     */
+    private TabPane createControls()
     {
-        Label locationTitle = new Label("My Location:");
-        HBox location = row(locationTitle, mUserLocationLabel);
+        HBox server = row(new Label("Tile Server:"), mTileServerComboBox);
+        HBox serverKey = row(mTileServerKeyField, mTileServerKeyLink);
+        HBox location = row(new Label("My Location:"), mUserLocationLabel);
         HBox locationButtons = row(mSetUserLocationButton, mCenterOnUserLocationButton);
         HBox zoom = row(new Label("Zoom:"), mZoomSpinner);
         HBox sites = row(mShowSitesCheckBox, mSiteCountLabel);
+        HBox historyLength = row(new Label("Track History Length:"), mTrackHistoryLengthComboBox);
+
+        HBox.setHgrow(mTileServerComboBox, Priority.ALWAYS);
+        mTileServerComboBox.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(mTileServerKeyField, Priority.ALWAYS);
+        serverKey.visibleProperty().bind(mTileServerKeyField.visibleProperty());
+        serverKey.managedProperty().bind(mTileServerKeyField.managedProperty());
+
+        Label layers = new Label("Layers");
+        layers.setStyle("-fx-font-weight: bold;");
+
+        VBox settings = tabContent(server, serverKey, new Separator(), location, locationButtons, new Separator(),
+            zoom, new Separator(), layers, sites);
+
         HBox trackButtons = row(mDeleteTrackButton, mDeleteAllTracksButton, mClearMapButton);
         HBox followButtons = row(mReplotAllTracksButton, mFollowButton, mFollowedEntityLabel);
-        HBox historyLength = row(mTrackHistoryLengthComboBox, new Label("Track History Length"));
         HBox selectedSystem = row(new Label("Selected System:"), mSelectedTrackSystemLabel);
 
         VBox.setVgrow(mTrackTable, Priority.ALWAYS);
@@ -438,16 +471,26 @@ public class MapView extends SplitPane
         mTrackTable.setMinHeight(80);
         mHistoryTable.setMinHeight(80);
 
-        VBox controls = new VBox(6, location, locationButtons, zoom, sites, mTrackTable, trackButtons, followButtons,
-            historyLength, mCenterOnSelectedCheckBox, selectedSystem, mHistoryTable);
+        VBox tracks = tabContent(mTrackTable, trackButtons, followButtons, historyLength, mCenterOnSelectedCheckBox,
+            selectedSystem, mHistoryTable);
 
-//Uncomment this line to add a debug track generator button to the controls
-//        controls.getChildren().add(createTrackGeneratorToggle());
+//Uncomment this line to add a debug track generator button to the tracks tab
+//        tracks.getChildren().add(createTrackGeneratorToggle());
 
-        controls.setPadding(new Insets(6));
-        controls.setMinWidth(220);
-        controls.setPrefWidth(CONTROLS_WIDTH);
-        return controls;
+        Tab settingsTab = new Tab("Settings", settings);
+        Tab tracksTab = new Tab("Tracks", tracks);
+        TabPane tabs = new TabPane(settingsTab, tracksTab);
+        tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        tabs.setMinWidth(220);
+        tabs.setPrefWidth(CONTROLS_WIDTH);
+        return tabs;
+    }
+
+    private static VBox tabContent(javafx.scene.Node... nodes)
+    {
+        VBox content = new VBox(6, nodes);
+        content.setPadding(new Insets(6));
+        return content;
     }
 
     private static HBox row(javafx.scene.Node... nodes)
@@ -479,6 +522,111 @@ public class MapView extends SplitPane
     }
 
     /**
+     * Tile server chooser, with a key field and a link to get a key for a server that needs one
+     */
+    private void initTileServerControls()
+    {
+        MapPreference preference = mUserPreferences.getMapPreference();
+        mTileServerComboBox.getItems().setAll(TileChoice.CHOICES);
+        mTileServerComboBox.setValue(TileChoice.get(preference.getTileServer(), preference.getTileStyle()));
+        mTileServerComboBox.setVisibleRowCount(TileChoice.CHOICES.size());
+        mTileServerComboBox.setTooltip(new Tooltip("Map tile server.  Auto follows the theme, " +
+            "Light and Dark always use that style.  Servers without a dark style are recolored for dark tiles."));
+        mTileServerComboBox.setOnAction(event -> {
+            TileChoice choice = mTileServerComboBox.getValue();
+
+            if(choice != null)
+            {
+                preference.setTileServer(choice.server().id());
+                preference.setTileStyle(choice.style().name());
+                updateTileSource();
+            }
+        });
+
+        mTileServerKeyField.setPromptText("API key");
+        mTileServerKeyField.setTooltip(new Tooltip("Free API key for this tile server, from the link beside it"));
+        mTileServerKeyField.setOnAction(event -> saveTileServerKey());
+        mTileServerKeyField.focusedProperty().addListener((observable, oldValue, focused) -> {
+            if(!focused)
+            {
+                saveTileServerKey();
+            }
+        });
+        mTileServerKeyLink.setOnAction(event -> {
+            TileServer server = getTileServer();
+
+            if(server != null && server.keyUrl() != null)
+            {
+                browse(server.keyUrl());
+            }
+        });
+    }
+
+    /**
+     * Stores the key the user entered for the selected server and reloads the tiles with it
+     */
+    private void saveTileServerKey()
+    {
+        TileServer server = getTileServer();
+
+        if(server != null && server.requiresKey())
+        {
+            mUserPreferences.getMapPreference().setTileServerKey(server.id(), mTileServerKeyField.getText());
+            updateTileSource();
+        }
+    }
+
+    /**
+     * Shows the selected server's tiles in the chosen style, or the style for the current theme, and its key field when it needs a key
+     */
+    private void updateTileSource()
+    {
+        TileChoice choice = mTileServerComboBox.getValue() != null ? mTileServerComboBox.getValue() :
+            TileChoice.CHOICES.getFirst();
+        TileServer server = choice.server();
+        String key = server.requiresKey() ? mUserPreferences.getMapPreference().getTileServerKey(server.id()) : null;
+
+        mTileServerKeyField.setVisible(server.requiresKey());
+        mTileServerKeyField.setManaged(server.requiresKey());
+
+        if(server.requiresKey() && !mTileServerKeyField.isFocused())
+        {
+            mTileServerKeyField.setText(key != null ? key : "");
+        }
+
+        mMap.setSource(choice.getSource(mUserPreferences.getApplicationPreference().isDarkMode(), key));
+    }
+
+    /**
+     * Server of the selected tile choice
+     */
+    private TileServer getTileServer()
+    {
+        TileChoice choice = mTileServerComboBox.getValue();
+        return choice != null ? choice.server() : TileServer.OPEN_STREET_MAP;
+    }
+
+    /**
+     * Opens the web page in the user's browser, off the JavaFX thread
+     */
+    private static void browse(String url)
+    {
+        Thread.ofVirtual().start(() -> {
+            try
+            {
+                if(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
+                {
+                    Desktop.getDesktop().browse(URI.create(url));
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.warn("Unable to open [" + url + "] - " + e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Updates the site count and redraws the sites
      */
     private void sitesUpdated()
@@ -499,6 +647,11 @@ public class MapView extends SplitPane
         if(preferenceType == PreferenceType.RADIO_REFERENCE)
         {
             Platform.runLater(this::updateUserLocation);
+        }
+        else if(preferenceType == PreferenceType.APPLICATION)
+        {
+            //The theme may have changed between light and dark
+            Platform.runLater(this::updateTileSource);
         }
     }
 

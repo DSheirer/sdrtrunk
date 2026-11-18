@@ -38,6 +38,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,15 +53,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Loads OpenStreetMap tile images in the background, with a memory cache of recently drawn tiles and a disk cache that
- * follows the tile server's caching headers.  Follows the OpenStreetMap tile usage policy: an identifying User-Agent,
- * two download threads, and local caching.  The newest requests load first and requests for tiles that scrolled out
- * of view are dropped.
+ * Loads map tile images from a {@link TileSource} in the background, with a memory cache of recently drawn tiles and
+ * a disk cache that follows the tile server's caching headers.  Follows the OpenStreetMap tile usage policy, which
+ * suits the other servers too: an identifying User-Agent, two download threads, and local caching.  The newest
+ * requests load first and requests for tiles that scrolled out of view are dropped.  Changing the source drops the
+ * loaded and requested tiles.
  */
 public class TileLoader
 {
     private static final Logger mLog = LoggerFactory.getLogger(TileLoader.class);
-    public static final String TILE_SERVER = "https://tile.openstreetmap.org";
     private static final String USER_AGENT = "sdrtrunk (https://github.com/DSheirer/sdrtrunk)";
     private static final int DOWNLOAD_THREADS = 2;
     //256 tiles of 256x256 pixels is about 64 MB
@@ -87,13 +88,14 @@ public class TileLoader
     private final Set<TileKey> mPending = ConcurrentHashMap.newKeySet();
     private final Map<TileKey,Long> mFailures = new ConcurrentHashMap<>();
     private volatile Set<TileKey> mWanted = Collections.emptySet();
+    private volatile TileSource mSource;
     private final AtomicBoolean mTrimmed = new AtomicBoolean();
     private final List<Thread> mThreads = new ArrayList<>();
     private volatile boolean mRunning = true;
 
     /**
-     * Constructs an instance and starts the download threads
-     * @param cacheDirectory for the disk cache, or null for no disk cache
+     * Constructs an instance and starts the download threads.  Nothing loads until a source is set.
+     * @param cacheDirectory for the disk cache, with a folder for each source, or null for no disk cache
      * @param loadedListener notified on a download thread when a requested tile is ready in {@link #get(TileKey)}
      */
     public TileLoader(Path cacheDirectory, Consumer<TileKey> loadedListener)
@@ -109,6 +111,29 @@ public class TileLoader
                 .unstarted(this::run);
             mThreads.add(thread);
             thread.start();
+        }
+    }
+
+    /**
+     * Sets the tiles to load, dropping the loaded and requested tiles of the previous source.  Call on the thread that
+     * requests tiles.
+     * @param source of the tiles, or null to load none
+     */
+    public void setSource(TileSource source)
+    {
+        if(Objects.equals(source, mSource))
+        {
+            return;
+        }
+
+        mSource = source;
+        mQueue.clear();
+        mPending.clear();
+        mFailures.clear();
+
+        synchronized(mMemoryCache)
+        {
+            mMemoryCache.clear();
         }
     }
 
@@ -138,7 +163,9 @@ public class TileLoader
      */
     public void request(TileKey key)
     {
-        if(get(key) != null)
+        TileSource source = mSource;
+
+        if(source == null || !source.isAvailable() || get(key) != null)
         {
             return;
         }
@@ -190,32 +217,38 @@ public class TileLoader
                 return;
             }
 
+            TileSource source = mSource;
+
             try
             {
-                if(mWanted.contains(key))
+                if(source != null && source.isAvailable() && mWanted.contains(key))
                 {
-                    Image image = load(key);
+                    Image image = load(key, source);
 
-                    if(image != null)
+                    //Drop the tile when the source changed while it loaded
+                    if(source == mSource)
                     {
-                        mFailures.remove(key);
-
-                        synchronized(mMemoryCache)
+                        if(image != null)
                         {
-                            mMemoryCache.put(key, image);
-                        }
+                            mFailures.remove(key);
 
-                        mLoadedListener.accept(key);
-                    }
-                    else
-                    {
-                        mFailures.put(key, System.currentTimeMillis());
+                            synchronized(mMemoryCache)
+                            {
+                                mMemoryCache.put(key, image);
+                            }
+
+                            mLoadedListener.accept(key);
+                        }
+                        else
+                        {
+                            mFailures.put(key, System.currentTimeMillis());
+                        }
                     }
                 }
             }
             catch(Exception e)
             {
-                mLog.error("Error loading map tile " + key, e);
+                mLog.error("Error loading map tile " + (source != null ? source.cacheName() : "") + " " + key, e);
                 mFailures.put(key, System.currentTimeMillis());
             }
             finally
@@ -227,12 +260,12 @@ public class TileLoader
 
     /**
      * Loads a tile from the disk cache while it's fresh, else downloads it, falling back to a stale cached copy when the
-     * download fails
+     * download fails.  Recolors the tile when the source darkens its tiles.
      * @return image, or null
      */
-    private Image load(TileKey key)
+    private Image load(TileKey key, TileSource source)
     {
-        Path file = getCacheFile(key);
+        Path file = getCacheFile(key, source);
         byte[] bytes = null;
         boolean fresh = false;
 
@@ -252,7 +285,7 @@ public class TileLoader
 
         if(!fresh)
         {
-            byte[] downloaded = download(key, file);
+            byte[] downloaded = download(key, file, source);
 
             if(downloaded != null)
             {
@@ -266,23 +299,32 @@ public class TileLoader
         }
 
         Image image = new Image(new ByteArrayInputStream(bytes));
-        return image.isError() ? null : image;
+
+        if(image.isError())
+        {
+            return null;
+        }
+
+        return source.darken() ? TileDarkener.darken(image) : image;
     }
 
     /**
      * Downloads the tile and stores it in the disk cache
      * @param key of the tile
      * @param file of the disk cache, or null
+     * @param source of the tile
      * @return tile image bytes, or null when the download failed
      */
-    private byte[] download(TileKey key, Path file)
+    private byte[] download(TileKey key, Path file, TileSource source)
     {
         if(!mRunning)
         {
             return null;
         }
 
-        URI uri = URI.create(TILE_SERVER + "/" + key.zoom() + "/" + key.x() + "/" + key.y() + ".png");
+        URI uri = URI.create(source.getUrl(key));
+        //The URL can hold the user's key, so the log names the source and the tile instead
+        String tile = source.cacheName() + " " + key;
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(20))
             .header("User-Agent", USER_AGENT).GET().build();
 
@@ -292,7 +334,7 @@ public class TileLoader
 
             if(response.statusCode() != 200)
             {
-                mLog.debug("Map tile " + uri + " response " + response.statusCode());
+                mLog.debug("Map tile " + tile + " response " + response.statusCode());
                 return null;
             }
 
@@ -311,7 +353,7 @@ public class TileLoader
         }
         catch(IOException e)
         {
-            mLog.debug("Unable to download map tile " + uri + " - " + e.getMessage());
+            mLog.debug("Unable to download map tile " + tile + " - " + e.getMessage());
         }
 
         return null;
@@ -377,10 +419,10 @@ public class TileLoader
         }
     }
 
-    private Path getCacheFile(TileKey key)
+    private Path getCacheFile(TileKey key, TileSource source)
     {
-        return mCacheDirectory != null ? mCacheDirectory.resolve(String.valueOf(key.zoom()))
-            .resolve(String.valueOf(key.x())).resolve(key.y() + ".png") : null;
+        return mCacheDirectory != null ? mCacheDirectory.resolve(source.cacheName())
+            .resolve(String.valueOf(key.zoom())).resolve(String.valueOf(key.x())).resolve(key.y() + ".tile") : null;
     }
 
     /**

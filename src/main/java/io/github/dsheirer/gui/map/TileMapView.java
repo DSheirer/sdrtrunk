@@ -46,8 +46,9 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
 /**
- * JavaFX slippy map: OpenStreetMap tiles drawn on a canvas, with {@link MapLayer} overlays.  While a tile loads, the
- * matching part of a loaded tile from a farther zoom level stands in for it.
+ * JavaFX slippy map: tiles from a {@link TileSource} drawn on a canvas, with {@link MapLayer} overlays.  While a tile
+ * loads, the matching part of a loaded tile from a farther zoom level stands in for it.  Past the source's highest
+ * zoom level, its closest tiles are enlarged.
  *
  * Mouse: drag with the primary button to pan, scroll to zoom at the mouse, double-click or middle-click to center and
  * zoom in.  Keys: arrows pan, plus and minus zoom.  Use on the JavaFX thread.
@@ -55,10 +56,13 @@ import javafx.scene.text.TextAlignment;
 public class TileMapView extends Region
 {
     private static final Color BACKGROUND = Color.rgb(221, 221, 221);
+    private static final Color DARK_BACKGROUND = Color.rgb(38, 38, 38);
     private static final Color ATTRIBUTION_BACKGROUND = Color.rgb(255, 255, 255, 0.75);
+    private static final Color DARK_ATTRIBUTION_BACKGROUND = Color.rgb(30, 30, 30, 0.75);
     private static final Color ATTRIBUTION_TEXT = Color.rgb(40, 40, 40);
+    private static final Color DARK_ATTRIBUTION_TEXT = Color.rgb(210, 210, 210);
     private static final Font ATTRIBUTION_FONT = Font.font(11);
-    private static final String ATTRIBUTION = "© OpenStreetMap contributors";
+    private static final Font MESSAGE_FONT = Font.font(14);
     private static final int FALLBACK_LEVELS = 5;
     //Scroll distance for one zoom step: one mouse wheel notch, or several trackpad events
     private static final double SCROLL_STEP = 40.0;
@@ -71,7 +75,8 @@ public class TileMapView extends Region
     private final List<MapLayer> mLayers = new ArrayList<>();
     private final List<Runnable> mViewListeners = new CopyOnWriteArrayList<>();
     private final ReadOnlyIntegerWrapper mZoom = new ReadOnlyIntegerWrapper(mViewport.getZoom());
-    private final double mAttributionWidth;
+    private final Text mMeasure = new Text();
+    private TileSource mSource;
     private boolean mRedrawPending;
     private double mDragX = Double.NaN;
     private double mDragY = Double.NaN;
@@ -91,10 +96,6 @@ public class TileMapView extends Region
         setMinSize(0, 0);
         setPrefSize(600, 400);
 
-        Text measure = new Text(ATTRIBUTION);
-        measure.setFont(ATTRIBUTION_FONT);
-        mAttributionWidth = measure.getLayoutBounds().getWidth();
-
         addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
         addEventHandler(MouseEvent.MOUSE_DRAGGED, this::mouseDragged);
         addEventHandler(MouseEvent.MOUSE_RELEASED, this::mouseReleased);
@@ -111,6 +112,30 @@ public class TileMapView extends Region
     public MapViewport getViewport()
     {
         return mViewport;
+    }
+
+    /**
+     * Sets the tiles to show, dropping the tiles of the previous source
+     * @param source of the tiles, or null to show none
+     */
+    public void setSource(TileSource source)
+    {
+        mSource = source;
+
+        if(mTileLoader != null)
+        {
+            mTileLoader.setSource(source);
+        }
+
+        requestRedraw();
+    }
+
+    /**
+     * Source of the tiles, or null
+     */
+    public TileSource getSource()
+    {
+        return mSource;
     }
 
     /**
@@ -240,7 +265,8 @@ public class TileMapView extends Region
         GraphicsContext gc = mCanvas.getGraphicsContext2D();
         double width = mCanvas.getWidth();
         double height = mCanvas.getHeight();
-        gc.setFill(BACKGROUND);
+        boolean dark = mSource != null && mSource.dark();
+        gc.setFill(dark ? DARK_BACKGROUND : BACKGROUND);
         gc.fillRect(0, 0, width, height);
 
         if(width <= 0 || height <= 0)
@@ -248,7 +274,18 @@ public class TileMapView extends Region
             return;
         }
 
-        drawTiles(gc, width, height);
+        if(mSource != null && mSource.isAvailable())
+        {
+            drawTiles(gc, width, height);
+        }
+        else if(mSource != null && mSource.unavailableReason() != null)
+        {
+            gc.setFill(dark ? DARK_ATTRIBUTION_TEXT : ATTRIBUTION_TEXT);
+            gc.setFont(MESSAGE_FONT);
+            gc.setTextAlign(TextAlignment.CENTER);
+            gc.setTextBaseline(VPos.CENTER);
+            gc.fillText(mSource.unavailableReason(), width / 2.0, height / 2.0);
+        }
 
         for(MapLayer layer: mLayers)
         {
@@ -257,7 +294,10 @@ public class TileMapView extends Region
             gc.restore();
         }
 
-        drawAttribution(gc, width, height);
+        if(mSource != null)
+        {
+            drawAttribution(gc, mSource.attribution(), dark, width, height);
+        }
     }
 
     private void drawTiles(GraphicsContext gc, double width, double height)
@@ -271,6 +311,8 @@ public class TileMapView extends Region
         int firstRow = Math.max(0, (int)Math.floor(top / Mercator.TILE_SIZE));
         int lastRow = Math.min(count - 1, (int)Math.floor((top + height - 1) / Mercator.TILE_SIZE));
 
+        //Past the source's highest zoom level, its closest tiles are enlarged
+        int enlarged = Math.max(0, zoom - mSource.maxZoom());
         Set<TileKey> wanted = new HashSet<>();
         List<TileKey> missing = new ArrayList<>();
 
@@ -279,20 +321,25 @@ public class TileMapView extends Region
             for(int column = firstColumn; column <= lastColumn; column++)
             {
                 TileKey key = new TileKey(zoom, Math.floorMod(column, count), row);
+                TileKey source = enlarged > 0 ? key.parent(enlarged) : key;
                 double x = column * (double)Mercator.TILE_SIZE - left;
                 double y = row * (double)Mercator.TILE_SIZE - top;
-                wanted.add(key);
+                wanted.add(source);
 
-                Image image = mTileLoader != null ? mTileLoader.get(key) : null;
+                Image image = mTileLoader != null ? mTileLoader.get(source) : null;
 
                 if(image != null)
                 {
-                    gc.drawImage(image, x, y, Mercator.TILE_SIZE, Mercator.TILE_SIZE);
+                    drawPart(gc, image, key, enlarged, x, y);
                 }
                 else
                 {
-                    drawFallback(gc, key, x, y);
-                    missing.add(key);
+                    drawFallback(gc, key, enlarged, x, y);
+
+                    if(!missing.contains(source))
+                    {
+                        missing.add(source);
+                    }
                 }
             }
         }
@@ -302,10 +349,12 @@ public class TileMapView extends Region
             mTileLoader.setWanted(wanted);
 
             //Request the tiles nearest the middle last, so they load first
-            double middleColumn = (left + width / 2.0) / Mercator.TILE_SIZE - 0.5;
-            double middleRow = (top + height / 2.0) / Mercator.TILE_SIZE - 0.5;
-            missing.sort((a, b) -> Double.compare(distance(b, middleColumn, middleRow, count),
-                distance(a, middleColumn, middleRow, count)));
+            double scale = 1 << enlarged;
+            int sourceCount = Mercator.tileCount(zoom - enlarged);
+            double middleColumn = ((left + width / 2.0) / Mercator.TILE_SIZE) / scale - 0.5;
+            double middleRow = ((top + height / 2.0) / Mercator.TILE_SIZE) / scale - 0.5;
+            missing.sort((a, b) -> Double.compare(distance(b, middleColumn, middleRow, sourceCount),
+                distance(a, middleColumn, middleRow, sourceCount)));
             missing.forEach(mTileLoader::request);
         }
     }
@@ -321,45 +370,65 @@ public class TileMapView extends Region
     }
 
     /**
-     * Draws the part of a loaded tile from a farther zoom level that covers the tile
+     * Draws the part of a tile from a farther zoom level that covers the tile, enlarged to the tile's size
+     * @param image of the tile from the farther zoom level
+     * @param key of the tile to cover
+     * @param levels between the tiles' zoom levels, 0 to draw the whole image
      */
-    private void drawFallback(GraphicsContext gc, TileKey key, double x, double y)
+    private static void drawPart(GraphicsContext gc, Image image, TileKey key, int levels, double x, double y)
+    {
+        if(levels == 0)
+        {
+            gc.drawImage(image, x, y, Mercator.TILE_SIZE, Mercator.TILE_SIZE);
+            return;
+        }
+
+        TileKey parent = key.parent(levels);
+        double size = image.getWidth() / (1 << levels);
+        double sourceX = (key.x() - ((long)parent.x() << levels)) * size;
+        double sourceY = (key.y() - ((long)parent.y() << levels)) * size;
+        gc.drawImage(image, sourceX, sourceY, size, size, x, y, Mercator.TILE_SIZE, Mercator.TILE_SIZE);
+    }
+
+    /**
+     * Draws the part of a loaded tile from a farther zoom level than the requested tile that covers the tile
+     * @param enlarged levels between the tile and the requested tile
+     */
+    private void drawFallback(GraphicsContext gc, TileKey key, int enlarged, double x, double y)
     {
         if(mTileLoader == null)
         {
             return;
         }
 
-        for(int levels = 1; levels <= FALLBACK_LEVELS && key.zoom() - levels >= 0; levels++)
+        for(int levels = enlarged + 1; levels <= enlarged + FALLBACK_LEVELS && key.zoom() - levels >= 0; levels++)
         {
-            TileKey parent = key.parent(levels);
-            Image image = mTileLoader.get(parent);
+            Image image = mTileLoader.get(key.parent(levels));
 
             if(image != null)
             {
-                double size = (double)Mercator.TILE_SIZE / (1 << levels);
-                double sourceX = (key.x() - ((long)parent.x() << levels)) * size;
-                double sourceY = (key.y() - ((long)parent.y() << levels)) * size;
-                gc.drawImage(image, sourceX, sourceY, size, size, x, y, Mercator.TILE_SIZE, Mercator.TILE_SIZE);
+                drawPart(gc, image, key, levels, x, y);
                 return;
             }
         }
     }
 
     /**
-     * OpenStreetMap attribution, required by the tile usage policy
+     * Attribution in the bottom right corner, required by the tile servers
      */
-    private void drawAttribution(GraphicsContext gc, double width, double height)
+    private void drawAttribution(GraphicsContext gc, String attribution, boolean dark, double width, double height)
     {
-        double boxWidth = mAttributionWidth + 8;
+        mMeasure.setText(attribution);
+        mMeasure.setFont(ATTRIBUTION_FONT);
+        double boxWidth = mMeasure.getLayoutBounds().getWidth() + 8;
         double boxHeight = 16;
-        gc.setFill(ATTRIBUTION_BACKGROUND);
+        gc.setFill(dark ? DARK_ATTRIBUTION_BACKGROUND : ATTRIBUTION_BACKGROUND);
         gc.fillRect(width - boxWidth, height - boxHeight, boxWidth, boxHeight);
-        gc.setFill(ATTRIBUTION_TEXT);
+        gc.setFill(dark ? DARK_ATTRIBUTION_TEXT : ATTRIBUTION_TEXT);
         gc.setFont(ATTRIBUTION_FONT);
         gc.setTextAlign(TextAlignment.LEFT);
         gc.setTextBaseline(VPos.CENTER);
-        gc.fillText(ATTRIBUTION, width - boxWidth + 4, height - boxHeight / 2.0);
+        gc.fillText(attribution, width - boxWidth + 4, height - boxHeight / 2.0);
     }
 
     private void mousePressed(MouseEvent event)
