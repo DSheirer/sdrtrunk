@@ -23,6 +23,7 @@ import io.github.dsheirer.preference.swing.SwingPreference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -30,8 +31,14 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.scene.control.Label;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -45,6 +52,7 @@ import javafx.scene.layout.VBox;
  */
 public abstract class HistoryTableView<T,F> extends VBox
 {
+    private static final KeyCombination COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
     private final ObservableList<Row<T>> mRows = FXCollections.observableArrayList();
     private final FilteredList<Row<T>> mFilteredRows = new FilteredList<>(mRows);
     private final Map<T,Row<T>> mRowMap = new HashMap<>();
@@ -71,6 +79,16 @@ public abstract class HistoryTableView<T,F> extends VBox
         mTableView.setItems(sortedRows);
         mTableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_SUBSEQUENT_COLUMNS);
         mTableView.setPlaceholder(new Label(""));
+        mTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        mTableView.setOnKeyPressed(event -> {
+            if(COPY.match(event))
+            {
+                ClipboardContent content = new ClipboardContent();
+                content.putString(getSelectedText());
+                Clipboard.getSystemClipboard().setContent(content);
+                event.consume();
+            }
+        });
         mTableColumnMonitor = new TableColumnMonitor<>(mTableView, tableKey, swingPreference, swingTableKey);
         mHistoryControls = new HistoryControls<>(filterEditorTitle, this::clear, this::setHistorySize,
             mTableColumnMonitor, columnsTitle);
@@ -158,6 +176,32 @@ public abstract class HistoryTableView<T,F> extends VBox
     protected void refreshAll()
     {
         mRows.forEach(Row::refresh);
+    }
+
+    /**
+     * Text of the selected rows, one line per row with the visible column values separated by tabs.
+     */
+    private String getSelectedText()
+    {
+        StringJoiner text = new StringJoiner("\n");
+
+        for(int row = 0; row < mTableView.getItems().size(); row++)
+        {
+            if(mTableView.getSelectionModel().isSelected(row))
+            {
+                StringJoiner line = new StringJoiner("\t");
+
+                for(TableColumn<Row<T>,?> column: mTableView.getVisibleLeafColumns())
+                {
+                    Object value = column.getCellData(row);
+                    line.add(value == null ? "" : value.toString());
+                }
+
+                text.add(line.toString());
+            }
+        }
+
+        return text.toString();
     }
 
     private void setHistorySize(int historySize)
