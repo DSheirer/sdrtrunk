@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 /**
  * Map test track data generator.

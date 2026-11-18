@@ -26,7 +26,7 @@ import io.github.dsheirer.module.decode.dmr.identifier.P25Location;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import java.util.ArrayList;
 import java.util.List;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 /**
  * Motorola Unit Self-Reported GPS Location

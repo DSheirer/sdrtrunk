@@ -108,7 +108,7 @@ import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActive
 import io.github.dsheirer.util.PacketUtil;
 import java.util.List;
 import java.util.Map;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
