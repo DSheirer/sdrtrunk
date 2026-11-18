@@ -27,6 +27,9 @@ import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -129,6 +132,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private Listener<IMessage> mMessageListener;
     private boolean mIgnoreDataCalls;
     private boolean mIgnoreEncryptedCalls;
+    private boolean mIgnoreDoNotMonitorCalls;
+    private final AliasList mAliasList;
     //Used only for data calls
     private final DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
     private final TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
@@ -139,12 +144,25 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      */
     public P25TrafficChannelManager(Channel parentChannel)
     {
+        this(parentChannel, null);
+    }
+
+    /**
+     * Constructs an instance.
+     * @param parentChannel (ie control channel) that owns this traffic channel manager
+     * @param aliasList for the parent channel, used to identify Do Not Monitor calls.  Can be null, in which case no
+     * call is ignored as Do Not Monitor.
+     */
+    public P25TrafficChannelManager(Channel parentChannel, AliasList aliasList)
+    {
         mParentChannel = parentChannel;
+        mAliasList = aliasList;
 
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 phase1)
         {
             mIgnoreDataCalls = phase1.getIgnoreDataCalls();
             mIgnoreEncryptedCalls = phase1.getIgnoreEncryptedCalls();
+            mIgnoreDoNotMonitorCalls = phase1.getIgnoreDoNotMonitorCalls();
             createPhase1TrafficChannels(phase1.getTrafficChannelPoolSize(), phase1);
             DecodeConfigP25Phase2 phase2 = new DecodeConfigP25Phase2();
             DecoderFactory.transferJMBESettings(phase1, phase2);
@@ -154,6 +172,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             mIgnoreDataCalls = phase2.getIgnoreDataCalls();
             mIgnoreEncryptedCalls = phase2.getIgnoreEncryptedCalls();
+            mIgnoreDoNotMonitorCalls = phase2.getIgnoreDoNotMonitorCalls();
             DecodeConfigP25Phase1 phase1 = new DecodeConfigP25Phase1();
             DecoderFactory.transferJMBESettings(phase2, phase1);
             createPhase1TrafficChannels(phase2.getTrafficChannelPoolSize(), phase1);
@@ -1205,6 +1224,43 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Indicates if the ignore Do Not Monitor option is enabled and the call is one that would produce no output: at
+     * least one alias for the call's identifiers (talkgroup, patch group or radio) is set to Do Not Monitor, and no
+     * alias for the call is set to record or stream the audio.  This mirrors how the audio segment applies the alias
+     * settings: Do Not Monitor only mutes playback, so a call that is still recorded or streamed must be tuned.
+     *
+     * @param ic for the call
+     * @return true if a traffic channel should not be allocated for the call
+     */
+    private boolean isIgnoredDoNotMonitor(IdentifierCollection ic)
+    {
+        if(!mIgnoreDoNotMonitorCalls || mAliasList == null || ic == null)
+        {
+            return false;
+        }
+
+        boolean doNotMonitor = false;
+
+        for(Identifier identifier : ic.getIdentifiers())
+        {
+            for(Alias alias : mAliasList.getAliases(identifier))
+            {
+                if(alias.isRecordable() || !alias.getBroadcastChannels().isEmpty())
+                {
+                    return false;
+                }
+
+                if(alias.getPlaybackPriority() <= Priority.DO_NOT_MONITOR)
+                {
+                    doNotMonitor = true;
+                }
+            }
+        }
+
+        return doNotMonitor;
+    }
+
+    /**
      * Updates the tracker's encrypted flag from the current service options.  When the talker changed (ie a new
      * tracker was created from a channel grant that carries service options) the tracker takes the current value.
      * Otherwise, the encrypted flag is only ever set (never cleared) since many update messages carry empty service
@@ -1320,7 +1376,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             //Even though we have a tracked event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
             if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant) &&
-                !(mIgnoreEncryptedCalls && tracker.isEncrypted()))
+                !(mIgnoreEncryptedCalls && tracker.isEncrypted()) && !isIgnoredDoNotMonitor(ic))
             {
                 Channel trafficChannel = mAvailablePhase1TrafficChannelQueue.poll();
 
@@ -1376,6 +1432,22 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     .build();
             tracker = new P25ChannelEventTracker(event);
             tracker.setEncrypted(true);
+            addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+            broadcast(tracker);
+            return;
+        }
+
+        //Don't allocate a traffic channel for a Do Not Monitor call, unless a traffic channel is already allocated for
+        //the frequency in which case the call will be processed (and muted) by the running traffic channel.
+        if(!mAllocatedTrafficChannelMap.containsKey(frequency) && isIgnoredDoNotMonitor(ic))
+        {
+            P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                    .channelDescriptor(apco25Channel)
+                    .details("IGNORED: DO NOT MONITOR - PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
+                    .identifiers(ic)
+                    .build();
+            tracker = new P25ChannelEventTracker(event);
+            updateEncrypted(tracker, serviceOptions);
             addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             broadcast(tracker);
             return;
@@ -1468,7 +1540,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             //the channel to be allocated, but a clear call on the other timeslot will allocate the channel through
             //its own tracker and then both timeslots are processed by the traffic channel.
             if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant) &&
-                !(mIgnoreEncryptedCalls && tracker.isEncrypted()) && (getCurrentControlFrequency() != frequency))
+                !(mIgnoreEncryptedCalls && tracker.isEncrypted()) && !isIgnoredDoNotMonitor(ic) &&
+                (getCurrentControlFrequency() != frequency))
             {
                 Channel trafficChannel = mAvailablePhase2TrafficChannelQueue.poll();
 
@@ -1516,6 +1589,24 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             tracker = new P25ChannelEventTracker(event);
             tracker.setEncrypted(true);
+            addTracker(tracker, frequency, timeslot);
+            broadcast(tracker);
+            return;
+        }
+
+        //Don't allocate a traffic channel for a Do Not Monitor call.  If the frequency is already allocated (ie there's
+        //a call on the other timeslot), the running traffic channel will process (and mute) this timeslot as well.
+        if(!mAllocatedTrafficChannelMap.containsKey(frequency) && isIgnoredDoNotMonitor(ic))
+        {
+            P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                .channelDescriptor(apco25Channel)
+                .details("IGNORED: DO NOT MONITOR - PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
+                .identifiers(ic)
+                .timeslot(timeslot)
+                .build();
+
+            tracker = new P25ChannelEventTracker(event);
+            updateEncrypted(tracker, serviceOptions);
             addTracker(tracker, frequency, timeslot);
             broadcast(tracker);
             return;

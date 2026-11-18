@@ -74,6 +74,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private ToggleSwitch mIgnoreDataCallsButton;
     private ToggleSwitch mIgnoreEncryptedCallsButton;
+    private ToggleSwitch mIgnoreDoNotMonitorCallsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private SegmentedButton mModulationSegmentedButton;
     private ToggleButton mC4FMToggleButton;
@@ -166,6 +167,15 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setHalignment(ignoreEncryptedLabel, HPos.LEFT);
             GridPane.setConstraints(ignoreEncryptedLabel, 7, row);
             gridPane.getChildren().add(ignoreEncryptedLabel);
+
+            GridPane.setConstraints(getIgnoreDoNotMonitorCallsButton(), 8, row);
+            gridPane.getChildren().add(getIgnoreDoNotMonitorCallsButton());
+
+            Label ignoreDoNotMonitorLabel = new Label("Ignore Do Not Monitor Calls");
+            ignoreDoNotMonitorLabel.setLabelFor(getIgnoreDoNotMonitorCallsButton());
+            GridPane.setHalignment(ignoreDoNotMonitorLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreDoNotMonitorLabel, 9, row);
+            gridPane.getChildren().add(ignoreDoNotMonitorLabel);
 
             row++;
 
@@ -368,6 +378,21 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         return mIgnoreEncryptedCallsButton;
     }
 
+    private ToggleSwitch getIgnoreDoNotMonitorCallsButton()
+    {
+        if(mIgnoreDoNotMonitorCallsButton == null)
+        {
+            mIgnoreDoNotMonitorCallsButton = new AccessibleToggleSwitch();
+            mIgnoreDoNotMonitorCallsButton.setDisable(true);
+            mIgnoreDoNotMonitorCallsButton.setTooltip(new Tooltip("Don't tune a traffic channel when an alias for the call (talkgroup, patch group or radio) is set to Do Not Monitor.  " +
+                    "Calls that are set to record or stream are still tuned."));
+            mIgnoreDoNotMonitorCallsButton.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreDoNotMonitorCallsButton;
+    }
+
     private ToggleSwitch getIgnoreDataCallsButton()
     {
         if(mIgnoreDataCallsButton == null)
@@ -424,12 +449,14 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     {
         getIgnoreDataCallsButton().setDisable(config == null);
         getIgnoreEncryptedCallsButton().setDisable(config == null);
+        getIgnoreDoNotMonitorCallsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
 
         if(config instanceof DecodeConfigP25Phase1 decodeConfig)
         {
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getIgnoreEncryptedCallsButton().setSelected(decodeConfig.getIgnoreEncryptedCalls());
+            getIgnoreDoNotMonitorCallsButton().setSelected(decodeConfig.getIgnoreDoNotMonitorCalls());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             if(decodeConfig.getModulation() == Modulation.C4FM)
             {
@@ -455,6 +482,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         {
             getIgnoreDataCallsButton().setSelected(false);
             getIgnoreEncryptedCallsButton().setSelected(false);
+            getIgnoreDoNotMonitorCallsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getJmbeAGCButton().setDisable(true);
             getJmbeNoiseGainSlider().setDisable(true);
@@ -483,6 +511,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
 
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setIgnoreEncryptedCalls(getIgnoreEncryptedCallsButton().isSelected());
+        config.setIgnoreDoNotMonitorCalls(getIgnoreDoNotMonitorCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setModulation(getC4FMToggleButton().isSelected() ? Modulation.C4FM : Modulation.CQPSK);
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());

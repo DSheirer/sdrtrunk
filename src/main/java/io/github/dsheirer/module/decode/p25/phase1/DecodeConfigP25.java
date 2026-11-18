@@ -35,6 +35,7 @@ public abstract class DecodeConfigP25 extends DecodeConfigJMBE
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
     private boolean mIgnoreEncryptedCalls = false;
+    private boolean mIgnoreDoNotMonitorCalls = true;
 
     public DecodeConfigP25()
     {
@@ -68,6 +69,27 @@ public abstract class DecodeConfigP25 extends DecodeConfigJMBE
     public void setIgnoreEncryptedCalls(boolean ignore)
     {
         mIgnoreEncryptedCalls = ignore;
+    }
+
+    /**
+     * Indicates if the traffic channel manager should not allocate (ie tune) a traffic channel for a channel grant
+     * where an alias for the call (talkgroup, patch group or radio) is set to Do Not Monitor and no alias for the
+     * call is set to record or stream the audio.  Such a call produces no audio output, so skipping it leaves the
+     * tuner free to follow other calls.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "ignore_do_not_monitor_calls")
+    public boolean getIgnoreDoNotMonitorCalls()
+    {
+        return mIgnoreDoNotMonitorCalls;
+    }
+
+    /**
+     * Sets the ignore do not monitor calls option.
+     * @param ignore true to not allocate traffic channels for calls that are aliased as Do Not Monitor.
+     */
+    public void setIgnoreDoNotMonitorCalls(boolean ignore)
+    {
+        mIgnoreDoNotMonitorCalls = ignore;
     }
 
 
