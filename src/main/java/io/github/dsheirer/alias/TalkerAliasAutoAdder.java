@@ -213,6 +213,13 @@ public class TalkerAliasAutoAdder implements BiConsumer<RadioIdentifier,TalkerAl
             return;
         }
 
+        if(!ALIAS_GROUP.equals(existing.getGroup()))
+        {
+            //Only maintain aliases in the managed group. Existing user aliases must not be renamed or duplicated.
+            markChecked(key, value);
+            return;
+        }
+
         if(getIdentityCount(existing) > 1)
         {
             //The alias also identifies other radios or talkgroups - leave it alone.
