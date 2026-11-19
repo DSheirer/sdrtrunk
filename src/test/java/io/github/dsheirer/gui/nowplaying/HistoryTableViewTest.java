@@ -76,9 +76,11 @@ public class HistoryTableViewTest
                 table.getSelectionModel().select(0);
                 table.getSelectionModel().select(2);
 
+                //The copy shortcut is Cmd-C (meta) on macOS and Ctrl-C elsewhere
+                boolean mac = System.getProperty("os.name", "").toLowerCase().startsWith("mac");
                 Clipboard.getSystemClipboard().clear();
                 Event.fireEvent(table, new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.C, false,
-                    true, false, false));
+                    !mac, false, mac));
                 copied.complete(Clipboard.getSystemClipboard().getString());
             }
             catch(Throwable t)
