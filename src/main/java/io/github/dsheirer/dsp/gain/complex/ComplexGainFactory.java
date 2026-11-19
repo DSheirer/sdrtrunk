@@ -44,6 +44,7 @@ public class ComplexGainFactory
                 return new VectorComplexGainControl();
             }
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ComplexGainControl();
         }
@@ -64,6 +65,7 @@ public class ComplexGainFactory
                 return new VectorComplexGain(gain);
             }
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarComplexGain(gain);
         }

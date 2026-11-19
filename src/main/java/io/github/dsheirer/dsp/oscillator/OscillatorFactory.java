@@ -49,6 +49,7 @@ public class OscillatorFactory
             case VECTOR_SIMD_PREFERRED:
                 return new VectorRealOscillator(frequency, sampleRate);
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarRealOscillator(frequency, sampleRate);
         }
@@ -69,6 +70,7 @@ public class OscillatorFactory
             case VECTOR_SIMD_PREFERRED:
                 return new VectorComplexOscillator(frequency, sampleRate);
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarComplexOscillator(frequency, sampleRate);
         }

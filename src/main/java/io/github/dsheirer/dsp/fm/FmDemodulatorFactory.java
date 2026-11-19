@@ -52,6 +52,7 @@ public class FmDemodulatorFactory
             case VECTOR_SIMD_512:
                 return new VectorFMDemodulator512();
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarFMDemodulator();
         }

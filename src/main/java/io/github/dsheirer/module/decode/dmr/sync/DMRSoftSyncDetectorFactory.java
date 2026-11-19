@@ -52,6 +52,7 @@ public class DMRSoftSyncDetectorFactory
             case VECTOR_SIMD_512:
                 return new DMRSoftSyncDetectorVector512();
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new DMRSoftSyncDetectorScalar();
         }
