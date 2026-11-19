@@ -92,6 +92,19 @@ class BladeRfTunerTest
     }
 
     @Test
+    void defaultFrequencyIsMovedIntoTheDeviceRange()
+    {
+        //bladeRF 2.0
+        assertEquals(TunerConfiguration.DEFAULT_FREQUENCY, BladeRfTunerController.getDefaultFrequency(
+                BladeRfTunerController.MINIMUM_TUNABLE_FREQUENCY_HZ,
+                BladeRfTunerController.MAXIMUM_TUNABLE_FREQUENCY_HZ));
+        //bladeRF 1.0 can't tune below 237.5 MHz
+        assertEquals(237_500_000L, BladeRfTunerController.getDefaultFrequency(237_500_000L, 3_800_000_000L));
+        //A device that can't tune as high as the default frequency
+        assertEquals(50_000_000L, BladeRfTunerController.getDefaultFrequency(1_000_000L, 50_000_000L));
+    }
+
+    @Test
     void onlyRatesAbove61MhzAreOversampled()
     {
         assertFalse(BladeRfSampleRate.RATE_61_44.isOversampled());
