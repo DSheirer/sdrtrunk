@@ -23,6 +23,8 @@ import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.gui.spectrum.layer.ChannelTuningLayer;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.spectrum.ChannelSignalMeter;
+import java.util.function.DoubleSupplier;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.StackPane;
@@ -46,9 +48,11 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
 
     private final ChannelTuningLayer mTuningLayer;
     private final EdgeSlider mNoiseFloorSlider;
+    private final ChannelSignalMeter mSignalMeter = new ChannelSignalMeter(this::showReading);
     private final Object mLock = new Object();
     private boolean mActive;
-    private boolean mHasChannel;
+    private volatile boolean mHasChannel;
+    private volatile boolean mHasNoiseDensity;
 
     /**
      * Constructs an instance.
@@ -86,7 +90,44 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
         StackPane.setMargin(mNoiseFloorSlider, new Insets(44, 0, 8, 0));
         getChildren().add(mNoiseFloorSlider);
 
+        //Channel power and SNR, measured from the spectrum frames
+        mSignalMeter.setWindowNoiseBandwidth(model.noiseBandwidthProperty().get());
+        model.noiseBandwidthProperty().addListener((ob, ov, nv) ->
+            mSignalMeter.setWindowNoiseBandwidth(nv.doubleValue()));
+        addDecibelListener(mSignalMeter);
+
         installConfigPanel();
+    }
+
+    /**
+     * Shows the channel signal reading in the tuning layer.  Called on the DFT processor thread.
+     */
+    private void showReading(ChannelSignalMeter.Reading reading)
+    {
+        String text = String.format("%.1f dBFS", reading.dbfs());
+
+        //Channels that aren't sourced by a tuner show the channel power without the SNR
+        if(mHasNoiseDensity)
+        {
+            if(!reading.hasSnr())
+            {
+                //Waiting for the tuner noise floor estimate, which restarts after a tuner frequency change
+                text += "   SNR --";
+            }
+            else
+            {
+                text += Double.isFinite(reading.snr()) && reading.snr() >= 0.0 ?
+                    String.format("   SNR %.1f dB", reading.snr()) : "   SNR < 0 dB";
+            }
+        }
+
+        String readout = text;
+        runOnFxThread(() -> {
+            if(mHasChannel && isDftRunning())
+            {
+                mTuningLayer.signalReadoutProperty().set(readout);
+            }
+        });
     }
 
     /**
@@ -105,9 +146,24 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
      */
     public void setChannel(long frequency, int sampleRate, int bandwidth)
     {
+        setChannel(frequency, sampleRate, bandwidth, null);
+    }
+
+    /**
+     * Sets the channel to display.
+     * @param frequency of the channel
+     * @param sampleRate of the channel samples, or 0 for no channel
+     * @param bandwidth of the channel in Hertz
+     * @param noiseDensity supplier of the tuner noise density near the channel, in full-scale units per Hertz, for the
+     * signal-to-noise ratio.  Null, or a supplier that returns NaN, shows the channel power without the SNR.
+     */
+    public void setChannel(long frequency, int sampleRate, int bandwidth, DoubleSupplier noiseDensity)
+    {
         synchronized(mLock)
         {
             mHasChannel = sampleRate > 0;
+            mSignalMeter.setChannel(sampleRate, bandwidth, noiseDensity);
+            mHasNoiseDensity = noiseDensity != null;
             updateProcessing();
         }
 
@@ -118,6 +174,7 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
             model.centerFrequencyProperty().set(frequency);
             model.sampleRateProperty().set(sampleRate);
             mTuningLayer.channelBandwidthProperty().set(bandwidth);
+            mTuningLayer.signalReadoutProperty().set(null);
             mTuningLayer.carrierOffsetValidProperty().set(false);
             mTuningLayer.carrierOffsetProperty().set(0);
             getSpectralDisplay().messageProperty().set(sampleRate > 0 ? null : MESSAGE_NO_CHANNEL);
@@ -195,6 +252,7 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
         else
         {
             stopDft();
+            runOnFxThread(() -> mTuningLayer.signalReadoutProperty().set(null));
         }
     }
 
