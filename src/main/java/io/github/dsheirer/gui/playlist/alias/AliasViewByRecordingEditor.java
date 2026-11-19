@@ -241,7 +241,7 @@ public class AliasViewByRecordingEditor extends VBox
             nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
 
             TableColumn groupColumn = new TableColumn();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setPrefWidth(200);
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
 
@@ -280,7 +280,7 @@ public class AliasViewByRecordingEditor extends VBox
             nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
 
             TableColumn groupColumn = new TableColumn();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setPrefWidth(200);
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
 

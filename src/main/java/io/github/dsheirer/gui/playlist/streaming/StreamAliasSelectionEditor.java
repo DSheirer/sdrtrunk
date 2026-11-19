@@ -225,7 +225,7 @@ public class StreamAliasSelectionEditor extends VBox
             aliasListNameColumn.setCellValueFactory(new PropertyValueFactory<>("aliasListName"));
 
             TableColumn groupColumn = new TableColumn();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setPrefWidth(150);
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
 
@@ -270,7 +270,7 @@ public class StreamAliasSelectionEditor extends VBox
             aliasListNameColumn.setCellValueFactory(new PropertyValueFactory<>("aliasListName"));
 
             TableColumn groupColumn = new TableColumn();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setPrefWidth(150);
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
 
