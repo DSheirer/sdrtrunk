@@ -21,6 +21,8 @@ package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.edacs.DecodeConfigEDACS;
+import io.github.dsheirer.module.decode.edacs.identifier.EDACSTalkgroup;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
@@ -169,6 +171,8 @@ public class RadioReferenceDecoder
                 return NXDNTalkgroupIdentifier.createTo(value);
             case PASSPORT:
                 return PassportTalkgroup.create(value);
+            case EDACS:
+                return EDACSTalkgroup.createTo(value);
             default:
                 return UnknownTalkgroupIdentifier.create(value);
         }
@@ -498,6 +502,11 @@ public class RadioReferenceDecoder
             case "NXDN":
                 return Protocol.NXDN;
             case "EDACS":
+                //EDACS Extended Addressing (with ProVoice and/or analog voice)
+                if(isEdacsEA(flavor, voice))
+                {
+                    return Protocol.EDACS;
+                }
             case "TETRA":
             case "Midland CMS":
             case "OpenSky":
@@ -510,6 +519,64 @@ public class RadioReferenceDecoder
 //        mLog.info("Type:" + type + " Flavor:" + flavor + " Voice:" + voice);
 
         return Protocol.UNKNOWN;
+    }
+
+    /**
+     * The site's frequencies in LCN order (index 0 = LCN 1), from the LCN Radio Reference lists for each frequency.  A
+     * missing LCN is left as 0.  When Radio Reference has no LCNs, the frequencies are kept in the order listed.
+     */
+    public static List<Long> getLcnFrequencies(Site site)
+    {
+        List<Long> frequencies = new ArrayList<>();
+
+        if(site == null || site.getSiteFrequencies() == null)
+        {
+            return frequencies;
+        }
+
+        boolean hasLcns = site.getSiteFrequencies().stream().anyMatch(f -> f.getLogicalChannelNumber() > 0);
+
+        for(SiteFrequency siteFrequency : site.getSiteFrequencies())
+        {
+            if(siteFrequency.getFrequency() <= 0.01)
+            {
+                continue;
+            }
+
+            long frequency = Math.round(siteFrequency.getFrequency() * 1E6);
+
+            if(!hasLcns)
+            {
+                frequencies.add(frequency);
+                continue;
+            }
+
+            int lcn = siteFrequency.getLogicalChannelNumber();
+
+            if(lcn > 0 && lcn <= 32)
+            {
+                while(frequencies.size() < lcn)
+                {
+                    frequencies.add(0L);
+                }
+
+                frequencies.set(lcn - 1, frequency);
+            }
+        }
+
+        return frequencies;
+    }
+
+    /**
+     * True for an EDACS system with Extended Addressing - the only EDACS addressing the EDACS decoder reads.  Radio
+     * Reference names it in the flavor ("Extended Addressing", "EA") or lists ProVoice voice, which EDACS systems carry
+     * with Extended Addressing.
+     */
+    private static boolean isEdacsEA(Flavor flavor, Voice voice)
+    {
+        String f = flavor != null && flavor.getName() != null ? flavor.getName().toLowerCase() : "";
+        String v = voice != null && voice.getName() != null ? voice.getName().toLowerCase() : "";
+        return f.contains("extended") || f.matches(".*\\bea\\b.*") || f.contains("provoice") || v.contains("provoice");
     }
 
     /**
@@ -575,6 +642,11 @@ public class RadioReferenceDecoder
                     return DecoderType.NXDN;
 
                 case "EDACS":
+                    //EDACS Extended Addressing
+                    if(isEdacsEA(flavor, voice))
+                    {
+                        return DecoderType.EDACS;
+                    }
                 case "TETRA":
                 case "Midland CMS":
                 case "OpenSky":
@@ -705,6 +777,11 @@ public class RadioReferenceDecoder
 
                 config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
                 return config;
+            case EDACS:
+                //The decoder needs every site frequency in LCN order
+                DecodeConfigEDACS edacs = new DecodeConfigEDACS();
+                edacs.setLcnFrequencies(getLcnFrequencies(site));
+                return edacs;
             default:
                 return DecoderFactory.getDecodeConfiguration(decoderType);
         }

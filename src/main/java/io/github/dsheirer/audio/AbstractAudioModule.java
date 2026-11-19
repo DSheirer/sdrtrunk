@@ -81,12 +81,21 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     /**
      * Closes the current audio segment
      */
+    /**
+     * Called just before an audio segment is completed, for a module that has something to say about the segment as a
+     * whole (for example that it was silence throughout).  Does nothing by default.
+     */
+    protected void segmentClosing(AudioSegment audioSegment)
+    {
+    }
+
     protected void closeAudioSegment()
     {
         synchronized(this)
         {
             if(mAudioSegment != null)
             {
+                segmentClosing(mAudioSegment);
                 mAudioSegment.completeProperty().set(true);
                 mIdentifierUpdateNotificationBroadcaster.removeListener(mAudioSegment);
                 mAudioSegment.decrementConsumerCount();
