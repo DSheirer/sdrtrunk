@@ -20,6 +20,7 @@
 package io.github.dsheirer.audio;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -45,6 +46,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     private AudioSegment mAudioSegment;
     private int mAudioSampleCount = 0;
     private boolean mRecordAudioOverride;
+    private volatile boolean mMuted;
     private int mTimeslot;
 
     /**
@@ -102,6 +104,39 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     }
 
     /**
+     * Mutes or unmutes this module's audio to the local speakers.  Audio segments created while muted have their
+     * monitor priority set to DO_NOT_MONITOR, so they are recorded and streamed as usual but not played.
+     *
+     * The current audio segment is closed in both cases so that the change is heard immediately: on mute, the segment
+     * that is playing is marked DO_NOT_MONITOR and ended; on unmute, the next audio starts a new segment with its
+     * normal priority.
+     *
+     * @param muted true to mute
+     */
+    public void setMuted(boolean muted)
+    {
+        mMuted = muted;
+
+        synchronized(this)
+        {
+            if(muted && mAudioSegment != null)
+            {
+                mAudioSegment.monitorPriorityProperty().set(Priority.DO_NOT_MONITOR);
+            }
+        }
+
+        closeAudioSegment();
+    }
+
+    /**
+     * Indicates if this module's audio is muted to the local speakers.
+     */
+    public boolean isMuted()
+    {
+        return mMuted;
+    }
+
+    /**
      * Gets the current audio segment, or creates a new audio segment as necessary and broadcasts it to any registered
      * listener(s).
      */
@@ -119,6 +154,11 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
                 if(mRecordAudioOverride)
                 {
                     mAudioSegment.recordAudioProperty().set(true);
+                }
+
+                if(mMuted)
+                {
+                    mAudioSegment.monitorPriorityProperty().set(Priority.DO_NOT_MONITOR);
                 }
 
                 if(mAudioSegmentListener != null)

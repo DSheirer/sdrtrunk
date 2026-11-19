@@ -53,6 +53,7 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +169,19 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     public ProcessingChain getProcessingChain(Channel channel)
     {
         return mProcessingChainsMap.get(channel);
+    }
+
+    /**
+     * Returns an unmodifiable view of the active channel to processing chain mappings, for callers that act on every
+     * processing chain whose channel matches some property (a channel and its traffic channels, for example).  The
+     * backing map is concurrent, so the view can be iterated while channels start and stop; it is a live view, not a
+     * snapshot.
+     *
+     * @return unmodifiable view of the active channel to processing chain mappings
+     */
+    public Map<Channel,ProcessingChain> getProcessingChains()
+    {
+        return Collections.unmodifiableMap(mProcessingChainsMap);
     }
 
     /**

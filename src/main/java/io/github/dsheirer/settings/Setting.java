@@ -82,6 +82,7 @@ public enum Setting
     MAIN_WINDOW_BROADCAST_DIVIDER(Node.GUI, "sdrtrunk.main.window.streaming.fraction"),
     MAIN_WINDOW_BROADCAST_STATUS_VISIBLE(Node.GUI, "sdrtrunk.broadcast.status.visible"),
     MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE(Node.GUI, "sdrtrunk.now.playing.details.visible"),
+    NOW_PLAYING_CHANNEL_MUTED(Node.GUI, "now.playing.channel.muted.%s"), //Argument: channel identity
     MAIN_WINDOW_RESOURCE_STATUS_VISIBLE(Node.GUI, "sdrtrunk.resource.status.visible"),
     MAIN_WINDOW_SPECTRAL_DISPLAY_VISIBLE(Node.GUI, "sdrtrunk.spectral.display.visible"),
     MAIN_WINDOW_SPECTRAL_DIVIDER(Node.GUI, "sdrtrunk.main.window.spectral.fraction"),

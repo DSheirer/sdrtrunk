@@ -74,6 +74,7 @@ public class Settings implements Listener<SettingsType>
 
     private SwingSettings mSwingSettings = new SwingSettings();
     private JavaFxSettings mJavaFxSettings = new JavaFxSettings();
+    private ChannelMuteSettings mChannelMuteSettings = new ChannelMuteSettings();
 
     /**
      * Constructs a new settings instance
@@ -107,6 +108,14 @@ public class Settings implements Listener<SettingsType>
     public JavaFxSettings getJavaFxSettings()
     {
         return mJavaFxSettings;
+    }
+
+    /**
+     * Now Playing mute state of channels that have no alias
+     */
+    public ChannelMuteSettings getChannelMuteSettings()
+    {
+        return mChannelMuteSettings;
     }
 
     /**

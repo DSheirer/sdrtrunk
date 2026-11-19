@@ -56,7 +56,7 @@ public class NowPlayingView extends SplitPane
     {
         setOrientation(Orientation.VERTICAL);
 
-        mChannelMetadataView = new ChannelMetadataView(playlistManager.getChannelProcessingManager(), iconModel, settings);
+        mChannelMetadataView = new ChannelMetadataView(playlistManager, iconModel, settings);
         mChannelDetailView = new ChannelDetailView(playlistManager.getChannelProcessingManager());
         mDecodeEventView = new DecodeEventView(iconModel, settings, playlistManager.getAliasModel());
         mMessageActivityView = new MessageActivityView(settings);
