@@ -243,7 +243,7 @@ public class AliasViewByIdentifierEditor extends VBox
             aliasColumn.setPrefWidth(200);
 
             TableColumn<AliasAndIdentifier, String> groupColumn = new TableColumn<>();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
             groupColumn.setPrefWidth(200);
             

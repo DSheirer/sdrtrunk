@@ -694,8 +694,8 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mAutoAddTalkerAliasesCheckBox = new CheckBox("Auto-Add Talker Aliases");
             mAutoAddTalkerAliasesCheckBox.setDisable(true);
             mAutoAddTalkerAliasesCheckBox.setTooltip(new Tooltip("Adds decoded talker aliases as radio aliases in " +
-                "the Talker Alias group.  Only radio aliases in that group are automatically renamed; existing " +
-                "radio aliases outside the group are left unchanged.  Move an alias out of the Talker Alias group " +
+                "the Talker Alias category.  Only radio aliases in that category are automatically renamed; existing " +
+                "radio aliases outside the category are left unchanged.  Move an alias out of the Talker Alias category " +
                 "to preserve a custom name.  Applies when the channel is (re)started."));
             mAutoAddTalkerAliasesCheckBox.setOnAction(event -> modifiedProperty().set(true));
         }

@@ -660,7 +660,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
             nameColumn.setPrefWidth(140);
 
             TableColumn groupColumn = new TableColumn();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
             groupColumn.setPrefWidth(140);
 
