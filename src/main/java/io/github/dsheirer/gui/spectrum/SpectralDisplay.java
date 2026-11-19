@@ -42,6 +42,8 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.geometry.Orientation;
 import javafx.geometry.VPos;
 import javafx.scene.Cursor;
@@ -104,6 +106,10 @@ public class SpectralDisplay extends StackPane
     private final SplitPane mSplitPane = new SplitPane();
     private final CanvasPane mSpectrumPane = new CanvasPane(DisplaySection.SPECTRUM);
     private final CanvasPane mWaterfallPane = new CanvasPane(DisplaySection.WATERFALL);
+    //Each section's canvas with overlay controls stacked on top
+    private final StackPane mSpectrumSection = new StackPane(mSpectrumPane);
+    private final StackPane mWaterfallSection = new StackPane(mWaterfallPane);
+    private final EdgeSlider mWaterfallRangeSlider;
     private final StackPane mDisabledPane = new StackPane();
 
     private final BooleanProperty mSpectrumEnabled = new SimpleBooleanProperty(true);
@@ -112,6 +118,8 @@ public class SpectralDisplay extends StackPane
     private final IntegerProperty mAveraging = new SimpleIntegerProperty(AVERAGING_DEFAULT);
     private final BooleanProperty mPeakHold = new SimpleBooleanProperty(false);
     private final DoubleProperty mDividerPosition = new SimpleDoubleProperty(0.5);
+    private final IntegerProperty mWaterfallRange = new SimpleIntegerProperty(WaterfallScaler.RANGE_DEFAULT);
+    private final IntegerProperty mWaterfallAveraging = new SimpleIntegerProperty(WaterfallScaler.AVERAGING_DEFAULT);
     private final StringProperty mMessage = new SimpleStringProperty();
 
     //Values read on the DFT results thread
@@ -119,6 +127,7 @@ public class SpectralDisplay extends StackPane
     private volatile boolean mWaterfallActive = true;
     private volatile boolean mWaterfallPausedFlag = false;
     private final SpectrumAverager mAverager = new SpectrumAverager();
+    private final WaterfallScaler mWaterfallScaler = new WaterfallScaler();
 
     //Hand off from the DFT results thread to the JavaFX thread
     private final AtomicReference<SpectrumAverager.Frame> mLatestSpectrum = new AtomicReference<>();
@@ -133,8 +142,10 @@ public class SpectralDisplay extends StackPane
     private WritableImage[] mWaterfallTiles;
     private int mWaterfallWidth;
     private int mWaterfallHeight;
-    private byte[] mWaterfallIndexes;
+    private byte[] mWaterfallLevels;
     private int[] mWaterfallPixels;
+    //ARGB color for each waterfall level code, for the current theme and range.  Null when it needs to be rebuilt.
+    private int[] mWaterfallColors;
     private int mWaterfallWriteRow = 0;
     private double[] mPolygonX = new double[0];
     private double[] mPolygonY = new double[0];
@@ -167,6 +178,37 @@ public class SpectralDisplay extends StackPane
         themeChanged(disabledLabel);
         getChildren().addAll(mDisabledPane, mSplitPane);
         setMinSize(0, 0);
+        mSpectrumSection.setMinSize(0, 0);
+        mWaterfallSection.setMinSize(0, 0);
+
+        //Waterfall gain slider along the right edge of the waterfall.  The slider value is inverted so that moving it
+        //up narrows the dB range, which raises the contrast of weak signals.
+        int rangeSum = WaterfallScaler.RANGE_MINIMUM + WaterfallScaler.RANGE_MAXIMUM;
+        mWaterfallRangeSlider = new EdgeSlider("Gain", "Waterfall gain: dB range from the noise floor to the top " +
+                "of the color palette.  Higher settings use a smaller range, which gives weak signals more contrast " +
+                "against the noise and saturates strong signals sooner.", WaterfallScaler.RANGE_MINIMUM,
+                WaterfallScaler.RANGE_MAXIMUM, 1, value -> (rangeSum - Math.round(value)) + " dB");
+        mWaterfallRangeSlider.valueProperty().set(rangeSum - mWaterfallRange.get());
+        mWaterfallRangeSlider.valueProperty().addListener((ob, ov, nv) ->
+                mWaterfallRange.set(rangeSum - (int)Math.round(nv.doubleValue())));
+        mWaterfallRange.addListener((ob, ov, nv) -> {
+            int range = Math.max(WaterfallScaler.RANGE_MINIMUM, Math.min(WaterfallScaler.RANGE_MAXIMUM,
+                    nv.intValue()));
+
+            if(range != nv.intValue())
+            {
+                mWaterfallRange.set(range);
+                return;
+            }
+
+            mWaterfallRangeSlider.valueProperty().set(rangeSum - range);
+            mWaterfallColors = null;
+            repaintWaterfallImage();
+        });
+        StackPane.setAlignment(mWaterfallRangeSlider, Pos.CENTER_RIGHT);
+        mWaterfallSection.getChildren().add(mWaterfallRangeSlider);
+
+        mWaterfallAveraging.addListener((ob, ov, nv) -> mWaterfallScaler.setAveraging(nv.intValue()));
 
         mSpectrumEnabled.addListener((ob, ov, nv) -> updateSections());
         mWaterfallEnabled.addListener((ob, ov, nv) -> updateSections());
@@ -261,6 +303,7 @@ public class SpectralDisplay extends StackPane
         SpectralDisplayTheme theme = getTheme();
         mDisabledPane.setBackground(new Background(new BackgroundFill(theme.getBackground(), null, null)));
         disabledLabel.setTextFill(theme.getLine());
+        mWaterfallColors = null;
         repaintWaterfallImage();
         requestRender();
     }
@@ -358,6 +401,42 @@ public class SpectralDisplay extends StackPane
     }
 
     /**
+     * Waterfall dB range from the noise floor to the top of the color palette, from WaterfallScaler.RANGE_MINIMUM to
+     * RANGE_MAXIMUM.  Smaller ranges give weak signals more contrast.  JavaFX thread only.
+     */
+    public IntegerProperty waterfallRangeProperty()
+    {
+        return mWaterfallRange;
+    }
+
+    /**
+     * Number of DFT frames averaged into each waterfall row, from WaterfallScaler.AVERAGING_MINIMUM to
+     * AVERAGING_MAXIMUM.  Averaging steadies the noise floor so weak signals stand out, but the waterfall scrolls
+     * more slowly.
+     */
+    public IntegerProperty waterfallAveragingProperty()
+    {
+        return mWaterfallAveraging;
+    }
+
+    /**
+     * Waterfall gain slider along the right edge of the waterfall section.
+     */
+    public EdgeSlider getWaterfallRangeSlider()
+    {
+        return mWaterfallRangeSlider;
+    }
+
+    /**
+     * Adds a control on top of the spectrum or the waterfall section, for example an EdgeSlider.  Set its StackPane
+     * alignment and margin before adding it.  The control is hidden with its section.
+     */
+    public void addSectionOverlay(DisplaySection section, javafx.scene.Node node)
+    {
+        (section == DisplaySection.SPECTRUM ? mSpectrumSection : mWaterfallSection).getChildren().add(node);
+    }
+
+    /**
      * Divider position (0 - 1.0) between the spectrum and the waterfall when both are showing.
      */
     public DoubleProperty dividerPositionProperty()
@@ -395,6 +474,7 @@ public class SpectralDisplay extends StackPane
     public void clear()
     {
         mAverager.reset();
+        mWaterfallScaler.reset();
 
         mLatestSpectrum.set(null);
         mWaterfallRows.clear();
@@ -412,10 +492,11 @@ public class SpectralDisplay extends StackPane
             return;
         }
 
-        //The first DFT results on startup can be NaN or infinite
+        //The first DFT results on startup can be NaN or infinite - drop them.  Replacing them with zeros would add
+        //full scale (0 dBFS) values to the spectrum averaging and the waterfall floor tracking.
         if(Float.isNaN(bins[0]) || Float.isInfinite(bins[0]))
         {
-            bins = new float[bins.length];
+            return;
         }
 
         if(mSpectrumActive)
@@ -425,11 +506,16 @@ public class SpectralDisplay extends StackPane
 
         if(mWaterfallActive && !mWaterfallPausedFlag)
         {
-            mWaterfallRows.offer(toWaterfallRow(bins));
+            byte[] row = mWaterfallScaler.process(bins);
 
-            while(mWaterfallRows.size() > WATERFALL_QUEUE_LIMIT)
+            if(row != null)
             {
-                mWaterfallRows.poll();
+                mWaterfallRows.offer(row);
+
+                while(mWaterfallRows.size() > WATERFALL_QUEUE_LIMIT)
+                {
+                    mWaterfallRows.poll();
+                }
             }
         }
     }
@@ -452,33 +538,7 @@ public class SpectralDisplay extends StackPane
         mLatestSpectrum.set(null);
         mWaterfallRows.clear();
         mWaterfallTiles = null;
-        mWaterfallIndexes = null;
-    }
-
-    /**
-     * Converts the DFT results to a row of waterfall intensity indexes (0 - 255).  Each bin is scaled relative to the
-     * average bin value so the noise floor stays at the bottom of the palette regardless of tuner gain.
-     */
-    private static byte[] toWaterfallRow(float[] bins)
-    {
-        double sum = 0.0;
-
-        for(float bin: bins)
-        {
-            sum += bin;
-        }
-
-        float average = (float)(sum / bins.length) - 1.0f;
-        float scale = 256.0f / average;
-        byte[] row = new byte[bins.length];
-
-        for(int x = 0; x < bins.length; x++)
-        {
-            int value = (int)((average - bins[x]) * scale);
-            row[x] = (byte)Math.max(0, Math.min(255, value));
-        }
-
-        return row;
+        mWaterfallLevels = null;
     }
 
     /**
@@ -491,11 +551,11 @@ public class SpectralDisplay extends StackPane
         mSpectrumActive = spectrum;
         mWaterfallActive = waterfall;
 
-        List<Pane> items = new ArrayList<>();
+        List<StackPane> items = new ArrayList<>();
 
         if(spectrum)
         {
-            items.add(mSpectrumPane);
+            items.add(mSpectrumSection);
         }
         else
         {
@@ -505,12 +565,15 @@ public class SpectralDisplay extends StackPane
 
         if(waterfall)
         {
-            items.add(mWaterfallPane);
+            items.add(mWaterfallSection);
         }
         else
         {
             mWaterfallRows.clear();
         }
+
+        //Keep the waterfall slider below the configuration panel tab when the waterfall is at the top
+        StackPane.setMargin(mWaterfallRangeSlider, new Insets(spectrum ? 8 : 44, 0, 8, 0));
 
         mSplitPane.getItems().setAll(items);
         mSplitPane.setVisible(!items.isEmpty());
@@ -543,7 +606,7 @@ public class SpectralDisplay extends StackPane
             if(mWaterfallTiles != null)
             {
                 mWaterfallTiles = null;
-                mWaterfallIndexes = null;
+                mWaterfallLevels = null;
                 mWaterfallWriteRow = 0;
             }
 
@@ -581,8 +644,8 @@ public class SpectralDisplay extends StackPane
 
     /**
      * Writes the row into the waterfall ring buffer.  The newest row is at mWaterfallWriteRow and older rows follow
-     * it, wrapping around the end of the image.  The intensity indexes are kept alongside the image so the history
-     * can be recolored when the theme changes.
+     * it, wrapping around the end of the image.  The level codes are kept alongside the image so the history
+     * can be recolored when the theme or the waterfall range changes.
      */
     private void writeWaterfallRow(byte[] row)
     {
@@ -590,7 +653,7 @@ public class SpectralDisplay extends StackPane
 
         if(mWaterfallTiles == null || mWaterfallWidth != row.length)
         {
-            mWaterfallIndexes = new byte[row.length * rows];
+            mWaterfallLevels = new byte[row.length * rows];
             createWaterfallTiles(row.length, rows);
             mWaterfallWriteRow = 0;
             repaintWaterfallImage();
@@ -602,7 +665,7 @@ public class SpectralDisplay extends StackPane
 
         int width = row.length;
         mWaterfallWriteRow = (mWaterfallWriteRow - 1 + mWaterfallHeight) % mWaterfallHeight;
-        System.arraycopy(row, 0, mWaterfallIndexes, mWaterfallWriteRow * width, width);
+        System.arraycopy(row, 0, mWaterfallLevels, mWaterfallWriteRow * width, width);
         writeWaterfallPixels(mWaterfallWriteRow);
     }
 
@@ -625,7 +688,7 @@ public class SpectralDisplay extends StackPane
     }
 
     /**
-     * Colors one row of the waterfall image tiles from the stored intensity indexes.
+     * Colors one row of the waterfall image tiles from the stored level codes.
      */
     private void writeWaterfallPixels(int imageRow)
     {
@@ -636,12 +699,12 @@ public class SpectralDisplay extends StackPane
             mWaterfallPixels = new int[width];
         }
 
-        SpectralDisplayTheme theme = getTheme();
+        int[] colors = getWaterfallColors();
         int offset = imageRow * width;
 
         for(int x = 0; x < width; x++)
         {
-            mWaterfallPixels[x] = theme.getWaterfallColor(mWaterfallIndexes[offset + x]);
+            mWaterfallPixels[x] = colors[mWaterfallLevels[offset + x] & 0xFF];
         }
 
         for(int tile = 0; tile < mWaterfallTiles.length; tile++)
@@ -653,11 +716,33 @@ public class SpectralDisplay extends StackPane
     }
 
     /**
-     * Recolors the whole waterfall image from the stored intensity indexes using the current theme.
+     * ARGB color for each waterfall level code, for the current theme and range.
+     */
+    private int[] getWaterfallColors()
+    {
+        if(mWaterfallColors == null)
+        {
+            SpectralDisplayTheme theme = getTheme();
+            int range = mWaterfallRange.get();
+            int[] colors = new int[256];
+
+            for(int level = 0; level < colors.length; level++)
+            {
+                colors[level] = theme.getWaterfallColor(WaterfallScaler.paletteIndex(level, range));
+            }
+
+            mWaterfallColors = colors;
+        }
+
+        return mWaterfallColors;
+    }
+
+    /**
+     * Recolors the whole waterfall image from the stored level codes using the current theme and range.
      */
     private void repaintWaterfallImage()
     {
-        if(mWaterfallTiles != null && mWaterfallIndexes != null)
+        if(mWaterfallTiles != null && mWaterfallLevels != null)
         {
             for(int y = 0; y < mWaterfallHeight; y++)
             {
@@ -689,10 +774,10 @@ public class SpectralDisplay extends StackPane
         for(int y = 0; y < previousHeight; y++)
         {
             int source = (mWaterfallWriteRow + y) % previousHeight;
-            System.arraycopy(mWaterfallIndexes, source * width, indexes, y * width, width);
+            System.arraycopy(mWaterfallLevels, source * width, indexes, y * width, width);
         }
 
-        mWaterfallIndexes = indexes;
+        mWaterfallLevels = indexes;
         createWaterfallTiles(width, rows);
         mWaterfallWriteRow = 0;
         repaintWaterfallImage();
