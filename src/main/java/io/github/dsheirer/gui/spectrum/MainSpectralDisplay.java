@@ -28,6 +28,7 @@ import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.scene.layout.StackPane;
@@ -225,6 +226,35 @@ public class MainSpectralDisplay extends StackPane
             if(display != null)
             {
                 display.showTuner(tuner);
+            }
+        });
+    }
+
+    /**
+     * Zooms the display to the zoom level and centres it on the frequency.  Used when a channel's "show in
+     * waterfall" request names the channel frequency.  Queued on the display thread after showTuner() so the tuner's
+     * frequency range is known, then applied on the FX thread; the zoom is reset first so it always re-centres.
+     * Can be called from any thread and doesn't block.
+     * @param zoom level (0 = full bandwidth, each level doubles)
+     * @param frequency to centre
+     */
+    public void zoomTo(int zoom, long frequency)
+    {
+        mExecutor.submit(() -> {
+            TunerSpectralDisplay display;
+
+            synchronized(MainSpectralDisplay.this)
+            {
+                display = mDisplay;
+            }
+
+            if(display != null)
+            {
+                Platform.runLater(() -> {
+                    SpectralDisplayModel model = display.getSpectralDisplay().getModel();
+                    model.resetZoom();
+                    model.setZoom(zoom, frequency, 0.5);
+                });
             }
         });
     }
