@@ -42,6 +42,7 @@ public class ChannelDFTFactory
             case VECTOR_SIMD_PREFERRED:
                 return new VectorChannelDFT(channelCount);
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarChannelDFT(channelCount);
         }
