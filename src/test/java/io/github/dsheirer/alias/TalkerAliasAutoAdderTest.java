@@ -255,6 +255,118 @@ public class TalkerAliasAutoAdderTest
         assertNull(alias(RADIO), "local radio with the same value isn't aliased");
     }
 
+    /**
+     * Fully qualified form of RADIO, with a local address that matches the radio ID.
+     */
+    private static final RadioIdentifier QUALIFIED = APCO25FullyQualifiedRadioIdentifier.createFrom(1234, 0xBEE00,
+        0x123, 1234);
+
+    private void assertSingleAliasForBothForms(String name)
+    {
+        assertEquals(1, aliases().size(), "one alias for both radio identifier forms");
+        Alias alias = aliases().get(0);
+        assertEquals(name, alias.getName());
+        assertEquals(2, alias.getAliasIdentifiers().size());
+        AliasList aliasList = mAliasModel.getAliasList(LIST);
+        assertEquals(List.of(alias), aliasList.getAliases(RADIO), "alias list finds the simple radio");
+        assertEquals(List.of(alias), aliasList.getAliases(QUALIFIED), "alias list finds the fully qualified radio");
+    }
+
+    @Test
+    public void fullyQualifiedRadioAddedToSimpleRadioAlias()
+    {
+        decode(RADIO, "ENGINE 12");
+        decode(QUALIFIED, "ENGINE 12");
+        assertSingleAliasForBothForms("ENGINE 12");
+        decode(QUALIFIED, "ENGINE 12");
+        decode(RADIO, "ENGINE 12");
+        assertSingleAliasForBothForms("ENGINE 12");
+    }
+
+    @Test
+    public void simpleRadioAddedToFullyQualifiedRadioAlias()
+    {
+        decode(QUALIFIED, "ENGINE 12");
+        decode(RADIO, "ENGINE 12");
+        assertSingleAliasForBothForms("ENGINE 12");
+    }
+
+    @Test
+    public void mergedAliasIsStillRenamed()
+    {
+        decode(RADIO, "ENGINE 1");
+        decode(QUALIFIED, "ENGINE 12 OFFICER");
+        assertSingleAliasForBothForms("ENGINE 12 OFFICER");
+        decode(RADIO, "LADDER 3");
+        decode(RADIO, "LADDER 3");
+        assertSingleAliasForBothForms("LADDER 3");
+        decode(QUALIFIED, "RESCUE 5");
+        decode(QUALIFIED, "RESCUE 5");
+        assertSingleAliasForBothForms("RESCUE 5");
+    }
+
+    @Test
+    public void roamingRadioIsNotAddedToHomeRadioIdAlias()
+    {
+        RadioIdentifier home = APCO25RadioIdentifier.createFrom(777);
+        decode(home, "LOCAL 777");
+        decode(APCO25FullyQualifiedRadioIdentifier.createFrom(1234, 0xBEE00, 0x123, 777), "ROAMER");
+        assertEquals(2, aliases().size());
+        assertEquals("LOCAL 777", alias(home).getName());
+        assertEquals(1, alias(home).getAliasIdentifiers().size());
+    }
+
+    @Test
+    public void simpleRadioIsNotAddedToAmbiguousFullyQualifiedAliases()
+    {
+        decode(QUALIFIED, "ENGINE 12");
+        decode(APCO25FullyQualifiedRadioIdentifier.createFrom(1234, 0xBEE01, 0x456, 1234), "OTHER 12");
+        decode(RADIO, "ENGINE 12");
+        assertEquals(3, aliases().size());
+        assertEquals(1, alias(RADIO).getAliasIdentifiers().size());
+    }
+
+    private Alias userAlias(Radio radio)
+    {
+        Alias alias = new Alias("Custom Name");
+        alias.setAliasListName(LIST);
+        alias.setGroup("Apparatus");
+        alias.addAliasID(radio);
+        mAliasModel.addAlias(alias);
+        return alias;
+    }
+
+    @Test
+    public void userAliasIsGivenFullyQualifiedRadio()
+    {
+        Alias alias = userAlias(new Radio(Protocol.APCO25, 1234));
+        decode(QUALIFIED, "ENGINE 12");
+        decode(QUALIFIED, "ENGINE 12");
+        assertSingleAliasForBothForms("Custom Name");
+        assertEquals("Apparatus", alias.getGroup());
+    }
+
+    @Test
+    public void userAliasIsGivenSimpleRadio()
+    {
+        Alias alias = userAlias(new P25FullyQualifiedRadio(0xBEE00, 0x123, 1234));
+        decode(RADIO, "ENGINE 12");
+        decode(RADIO, "ENGINE 12");
+        assertSingleAliasForBothForms("Custom Name");
+        assertEquals("Apparatus", alias.getGroup());
+    }
+
+    @Test
+    public void multiIdentifierUserAliasIsNotGivenFullyQualifiedRadio()
+    {
+        Alias alias = userAlias(new Radio(Protocol.APCO25, 1234));
+        alias.addAliasID(new Talkgroup(Protocol.APCO25, 100));
+        mAliasModel.getAliasList(LIST).updateAlias(alias);
+        decode(QUALIFIED, "ENGINE 12");
+        assertEquals(2, aliases().size());
+        assertEquals(2, alias.getAliasIdentifiers().size());
+    }
+
     @Test
     public void decide()
     {

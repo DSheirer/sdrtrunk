@@ -52,7 +52,9 @@ import org.slf4j.LoggerFactory;
  * </ul>
  *
  * Only aliases whose only identifier is the radio are created or renamed.  An alias that combines the radio with other
- * identifiers (e.g. several radios or talkgroups) is left alone.
+ * identifiers (e.g. several radios or talkgroups) is left alone.  The exception is a P25 radio's simple and fully
+ * qualified radio identifiers with the same radio ID: the second form decoded is added to the alias for the first
+ * form, including a user alias outside the managed group, instead of creating a second alias for the same radio.
  *
  * This class is thread safe.  Talker aliases are received on decoder threads and the alias model is updated on the
  * JavaFX application thread.
@@ -199,6 +201,21 @@ public class TalkerAliasAutoAdder implements BiConsumer<RadioIdentifier,TalkerAl
     {
         AliasList aliasList = mAliasModel.getAliasList(mAliasListName);
         Alias existing = findExactMatch(aliasList.getAliases(radio), aliasId);
+
+        if(existing == null)
+        {
+            existing = findCompanion(aliasList.aliases(), radio, aliasId);
+
+            if(existing != null)
+            {
+                //Add the radio to the alias for the same radio's other identifier form, then continue below to
+                //compare the talker alias with the alias name (only managed aliases are renamed).
+                existing.addAliasID(aliasId);
+                aliasList.updateAlias(existing);
+                mLog.info("Talker alias radio [" + aliasId + "] added to existing alias [" + existing.getName() +
+                    "] in alias list [" + mAliasListName + "]");
+            }
+        }
 
         if(existing == null)
         {
@@ -408,22 +425,114 @@ public class TalkerAliasAutoAdder implements BiConsumer<RadioIdentifier,TalkerAl
     }
 
     /**
-     * Number of identifiers (e.g. radios, talkgroups) in the alias, excluding audio settings like priority, record and
-     * streaming.
+     * Finds the alias for the other identifier form of a P25 radio, so that a radio's simple and fully qualified
+     * identifiers share one alias instead of creating an alias for each.  This includes user aliases outside the
+     * managed group, so that either identifier maps to the user's alias.  The user alias is never renamed.
+     * <ul>
+     *     <li>Fully qualified radio: the alias whose only identifier is the simple radio with the same radio
+     *     ID.  Only when the fully qualified radio isn't using a different local address (e.g. a roaming radio), since
+     *     the radio ID then belongs to the home system and doesn't identify the radio on this system.</li>
+     *     <li>Simple radio: the alias whose only identifier is a fully qualified radio with the same radio ID.  None
+     *     when more than one fully qualified radio alias matches.</li>
+     * </ul>
+     * @param aliases to search
+     * @param radio decoded radio identifier
+     * @param aliasId created from the decoded radio
+     * @return companion alias or null.
      */
-    private static int getIdentityCount(Alias alias)
+    @VisibleForTesting
+    static Alias findCompanion(List<Alias> aliases, RadioIdentifier radio, Radio aliasId)
     {
-        int count = 0;
+        if(aliases == null || aliasId.getProtocol() != Protocol.APCO25)
+        {
+            return null;
+        }
+
+        boolean fullyQualified = aliasId instanceof P25FullyQualifiedRadio;
+
+        if(fullyQualified && !(radio instanceof FullyQualifiedRadioIdentifier fqri &&
+            fqri.getValue() != null && fqri.getValue() == fqri.getRadio()))
+        {
+            return null;
+        }
+
+        Alias match = null;
+
+        for(Alias alias: aliases)
+        {
+            if(getSoleIdentity(alias) instanceof Radio candidate &&
+                (candidate instanceof P25FullyQualifiedRadio) != fullyQualified &&
+                candidate.getProtocol() == Protocol.APCO25 && candidate.getValue() == aliasId.getValue())
+            {
+                if(match != null)
+                {
+                    //Ambiguous - more than one candidate.
+                    return null;
+                }
+
+                match = alias;
+            }
+        }
+
+        return match;
+    }
+
+    /**
+     * Identifier of an alias that has exactly one identifier, excluding audio settings.
+     * @return identifier or null if the alias has none or more than one.
+     */
+    private static AliasID getSoleIdentity(Alias alias)
+    {
+        AliasID sole = null;
 
         for(AliasID id: alias.getAliasIdentifiers())
         {
             if(!id.isAudioIdentifier())
             {
-                count++;
+                if(sole != null)
+                {
+                    return null;
+                }
+
+                sole = id;
             }
         }
 
-        return count;
+        return sole;
+    }
+
+    /**
+     * Number of identities (e.g. radios, talkgroups) in the alias, excluding audio settings like priority, record and
+     * streaming.  A P25 radio's simple and fully qualified radio identifiers with the same radio ID count as one
+     * identity.
+     */
+    private static int getIdentityCount(Alias alias)
+    {
+        List<AliasID> ids = alias.getAliasIdentifiers().stream().filter(id -> !id.isAudioIdentifier()).toList();
+
+        if(ids.size() == 2 && isRadioPair(ids.get(0), ids.get(1)))
+        {
+            return 1;
+        }
+
+        return ids.size();
+    }
+
+    /**
+     * Indicates if the identifiers are the simple and fully qualified forms of the same P25 radio ID.
+     */
+    private static boolean isRadioPair(AliasID a, AliasID b)
+    {
+        if(a instanceof P25FullyQualifiedRadio)
+        {
+            AliasID swap = a;
+            a = b;
+            b = swap;
+        }
+
+        return a instanceof Radio simple && !(a instanceof P25FullyQualifiedRadio) &&
+            b instanceof P25FullyQualifiedRadio fqr && simple.getProtocol() == Protocol.APCO25 &&
+            simple.getValue() == fqr.getValue();
     }
 
     private static String getKey(Radio aliasId)
