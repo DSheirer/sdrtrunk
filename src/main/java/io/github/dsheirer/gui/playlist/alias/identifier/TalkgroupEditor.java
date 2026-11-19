@@ -272,6 +272,10 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
                 "Format: 0 - 65535"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
                 "Format: 0 - FFFF"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.SMARTNET, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
+                "Format: 0 - 65535"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.SMARTNET, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
+                "Format: 0 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.DECIMAL, new IntegerFormatter(0,16777215),
                 "Format: 0 - FFFFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.FORMATTED, new IntegerFormatter(0,16777215),

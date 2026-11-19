@@ -304,6 +304,10 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
                 new IntegerFormatter(0,0x7FFFFF), "Format: 0 - 8388607"));
         details.add(new RadioIdDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0x7FFFFF),
                 new HexFormatter(0,0x7FFFFF), "Format: 0 - 7FFFFF"));
+        details.add(new RadioIdDetail(Protocol.SMARTNET, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
+                new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
+        details.add(new RadioIdDetail(Protocol.SMARTNET, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
+                new HexFormatter(0,0xFFFF), "Format: 0 - FFFF"));
         details.add(new RadioIdDetail(Protocol.UNKNOWN, IntegerFormat.DECIMAL, new IntegerFormatter(0,16777215),
                 new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
         details.add(new RadioIdDetail(Protocol.UNKNOWN, IntegerFormat.FORMATTED, new IntegerFormatter(0,16777215),
