@@ -42,6 +42,7 @@ public class EDACSMessageFramer
     private final boolean[] mPayload = new boolean[PAYLOAD_BITS];
     private int mPayloadIndex;
     private long mBitCount;
+    private int mSystemKeyMask;
 
     //Statistics
     private long mSyncCount, mValidCount, mInvalidCount;
@@ -49,6 +50,16 @@ public class EDACSMessageFramer
     public EDACSMessageFramer(Consumer<EDACSMessage> listener)
     {
         mListener = listener;
+    }
+
+    /**
+     * Sets the EDACS System Key (ESK).  Systems with an ESK XOR the top 8 bits of each 28-bit message with it; the key
+     * is removed from each message after the BCH check, which covers the transmitted (keyed) bits.
+     * @param systemKey 0 for none, or the key (0xA0 is the value in use)
+     */
+    public void setSystemKey(int systemKey)
+    {
+        mSystemKeyMask = (systemKey & 0xFF) << 20;
     }
 
     /**
@@ -118,14 +129,14 @@ public class EDACSMessageFramer
             if(EDACSBCH.isValid(second))
             {
                 mValidCount++;
-                message2 = (int)(second >> EDACSBCH.CHECK_BITS);
+                message2 = (int)(second >> EDACSBCH.CHECK_BITS) ^ mSystemKeyMask;
             }
             else
             {
                 mInvalidCount++;
             }
 
-            mListener.accept(new EDACSMessage((int)(first >> EDACSBCH.CHECK_BITS), message2, timestamp,
+            mListener.accept(new EDACSMessage((int)(first >> EDACSBCH.CHECK_BITS) ^ mSystemKeyMask, message2, timestamp,
                 corrected[0]));
         }
         else

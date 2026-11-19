@@ -394,7 +394,7 @@ public class DecoderFactory
     {
         if(channelType == ChannelType.STANDARD)
         {
-            modules.add(new EDACSDecoder());
+            modules.add(new EDACSDecoder(config.getSystemKey()));
             EDACSTrafficChannelManager trafficChannelManager = new EDACSTrafficChannelManager(channel);
             modules.add(trafficChannelManager);
             EDACSDecoderState edacsState = new EDACSDecoderState(channelType, trafficChannelManager, config);

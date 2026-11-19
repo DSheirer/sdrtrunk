@@ -43,6 +43,23 @@ public class EDACSDecoder extends Decoder implements IComplexSamplesListener, Li
     private double mSampleRate;
     private long mTimestamp;
 
+    /**
+     * Constructs an instance for a system without an EDACS System Key
+     */
+    public EDACSDecoder()
+    {
+        this(0);
+    }
+
+    /**
+     * Constructs an instance
+     * @param systemKey EDACS System Key (ESK), 0 for none
+     */
+    public EDACSDecoder(int systemKey)
+    {
+        mFramer.setSystemKey(systemKey);
+    }
+
     @Override
     public DecoderType getDecoderType()
     {

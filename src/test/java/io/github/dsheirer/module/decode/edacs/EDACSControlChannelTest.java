@@ -155,6 +155,37 @@ public class EDACSControlChannelTest
     }
 
     /**
+     * Test: with an EDACS System Key (ESK) the top 8 bits of each message are XORed with the key on the air; the
+     * framer removes it after the BCH check.  Without the key set, the same frames decode to the wrong values.
+     */
+    @Test
+    void testSystemKey()
+    {
+        int key = 0xA0 << 20;
+        boolean[] keyed = frame(0x18B0128 ^ key, 0x1A0116D ^ key);
+
+        List<EDACSMessage> withKey = new ArrayList<>();
+        EDACSMessageFramer keyedFramer = new EDACSMessageFramer(withKey::add);
+        keyedFramer.setSystemKey(0xA0);
+
+        List<EDACSMessage> withoutKey = new ArrayList<>();
+        EDACSMessageFramer plainFramer = new EDACSMessageFramer(withoutKey::add);
+
+        for(boolean b : keyed)
+        {
+            keyedFramer.process(b, 0);
+            plainFramer.process(b, 0);
+        }
+
+        assertEquals(1, withKey.size());
+        assertEquals(296, withKey.get(0).getGroup());
+        assertEquals(4461, withKey.get(0).getSource());
+
+        assertEquals(1, withoutKey.size(), "the keyed frame still passes the BCH check");
+        assertEquals(0x18B0128 ^ key, withoutKey.get(0).getMessage1());
+    }
+
+    /**
      * Test: demodulator recovers frames from synthetic 9600 baud FSK at 50 kHz with a slight clock offset and noise.
      */
     @Test
