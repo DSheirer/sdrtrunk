@@ -39,13 +39,23 @@ public class SpectralDisplayThemeTest
     }
 
     @Test
-    void classicPaletteMatchesTheOriginalWaterfall()
+    void classicPaletteUsesTheOriginalWaterfallColors()
     {
         int[] palette = WaterfallPalette.classic();
-        assertEquals(0xFF00007F, palette[0]);
-        assertEquals(0xFF0000BF, palette[16]);
-        assertEquals(0xFFFFFF00, palette[60]);
+        assertEquals(0xFF0000BF, palette[63]);
+        assertEquals(0xFFFFFF00, palette[100]);
         assertEquals(0xFFFF0000, palette[255]);
+    }
+
+    @Test
+    void classicPaletteHasDistinctColorsNearTheNoiseFloor()
+    {
+        int[] palette = WaterfallPalette.classic();
+
+        for(int index = 1; index < 64; index++)
+        {
+            assertTrue((palette[index] & 0xFF) > (palette[index - 1] & 0xFF), "index " + index);
+        }
     }
 
     @Test

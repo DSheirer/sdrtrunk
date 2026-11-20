@@ -353,6 +353,27 @@ public class SpectralDisplayConfigPanel extends VBox
                 "falling slowly"));
         row = addRow(grid, row, peakHold.label(), peakHold.control());
 
+        //Waterfall
+        grid.add(sectionLabel("Waterfall"), 0, row++, 2, 1);
+        ComboBox<Integer> waterfallAveraging = new ComboBox<>();
+        for(int frames = WaterfallScaler.AVERAGING_MINIMUM; frames <= WaterfallScaler.AVERAGING_MAXIMUM; frames++)
+        {
+            waterfallAveraging.getItems().add(frames);
+        }
+        waterfallAveraging.setMaxWidth(Double.MAX_VALUE);
+        waterfallAveraging.setConverter(converter(frames -> frames == 1 ? "Off" : frames + " frames"));
+        waterfallAveraging.setValue(mSpectralDisplay.waterfallAveragingProperty().get());
+        waterfallAveraging.valueProperty().addListener((ob, ov, nv) -> {
+            if(nv != null)
+            {
+                mSpectralDisplay.waterfallAveragingProperty().set(nv);
+            }
+        });
+        waterfallAveraging.setTooltip(new Tooltip("FFT frames averaged into each waterfall row.  Averaging steadies " +
+                "the noise floor so weak signals stand out, but the waterfall scrolls more slowly."));
+        trackPopup(waterfallAveraging.showingProperty());
+        row = addRow(grid, row, "Averaging", waterfallAveraging);
+
         //Layer settings
         for(SpectralDisplayLayer layer: mSpectralDisplay.getLayers())
         {
