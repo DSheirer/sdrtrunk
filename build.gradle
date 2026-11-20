@@ -213,6 +213,14 @@ def jvmArgsLinux =
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
          '--enable-native-access=ALL-UNNAMED'] //Suppress warnings for FFM API native calls (tuner libraries)
 
+/**
+ * Startup splash screen image.  The JVM shows it before any application code runs and closes it when the main window
+ * opens.  The release launch scripts load it from the runtime image lib folder (see the runtime task below) and the
+ * gradle run task loads it from the resources folder.  The JVM picks up the @2x image on HiDPI displays.
+ */
+def splashImages = ['sdrtrunk-splash.png', 'sdrtrunk-splash@2x.png']
+def splashResourceDir = 'src/main/resources/images/sdrtrunk'
+
 application {
     mainClass = "io.github.dsheirer.gui.SDRTrunk"
 
@@ -222,6 +230,10 @@ application {
     else {
         applicationDefaultJvmArgs = jvmArgsLinux
     }
+}
+
+tasks.named('run') {
+    jvmArgs "-splash:${file(splashResourceDir + '/' + splashImages[0]).absolutePath}"
 }
 
 test {
@@ -288,8 +300,8 @@ def jdk_download_windows_aarch64 = jdk_download_base + "windows-aarch64-full.zip
  * @return configured task.
  */
 def configure(RuntimeZipTask rt, List<String> jvmArgs) {
-    //Use the correct set of JVM arguments
-    rt.extension.launcherData.get().jvmArgs = jvmArgs
+    //Use the correct set of JVM arguments, plus the startup splash screen that the runtime task copies to lib
+    rt.extension.launcherData.get().jvmArgs = jvmArgs + ['-splash:{{BIN_DIR}}/../lib/sdrtrunk-splash.png']
 
     //Additional modules to include with auto-detected modules.
     //jdk.charsets - NXDN BIG5 encoding support
@@ -384,6 +396,22 @@ tasks.named('runtime') {rt ->
             }
             logger.lifecycle("Native strip: removed ${String.format('%.1f', total / 1048576)} MB of other " +
                     "platform native libraries from [${target}]")
+        }
+    }
+}
+
+/**
+ * Copies the startup splash screen images into the lib folder of each runtime target image, where the launch scripts
+ * load them from (-splash:{{BIN_DIR}}/../lib/...).
+ */
+tasks.named('runtime') {rt ->
+    rt.doLast {
+        rt.targetPlatforms.get().keySet().each { target ->
+            def lib = new File(rt.imageDir.asFile, "${project.name}-${target}/lib")
+            splashImages.each { name ->
+                java.nio.file.Files.copy(file(splashResourceDir + '/' + name).toPath(), new File(lib, name).toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
         }
     }
 }

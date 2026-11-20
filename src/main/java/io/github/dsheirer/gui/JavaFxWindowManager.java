@@ -181,6 +181,7 @@ public class JavaFxWindowManager extends Application
         {
             mJFXPanel = new JFXPanel();
             Platform.setImplicitExit(false);
+            ApplicationIcons.installJavaFx();
         }
     }
 
