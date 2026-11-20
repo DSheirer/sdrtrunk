@@ -19,13 +19,8 @@
 
 package io.github.dsheirer.gui;
 
-import java.awt.AWTEvent;
-import java.awt.Dialog;
-import java.awt.Frame;
 import java.awt.Image;
 import java.awt.Taskbar;
-import java.awt.Toolkit;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -40,9 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * sdrtrunk application icon for Swing frames and dialogs, JavaFX stages and the macOS Dock.
+ * sdrtrunk application icon for JavaFX stages and the macOS Dock.
  *
- * Call installSwing() once at startup and installJavaFx() once the JavaFX toolkit is running.  After that, each
+ * Call installJavaFx() once the JavaFX toolkit is running, which also sets the macOS Dock icon.  After that, each
  * window that opens without its own icon gets the sdrtrunk icon, so individual windows don't have to set it.
  */
 public final class ApplicationIcons
@@ -54,7 +49,7 @@ public final class ApplicationIcons
 
     private static List<Image> sAwtImages;
     private static List<javafx.scene.image.Image> sFxImages;
-    private static boolean sSwingInstalled;
+    private static boolean sTaskbarInstalled;
     private static boolean sJavaFxInstalled;
 
     private ApplicationIcons()
@@ -62,7 +57,7 @@ public final class ApplicationIcons
     }
 
     /**
-     * Application icon in each available size, smallest first, for Swing/AWT windows.
+     * Application icon in each available size, smallest first, as AWT images for the macOS Dock.
      * @return images, or an empty list if the icon resources can't be loaded.
      */
     public static synchronized List<Image> getAwtImages()
@@ -142,17 +137,6 @@ public final class ApplicationIcons
     }
 
     /**
-     * Sets the application icon on the Swing/AWT window if it doesn't already have one.
-     */
-    public static void apply(java.awt.Window window)
-    {
-        if(window != null && window.getIconImages().isEmpty() && !getAwtImages().isEmpty())
-        {
-            window.setIconImages(getAwtImages());
-        }
-    }
-
-    /**
      * Sets the application icon on the JavaFX stage if it doesn't already have one.  Call on the FX thread.
      */
     public static void apply(Stage stage)
@@ -164,27 +148,18 @@ public final class ApplicationIcons
     }
 
     /**
-     * Sets the macOS Dock icon and gives each Swing frame and dialog that opens without an icon the application
-     * icon.  Safe to call more than once.  Does nothing in a headless environment.
+     * Sets the macOS Dock icon.  Windows and Linux take the icon from each window instead.  Safe to call more than
+     * once.  Does nothing in a headless environment.
      */
-    public static synchronized void installSwing()
+    public static synchronized void installTaskbarIcon()
     {
-        if(sSwingInstalled || java.awt.GraphicsEnvironment.isHeadless())
+        if(sTaskbarInstalled || java.awt.GraphicsEnvironment.isHeadless())
         {
             return;
         }
 
-        sSwingInstalled = true;
+        sTaskbarInstalled = true;
 
-        Toolkit.getDefaultToolkit().addAWTEventListener(event -> {
-            if(event.getID() == WindowEvent.WINDOW_OPENED &&
-                (event.getSource() instanceof Frame || event.getSource() instanceof Dialog))
-            {
-                apply((java.awt.Window)event.getSource());
-            }
-        }, AWTEvent.WINDOW_EVENT_MASK);
-
-        //The Dock icon on macOS.  Windows and Linux take the icon from each window instead.
         try
         {
             if(Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE))
@@ -219,6 +194,7 @@ public final class ApplicationIcons
         }
 
         sJavaFxInstalled = true;
+        installTaskbarIcon();
 
         Platform.runLater(() -> {
             for(Window window: Window.getWindows())
@@ -243,7 +219,7 @@ public final class ApplicationIcons
      */
     private static void onFxWindowShown(Window window)
     {
-        //Only stages are top-level windows.  JFXPanel content and popups (menus, tooltips) are other Window types.
+        //Only stages are top-level windows.  Popups (menus, tooltips) are other Window types.
         if(window instanceof Stage stage)
         {
             apply(stage);

@@ -34,6 +34,7 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -233,7 +234,25 @@ public class SpectralDisplayConfigPanel extends VBox
         pinButton.getStyleClass().add("spectral-config-pin");
         pinButton.selectedProperty().bindBidirectional(mPinned);
         pinButton.setTooltip(new Tooltip("Keep the settings panel open"));
-        HBox header = new HBox(6, headerIcon, title, spacer, pinButton);
+        IconNode hideIcon = new IconNode(FontAwesome.EYE_SLASH);
+        hideIcon.setIconSize(12);
+        hideIcon.getStyleClass().add("spectral-config-icon");
+        Button hideButton = new Button(null, hideIcon);
+        hideButton.getStyleClass().add("spectral-config-pin");
+        hideButton.setTooltip(new Tooltip("Hide the spectrum and waterfall.  A hidden display uses no processing " +
+            "or memory.  Show it again from the View menu or the bar at the top of the window."));
+        hideButton.setAccessibleText("Hide spectrum and waterfall");
+        hideButton.visibleProperty().bind(mHost.hideHandlerProperty().isNotNull());
+        hideButton.managedProperty().bind(hideButton.visibleProperty());
+        hideButton.setOnAction(event -> {
+            Runnable handler = mHost.hideHandlerProperty().get();
+
+            if(handler != null)
+            {
+                handler.run();
+            }
+        });
+        HBox header = new HBox(6, headerIcon, title, spacer, hideButton, pinButton);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(2, 2, 4, 4));
 

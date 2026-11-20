@@ -1,0 +1,112 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* Streaming status panel.  Colors follow the theme's looked-up colors except for the status chips, which use solid
+   colors with matching text so that they read the same in every theme.  The dark theme fills each label's .text
+   node directly, so chip text colors are set on the .text node as well (see audio_panel.css). */
+
+.broadcast-status-view
+{
+    -fx-background-color: -fx-background;
+}
+
+.broadcast-status-view .broadcast-toolbar
+{
+    -fx-padding: 4 8 4 8;
+}
+
+.broadcast-status-view .broadcast-title
+{
+    -fx-font-weight: bold;
+    -fx-graphic-text-gap: 6;
+}
+
+.broadcast-status-view .broadcast-title-icon
+{
+    -fx-fill: -fx-accent;
+}
+
+.broadcast-status-view .broadcast-summary
+{
+    -fx-opacity: 0.75;
+}
+
+.broadcast-status-view .broadcast-placeholder
+{
+    -fx-opacity: 0.7;
+}
+
+.broadcast-status-view .broadcast-count
+{
+    -fx-font-family: monospace;
+}
+
+.broadcast-status-view .broadcast-status-chip
+{
+    -fx-background-radius: 9;
+    -fx-padding: 1 9 1 9;
+    -fx-font-weight: bold;
+    -fx-font-size: 0.92em;
+}
+
+.broadcast-status-view .broadcast-status-severity-ok
+{
+    -fx-background-color: #2e9e5b;
+    -fx-text-fill: #ffffff;
+}
+
+.broadcast-status-view .broadcast-status-severity-ok .text
+{
+    -fx-fill: #ffffff;
+}
+
+.broadcast-status-view .broadcast-status-severity-warning
+{
+    -fx-background-color: #e0a91f;
+    -fx-text-fill: #1d1d1d;
+}
+
+.broadcast-status-view .broadcast-status-severity-warning .text
+{
+    -fx-fill: #1d1d1d;
+}
+
+.broadcast-status-view .broadcast-status-severity-error
+{
+    -fx-background-color: #d64545;
+    -fx-text-fill: #ffffff;
+}
+
+.broadcast-status-view .broadcast-status-severity-error .text
+{
+    -fx-fill: #ffffff;
+}
+
+.broadcast-status-view .broadcast-status-severity-neutral
+{
+    -fx-background-color: transparent;
+    -fx-border-color: derive(-fx-text-base-color, -30%);
+    -fx-border-radius: 9;
+}
+
+.broadcast-status-view .broadcast-status-severity-disabled
+{
+    -fx-background-color: transparent;
+    -fx-opacity: 0.6;
+}

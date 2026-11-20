@@ -468,3 +468,9 @@
 {
     -fx-background-color: #ffffff;
 }
+
+/* Main window menu icons (jiconfont IconNode text glyphs default to black) */
+.main-menu-icon
+{
+    -fx-fill: #ececec;
+}

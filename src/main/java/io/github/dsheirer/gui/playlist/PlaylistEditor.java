@@ -37,7 +37,6 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -131,6 +130,9 @@ public class PlaylistEditor extends BorderPane
                     getRadioReferenceEditor().view(viewRequest);
                 }
                 break;
+            case STREAM:
+                getTabPane().getSelectionModel().select(getStreamingTab());
+                break;
             case PLAYLIST:
                 //Ignore - this is a request to simply show te playlist editor
                 break;
@@ -182,7 +184,7 @@ public class PlaylistEditor extends BorderPane
             screenShot.setOnShown(event -> menuItem.fire());
             menuItem.setOnAction(event -> {
                 WritableImage image = getMenuBar().getScene().snapshot(null);
-                final BufferedImage bufferedImage = SwingFXUtils.fromFXImage(image, null);
+                final BufferedImage bufferedImage = io.github.dsheirer.gui.FxToolkit.toBufferedImage(image);
                 String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
                 final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 

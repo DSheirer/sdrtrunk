@@ -94,7 +94,7 @@ public class MessageActivityView extends HistoryTableView<MessageItem,IMessage> 
             MessageHistory history = processingChain.getMessageHistory();
             FilterSet<IMessage> filterSet = DecoderFactory.getMessageFilters(processingChain.getModules());
             mMessageFilterSet = filterSet;
-            //Filter changes come from the Swing filter editor
+            //Filter changes come from the filter editor
             filterSet.register(() -> Platform.runLater(() -> {
                 if(mMessageFilterSet == filterSet)
                 {

@@ -32,8 +32,6 @@ import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.ImageIcon;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -46,7 +44,6 @@ public class Icon implements Comparable<Icon>
     private StringProperty mPath = new SimpleStringProperty();
     private BooleanProperty mDefaultIcon = new SimpleBooleanProperty();
     private BooleanProperty mStandardIcon = new SimpleBooleanProperty();
-    private ImageIcon mImageIcon;
     private Image mFxImage;
     private boolean mFxImageLoaded = false;
 
@@ -168,40 +165,6 @@ public class Icon implements Comparable<Icon>
         mPath.set(path);
     }
 
-    @JsonIgnore
-    public ImageIcon getIcon()
-    {
-        if(mImageIcon == null && mPath != null)
-        {
-            try
-            {
-                if(!getPath().startsWith("images"))
-                {
-                    mImageIcon = new ImageIcon(getPath());
-                }
-                else
-                {
-                    URL imageURL = Icon.class.getResource(getPath());
-
-                    if(imageURL == null && !getPath().startsWith("/"))
-                    {
-                        imageURL = (Icon.class.getResource("/" + getPath()));
-                    }
-
-                    if(imageURL != null)
-                    {
-                        mImageIcon = new ImageIcon(imageURL);
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error loading Icon [" + getPath() + "]", e);
-            }
-        }
-
-        return mImageIcon;
-    }
 
     /**
      * Lazy loads an FX image for the icon and retains it in memory.

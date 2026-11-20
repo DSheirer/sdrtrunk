@@ -31,6 +31,7 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import java.util.Arrays;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     private final LinkedTransferQueue<AudioSegment> mAudioSegmentQueue = new LinkedTransferQueue<>();
     private final UserPreferences mUserPreferences;
     private final String mChannelName;
+    private final AtomicInteger mPeakLevelBits = new AtomicInteger();
 
     private AudioSegment mCurrentAudioSegment;
     private Listener<IdentifierCollection> mIdentifierCollectionListener;
@@ -174,18 +176,66 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      */
     public float[] getAudio()
     {
-        if(mAudioBuffer.isFull())
-        {
-            float[] audio = mAudioBuffer.get();
+        float[] audio = getNextAudio();
 
+        if(audio != null)
+        {
+            updatePeakLevel(audio);
+
+            //Muted channels return silence.  The peak level is measured before muting so that the display can still
+            //show that the muted channel has audio.
             if(isMuted())
             {
                 return new float[SAMPLES_PER_INTERVAL];
             }
-            else
+        }
+
+        return audio;
+    }
+
+    /**
+     * Peak absolute sample value of the audio provided by this channel since the last call to this method, measured
+     * before muting.  The audio output pulls audio ahead of playback, so this leads what is heard by the playback
+     * device buffer latency.  Thread safe.
+     * @return peak level in the range 0.0 to 1.0 (or higher, if the audio is clipping) and resets it to zero.
+     */
+    public float getAndResetPeakLevel()
+    {
+        return Float.intBitsToFloat(mPeakLevelBits.getAndSet(0));
+    }
+
+    /**
+     * Updates the peak level with the maximum absolute sample value of the audio buffer.
+     */
+    private void updatePeakLevel(float[] audio)
+    {
+        float peak = 0.0f;
+
+        for(float sample: audio)
+        {
+            float magnitude = Math.abs(sample);
+
+            if(magnitude > peak)
             {
-                return audio;
+                peak = magnitude;
             }
+        }
+
+        final float bufferPeak = peak;
+
+        //Non-negative float bit patterns sort the same as the float values
+        mPeakLevelBits.accumulateAndGet(Float.floatToIntBits(bufferPeak), Math::max);
+    }
+
+    /**
+     * Next interval of audio from the audio buffer or the current audio segment, before muting.
+     * @return audio or null
+     */
+    private float[] getNextAudio()
+    {
+        if(mAudioBuffer.isFull())
+        {
+            return mAudioBuffer.get();
         }
 
         if(mCurrentAudioSegment == null)
@@ -247,12 +297,6 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
         else if(mCurrentAudioSegment == null && !mAudioBuffer.isEmpty())
         {
             audio = mAudioBuffer.flush();
-        }
-
-        //Finally, if we have buffer audio and we're muted, return silence
-        if(isMuted() && audio != null)
-        {
-            audio = new float[SAMPLES_PER_INTERVAL];
         }
 
         return audio;

@@ -38,8 +38,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 /**
- * Appearance preferences - selects the active UI {@link Theme} and the global GUI zoom factor for
- * both the Swing main window and the JavaFX panels.
+ * Appearance preferences - selects the active UI {@link Theme} and the global GUI zoom factor for the
+ * application windows.
  */
 public class AppearancePreferenceEditor extends HBox
 {

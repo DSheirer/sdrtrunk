@@ -38,7 +38,7 @@ public class NoiseSquelchTestApplication extends Application
     @Override
     public void start(Stage primaryStage)
     {
-        //Register FontAwesome so we can use the fonts in Swing windows
+        //Register FontAwesome so the views can use its icons
         IconFontFX.register(FontAwesome.getIconFont());
 
         NoiseSquelchView view = new NoiseSquelchView(null);
