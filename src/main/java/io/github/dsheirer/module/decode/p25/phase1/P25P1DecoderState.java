@@ -194,6 +194,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final Listener<ChannelEvent> mChannelEventListener;
     private final P25TrafficChannelManager mTrafficChannelManager;
     private ServiceOptions mCurrentServiceOptions;
+    private final P25P1NacGate mNacGate;
 
     /**
      * Encryption state of the current call as signalled by the algorithm ID in the HDU header or LDU2 encryption sync
@@ -214,7 +215,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     public P25P1DecoderState(Channel channel, P25TrafficChannelManager trafficChannelManager)
     {
         mChannel = channel;
-        mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
+        DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)channel.getDecodeConfiguration();
+        mModulation = config.getModulation();
+        mNacGate = new P25P1NacGate(config.getNacFilter());
         mNetworkConfigurationMonitor = new P25P1NetworkConfigurationMonitor(mModulation);
 
         if(trafficChannelManager != null)
@@ -290,6 +293,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         if(iMessage instanceof P25P1Message message)
         {
+            //NAC filter: drop messages from co-channel transmitters with a non-matching NAC
+            if(!mNacGate.passes(message))
+            {
+                return;
+            }
+
             getIdentifierCollection().update(message.getNAC());
 
             switch(message.getDUID())
@@ -2217,6 +2226,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 resetState();
                 mTalkerAliasTracker.reset();
                 mNetworkConfigurationMonitor.reset();
+                mNacGate.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 long frequency = event.getFrequency();
