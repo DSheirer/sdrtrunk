@@ -18,165 +18,150 @@
  */
 package io.github.dsheirer.source.tuner.network;
 
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import net.miginfocom.swing.MigLayout;
-
-import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.github.dsheirer.gui.control.FrequencyEntry;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredNetworkTuner;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.stage.Window;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+/**
+ * Dialog for adding an rtl_tcp network tuner.
+ */
+public class AddNetworkTunerDialog extends Dialog<ButtonType> {
+  private static final Logger mLog = LoggerFactory.getLogger(AddNetworkTunerDialog.class);
+  private static final ButtonType ADD = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
+  private final UserPreferences mUserPreferences;
+  private final DiscoveredTunerModel mDiscoveredTunerModel;
+  private final TunerConfigurationManager mTunerConfigurationManager;
+  private final ComboBox<String> mTypeComboBox = new ComboBox<>();
+  private final TextField mHostField = new TextField();
+  private final TextField mPortField = new TextField("1234");
+  private final TextField mFrequencyField = new TextField();
+  private final Label mValidationLabel = new Label();
 
-public class AddNetworkTunerDialog extends JFrame {
-  private final static Logger mLog = LoggerFactory.getLogger(AddNetworkTunerDialog.class);
-  private UserPreferences mUserPreferences;
-  private DiscoveredTunerModel mDiscoveredTunerModel;
-  private TunerConfigurationManager mTunerConfigurationManager;
-  private JLabel mTypeLabel;
-  private JLabel mHostLabel;
-  private JLabel mPortLabel;
-  private JLabel mFrequencyLabel;
-  private JComboBox mTypeComboBox;
-  private JTextField mHostField;
-  private JTextField mPortField;
-  private JTextField mFrequencyField;
-  private JButton mAddButton;
-  private JButton mCancelButton;
-
-  public AddNetworkTunerDialog(UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
+  public AddNetworkTunerDialog(Window owner, UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
       TunerConfigurationManager tunerConfigurationManager) {
     Validate.notNull(userPreferences, "UserPreferences cannot be null");
     Validate.notNull(discoveredTunerModel, "TunerModel cannot be null");
     Validate.notNull(tunerConfigurationManager, "TunerConfigurationManager cannot be null");
-
     mDiscoveredTunerModel = discoveredTunerModel;
     mUserPreferences = userPreferences;
     mTunerConfigurationManager = tunerConfigurationManager;
 
-    setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    initOwner(owner);
     setTitle("Add Network Tuner");
-    setSize(new Dimension(500, 250));
+    setHeaderText("Add an rtl_tcp network tuner");
 
-    JPanel content = new JPanel();
-    content.setLayout(new MigLayout("", "[align right][][]", "[][][][][grow][]"));
+    mTypeComboBox.getItems().add("rtl-tcp");
+    mTypeComboBox.getSelectionModel().selectFirst();
+    mTypeComboBox.setMaxWidth(Double.MAX_VALUE);
+    mHostField.setPromptText("hostname or IP address");
+    mPortField.setPromptText("e.g. 1234");
+    mFrequencyField.setPromptText("e.g. 851.0125");
+    mValidationLabel.getStyleClass().add("tuner-validation");
+    mValidationLabel.setWrapText(true);
+    mValidationLabel.setStyle("-fx-text-fill: #d9443a;");
 
-    mTypeLabel = new JLabel("Type:");
-    content.add(mTypeLabel);
+    GridPane grid = new GridPane();
+    grid.setHgap(10);
+    grid.setVgap(8);
+    grid.setPadding(new Insets(10));
+    grid.addRow(0, new Label("Type"), mTypeComboBox);
+    grid.addRow(1, new Label("Host"), mHostField);
+    grid.addRow(2, new Label("Port"), mPortField);
+    grid.addRow(3, new Label("Frequency (MHz)"), mFrequencyField);
+    grid.add(mValidationLabel, 0, 4, 2, 1);
+    GridPane.setHgrow(mHostField, Priority.ALWAYS);
+    grid.setPrefWidth(420);
 
-    String[] options = { "rtl-tcp" };
-    mTypeComboBox = new JComboBox<>(options);
-    content.add(mTypeComboBox, "span2,grow,wrap");
+    getDialogPane().setContent(grid);
+    getDialogPane().getButtonTypes().addAll(ADD, ButtonType.CANCEL);
 
-    mHostLabel = new JLabel("Host:");
-    content.add(mHostLabel);
+    Node addButton = getDialogPane().lookupButton(ADD);
+    addButton.setDisable(true);
+    Runnable validate = () -> {
+      String error = getValidationError();
+      mValidationLabel.setText(error == null ? "" : error);
+      addButton.setDisable(error != null);
+    };
+    mHostField.textProperty().addListener((observable, oldValue, newValue) -> validate.run());
+    mPortField.textProperty().addListener((observable, oldValue, newValue) -> validate.run());
+    mFrequencyField.textProperty().addListener((observable, oldValue, newValue) -> validate.run());
+    validate.run();
+    mValidationLabel.setText("");
 
-    mHostField = new JTextField("");
-    mHostField.setToolTipText("Enter the hostname or IP address of the network tuner");
-    content.add(mHostField, "span2,grow,wrap");
-
-    mPortLabel = new JLabel("Port:");
-    content.add(mPortLabel);
-
-    mPortField = new JTextField("");
-    mHostField.setToolTipText("Enter the port number of the network tuner");
-    content.add(mPortField, "span2,grow,wrap");
-
-    mFrequencyLabel = new JLabel("Frequency (Hz):");
-    content.add(mFrequencyLabel);
-
-    mFrequencyField = new JTextField("");
-    mFrequencyField.setToolTipText("Enter the center frequency of the network tuner in Hertz (Hz)");
-    content.add(mFrequencyField, "span2,grow,wrap");
-
-    content.add(new JLabel(""), "wrap");
-    content.add(new JLabel(""));
-
-    mAddButton = new JButton("Add");
-    // mAddButton.setEnabled(false);
-    mAddButton.addActionListener(e -> {
-
-      long frequency = getFrequency();
-
-      if (frequency <= 0 || frequency > Integer.MAX_VALUE) {
-        JOptionPane.showMessageDialog(AddNetworkTunerDialog.this,
-            "Please provide a center frequency (1Hz to 2.14 GHz)",
-            "Center Frequency Required",
-            JOptionPane.ERROR_MESSAGE);
-        return;
+    setResultConverter(buttonType -> {
+      if (buttonType == ADD) {
+        addTuner();
       }
-
-      mLog.info("Adding network tuner = frequency [" + frequency + "] host [" + getHost() + ":" + getPort() + "]");
-
-      try {
-        NetworkTunerConfiguration config = NetworkTunerConfiguration.create();
-        config.setFrequency(frequency);
-        config.setHost(getHost());
-        config.setPort(getPort());
-        mTunerConfigurationManager.addTunerConfiguration(config);
-        DiscoveredNetworkTuner discoveredNetworkTuner = new DiscoveredNetworkTuner(mUserPreferences, config);
-        mDiscoveredTunerModel.addDiscoveredTuner(discoveredNetworkTuner);
-      } catch (Exception ex) {
-        mLog.error("Error adding network tuner", ex);
-      }
-
-      AddNetworkTunerDialog.this.setVisible(false);
+      return buttonType;
     });
-    content.add(mAddButton, "grow,push");
 
-    mCancelButton = new JButton("Cancel");
-    mCancelButton.addActionListener(new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        AddNetworkTunerDialog.this.setVisible(false);
-      }
-    });
-    content.add(mCancelButton, "grow,push");
-
-    setContentPane(content);
+    Platform.runLater(mHostField::requestFocus);
   }
 
-  private long getFrequency() {
-    String text = mFrequencyField.getText();
-
-    if (text != null && !text.isEmpty()) {
-      try {
-        return Long.parseLong(text);
-      } catch (Exception e) {
-        // Do nothing, we couldn't parse the frequency value
-      }
+  /**
+   * Validation error for the current entries, or null when they are valid.
+   */
+  private String getValidationError() {
+    if (getHost().isEmpty()) {
+      return "Enter the host name or IP address of the rtl_tcp server";
     }
 
-    return 0l;
+    if (getPort() <= 0) {
+      return "Enter a port number from 1 to " + Short.MAX_VALUE;
+    }
+
+    Long frequency = FrequencyEntry.parse(mFrequencyField.getText());
+
+    if (frequency == null || frequency <= 0 || frequency > Integer.MAX_VALUE) {
+      return "Enter a center frequency up to 2147.483647 MHz";
+    }
+
+    return null;
+  }
+
+  private void addTuner() {
+    long frequency = FrequencyEntry.parse(mFrequencyField.getText());
+    mLog.info("Adding network tuner = frequency [" + frequency + "] host [" + getHost() + ":" + getPort() + "]");
+
+    try {
+      NetworkTunerConfiguration config = NetworkTunerConfiguration.create();
+      config.setFrequency(frequency);
+      config.setHost(getHost());
+      config.setPort(getPort());
+      mTunerConfigurationManager.addTunerConfiguration(config);
+      DiscoveredNetworkTuner discoveredNetworkTuner = new DiscoveredNetworkTuner(mUserPreferences, config);
+      mDiscoveredTunerModel.addDiscoveredTuner(discoveredNetworkTuner);
+    } catch (Exception ex) {
+      mLog.error("Error adding network tuner", ex);
+    }
   }
 
   private String getHost() {
-    return mHostField.getText();
+    return mHostField.getText() == null ? "" : mHostField.getText().trim();
   }
 
   private short getPort() {
-    String text = mPortField.getText();
-
-    if (text != null && !text.isEmpty()) {
-      try {
-        return Short.parseShort(text);
-      } catch (Exception e) {
-        // Do nothing, we couldn't parse the port value
-      }
+    try {
+      return Short.parseShort(mPortField.getText().trim());
+    } catch (Exception e) {
+      return 0;
     }
-
-    return 0;
   }
 }

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.bladerf;
 
 import io.github.dsheirer.bladerf.GainMode;
@@ -25,41 +24,26 @@ import io.github.dsheirer.bladerf.Range;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import io.github.dsheirer.source.tuner.ui.GainSlider;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import java.awt.Component;
-import java.io.Serial;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
 import java.util.List;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-import javax.swing.JSlider;
-import javax.swing.SpinnerNumberModel;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.util.StringConverter;
 
 /**
- * bladeRF tuner editor
+ * bladeRF tuner editor.  sdrtrunk uses the RX1 connector as a single tuner.
  */
 public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerConfiguration>
 {
-    @Serial
-    private static final long serialVersionUID = 1L;
-    private static final Logger mLog = LoggerFactory.getLogger(BladeRfTunerEditor.class);
-    private JButton mTunerInfoButton;
-    private JComboBox<BladeRfSampleRate> mSampleRateCombo;
-    private JCheckBox mBiasTCheckBox;
-    private JComboBox<GainModeInfo> mGainModeCombo;
-    private JSlider mGainSlider;
-    private JLabel mGainValueLabel;
+    private ComboBox<BladeRfSampleRate> mSampleRateCombo;
+    private CheckBox mBiasTCheckBox;
+    private ComboBox<GainModeInfo> mGainModeCombo;
+    private GainSlider mGainSlider;
+    private Label mGainLabel;
 
     /**
      * Constructs an instance
@@ -71,7 +55,7 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
     {
         super(userPreferences, tunerManager, discoveredTuner);
         init();
-        tunerStatusUpdated();
+        refresh();
     }
 
     @Override
@@ -90,78 +74,33 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]", "[][][][][][][][][][][][grow]"));
+        getTuningSection().addRow("Sample Rate", getSampleRateCombo());
 
-        add(new JLabel("Tuner:"));
-        add(getTunerIdLabel());
-        add(getTunerInfoButton());
+        TunerSection gain = addSection("Gain");
+        gain.addRow("Mode", getGainModeCombo());
+        mGainLabel = gain.addRow("Gain", getGainSlider());
 
-        add(new JLabel("Status:"));
-        add(getTunerStatusLabel(), "wrap");
-
-        add(getButtonPanel(), "span,align left");
-
-        add(new JSeparator(), "span,growx");
-
-        add(new JLabel("Frequency (MHz):"));
-        add(getFrequencyPanel(), "wrap");
-
-        add(new JLabel("Sample Rate:"));
-        add(getSampleRateCombo(), "wrap");
-
-        add(new JLabel());
-        add(getBiasTCheckBox(), "wrap");
-
-        add(new JSeparator(), "span,growx");
-        add(new JLabel("Gain Control"), "wrap");
-
-        add(new JLabel("Mode:"));
-        add(getGainModeCombo(), "wrap");
-
-        add(new JLabel("Gain:"));
-        add(getGainSlider());
-        add(getGainValueLabel());
-
-        //Empty row that takes all extra vertical space so that the controls stay stacked at the top of the editor.
-        add(new JLabel(), "span,pushy");
+        TunerSection options = addSection("Options");
+        options.addControl(getBiasTCheckBox());
     }
 
     @Override
     protected void tunerStatusUpdated()
     {
-        setLoading(true);
-
-        boolean started = hasStartedTuner();
-        getTunerIdLabel().setText(started ? getTuner().getPreferredName() : getDiscoveredTuner().getId());
-
-        String status = getDiscoveredTuner().getTunerStatus().toString();
-        if(getDiscoveredTuner().hasErrorMessage())
-        {
-            status += " - " + getDiscoveredTuner().getErrorMessage();
-        }
-        getTunerStatusLabel().setText(status);
-        getButtonPanel().updateControls();
-        getFrequencyPanel().updateControls();
-        getTunerInfoButton().setEnabled(started);
-
-        if(started)
+        if(hasStartedTuner())
         {
             BladeRfTunerController controller = getTuner().getController();
             List<BladeRfSampleRate> rates = controller.getSampleRates();
-            getSampleRateCombo().setModel(new DefaultComboBoxModel<>(rates.toArray(new BladeRfSampleRate[0])));
-            getSampleRateCombo().setSelectedItem(controller.getBladeRfSampleRate());
-            getSampleRateCombo().setEnabled(!controller.isLockedSampleRate());
-
+            getSampleRateCombo().getItems().setAll(rates);
+            getSampleRateCombo().setValue(controller.getBladeRfSampleRate());
+            getSampleRateCombo().setDisable(controller.isLockedSampleRate());
             getBiasTCheckBox().setVisible(controller.isBiasTSupported());
-            getBiasTCheckBox().setEnabled(true);
-
+            getBiasTCheckBox().setDisable(false);
             List<GainModeInfo> modes = controller.getGainModes();
-            getGainModeCombo().setModel(new DefaultComboBoxModel<>(modes.toArray(new GainModeInfo[0])));
-            getGainModeCombo().setEnabled(true);
-
+            getGainModeCombo().getItems().setAll(modes);
+            getGainModeCombo().setDisable(false);
             Range range = controller.getGainRange();
-            getGainSlider().setMinimum((int)range.min());
-            getGainSlider().setMaximum((int)range.max());
+            getGainSlider().setRange((int)range.min(), (int)range.max());
 
             if(hasConfiguration())
             {
@@ -172,7 +111,7 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
                 {
                     if(mode.mode() == getConfiguration().getGainMode())
                     {
-                        getGainModeCombo().setSelectedItem(mode);
+                        getGainModeCombo().setValue(mode);
                     }
                 }
             }
@@ -181,81 +120,50 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
         }
         else
         {
-            getSampleRateCombo().setModel(new DefaultComboBoxModel<>());
-            getSampleRateCombo().setEnabled(false);
-            getBiasTCheckBox().setEnabled(false);
+            getSampleRateCombo().getItems().clear();
+            getSampleRateCombo().setDisable(true);
+            getBiasTCheckBox().setDisable(true);
             getBiasTCheckBox().setSelected(false);
-            getGainModeCombo().setModel(new DefaultComboBoxModel<>());
-            getGainModeCombo().setEnabled(false);
-            getGainSlider().setEnabled(false);
-            getGainValueLabel().setEnabled(false);
+            getGainModeCombo().getItems().clear();
+            getGainModeCombo().setDisable(true);
+            getGainSlider().setDisable(true);
+            mGainLabel.setDisable(true);
         }
-
-        setLoading(false);
     }
 
     /**
-     * Indicates if the tuner has finished starting, since a status update can arrive while it's starting or restarting.
+     * Indicates if the tuner is started, which is when the controller has the gain range.
      */
     private boolean hasStartedTuner()
     {
         return hasTuner() && getTuner().getController().getGainRange() != null;
     }
 
-    /**
-     * Enables the gain slider when the gain mode is manual and refreshes the gain value label.
-     */
     private void updateGainControls()
     {
-        GainModeInfo mode = (GainModeInfo)getGainModeCombo().getSelectedItem();
+        GainModeInfo mode = getGainModeCombo().getValue();
         boolean manual = hasTuner() && mode != null && mode.mode() == GainMode.MANUAL;
-        getGainSlider().setEnabled(manual);
-        getGainValueLabel().setEnabled(manual);
-        getGainValueLabel().setText(manual ? getGainSlider().getValue() + " dB" : "AGC");
+        getGainSlider().setDisable(!manual);
+        mGainLabel.setDisable(!manual);
+        getGainSlider().setFormatter(value -> manual ? value + " dB" : "AGC");
     }
 
-    /**
-     * Button that provides tuner information
-     */
-    private JButton getTunerInfoButton()
-    {
-        if(mTunerInfoButton == null)
-        {
-            mTunerInfoButton = new JButton("Info");
-            mTunerInfoButton.setEnabled(false);
-            mTunerInfoButton.addActionListener(_ -> JOptionPane.showMessageDialog(BladeRfTunerEditor.this,
-                    getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));
-        }
-
-        return mTunerInfoButton;
-    }
-
-    private JComboBox<BladeRfSampleRate> getSampleRateCombo()
+    private ComboBox<BladeRfSampleRate> getSampleRateCombo()
     {
         if(mSampleRateCombo == null)
         {
-            mSampleRateCombo = new JComboBox<>();
-            mSampleRateCombo.setEnabled(false);
-            mSampleRateCombo.addActionListener(_ ->
-            {
-                if(hasTuner() && !isLoading())
+            mSampleRateCombo = new ComboBox<>();
+            mSampleRateCombo.setMaxWidth(Double.MAX_VALUE);
+            mSampleRateCombo.setDisable(true);
+            mSampleRateCombo.setTooltip(new Tooltip("Select a sample rate for the tuner"));
+            mSampleRateCombo.setOnAction(e -> {
+                BladeRfSampleRate rate = mSampleRateCombo.getValue();
+
+                if(hasTuner() && !isLoading() && rate != null &&
+                    applyToTuner("sample rate [" + rate + "]", () -> getTuner().getController().setSampleRate(rate)))
                 {
-                    BladeRfSampleRate rate = (BladeRfSampleRate)mSampleRateCombo.getSelectedItem();
-
-                    try
-                    {
-                        getTuner().getController().setSampleRate(rate);
-
-                        //Adjust the min/max values for the sample rate.
-                        adjustForSampleRate(rate.getRate());
-
-                        save();
-                    }
-                    catch(Exception e1)
-                    {
-                        mLog.error("Error setting bladeRF sample rate", e1);
-                        JOptionPane.showMessageDialog(BladeRfTunerEditor.this, "Couldn't set sample rate to " + rate);
-                    }
+                    adjustForSampleRate(rate.getRate());
+                    save();
                 }
             });
         }
@@ -263,30 +171,19 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
         return mSampleRateCombo;
     }
 
-    /**
-     * Checkbox to enable/disable Bias-T power for active antennas
-     */
-    private JCheckBox getBiasTCheckBox()
+    private CheckBox getBiasTCheckBox()
     {
         if(mBiasTCheckBox == null)
         {
-            mBiasTCheckBox = new JCheckBox("Bias-T");
-            mBiasTCheckBox.setEnabled(false);
-            mBiasTCheckBox.setToolTipText("Enable Bias-T power output for active antennas.  Also powers the RX2 connector.");
-            mBiasTCheckBox.addActionListener(_ ->
-            {
-                if(hasTuner() && !isLoading())
+            mBiasTCheckBox = new CheckBox("Bias-T");
+            mBiasTCheckBox.setDisable(true);
+            mBiasTCheckBox.setTooltip(new Tooltip("Enable Bias-T power output for active antennas.  Also powers the " +
+                    "RX2 connector."));
+            mBiasTCheckBox.setOnAction(e -> {
+                if(hasTuner() && !isLoading() &&
+                    applyToTuner("Bias-T", () -> getTuner().getController().setBiasT(mBiasTCheckBox.isSelected())))
                 {
-                    try
-                    {
-                        getTuner().getController().setBiasT(mBiasTCheckBox.isSelected());
-                        save();
-                    }
-                    catch(Exception e1)
-                    {
-                        mLog.error("Error setting Bias-T", e1);
-                        JOptionPane.showMessageDialog(mBiasTCheckBox, "Couldn't set Bias-T: " + e1.getMessage());
-                    }
+                    save();
                 }
             });
         }
@@ -294,39 +191,36 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
         return mBiasTCheckBox;
     }
 
-    private JComboBox<GainModeInfo> getGainModeCombo()
+    private ComboBox<GainModeInfo> getGainModeCombo()
     {
         if(mGainModeCombo == null)
         {
-            mGainModeCombo = new JComboBox<>();
-            mGainModeCombo.setEnabled(false);
-            mGainModeCombo.setRenderer(new DefaultListCellRenderer()
+            mGainModeCombo = new ComboBox<>();
+            mGainModeCombo.setMaxWidth(Double.MAX_VALUE);
+            mGainModeCombo.setDisable(true);
+            mGainModeCombo.setConverter(new StringConverter<>()
             {
                 @Override
-                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected,
-                                                              boolean focused)
+                public String toString(GainModeInfo mode)
                 {
-                    Object label = value instanceof GainModeInfo mode ? mode.name() : value;
-                    return super.getListCellRendererComponent(list, label, index, selected, focused);
+                    return mode == null ? "" : mode.name();
+                }
+
+                @Override
+                public GainModeInfo fromString(String text)
+                {
+                    return null;
                 }
             });
-            mGainModeCombo.addActionListener(_ ->
-            {
-                if(hasTuner() && !isLoading())
-                {
-                    GainModeInfo mode = (GainModeInfo)mGainModeCombo.getSelectedItem();
+            mGainModeCombo.setOnAction(e -> {
+                GainModeInfo mode = mGainModeCombo.getValue();
 
-                    try
-                    {
-                        getTuner().getController().setGainMode(mode.mode());
-                        updateGainControls();
-                        save();
-                    }
-                    catch(Exception e1)
-                    {
-                        mLog.error("Error setting bladeRF gain mode", e1);
-                        JOptionPane.showMessageDialog(mGainModeCombo, "Couldn't set gain mode to " + mode.name());
-                    }
+                if(hasTuner() && !isLoading() && mode != null &&
+                    applyToTuner("gain mode [" + mode.name() + "]",
+                        () -> getTuner().getController().setGainMode(mode.mode())))
+                {
+                    updateGainControls();
+                    save();
                 }
             });
         }
@@ -334,48 +228,23 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
         return mGainModeCombo;
     }
 
-    private JSlider getGainSlider()
+    private GainSlider getGainSlider()
     {
         if(mGainSlider == null)
         {
-            mGainSlider = new JSlider(JSlider.HORIZONTAL, 0, 60, BladeRfTunerController.GAIN_DEFAULT);
-            mGainSlider.setEnabled(false);
-            mGainSlider.setMajorTickSpacing(5);
-            mGainSlider.setPaintTicks(true);
-            mGainSlider.addChangeListener(_ ->
-            {
-                int gain = mGainSlider.getValue();
-
-                if(hasTuner() && !isLoading())
+            mGainSlider = new GainSlider(0, 60, BladeRfTunerController.GAIN_DEFAULT);
+            mGainSlider.setDisable(true);
+            mGainSlider.setFormatter(value -> value + " dB");
+            mGainSlider.setOnChange(gain -> {
+                if(hasTuner() && !isLoading() &&
+                    applyToTuner("gain", () -> getTuner().getController().setGain(gain)))
                 {
-                    try
-                    {
-                        getTuner().getController().setGain(gain);
-                        save();
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.error("Couldn't set bladeRF gain to:" + gain, e);
-                        JOptionPane.showMessageDialog(mGainSlider, "Couldn't set gain value to " + gain);
-                    }
+                    save();
                 }
-
-                updateGainControls();
             });
         }
 
         return mGainSlider;
-    }
-
-    private JLabel getGainValueLabel()
-    {
-        if(mGainValueLabel == null)
-        {
-            mGainValueLabel = new JLabel("0 dB");
-            mGainValueLabel.setEnabled(false);
-        }
-
-        return mGainValueLabel;
     }
 
     @Override
@@ -383,58 +252,49 @@ public class BladeRfTunerEditor extends TunerEditor<BladeRfTuner, BladeRfTunerCo
     {
         if(hasConfiguration() && !isLoading())
         {
-            getConfiguration().setFrequency(getFrequencyControl().getFrequency());
-            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
-            double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
-            getConfiguration().setFrequencyCorrection(value);
-            getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
+            BladeRfTunerConfiguration config = getConfiguration();
+            saveCommonSettings(config);
 
-            if(getSampleRateCombo().getSelectedItem() instanceof BladeRfSampleRate rate)
+            if(getSampleRateCombo().getValue() instanceof BladeRfSampleRate rate)
             {
-                getConfiguration().setSampleRate(rate.getRate());
+                config.setSampleRate(rate.getRate());
             }
 
-            if(getGainModeCombo().getSelectedItem() instanceof GainModeInfo mode)
+            if(getGainModeCombo().getValue() instanceof GainModeInfo mode)
             {
-                getConfiguration().setGainMode(mode.mode());
+                config.setGainMode(mode.mode());
             }
 
-            getConfiguration().setGain(getGainSlider().getValue());
-            getConfiguration().setBiasT(getBiasTCheckBox().isSelected());
+            config.setGain(getGainSlider().getValue());
+            config.setBiasT(getBiasTCheckBox().isSelected());
             saveConfiguration();
         }
     }
 
     @Override
-    public void setTunerLockState(boolean locked)
+    protected void tunerLockStateUpdated(boolean locked)
     {
-        getFrequencyPanel().updateControls();
-        getSampleRateCombo().setEnabled(!locked);
-        getSampleRateCombo().setToolTipText(locked ? "Sample Rate is locked.  Disable decoding channels to unlock." :
-                "Select a sample rate for the tuner");
+        getSampleRateCombo().setDisable(!hasStartedTuner() || locked);
+        getSampleRateCombo().setTooltip(new Tooltip(locked ? "Sample rate is locked.  Disable decoding channels " +
+                "to unlock." : "Select a sample rate for the tuner"));
     }
 
-    private String getTunerInfo()
+    @Override
+    protected String getTunerInfo()
     {
-        if(getDiscoveredTuner().getTunerStatus() == TunerStatus.ERROR)
+        if(!hasStartedTuner())
         {
-            return getDiscoveredTuner().getErrorMessage();
+            return null;
         }
 
-        if(hasTuner())
-        {
-            BladeRfDeviceInformation info = getTuner().getController().getDeviceInfo();
-            StringBuilder sb = new StringBuilder();
-            sb.append("<html><h3>bladeRF Tuner</h3>");
-            sb.append("<b>Serial: </b>").append(info.serial()).append("<br>");
-            sb.append("<b>Board: </b>").append(info.board()).append("<br>");
-            sb.append("<b>Firmware: </b>").append(info.firmware()).append("<br>");
-            sb.append("<b>FPGA: </b>").append(info.fpga()).append("<br>");
-            sb.append("<b>USB Speed: </b>").append(info.speed()).append("<br>");
-            return sb.toString();
-        }
-
-        return null;
+        BladeRfDeviceInformation info = getTuner().getController().getDeviceInfo();
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><h3>bladeRF Tuner</h3>");
+        sb.append("<b>Serial: </b>").append(info.serial()).append("<br>");
+        sb.append("<b>Board: </b>").append(info.board()).append("<br>");
+        sb.append("<b>Firmware: </b>").append(info.firmware()).append("<br>");
+        sb.append("<b>FPGA: </b>").append(info.fpga()).append("<br>");
+        sb.append("<b>USB Speed: </b>").append(info.speed()).append("<br>");
+        return sb.toString();
     }
 }

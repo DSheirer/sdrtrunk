@@ -16,42 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.limesdr;
 
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import io.github.dsheirer.source.tuner.ui.GainSlider;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import java.io.Serial;
-import java.util.List;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-import javax.swing.JSlider;
-import javax.swing.SpinnerNumberModel;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tooltip;
 
 /**
  * LimeSDR tuner editor
  */
 public class LimeSdrTunerEditor extends TunerEditor<LimeSdrTuner, LimeSdrTunerConfiguration>
 {
-    @Serial
-    private static final long serialVersionUID = 1L;
-    private static final Logger mLog = LoggerFactory.getLogger(LimeSdrTunerEditor.class);
-    private JButton mTunerInfoButton;
-    private JComboBox<LimeSdrSampleRate> mSampleRateCombo;
-    private JComboBox<String> mAntennaCombo;
-    private JSlider mGainSlider;
-    private JLabel mGainValueLabel;
+    private ComboBox<LimeSdrSampleRate> mSampleRateCombo;
+    private ComboBox<String> mAntennaCombo;
+    private GainSlider mGainSlider;
 
     /**
      * Constructs an instance
@@ -63,7 +46,7 @@ public class LimeSdrTunerEditor extends TunerEditor<LimeSdrTuner, LimeSdrTunerCo
     {
         super(userPreferences, tunerManager, discoveredTuner);
         init();
-        tunerStatusUpdated();
+        refresh();
     }
 
     @Override
@@ -82,142 +65,62 @@ public class LimeSdrTunerEditor extends TunerEditor<LimeSdrTuner, LimeSdrTunerCo
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]", "[][][][][][][][][][][grow]"));
+        getTuningSection().addRow("Sample Rate", getSampleRateCombo());
+        getTuningSection().addRow("Antenna", getAntennaCombo());
 
-        add(new JLabel("Tuner:"));
-        add(getTunerIdLabel());
-        add(getTunerInfoButton());
-
-        add(new JLabel("Status:"));
-        add(getTunerStatusLabel(), "wrap");
-
-        add(getButtonPanel(), "span,align left");
-
-        add(new JSeparator(), "span,growx");
-
-        add(new JLabel("Frequency (MHz):"));
-        add(getFrequencyPanel(), "wrap");
-
-        add(new JLabel("Sample Rate:"));
-        add(getSampleRateCombo(), "wrap");
-
-        add(new JLabel("Antenna:"));
-        add(getAntennaCombo(), "wrap");
-
-        add(new JSeparator(), "span,growx");
-
-        add(new JLabel("Gain:"));
-        add(getGainSlider());
-        add(getGainValueLabel());
-
-        //Empty row that takes all extra vertical space so that the controls stay stacked at the top of the editor.
-        add(new JLabel(), "span,pushy");
+        TunerSection gain = addSection("Gain");
+        gain.addRow("Gain", getGainSlider());
     }
 
     @Override
     protected void tunerStatusUpdated()
     {
-        setLoading(true);
-
-        boolean started = hasStartedTuner();
-        getTunerIdLabel().setText(started ? getTuner().getPreferredName() : getDiscoveredTuner().getId());
-
-        String status = getDiscoveredTuner().getTunerStatus().toString();
-        if(getDiscoveredTuner().hasErrorMessage())
-        {
-            status += " - " + getDiscoveredTuner().getErrorMessage();
-        }
-        getTunerStatusLabel().setText(status);
-        getButtonPanel().updateControls();
-        getFrequencyPanel().updateControls();
-        getTunerInfoButton().setEnabled(started);
-
-        if(started)
+        if(hasStartedTuner())
         {
             LimeSdrTunerController controller = getTuner().getController();
-            List<LimeSdrSampleRate> rates = controller.getSampleRates();
-            getSampleRateCombo().setModel(new DefaultComboBoxModel<>(rates.toArray(new LimeSdrSampleRate[0])));
-            getSampleRateCombo().setSelectedItem(controller.getLimeSdrSampleRate());
-            getSampleRateCombo().setEnabled(!controller.isLockedSampleRate());
-
-            List<String> antennas = controller.getAntennas();
-            getAntennaCombo().setModel(new DefaultComboBoxModel<>(antennas.toArray(new String[0])));
-            getAntennaCombo().setSelectedItem(controller.getAntenna());
-            getAntennaCombo().setEnabled(true);
-
+            getSampleRateCombo().getItems().setAll(controller.getSampleRates());
+            getSampleRateCombo().setValue(controller.getLimeSdrSampleRate());
+            getSampleRateCombo().setDisable(controller.isLockedSampleRate());
+            getAntennaCombo().getItems().setAll(controller.getAntennas());
+            getAntennaCombo().setValue(controller.getAntenna());
+            getAntennaCombo().setDisable(false);
             getGainSlider().setValue(controller.getGain());
-            getGainSlider().setEnabled(true);
-            getGainValueLabel().setEnabled(true);
+            getGainSlider().setDisable(false);
         }
         else
         {
-            getSampleRateCombo().setModel(new DefaultComboBoxModel<>());
-            getSampleRateCombo().setEnabled(false);
-            getAntennaCombo().setModel(new DefaultComboBoxModel<>());
-            getAntennaCombo().setEnabled(false);
-            getGainSlider().setEnabled(false);
-            getGainValueLabel().setEnabled(false);
+            getSampleRateCombo().getItems().clear();
+            getSampleRateCombo().setDisable(true);
+            getAntennaCombo().getItems().clear();
+            getAntennaCombo().setDisable(true);
+            getGainSlider().setDisable(true);
         }
-
-        updateGainLabel();
-        setLoading(false);
     }
 
     /**
-     * Indicates if the tuner has finished starting, since a status update can arrive while it's starting or restarting.
+     * Indicates if the tuner is started, which is when the controller knows the selected antenna.
      */
     private boolean hasStartedTuner()
     {
         return hasTuner() && getTuner().getController().getAntenna() != null;
     }
 
-    private void updateGainLabel()
-    {
-        getGainValueLabel().setText(getGainSlider().getValue() + " dB");
-    }
-
-    /**
-     * Button that provides tuner information
-     */
-    private JButton getTunerInfoButton()
-    {
-        if(mTunerInfoButton == null)
-        {
-            mTunerInfoButton = new JButton("Info");
-            mTunerInfoButton.setEnabled(false);
-            mTunerInfoButton.addActionListener(_ -> JOptionPane.showMessageDialog(LimeSdrTunerEditor.this,
-                    getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));
-        }
-
-        return mTunerInfoButton;
-    }
-
-    private JComboBox<LimeSdrSampleRate> getSampleRateCombo()
+    private ComboBox<LimeSdrSampleRate> getSampleRateCombo()
     {
         if(mSampleRateCombo == null)
         {
-            mSampleRateCombo = new JComboBox<>();
-            mSampleRateCombo.setEnabled(false);
-            mSampleRateCombo.addActionListener(_ ->
-            {
-                if(hasTuner() && !isLoading())
+            mSampleRateCombo = new ComboBox<>();
+            mSampleRateCombo.setMaxWidth(Double.MAX_VALUE);
+            mSampleRateCombo.setDisable(true);
+            mSampleRateCombo.setTooltip(new Tooltip("Select a sample rate for the tuner"));
+            mSampleRateCombo.setOnAction(e -> {
+                LimeSdrSampleRate rate = mSampleRateCombo.getValue();
+
+                if(hasTuner() && !isLoading() && rate != null &&
+                    applyToTuner("sample rate [" + rate + "]", () -> getTuner().getController().setSampleRate(rate)))
                 {
-                    LimeSdrSampleRate rate = (LimeSdrSampleRate)mSampleRateCombo.getSelectedItem();
-
-                    try
-                    {
-                        getTuner().getController().setSampleRate(rate);
-
-                        //Adjust the min/max values for the sample rate.
-                        adjustForSampleRate(rate.getRate());
-
-                        save();
-                    }
-                    catch(Exception e1)
-                    {
-                        mLog.error("Error setting LimeSDR sample rate", e1);
-                        JOptionPane.showMessageDialog(LimeSdrTunerEditor.this, "Couldn't set sample rate to " + rate);
-                    }
+                    adjustForSampleRate(rate.getRate());
+                    save();
                 }
             });
         }
@@ -225,29 +128,21 @@ public class LimeSdrTunerEditor extends TunerEditor<LimeSdrTuner, LimeSdrTunerCo
         return mSampleRateCombo;
     }
 
-    private JComboBox<String> getAntennaCombo()
+    private ComboBox<String> getAntennaCombo()
     {
         if(mAntennaCombo == null)
         {
-            mAntennaCombo = new JComboBox<>();
-            mAntennaCombo.setEnabled(false);
-            mAntennaCombo.setToolTipText("Receive port: LNAW wideband (default), LNAL low band, LNAH high band");
-            mAntennaCombo.addActionListener(_ ->
-            {
-                if(hasTuner() && !isLoading())
-                {
-                    String antenna = (String)mAntennaCombo.getSelectedItem();
+            mAntennaCombo = new ComboBox<>();
+            mAntennaCombo.setMaxWidth(Double.MAX_VALUE);
+            mAntennaCombo.setDisable(true);
+            mAntennaCombo.setTooltip(new Tooltip("Receive port: LNAW wideband (default), LNAL low band, LNAH high band"));
+            mAntennaCombo.setOnAction(e -> {
+                String antenna = mAntennaCombo.getValue();
 
-                    try
-                    {
-                        getTuner().getController().setAntenna(antenna);
-                        save();
-                    }
-                    catch(Exception e1)
-                    {
-                        mLog.error("Error setting LimeSDR antenna", e1);
-                        JOptionPane.showMessageDialog(mAntennaCombo, "Couldn't set antenna to " + antenna);
-                    }
+                if(hasTuner() && !isLoading() && antenna != null &&
+                    applyToTuner("antenna [" + antenna + "]", () -> getTuner().getController().setAntenna(antenna)))
+                {
+                    save();
                 }
             });
         }
@@ -255,49 +150,24 @@ public class LimeSdrTunerEditor extends TunerEditor<LimeSdrTuner, LimeSdrTunerCo
         return mAntennaCombo;
     }
 
-    private JSlider getGainSlider()
+    private GainSlider getGainSlider()
     {
         if(mGainSlider == null)
         {
-            mGainSlider = new JSlider(JSlider.HORIZONTAL, LimeSdrTunerController.GAIN_MINIMUM,
-                    LimeSdrTunerController.GAIN_MAXIMUM, LimeSdrTunerController.GAIN_DEFAULT);
-            mGainSlider.setEnabled(false);
-            mGainSlider.setMajorTickSpacing(5);
-            mGainSlider.setPaintTicks(true);
-            mGainSlider.addChangeListener(_ ->
-            {
-                int gain = mGainSlider.getValue();
-
-                if(hasTuner() && !isLoading())
+            mGainSlider = new GainSlider(LimeSdrTunerController.GAIN_MINIMUM, LimeSdrTunerController.GAIN_MAXIMUM,
+                    LimeSdrTunerController.GAIN_DEFAULT);
+            mGainSlider.setDisable(true);
+            mGainSlider.setFormatter(value -> value + " dB");
+            mGainSlider.setOnChange(gain -> {
+                if(hasTuner() && !isLoading() &&
+                    applyToTuner("gain", () -> getTuner().getController().setGain(gain)))
                 {
-                    try
-                    {
-                        getTuner().getController().setGain(gain);
-                        save();
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.error("Couldn't set LimeSDR gain to:" + gain, e);
-                        JOptionPane.showMessageDialog(mGainSlider, "Couldn't set gain value to " + gain);
-                    }
+                    save();
                 }
-
-                updateGainLabel();
             });
         }
 
         return mGainSlider;
-    }
-
-    private JLabel getGainValueLabel()
-    {
-        if(mGainValueLabel == null)
-        {
-            mGainValueLabel = new JLabel("0 dB");
-            mGainValueLabel.setEnabled(false);
-        }
-
-        return mGainValueLabel;
     }
 
     @Override
@@ -305,59 +175,50 @@ public class LimeSdrTunerEditor extends TunerEditor<LimeSdrTuner, LimeSdrTunerCo
     {
         if(hasConfiguration() && !isLoading())
         {
-            getConfiguration().setFrequency(getFrequencyControl().getFrequency());
-            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
-            double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
-            getConfiguration().setFrequencyCorrection(value);
-            getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
+            LimeSdrTunerConfiguration config = getConfiguration();
+            saveCommonSettings(config);
 
-            if(getSampleRateCombo().getSelectedItem() instanceof LimeSdrSampleRate rate)
+            if(getSampleRateCombo().getValue() instanceof LimeSdrSampleRate rate)
             {
-                getConfiguration().setSampleRate(rate.getRate());
+                config.setSampleRate(rate.getRate());
             }
 
-            if(getAntennaCombo().getSelectedItem() instanceof String antenna)
+            if(getAntennaCombo().getValue() instanceof String antenna)
             {
-                getConfiguration().setAntenna(antenna);
+                config.setAntenna(antenna);
             }
 
-            getConfiguration().setGain(getGainSlider().getValue());
+            config.setGain(getGainSlider().getValue());
             saveConfiguration();
         }
     }
 
     @Override
-    public void setTunerLockState(boolean locked)
+    protected void tunerLockStateUpdated(boolean locked)
     {
-        getFrequencyPanel().updateControls();
-        getSampleRateCombo().setEnabled(!locked);
-        getSampleRateCombo().setToolTipText(locked ? "Sample Rate is locked.  Disable decoding channels to unlock." :
-                "Select a sample rate for the tuner");
+        getSampleRateCombo().setDisable(!hasStartedTuner() || locked);
+        getSampleRateCombo().setTooltip(new Tooltip(locked ? "Sample rate is locked.  Disable decoding channels " +
+                "to unlock." : "Select a sample rate for the tuner"));
     }
 
-    private String getTunerInfo()
+    @Override
+    protected String getTunerInfo()
     {
-        if(getDiscoveredTuner().getTunerStatus() == TunerStatus.ERROR)
+        if(!hasStartedTuner())
         {
-            return getDiscoveredTuner().getErrorMessage();
+            return null;
         }
 
-        if(hasTuner())
-        {
-            LimeSdrDeviceInformation info = getTuner().getController().getDeviceInfo();
-            StringBuilder sb = new StringBuilder();
-            sb.append("<html><h3>LimeSDR Tuner</h3>");
-            sb.append("<b>Board: </b>").append(info.board()).append("<br>");
-            sb.append("<b>Serial: </b>").append(info.serial()).append("<br>");
-            sb.append("<b>Hardware: </b>").append(info.hardware()).append("<br>");
-            sb.append("<b>Firmware: </b>").append(info.firmware()).append("<br>");
-            sb.append("<b>Gateware: </b>").append(info.gateware()).append("<br>");
-            sb.append("<b>Connection: </b>").append(info.connection()).append("<br>");
-            sb.append("<b>LimeSuiteNG: </b>").append(info.library()).append("<br>");
-            return sb.toString();
-        }
-
-        return null;
+        LimeSdrDeviceInformation info = getTuner().getController().getDeviceInfo();
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><h3>LimeSDR Tuner</h3>");
+        sb.append("<b>Board: </b>").append(info.board()).append("<br>");
+        sb.append("<b>Serial: </b>").append(info.serial()).append("<br>");
+        sb.append("<b>Hardware: </b>").append(info.hardware()).append("<br>");
+        sb.append("<b>Firmware: </b>").append(info.firmware()).append("<br>");
+        sb.append("<b>Gateware: </b>").append(info.gateware()).append("<br>");
+        sb.append("<b>Connection: </b>").append(info.connection()).append("<br>");
+        sb.append("<b>LimeSuiteNG: </b>").append(info.library()).append("<br>");
+        return sb.toString();
     }
 }

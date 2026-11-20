@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,59 +16,82 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.sdrplay;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.sdrplay.Tuner;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.ui.GainSlider;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
 import io.github.dsheirer.util.ThreadPool;
-import java.awt.Color;
-import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import net.miginfocom.swing.MigLayout;
+import javafx.css.PseudoClass;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.JToggleButton;
-
 /**
- * Abstract RSP tuner editor
+ * Base SDRPlay RSP tuner editor.  Provides the sample rate control, the gain section (LNA state, IF gain reduction,
+ * IF AGC, gain readout and overload indicator) and helpers for binding the model specific option check boxes and
+ * choices to the device.
  */
-public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends TunerEditor<RspTuner,C> implements ITunerStatusListener
+public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends TunerEditor<RspTuner,C>
+        implements ITunerStatusListener
 {
-    private Logger mLog = LoggerFactory.getLogger(RspTunerEditor.class);
-    protected static final String MANUAL = "Manual";
-    protected static final String AUTOMATIC = "Automatic";
-    private JToggleButton mAgcButton;
-    private JLabel mGainValueLabel;
-    private LnaSlider mLNASlider;
-    private IfGainSlider mIfGainSlider;
-    private JButton mGainOverloadButton;
-    private JPanel mGainPanel;
-    private AtomicBoolean mGainOverloadAlert = new AtomicBoolean();
+    private static final Logger mLog = LoggerFactory.getLogger(RspTunerEditor.class);
+    private static final PseudoClass OVERLOAD = PseudoClass.getPseudoClass("overload");
+    private static final int IF_GAIN_SLIDER_MAX = 39;
+    private ComboBox<RspSampleRate> mSampleRateCombo;
+    private CheckBox mAgcCheckBox;
+    private Label mGainValueLabel;
+    private Label mGainOverloadLabel;
+    private GainSlider mLNASlider;
+    private GainSlider mIfGainSlider;
+    private Label mLnaLabel;
+    private Label mIfGainLabel;
+    private boolean mGainOverloadAlert;
+    private final List<Option> mOptions = new ArrayList<>();
+    private final List<Choice<?>> mChoices = new ArrayList<>();
 
     /**
-     * Constructs an instance
-     * @param userPreferences for preference settings
-     * @param tunerManager to notify for state changes
-     * @param discoveredTuner to be edited.
+     * Constructs an instance.  Implementations add their own sections and then call {@link #refresh()}.
      */
     public RspTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
         super(userPreferences, tunerManager, discoveredTuner);
+        getTuningSection().addRow("Sample Rate", getSampleRateCombo());
+
+        TunerSection gain = addSection("Gain");
+        HBox readout = new HBox(getGainValueLabel(), getGainOverloadLabel());
+        readout.getStyleClass().add("tuner-flow-row");
+        gain.addRow("Gain", readout);
+        mLnaLabel = gain.addRow("LNA", getLNASlider(), new Region());
+        mIfGainLabel = gain.addRow("IF", getIfGainSlider(), getAgcCheckBox());
     }
 
-    private RspTunerController getTunerController()
+    /**
+     * Discovered RSP tuner
+     */
+    protected DiscoveredRspTuner getDiscoveredRspTuner()
     {
-        return (RspTunerController) getTuner().getTunerController();
+        return (DiscoveredRspTuner)getDiscoveredTuner();
+    }
+
+    /**
+     * Device control for the tuner.  Only use when the editor has a tuner.
+     */
+    protected IControlRsp getControlRsp()
+    {
+        return getTuner().getRspTunerController().getControlRsp();
     }
 
     @Override
@@ -84,92 +107,201 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     }
 
     /**
-     * Gain controls panel
-     * @return gain panel
+     * Sample rates to offer.  Defaults to the single tuner sample rates.
      */
-    protected JPanel getGainPanel()
+    protected Collection<RspSampleRate> getSampleRates()
     {
-        if(mGainPanel == null)
-        {
-            mGainPanel = new JPanel();
-            mGainPanel.setLayout(new MigLayout("insets 0","[][][grow,fill][][]",""));
-            mGainPanel.add(getGainValueLabel());
-            mGainPanel.add(getGainOverloadButton());
-            mGainPanel.add(new JLabel()); //empty label to grow to fill space
-            mGainPanel.add(new JLabel("IF Gain Mode:"));
-            mGainPanel.add(getAgcButton());
-        }
-
-        return mGainPanel;
+        return RspSampleRate.SINGLE_TUNER_SAMPLE_RATES;
     }
 
     /**
-     * Label for displaying current gain index value
+     * Indicates if the user can change the sample rate (when it isn't locked by active channels).  Defaults to true.
      */
-    protected JLabel getGainValueLabel()
+    protected boolean isSampleRateChangeable()
+    {
+        return true;
+    }
+
+    /**
+     * Implementation specific updates after the common RSP controls are refreshed.  Invoked while loading.
+     */
+    protected void rspTunerStatusUpdated()
+    {
+    }
+
+    @Override
+    protected final void tunerStatusUpdated()
+    {
+        getSampleRateCombo().getItems().setAll(hasTuner() ? getSampleRates() : List.of());
+        getSampleRateCombo().setValue(hasTuner() ? getControlRsp().getSampleRateEnumeration() : null);
+        updateSampleRateControl();
+
+        getAgcCheckBox().setDisable(!hasTuner());
+
+        if(hasTuner())
+        {
+            RspAgcMode current = getControlRsp().getAgcMode();
+            getAgcCheckBox().setSelected(current == null || current.equals(RspAgcMode.ENABLE));
+            getLNASlider().setRange(0, getControlRsp().getMaximumLNASetting());
+            setLNA(getControlRsp().getLNA());
+            setGainReduction(getControlRsp().getBasebandGainReduction());
+            //Register to receive gain overload notifications
+            getControlRsp().setGainOverloadListener(this);
+            updateGainLabel();
+        }
+        else
+        {
+            getGainValueLabel().setText("");
+        }
+
+        getLNASlider().setDisable(!hasTuner());
+        mLnaLabel.setDisable(!hasTuner());
+        boolean ifManual = hasTuner() && !getAgcCheckBox().isSelected();
+        getIfGainSlider().setDisable(!ifManual);
+        mIfGainLabel.setDisable(!ifManual);
+        getGainValueLabel().setDisable(!hasTuner());
+
+        for(Option option: mOptions)
+        {
+            option.refresh();
+        }
+
+        for(Choice<?> choice: mChoices)
+        {
+            choice.refresh();
+        }
+
+        rspTunerStatusUpdated();
+    }
+
+    @Override
+    protected void tunerLockStateUpdated(boolean locked)
+    {
+        updateSampleRateControl();
+    }
+
+    private void updateSampleRateControl()
+    {
+        boolean locked = hasTuner() && getTuner().getTunerController().isLockedSampleRate();
+        getSampleRateCombo().setDisable(!hasTuner() || !isSampleRateChangeable() || locked);
+
+        if(locked)
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("Sample rate is locked.  Disable decoding channels to unlock."));
+        }
+        else if(!hasTuner())
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("No tuner available"));
+        }
+        else if(!isSampleRateChangeable())
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("The sample rate is set by the master tuner"));
+        }
+        else
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("Select a sample rate for the tuner"));
+        }
+    }
+
+    /**
+     * Sample rate selection
+     */
+    protected ComboBox<RspSampleRate> getSampleRateCombo()
+    {
+        if(mSampleRateCombo == null)
+        {
+            mSampleRateCombo = new ComboBox<>();
+            mSampleRateCombo.setMaxWidth(Double.MAX_VALUE);
+            mSampleRateCombo.setDisable(true);
+            mSampleRateCombo.setOnAction(e -> {
+                RspSampleRate selected = mSampleRateCombo.getValue();
+
+                if(hasTuner() && !isLoading() && selected != null &&
+                    applyToTuner("sample rate [" + selected + "]",
+                        () -> getTuner().getRspTunerController().setSampleRate(selected)))
+                {
+                    //Adjust the min/max values for the sample rate.
+                    adjustForSampleRate((int)selected.getSampleRate());
+                    save();
+                }
+            });
+        }
+
+        return mSampleRateCombo;
+    }
+
+    /**
+     * Copies the common RSP settings (sample rate and gain) and the base settings to the configuration.
+     */
+    protected void saveRspSettings(C config)
+    {
+        saveCommonSettings(config);
+
+        if(getSampleRateCombo().getValue() != null)
+        {
+            config.setSampleRate(getSampleRateCombo().getValue());
+        }
+
+        config.setLNA(getLNA());
+        config.setBasebandGainReduction(getGainReduction());
+        config.setAgcMode(getAgcCheckBox().isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
+    }
+
+    private Label getGainValueLabel()
     {
         if(mGainValueLabel == null)
         {
-            mGainValueLabel = new JLabel("0");
-            mGainValueLabel.setEnabled(false);
+            mGainValueLabel = new Label();
+            mGainValueLabel.getStyleClass().add("tuner-value-label");
+            mGainValueLabel.setTooltip(new Tooltip("Current overall gain"));
         }
 
         return mGainValueLabel;
     }
 
-    /**
-     * IF AGC mode (enable/disable) toggle button
-     */
-    protected JToggleButton getAgcButton()
+    private Label getGainOverloadLabel()
     {
-        if(mAgcButton == null)
+        if(mGainOverloadLabel == null)
         {
-            mAgcButton = new JToggleButton(MANUAL);
-            mAgcButton.setEnabled(false);
-            mAgcButton.addActionListener(e -> {
-                if(hasTuner() && !isLoading())
-                {
-                    try
-                    {
-                        getTunerController().getControlRsp().setAgcMode(mAgcButton.isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
-                        updateGainLabel();
-                    }
-                    catch(RspException se)
-                    {
-                        mLog.error("Error setting AGC mode on RSP device");
-                    }
-                    save();
-                }
-
-                getIfGainSlider().setEnabled(!getAgcButton().isSelected());
-
-                if(mAgcButton.isSelected())
-                {
-                    getAgcButton().setText(AUTOMATIC);
-                }
-                else
-                {
-                    getAgcButton().setText(MANUAL);
-                }
-            });
+            mGainOverloadLabel = new Label("Overload");
+            mGainOverloadLabel.getStyleClass().add("tuner-overload-indicator");
+            mGainOverloadLabel.setTooltip(new Tooltip("Lights when the manual gain is set too high and the signal " +
+                    "overloads the tuner.  Reduce the gain when this flashes."));
         }
 
-        return mAgcButton;
+        return mGainOverloadLabel;
     }
 
     /**
-     * Gain overload button.  Used in a disabled state to indicate (e.g. flashing color) that gain overload is detected.
+     * IF automatic gain control
      */
-    protected JButton getGainOverloadButton()
+    protected CheckBox getAgcCheckBox()
     {
-        if(mGainOverloadButton == null)
+        if(mAgcCheckBox == null)
         {
-            mGainOverloadButton = new JButton("Gain Overload");
-            mGainOverloadButton.setToolTipText("Notification that manual gain is set too high and causing power overload.  Reduce manual gain when this flashes.");
-            mGainOverloadButton.setEnabled(false);
+            mAgcCheckBox = new CheckBox("AGC");
+            mAgcCheckBox.setTooltip(new Tooltip("Automatic IF gain control.  Turn off to set the IF gain manually."));
+            mAgcCheckBox.setDisable(true);
+            mAgcCheckBox.setOnAction(e -> {
+                boolean agc = mAgcCheckBox.isSelected();
+
+                if(hasTuner() && !isLoading())
+                {
+                    if(applyToTuner("AGC mode",
+                            () -> getControlRsp().setAgcMode(agc ? RspAgcMode.ENABLE : RspAgcMode.DISABLE)))
+                    {
+                        updateGainLabel();
+                    }
+
+                    save();
+                }
+
+                getIfGainSlider().setDisable(agc);
+                mIfGainLabel.setDisable(agc);
+            });
         }
 
-        return mGainOverloadButton;
+        return mAgcCheckBox;
     }
 
     @Override
@@ -177,210 +309,292 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     {
         if(hasTuner() && getTuner().getRspTunerController().getSdrplayTuner() == tuner)
         {
-            //Set overload alert
-            EventQueue.invokeLater(() -> setGainOverloadAlert(true));
-
-            //Schedule a reset to happen 1 second later
-            ThreadPool.SCHEDULED.schedule((Runnable) () -> setGainOverloadAlert(false), 600, TimeUnit.MILLISECONDS);
+            runOnFxThread(() -> setGainOverloadAlert(true));
+            ThreadPool.SCHEDULED.schedule(() -> runOnFxThread(() -> setGainOverloadAlert(false)), 600,
+                    TimeUnit.MILLISECONDS);
         }
     }
 
     @Override
     public void frequencyUpdated()
     {
-        updateLnaSlider();
+        runOnFxThread(this::updateLnaSlider);
     }
 
-    /**
-     * Toggles the alert styling of the disabled gain overload button to indicate an alert condition or a normal
-     * operating condition.
-     * @param alert true to apply alert styling or false to reset.
-     */
     private void setGainOverloadAlert(boolean alert)
     {
-        if(alert && mGainOverloadAlert.compareAndSet(false, true))
+        if(alert != mGainOverloadAlert)
         {
-            getGainOverloadButton().setEnabled(true);
-            getGainOverloadButton().setForeground(Color.YELLOW);
-            getGainOverloadButton().setBackground(Color.RED);
-        }
-        else if(!alert && mGainOverloadAlert.compareAndSet(true, false))
-        {
-            getGainOverloadButton().setEnabled(false);
-            getGainOverloadButton().setForeground(getForeground());
-            getGainOverloadButton().setBackground(getBackground());
+            mGainOverloadAlert = alert;
+            getGainOverloadLabel().pseudoClassStateChanged(OVERLOAD, alert);
         }
     }
 
     /**
-     * Updates the LNA slider with the number of LNA states available for the current frequency.
+     * Updates the LNA slider range for the current frequency, since the number of LNA states depends on the band.
      */
     protected void updateLnaSlider()
     {
         if(hasTuner())
         {
-            int max = getTunerController().getControlRsp().getMaximumLNASetting();
-            if(max != getLNASlider().getMaximum())
+            int max = getControlRsp().getMaximumLNASetting();
+            GainSlider slider = getLNASlider();
+
+            if(max != (int)slider.getSlider().getMax())
             {
-                EventQueue.invokeLater(() -> {
-                    setLoading(true);
-                    //Adjust the value if it's less than max
-                    getLNASlider().setValue(Math.min(getLNASlider().getValue(), max));
-                    getLNASlider().setMaximum(max);
-                    setLoading(false);
-                });
+                boolean wasLoading = isLoading();
+                setLoading(true);
+                int lna = Math.min(getLNA(), max);
+                slider.setRange(0, max);
+                setLNA(lna);
+                setLoading(wasLoading);
             }
         }
     }
 
     /**
-     * LNA Gain Slider
+     * LNA state slider.  The slider is inverted so that moving it right increases the gain: LNA state 0 is the
+     * highest gain.
      */
-    protected LnaSlider getLNASlider()
+    protected GainSlider getLNASlider()
     {
         if(mLNASlider == null)
         {
-            mLNASlider = new LnaSlider();
-            mLNASlider.setEnabled(true);
-            mLNASlider.setMajorTickSpacing(1);
-            mLNASlider.setPaintTicks(true);
-            mLNASlider.addChangeListener(event ->
-            {
-                JSlider source = (JSlider)event.getSource();
-
-                if(!source.getValueIsAdjusting())
-                {
-                    updateGain();
-                }
-            });
+            mLNASlider = new GainSlider(0, 9, 9);
+            mLNASlider.setApplyOnRelease(true);
+            mLNASlider.setTooltip("LNA gain.  Move right for more gain.");
+            mLNASlider.setFormatter(value -> "State " + ((int)mLNASlider.getSlider().getMax() - value));
+            mLNASlider.setOnChange(value -> updateGain());
         }
 
         return mLNASlider;
     }
 
     /**
-     * Updates the gain settings when the LNA or Baseband gain value is changed by the user.
+     * IF gain slider.  The slider is inverted gain reduction, so that moving it right increases the gain.
      */
-    private void updateGain()
-    {
-        int lna = getLNASlider().getLNA();
-        int gr = getIfGainSlider().getGR();
-
-        if(hasTuner() && !isLoading())
-        {
-            try
-            {
-                getTunerController().getControlRsp().setGain(lna, gr);
-                save();
-                updateGainLabel();
-            }
-            catch(Exception e)
-            {
-                mLog.error("Couldn't set RSP gain to LNA:" + lna + " Gain Reduction:" + gr, e);
-                JOptionPane.showMessageDialog(mIfGainSlider, "Couldn't set RSP gain value to LNA:" + lna + " Gain Reduction:" + gr);
-            }
-        }
-    }
-
-    protected void updateGainLabel()
-    {
-        try
-        {
-            float currentGain = getTunerController().getControlRsp().getCurrentGain();
-            getGainValueLabel().setText((int)currentGain + " dB");
-        }
-        catch(RspException se)
-        {
-            mLog.error("Error accessing current gain value from RSP tuner", se);
-        }
-    }
-
-    /**
-     * IF Gain Slider
-     */
-    protected IfGainSlider getIfGainSlider()
+    protected GainSlider getIfGainSlider()
     {
         if(mIfGainSlider == null)
         {
-            mIfGainSlider = new IfGainSlider();
-            mIfGainSlider.setEnabled(true);
-            mIfGainSlider.setMajorTickSpacing(1);
-            mIfGainSlider.setPaintTicks(true);
-            mIfGainSlider.addChangeListener(event ->
-            {
-                JSlider source = (JSlider)event.getSource();
-
-                if(!source.getValueIsAdjusting())
-                {
-                    updateGain();
-                }
-            });
+            mIfGainSlider = new GainSlider(0, IF_GAIN_SLIDER_MAX, 30);
+            mIfGainSlider.setApplyOnRelease(true);
+            mIfGainSlider.setTooltip("IF gain.  Move right for more gain.  Turn off AGC to adjust.");
+            mIfGainSlider.setFormatter(value -> (IF_GAIN_SLIDER_MAX - value + 20) + " dB GR");
+            mIfGainSlider.setOnChange(value -> updateGain());
         }
 
         return mIfGainSlider;
     }
 
     /**
-     * JSlider implementation that inverts the scale to support LNA values.
+     * Current LNA state from the slider
      */
-    public class LnaSlider extends JSlider
+    protected int getLNA()
     {
-        /**
-         * Constructs an instance
-         */
-        public LnaSlider()
-        {
-            super(JSlider.HORIZONTAL, 0,9,9);
-        }
+        return (int)getLNASlider().getSlider().getMax() - getLNASlider().getValue();
+    }
 
-        /**
-         * Slider value converted to the LNA scale.
-         * @return lna value.
-         */
-        public int getLNA()
-        {
-             return getMaximum() - getValue();
-        }
+    private void setLNA(int lna)
+    {
+        getLNASlider().setValue((int)getLNASlider().getSlider().getMax() - lna);
+    }
 
-        /**
-         * Sets the slider with the value converted from the provided LNA value.
-         * @param lna value to apply
-         */
-        public void setLNA(int lna)
+    /**
+     * Current baseband gain reduction from the IF gain slider
+     */
+    protected int getGainReduction()
+    {
+        return IF_GAIN_SLIDER_MAX - getIfGainSlider().getValue() + 20;
+    }
+
+    private void setGainReduction(int gainReduction)
+    {
+        getIfGainSlider().setValue(IF_GAIN_SLIDER_MAX - (gainReduction - 20));
+    }
+
+    private void updateGain()
+    {
+        int lna = getLNA();
+        int gr = getGainReduction();
+
+        if(hasTuner() && !isLoading() &&
+            applyToTuner("gain (LNA " + lna + ", gain reduction " + gr + ")", () -> getControlRsp().setGain(lna, gr)))
         {
-            setValue(getMaximum() - lna);
+            save();
+            updateGainLabel();
         }
     }
 
     /**
-     * JSlider implementation that inverts the scale to support IF Gain (aka Gain Reduction) values.
+     * Updates the overall gain readout
      */
-    public class IfGainSlider extends JSlider
+    protected void updateGainLabel()
     {
-        /**
-         * Constructs an instance
-         */
-        public IfGainSlider()
+        try
         {
-            super(JSlider.HORIZONTAL, 0, 39, 30);
+            getGainValueLabel().setText((int)getControlRsp().getCurrentGain() + " dB");
+        }
+        catch(Exception se)
+        {
+            mLog.error("Error accessing current gain value from RSP tuner", se);
+        }
+    }
+
+    /**
+     * Reads a device setting
+     */
+    @FunctionalInterface
+    protected interface RspGetter<T>
+    {
+        T get() throws Exception;
+    }
+
+    /**
+     * Applies a device setting
+     */
+    @FunctionalInterface
+    protected interface RspSetter<T>
+    {
+        void set(T value) throws Exception;
+    }
+
+    /**
+     * Adds a check box option to the section that's bound to a device setting.  The check box is refreshed from the
+     * device when the editor refreshes, and changes are applied to the device and then saved.
+     * @param section to add to
+     * @param text for the check box
+     * @param tooltip or null
+     * @param getter reads the device setting
+     * @param setter applies the device setting
+     * @return the check box
+     */
+    protected CheckBox addOption(TunerSection section, String text, String tooltip, RspGetter<Boolean> getter,
+                                 RspSetter<Boolean> setter)
+    {
+        Option option = new Option(text, getter, setter);
+
+        if(tooltip != null)
+        {
+            option.mCheckBox.setTooltip(new Tooltip(tooltip));
         }
 
-        /**
-         * Slider value converted to the gain reduction scale.
-         * @return gain reduction value.
-         */
-        public int getGR()
+        mOptions.add(option);
+        section.addControl(option.mCheckBox);
+        return option.mCheckBox;
+    }
+
+    /**
+     * Adds a choice (combo box) to the section that's bound to a device setting.
+     * @param section to add to
+     * @param label for the row
+     * @param values to choose from
+     * @param getter reads the device setting
+     * @param setter applies the device setting
+     * @return the combo box
+     */
+    protected <T> ComboBox<T> addChoice(TunerSection section, String label, Collection<T> values, RspGetter<T> getter,
+                                        RspSetter<T> setter)
+    {
+        Choice<T> choice = new Choice<>(label, values, getter, setter);
+        mChoices.add(choice);
+        section.addRow(label, choice.mComboBox);
+        return choice.mComboBox;
+    }
+
+    /**
+     * Check box bound to a device setting
+     */
+    private class Option
+    {
+        private final CheckBox mCheckBox;
+        private final String mText;
+        private final RspGetter<Boolean> mGetter;
+
+        Option(String text, RspGetter<Boolean> getter, RspSetter<Boolean> setter)
         {
-            return getIfGainSlider().getMaximum() - getIfGainSlider().getValue() + 20;
+            mText = text;
+            mGetter = getter;
+            mCheckBox = new CheckBox(text);
+            mCheckBox.setDisable(true);
+            mCheckBox.setOnAction(e -> {
+                if(hasTuner() && !isLoading())
+                {
+                    boolean selected = mCheckBox.isSelected();
+
+                    if(applyToTuner(mText, () -> setter.set(selected)))
+                    {
+                        save();
+                    }
+                    else
+                    {
+                        refresh();
+                    }
+                }
+            });
         }
 
-        /**
-         * Sets the slider with the value converted from the provided gain reduction value.
-         * @param gainReduction value to apply
-         */
-        public void setGR(int gainReduction)
+        void refresh()
         {
-            setValue(getMaximum() - (gainReduction - 20));
+            mCheckBox.setDisable(!hasTuner());
+
+            try
+            {
+                mCheckBox.setSelected(hasTuner() && mGetter.get());
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error reading RSP setting [" + mText + "]", e);
+            }
+        }
+    }
+
+    /**
+     * Combo box bound to a device setting
+     */
+    private class Choice<T>
+    {
+        private final ComboBox<T> mComboBox;
+        private final String mLabel;
+        private final RspGetter<T> mGetter;
+
+        Choice(String label, Collection<T> values, RspGetter<T> getter, RspSetter<T> setter)
+        {
+            mLabel = label;
+            mGetter = getter;
+            mComboBox = new ComboBox<>();
+            mComboBox.getItems().addAll(values);
+            mComboBox.setMaxWidth(Double.MAX_VALUE);
+            mComboBox.setDisable(true);
+            mComboBox.setOnAction(e -> {
+                T selected = mComboBox.getValue();
+
+                if(hasTuner() && !isLoading() && selected != null)
+                {
+                    if(applyToTuner(mLabel.toLowerCase() + " [" + selected + "]", () -> setter.set(selected)))
+                    {
+                        save();
+                    }
+                    else
+                    {
+                        refresh();
+                    }
+                }
+            });
+        }
+
+        void refresh()
+        {
+            mComboBox.setDisable(!hasTuner());
+
+            try
+            {
+                mComboBox.setValue(hasTuner() ? mGetter.get() : null);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error reading RSP setting [" + mLabel + "]", e);
+            }
         }
     }
 }

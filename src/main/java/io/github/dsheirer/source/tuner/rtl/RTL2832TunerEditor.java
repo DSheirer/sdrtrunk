@@ -19,7 +19,6 @@
 package io.github.dsheirer.source.tuner.rtl;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -27,17 +26,12 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController.SampleRate;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r8x.R8xTunerConfiguration;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-import javax.swing.JToggleButton;
-import javax.swing.SpinnerNumberModel;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
+import javafx.collections.FXCollections;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 
 /**
  * RTL-2832 tuner editor for all supported embedded tuner types (E4000, FC0012, FC0013, FC2580, R820T and R828D).
@@ -47,15 +41,12 @@ import org.slf4j.LoggerFactory;
  */
 public class RTL2832TunerEditor extends TunerEditor<RTL2832Tuner, RTL2832TunerConfiguration>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(RTL2832TunerEditor.class);
-    private static final long serialVersionUID = 1L;
-    private JButton mTunerInfoButton;
-    private JToggleButton mBiasTButton;
-    private JComboBox<SampleRate> mSampleRateCombo;
-    private JToggleButton mAgcToggleButton;
-    private JComboBox<Gain> mGainCombo;
-    private JLabel mIFGainLabel;
-    private JComboBox<Integer> mIFGainCombo;
+    private ComboBox<SampleRate> mSampleRateCombo;
+    private CheckBox mBiasTCheckBox;
+    private CheckBox mAgcCheckBox;
+    private ComboBox<Gain> mGainCombo;
+    private Label mIFGainLabel;
+    private ComboBox<Integer> mIFGainCombo;
 
     /**
      * Constructs an instance
@@ -67,7 +58,7 @@ public class RTL2832TunerEditor extends TunerEditor<RTL2832Tuner, RTL2832TunerCo
     {
         super(userPreferences, tunerManager, discoveredTuner);
         init();
-        tunerStatusUpdated();
+        refresh();
     }
 
     @Override
@@ -92,11 +83,6 @@ public class RTL2832TunerEditor extends TunerEditor<RTL2832Tuner, RTL2832TunerCo
         return R8xTunerConfiguration.MAXIMUM_TUNABLE_FREQUENCY_HZ;
     }
 
-    private String getLogPrefix()
-    {
-        return (hasTuner() ? getTuner().getController().getTunerType().getLabel() : "RTL-2832") + " Tuner Controller - ";
-    }
-
     /**
      * Indicates if the tuner has an E4000 embedded tuner, which supports IF gain control.
      */
@@ -107,338 +93,18 @@ public class RTL2832TunerEditor extends TunerEditor<RTL2832Tuner, RTL2832TunerCo
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
-                "[][][][][][][][][][][][][][][][grow]"));
+        getTuningSection().addRow("Sample Rate", getSampleRateCombo());
 
-        add(new JLabel("Tuner:"));
-        add(getTunerIdLabel());
-        add(getTunerInfoButton());
+        TunerSection gain = addSection("Gain");
+        gain.addRow("Gain", getGainCombo(), getAgcCheckBox());
+        mIFGainLabel = gain.addRow("IF Gain (dB)", getIFGainCombo());
 
-        add(new JLabel("Status:"));
-        add(getTunerStatusLabel());
-        add(getBiasTButton(), "wrap");
-
-        add(getButtonPanel(), "span,align left");
-
-        add(new JSeparator(), "span,growx,push");
-
-        add(new JLabel("Frequency (MHz):"));
-        add(getFrequencyPanel(), "wrap");
-
-        add(new JLabel("Sample Rate:"));
-        add(getSampleRateCombo(), "wrap");
-
-        add(new JSeparator(), "span,growx,push");
-        add(new JLabel("Gain Control"), "wrap");
-
-        add(new JLabel("Gain:"));
-        add(getGainCombo());
-        add(getAgcToggleButton(), "wrap");
-
-        add(getIFGainLabel());
-        add(getIFGainCombo(), "wrap");
+        TunerSection options = addSection("Options");
+        options.addControl(getBiasTCheckBox());
     }
 
     @Override
-    protected void tunerStatusUpdated()
-    {
-        setLoading(true);
-
-        if(hasTuner())
-        {
-            getTunerIdLabel().setText(getTuner().getPreferredName());
-        }
-        else
-        {
-            getTunerIdLabel().setText(getDiscoveredTuner().getId());
-        }
-
-        String status = getDiscoveredTuner().getTunerStatus().toString();
-        if(getDiscoveredTuner().hasErrorMessage())
-        {
-            status += " - " + getDiscoveredTuner().getErrorMessage();
-        }
-        getTunerStatusLabel().setText(status);
-        getButtonPanel().updateControls();
-        getFrequencyPanel().updateControls();
-
-        DefaultComboBoxModel<Gain> gainModel = new DefaultComboBoxModel<>();
-
-        if(hasTuner())
-        {
-            RTL2832TunerController controller = getTuner().getController();
-
-            if(controller.hasGainControl())
-            {
-                for(int gain : controller.getTunerGains())
-                {
-                    gainModel.addElement(new Gain(gain));
-                }
-            }
-        }
-
-        getGainCombo().setModel(gainModel);
-
-        boolean e4k = isE4K();
-        getIFGainLabel().setVisible(e4k);
-        getIFGainCombo().setVisible(e4k);
-
-        if(hasTuner() && hasConfiguration())
-        {
-            RTL2832TunerConfiguration config = getConfiguration();
-            getBiasTButton().setEnabled(true);
-            getBiasTButton().setSelected(config.isBiasT());
-            getTunerInfoButton().setEnabled(true);
-            getSampleRateCombo().setEnabled(true);
-            getSampleRateCombo().setSelectedItem(config.getSampleRate());
-            RTL2832TunerController controller = getTuner().getController();
-            //The FC2580 always uses its internal AGC and the FC0012 doesn't support AGC
-            boolean agc = controller.hasGainControl() ? controller.hasTunerAGC() && config.isAGC() : true;
-            getAgcToggleButton().setEnabled(controller.hasTunerAGC());
-            getAgcToggleButton().setSelected(agc);
-            getAgcToggleButton().setToolTipText(getAgcToolTip(controller));
-            getGainCombo().setEnabled(!agc && gainModel.getSize() > 0);
-            getGainCombo().setSelectedItem(new Gain(getTuner().getController().getClosestTunerGain(config.getGain())));
-
-            if(e4k && config instanceof E4KTunerConfiguration e4kConfig)
-            {
-                getIFGainCombo().setEnabled(true);
-                getIFGainCombo().setSelectedItem(e4kConfig.getIFGainDb());
-            }
-        }
-        else
-        {
-            getBiasTButton().setEnabled(false);
-            getBiasTButton().setSelected(false);
-            getTunerInfoButton().setEnabled(false);
-            getSampleRateCombo().setEnabled(false);
-            getAgcToggleButton().setEnabled(false);
-            getGainCombo().setEnabled(false);
-            getIFGainCombo().setEnabled(false);
-        }
-
-        updateSampleRateToolTip();
-
-        setLoading(false);
-    }
-
-    /**
-     * Bias-T toggle button
-     */
-    private JToggleButton getBiasTButton()
-    {
-        if(mBiasTButton == null)
-        {
-            mBiasTButton = new JToggleButton("Bias-T");
-            mBiasTButton.setEnabled(false);
-            mBiasTButton.addActionListener(e -> {
-                if(!isLoading())
-                {
-                    getTuner().getController().setBiasT(mBiasTButton.isSelected());
-                    save();
-                }
-            });
-        }
-
-        return mBiasTButton;
-    }
-
-    /**
-     * Button that provides tuner information
-     */
-    private JButton getTunerInfoButton()
-    {
-        if(mTunerInfoButton == null)
-        {
-            mTunerInfoButton = new JButton("Info");
-            mTunerInfoButton.setEnabled(false);
-            mTunerInfoButton.addActionListener(e -> JOptionPane.showMessageDialog(RTL2832TunerEditor.this,
-                    getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));
-        }
-
-        return mTunerInfoButton;
-    }
-
-    /**
-     * Applies the current AGC and gain settings to the tuner and saves the configuration.
-     */
-    private void applyGain()
-    {
-        if(isLoading() || !hasTuner())
-        {
-            return;
-        }
-
-        boolean agc = getAgcToggleButton().isSelected();
-        Gain gain = (Gain)getGainCombo().getSelectedItem();
-        getGainCombo().setEnabled(!agc && getGainCombo().getItemCount() > 0);
-
-        try
-        {
-            getTuner().getController().setGain(agc, gain != null ? gain.value() : getConfiguration().getGain());
-            save();
-        }
-        catch(SourceException se)
-        {
-            JOptionPane.showMessageDialog(RTL2832TunerEditor.this, getLogPrefix() +
-                    "couldn't apply the gain setting - " + se.getLocalizedMessage());
-            mLog.error(getLogPrefix() + "couldn't apply gain setting", se);
-        }
-    }
-
-    /**
-     * Tool tip for the AGC button that explains when the tuner doesn't support switching AGC.
-     */
-    private static String getAgcToolTip(RTL2832TunerController controller)
-    {
-        if(!controller.hasGainControl())
-        {
-            return "The " + controller.getTunerType().getLabel() + " tuner always uses its automatic gain control (AGC)";
-        }
-        else if(!controller.hasTunerAGC())
-        {
-            return "The " + controller.getTunerType().getLabel() + " tuner doesn't support automatic gain control (AGC)";
-        }
-
-        return "Turn on the tuner's automatic gain control (AGC)";
-    }
-
-    private JToggleButton getAgcToggleButton()
-    {
-        if(mAgcToggleButton == null)
-        {
-            mAgcToggleButton = new JToggleButton("AGC");
-            mAgcToggleButton.setEnabled(false);
-            mAgcToggleButton.setToolTipText("Turn on the tuner's automatic gain control (AGC)");
-            mAgcToggleButton.addActionListener(e -> applyGain());
-        }
-
-        return mAgcToggleButton;
-    }
-
-    private JComboBox<Gain> getGainCombo()
-    {
-        if(mGainCombo == null)
-        {
-            mGainCombo = new JComboBox<>();
-            mGainCombo.setEnabled(false);
-            mGainCombo.setToolTipText("Tuner gain.  Turn off AGC to enable adjustment.");
-            mGainCombo.addActionListener(e -> applyGain());
-        }
-
-        return mGainCombo;
-    }
-
-    private JLabel getIFGainLabel()
-    {
-        if(mIFGainLabel == null)
-        {
-            mIFGainLabel = new JLabel("IF Gain (dB):");
-        }
-
-        return mIFGainLabel;
-    }
-
-    private JComboBox<Integer> getIFGainCombo()
-    {
-        if(mIFGainCombo == null)
-        {
-            mIFGainCombo = new JComboBox<>();
-
-            for(int gain = RTL2832TunerController.E4K_IF_GAIN_MINIMUM; gain <= RTL2832TunerController.E4K_IF_GAIN_MAXIMUM; gain++)
-            {
-                mIFGainCombo.addItem(gain);
-            }
-
-            mIFGainCombo.setEnabled(false);
-            mIFGainCombo.setToolTipText("E4000 IF gain, distributed across the six IF gain stages");
-            mIFGainCombo.addActionListener(e ->
-            {
-                Integer gain = (Integer)mIFGainCombo.getSelectedItem();
-
-                if(!isLoading() && hasTuner() && gain != null)
-                {
-                    try
-                    {
-                        getTuner().getController().setE4KIFGain(gain);
-                        save();
-                    }
-                    catch(SourceException se)
-                    {
-                        JOptionPane.showMessageDialog(RTL2832TunerEditor.this, getLogPrefix() +
-                                "couldn't apply the IF gain setting - " + se.getLocalizedMessage());
-                        mLog.error(getLogPrefix() + "couldn't apply IF gain setting", se);
-                    }
-                }
-            });
-        }
-
-        return mIFGainCombo;
-    }
-
-    private JComboBox<SampleRate> getSampleRateCombo()
-    {
-        if(mSampleRateCombo == null)
-        {
-            mSampleRateCombo = new JComboBox<>(SampleRate.values());
-            mSampleRateCombo.setEnabled(false);
-            mSampleRateCombo.addActionListener(e ->
-            {
-                if(!isLoading())
-                {
-                    SampleRate sampleRate = (SampleRate) mSampleRateCombo.getSelectedItem();
-
-                    try
-                    {
-                        getTuner().getController().setSampleRate(sampleRate);
-                        //Adjust the min/max values for the sample rate.
-                        adjustForSampleRate(sampleRate.getRate());
-                        save();
-                    }
-                    catch(SourceException se)
-                    {
-                        JOptionPane.showMessageDialog(RTL2832TunerEditor.this,
-                                getLogPrefix() + "couldn't apply the sample rate setting [" +
-                                        sampleRate.getLabel() + "] " + se.getLocalizedMessage());
-
-                        mLog.error(getLogPrefix() + "couldn't apply sample rate setting [" + sampleRate.getLabel() +
-                                "]", se);
-                    }
-                }
-            });
-        }
-
-        return mSampleRateCombo;
-    }
-
-    /**
-     * Updates the sample rate tooltip according to the tuner controller's lock state.
-     */
-    private void updateSampleRateToolTip()
-    {
-        if(hasTuner() && getTuner().getTunerController().isLockedSampleRate())
-        {
-            getSampleRateCombo().setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
-        }
-        else if(hasTuner())
-        {
-            getSampleRateCombo().setToolTipText("Select a sample rate for the tuner");
-        }
-        else
-        {
-            getSampleRateCombo().setToolTipText("No tuner available");
-        }
-    }
-
-    @Override
-    public void setTunerLockState(boolean locked)
-    {
-        getFrequencyPanel().updateControls();
-        getSampleRateCombo().setEnabled(!locked);
-        updateSampleRateToolTip();
-    }
-
-    private String getTunerInfo()
+    protected String getTunerInfo()
     {
         StringBuilder sb = new StringBuilder();
         RTL2832TunerController.Descriptor descriptor = getTuner().getController().getDescriptor();
@@ -464,27 +130,241 @@ public class RTL2832TunerEditor extends TunerEditor<RTL2832Tuner, RTL2832TunerCo
     }
 
     @Override
+    protected void tunerStatusUpdated()
+    {
+        getGainCombo().getItems().clear();
+
+        if(hasTuner())
+        {
+            RTL2832TunerController controller = getTuner().getController();
+
+            if(controller.hasGainControl())
+            {
+                for(int gain : controller.getTunerGains())
+                {
+                    getGainCombo().getItems().add(new Gain(gain));
+                }
+            }
+        }
+
+        boolean e4k = isE4K();
+        mIFGainLabel.setVisible(e4k);
+        getIFGainCombo().setVisible(e4k);
+
+        if(hasTuner() && hasConfiguration())
+        {
+            RTL2832TunerConfiguration config = getConfiguration();
+            RTL2832TunerController controller = getTuner().getController();
+            getBiasTCheckBox().setDisable(false);
+            getBiasTCheckBox().setSelected(config.isBiasT());
+            getSampleRateCombo().setValue(config.getSampleRate());
+            //The FC2580 always uses its internal AGC and the FC0012 doesn't support AGC
+            boolean agc = controller.hasGainControl() ? controller.hasTunerAGC() && config.isAGC() : true;
+            getAgcCheckBox().setDisable(!controller.hasTunerAGC());
+            getAgcCheckBox().setSelected(agc);
+            getAgcCheckBox().setTooltip(new Tooltip(getAgcToolTip(controller)));
+            getGainCombo().setDisable(agc || getGainCombo().getItems().isEmpty());
+            getGainCombo().setValue(new Gain(controller.getClosestTunerGain(config.getGain())));
+
+            if(e4k && config instanceof E4KTunerConfiguration e4kConfig)
+            {
+                getIFGainCombo().setDisable(false);
+                getIFGainCombo().setValue(e4kConfig.getIFGainDb());
+            }
+        }
+        else
+        {
+            getBiasTCheckBox().setDisable(true);
+            getBiasTCheckBox().setSelected(false);
+            getAgcCheckBox().setDisable(true);
+            getGainCombo().setDisable(true);
+            getIFGainCombo().setDisable(true);
+        }
+
+        updateSampleRateControl();
+    }
+
+    @Override
+    protected void tunerLockStateUpdated(boolean locked)
+    {
+        updateSampleRateControl();
+    }
+
+    /**
+     * Updates the sample rate combo's enabled state and tooltip according to the tuner controller's lock state.
+     */
+    private void updateSampleRateControl()
+    {
+        boolean locked = hasTuner() && getTuner().getTunerController().isLockedSampleRate();
+        getSampleRateCombo().setDisable(!hasTuner() || !hasConfiguration() || locked);
+
+        if(locked)
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("Sample rate is locked.  Disable decoding channels to unlock."));
+        }
+        else if(hasTuner())
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("Select a sample rate for the tuner"));
+        }
+        else
+        {
+            getSampleRateCombo().setTooltip(new Tooltip("No tuner available"));
+        }
+    }
+
+    private CheckBox getBiasTCheckBox()
+    {
+        if(mBiasTCheckBox == null)
+        {
+            mBiasTCheckBox = new CheckBox("Bias-T");
+            mBiasTCheckBox.setTooltip(new Tooltip("Provide DC power on the antenna connector (e.g. for an LNA)"));
+            mBiasTCheckBox.setDisable(true);
+            mBiasTCheckBox.setOnAction(e -> {
+                if(!isLoading() && hasTuner())
+                {
+                    getTuner().getController().setBiasT(mBiasTCheckBox.isSelected());
+                    save();
+                }
+            });
+        }
+
+        return mBiasTCheckBox;
+    }
+
+    /**
+     * Applies the current AGC and gain settings to the tuner and saves the configuration.
+     */
+    private void applyGain()
+    {
+        if(isLoading() || !hasTuner())
+        {
+            return;
+        }
+
+        boolean agc = getAgcCheckBox().isSelected();
+        Gain gain = getGainCombo().getValue();
+        getGainCombo().setDisable(agc || getGainCombo().getItems().isEmpty());
+
+        if(applyToTuner("gain", () -> getTuner().getController().setGain(agc,
+                gain != null ? gain.value() : getConfiguration().getGain())))
+        {
+            save();
+        }
+    }
+
+    /**
+     * Tool tip for the AGC control that explains when the tuner doesn't support switching AGC.
+     */
+    private static String getAgcToolTip(RTL2832TunerController controller)
+    {
+        if(!controller.hasGainControl())
+        {
+            return "The " + controller.getTunerType().getLabel() + " tuner always uses its automatic gain control (AGC)";
+        }
+        else if(!controller.hasTunerAGC())
+        {
+            return "The " + controller.getTunerType().getLabel() + " tuner doesn't support automatic gain control (AGC)";
+        }
+
+        return "Turn on the tuner's automatic gain control (AGC)";
+    }
+
+    private CheckBox getAgcCheckBox()
+    {
+        if(mAgcCheckBox == null)
+        {
+            mAgcCheckBox = new CheckBox("AGC");
+            mAgcCheckBox.setDisable(true);
+            mAgcCheckBox.setTooltip(new Tooltip("Turn on the tuner's automatic gain control (AGC)"));
+            mAgcCheckBox.setOnAction(e -> applyGain());
+        }
+
+        return mAgcCheckBox;
+    }
+
+    private ComboBox<Gain> getGainCombo()
+    {
+        if(mGainCombo == null)
+        {
+            mGainCombo = new ComboBox<>();
+            mGainCombo.setMaxWidth(Double.MAX_VALUE);
+            mGainCombo.setDisable(true);
+            mGainCombo.setTooltip(new Tooltip("Tuner gain.  Turn off AGC to enable adjustment."));
+            mGainCombo.setOnAction(e -> applyGain());
+        }
+
+        return mGainCombo;
+    }
+
+    private ComboBox<Integer> getIFGainCombo()
+    {
+        if(mIFGainCombo == null)
+        {
+            mIFGainCombo = new ComboBox<>();
+            mIFGainCombo.setMaxWidth(Double.MAX_VALUE);
+
+            for(int gain = RTL2832TunerController.E4K_IF_GAIN_MINIMUM; gain <= RTL2832TunerController.E4K_IF_GAIN_MAXIMUM; gain++)
+            {
+                mIFGainCombo.getItems().add(gain);
+            }
+
+            mIFGainCombo.setDisable(true);
+            mIFGainCombo.setTooltip(new Tooltip("E4000 IF gain, distributed across the six IF gain stages"));
+            mIFGainCombo.setOnAction(e -> {
+                Integer gain = mIFGainCombo.getValue();
+
+                if(!isLoading() && hasTuner() && gain != null &&
+                    applyToTuner("IF gain", () -> getTuner().getController().setE4KIFGain(gain)))
+                {
+                    save();
+                }
+            });
+        }
+
+        return mIFGainCombo;
+    }
+
+    private ComboBox<SampleRate> getSampleRateCombo()
+    {
+        if(mSampleRateCombo == null)
+        {
+            mSampleRateCombo = new ComboBox<>(FXCollections.observableArrayList(SampleRate.values()));
+            mSampleRateCombo.setMaxWidth(Double.MAX_VALUE);
+            mSampleRateCombo.setDisable(true);
+            mSampleRateCombo.setOnAction(e -> {
+                SampleRate sampleRate = mSampleRateCombo.getValue();
+
+                if(!isLoading() && hasTuner() && sampleRate != null &&
+                    applyToTuner("sample rate [" + sampleRate.getLabel() + "]",
+                        () -> getTuner().getController().setSampleRate(sampleRate)))
+                {
+                    //Adjust the min/max values for the sample rate.
+                    adjustForSampleRate(sampleRate.getRate());
+                    save();
+                }
+            });
+        }
+
+        return mSampleRateCombo;
+    }
+
+    @Override
     public void save()
     {
         if(hasConfiguration() && !isLoading())
         {
             RTL2832TunerConfiguration config = getConfiguration();
+            saveCommonSettings(config);
             config.setBiasT(getTuner().getController().isBiasT());
-            config.setFrequency(getFrequencyControl().getFrequency());
-            config.setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-            config.setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
-            double value = ((SpinnerNumberModel)getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
-            config.setFrequencyCorrection(value);
-            config.setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
-            config.setSampleRate((SampleRate)getSampleRateCombo().getSelectedItem());
-            config.setAGC(getAgcToggleButton().isSelected());
+            config.setSampleRate(getSampleRateCombo().getValue());
+            config.setAGC(getAgcCheckBox().isSelected());
 
-            if(getGainCombo().getSelectedItem() instanceof Gain gain)
+            if(getGainCombo().getValue() instanceof Gain gain)
             {
                 config.setGain(gain.value());
             }
 
-            if(config instanceof E4KTunerConfiguration e4k && getIFGainCombo().getSelectedItem() instanceof Integer ifGain)
+            if(config instanceof E4KTunerConfiguration e4k && getIFGainCombo().getValue() instanceof Integer ifGain)
             {
                 e4k.setIFGainDb(ifGain);
             }

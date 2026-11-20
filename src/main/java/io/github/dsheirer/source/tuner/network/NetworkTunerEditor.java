@@ -18,53 +18,37 @@
  */
 package io.github.dsheirer.source.tuner.network;
 
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-import javax.swing.JToggleButton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController.SampleRate;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import net.miginfocom.swing.MigLayout;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
+import java.util.List;
+import javafx.collections.FXCollections;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tooltip;
+import javafx.util.StringConverter;
 
+/**
+ * Editor for an rtl_tcp network tuner.
+ */
 public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerConfiguration> {
-  private static final long serialVersionUID = 1L;
-  private static final Logger mLog = LoggerFactory.getLogger(NetworkTunerEditor.class);
+  private static final List<Integer> R820T_GAINS_TENTHS_DB = List.of(0, 9, 14, 27, 37, 77, 87, 125, 144, 157, 166,
+      197, 207, 229, 254, 280, 297, 328, 338, 364, 372, 386, 402, 421, 434, 439, 445, 480, 496);
 
-  //R820T total gain table (tenths of dB), from librtlsdr's rtlsdr_get_tuner_gains() - most rtl_tcp
-  //servers are backed by an R820T/R820T2 dongle and report this same gain table.
-  private static final Integer[] R820T_GAINS_TENTHS_DB = {0, 9, 14, 27, 37, 77, 87, 125, 144, 157, 166, 197, 207,
-      229, 254, 280, 297, 328, 338, 364, 372, 386, 402, 421, 434, 439, 445, 480, 496};
-
-  private JButton mTunerInfoButton;
-  private JToggleButton mBiasTButton;
-  private JComboBox<SampleRate> mSampleRateCombo;
-  private JCheckBox mGainAutoCheckBox;
-  private JComboBox<Integer> mGainCombo;
-  private JCheckBox mAutoReconnectCheckBox;
+  private CheckBox mBiasTCheckBox;
+  private ComboBox<SampleRate> mSampleRateCombo;
+  private CheckBox mGainAutoCheckBox;
+  private ComboBox<Integer> mGainCombo;
+  private CheckBox mAutoReconnectCheckBox;
 
   public NetworkTunerEditor(UserPreferences userPreferences, TunerManager tunerManager,
       DiscoveredTuner discoveredTuner) {
     super(userPreferences, tunerManager, discoveredTuner);
     init();
-    tunerStatusUpdated();
-  }
-
-  @Override
-  public void setTunerLockState(boolean locked) {
-    getFrequencyPanel().updateControls();
-    //Matches the USB RTL2832/R8x tuner pattern: sample rate can't change while channels are active. Gain and
-    //Bias-T don't affect channelizing, so they remain adjustable regardless of lock state.
-    getSampleRateCombo().setEnabled(hasTuner() && !locked);
+    refresh();
   }
 
   @Override
@@ -74,134 +58,92 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
 
   @Override
   public long getMaximumTunableFrequency() {
-    return 2200000000l;
+    return 2200000000L;
+  }
+
+  private void init() {
+    getTuningSection().addRow("Sample Rate", getSampleRateCombo());
+
+    TunerSection gain = addSection("Gain");
+    gain.addRow("Gain", getGainCombo(), getGainAutoCheckBox());
+
+    TunerSection options = addSection("Options");
+    options.addControl(getBiasTCheckBox());
+    options.addControl(getAutoReconnectCheckBox());
   }
 
   @Override
   protected void tunerStatusUpdated() {
-    setLoading(true);
-
-    if (hasTuner()) {
-      getTunerIdLabel().setText(getTuner().getPreferredName());
-    } else {
-      getTunerIdLabel().setText(getDiscoveredTuner().getId());
-    }
-
-    String status = getDiscoveredTuner().getTunerStatus().toString();
-    if (getDiscoveredTuner().hasErrorMessage()) {
-      status += " - " + getDiscoveredTuner().getErrorMessage();
-    }
-    getTunerStatusLabel().setText(status);
-    getButtonPanel().updateControls();
-    getFrequencyPanel().updateControls();
-
-    getTunerInfoButton().setEnabled(hasTuner());
-    getBiasTButton().setEnabled(hasTuner());
-    getSampleRateCombo().setEnabled(hasTuner());
-    getGainAutoCheckBox().setEnabled(hasTuner());
-    getAutoReconnectCheckBox().setEnabled(hasTuner());
+    getBiasTCheckBox().setDisable(!hasTuner());
+    getGainAutoCheckBox().setDisable(!hasTuner());
+    getAutoReconnectCheckBox().setDisable(!hasTuner());
+    updateSampleRateControl();
 
     if (hasConfiguration()) {
-      getBiasTButton().setSelected(getConfiguration().isBiasTEnabled());
-      getSampleRateCombo().setSelectedItem(closestSampleRate(getConfiguration().getSampleRate()));
+      getBiasTCheckBox().setSelected(getConfiguration().isBiasTEnabled());
+      getSampleRateCombo().setValue(closestSampleRate(getConfiguration().getSampleRate()));
       getGainAutoCheckBox().setSelected(getConfiguration().isGainAuto());
-      getGainCombo().setSelectedItem(closestGain(getConfiguration().getGain()));
-      getGainCombo().setEnabled(hasTuner() && !getConfiguration().isGainAuto());
+      getGainCombo().setValue(closestGain(getConfiguration().getGain()));
+      getGainCombo().setDisable(!hasTuner() || getConfiguration().isGainAuto());
       getAutoReconnectCheckBox().setSelected(getConfiguration().isAutoReconnect());
+    } else {
+      getGainCombo().setDisable(true);
+    }
+  }
+
+  @Override
+  protected void tunerLockStateUpdated(boolean locked) {
+    updateSampleRateControl();
+  }
+
+  private void updateSampleRateControl() {
+    getSampleRateCombo().setDisable(!hasTuner() || getTuner().getTunerController().isLockedSampleRate());
+  }
+
+  @Override
+  protected String getTunerInfo() {
+    if (!hasConfiguration()) {
+      return null;
     }
 
-    setLoading(false);
+    return "<html><h3>rtl_tcp Network Tuner</h3>" +
+        "<b>Host: </b>" + getConfiguration().getHost() + "<br>" +
+        "<b>Port: </b>" + getConfiguration().getPort() + "<br>" +
+        "<b>Tuner Type: </b>rtl_tcp<br>";
   }
 
-  private void init() {
-    setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]", "[][][][][][][][][grow]"));
-
-    add(new JLabel("Tuner:"));
-    add(getTunerIdLabel());
-    add(getTunerInfoButton());
-
-    add(new JLabel("Status:"));
-    add(getTunerStatusLabel());
-    add(getBiasTButton(), "wrap");
-
-    add(getButtonPanel(), "span,align left");
-    add(new JSeparator(), "span,growx,push");
-
-    add(new JLabel("Frequency (MHz):"));
-    add(getFrequencyPanel(), "wrap");
-
-    add(new JLabel("Sample Rate:"));
-    add(getSampleRateCombo(), "wrap");
-
-    add(new JLabel("Gain:"));
-    add(getGainAutoCheckBox(), "split 2");
-    add(getGainCombo(), "wrap");
-
-    add(new JLabel("Auto-Reconnect:"));
-    add(getAutoReconnectCheckBox(), "wrap");
-  }
-
-  /**
-   * Bias-T toggle button, matching the USB RTL2832/R8x tuner editor's top-row placement.
-   */
-  private JToggleButton getBiasTButton() {
-    if (mBiasTButton == null) {
-      mBiasTButton = new JToggleButton("Bias-T");
-      mBiasTButton.setEnabled(false);
-      mBiasTButton.addActionListener(e -> {
+  private CheckBox getBiasTCheckBox() {
+    if (mBiasTCheckBox == null) {
+      mBiasTCheckBox = new CheckBox("Bias-T");
+      mBiasTCheckBox.setTooltip(new Tooltip("Ask the rtl_tcp server to provide DC power on the antenna connector"));
+      mBiasTCheckBox.setDisable(true);
+      mBiasTCheckBox.setOnAction(e -> {
         if (!isLoading()) {
-          boolean enabled = mBiasTButton.isSelected();
-
           if (hasTuner()) {
-            getTuner().getTunerController().setBiasTEnabled(enabled);
+            getTuner().getTunerController().setBiasTEnabled(mBiasTCheckBox.isSelected());
           }
-
           save();
         }
       });
     }
 
-    return mBiasTButton;
+    return mBiasTCheckBox;
   }
 
-  /**
-   * Hyperlink-style button that shows the network tuner's connection details.
-   */
-  private JButton getTunerInfoButton() {
-    if (mTunerInfoButton == null) {
-      mTunerInfoButton = new JButton("Info");
-      mTunerInfoButton.setEnabled(false);
-      mTunerInfoButton.addActionListener(e -> JOptionPane.showMessageDialog(NetworkTunerEditor.this,
-          getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));
-    }
-
-    return mTunerInfoButton;
-  }
-
-  private String getTunerInfo() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("<html><h3>rtl_tcp Network Tuner</h3>");
-    sb.append("<b>Host: </b>").append(getConfiguration().getHost()).append("<br>");
-    sb.append("<b>Port: </b>").append(getConfiguration().getPort()).append("<br>");
-    sb.append("<b>Tuner Type: </b>rtl_tcp<br>");
-    return sb.toString();
-  }
-
-  private JComboBox<SampleRate> getSampleRateCombo() {
+  private ComboBox<SampleRate> getSampleRateCombo() {
     if (mSampleRateCombo == null) {
-      mSampleRateCombo = new JComboBox<>(SampleRate.values());
-      mSampleRateCombo.setEnabled(false);
-      mSampleRateCombo.addActionListener(e -> {
-        if (!isLoading()) {
-          SampleRate sampleRate = (SampleRate) mSampleRateCombo.getSelectedItem();
+      mSampleRateCombo = new ComboBox<>(FXCollections.observableArrayList(SampleRate.values()));
+      mSampleRateCombo.setMaxWidth(Double.MAX_VALUE);
+      mSampleRateCombo.setDisable(true);
+      mSampleRateCombo.setOnAction(e -> {
+        SampleRate sampleRate = mSampleRateCombo.getValue();
 
-          if (sampleRate != null) {
-            if (hasTuner()) {
-              getTuner().getTunerController().setSampleRate(sampleRate.getRate());
-            }
-
-            save();
+        if (!isLoading() && sampleRate != null) {
+          if (hasTuner()) {
+            getTuner().getTunerController().setSampleRate(sampleRate.getRate());
+            adjustForSampleRate(sampleRate.getRate());
           }
+          save();
         }
       });
     }
@@ -209,18 +151,18 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
     return mSampleRateCombo;
   }
 
-  private JCheckBox getGainAutoCheckBox() {
+  private CheckBox getGainAutoCheckBox() {
     if (mGainAutoCheckBox == null) {
-      mGainAutoCheckBox = new JCheckBox("Auto");
-      mGainAutoCheckBox.addActionListener(e -> {
+      mGainAutoCheckBox = new CheckBox("Auto");
+      mGainAutoCheckBox.setTooltip(new Tooltip("Let the rtl_tcp server's tuner set the gain automatically"));
+      mGainAutoCheckBox.setOnAction(e -> {
         boolean gainAuto = mGainAutoCheckBox.isSelected();
-        getGainCombo().setEnabled(hasTuner() && !gainAuto);
+        getGainCombo().setDisable(!hasTuner() || gainAuto);
 
         if (!isLoading()) {
           if (hasTuner()) {
             getTuner().getTunerController().setGainAuto(gainAuto);
           }
-
           save();
         }
       });
@@ -229,22 +171,31 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
     return mGainAutoCheckBox;
   }
 
-  private JComboBox<Integer> getGainCombo() {
+  private ComboBox<Integer> getGainCombo() {
     if (mGainCombo == null) {
-      mGainCombo = new JComboBox<>(R820T_GAINS_TENTHS_DB);
-      mGainCombo.setEnabled(false);
-      mGainCombo.setToolTipText("Gain in tenths of dB.  Uncheck Auto to enable manual gain.");
-      mGainCombo.addActionListener(e -> {
-        if (!isLoading()) {
-          Integer gain = (Integer) mGainCombo.getSelectedItem();
+      mGainCombo = new ComboBox<>(FXCollections.observableArrayList(R820T_GAINS_TENTHS_DB));
+      mGainCombo.setMaxWidth(Double.MAX_VALUE);
+      mGainCombo.setDisable(true);
+      mGainCombo.setTooltip(new Tooltip("Manual gain.  Uncheck Auto to enable manual gain."));
+      mGainCombo.setConverter(new StringConverter<>() {
+        @Override
+        public String toString(Integer gain) {
+          return gain == null ? "" : String.format("%.1f dB", gain / 10.0);
+        }
 
-          if (gain != null) {
-            if (hasTuner()) {
-              getTuner().getTunerController().setGain(gain);
-            }
+        @Override
+        public Integer fromString(String text) {
+          return null;
+        }
+      });
+      mGainCombo.setOnAction(e -> {
+        Integer gain = mGainCombo.getValue();
 
-            save();
+        if (!isLoading() && gain != null) {
+          if (hasTuner()) {
+            getTuner().getTunerController().setGain(gain);
           }
+          save();
         }
       });
     }
@@ -252,18 +203,16 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
     return mGainCombo;
   }
 
-  private JCheckBox getAutoReconnectCheckBox() {
+  private CheckBox getAutoReconnectCheckBox() {
     if (mAutoReconnectCheckBox == null) {
-      mAutoReconnectCheckBox = new JCheckBox();
-      mAutoReconnectCheckBox.setToolTipText("Automatically reconnect if the connection to the rtl_tcp server is lost");
-      mAutoReconnectCheckBox.addActionListener(e -> {
+      mAutoReconnectCheckBox = new CheckBox("Auto-reconnect");
+      mAutoReconnectCheckBox.setTooltip(new Tooltip("Automatically reconnect if the connection to the rtl_tcp " +
+          "server is lost"));
+      mAutoReconnectCheckBox.setOnAction(e -> {
         if (!isLoading()) {
-          boolean autoReconnect = mAutoReconnectCheckBox.isSelected();
-
           if (hasTuner()) {
-            getTuner().getTunerController().setAutoReconnect(autoReconnect);
+            getTuner().getTunerController().setAutoReconnect(mAutoReconnectCheckBox.isSelected());
           }
-
           save();
         }
       });
@@ -272,9 +221,6 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
     return mAutoReconnectCheckBox;
   }
 
-  /**
-   * Finds the SampleRate enum value closest to the specified sample rate (Hz).
-   */
   private static SampleRate closestSampleRate(long sampleRate) {
     SampleRate closest = SampleRate.values()[0];
 
@@ -287,11 +233,8 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
     return closest;
   }
 
-  /**
-   * Finds the R820T gain table entry closest to the specified gain value (tenths of dB).
-   */
   private static int closestGain(int gain) {
-    int closest = R820T_GAINS_TENTHS_DB[0];
+    int closest = R820T_GAINS_TENTHS_DB.get(0);
 
     for (int candidate : R820T_GAINS_TENTHS_DB) {
       if (Math.abs(candidate - gain) < Math.abs(closest - gain)) {
@@ -306,23 +249,21 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
   public void save() {
     if (hasConfiguration() && !isLoading()) {
       NetworkTunerConfiguration config = getConfiguration();
-      config.setFrequency(getFrequencyControl().getFrequency());
-      getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-      getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
+      saveCommonSettings(config);
+      SampleRate sampleRate = getSampleRateCombo().getValue();
 
-      SampleRate sampleRate = (SampleRate) getSampleRateCombo().getSelectedItem();
       if (sampleRate != null) {
         config.setSampleRate(sampleRate.getRate());
       }
 
       config.setGainAuto(getGainAutoCheckBox().isSelected());
+      Integer gain = getGainCombo().getValue();
 
-      Integer gain = (Integer) getGainCombo().getSelectedItem();
       if (gain != null) {
         config.setGain(gain);
       }
 
-      config.setBiasTEnabled(getBiasTButton().isSelected());
+      config.setBiasTEnabled(getBiasTCheckBox().isSelected());
       config.setAutoReconnect(getAutoReconnectCheckBox().isSelected());
       saveConfiguration();
     }

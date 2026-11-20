@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,192 +16,51 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.sdrplay.rsp2;
 
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
-import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerEditor;
-import io.github.dsheirer.source.tuner.sdrplay.RspException;
-import io.github.dsheirer.source.tuner.sdrplay.RspAgcMode;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JSeparator;
-import javax.swing.SpinnerNumberModel;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
+import java.util.List;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 
 /**
- * RSP2 Tuner Editor
+ * RSP2 tuner editor
  */
 public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(Rsp2TunerEditor.class);
-
-    private JComboBox<RspSampleRate> mSampleRateCombo;
-    private JCheckBox mBiasTCheckBox;
-    private JCheckBox mExternalReferenceOutputCheckBox;
-    private JCheckBox mRfNotchCheckBox;
-    private JComboBox<Rsp2AntennaSelection> mAntennaSelectionCombo;
+    private final ComboBox<Rsp2AntennaSelection> mAntennaCombo;
+    private final CheckBox mBiasTCheckBox;
+    private final CheckBox mExternalReferenceOutputCheckBox;
+    private final CheckBox mRfNotchCheckBox;
 
     /**
      * Constructs an instance
-     * @param userPreferences for settings
-     * @param tunerManager for state updates
-     * @param discoveredTuner to edit or control.
+     * @param userPreferences for preference settings
+     * @param tunerManager for saving tuner configurations
+     * @param discoveredTuner to edit
      */
     public Rsp2TunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
         super(userPreferences, tunerManager, discoveredTuner);
-        init();
-        tunerStatusUpdated();
+        TunerSection options = addSection("Options");
+        mAntennaCombo = addChoice(options, "Antenna", List.of(Rsp2AntennaSelection.values()),
+                () -> control().getAntennaSelection(), selection -> control().setAntennaSelection(selection));
+        mBiasTCheckBox = addOption(options, "ANT B Bias-T power", "Provide DC power on the ANT B connector",
+                () -> control().isBiasT(), enabled -> control().setBiasT(enabled));
+        mRfNotchCheckBox = addOption(options, "FM broadcast band filter (77-115 MHz)", null,
+                () -> control().isRfNotch(), enabled -> control().setRfNotch(enabled));
+        mExternalReferenceOutputCheckBox = addOption(options, "External reference output", null,
+                () -> control().isExternalReferenceOutput(), enabled -> control().setExternalReferenceOutput(enabled));
+        refresh();
     }
 
-    private void init()
+    private IControlRsp2 control()
     {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
-                "[][][][][][][][][][][][][][][grow]"));
-
-        add(new JLabel("Tuner:"));
-        add(getTunerIdLabel(), "wrap");
-
-        add(new JLabel("Status:"));
-        add(getTunerStatusLabel(), "wrap");
-
-        add(getButtonPanel(), "span,align left");
-
-        add(new JSeparator(), "span,growx,push");
-
-        add(new JLabel("Frequency (MHz):"));
-        add(getFrequencyPanel(), "wrap");
-
-        add(new JLabel("Sample Rate:"));
-        add(getSampleRateCombo(), "wrap");
-
-        add(new JLabel("Gain:"));
-        add(getGainPanel(), "wrap");
-        add(new JLabel("LNA:"));
-        add(getLNASlider(), "wrap");
-        add(new JLabel("IF:"));
-        add(getIfGainSlider(), "wrap");
-
-        add(new JSeparator(), "span,growx,push");
-
-        add(new JLabel());
-        add(getBiasTCheckBox(), "wrap");
-        add(new JLabel());
-        add(getExternalReferenceOutputCheckBox(), "wrap");
-        add(new JLabel());
-        add(getRfNotchCheckBox(), "wrap");
-        add(new JLabel());
-        add(getAntennaSelectionCombo(), "wrap");
-    }
-
-    /**
-     * Access tuner controller
-     */
-    private Rsp2TunerController getTunerController()
-    {
-        if(hasTuner())
-        {
-            return (Rsp2TunerController) getTuner().getTunerController();
-        }
-
-        return null;
-    }
-
-    @Override
-    public void setTunerLockState(boolean locked)
-    {
-        getFrequencyPanel().updateControls();
-        getSampleRateCombo().setEnabled(!locked);
-        updateSampleRateToolTip();
-    }
-
-    @Override
-    protected void tunerStatusUpdated()
-    {
-        setLoading(true);
-
-        getTunerIdLabel().setText(getDiscoveredTuner().getId());
-
-        String status = getDiscoveredTuner().getTunerStatus().toString();
-        if(getDiscoveredTuner().hasErrorMessage())
-        {
-            status += " - " + getDiscoveredTuner().getErrorMessage();
-        }
-        getTunerStatusLabel().setText(status);
-        getButtonPanel().updateControls();
-        getFrequencyPanel().updateControls();
-
-        getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
-        getSampleRateCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getSampleRateEnumeration() : null);
-        updateSampleRateToolTip();
-
-        getAgcButton().setEnabled(hasTuner());
-        if(hasTuner())
-        {
-            RspAgcMode current = getTunerController().getControlRsp().getAgcMode();
-            getAgcButton().setSelected(current == null || current.equals(RspAgcMode.ENABLE));
-            getAgcButton().setText((current == null || current.equals(RspAgcMode.ENABLE)) ? AUTOMATIC : MANUAL);
-            getLNASlider().setLNA(getTunerController().getControlRsp().getLNA());
-            getIfGainSlider().setGR(getTunerController().getControlRsp().getBasebandGainReduction());
-
-            //Register to receive gain overload notifications
-            getTunerController().getControlRsp().setGainOverloadListener(this);
-            updateGainLabel();
-        }
-
-        getLNASlider().setEnabled(hasTuner());
-        getIfGainSlider().setEnabled(hasTuner() && getTunerController().getControlRsp().getAgcMode() != RspAgcMode.ENABLE);
-        getGainValueLabel().setEnabled(hasTuner());
-
-        getBiasTCheckBox().setEnabled(hasTuner());
-        try
-        {
-            getBiasTCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isBiasT());
-        }
-        catch(RspException se)
-        {
-            mLog.error("Error setting Bias-T enabled state in editor");
-        }
-
-        getExternalReferenceOutputCheckBox().setEnabled(hasTuner());
-        try
-        {
-            getExternalReferenceOutputCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isExternalReferenceOutput());
-        }
-        catch(RspException se)
-        {
-            mLog.error("Error setting RF DAB Notch enabled state in editor");
-        }
-
-        getRfNotchCheckBox().setEnabled(hasTuner());
-        try
-        {
-            getRfNotchCheckBox().setSelected(hasTuner() && getTunerController().getControlRsp().isRfNotch());
-        }
-        catch(RspException se)
-        {
-            mLog.error("Error setting RF Notch enabled state in editor");
-        }
-
-        getAntennaSelectionCombo().setEnabled(hasTuner());
-        try
-        {
-            getAntennaSelectionCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getAntennaSelection() : null);
-        }
-        catch(RspException se)
-        {
-            mLog.error("Error setting antenna selection in editor");
-        }
-
-        setLoading(false);
+        return (IControlRsp2)getControlRsp();
     }
 
     @Override
@@ -209,188 +68,18 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
     {
         if(hasConfiguration() && !isLoading())
         {
-            getConfiguration().setFrequency(getFrequencyControl().getFrequency());
-            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
-            double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
-            getConfiguration().setFrequencyCorrection(value);
-            getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
-            getConfiguration().setSampleRate((RspSampleRate)getSampleRateCombo().getSelectedItem());
-            getConfiguration().setBiasT(getBiasTCheckBox().isSelected());
-            getConfiguration().setRfNotch(getRfNotchCheckBox().isSelected());
-            getConfiguration().setAntennaSelection((Rsp2AntennaSelection)getAntennaSelectionCombo().getSelectedItem());
-            getConfiguration().setLNA(getLNASlider().getLNA());
-            getConfiguration().setBasebandGainReduction(getIfGainSlider().getGR());
-            getConfiguration().setAgcMode(getAgcButton().isSelected() ? RspAgcMode.ENABLE : RspAgcMode.DISABLE);
+            Rsp2TunerConfiguration config = getConfiguration();
+            saveRspSettings(config);
+            config.setBiasT(mBiasTCheckBox.isSelected());
+            config.setRfNotch(mRfNotchCheckBox.isSelected());
+            config.setExternalReferenceOutput(mExternalReferenceOutputCheckBox.isSelected());
+
+            if(mAntennaCombo.getValue() != null)
+            {
+                config.setAntennaSelection(mAntennaCombo.getValue());
+            }
 
             saveConfiguration();
-        }
-    }
-
-    /**
-     * Sample rate selection combobox control
-     */
-    private JComboBox<RspSampleRate> getSampleRateCombo()
-    {
-        if(mSampleRateCombo == null)
-        {
-            RspSampleRate[] rspSampleRates = RspSampleRate.SINGLE_TUNER_SAMPLE_RATES.toArray(new RspSampleRate[RspSampleRate.SINGLE_TUNER_SAMPLE_RATES.size()]);
-            mSampleRateCombo = new JComboBox<>(rspSampleRates);
-            mSampleRateCombo.setEnabled(false);
-            mSampleRateCombo.addActionListener(e -> {
-                if(hasTuner() && !isLoading())
-                {
-                    RspSampleRate selected = (RspSampleRate)mSampleRateCombo.getSelectedItem();
-
-                    try
-                    {
-                        getTunerController().setSampleRate(selected);
-                        //Adjust the min/max values for the sample rate.
-                        adjustForSampleRate((int)selected.getSampleRate());
-                        save();
-                    }
-                    catch(RspException se)
-                    {
-                        mLog.error("Error setting sample rate for RSP2 tuner", se);
-                    }
-                }
-            });
-        }
-
-        return mSampleRateCombo;
-    }
-
-    /**
-     * Checkbox control for Bias-T
-     */
-    private JCheckBox getBiasTCheckBox()
-    {
-        if(mBiasTCheckBox == null)
-        {
-            mBiasTCheckBox = new JCheckBox("ANT B Bias-T Power");
-            mBiasTCheckBox.setEnabled(false);
-            mBiasTCheckBox.addActionListener(e -> {
-                if(hasTuner() && !isLoading())
-                {
-                    try
-                    {
-                        getTunerController().getControlRsp().setBiasT(mBiasTCheckBox.isSelected());
-                        save();
-                    }
-                    catch(RspException se)
-                    {
-                        mLog.error("Unable to set RSP2 Bias-T enabled to " + mBiasTCheckBox.isSelected(), se);
-                    }
-                }
-            });
-        }
-
-        return mBiasTCheckBox;
-    }
-
-    /**
-     * Checkbox control for RF notch
-     */
-    private JCheckBox getRfNotchCheckBox()
-    {
-        if(mRfNotchCheckBox == null)
-        {
-            mRfNotchCheckBox = new JCheckBox("FM Broadcast Band Filter (77-115 MHz)");
-            mRfNotchCheckBox.setEnabled(false);
-            mRfNotchCheckBox.addActionListener(e -> {
-                if(hasTuner() && !isLoading())
-                {
-                    try
-                    {
-                        getTunerController().getControlRsp().setRfNotch(mRfNotchCheckBox.isSelected());
-                        save();
-                    }
-                    catch(RspException se)
-                    {
-                        mLog.error("Unable to set RSP2 RF notch enabled to " + mRfNotchCheckBox.isSelected(), se);
-                    }
-                }
-            });
-        }
-
-        return mRfNotchCheckBox;
-    }
-
-    /**
-     * Checkbox control for External Reference Output
-     */
-    private JCheckBox getExternalReferenceOutputCheckBox()
-    {
-        if(mExternalReferenceOutputCheckBox == null)
-        {
-            mExternalReferenceOutputCheckBox = new JCheckBox("External Reference Output");
-            mExternalReferenceOutputCheckBox.setEnabled(false);
-            mExternalReferenceOutputCheckBox.addActionListener(e -> {
-                if(hasTuner() && !isLoading())
-                {
-                    try
-                    {
-                        getTunerController().getControlRsp().setExternalReferenceOutput(mExternalReferenceOutputCheckBox.isSelected());
-                        save();
-                    }
-                    catch(RspException se)
-                    {
-                        mLog.error("Unable to set RSP2 external reference output notch enabled to " +
-                                mExternalReferenceOutputCheckBox.isSelected(), se);
-                    }
-                }
-            });
-        }
-
-        return mExternalReferenceOutputCheckBox;
-    }
-
-    /**
-     * Antenna selection combobox control
-     */
-    private JComboBox<Rsp2AntennaSelection> getAntennaSelectionCombo()
-    {
-        if(mAntennaSelectionCombo == null)
-        {
-            mAntennaSelectionCombo = new JComboBox<>(Rsp2AntennaSelection.values());
-            mAntennaSelectionCombo.setEnabled(false);
-            mAntennaSelectionCombo.addActionListener(e -> {
-                if(hasTuner() && !isLoading())
-                {
-                    Rsp2AntennaSelection selected = (Rsp2AntennaSelection)mAntennaSelectionCombo.getSelectedItem();
-
-                    try
-                    {
-                        getTunerController().getControlRsp().setAntennaSelection(selected);
-                        save();
-                    }
-                    catch(RspException se)
-                    {
-                        mLog.error("Error setting Antenna selection for RSP2", se);
-                    }
-                }
-            });
-        }
-
-        return mAntennaSelectionCombo;
-    }
-
-    /**
-     * Updates the sample rate tooltip according to the tuner controller's lock state.
-     */
-    private void updateSampleRateToolTip()
-    {
-        if(hasTuner() && getTuner().getTunerController().isLockedSampleRate())
-        {
-            getSampleRateCombo().setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
-        }
-        else if(hasTuner())
-        {
-            getSampleRateCombo().setToolTipText("Select a sample rate for the tuner");
-        }
-        else
-        {
-            getSampleRateCombo().setToolTipText("No tuner available");
         }
     }
 }
