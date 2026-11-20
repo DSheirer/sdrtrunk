@@ -98,6 +98,7 @@ public class NXDNDecoderState extends DecoderState
     private boolean mEncryptedCall = false;
     private int mDisconnectResponseCount = 0;
     private int mIdleDuringCallCount = IDLE_DURING_CALL_MAX_COUNT;
+    private final NXDNRanGate mRanGate;
 
     /**
      * Constructs an instance
@@ -108,6 +109,8 @@ public class NXDNDecoderState extends DecoderState
     {
         mChannel = channel;
         mTrafficChannelManager = trafficChannelManager;
+        mRanGate = new NXDNRanGate(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN config ?
+            config.getRanFilter() : null);
     }
 
     /**
@@ -150,6 +153,7 @@ public class NXDNDecoderState extends DecoderState
                 mTalkerAliasTracker.callEnded();
                 resetState();
                 mTalkerAliasTracker.reset();
+                mRanGate.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 setCurrentFrequency(event.getFrequency());
@@ -183,6 +187,12 @@ public class NXDNDecoderState extends DecoderState
     @Override
     public void receive(IMessage iMessage)
     {
+        //RAN filter: drop messages from co-channel transmitters with a non-matching RAN
+        if(iMessage instanceof NXDNMessage && !mRanGate.passes(iMessage))
+        {
+            return;
+        }
+
         if(iMessage instanceof NXDNMessage nxdn && nxdn.isValid())
         {
             if(nxdn instanceof NXDNLayer3Message layer3)
