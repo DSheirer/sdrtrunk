@@ -78,7 +78,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
             userPreferences.getSwingPreference(), SWING_TABLE_KEY, "Event Filter Editor", "Event Columns");
         mTimestampFormatter = timestampFormatter;
         getHistoryControls().setFilterSet(mFilterSet);
-        //Filter changes come from the Swing filter editor
+        //Filter changes come from the filter editor
         mFilterSet.register(() -> Platform.runLater(this::refilter));
         MyEventBus.getGlobalEventBus().register(this);
     }

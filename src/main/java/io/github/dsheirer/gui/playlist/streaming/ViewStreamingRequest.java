@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ *  Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,27 +17,18 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.util;
+package io.github.dsheirer.gui.playlist.streaming;
 
-import java.awt.EventQueue;
+import io.github.dsheirer.gui.playlist.PlaylistEditorRequest;
 
 /**
- * Swing utilities
+ * Request to show the playlist editor with the Streaming tab selected.
  */
-public class SwingUtils
+public class ViewStreamingRequest extends PlaylistEditorRequest
 {
-    /**
-     * Runs the runnable on the swing dispatch thread
-     */
-    public static void run(Runnable r)
+    @Override
+    public TabName getTabName()
     {
-        if(EventQueue.isDispatchThread())
-        {
-            r.run();
-        }
-        else
-        {
-            EventQueue.invokeLater(r);
-        }
+        return TabName.STREAM;
     }
 }

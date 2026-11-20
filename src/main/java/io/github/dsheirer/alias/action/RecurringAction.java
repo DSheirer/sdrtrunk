@@ -19,14 +19,16 @@
 
 package io.github.dsheirer.alias.action;
 
+import io.github.dsheirer.gui.FxToolkit;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.util.ThreadPool;
 
-import javax.swing.*;
-import java.awt.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,23 +64,28 @@ public abstract class RecurringAction extends AliasAction
                     mPerpetualAction = ThreadPool.SCHEDULED.scheduleAtFixedRate(
                         new PerformActionTask(alias, message), 0, mPeriod, TimeUnit.SECONDS);
 
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("<html><div width='250'>Alias [");
-                    sb.append(alias.getName());
-                    sb.append("] is active in message [");
-                    sb.append(message.toString());
-                    sb.append("]</div></html>");
+                    String text = "Alias [" + alias.getName() + "] is active in message [" + message + "]";
 
-                    final String text = sb.toString();
-
-                    EventQueue.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(null, text,
-                            "Alias Alert", JOptionPane.INFORMATION_MESSAGE);
-
+                    Runnable dismissed = () -> {
                         dismiss(false);
-
                         ThreadPool.SCHEDULED.schedule(new ResetTask(), 15, TimeUnit.SECONDS);
-                    });
+                    };
+
+                    if(FxToolkit.isStarted())
+                    {
+                        //The action repeats until the user closes the alert
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION, text);
+                            alert.setTitle("Alias Alert");
+                            alert.setHeaderText(null);
+                            alert.setOnHidden(event -> dismissed.run());
+                            alert.show();
+                        });
+                    }
+                    else
+                    {
+                        dismissed.run();
+                    }
                     break;
                 default:
             }

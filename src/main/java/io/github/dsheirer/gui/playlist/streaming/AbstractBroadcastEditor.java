@@ -164,7 +164,7 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
                 }
             }
 
-            //TODO: remove this after we get rid of Swing tables so that we don't have to announce these changes.
+            //Restarts the stream's broadcaster with the updated configuration and notifies the model's listeners
             mPlaylistManager.getBroadcastModel().process(new BroadcastEvent(configuration,
                 BroadcastEvent.Event.CONFIGURATION_CHANGE));
         }

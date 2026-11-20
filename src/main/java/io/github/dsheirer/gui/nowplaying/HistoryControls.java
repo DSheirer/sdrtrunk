@@ -22,7 +22,6 @@ import io.github.dsheirer.filter.FilterEditor;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.gui.table.ColumnConfigurationButton;
 import io.github.dsheirer.gui.table.TableColumnMonitor;
-import java.awt.EventQueue;
 import java.util.function.IntConsumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -52,7 +51,6 @@ public class HistoryControls<T> extends HBox
     private final Label mHistoryLabel = new Label("History:");
     private final Slider mHistorySlider = new Slider(0, MAXIMUM_HISTORY_SIZE, DEFAULT_HISTORY_SIZE);
     private final Label mHistoryValueLabel = new Label(String.valueOf(DEFAULT_HISTORY_SIZE));
-    //Swing filter editor, accessed on the Swing event thread
     private FilterEditor<T> mFilterEditor;
     private FilterSet<T> mFilterSet;
 
@@ -122,16 +120,14 @@ public class HistoryControls<T> extends HBox
     {
         mFilterSet = filterSet;
 
-        EventQueue.invokeLater(() -> {
-            if(mFilterEditor != null && filterSet != null)
-            {
-                mFilterEditor.updateFilterSet(filterSet);
-            }
-        });
+        if(mFilterEditor != null && filterSet != null)
+        {
+            mFilterEditor.updateFilterSet(filterSet);
+        }
     }
 
     /**
-     * Shows the filter editor.  The filter editor is a Swing window.
+     * Shows the filter editor.
      */
     private void showFilterEditor()
     {
@@ -139,15 +135,13 @@ public class HistoryControls<T> extends HBox
 
         if(filterSet != null)
         {
-            EventQueue.invokeLater(() -> {
-                if(mFilterEditor == null)
-                {
-                    mFilterEditor = new FilterEditor<>(mFilterEditorTitle, null, filterSet);
-                }
+            if(mFilterEditor == null)
+            {
+                mFilterEditor = new FilterEditor<>(mFilterEditorTitle,
+                    getScene() != null ? getScene().getWindow() : null, filterSet);
+            }
 
-                mFilterEditor.setVisible(true);
-                mFilterEditor.toFront();
-            });
+            mFilterEditor.show();
         }
     }
 }

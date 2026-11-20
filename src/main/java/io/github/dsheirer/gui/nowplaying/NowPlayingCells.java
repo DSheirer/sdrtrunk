@@ -31,7 +31,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.image.ImageView;
 import javafx.util.Callback;
 
-import javax.swing.UIManager;
 
 /**
  * Table column and cell helpers for the Now Playing tables.
@@ -125,9 +124,8 @@ public final class NowPlayingCells
                     setGraphic(icon != null && icon.getFxImage() != null ? new ImageView(icon.getFxImage()) : null);
 
                     java.awt.Color color = new java.awt.Color(item.color());
-                    java.awt.Color background = UIManager.getColor("Table.background");
-                    java.awt.Color readable = background != null ?
-                        ThemeManager.getInstance().getReadableColor(color, background) : color;
+                    java.awt.Color readable = ThemeManager.getInstance().getReadableColor(color,
+                        ThemeManager.getInstance().getInnerBackground());
                     String fill = toWebColor(readable.getRGB());
                     //An inline style, since the themed table row style otherwise replaces the text fill
                     setStyle("-fx-text-fill: " + fill + ";");

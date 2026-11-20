@@ -79,7 +79,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
-import javax.swing.UIManager;
 import jiconfont.IconCode;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
@@ -950,7 +949,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                             rectangle.setVisible(true);
                             java.awt.Color color = alias.getDisplayColor();
                             java.awt.Color readable = ThemeManager.getInstance().getReadableColor(color,
-                                UIManager.getColor("TextField.background"));
+                                ThemeManager.getInstance().getInnerBackground());
                             rectangle.setFill(ColorUtil.fromInteger(readable.equals(color) ? alias.getColor() :
                                 readable.getRGB()));
                             setAccessibleText(String.format("#%06X", alias.getColor() & 0xFFFFFF));

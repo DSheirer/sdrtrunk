@@ -20,34 +20,54 @@
 package io.github.dsheirer.gui.theme;
 
 /**
- * Curated preset themes for the application.
- *
- * <p>Each theme pairs a FlatLaf Swing look-and-feel class with a flag indicating whether the
- * palette is dark.  The dark flag drives whether the dark JavaFX stylesheet is applied to
- * registered Scenes.  Other per-theme values (colours used to seed JIDE-specific UIManager
- * keys) are read at runtime from {@link javax.swing.UIManager} after the LAF installs, so each
- * theme automatically contributes its own palette to JIDE components.
+ * Application color themes.  Each theme has a palette that the theme manager applies to the JavaFX scenes, and a
+ * dark flag that adds the dark stylesheet.  The palettes are the colors of the FlatLaf themes that sdrtrunk used for
+ * its Swing windows, so the themes look the same after the move to JavaFX.
  */
 public enum Theme
 {
-    LIGHT("Light", "com.formdev.flatlaf.FlatLightLaf", false),
-    DARK("Dark", "com.formdev.flatlaf.FlatDarkLaf", true),
-    NORD("Nord", "com.formdev.flatlaf.intellijthemes.FlatNordIJTheme", true),
-    DRACULA("Dracula", "com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme", true),
-    SOLARIZED_LIGHT("Solarized Light", "com.formdev.flatlaf.intellijthemes.FlatSolarizedLightIJTheme", false),
-    SOLARIZED_DARK("Solarized Dark", "com.formdev.flatlaf.intellijthemes.FlatSolarizedDarkIJTheme", true),
-    MATERIAL_DEEP_OCEAN("Material Deep Ocean", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMTMaterialDeepOceanIJTheme", true),
-    ARC_DARK("Arc Dark", "com.formdev.flatlaf.intellijthemes.FlatArcDarkIJTheme", true);
+    LIGHT("Light", false,
+        new Palette(0xf2f2f2, 0xffffff, 0xfafafa, 0x2675bf, 0x2675bf, 0xffffff, 0x000000, 0xc2c2c2)),
+    DARK("Dark", true,
+        new Palette(0x3c3f41, 0x46494b, 0x353739, 0x4b6eaf, 0x4b6eaf, 0xeeeeee, 0xdddddd, 0x616365)),
+    NORD("Nord", true,
+        new Palette(0x2e3440, 0x3b4252, 0x353739, 0x88c0d0, 0x88c0d0, 0x2e3440, 0xeceff4, 0x3b4252)),
+    DRACULA("Dracula", true,
+        new Palette(0x414450, 0x3a3d4c, 0x353739, 0xff79c6, 0x6272a4, 0xf8f8f2, 0xdddddd, 0x6272a4)),
+    SOLARIZED_LIGHT("Solarized Light", false,
+        new Palette(0xeee8d5, 0xfdf6e3, 0xfafafa, 0x3d7ec0, 0x3570cd, 0xffffeb, 0x2e4e58, 0xbac0b8)),
+    SOLARIZED_DARK("Solarized Dark", true,
+        new Palette(0x0e3c4a, 0x1b4854, 0x353739, 0x3985c7, 0x1c62c9, 0xc2c5bc, 0xa9b3ae, 0x49636b)),
+    MATERIAL_DEEP_OCEAN("Material Deep Ocean", true,
+        new Palette(0x0f111a, 0x090b10, 0x353739, 0x84ffff, 0x3d4669, 0xffffff, 0x8f93a2, 0x1f2233)),
+    ARC_DARK("Arc Dark", true,
+        new Palette(0x383c4a, 0x474c5b, 0x353739, 0x2679db, 0x2679db, 0xffffff, 0xd3dae3, 0x2b2e39));
+
+    /**
+     * Theme colors as 0xRRGGBB values.
+     * @param background of windows and panels
+     * @param inner background of text fields, tables and lists
+     * @param innerAlternate background of alternate table rows
+     * @param accent for focus, default buttons and highlights
+     * @param selectionBackground of selected rows
+     * @param selectionText of selected rows
+     * @param text color
+     * @param border of controls and scroll bar thumbs
+     */
+    public record Palette(int background, int inner, int innerAlternate, int accent, int selectionBackground,
+                          int selectionText, int text, int border)
+    {
+    }
 
     private final String mDisplayName;
-    private final String mLafClassName;
     private final boolean mDark;
+    private final Palette mPalette;
 
-    Theme(String displayName, String lafClassName, boolean dark)
+    Theme(String displayName, boolean dark, Palette palette)
     {
         mDisplayName = displayName;
-        mLafClassName = lafClassName;
         mDark = dark;
+        mPalette = palette;
     }
 
     /**
@@ -59,20 +79,20 @@ public enum Theme
     }
 
     /**
-     * @return fully qualified FlatLaf class name to instantiate via reflection.
-     */
-    public String getLafClassName()
-    {
-        return mLafClassName;
-    }
-
-    /**
      * @return true if this theme is a dark palette - the JavaFX dark stylesheet is applied for
      *         dark themes and removed for light themes.
      */
     public boolean isDark()
     {
         return mDark;
+    }
+
+    /**
+     * Theme colors
+     */
+    public Palette getPalette()
+    {
+        return mPalette;
     }
 
     /**

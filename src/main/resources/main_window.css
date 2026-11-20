@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,33 +17,31 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.spectrum;
+/* Main window.  Colors are derived from the theme's looked-up colors so they follow every application theme. */
 
-import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
-
-public interface SpectralDisplayAdjuster
+.main-window
 {
-	/**
-	 * Gets the averaging value indicating the number of FFT results that are
-	 * averaged to produce each FFT results output.
-	 * 
-	 * @return averaging value ( 2 - 50 )
-	 */
-	public int getAveraging();
-	public void setAveraging( int averaging );
+    -fx-background-color: -fx-background;
+}
 
-	/**
-	 * Sets the smoothing filter averaging window width.
-	 * 
-	 * Valid values are odd in the range 3 - 29
-	 */
-	public int getSmoothing();
-	public void setSmoothing( int smoothing );
+.main-window .main-hidden-bar
+{
+    -fx-padding: 4 8 4 10;
+    -fx-background-color: derive(-fx-background, -6%);
+    -fx-border-color: transparent transparent derive(-fx-background, -25%) transparent;
+}
 
-	/**
-	 * Sets the type of smoothing filter to use.
-	 */
-	public SmoothingType getSmoothingType();
-	public void setSmoothingType( SmoothingType type );
-	
+.main-window .main-hidden-bar-icon
+{
+    -fx-fill: -fx-accent;
+}
+
+.main-window .main-hidden-bar-label
+{
+    -fx-opacity: 0.8;
+}
+
+.main-window .main-playlist-tab-icon
+{
+    -fx-fill: -fx-accent;
 }

@@ -19,15 +19,14 @@
 
 package io.github.dsheirer.gui.viewer.symbol;
 
-import io.github.dsheirer.util.SwingUtils;
 import java.util.concurrent.CountDownLatch;
+import io.github.dsheirer.gui.FxToolkit;
 import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
+import javafx.stage.Stage;
 import javafx.scene.Scene;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JFrame;
 
 /**
  * Utility for viewing sync detection results
@@ -59,7 +58,7 @@ public class SymbolViewerFX implements ISymbolResultsListener
     {
         CountDownLatch latch = new CountDownLatch(1);
 
-        final JFXPanel fxPanel = new JFXPanel();
+        FxToolkit.ensureStarted();
         Platform.runLater(() -> {
             Platform.setImplicitExit(false);
             SymbolViewPanel viewer = new SymbolViewPanel();
@@ -77,19 +76,13 @@ public class SymbolViewerFX implements ISymbolResultsListener
 //                LOGGER.warn("Can't find stylesheet resource for sdrtrunk");
 //            }
 
-            fxPanel.setScene(scene);
-            fxPanel.setVisible(true);
-
-            JFrame frame = new JFrame();
-            frame.setTitle("Symbol Results Viewer");
-            frame.setContentPane(fxPanel);
-            frame.setSize(1400, 1400);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setLocationRelativeTo(null);
-            SwingUtils.run(() -> {
-                frame.setVisible(true);
-                latch.countDown();
-            });
+            Stage stage = new Stage();
+            stage.setTitle("Symbol Results Viewer");
+            stage.setScene(scene);
+            //Closing the viewer exits the application, the same as the Swing viewer did
+            stage.setOnCloseRequest(event -> System.exit(0));
+            stage.show();
+            latch.countDown();
         });
 
         try

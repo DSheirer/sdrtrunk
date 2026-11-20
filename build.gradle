@@ -145,18 +145,13 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.6.6'
     implementation 'ch.qos.logback:logback-core:1.6.6'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.23.0'
-    implementation 'com.formdev:flatlaf:3.8'
-    implementation 'com.formdev:flatlaf-intellij-themes:3.8' //Not imported - Theme.java loads these themes by class name
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     implementation 'com.github.jiconfont:jiconfont-javafx:1.0.0'
-    implementation 'com.github.jiconfont:jiconfont-swing:1.0.1'
     implementation('com.github.wendykierp:JTransforms:3.2') {
         exclude group: 'junit' //JLargeArrays 1.7 declares junit as a compile dependency
     }
     implementation 'com.google.code.gson:gson:2.15.0'
     implementation 'com.google.guava:guava:33.8.0-jre'
-    implementation 'com.jidesoft:jide-oss:3.6.18'
-    implementation 'com.miglayout:miglayout-swing:11.5.2'
     implementation 'com.mpatric:mp3agic:0.9.1'
     implementation 'commons-io:commons-io:2.22.0'
     implementation 'io.github.dsheirer:jairspy:1.0.12.1' //Airspy tuners - GitHub release, see settings.gradle
@@ -195,7 +190,6 @@ tasks.withType(JavaCompile).configureEach {
  */
 def jvmArgsWindows =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
-         '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED', //windows users for JIDE
          '--add-modules=jdk.incubator.vector',   //Project Panama vector API is still in incubator
          '--enable-preview', //Project Panama Vector API is still in incubator
          '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
@@ -315,9 +309,9 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
     //java.management for JVM resource monitoring
-    //java.base, java.logging, java.net.http, java.prefs, javafx.controls, javafx.swing - required by sdrtrunk (jdeps)
+    //java.base, java.desktop, java.logging, java.net.http, java.prefs, javafx.controls - required by sdrtrunk (jdeps)
     rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management',
-            'java.base', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls', 'javafx.swing')
+            'java.base', 'java.desktop', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls')
 
     //Use only the modules listed above.  The runtime plugin's module auto-detection uses a bundled ASM library that
     //can't read Java 27 class files and logs a 'Failed to scan' error for each sdrtrunk class.  The jdeps module check

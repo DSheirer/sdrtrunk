@@ -22,20 +22,12 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.swing.ImageIcon;
-import java.awt.Image;
-import java.net.URL;
 
 public class MapIcon extends Setting implements Comparable<MapIcon>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(MapIcon.class);
 
-    private static final int sMAX_IMAGE_DIMENSION = 48;
     private String mPath;
-    private ImageIcon mImageIcon;
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
@@ -103,65 +95,6 @@ public class MapIcon extends Setting implements Comparable<MapIcon>
         mDefaultIcon = isDefault;
     }
 
-    @JsonIgnore
-    public ImageIcon getImageIcon()
-    {
-        if(mImageIcon == null && mPath != null)
-        {
-            try
-            {
-                URL imageURL = Icon.class.getResource(mPath);
-
-                if(imageURL == null && !mPath.startsWith("/"))
-                {
-                    imageURL = (Icon.class.getResource("/" + mPath));
-                }
-
-                if(imageURL != null)
-                {
-                    mImageIcon = new ImageIcon(imageURL);
-
-                    /**
-                     * If the image is too big, scale it down to max pixel size squared
-                     */
-                    if(mImageIcon.getIconWidth() > sMAX_IMAGE_DIMENSION ||
-                        mImageIcon.getIconHeight() > sMAX_IMAGE_DIMENSION)
-                    {
-                        /**
-                         * getScaled instance will correct any negative value to the
-                         * correct value, maintaining original aspect ratio.  So, we
-                         * only scale the larger value, and allow the image class to
-                         * determine the correct value for the other measurement
-                         */
-                        int height = -1;
-                        int width = -1;
-
-                        /**
-                         * Use the larger width or height value to determine the
-                         * scaling factor
-                         */
-                        if(mImageIcon.getIconHeight() > mImageIcon.getIconWidth())
-                        {
-                            height = sMAX_IMAGE_DIMENSION;
-                        }
-                        else
-                        {
-                            width = sMAX_IMAGE_DIMENSION;
-                        }
-
-                        mImageIcon = new ImageIcon(mImageIcon.getImage()
-                            .getScaledInstance(width, height, Image.SCALE_SMOOTH));
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error loading Icon [" + mPath + "]", e);
-            }
-        }
-
-        return mImageIcon;
-    }
 
     @JacksonXmlProperty(isAttribute = true, localName = "path")
     public String getPath()

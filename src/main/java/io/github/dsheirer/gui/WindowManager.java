@@ -20,36 +20,25 @@
 package io.github.dsheirer.gui;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.controller.channel.map.ChannelMap;
-import io.github.dsheirer.controller.channel.map.ChannelRange;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.icon.IconManager;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.PlaylistEditor;
 import io.github.dsheirer.gui.playlist.PlaylistEditorRequest;
-import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditor;
 import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
-import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
 import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.gui.viewer.MessageRecordingViewer;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
-import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
-import io.github.dsheirer.module.log.EventLogManager;
-import io.github.dsheirer.monitor.ResourceMonitor;
-import io.github.dsheirer.monitor.StatusBox;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import jiconfont.javafx.IconFontFX;
@@ -57,17 +46,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Java FX window manager.  Handles all secondary Java FX windows that are used within this primarily
- * Swing application.
+ * Opens the application's tool windows (playlist editor, user preferences, icon manager, channel map editor, JMBE
+ * library editor and message recording viewer) when it receives their request events on the event bus.  Each window
+ * is created once, then restored and brought to the front on later requests, and its size and location are kept
+ * across sessions.
  */
-public class JavaFxWindowManager extends Application
+public class WindowManager
 {
-    private final static Logger mLog = LoggerFactory.getLogger(JavaFxWindowManager.class);
+    private final static Logger mLog = LoggerFactory.getLogger(WindowManager.class);
 
-    public static final String CHANNEL_MAP_EDITOR = "channelmap";
-    public static final String ICON_MANAGER = "iconmanager";
-    public static final String PLAYLIST_EDITOR = "playlist";
-    public static final String USER_PREFERENCES_EDITOR = "preferences";
     public static final String STAGE_MONITOR_KEY_CALIBRATION_DIALOG = "calibration.dialog";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
     public static final String STAGE_MONITOR_KEY_RECORDING_VIEWER = "recording.viewer";
@@ -76,7 +63,6 @@ public class JavaFxWindowManager extends Application
     public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
     public static final String STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR = "user.preferences";
 
-    private JFXPanel mJFXPanel;
     private ChannelMapEditor mChannelMapEditor;
     private IconManager mIconManager;
     private JmbeEditor mJmbeEditor;
@@ -93,55 +79,20 @@ public class JavaFxWindowManager extends Application
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
     private Stage mRecordingViewerStage;
-    private JFXPanel mStatusPanel;
 
     /**
-     * Constructs an instance.  Note: this constructor is used for Swing applications.
+     * Constructs an instance and registers it to receive window requests on the event bus.
+     * @param userPreferences for the windows and their stored locations
+     * @param tunerManager for the playlist editor
+     * @param playlistManager for the playlist and channel map editors
      */
-    public JavaFxWindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
+    public WindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
     {
         mUserPreferences = userPreferences;
         mTunerManager = tunerManager;
         mPlaylistManager = playlistManager;
 
         setup();
-    }
-
-    /**
-     * Constructs an instance.  Note: this constructor is used for standalone JavaFX application testing
-     */
-    public JavaFxWindowManager()
-    {
-        mUserPreferences = new UserPreferences();
-        AliasModel aliasModel = new AliasModel();
-        EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mTunerManager = new TunerManager(mUserPreferences);
-        mTunerManager.start();
-        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
-        mPlaylistManager.init();
-        setup();
-    }
-
-    /**
-     * Creates or accesses the JavaFX status panel, used by the main application GUI.
-     * @param resourceMonitor for statistics
-     * @return JFXPanel accessible on Swing thread that delegates JavaFX scene creation to the FX event thread.
-     */
-    public JFXPanel getStatusPanel(ResourceMonitor resourceMonitor)
-    {
-        if(mStatusPanel == null)
-        {
-            mStatusPanel = new JFXPanel();
-
-            //JFXPanel has to be populated on the FX event thread
-            Platform.runLater(() -> {
-                Scene scene = new Scene(new StatusBox(resourceMonitor));
-                ThemeManager.getInstance().register(scene);
-                mStatusPanel.setScene(scene);
-            });
-        }
-
-        return mStatusPanel;
     }
 
     private void setup()
@@ -152,7 +103,7 @@ public class JavaFxWindowManager extends Application
         //Register JavaFX icon fonts
         IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
 
-        createJFXPanel();
+        startToolkit();
     }
 
     /**
@@ -160,7 +111,7 @@ public class JavaFxWindowManager extends Application
      */
     private void execute(Runnable runnable)
     {
-        createJFXPanel();
+        startToolkit();
 
         if(Platform.isFxApplicationThread())
         {
@@ -173,16 +124,11 @@ public class JavaFxWindowManager extends Application
     }
 
     /**
-     * Creates a JavaFX panel for Swing application compatibility
+     * Starts the JavaFX toolkit if it is not running
      */
-    private void createJFXPanel()
+    private void startToolkit()
     {
-        if(mJFXPanel == null)
-        {
-            mJFXPanel = new JFXPanel();
-            Platform.setImplicitExit(false);
-            ApplicationIcons.installJavaFx();
-        }
+        FxToolkit.ensureStarted();
     }
 
     /**
@@ -197,7 +143,7 @@ public class JavaFxWindowManager extends Application
 
     public CalibrationDialog getCalibrationDialog(UserPreferences userPreferences)
     {
-        createJFXPanel();
+        startToolkit();
         return new CalibrationDialog(userPreferences);
     }
 
@@ -208,7 +154,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mRecordingViewerStage == null)
         {
-            createJFXPanel();
+            startToolkit();
             Scene scene = new Scene(getRecordingViewer(), 1100, 800);
             ThemeManager.getInstance().register(scene);
             mRecordingViewerStage = new Stage();
@@ -234,7 +180,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mIconManagerStage == null)
         {
-            createJFXPanel();
+            startToolkit();
             Scene scene = new Scene(getIconManager(), 500, 500);
             ThemeManager.getInstance().register(scene);
             mIconManagerStage = new Stage();
@@ -283,7 +229,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mJmbeEditorStage == null)
         {
-            createJFXPanel();
+            startToolkit();
             Scene scene = new Scene(getJmbeEditor(), 650, 650);
             ThemeManager.getInstance().register(scene);
             mJmbeEditorStage = new Stage();
@@ -325,7 +271,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mPlaylistStage == null)
         {
-            createJFXPanel();
+            startToolkit();
             Scene scene = new Scene(getPlaylistEditor(), 1000, 750);
             ThemeManager.getInstance().register(scene);
             mPlaylistStage = new Stage();
@@ -376,7 +322,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mUserPreferencesStage == null)
         {
-            createJFXPanel();
+            startToolkit();
             Scene scene = new Scene(getUserPreferencesEditor(), 900, 500);
             ThemeManager.getInstance().register(scene);
             mUserPreferencesStage = new Stage();
@@ -420,7 +366,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mChannelMapStage == null)
         {
-            createJFXPanel();
+            startToolkit();
             Scene scene = new Scene(getChannelMapEditor(), 500, 500);
             ThemeManager.getInstance().register(scene);
             mChannelMapStage = new Stage();
@@ -469,76 +415,5 @@ public class JavaFxWindowManager extends Application
         stage.show();
         stage.requestFocus();
         stage.toFront();
-    }
-
-    @Override
-    public void start(Stage primaryStage) throws Exception
-    {
-        mLog.debug("Starting ...");
-        Parameters parameters = getParameters();
-        mLog.debug("Parameters: " + (parameters != null));
-
-        boolean valid = false;
-
-        if(parameters != null && parameters.getRaw().size() == 1)
-        {
-            String window = parameters.getRaw().get(0);
-
-            if(window != null)
-            {
-                switch(window)
-                {
-                    case CHANNEL_MAP_EDITOR:
-                        //Generate some test data for the editor
-                        ChannelMap channelMap1 = new ChannelMap("Test Map 1");
-                        channelMap1.addRange(new ChannelRange(1,199,150000000, 12500));
-                        channelMap1.addRange(new ChannelRange(200,299,160000000, 25000));
-                        channelMap1.addRange(new ChannelRange(300,399,170000000, 12500));
-                        channelMap1.addRange(new ChannelRange(400,499,180000000, 25000));
-                        mPlaylistManager.getChannelMapModel().addChannelMap(channelMap1);
-
-                        ChannelMap channelMap2 = new ChannelMap("Test Map 2");
-                        channelMap2.addRange(new ChannelRange(1,199,450000000, 12500));
-                        channelMap2.addRange(new ChannelRange(200,299,460000000, 25000));
-                        channelMap2.addRange(new ChannelRange(300,399,470000000, 12500));
-                        channelMap2.addRange(new ChannelRange(400,499,480000000, 25000));
-                        mPlaylistManager.getChannelMapModel().addChannelMap(channelMap2);
-                        valid = true;
-                        process(new ViewChannelMapEditorRequest());
-                        break;
-                    case ICON_MANAGER:
-                        valid = true;
-                        process(new ViewIconManagerRequest());
-                        break;
-                    case PLAYLIST_EDITOR:
-                        valid = true;
-                        process(new ViewPlaylistRequest());
-                        break;
-                    case USER_PREFERENCES_EDITOR:
-                        valid = true;
-                        process(new ViewUserPreferenceEditorRequest(PreferenceEditorType.DEFAULT));
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-        if(!valid)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.append("An argument is required to launch JavaFX windows from this window manager.  " +
-                "Valid options are:\n\tchannelmap\tChannel Map Editor\n\ticonmanager\tIcon Manager\n\tplaylist\tPlaylist Editor\n" +
-                "\tpreferences\tUser Preferences Editor\n");
-            sb.append("Supplied Argument(s): ").append(parameters.getRaw());
-
-            mLog.error(sb.toString());
-        }
-    }
-
-    public static void main(String[] args)
-    {
-        mLog.info("Application Start - Parameters: " + args);
-        launch(args);
     }
 }

@@ -146,6 +146,17 @@ public abstract class DftSpectralDisplay extends StackPane
         setMinSize(0, 0);
     }
 
+    private final ObjectProperty<Runnable> mHideHandler = new SimpleObjectProperty<>();
+
+    /**
+     * Optional handler that hides this display, for example by collapsing the main window's spectrum pane.  When set,
+     * the configuration panel shows a hide button.  JavaFX thread only.
+     */
+    public ObjectProperty<Runnable> hideHandlerProperty()
+    {
+        return mHideHandler;
+    }
+
     /**
      * Creates the configuration panel.  Subclasses call this at the end of their constructor, after their own
      * settings are loaded, since the panel reads the subclass's controls.

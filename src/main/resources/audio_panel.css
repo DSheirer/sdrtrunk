@@ -1,0 +1,359 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* Audio playback display.  It is styled as an instrument display, dark in every application theme, so that the
+   call that is playing stands out from the rest of the application.  -audio-accent is set per channel from the
+   alias color.  The dark theme fills each label's .text node directly, so label colors are set on both the label
+   and its .text node, as in ChannelMenus. */
+
+.audio-view
+{
+    -audio-display: #0d1117;
+    -audio-panel: #161b22;
+    -audio-panel-active: #1b2430;
+    -audio-border: #2a313c;
+    -audio-text: #e6edf3;
+    -audio-text-secondary: #9aa6b4;
+    -audio-text-dim: #5f6b78;
+    -audio-live: #3ddc84;
+    -audio-muted: #ff5c5c;
+    -audio-accent: #3ddc84;
+
+    -fx-background-color: -audio-display;
+    -fx-padding: 8 10 8 10;
+    -fx-border-color: transparent transparent -audio-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* Master section */
+
+.audio-view .audio-master
+{
+    -fx-padding: 2 8 2 2;
+    -fx-alignment: top-left;
+}
+
+.audio-view .audio-master-title
+{
+    -fx-text-fill: -audio-text-secondary;
+    -fx-font-size: 0.85em;
+    -fx-font-weight: bold;
+}
+
+.audio-view .audio-master-title .text
+{
+    -fx-fill: -audio-text-secondary;
+}
+
+.audio-view .audio-device
+{
+    -fx-text-fill: -audio-text-dim;
+    -fx-font-size: 0.85em;
+}
+
+.audio-view .audio-device .text
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-icon-button
+{
+    -fx-background-color: -audio-panel;
+    -fx-background-radius: 6;
+    -fx-border-color: -audio-border;
+    -fx-border-radius: 6;
+    -fx-padding: 5 8 5 8;
+    -fx-cursor: hand;
+}
+
+.audio-view .audio-icon-button:hover
+{
+    -fx-background-color: -audio-panel-active;
+    -fx-border-color: -audio-text-dim;
+}
+
+.audio-view .audio-icon-button:focus-visible
+{
+    -fx-border-color: -audio-live;
+}
+
+.audio-view .audio-icon-button .audio-button-icon
+{
+    -fx-fill: -audio-text;
+}
+
+.audio-view .audio-icon-button:selected
+{
+    -fx-background-color: derive(-audio-muted, -60%);
+    -fx-border-color: -audio-muted;
+}
+
+.audio-view .audio-icon-button:selected .audio-button-icon
+{
+    -fx-fill: -audio-muted;
+}
+
+.audio-view .audio-master-mute
+{
+    -fx-padding: 6 12 6 12;
+    -fx-min-width: 48;
+}
+
+.audio-view .audio-volume .track
+{
+    -fx-background-color: -audio-border;
+    -fx-background-radius: 3;
+    -fx-pref-height: 4;
+}
+
+.audio-view .audio-volume .thumb
+{
+    -fx-background-color: -audio-text;
+    -fx-background-radius: 7;
+    -fx-padding: 6;
+}
+
+.audio-view .audio-volume:focus-visible .thumb
+{
+    -fx-background-color: -audio-live;
+}
+
+/* Channel display */
+
+.audio-view .audio-channel
+{
+    -fx-background-color: -audio-panel;
+    -fx-background-radius: 8;
+    -fx-border-color: -audio-border;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-spacing: 10;
+    -fx-padding: 0 12 8 0;
+}
+
+.audio-view .audio-channel:active
+{
+    -fx-background-color: -audio-panel-active;
+    -fx-border-color: -audio-accent;
+}
+
+.audio-view .audio-accent
+{
+    -fx-background-color: transparent;
+    -fx-background-radius: 8 0 0 8;
+}
+
+.audio-view .audio-channel:active .audio-accent
+{
+    -fx-background-color: -audio-accent;
+}
+
+.audio-view .audio-channel-content
+{
+    -fx-padding: 6 0 0 0;
+}
+
+.audio-view .audio-icon-pane
+{
+    -fx-background-color: -audio-display;
+    -fx-background-radius: 26;
+    -fx-border-color: -audio-border;
+    -fx-border-radius: 26;
+}
+
+.audio-view .audio-channel:active .audio-icon-pane
+{
+    -fx-border-color: -audio-accent;
+    -fx-border-width: 2;
+}
+
+.audio-view .audio-placeholder-icon
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-channel:active .audio-placeholder-icon
+{
+    -fx-fill: -audio-accent;
+}
+
+.audio-view .audio-channel-tag
+{
+    -fx-text-fill: -audio-text-secondary;
+    -fx-background-color: -audio-display;
+    -fx-background-radius: 4;
+    -fx-padding: 1 6 1 6;
+    -fx-font-size: 0.8em;
+    -fx-font-weight: bold;
+}
+
+.audio-view .audio-channel-tag .text
+{
+    -fx-fill: -audio-text-secondary;
+}
+
+.audio-view .audio-status
+{
+    -fx-text-fill: -audio-text-dim;
+    -fx-font-size: 0.8em;
+    -fx-font-weight: bold;
+}
+
+.audio-view .audio-status .text
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-channel:active .audio-status
+{
+    -fx-text-fill: -audio-live;
+}
+
+.audio-view .audio-channel:active .audio-status .text
+{
+    -fx-fill: -audio-live;
+}
+
+.audio-view .audio-channel:muted .audio-status
+{
+    -fx-text-fill: -audio-muted;
+}
+
+.audio-view .audio-channel:muted .audio-status .text
+{
+    -fx-fill: -audio-muted;
+}
+
+.audio-view .audio-elapsed
+{
+    -fx-text-fill: -audio-text-secondary;
+    -fx-font-family: monospace;
+    -fx-font-size: 1.05em;
+}
+
+.audio-view .audio-elapsed .text
+{
+    -fx-fill: -audio-text-secondary;
+}
+
+.audio-view .audio-channel:active .audio-elapsed
+{
+    -fx-text-fill: -audio-text;
+}
+
+.audio-view .audio-channel:active .audio-elapsed .text
+{
+    -fx-fill: -audio-text;
+}
+
+.audio-view .audio-channel .audio-icon-button
+{
+    -fx-padding: 3 7 3 7;
+}
+
+.audio-view .audio-to
+{
+    -fx-text-fill: -audio-text-dim;
+    -fx-font-size: 1.9em;
+    -fx-font-weight: bold;
+}
+
+.audio-view .audio-to .text
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-channel:active .audio-to
+{
+    -fx-text-fill: -audio-text;
+}
+
+.audio-view .audio-channel:active .audio-to .text
+{
+    -fx-fill: -audio-text;
+}
+
+.audio-view .audio-to-detail
+{
+    -fx-text-fill: -audio-text-dim;
+    -fx-font-family: monospace;
+    -fx-font-size: 1.05em;
+}
+
+.audio-view .audio-to-detail .text
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-channel:active .audio-to-detail
+{
+    -fx-text-fill: -audio-accent;
+}
+
+.audio-view .audio-channel:active .audio-to-detail .text
+{
+    -fx-fill: -audio-accent;
+}
+
+.audio-view .audio-detail
+{
+    -fx-text-fill: -audio-text-dim;
+    -fx-font-size: 1.05em;
+}
+
+.audio-view .audio-detail .text
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-channel:active .audio-detail
+{
+    -fx-text-fill: -audio-text-secondary;
+}
+
+.audio-view .audio-channel:active .audio-detail .text
+{
+    -fx-fill: -audio-text-secondary;
+}
+
+.audio-view .audio-detail-icon
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-context
+{
+    -fx-text-fill: -audio-text-dim;
+    -fx-font-size: 0.9em;
+}
+
+.audio-view .audio-context .text
+{
+    -fx-fill: -audio-text-dim;
+}
+
+.audio-view .audio-channel:active .audio-context
+{
+    -fx-text-fill: -audio-text-secondary;
+}
+
+.audio-view .audio-channel:active .audio-context .text
+{
+    -fx-fill: -audio-text-secondary;
+}
