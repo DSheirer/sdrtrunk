@@ -232,8 +232,14 @@ application {
     }
 }
 
+/**
+ * Adds the splash screen to the run task through an argument provider.  Calling jvmArgs here would replace the
+ * applicationDefaultJvmArgs convention (--add-modules=jdk.incubator.vector, --enable-preview, etc.) instead of adding
+ * to it.
+ */
 tasks.named('run') {
-    jvmArgs "-splash:${file(splashResourceDir + '/' + splashImages[0]).absolutePath}"
+    def splashImage = file(splashResourceDir + '/' + splashImages[0]).absolutePath
+    jvmArgumentProviders.add({ ["-splash:${splashImage}".toString()] } as CommandLineArgumentProvider)
 }
 
 test {
