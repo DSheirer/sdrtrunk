@@ -72,6 +72,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TextField mTalkgroupField;
     private ToggleSwitch mAudioFilterEnable;
     private ToggleSwitch mALCEnable;
+    private Spinner<Integer> mHangTimeSpinner;
+    private ToggleSwitch mHangTimeRemoveSilenceSwitch;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
@@ -229,6 +231,18 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mDcsCodeCombo.valueProperty().addListener((obs, ov, nv) -> modifiedProperty().set(true));
             GridPane.setConstraints(mDcsCodeCombo, 4, 2);
             gridPane.getChildren().add(mDcsCodeCombo);
+
+            Label hangTimeLabel = new Label("Hang Time (ms)");
+            GridPane.setHalignment(hangTimeLabel, HPos.RIGHT);
+            GridPane.setConstraints(hangTimeLabel, 0, 3);
+            gridPane.getChildren().add(hangTimeLabel);
+            hangTimeLabel.setLabelFor(getHangTimeSpinner());
+
+            GridPane.setConstraints(getHangTimeSpinner(), 1, 3);
+            gridPane.getChildren().add(getHangTimeSpinner());
+
+            GridPane.setConstraints(getHangTimeRemoveSilenceSwitch(), 2, 3, 2, 1);
+            gridPane.getChildren().add(getHangTimeRemoveSilenceSwitch());
 
             mDecoderPane.setContent(gridPane);
 
@@ -411,6 +425,36 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         return mALCEnable;
     }
+    private Spinner<Integer> getHangTimeSpinner()
+    {
+        if(mHangTimeSpinner == null)
+        {
+            mHangTimeSpinner = new Spinner<>();
+            mHangTimeSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 5000, 0, 100));
+            mHangTimeSpinner.setEditable(true);
+            mHangTimeSpinner.setPrefWidth(90);
+            mHangTimeSpinner.setTooltip(new Tooltip("Keeps the call open for this long after the squelch closes, so a " +
+                "transmission and a reply, or a brief drop out, are captured as one call.  0 disables."));
+            mHangTimeSpinner.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mHangTimeSpinner;
+    }
+
+    private ToggleSwitch getHangTimeRemoveSilenceSwitch()
+    {
+        if(mHangTimeRemoveSilenceSwitch == null)
+        {
+            mHangTimeRemoveSilenceSwitch = new AccessibleToggleSwitch("Remove Gap Silence");
+            mHangTimeRemoveSilenceSwitch.setTooltip(new Tooltip("On: audio either side of a gap is joined directly.  " +
+                "Off: the gap is kept as silence so the call keeps its real timing."));
+            mHangTimeRemoveSilenceSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mHangTimeRemoveSilenceSwitch;
+    }
+
     private SegmentedButton getBandwidthButton()
     {
         if(mBandwidthButton == null)
@@ -557,6 +601,10 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             getALCEnable().setDisable(false);
             getALCEnable().setSelected(decodeConfigNBFM.isAudioALC());
+            getHangTimeSpinner().setDisable(false);
+            getHangTimeSpinner().getValueFactory().setValue(decodeConfigNBFM.getHangTimeMs());
+            getHangTimeRemoveSilenceSwitch().setDisable(false);
+            getHangTimeRemoveSilenceSwitch().setSelected(decodeConfigNBFM.isHangTimeRemoveSilence());
 
             getDeemphasisCombo().setValue(decodeConfigNBFM.getDeemphasis());
 
@@ -610,6 +658,10 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getAudioFilterEnable().setSelected(false);
             getALCEnable().setDisable(true);
             getALCEnable().setSelected(false);
+            getHangTimeSpinner().setDisable(true);
+            getHangTimeSpinner().getValueFactory().setValue(0);
+            getHangTimeRemoveSilenceSwitch().setDisable(true);
+            getHangTimeRemoveSilenceSwitch().setSelected(false);
 
             getDeemphasisCombo().setValue(DeemphasisMode.NONE);
             resetSquelchCodes();
@@ -649,6 +701,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         config.setTalkgroup(talkgroup);
         config.setAudioFilter(getAudioFilterEnable().isSelected());
         config.setAudioALC(getALCEnable().isSelected());
+        Integer hangTime = getHangTimeSpinner().getValue();
+        config.setHangTimeMs(hangTime != null ? hangTime : 0);
+        config.setHangTimeRemoveSilence(getHangTimeRemoveSilenceSwitch().isSelected());
 
         config.setDeemphasis(getDeemphasisCombo().getValue());
 
