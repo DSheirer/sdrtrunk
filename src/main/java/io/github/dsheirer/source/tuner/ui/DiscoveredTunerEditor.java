@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,35 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.ui;
 
-import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
-import net.miginfocom.swing.MigLayout;
+import javafx.application.Platform;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-
 /**
- * Editor for Discovered Tuners that displays custom tuner editor for the selected discovered tuner
+ * Hosts the tuner editor for the selected discovered tuner, and replaces the editor when the tuner's status changes,
+ * since the tuner (and therefore the editor's controls) can change with the status.
  */
-public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements IDiscoveredTunerStatusListener
+public class DiscoveredTunerEditor extends StackPane implements IDiscoveredTunerStatusListener
 {
-    private static final long serialVersionUID = 1L;
     private static final Logger mLog = LoggerFactory.getLogger(DiscoveredTunerEditor.class);
-    private UserPreferences mUserPreferences;
-    private TunerManager mTunerManager;
-    private JPanel mEmptyEditor = new EmptyTunerEditor();
-    private JPanel mEditor = mEmptyEditor;
-    private JScrollPane mEditorScroller;
+    private final UserPreferences mUserPreferences;
+    private final TunerManager mTunerManager;
+    private final EmptyTunerEditor mEmptyEditor = new EmptyTunerEditor();
+    private final ScrollPane mScrollPane = new ScrollPane();
+    private DiscoveredTuner mDiscoveredTuner;
+    private TunerEditor<?,?> mEditor;
 
     /**
      * Constructs an instance
@@ -55,83 +53,81 @@ public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements ID
     {
         mUserPreferences = userPreferences;
         mTunerManager = tunerManager;
-        init();
+        getStyleClass().add("discovered-tuner-editor");
+        mScrollPane.setFitToWidth(true);
+        mScrollPane.getStyleClass().add("tuner-editor-scroll");
+        mScrollPane.setContent(mEmptyEditor);
+        getChildren().add(mScrollPane);
     }
 
     /**
-     * Updates the lock state of the tuner editor so that lockable controls are updated
-     * @param locked true if the tuner is locked and the controls should be locked.
+     * Discovered tuner shown in the editor, or null.
      */
-    public void setTunerLockState(boolean locked)
+    public DiscoveredTuner getItem()
     {
-        if(mEditor instanceof TunerEditor tunerEditor)
-        {
-            tunerEditor.setTunerLockState(locked);
-        }
+        return mDiscoveredTuner;
     }
 
-    public void init()
+    /**
+     * Indicates if the editor shows a tuner.
+     */
+    public boolean hasItem()
     {
-        setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
-        mEditorScroller = new JScrollPane(mEditor);
-        add(mEditorScroller);
+        return mDiscoveredTuner != null;
     }
 
-    @Override
-    public void save()
+    /**
+     * Current tuner editor, or null.
+     */
+    public TunerEditor<?,?> getEditor()
     {
-        //Unused
+        return mEditor;
     }
 
-    @Override
-    public void setItem(DiscoveredTuner tuner)
+    /**
+     * Shows the editor for the discovered tuner, or the empty editor when the tuner is null.
+     */
+    public void setItem(DiscoveredTuner discoveredTuner)
     {
-        if(hasItem())
+        if(mDiscoveredTuner != null)
         {
-            getItem().removeTunerStatusListener(this);
+            mDiscoveredTuner.removeTunerStatusListener(this);
         }
 
-        //Cleanup previously selected tuner
-        if(hasItem() && mEditor instanceof TunerEditor tunerEditor)
+        if(mEditor != null)
         {
-            tunerEditor.dispose();
+            mEditor.dispose();
+            mEditor = null;
         }
 
-        super.setItem(tuner);
+        mDiscoveredTuner = discoveredTuner;
 
-        mEditorScroller.remove(mEditor);
-
-        if(hasItem())
+        if(discoveredTuner != null)
         {
-            mEditor = TunerFactory.getEditor(mUserPreferences, getItem(), mTunerManager);
-            getItem().addTunerStatusListener(this);
-        }
-        else
-        {
-            mEditor = mEmptyEditor;
+            try
+            {
+                mEditor = TunerFactory.getEditor(mUserPreferences, discoveredTuner, mTunerManager);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error creating tuner editor for " + discoveredTuner.getId(), e);
+            }
+
+            discoveredTuner.addTunerStatusListener(this);
         }
 
-        remove(mEditorScroller);
-        mEditorScroller = new JScrollPane(mEditor);
-        add(mEditorScroller);
-        revalidate();
-        repaint();
+        mScrollPane.setContent(mEditor != null ? mEditor : mEmptyEditor);
     }
 
     @Override
     public void tunerStatusUpdated(DiscoveredTuner discoveredTuner, TunerStatus previous, TunerStatus current)
     {
-        //If this is the currently displayed tuner, set it again to re-render the editor
-        if(hasItem() && getItem().equals(discoveredTuner))
-        {
-            if(current == TunerStatus.REMOVED)
+        Platform.runLater(() -> {
+            //If this is the currently displayed tuner, set it again to re-create the editor
+            if(mDiscoveredTuner != null && mDiscoveredTuner.equals(discoveredTuner))
             {
-                setItem(null);
+                setItem(current == TunerStatus.REMOVED ? null : discoveredTuner);
             }
-            else
-            {
-                setItem(discoveredTuner);
-            }
-        }
+        });
     }
 }

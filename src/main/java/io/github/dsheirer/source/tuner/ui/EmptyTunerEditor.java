@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,27 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.ui;
 
-import net.miginfocom.swing.MigLayout;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 
 /**
- * Empty tuner editor panel
+ * Placeholder shown when no tuner is selected.
  */
-public class EmptyTunerEditor extends JPanel
+public class EmptyTunerEditor extends VBox
 {
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * Constructs an instance
-     */
     public EmptyTunerEditor()
     {
-        setLayout(new MigLayout("insets 0 0 0 0", "[center,grow]", "[center,grow]"));
-        add(new JLabel("No tuner selected"), "wrap");
+        getStyleClass().add("empty-tuner-editor");
+        setAlignment(Pos.CENTER);
+        Label title = new Label("No tuner selected");
+        title.getStyleClass().add("empty-tuner-title");
+        Label hint = new Label("Select a tuner in the list to view and change its settings.");
+        hint.setWrapText(true);
+        getChildren().addAll(title, hint);
     }
 }
