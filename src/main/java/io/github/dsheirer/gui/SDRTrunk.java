@@ -145,11 +145,27 @@ public class SDRTrunk implements Listener<TunerEvent>
 
     public SDRTrunk()
     {
+        try
+        {
+            initialize();
+        }
+        catch(Throwable t)
+        {
+            startupFailed(t);
+        }
+    }
+
+    /**
+     * Creates and starts the application components and shows the main window.
+     */
+    private void initialize()
+    {
         if(!GraphicsEnvironment.isHeadless())
         {
             //Initialize the theme manager before any Swing components are realized so the chosen
             //look-and-feel applies to the very first window that is created.
             ThemeManager.getInstance().initialize(mUserPreferences);
+            ApplicationIcons.installSwing();
             mMainGui = new JFrame();
         }
 
@@ -273,6 +289,9 @@ public class SDRTrunk implements Listener<TunerEvent>
                 if(!GraphicsEnvironment.isHeadless())
                 {
                     mMainGui.setVisible(true);
+
+                    //The JVM closes the splash when the first window shows.  Close it here as well in case it didn't.
+                    Splash.close();
                     Tuner tuner = tunerSpectralDisplayManager.showFirstTuner();
 
                     if(tuner != null)
@@ -311,7 +330,15 @@ public class SDRTrunk implements Listener<TunerEvent>
             }
             catch(Exception e)
             {
-                e.printStackTrace();
+                if(mMainGui != null && !mMainGui.isVisible())
+                {
+                    //The main window didn't open, so the user has no way to close the application.
+                    startupFailed(e);
+                }
+                else
+                {
+                    mLog.error("Error while starting the application", e);
+                }
             }
         });
     }
@@ -361,6 +388,7 @@ public class SDRTrunk implements Listener<TunerEvent>
          */
         mTitle = SystemProperties.getInstance().getApplicationName();
         mMainGui.setTitle(mTitle);
+        ApplicationIcons.apply(mMainGui);
 
         Point location = mUserPreferences.getSwingPreference().getLocation(WINDOW_FRAME_IDENTIFIER);
         if(location != null)
@@ -968,10 +996,116 @@ public class SDRTrunk implements Listener<TunerEvent>
     }
 
     /**
+     * Handles an error that stops the application from starting.  Stops the tuners that already started, so that they
+     * are released for the next start, then reports the error and exits.  Without this, the threads that the
+     * application started before the error keep the JVM running with no main window and the splash screen showing.
+     * @param t error
+     */
+    private void startupFailed(Throwable t)
+    {
+        mLog.error("sdrtrunk failed to start", t);
+
+        if(mTunerManager != null)
+        {
+            try
+            {
+                mTunerManager.stop();
+            }
+            catch(Throwable t2)
+            {
+                mLog.error("Error stopping tuners after the startup error", t2);
+            }
+        }
+
+        String logsDirectory = null;
+
+        try
+        {
+            logsDirectory = mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog().toString();
+        }
+        catch(Throwable t2)
+        {
+            //Not available - the dialog leaves out the log location
+        }
+
+        if(mApplicationLog != null)
+        {
+            mApplicationLog.stop();
+        }
+
+        exitAfterStartupError(t, logsDirectory);
+    }
+
+    /**
+     * Closes the splash screen, shows the startup error to the user and exits the JVM with a non-zero status.
+     * @param t error
+     * @param logsDirectory where the application log is, or null if not known.
+     */
+    private static void exitAfterStartupError(Throwable t, String logsDirectory)
+    {
+        //The application log may not be running yet, so also write the error to the console.
+        System.err.println("sdrtrunk failed to start");
+        t.printStackTrace();
+
+        Splash.close();
+
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            String message = "<html><body style='width: 450px'>" +
+                "<p>sdrtrunk couldn't start because of this error:</p><br>" +
+                "<p><b>" + escapeHtml(String.valueOf(t)) + "</b></p><br>" +
+                (logsDirectory != null ? "<p>The application log has the details:</p><p>" +
+                    escapeHtml(logsDirectory) + "</p><br>" : "") +
+                "<p>See Help / Support on the sdrtrunk wiki for help.</p>" +
+                "</body></html>";
+
+            try
+            {
+                Runnable dialog = () -> JOptionPane.showMessageDialog(null, message, "sdrtrunk Startup Error",
+                    JOptionPane.ERROR_MESSAGE);
+
+                if(EventQueue.isDispatchThread())
+                {
+                    dialog.run();
+                }
+                else
+                {
+                    EventQueue.invokeAndWait(dialog);
+                }
+            }
+            catch(Throwable t2)
+            {
+                t2.printStackTrace();
+            }
+        }
+
+        System.exit(1);
+    }
+
+    /**
+     * Escapes text for display in a Swing HTML label.
+     */
+    private static String escapeHtml(String text)
+    {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
      * Launch the application.
      */
     public static void main(String[] args)
     {
-        new SDRTrunk();
+        String version = SDRTrunk.class.getPackage().getImplementationVersion();
+        Splash.showVersion(version != null ? "v" + version : null);
+
+        try
+        {
+            new SDRTrunk();
+        }
+        catch(Throwable t)
+        {
+            //An error creating the SDRTrunk fields, before the constructor's own startup error handling runs.
+            exitAfterStartupError(t, null);
+        }
     }
 }
