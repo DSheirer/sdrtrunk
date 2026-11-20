@@ -39,6 +39,7 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
 {
     private boolean mAudioFilter = true;
     private boolean mAudioALC = false;
+    private boolean mCtcssFineResolution = false;
     private float mSquelchNoiseOpenThreshold = NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD;
     private float mSquelchNoiseCloseThreshold = NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD;
     private int mSquelchHysteresisOpenThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD;
@@ -126,6 +127,26 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     public void setAudioALC(boolean audioALC)
     {
         mAudioALC = audioALC;
+    }
+
+    /**
+     * Indicates if the CTCSS detector re-evaluates the detected tone against its neighbors over a longer (256 ms)
+     * window, to stop the detection flipping between adjacent tones (e.g. 91.5 / 94.8 / 97.4) which causes choppy
+     * audio when CTCSS filtering is enabled.
+     * @return enabled status, defaults to false.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "ctcssFineResolution")
+    public boolean isCtcssFineResolution()
+    {
+        return mCtcssFineResolution;
+    }
+
+    /**
+     * Sets the CTCSS fine resolution enabled state.
+     */
+    public void setCtcssFineResolution(boolean ctcssFineResolution)
+    {
+        mCtcssFineResolution = ctcssFineResolution;
     }
 
     /**

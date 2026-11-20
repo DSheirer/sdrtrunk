@@ -184,7 +184,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
                 // Create CTCSS detector if we have CTCSS codes to detect
                 if(!mConfiguredCTCSSCodes.isEmpty())
                 {
-                    mCTCSSDetector = new CTCSSDetector(mConfiguredCTCSSCodes);
+                    mCTCSSDetector = new CTCSSDetector(mConfiguredCTCSSCodes, config.isCtcssFineResolution());
                 }
 
                 // Create DCS detector if we have DCS codes to detect
