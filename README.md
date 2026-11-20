@@ -25,24 +25,6 @@ A cross-platform java application for decoding, monitoring, recording and stream
 ![sdrtrunk primary application window decoding a P25 trunked radio system](https://github.com/DSheirer/sdrtrunk/wiki/images/application_overview.png)
 **Figure 1:** sdrtrunk decoding a P25 Phase 1 simulcast trunked radio system
 
-## MacOS Tahoe 26.1 Users - Attention
-Changes to USB support in Tahoe version 26.x cause sdrtrunk to fail to launch.  Do the following to install the latest libusb and create a symbolic link and then use the nightly build which includes an updated usb4java native library for Tahoe with ARM processor.  There may still be issue(s) with MacOS accessing your USB SDR tuners.
-
-```
-brew install libusb --HEAD
-cd /opt
-sudo mkdir local
-cd local
-sudo mkdir lib
-```
-Next, find where brew installed the libusb library, for example: ```/opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib```    Note: the folder "HEAD-9ceaa52" is the version stamp for HEAD when you installed from it.
-
-Finally, create a symbolic link from the installed library to the place where usb4java is expecting to find libusb (/opt/local/lib/libusb-1.0.0.dylib)
-
-```
-sudo ln -s /opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib /opt/local/lib/libusb-1.0.0.dylib
-```
-
 ## Download the Latest Release
 All release versions of sdrtrunk are available from the [releases](https://github.com/DSheirer/sdrtrunk/releases) tab.
 
