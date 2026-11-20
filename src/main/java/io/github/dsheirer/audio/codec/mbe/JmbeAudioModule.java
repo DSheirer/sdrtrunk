@@ -37,10 +37,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jmbe.frame.ICorrectedFrame;
 import jmbe.iface.IAudioCodec;
 import jmbe.iface.IAudioCodecLibrary;
 import jmbe.iface.IAudioCodecLibraryV2;
+import jmbe.iface.IAudioCodecLibraryV3;
 import jmbe.iface.IAudioCodecV2;
+import jmbe.iface.IAudioCodecV3;
+import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +56,8 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
 {
     private static final Logger LOG = LoggerFactory.getLogger(JmbeAudioModule.class);
     private static final String JMBE_AUDIO_LIBRARY = "JMBE";
+    private static final String[] JMBE_LIBRARY_CLASSES = {"jmbe.JMBEAudioLibraryV3", "jmbe.JMBEAudioLibraryV2",
+        "jmbe.JMBEAudioLibrary"};
     private static final List<String> mLibraryLoadStatusLogged = new ArrayList<>();
     private IAudioCodec mAudioCodec;
     private final UserPreferences mUserPreferences;
@@ -128,6 +134,41 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
         return getAudioCodec() != null;
     }
 
+    /**
+     * Synthesizes audio for a voice frame that has already been error corrected.  A version 3 codec uses the corrected
+     * frame so that it doesn't repeat the error correction.  Earlier codec versions decode the original frame bytes.
+     * @param correctedFrame from CorrectedIMBEFrame or CorrectedAMBEFrame
+     * @param frame bytes that were corrected
+     * @return audio samples
+     */
+    protected float[] getAudio(ICorrectedFrame correctedFrame, byte[] frame)
+    {
+        if(mAudioCodec instanceof IAudioCodecV3 v3)
+        {
+            return v3.getAudio(correctedFrame);
+        }
+
+        return mAudioCodec.getAudio(frame);
+    }
+
+    /**
+     * Synthesizes audio with optional tone metadata for a voice frame that has already been error corrected.  A
+     * version 3 codec uses the corrected frame so that it doesn't repeat the error correction.  Earlier codec versions
+     * decode the original frame bytes.
+     * @param correctedFrame from CorrectedAMBEFrame
+     * @param frame bytes that were corrected
+     * @return audio samples with optional metadata
+     */
+    protected IAudioWithMetadata getAudioWithMetadata(ICorrectedFrame correctedFrame, byte[] frame)
+    {
+        if(mAudioCodec instanceof IAudioCodecV3 v3)
+        {
+            return v3.getAudioWithMetadata(correctedFrame);
+        }
+
+        return mAudioCodec.getAudioWithMetadata(frame);
+    }
+
     @Override
     public Listener<IMessage> getMessageListener()
     {
@@ -177,25 +218,24 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     URLClassLoader childClassLoader = new URLClassLoader(new URL[]{path.toUri().toURL()},
                             this.getClass().getClassLoader());
 
-                    try
-                    {
-                        sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibraryV2", true, childClassLoader);
-                    }
-                    catch(ClassNotFoundException legacyLibrary)
+                    for(String libraryClass: JMBE_LIBRARY_CLASSES)
                     {
                         try
                         {
-                            sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
+                            sLoadedJmbeAudioConverterClass = Class.forName(libraryClass, true, childClassLoader);
+                            break;
                         }
-                        catch(ClassNotFoundException missingLibrary)
+                        catch(ClassNotFoundException olderLibrary)
                         {
-                            if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
-                            {
-                                LOG.error("Couldn't load JMBE audio conversion library from [" + path +
-                                    "] - neither V2 nor V1 library class was found");
-                                mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
-                            }
+                            //Try the next older library version
                         }
+                    }
+
+                    if(sLoadedJmbeAudioConverterClass == null && !mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
+                    {
+                        LOG.error("Couldn't load JMBE audio conversion library from [" + path +
+                            "] - none of the V3, V2 or V1 library classes was found");
+                        mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
                     }
                 }
                 catch(IllegalArgumentException iae)
@@ -229,9 +269,18 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     if((library.getMajorVersion() == 1 && library.getMinorVersion() >= 0 &&
                             library.getBuildVersion() >= 0) || library.getMajorVersion() >= 1)
                     {
-                        audioConverter = library instanceof IAudioCodecLibraryV2 libraryV2 ?
-                            libraryV2.getAudioConverterV2(getCodecName()) :
-                            library.getAudioConverter(getCodecName());
+                        if(library instanceof IAudioCodecLibraryV3 libraryV3)
+                        {
+                            audioConverter = libraryV3.getAudioConverterV3(getCodecName());
+                        }
+                        else if(library instanceof IAudioCodecLibraryV2 libraryV2)
+                        {
+                            audioConverter = libraryV2.getAudioConverterV2(getCodecName());
+                        }
+                        else
+                        {
+                            audioConverter = library.getAudioConverter(getCodecName());
+                        }
 
                         String codecStatusKey = JMBE_AUDIO_LIBRARY + ":codec:" + getCodecName();
                         if(!mLibraryLoadStatusLogged.contains(codecStatusKey))

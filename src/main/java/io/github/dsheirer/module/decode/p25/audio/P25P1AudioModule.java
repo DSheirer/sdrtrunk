@@ -31,6 +31,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
+import jmbe.frame.CorrectedIMBEFrame;
 
 public class P25P1AudioModule extends ImbeAudioModule
 {
@@ -135,7 +136,9 @@ public class P25P1AudioModule extends ImbeAudioModule
         {
             for(byte[] frame : ldu.getIMBEFrames())
             {
-                addAudio(getAudioCodec().getAudio(frame));
+                CorrectedIMBEFrame correctedFrame = CorrectedIMBEFrame.correct(frame);
+                addAudio(getAudio(correctedFrame, frame));
+                addVoiceFrameErrors(correctedFrame.getErrors()[0]);
             }
         }
         else
