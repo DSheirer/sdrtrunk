@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>sdrtrunk</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#13283d"/>
+      <stop offset="1" stop-color="#08121d"/>
+    </linearGradient>
+    <linearGradient id="sig" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#2ee6a6"/>
+      <stop offset="1" stop-color="#7cf05a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2ee6a6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#2ee6a6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bg)"/>
+  <rect x="16.5" y="16.5" width="479" height="479" rx="107.5" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+  <!-- faint grid, like a spectrum display -->
+  <g stroke="#ffffff" stroke-opacity="0.05" stroke-width="2">
+    <line x1="16" y1="160" x2="496" y2="160"/>
+    <line x1="16" y1="256" x2="496" y2="256"/>
+    <line x1="16" y1="352" x2="496" y2="352"/>
+  </g>
+  <circle cx="232" cy="256" r="96" fill="url(#glow)"/>
+  <g fill="none" stroke="url(#sig)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <!-- incoming signal: a short wave that settles into the trunk -->
+    <path d="M78 256 C 96 196, 118 196, 136 256 S 176 316, 194 256 L 232 256"/>
+    <!-- three channels branching off the trunk -->
+    <path d="M232 256 C 286 256, 300 150, 362 150 L 392 150"/>
+    <path d="M232 256 L 392 256"/>
+    <path d="M232 256 C 286 256, 300 362, 362 362 L 392 362"/>
+  </g>
+  <circle cx="232" cy="256" r="24" fill="#e9fff5"/>
+  <g fill="#7cf05a">
+    <circle cx="414" cy="150" r="26"/>
+    <circle cx="414" cy="256" r="26"/>
+    <circle cx="414" cy="362" r="26"/>
+  </g>
+  <g fill="#08121d">
+    <circle cx="414" cy="150" r="10"/>
+    <circle cx="414" cy="256" r="10"/>
+    <circle cx="414" cy="362" r="10"/>
+  </g>
+</svg>
