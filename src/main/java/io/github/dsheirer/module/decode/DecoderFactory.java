@@ -719,6 +719,8 @@ public class DecoderFactory
         DMRAudioModule audioModule2 = new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_2);
         configureJMBEAudioModule(audioModule1, decodeConfig);
         configureJMBEAudioModule(audioModule2, decodeConfig);
+        audioModule1.setColorCodeFilter(decodeConfig.getColorCodeFilter());
+        audioModule2.setColorCodeFilter(decodeConfig.getColorCodeFilter());
         modules.add(audioModule1);
         modules.add(audioModule2);
 
