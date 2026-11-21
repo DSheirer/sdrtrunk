@@ -41,6 +41,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
@@ -62,7 +63,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Audio playback display.  A master section with the output mute, volume and audio device settings, followed by one
+ * Audio playback display.  A narrow master column with the output mute, audio device settings and (when the output
+ * supports it) a vertical volume slider, followed by one
  * display per audio channel: a single wide display for a mono output or side by side left and right displays for a
  * stereo output.  Rebuilds the channel displays when the audio playback device configuration changes.
  */
@@ -82,8 +84,8 @@ public class AudioView extends HBox
     private final HBox mChannelsBox = new HBox(8);
     private final ToggleButton mMuteButton = new ToggleButton();
     private final IconNode mMuteIcon = new IconNode(FontAwesome.VOLUME_UP);
-    private final Label mDeviceLabel = new Label();
-    private final HBox mVolumeBox;
+    private final Button mSettingsButton = new Button();
+    private final VBox mVolumeBox;
     private final Slider mVolumeSlider = new Slider(0, 100, 50);
     private final Timeline mTimeline;
     private FloatControl mGainControl;
@@ -122,33 +124,31 @@ public class AudioView extends HBox
         //Master controls
         Label title = new Label("AUDIO");
         title.getStyleClass().add("audio-master-title");
-        mDeviceLabel.getStyleClass().add("audio-device");
-        mDeviceLabel.setMaxWidth(150);
 
         mMuteIcon.setIconSize(22);
         mMuteIcon.getStyleClass().add("audio-button-icon");
         mMuteButton.setGraphic(mMuteIcon);
         mMuteButton.getStyleClass().addAll("audio-icon-button", "audio-master-mute");
+        mMuteButton.setMaxWidth(Double.MAX_VALUE);
         mMuteButton.setOnAction(event -> setOutputMuted(mMuteButton.isSelected()));
 
         IconNode settingsIcon = new IconNode(FontAwesome.COG);
         settingsIcon.setIconSize(16);
         settingsIcon.getStyleClass().add("audio-button-icon");
-        Button settingsButton = new Button();
-        settingsButton.setGraphic(settingsIcon);
-        settingsButton.getStyleClass().add("audio-icon-button");
-        settingsButton.setTooltip(new Tooltip("Audio playback device and preferences"));
-        settingsButton.setAccessibleText("Audio settings");
-        settingsButton.setOnAction(event -> showAudioPreferences());
-
-        HBox buttons = new HBox(6, mMuteButton, settingsButton);
-        buttons.setAlignment(Pos.CENTER_LEFT);
+        mSettingsButton.setGraphic(settingsIcon);
+        mSettingsButton.getStyleClass().add("audio-icon-button");
+        mSettingsButton.setMaxWidth(Double.MAX_VALUE);
+        mSettingsButton.setAccessibleText("Audio settings");
+        mSettingsButton.setOnAction(event -> showAudioPreferences());
 
         IconNode volumeIcon = new IconNode(FontAwesome.VOLUME_DOWN);
         volumeIcon.setIconSize(12);
         volumeIcon.getStyleClass().add("audio-detail-icon");
         mVolumeSlider.getStyleClass().add("audio-volume");
-        mVolumeSlider.setPrefWidth(110);
+        mVolumeSlider.setOrientation(Orientation.VERTICAL);
+        mVolumeSlider.setMinHeight(40);
+        mVolumeSlider.setPrefHeight(60);
+        VBox.setVgrow(mVolumeSlider, Priority.ALWAYS);
         mVolumeSlider.setTooltip(new Tooltip("Volume (double-click to reset)"));
         mVolumeSlider.setAccessibleText("Volume");
         mVolumeSlider.valueProperty().addListener((observable, oldValue, newValue) -> applyVolume(newValue.intValue()));
@@ -158,12 +158,16 @@ public class AudioView extends HBox
                 mVolumeSlider.setValue(50);
             }
         });
-        mVolumeBox = new HBox(5, volumeIcon, mVolumeSlider);
-        mVolumeBox.setAlignment(Pos.CENTER_LEFT);
+        mVolumeBox = new VBox(4, mVolumeSlider, volumeIcon);
+        mVolumeBox.setAlignment(Pos.TOP_CENTER);
 
-        VBox master = new VBox(6, title, buttons, mVolumeBox, mDeviceLabel);
+        VBox controls = new VBox(6, title, mMuteButton, mSettingsButton);
+        controls.setAlignment(Pos.TOP_CENTER);
+        controls.setFillWidth(true);
+
+        HBox master = new HBox(4, controls, mVolumeBox);
         master.getStyleClass().add("audio-master");
-        master.setMinWidth(VBox.USE_PREF_SIZE);
+        master.setMinWidth(HBox.USE_PREF_SIZE);
 
         HBox.setHgrow(mChannelsBox, Priority.ALWAYS);
         mChannelsBox.setFillHeight(true);
@@ -283,8 +287,8 @@ public class AudioView extends HBox
             case 2 -> "Stereo";
             default -> channels.size() + " channels";
         };
-        mDeviceLabel.setText(layout.isEmpty() ? deviceName : layout + " · " + deviceName);
-        mDeviceLabel.setTooltip(new Tooltip(mDeviceLabel.getText()));
+        String deviceText = layout.isEmpty() ? deviceName : layout + " · " + deviceName;
+        mSettingsButton.setTooltip(new Tooltip("Audio playback device and preferences\n" + deviceText));
 
         if(channels.isEmpty())
         {

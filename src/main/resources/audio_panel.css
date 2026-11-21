@@ -45,8 +45,7 @@
 
 .audio-view .audio-master
 {
-    -fx-padding: 2 8 2 2;
-    -fx-alignment: top-left;
+    -fx-padding: 2 4 2 0;
 }
 
 .audio-view .audio-master-title
@@ -59,17 +58,6 @@
 .audio-view .audio-master-title .text
 {
     -fx-fill: -audio-text-secondary;
-}
-
-.audio-view .audio-device
-{
-    -fx-text-fill: -audio-text-dim;
-    -fx-font-size: 0.85em;
-}
-
-.audio-view .audio-device .text
-{
-    -fx-fill: -audio-text-dim;
 }
 
 .audio-view .audio-icon-button
@@ -111,15 +99,14 @@
 
 .audio-view .audio-master-mute
 {
-    -fx-padding: 6 12 6 12;
-    -fx-min-width: 48;
+    -fx-padding: 6 10 6 10;
 }
 
 .audio-view .audio-volume .track
 {
     -fx-background-color: -audio-border;
     -fx-background-radius: 3;
-    -fx-pref-height: 4;
+    -fx-pref-width: 4;
 }
 
 .audio-view .audio-volume .thumb
