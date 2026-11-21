@@ -22,11 +22,13 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.dsp.filter.equalizer.GraphicEqualizer;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
 import io.github.dsheirer.dsp.fm.IDemodulator;
+import io.github.dsheirer.dsp.squelch.NoiseSquelch;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.Module;
@@ -60,6 +62,17 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
     private Listener<float[]> mResampledBufferListener;
     private double mChannelBandwidth;
+    private NoiseSquelch mNoiseSquelch;
+    private GraphicEqualizer mGraphicEqualizer;
+    private IRealFilter mOutputFilter;
+    private boolean mCarrierSquelch;
+    private double mCarrierReferenceDb = Double.NEGATIVE_INFINITY;
+    private double mDecimatedSampleRate;
+
+    /** Carrier squelch mutes when the carrier is this far below the call's carrier level */
+    public static final double CARRIER_DROP_DB = 20.0;
+    /** How fast the carrier reference follows a weakening signal */
+    private static final double CARRIER_REFERENCE_DECAY_DB_PER_SECOND = 3.0;
 
     /**
      * Creates an FM demodulator for the specified channel bandwidth and output sample rate.
@@ -74,15 +87,92 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     /**
+     * FM demodulator whose audio passes through a noise squelch before resampling, so noise
+     * (no carrier) is dropped and only received audio is broadcast.  Used on trunked voice channels, which stay
+     * open a few seconds after the transmitter drops.
+     *
+     * @param channelBandwidth as above
+     * @param noiseSquelch applied to the demodulated audio
+     */
+    public FMDemodulatorModule(double channelBandwidth, NoiseSquelch noiseSquelch)
+    {
+        this(channelBandwidth);
+        mNoiseSquelch = noiseSquelch;
+    }
+
+    /**
      * Broadcasts the demodulated audio samples to the registered listener.
      * @param demodulatedSamples to broadcast
      */
     protected void broadcast(float[] demodulatedSamples)
     {
+        IRealFilter outputFilter = mOutputFilter;
+
+        if(outputFilter != null)
+        {
+            demodulatedSamples = outputFilter.filter(demodulatedSamples);
+        }
+
+        GraphicEqualizer equalizer = mGraphicEqualizer;
+
+        if(equalizer != null && equalizer.isEnabled())
+        {
+            demodulatedSamples = equalizer.process(demodulatedSamples);
+        }
+
         if(mResampledBufferListener != null)
         {
             mResampledBufferListener.receive(demodulatedSamples);
         }
+    }
+
+    /**
+     * Filter applied to the 8 kHz audio before the equalizer, or null for none
+     */
+    public void setOutputFilter(IRealFilter filter)
+    {
+        mOutputFilter = filter;
+    }
+
+    /**
+     * Carrier squelch for trunked voice channels.  The channel is only open while a call is on it,
+     * so the audio is dropped whenever the received carrier falls CARRIER_DROP_DB below the call's carrier level - the
+     * transmitter has stopped.  Works with the noise squelch: audio passes only when both are open.
+     */
+    public void setCarrierSquelch(boolean enabled)
+    {
+        mCarrierSquelch = enabled;
+    }
+
+    /**
+     * Carrier squelch decision for one block of filtered samples - true to drop the block.  Package-private for testing.
+     */
+    boolean carrierSquelched(float[] i, float[] q)
+    {
+        if(!mCarrierSquelch || i.length == 0)
+        {
+            return false;
+        }
+
+        double power = 0;
+
+        for(int x = 0; x < i.length; x++)
+        {
+            power += i[x] * i[x] + q[x] * q[x];
+        }
+
+        double db = 10 * Math.log10(power / i.length + 1e-20);
+        double seconds = mDecimatedSampleRate > 0 ? i.length / mDecimatedSampleRate : 0.01;
+        mCarrierReferenceDb = Math.max(db, mCarrierReferenceDb - CARRIER_REFERENCE_DECAY_DB_PER_SECOND * seconds);
+        return db < mCarrierReferenceDb - CARRIER_DROP_DB;
+    }
+
+    /**
+     * Graphic equalizer applied to the 8 kHz demodulated audio, or null for none
+     */
+    public void setGraphicEqualizer(GraphicEqualizer equalizer)
+    {
+        mGraphicEqualizer = equalizer;
     }
 
     @Override
@@ -138,7 +228,16 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
         float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
         mPowerMonitor.process(filteredI, filteredQ);
 
-        if(mResampler != null)
+        if(carrierSquelched(filteredI, filteredQ))
+        {
+            return; //Carrier gone - the transmission is over
+        }
+
+        if(mNoiseSquelch != null)
+        {
+            mNoiseSquelch.process(demodulated);
+        }
+        else if(mResampler != null)
         {
             mResampler.resample(demodulated);
         }
@@ -186,6 +285,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                     decimatedSampleRate /= decimationRate;
                 }
 
+                mDecimatedSampleRate = decimatedSampleRate;
                 mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
                 mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
 
@@ -238,6 +338,13 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
 
                 mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
                 mResampler.setListener(resampled -> broadcast(resampled));
+
+                if(mNoiseSquelch != null)
+                {
+                    final RealResampler resampler = mResampler;
+                    mNoiseSquelch.setSampleRate(decimatedSampleRate);
+                    mNoiseSquelch.setAudioListener(audio -> resampler.resample(audio));
+                }
             }
         }
     }

@@ -152,6 +152,7 @@ public class TalkgroupFormatPreference extends Preference
             case NBFM:
             case NXDN:
             case PASSPORT:
+            case EDACS:
             case UNKNOWN:
                 return IntegerFormat.DECIMAL;
             default:
@@ -176,6 +177,7 @@ public class TalkgroupFormatPreference extends Preference
             case NBFM:
             case NXDN:
             case PASSPORT:
+            case EDACS:
             case UNKNOWN:
                 return IntegerFormat.DECIMAL_HEXADECIMAL;
             default:
@@ -190,6 +192,7 @@ public class TalkgroupFormatPreference extends Preference
         {
             case MDC1200:
             case PASSPORT:
+            case EDACS:
                 return false;
             case AM:
             case APCO25:
@@ -352,6 +355,9 @@ public class TalkgroupFormatPreference extends Preference
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));
+            case EDACS:
+                return PassportTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.EDACS),
+                    isTalkgroupFixedWidth(Protocol.EDACS));
             default:
                 return talkgroupIdentifier.toString();
         }
@@ -397,6 +403,9 @@ public class TalkgroupFormatPreference extends Preference
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));
+            case EDACS:
+                return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.EDACS),
+                    isTalkgroupFixedWidth(Protocol.EDACS));
             default:
                 return radioIdentifier.toString();
         }

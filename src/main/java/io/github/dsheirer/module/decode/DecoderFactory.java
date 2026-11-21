@@ -105,6 +105,14 @@ import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.filter.P25P2MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
+import io.github.dsheirer.dsp.filter.equalizer.GraphicEqualizer;
+import io.github.dsheirer.dsp.squelch.NoiseSquelch;
+import io.github.dsheirer.module.decode.edacs.DecodeConfigEDACS;
+import io.github.dsheirer.module.decode.edacs.EDACSDecoder;
+import io.github.dsheirer.module.decode.edacs.EDACSDecoderState;
+import io.github.dsheirer.module.decode.edacs.EDACSTrafficChannelManager;
+import io.github.dsheirer.module.decode.edacs.provoice.ProVoiceAudioModule;
+import io.github.dsheirer.module.decode.edacs.provoice.ProVoiceDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderState;
 import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
@@ -200,6 +208,10 @@ public class DecoderFactory
                 break;
             case PASSPORT:
                 processPassport(channel, modules, aliasList, decodeConfig);
+                break;
+            case EDACS:
+                processEDACS(channel, modules, aliasList, channelType, (DecodeConfigEDACS)decodeConfig,
+                    userPreferences);
                 break;
             case P25_PHASE1:
                 processP25Phase1(channel, userPreferences, modules, aliasList, trafficChannelManager, channelDescriptor);
@@ -373,6 +385,85 @@ public class DecoderFactory
      * @param aliasList for the channel
      * @param decodeConfig for the channel
      */
+    /**
+     * EDACS Extended Addressing.  The control channel decodes the outbound control channel and starts
+     * a voice (traffic) channel for each call: ProVoice voice decoded through the JMBE IMBE codec, or analog FM.
+     */
+    private static void processEDACS(Channel channel, List<Module> modules, AliasList aliasList,
+                                     ChannelType channelType, DecodeConfigEDACS config, UserPreferences userPreferences)
+    {
+        if(channelType == ChannelType.STANDARD)
+        {
+            modules.add(new EDACSDecoder(config.getSystemKey()));
+            EDACSTrafficChannelManager trafficChannelManager = new EDACSTrafficChannelManager(channel);
+            modules.add(trafficChannelManager);
+            EDACSDecoderState edacsState = new EDACSDecoderState(channelType, trafficChannelManager, config);
+            edacsState.setAliasList(aliasList);
+            modules.add(edacsState);
+
+            if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
+                sctmf.hasMultipleFrequencies())
+            {
+                List<State> activeStates = new ArrayList<>();
+                activeStates.add(State.CONTROL);
+                modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
+            }
+        }
+        else if(config.getVoiceMode() == DecodeConfigEDACS.VoiceMode.ANALOG)
+        {
+            AudioModule audioModule = new AudioModule(aliasList, AbstractAudioModule.DEFAULT_TIMESLOT,
+                config.getCallTimeoutSeconds() * 1000L + 5000, highPassFilter());
+            modules.add(audioModule);
+
+            SourceType sourceType = channel.getSourceConfiguration().getSourceType();
+
+            if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
+            {
+                FMDemodulatorModule demodulator = new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, new NoiseSquelch(
+                    NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD, NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD,
+                    NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD, NoiseSquelch.DEFAULT_HYSTERESIS_CLOSE_THRESHOLD));
+                demodulator.setCarrierSquelch(true);
+                demodulator.setGraphicEqualizer(edacsEqualizer(config));
+                modules.add(demodulator);
+            }
+
+            modules.add(new EDACSDecoderState(channelType, null, config));
+        }
+        else
+        {
+            modules.add(new ProVoiceDecoder());
+            ProVoiceAudioModule audioModule = new ProVoiceAudioModule(userPreferences, aliasList);
+            //A ProVoice voice channel has no JMBE settings of its own: use the P25 defaults
+            configureJMBEAudioModule(audioModule, new DecodeConfigP25Phase1());
+            audioModule.setGraphicEqualizer(edacsEqualizer(config));
+            modules.add(audioModule);
+            modules.add(new EDACSDecoderState(channelType, null, config));
+        }
+    }
+
+    private static GraphicEqualizer edacsEqualizer(DecodeConfigEDACS config)
+    {
+        if(!config.isGraphicEQEnabled())
+        {
+            return null;
+        }
+
+        GraphicEqualizer equalizer = new GraphicEqualizer(8000.0);
+        equalizer.setBandGains(config.getGraphicEQBandGains());
+        equalizer.setEnabled(true);
+        return equalizer;
+    }
+
+    /**
+     * The default audio filtering (high-pass) as an audio module filter list.
+     */
+    private static List<AbstractAudioFilter> highPassFilter()
+    {
+        List<AbstractAudioFilter> filters = new ArrayList<>();
+        filters.add(new HighPassAudioFilter());
+        return filters;
+    }
+
     private static void processPassport(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
         modules.add(new PassportDecoder(decodeConfig));
         modules.add(new PassportDecoderState());
@@ -879,6 +970,8 @@ public class DecoderFactory
                 return new DecodeConfigNXDN();
             case PASSPORT:
                 return new DecodeConfigPassport();
+            case EDACS:
+                return new DecodeConfigEDACS();
             case P25_PHASE1:
                 return new DecodeConfigP25Phase1();
             case P25_PHASE2:
@@ -971,6 +1064,8 @@ public class DecoderFactory
                     return copyP25P2;
                 case PASSPORT:
                     return new DecodeConfigPassport();
+                case EDACS:
+                    return ((DecodeConfigEDACS)config).copy();
                 default:
                     throw new IllegalArgumentException("Unrecognized decoder configuration type:" + config.getDecoderType());
             }

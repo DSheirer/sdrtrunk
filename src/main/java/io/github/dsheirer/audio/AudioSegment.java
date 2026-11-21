@@ -522,4 +522,23 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         sb.append("   Identifiers:\n").append(getIdentifierCollection()).append("\n");
         return sb.toString();
     }
+
+    private volatile boolean mSilent;
+
+    /**
+     * Indicates the whole segment is silence - a transmission whose voice frames carried no sound, such as the
+     * ProVoice transmissions that only key up the channel.  A silent segment is not recorded and not streamed.
+     */
+    public boolean isSilent()
+    {
+        return mSilent;
+    }
+
+    /**
+     * Flags the segment as silence throughout.  Set by the audio module before the segment is completed.
+     */
+    public void setSilent(boolean silent)
+    {
+        mSilent = silent;
+    }
 }
