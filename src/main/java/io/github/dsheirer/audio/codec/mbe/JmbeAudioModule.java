@@ -289,21 +289,34 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     if((library.getMajorVersion() == 1 && library.getMinorVersion() >= 0 &&
                             library.getBuildVersion() >= 0) || library.getMajorVersion() >= 1)
                     {
-                        if(library instanceof IAudioCodecLibraryV3 libraryV3)
+                        try
                         {
-                            audioConverter = libraryV3.getAudioConverterV3(getCodecName());
+                            if(library instanceof IAudioCodecLibraryV3 libraryV3)
+                            {
+                                audioConverter = libraryV3.getAudioConverterV3(getCodecName());
+                            }
+                            else if(library instanceof IAudioCodecLibraryV2 libraryV2)
+                            {
+                                audioConverter = libraryV2.getAudioConverterV2(getCodecName());
+                            }
+                            else
+                            {
+                                audioConverter = library.getAudioConverter(getCodecName());
+                            }
                         }
-                        else if(library instanceof IAudioCodecLibraryV2 libraryV2)
+                        catch(IllegalArgumentException iae)
                         {
-                            audioConverter = libraryV2.getAudioConverterV2(getCodecName());
-                        }
-                        else
-                        {
-                            audioConverter = library.getAudioConverter(getCodecName());
+                            //The library does not have this codec, for example the ProVoice codec in a JMBE library
+                            //that predates it.  Audio for this codec is unavailable; other codecs are unaffected.
+                            if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY + getCodecName()))
+                            {
+                                LOG.warn("JMBE audio conversion library does not support [" + getCodecName() + "] codec");
+                                mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY + getCodecName());
+                            }
                         }
 
                         String codecStatusKey = JMBE_AUDIO_LIBRARY + ":codec:" + getCodecName();
-                        if(!mLibraryLoadStatusLogged.contains(codecStatusKey))
+                        if(audioConverter != null && !mLibraryLoadStatusLogged.contains(codecStatusKey))
                         {
                             LOG.info("JMBE codec [" + getCodecName() + "] class [" +
                                 audioConverter.getClass().getName() + "] features [" +

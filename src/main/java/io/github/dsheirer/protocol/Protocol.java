@@ -28,6 +28,7 @@ public enum Protocol
     AM("AM", "AM", 0),
     APCO25("APCO-25", "APCO25PHASE1", 9600),
     APCO25_PHASE2("APCO-25 P2", "APCO25PHASE2", 12000),
+    EDACS("EDACS", "EDACS", 9600),
     ARS("ARS", "ARS", 0),
     CELLOCATOR("CELLOCATOR", "CELLOCATOR", 0),
     CTCSS("CTCSS", "CTCSS", 0),
@@ -60,7 +61,7 @@ public enum Protocol
     }
 
     public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(AM, APCO25, DMR, FLEETSYNC, LTR, LTR_NET, MDC1200,
-        MPT1327, NBFM, NXDN, PASSPORT);
+        MPT1327, NBFM, NXDN, PASSPORT, EDACS);
 
     public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25, DMR, NXDN, PASSPORT);
 
