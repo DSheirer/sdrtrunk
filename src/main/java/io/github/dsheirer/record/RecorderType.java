@@ -35,9 +35,10 @@ public enum RecorderType
 	AUDIO( "Audio (.wav)"),
 
     /**
-     * Baseband, 16-bit complex inphase/quadrature samples at the channel sample rate.
+     * Baseband, 16-bit complex inphase/quadrature samples at the channel sample rate. File format (.wav or .iq)
+     * is selected by the user preference.
      */
-    BASEBAND( "Baseband I/Q (.wav)"),
+    BASEBAND( "Baseband I/Q (.wav or .iq)"),
 
     /**
      * Demodulated bit stream at the baud rate of the decoder
@@ -47,7 +48,7 @@ public enum RecorderType
     /**
      * Traffic channel baseband, 16-bit complex inphase/quadrature samples at the channel sample rate.
      */
-	TRAFFIC_BASEBAND( "Traffic Channel Baseband I/Q (.wav)" ),
+	TRAFFIC_BASEBAND( "Traffic Channel Baseband I/Q (.wav or .iq)" ),
 
     /**
      * Traffic channel demodulated bit stream at the baud rate of the decoder
