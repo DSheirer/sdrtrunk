@@ -82,6 +82,7 @@ public class TalkerAliasAutoAdderTest
         assertEquals(TalkerAliasAutoAdder.ALIAS_GROUP, alias.getGroup());
         assertTrue(alias.getAliasIdentifiers().get(0) instanceof Radio radio && radio.getValue() == 1234 &&
             radio.getProtocol() == Protocol.APCO25);
+        assertEquals("Radio ID:1234 Protocol:APCO-25", alias.getAliasIdentifiers().get(0).valueProperty().get());
 
         decode(RADIO, "ENGINE 12");
         assertEquals(1, aliases().size(), "no duplicate alias");
@@ -252,6 +253,8 @@ public class TalkerAliasAutoAdderTest
         decode(roaming, "ROAMER");
         Alias alias = alias(roaming);
         assertTrue(alias.getAliasIdentifiers().get(0) instanceof P25FullyQualifiedRadio);
+        assertEquals("Fully Qualified Radio ID:781824.291.777 Protocol:APCO-25",
+            alias.getAliasIdentifiers().get(0).valueProperty().get());
         assertNull(alias(RADIO), "local radio with the same value isn't aliased");
     }
 

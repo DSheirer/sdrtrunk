@@ -45,6 +45,7 @@ public class Radio extends AliasID implements Comparable<Radio>
     {
         mProtocol = protocol;
         mValue = value;
+        updateValueProperty();
     }
 
     @Override
