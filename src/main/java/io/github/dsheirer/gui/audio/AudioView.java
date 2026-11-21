@@ -302,7 +302,7 @@ public class AudioView extends HBox
     }
 
     /**
-     * Updates the master mute button.  The output is muted when every channel is muted.
+     * Updates the master mute button and disables the channel level meters when every channel is muted.
      */
     private void updateMuted()
     {
@@ -311,6 +311,11 @@ public class AudioView extends HBox
         for(AudioChannelView view: mChannelViews)
         {
             muted &= view.getAudioChannel().isMuted();
+        }
+
+        for(AudioChannelView view: mChannelViews)
+        {
+            view.setOutputMuted(muted);
         }
 
         mMuteButton.setSelected(muted);

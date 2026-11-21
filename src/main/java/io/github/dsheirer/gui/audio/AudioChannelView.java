@@ -243,6 +243,15 @@ public class AudioChannelView extends HBox
     }
 
     /**
+     * Disables the level meter while the whole audio output (every channel) is muted.
+     * @param outputMuted true when every channel is muted
+     */
+    public void setOutputMuted(boolean outputMuted)
+    {
+        mLevelMeter.setDisable(outputMuted);
+    }
+
+    /**
      * Updates the muted display after the channel or the whole output was (un)muted.
      */
     public void updateMuted()
