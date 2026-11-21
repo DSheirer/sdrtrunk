@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2026 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,10 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jmbe.frame.CorrectedAMBEFrame;
 
 public abstract class AbstractVoiceTimeslot extends Timeslot
 {
@@ -38,7 +40,30 @@ public abstract class AbstractVoiceTimeslot extends Timeslot
         super(message, dataUnitID, scramblingSequence, timeslot, timestamp);
     }
 
+    private List<CorrectedAMBEFrame> mCorrectedVoiceFrames;
+
     public abstract List<BinaryMessage> getVoiceFrames();
+
+    /**
+     * Error corrected versions of the AMBE voice frames from getVoiceFrames(), in the same order.  The frames are
+     * error corrected once and cached.
+     */
+    public synchronized List<CorrectedAMBEFrame> getCorrectedVoiceFrames()
+    {
+        if(mCorrectedVoiceFrames == null)
+        {
+            List<CorrectedAMBEFrame> corrected = new ArrayList<>();
+
+            for(BinaryMessage frame: getVoiceFrames())
+            {
+                corrected.add(CorrectedAMBEFrame.correct(frame.getBytes()));
+            }
+
+            mCorrectedVoiceFrames = corrected;
+        }
+
+        return mCorrectedVoiceFrames;
+    }
 
     @Override
     public List<Identifier> getIdentifiers()

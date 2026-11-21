@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import java.util.ArrayList;
 import java.util.List;
+import jmbe.frame.CorrectedIMBEFrame;
 
 /**
  * LDU voice frame
@@ -41,6 +42,7 @@ public abstract class LDUMessage extends P25P1Message
     public static final int[] LOW_SPEED_DATA = {1392, 1393, 1394, 1395, 1396, 1397, 1398, 1399, 1408, 1409, 1410, 1411,
             1412, 1413, 1414, 1415};
     private List<byte[]> mIMBIFrames;
+    private List<CorrectedIMBEFrame> mCorrectedIMBEFrames;
 
     /**
      * Constructs an instance
@@ -97,5 +99,24 @@ public abstract class LDUMessage extends P25P1Message
         }
 
         return mIMBIFrames;
+    }
+
+    /**
+     * Error corrected versions of the 9 IMBE voice frames from getIMBEFrames(), in the same order.  The frames are
+     * deinterleaved, derandomized, and error corrected once and cached.
+     */
+    public synchronized List<CorrectedIMBEFrame> getCorrectedIMBEFrames()
+    {
+        if(mCorrectedIMBEFrames == null)
+        {
+            mCorrectedIMBEFrames = new ArrayList<>();
+
+            for(byte[] frame: getIMBEFrames())
+            {
+                mCorrectedIMBEFrames.add(CorrectedIMBEFrame.correct(frame));
+            }
+        }
+
+        return mCorrectedIMBEFrames;
     }
 }

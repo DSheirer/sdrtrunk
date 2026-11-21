@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ *  Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@ public class Version implements Comparable<Version>
     {
         if(hasMajor() && other.hasMajor())
         {
-            if(getMajor() != other.getMajor())
+            if(!getMajor().equals(other.getMajor()))
             {
                 return Integer.compare(getMajor(), other.getMajor());
             }
@@ -175,7 +175,7 @@ public class Version implements Comparable<Version>
             {
                 if(hasMinor() && other.hasMinor())
                 {
-                    if(getMinor() != other.getMinor())
+                    if(!getMinor().equals(other.getMinor()))
                     {
                         return Integer.compare(getMinor(), other.getMinor());
                     }
@@ -183,7 +183,7 @@ public class Version implements Comparable<Version>
                     {
                         if(hasRelease() && other.hasRelease())
                         {
-                            if(getRelease() != other.getRelease())
+                            if(!getRelease().equals(other.getRelease()))
                             {
                                 return Integer.compare(getRelease(), other.getRelease());
                             }
@@ -199,6 +199,10 @@ public class Version implements Comparable<Version>
                                     {
                                         return 0;
                                     }
+                                }
+                                else if(hasPatch() == other.hasPatch())
+                                {
+                                    return 0;
                                 }
                                 else
                                 {

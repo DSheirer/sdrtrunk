@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -171,12 +171,17 @@ public class JmbeLibraryPreferenceEditor extends VBox
             try
             {
                 Version current = mUserPreferences.getJmbeLibraryPreference().getCurrentVersion();
-                final Release release = GitHub.getLatestRelease(JmbeCreator.GITHUB_JMBE_RELEASES_URL);
+                final Release release = GitHub.getLatestRelease(JmbeCreator.GITHUB_JMBE_RELEASES_URL,
+                    JmbeCreator.JMBE_API_MAJOR_VERSION);
 
-                mLog.info("Checking for JMBE Library Updates ...");
+                mLog.info("Checking for JMBE Library Updates for API major version " +
+                    JmbeCreator.JMBE_API_MAJOR_VERSION + " ...");
                 mLog.info("Current: " + (current != null ? current.toString() : "empty"));
 
+                //Offer the latest matching release when there is no current library, when the current library is a
+                //different (incompatible) major version, or when the matching release is newer than the current one.
                 final boolean canUpdate = (release != null) && ((current == null) ||
+                    !current.hasMajor() || current.getMajor() != JmbeCreator.JMBE_API_MAJOR_VERSION ||
                     (release.getVersion().compareTo(current) > 0));
 
                 if(release != null)

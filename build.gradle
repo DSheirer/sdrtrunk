@@ -138,7 +138,6 @@ dependencies {
 
     //Jitpack imports
     implementation 'com.github.dnault:libresample4j:master'
-    implementation 'com.github.DSheirer.jmbe:api:v2.1.1'
     implementation 'com.github.nwaldispuehl:java-lame:v3.98.4'
 
     //mavenCentral/jcenter imports
@@ -158,6 +157,7 @@ dependencies {
     implementation 'io.github.dsheirer:jairspyhf:1.8.1.1' //Airspy HF+ tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jbladerf:2.6.0.1' //bladeRF tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jhackrf:2026.01.3.1' //HackRF tuners - GitHub release, see settings.gradle
+    implementation 'io.github.dsheirer:jmbe-api:3.0.0' //JMBE audio codec interfaces - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jlibusb:1.0.30.1' //libusb and USB hotplug for the tuner libraries - GitHub release; not pulled in transitively
     implementation 'io.github.dsheirer:jhydrasdr:1.1.4.1' //HydraSDR tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jlimesdr:25.1.0.2' //LimeSDR tuners - GitHub release, see settings.gradle
