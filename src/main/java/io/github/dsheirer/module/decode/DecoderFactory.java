@@ -353,6 +353,7 @@ public class DecoderFactory
 
             P25P1AudioModule audioModule = new P25P1AudioModule(userPreferences, aliasList);
             configureJMBEAudioModule(audioModule, configP25P1);
+            audioModule.setNacFilter(configP25P1.getNacFilter());
             modules.add(audioModule);
 
             //Add a channel rotation monitor when we have multiple control channel frequencies specified
@@ -565,6 +566,7 @@ public class DecoderFactory
 
             NXDNAudioModule audioModule = new NXDNAudioModule(userPreferences, aliasList);
             configureJMBEAudioModule(audioModule, configNXDN);
+            audioModule.setRanFilter(configNXDN.getRanFilter());
             modules.add(audioModule);
 
             if(channel.getChannelType() == ChannelType.STANDARD)
@@ -718,6 +720,8 @@ public class DecoderFactory
         DMRAudioModule audioModule2 = new DMRAudioModule(userPreferences, aliasList, DMRMessage.TIMESLOT_2);
         configureJMBEAudioModule(audioModule1, decodeConfig);
         configureJMBEAudioModule(audioModule2, decodeConfig);
+        audioModule1.setColorCodeFilter(decodeConfig.getColorCodeFilter());
+        audioModule2.setColorCodeFilter(decodeConfig.getColorCodeFilter());
         modules.add(audioModule1);
         modules.add(audioModule2);
 

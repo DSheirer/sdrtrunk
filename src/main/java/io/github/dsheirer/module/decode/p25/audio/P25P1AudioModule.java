@@ -23,6 +23,9 @@ import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1NacGate;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
@@ -39,10 +42,22 @@ public class P25P1AudioModule extends ImbeAudioModule
 
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private List<LDUMessage> mCachedLDUMessages = new ArrayList<>();
+    private P25P1NacGate mNacGate = new P25P1NacGate(null);
 
     public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
         super(userPreferences, aliasList);
+    }
+
+    /**
+     * Sets the Network Access Code (NAC) filter for the audio path.  The audio module receives the decoded message
+     * stream in parallel with the decoder state, so the decoder state's NAC filter does not gate audio: without this
+     * filter, voice frames from a co-channel transmitter with a different NAC would be decoded into the call audio.
+     * @param nacFilter to apply, or null to pass all audio.
+     */
+    public void setNacFilter(AccessCodeFilter nacFilter)
+    {
+        mNacGate = new P25P1NacGate(nacFilter);
     }
 
     @Override
@@ -61,6 +76,7 @@ public class P25P1AudioModule extends ImbeAudioModule
     public void reset()
     {
         getIdentifierCollection().clear();
+        mNacGate.reset();
     }
 
     @Override
@@ -77,6 +93,12 @@ public class P25P1AudioModule extends ImbeAudioModule
      */
     public void receive(IMessage message)
     {
+        //NAC filter: drop header and voice frames from co-channel transmitters with a non-matching NAC
+        if(message instanceof P25P1Message && !mNacGate.passes(message))
+        {
+            return;
+        }
+
         if(hasAudioCodec())
         {
             if(mEncryptedCallStateEstablished)
