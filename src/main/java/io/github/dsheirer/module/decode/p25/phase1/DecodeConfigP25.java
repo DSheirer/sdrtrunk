@@ -35,6 +35,7 @@ public abstract class DecodeConfigP25 extends DecodeConfigJMBE
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
     private boolean mIgnoreEncryptedCalls = false;
+    private boolean mIgnoreUnaliasedTalkgroups = false;
 
     public DecodeConfigP25()
     {
@@ -70,6 +71,24 @@ public abstract class DecodeConfigP25 extends DecodeConfigJMBE
         mIgnoreEncryptedCalls = ignore;
     }
 
+    /**
+     * Indicates if the traffic channel manager should not allocate (ie tune) a traffic channel for a channel grant
+     * to a talkgroup that has no alias in the channel's alias list.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "ignore_unaliased_talkgroups")
+    public boolean getIgnoreUnaliasedTalkgroups()
+    {
+        return mIgnoreUnaliasedTalkgroups;
+    }
+
+    /**
+     * Sets the ignore unaliased talkgroups option.
+     * @param ignore true to not allocate traffic channels for talkgroups with no alias.
+     */
+    public void setIgnoreUnaliasedTalkgroups(boolean ignore)
+    {
+        mIgnoreUnaliasedTalkgroups = ignore;
+    }
 
     @JacksonXmlProperty(isAttribute = true, localName = "traffic_channel_pool_size")
     public int getTrafficChannelPoolSize()
