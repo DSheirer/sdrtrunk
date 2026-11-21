@@ -26,7 +26,8 @@ import javafx.scene.paint.Color;
 
 /**
  * Segmented horizontal audio level meter in dBFS with peak hold and level ballistics.  Feed it with peak sample
- * levels via {@link #update(float)} at a steady rate from the JavaFX application thread.
+ * levels via {@link #update(float)} at a steady rate from the JavaFX application thread.  While the meter is
+ * disabled, for example when the whole audio output is muted, it shows silence and ignores updates.
  */
 public class LevelMeter extends Region
 {
@@ -70,6 +71,10 @@ public class LevelMeter extends Region
         setPrefHeight(PREFERRED_HEIGHT);
         setMaxHeight(PREFERRED_HEIGHT);
         setMinWidth(40);
+        disabledProperty().addListener((observable, wasDisabled, disabled) -> {
+            updateOpacity();
+            reset();
+        });
     }
 
     /**
@@ -78,6 +83,11 @@ public class LevelMeter extends Region
      */
     public void update(float peak)
     {
+        if(isDisabled())
+        {
+            return;
+        }
+
         double db = peak > 0.0f ? Math.max(MINIMUM_DB, Math.min(MAXIMUM_DB, 20.0 * Math.log10(peak))) : MINIMUM_DB;
         double level = Math.max(db, mLevelDb - mFallPerUpdateDb);
 
@@ -111,8 +121,13 @@ public class LevelMeter extends Region
         if(mDimmed != dimmed)
         {
             mDimmed = dimmed;
-            mCanvas.setOpacity(dimmed ? 0.45 : 1.0);
+            updateOpacity();
         }
+    }
+
+    private void updateOpacity()
+    {
+        mCanvas.setOpacity(isDisabled() ? 0.3 : mDimmed ? 0.45 : 1.0);
     }
 
     /**
