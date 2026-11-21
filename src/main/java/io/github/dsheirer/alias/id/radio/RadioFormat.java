@@ -38,6 +38,7 @@ public enum RadioFormat
     NXDN("*****", 1, 0xFFFF, "1 to 65,535", "NXDN valid range is 1 to 65,535"),
     PASSPORT("********", 0, 0x7FFFFF, "0 to 8,388,607",
         "<html>PASSPORT valid range is 0 to 8,388,607"),
+    SMARTNET("*****", 0, 0xFFFF, "0 to 65,535", "Motorola Type II radio ID valid range is 0 to 65,535"),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
         "<html>Unknown protocol valid value range is 1-16,777,215");
 
@@ -118,6 +119,8 @@ public enum RadioFormat
                 return NXDN;
             case PASSPORT:
                 return PASSPORT;
+            case SMARTNET:
+                return SMARTNET;
             default:
                 return UNKNOWN;
         }

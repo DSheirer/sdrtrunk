@@ -35,6 +35,7 @@ public enum DecoderType
     NBFM("NBFM", "NBFM", Protocol.NBFM),
     NXDN("NXDN", "NXDN", Protocol.NXDN),
     PASSPORT("Passport", "Passport", Protocol.PASSPORT),
+    SMARTNET("Motorola Type II", "Motorola Type II", Protocol.SMARTNET),
     P25_PHASE1("P25 Phase 1", "P25-1", Protocol.APCO25),
     P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),
 
@@ -61,7 +62,7 @@ public enum DecoderType
      * Primary decoders that operate on I/Q sample streams
      */
     public static final EnumSet<DecoderType> PRIMARY_DECODERS = EnumSet.of(AM, DMR, LTR, LTR_NET, MPT1327, NBFM, NXDN,
-            P25_PHASE1, P25_PHASE2, PASSPORT);
+            P25_PHASE1, P25_PHASE2, PASSPORT, SMARTNET);
 
     /**
      * Auxiliary decoders that operate on in-band signalling in the decoded audio channel
