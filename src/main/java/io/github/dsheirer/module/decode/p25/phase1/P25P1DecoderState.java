@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
@@ -2199,13 +2200,11 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append(mNetworkConfigurationMonitor.getActivitySummary());
-        sb.append("\n");
-        sb.append(mPatchGroupManager.getPatchGroupSummary());
-        sb.append("\n");
-        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
-        return sb.toString();
+        ActivitySummary summary = new ActivitySummary("P25 Phase 1 " + mModulation.getLabel());
+        mNetworkConfigurationMonitor.addActivitySummary(summary);
+        mPatchGroupManager.addPatchGroupSummary(summary);
+        mTrafficChannelManager.getTalkerAliasManager().addAliasSummary(summary);
+        return summary.toString();
     }
 
     @Override

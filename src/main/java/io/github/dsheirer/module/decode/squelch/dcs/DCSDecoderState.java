@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.squelch.dcs;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.message.IMessage;
@@ -84,31 +85,16 @@ public class DCSDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=============================\n");
-        sb.append("Decoder:\tDigital Coded Squelch (DCS)\n\n");
-        if(mDcsCodeCountsMap.isEmpty())
-        {
-            sb.append("   Detected Codes: (none)\n");
-        }
-        else
-        {
-            for(Map.Entry<DCSCode,Integer> entry: mDcsCodeCountsMap.entrySet())
-            {
-                sb.append("   ").append(entry.getKey()).append(" - Count: ").append(entry.getValue());
+        ActivitySummary summary = new ActivitySummary("Digital Coded Squelch (DCS)");
+        summary.section("Detected Codes");
+        ActivitySummary.Table table = summary.table("Code", "Count", "Current");
 
-                if(entry.getKey().equals(mCurrentCode))
-                {
-                    sb.append(" - Current\n");
-                }
-                else
-                {
-                    sb.append("\n");
-                }
-            }
+        for(Map.Entry<DCSCode,Integer> entry: mDcsCodeCountsMap.entrySet())
+        {
+            table.row(entry.getKey(), entry.getValue(), entry.getKey().equals(mCurrentCode) ? "Yes" : null);
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     @Override

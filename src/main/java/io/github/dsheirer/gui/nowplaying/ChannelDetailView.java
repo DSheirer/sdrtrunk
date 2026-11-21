@@ -64,6 +64,8 @@ public class ChannelDetailView extends VBox implements Listener<ProcessingChain>
         labels.setPadding(new Insets(3, 2, 3, 2));
 
         mDetailTextArea.setEditable(false);
+        //Activity summaries are column-aligned plain text and require a fixed-width font
+        mDetailTextArea.setStyle("-fx-font-family: monospace;");
         VBox.setVgrow(mDetailTextArea, Priority.ALWAYS);
         getChildren().addAll(labels, mDetailTextArea);
     }

@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -1481,31 +1482,27 @@ public class DMRDecoderState extends TimeslotDecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        //Only add the talker alias summary to timeslot 1 activity summary since we aggregate across both timeslots.
+        boolean addAliases = getTimeslot() == TimeslotMessage.TIMESLOT_1 && hasTrafficChannelManager();
 
-        boolean networkAdded = false;
+        if(mNetworkConfigurationMonitor == null && !addAliases)
+        {
+            return "";
+        }
+
+        ActivitySummary summary = new ActivitySummary("DMR");
 
         if(mNetworkConfigurationMonitor != null)
         {
-            sb.append(mNetworkConfigurationMonitor.getActivitySummary());
-            networkAdded = true;
+            mNetworkConfigurationMonitor.addActivitySummary(summary);
         }
 
-        //Only add the talker alias summary to timeslot 1 activity summary since we aggregate across both timeslots.
-        if(getTimeslot() == TimeslotMessage.TIMESLOT_1)
+        if(addAliases)
         {
-            if(networkAdded)
-            {
-                sb.append("\n");
-            }
-
-            if(hasTrafficChannelManager())
-            {
-                sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
-            }
+            mTrafficChannelManager.getTalkerAliasManager().addAliasSummary(summary);
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     @Override
