@@ -290,3 +290,30 @@
 {
     -fx-font-weight: bold;
 }
+
+/* Web accounts */
+
+.settings-editor .table-cell.web-account-active
+{
+    -fx-text-fill: #2e9e5b;
+    -fx-font-weight: bold;
+}
+
+.settings-editor .table-cell.web-account-pending
+{
+    -fx-text-fill: #d08c00;
+    -fx-font-weight: bold;
+}
+
+.settings-editor .table-cell.web-account-disabled,
+.settings-editor .web-account-error
+{
+    -fx-text-fill: #d64545;
+}
+
+.settings-editor .table-row-cell:selected .table-cell.web-account-active,
+.settings-editor .table-row-cell:selected .table-cell.web-account-pending,
+.settings-editor .table-row-cell:selected .table-cell.web-account-disabled
+{
+    -fx-text-fill: -fx-selection-bar-text;
+}

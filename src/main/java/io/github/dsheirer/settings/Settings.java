@@ -22,6 +22,7 @@ package io.github.dsheirer.settings;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.settings.application.ApplicationSettings;
 import io.github.dsheirer.settings.calibration.VectorCalibrationSettings;
+import io.github.dsheirer.settings.database.DatabaseSettings;
 import io.github.dsheirer.settings.decoder.JmbeLibrarySettings;
 import io.github.dsheirer.settings.directory.DirectorySettings;
 import io.github.dsheirer.settings.duplicate.CallManagementSettings;
@@ -36,6 +37,7 @@ import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.settings.record.RecordSettings;
 import io.github.dsheirer.settings.source.TunerSettings;
 import io.github.dsheirer.settings.swing.SwingSettings;
+import io.github.dsheirer.settings.web.WebServerSettings;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -58,6 +60,7 @@ import io.github.dsheirer.sample.Listener;
 public class Settings implements Listener<SettingsType>
 {
     private ApplicationSettings mApplicationSettings;
+    private DatabaseSettings mDatabaseSettings;
     private DecodeEventSettings mDecodeEventSettings;
     private DirectorySettings mDirectorySettings;
     private CallManagementSettings mCallManagementSettings;
@@ -71,6 +74,7 @@ public class Settings implements Listener<SettingsType>
     private TalkgroupFormatSettings mTalkgroupFormatSettings;
     private TunerSettings mTunerSettings;
     private VectorCalibrationSettings mVectorCalibrationSettings;
+    private WebServerSettings mWebServerSettings;
 
     private SwingSettings mSwingSettings = new SwingSettings();
     private JavaFxSettings mJavaFxSettings = new JavaFxSettings();
@@ -107,6 +111,14 @@ public class Settings implements Listener<SettingsType>
     public JavaFxSettings getJavaFxSettings()
     {
         return mJavaFxSettings;
+    }
+
+    /**
+     * Call and event database, age-off and backup settings
+     */
+    public DatabaseSettings getDatabaseSettings()
+    {
+        return mDatabaseSettings;
     }
 
     /**
@@ -191,6 +203,14 @@ public class Settings implements Listener<SettingsType>
 
 
     /**
+     * Web server and web API settings
+     */
+    public WebServerSettings getWebServerSettings()
+    {
+        return mWebServerSettings;
+    }
+
+    /**
      * Window locations and table column widths stored by the earlier Swing version of the application.  Used only to
      * migrate those settings to the JavaFX windows and tables.
      */
@@ -221,6 +241,7 @@ public class Settings implements Listener<SettingsType>
     private void loadSettings()
     {
         mApplicationSettings = new ApplicationSettings(this::receive);
+        mDatabaseSettings = new DatabaseSettings(this::receive);
         mDecodeEventSettings = new DecodeEventSettings(this::receive);
         mDirectorySettings = new DirectorySettings(this::receive);
         mCallManagementSettings = new CallManagementSettings(this::receive);
@@ -234,6 +255,7 @@ public class Settings implements Listener<SettingsType>
         mTalkgroupFormatSettings = new TalkgroupFormatSettings(this::receive);
         mTunerSettings = new TunerSettings(this::receive);
         mVectorCalibrationSettings = new VectorCalibrationSettings(this::receive);
+        mWebServerSettings = new WebServerSettings(this::receive);
     }
 
     /**

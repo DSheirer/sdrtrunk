@@ -26,6 +26,8 @@ import io.github.dsheirer.gui.settings.SettingsPageType;
 import io.github.dsheirer.gui.settings.SettingsSection;
 import io.github.dsheirer.record.BasebandRecordFormat;
 import io.github.dsheirer.record.RecordFormat;
+import io.github.dsheirer.record.RecordingFolderLayout;
+import io.github.dsheirer.record.RecordingFolders;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.mp3.MP3Settings;
 import io.github.dsheirer.settings.record.RecordSettings;
@@ -40,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Settings for audio and baseband recording, and the MP3 encoder used for recordings and streaming
+ * Settings for audio and baseband recording, call recording folders, and the MP3 encoder used for recordings and streaming
  */
 public class RecordingSettingsPage extends SettingsPage
 {
@@ -52,6 +54,10 @@ public class RecordingSettingsPage extends SettingsPage
     private ComboBox<MP3Setting> mMP3SettingComboBox;
     private ComboBox<InputAudioFormat> mAudioSampleRateComboBox;
     private ToggleSwitch mNormalizeAudioSwitch;
+    private ToggleSwitch mRecordAllCallsSwitch;
+    private ComboBox<RecordingFolderLayout> mFolderLayoutComboBox;
+    private ToggleSwitch mHourFolderSwitch;
+    private Label mFolderExampleLabel;
 
     public RecordingSettingsPage(Settings settings)
     {
@@ -68,6 +74,27 @@ public class RecordingSettingsPage extends SettingsPage
                 getBasebandRecordFormatComboBox()::setValue)
             .help("File format for tuner and channel baseband I/Q recordings.  Applies to recordings started " +
                 "after the change.");
+
+        SettingsSection calls = addSection("Call Recordings");
+        calls.addRow("Record all calls", getRecordAllCallsSwitch())
+            .defaultValue(getRecordAllCallsSwitch().selectedProperty(), RecordSettings.DEFAULT_RECORD_ALL_CALLS,
+                getRecordAllCallsSwitch()::setSelected)
+            .help("Records the audio of every call.  When off, only calls with an alias that has the Record option " +
+                "are recorded.  Duplicate and Do Not Monitor calls are deleted after the retention time on the " +
+                "Database page.  Use the Database page age-off rules to limit the disk space used by recordings.");
+        calls.addRow("Organize call recordings", getFolderLayoutComboBox())
+            .defaultValue(getFolderLayoutComboBox().valueProperty(), RecordSettings.DEFAULT_RECORDING_FOLDER_LAYOUT,
+                getFolderLayoutComboBox()::setValue)
+            .help("Applies to new call recordings; existing recordings stay where they are.  The date is the call " +
+                "start date.  Talkgroup or Radio is the TO talkgroup (TG_1001), patch group (PATCH_500) or radio of " +
+                "a private call (RADIO_1234), else the FROM radio, else the channel name.  Folder names use the " +
+                "identifier values, not alias names, so they don't change when aliases change.");
+        calls.addRow("Add an hour folder below the date folder", getHourFolderSwitch())
+            .defaultValue(getHourFolderSwitch().selectedProperty(), RecordSettings.DEFAULT_RECORDING_HOUR_FOLDER,
+                getHourFolderSwitch()::setSelected)
+            .help("For busy systems.");
+        calls.addContent(getFolderExampleLabel());
+        updateFolderExample();
 
         SettingsSection mp3 = addSection("MP3 Encoder");
         mp3.addHelp("Used for MP3 audio recordings and for streaming.");
@@ -206,5 +233,79 @@ public class RecordingSettingsPage extends SettingsPage
         }
 
         return mNormalizeAudioSwitch;
+    }
+
+    private ToggleSwitch getRecordAllCallsSwitch()
+    {
+        if(mRecordAllCallsSwitch == null)
+        {
+            mRecordAllCallsSwitch = new ToggleSwitch();
+            mRecordAllCallsSwitch.setSelected(mRecordSettings.isRecordAllCalls());
+            mRecordAllCallsSwitch.selectedProperty().addListener((observable, oldValue, selected) ->
+                mRecordSettings.setRecordAllCalls(selected));
+        }
+
+        return mRecordAllCallsSwitch;
+    }
+
+    private ComboBox<RecordingFolderLayout> getFolderLayoutComboBox()
+    {
+        if(mFolderLayoutComboBox == null)
+        {
+            mFolderLayoutComboBox = new ComboBox<>();
+            mFolderLayoutComboBox.getItems().addAll(RecordingFolderLayout.values());
+            mFolderLayoutComboBox.setVisibleRowCount(RecordingFolderLayout.values().length);
+            mFolderLayoutComboBox.setValue(mRecordSettings.getRecordingFolderLayout());
+            mFolderLayoutComboBox.valueProperty().addListener((observable, oldValue, layout) -> {
+                if(layout != null)
+                {
+                    mRecordSettings.setRecordingFolderLayout(layout);
+                }
+
+                updateFolderExample();
+            });
+        }
+
+        return mFolderLayoutComboBox;
+    }
+
+    private ToggleSwitch getHourFolderSwitch()
+    {
+        if(mHourFolderSwitch == null)
+        {
+            mHourFolderSwitch = new ToggleSwitch();
+            mHourFolderSwitch.setSelected(mRecordSettings.isRecordingHourFolder());
+            mHourFolderSwitch.selectedProperty().addListener((observable, oldValue, selected) -> {
+                mRecordSettings.setRecordingHourFolder(selected);
+                updateFolderExample();
+            });
+        }
+
+        return mHourFolderSwitch;
+    }
+
+    private Label getFolderExampleLabel()
+    {
+        if(mFolderExampleLabel == null)
+        {
+            mFolderExampleLabel = new Label();
+            mFolderExampleLabel.getStyleClass().add("settings-help");
+            mFolderExampleLabel.setStyle("-fx-font-family: monospace;");
+        }
+
+        return mFolderExampleLabel;
+    }
+
+    /**
+     * Shows where a call recording is written with the selected folder layout, from the same folder logic used for
+     * recordings, and enables the hour folder option only for layouts with a date folder.
+     */
+    private void updateFolderExample()
+    {
+        RecordingFolderLayout layout = getFolderLayoutComboBox().getValue();
+        getHourFolderSwitch().setDisable(layout == null || !layout.hasDate());
+        String folders = layout != null ? RecordingFolders.getExample(layout, getHourFolderSwitch().isSelected()) : "";
+        getFolderExampleLabel().setText("Example: <recordings>/" + (folders.isEmpty() ? "" : folders + "/") +
+            "<recording file>");
     }
 }

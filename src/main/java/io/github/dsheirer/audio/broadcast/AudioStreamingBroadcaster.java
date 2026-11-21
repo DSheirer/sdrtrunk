@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.audio.broadcast.activity.StreamStatus;
 import io.github.dsheirer.audio.convert.AudioFrames;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
@@ -32,6 +33,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,10 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     private long mDelay;
     private long mMaximumRecordingAge;
     private AtomicBoolean mStreaming = new AtomicBoolean();
+    /**
+     * Recording that is being streamed, for its stream activity status
+     */
+    private final AtomicReference<AudioRecording> mStreamingRecording = new AtomicReference<>();
 
     protected boolean mInlineActive = false;
     protected int mInlineInterval;
@@ -188,12 +194,15 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     {
         if(connected())
         {
+            recording.setStatus(this, StreamStatus.PENDING, mDelay > 0 ?
+                "Waiting for the stream delay of " + (mDelay / 1000) + " seconds" : null);
             mAudioRecordingQueue.offer(recording);
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
         }
         else
         {
-            recording.removePendingReplay();
+            recording.setStatus(this, StreamStatus.NOT_SENT, "The stream isn't connected (" +
+                getBroadcastState() + ")");
         }
     }
 
@@ -228,13 +237,22 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
             {
                 //Reset inline metadata
                 mInlineRemaining = -1;
+                AudioRecording streaming = mStreamingRecording.getAndSet(null);
+
+                if(streaming != null)
+                {
+                    streaming.setStatus(this, StreamStatus.ERROR, "The stream disconnected while streaming the call (" +
+                        state + ")");
+                }
+
                 //Remove all pending audio recordings
                 while(!mAudioRecordingQueue.isEmpty())
                 {
                     try
                     {
                         AudioRecording recording = mAudioRecordingQueue.remove();
-                        recording.removePendingReplay();
+                        recording.setStatus(this, StreamStatus.NOT_SENT, "The stream disconnected before the call " +
+                            "was streamed (" + state + ")");
                     }
                     catch(Exception e)
                     {
@@ -335,6 +353,13 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
         {
             boolean metadataUpdateRequired = false;
 
+            AudioRecording streamed = mStreamingRecording.getAndSet(null);
+
+            if(streamed != null)
+            {
+                streamed.setStatus(AudioStreamingBroadcaster.this, StreamStatus.SENT, null);
+            }
+
             if(mInputFrames != null)
             {
                 mStreamedAudioCount++;
@@ -355,7 +380,8 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                 (nextRecording.getStartTime() + mDelay + mMaximumRecordingAge) < java.lang.System.currentTimeMillis())
             {
                 nextRecording = mAudioRecordingQueue.remove();
-                nextRecording.removePendingReplay();
+                nextRecording.setStatus(AudioStreamingBroadcaster.this, StreamStatus.AGED_OFF,
+                    "Waited longer than the maximum recording age of " + (mMaximumRecordingAge / 1000) + " seconds");
                 mAgedOffAudioCount++;
                 broadcast(new BroadcastEvent(AudioStreamingBroadcaster.this,
                     BroadcastEvent.Event.BROADCASTER_AGED_OFF_COUNT_CHANGE));
@@ -383,6 +409,8 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                                     throw new IllegalArgumentException("Unsupported broadcast format [" + mBroadcastFormat + "]");
                             }
                             mInputIdentifierCollection = nextRecording.getIdentifierCollection();
+                            nextRecording.setStatus(AudioStreamingBroadcaster.this, StreamStatus.STREAMING, null);
+                            mStreamingRecording.set(nextRecording);
 
                             if(connected())
                             {
@@ -391,6 +419,16 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
                             metadataUpdateRequired = false;
                         }
+                        else
+                        {
+                            nextRecording.setStatus(AudioStreamingBroadcaster.this, StreamStatus.NOT_SENT,
+                                "The call has no audio");
+                        }
+                    }
+                    else
+                    {
+                        nextRecording.setStatus(AudioStreamingBroadcaster.this, StreamStatus.ERROR,
+                            "The temporary recording file is missing");
                     }
                 }
                 catch(IOException ioe)
@@ -401,9 +439,17 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                     mInputFrames = null;
                     mInputIdentifierCollection = null;
                     metadataUpdateRequired = false;
+                    nextRecording.setStatus(AudioStreamingBroadcaster.this, StreamStatus.ERROR,
+                        "Error reading the temporary recording file: " + ioe.getMessage());
+                }
+                catch(IllegalArgumentException iae)
+                {
+                    nextRecording.setStatus(AudioStreamingBroadcaster.this, StreamStatus.ERROR, iae.getMessage());
+                    throw iae;
                 }
 
-                nextRecording.removePendingReplay();
+                //The audio is in memory, so the temporary file can be deleted once the other streams are done
+                nextRecording.release(AudioStreamingBroadcaster.this);
 
                 broadcast(new BroadcastEvent(AudioStreamingBroadcaster.this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
             }

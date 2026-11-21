@@ -32,7 +32,7 @@ import javafx.collections.ListChangeListener;
 
 /**
  * Streaming status: connected streams out of the enabled streams, with an error dot when any stream has an error.
- * A failed stream is easy to miss while the streaming status pane is hidden.
+ * A failed stream is easy to miss while the Streaming tab isn't showing.
  */
 public class StreamingStatusItem extends ServiceStatusItem
 {

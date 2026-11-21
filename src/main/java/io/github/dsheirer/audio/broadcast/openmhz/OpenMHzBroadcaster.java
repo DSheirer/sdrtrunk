@@ -27,6 +27,7 @@ import io.github.dsheirer.audio.broadcast.AbstractAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.AudioRecording;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.audio.broadcast.activity.StreamStatus;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
@@ -154,7 +155,7 @@ import org.slf4j.LoggerFactory;
 
          while(audioRecording != null)
          {
-             audioRecording.removePendingReplay();
+             audioRecording.setStatus(this, StreamStatus.NOT_SENT, "The stream stopped before the call was uploaded");
              audioRecording = mAudioRecordingQueue.poll();
          }
      }
@@ -203,9 +204,43 @@ import org.slf4j.LoggerFactory;
      @Override
      public void receive(AudioRecording audioRecording)
      {
+         audioRecording.setStatus(this, StreamStatus.PENDING, getBroadcastState() != BroadcastState.CONNECTED ?
+             "Waiting for the stream to connect (" + getBroadcastState() + ")" : null);
          mAudioRecordingQueue.offer(audioRecording);
          broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
      }
+
+    /**
+     * Stream activity detail for a call that waited too long to be uploaded
+     */
+    private String getAgedOffDetail()
+    {
+        return "Waited longer than the maximum recording age of " +
+            (getBroadcastConfiguration().getMaximumRecordingAge() / 1000) + " seconds (stream " + getBroadcastState() +
+            ")";
+    }
+
+    /**
+     * Describes a failed HTTP exchange: the status code and response, or the exception.
+     */
+    private static String describe(HttpResponse<String> response, Throwable throwable)
+    {
+        if(throwable != null)
+        {
+            Throwable cause = throwable instanceof CompletionException && throwable.getCause() != null ?
+                throwable.getCause() : throwable;
+            return cause.getClass().getSimpleName() + (cause.getMessage() != null ? " " + cause.getMessage() : "");
+        }
+
+        if(response != null)
+        {
+            String body = response.body() != null ? response.body().trim() : "";
+            return "HTTP " + response.statusCode() + (body.isEmpty() ? "" : " " +
+                (body.length() > 200 ? body.substring(0, 200) + "..." : body));
+        }
+
+        return "no response";
+    }
 
      /**
       * Indicates if the audio recording is non-null and not too old, meaning that the age of the recording has not
@@ -233,8 +268,22 @@ import org.slf4j.LoggerFactory;
              final AudioRecording audioRecording = mAudioRecordingQueue.poll();
              broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
 
-             if(isValid(audioRecording) && audioRecording.getRecordingLength() > 0)
+             if(!isValid(audioRecording))
              {
+                 if(audioRecording != null)
+                 {
+                     audioRecording.setStatus(this, StreamStatus.AGED_OFF, getAgedOffDetail());
+                     incrementAgedOffAudioCount();
+                     broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_AGED_OFF_COUNT_CHANGE));
+                 }
+             }
+             else if(audioRecording.getRecordingLength() <= 0)
+             {
+                 audioRecording.setStatus(this, StreamStatus.NOT_SENT, "The call has no audio");
+             }
+             else
+             {
+                 audioRecording.setStatus(this, StreamStatus.UPLOADING, null);
                  int durationSeconds = (int)(audioRecording.getRecordingLength() / 1E3f);
                  long timestampSeconds = (int)(audioRecording.getStartTime() / 1E3);
                  String talkgroup = getTo(audioRecording);
@@ -288,21 +337,19 @@ import org.slf4j.LoggerFactory;
                              .whenComplete((fileResponse, throwable1) -> {
                                  if(throwable1 != null || fileResponse.statusCode() != 200)
                                  {
+                                     audioRecording.setStatus(OpenMHzBroadcaster.this, StreamStatus.ERROR,
+                                         "Upload failed: " + describe(fileResponse, throwable1));
                                      if(throwable1 instanceof IOException || throwable1 instanceof CompletionException)
                                      {
                                          //We get socket reset exceptions occasionally when the remote server doesn't
                                          //fully read our request and immediately responds.
                                          setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                         mLog.error("OpenMHz API file upload fail [" +
-                                             fileResponse.statusCode() + "] response [" +
-                                             fileResponse.body() + "]");
+                                         mLog.error("OpenMHz API file upload fail " + describe(fileResponse, throwable1));
                                      }
                                      else
                                      {
                                          setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                         mLog.error("OpenMHz API file upload fail [" +
-                                             fileResponse.statusCode() + "] response [" +
-                                             fileResponse.body() + "]");
+                                         mLog.error("OpenMHz API file upload fail " + describe(fileResponse, throwable1));
                                      }
 
                                      incrementErrorAudioCount();
@@ -314,17 +361,15 @@ import org.slf4j.LoggerFactory;
 
                                      if(fileResponse.statusCode() == 200)
                                      {
+                                         audioRecording.setStatus(OpenMHzBroadcaster.this, StreamStatus.SENT, null);
                                          incrementStreamedAudioCount();
                                          broadcast(new BroadcastEvent(OpenMHzBroadcaster.this,
                                              BroadcastEvent.Event.BROADCASTER_STREAMED_COUNT_CHANGE)); 
-                                         audioRecording.removePendingReplay(); 
                                      }
                                      else
                                      {
                                          setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                                         mLog.error("OpenMHz API file upload fail [" +
-                                             fileResponse.statusCode() + "] response [" +
-                                             fileResponse.body() + "]");
+                                         mLog.error("OpenMHz API file upload fail " + describe(fileResponse, throwable1));
                                      }
 
 
@@ -337,19 +382,20 @@ import org.slf4j.LoggerFactory;
                          //Register an error for the file not found exception
                          mLog.error("OpenMHz API - upload file not found [" +
                              audioRecording.getPath().toString() + "]");
+                         audioRecording.setStatus(OpenMHzBroadcaster.this, StreamStatus.ERROR,
+                             "The temporary recording file is missing");
                          incrementErrorAudioCount();
                          broadcast(new BroadcastEvent(OpenMHzBroadcaster.this,
                              BroadcastEvent.Event.BROADCASTER_ERROR_COUNT_CHANGE));
-                         audioRecording.removePendingReplay();
                      }
                  }
                  catch(Exception e)
                  {
                      mLog.error("Unknown Error", e);
+                     audioRecording.setStatus(this, StreamStatus.ERROR, "Upload error: " + e);
                      setBroadcastState(BroadcastState.ERROR);
                      incrementErrorAudioCount();
                      broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_ERROR_COUNT_CHANGE));
-                     audioRecording.removePendingReplay();
                  }
              }
          }
@@ -368,7 +414,7 @@ import org.slf4j.LoggerFactory;
              {
                  //Remove the recording from the queue, remove a replay, and peek at the next recording in the queue
                  mAudioRecordingQueue.poll();
-                 audioRecording.removePendingReplay();
+                 audioRecording.setStatus(this, StreamStatus.AGED_OFF, getAgedOffDetail());
                  incrementAgedOffAudioCount();
                  broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_AGED_OFF_COUNT_CHANGE));
                  audioRecording = mAudioRecordingQueue.peek();

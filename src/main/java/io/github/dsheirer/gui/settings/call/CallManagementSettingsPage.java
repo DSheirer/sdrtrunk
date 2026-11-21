@@ -43,7 +43,6 @@ public class CallManagementSettingsPage extends SettingsPage
     private ToggleSwitch mDetectDuplicateTalkgroups;
     private ToggleSwitch mDetectDuplicateRadios;
     private ToggleSwitch mSuppressDuplicateListening;
-    private ToggleSwitch mSuppressDuplicateRecording;
     private ToggleSwitch mSuppressDuplicateStreaming;
     private ComboBox<PatchGroupStreamingOption> mPatchGroupStreamingOptionComboBox;
 
@@ -76,12 +75,11 @@ public class CallManagementSettingsPage extends SettingsPage
         suppression.addRow("Listening", getSuppressDuplicateListening())
             .defaultValue(getSuppressDuplicateListening().selectedProperty(), CallManagementSettings.DEFAULT_SUPPRESS_DUPLICATE_PLAYBACK,
                 getSuppressDuplicateListening()::setSelected);
-        suppression.addRow("Recording", getSuppressDuplicateRecording())
-            .defaultValue(getSuppressDuplicateRecording().selectedProperty(), CallManagementSettings.DEFAULT_SUPPRESS_DUPLICATE_RECORDING,
-                getSuppressDuplicateRecording()::setSelected);
         suppression.addRow("Streaming", getSuppressDuplicateStreaming())
             .defaultValue(getSuppressDuplicateStreaming().selectedProperty(), CallManagementSettings.DEFAULT_SUPPRESS_DUPLICATE_STREAMING,
                 getSuppressDuplicateStreaming()::setSelected);
+        suppression.addHelp("Duplicate calls are recorded and listed in the call database.  They are deleted after " +
+            "the duplicate and Do Not Monitor retention time on the Database page.");
 
         SettingsSection patchGroups = addSection("Patch Groups");
         patchGroups.addRow("Stream a patch group call as", getPatchGroupStreamingOptionComboBox())
@@ -129,22 +127,6 @@ public class CallManagementSettingsPage extends SettingsPage
         }
 
         return mSuppressDuplicateListening;
-    }
-
-    private ToggleSwitch getSuppressDuplicateRecording()
-    {
-        if(mSuppressDuplicateRecording == null)
-        {
-            mSuppressDuplicateRecording = new ToggleSwitch();
-            mSuppressDuplicateRecording.disableProperty()
-                .bind(Bindings.and(getDetectDuplicateTalkgroups().selectedProperty().not(),
-                    getDetectDuplicateRadios().selectedProperty().not()));
-            mSuppressDuplicateRecording.setSelected(mSettings.isDuplicateRecordingSuppressionEnabled());
-            mSuppressDuplicateRecording.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> mSettings.setDuplicateRecordingSuppressionEnabled(newValue));
-        }
-
-        return mSuppressDuplicateRecording;
     }
 
     private ToggleSwitch getSuppressDuplicateStreaming()

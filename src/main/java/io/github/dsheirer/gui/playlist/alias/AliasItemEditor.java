@@ -24,6 +24,8 @@ import com.google.common.eventbus.Subscribe;
 import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.gui.playlist.ExternalChangeGuard;
+import io.github.dsheirer.web.playlist.PlaylistConfig;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.action.AliasAction;
@@ -131,6 +133,23 @@ public class AliasItemEditor extends Editor<Alias>
     private static final Logger mLog = LoggerFactory.getLogger(AliasItemEditor.class);
 
     private PlaylistManager mPlaylistManager;
+    private final ExternalChangeGuard<Alias> mExternalChangeGuard =
+        new ExternalChangeGuard<>(this, PlaylistConfig::version, "alias");
+    private final ListChangeListener<Alias> mAliasChangeListener = change -> {
+        while(change.next())
+        {
+            if(change.wasUpdated() && getItem() != null)
+            {
+                for(int x = change.getFrom(); x < change.getTo(); x++)
+                {
+                    if(change.getList().get(x) == getItem())
+                    {
+                        mExternalChangeGuard.changed(getItem());
+                    }
+                }
+            }
+        }
+    };
     private Settings mSettings;
     private EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private IdentifierEditorModificationListener mIdentifierEditorModificationListener = new IdentifierEditorModificationListener();
@@ -186,6 +205,9 @@ public class AliasItemEditor extends Editor<Alias>
             .addListener((ListChangeListener<ConfiguredBroadcast>)c -> updateStreamViews());
 
         MyEventBus.getGlobalEventBus().register(this);
+
+        //Notice changes to the edited alias made elsewhere, for example through the web API
+        mPlaylistManager.getAliasModel().aliasList().addListener(mAliasChangeListener);
 
         setMaxWidth(Double.MAX_VALUE);
 
@@ -332,10 +354,19 @@ public class AliasItemEditor extends Editor<Alias>
         }
 
         modifiedProperty().set(false);
+        mExternalChangeGuard.loaded(alias);
     }
 
     @Override
     public void save()
+    {
+        mExternalChangeGuard.save(this::saveChanges);
+    }
+
+    /**
+     * Copies the editor values to the alias.
+     */
+    private void saveChanges()
     {
         if(modifiedProperty().get())
         {
@@ -439,6 +470,7 @@ public class AliasItemEditor extends Editor<Alias>
     public void dispose()
     {
         MyEventBus.getGlobalEventBus().unregister(this);
+        mPlaylistManager.getAliasModel().aliasList().removeListener(mAliasChangeListener);
     }
 
     /**

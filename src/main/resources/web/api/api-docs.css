@@ -1,0 +1,6 @@
+body { margin: 0; font-family: system-ui, sans-serif; }
+.api-header img { display: block; }
+.api-header { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 10px 20px;
+  background: #1d2330; color: #e6e9ef; font-size: 14px; }
+.api-header span { flex: 1; color: #a0a8b8; }
+.api-header a { color: #6aa5ff; }

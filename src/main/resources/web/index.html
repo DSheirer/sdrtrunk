@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sdrtrunk</title>
+  <link rel="icon" href="/images/sdrtrunk/sdrtrunk-icon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/images/sdrtrunk/sdrtrunk-icon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="/images/sdrtrunk/sdrtrunk-icon-256.png">
+  <script src="js/theme-init.js"></script>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <span class="brand"><img src="/images/sdrtrunk/sdrtrunk-icon-64.png" alt="" width="28" height="28">sdrtrunk</span>
+  <nav id="nav" hidden>
+    <a href="#/calls">Calls</a>
+    <a href="#/live">Live</a>
+    <a href="#/account">Account</a>
+    <a href="#/admin" id="nav-admin" hidden>Admin</a>
+    <a href="/api/" target="_blank" rel="noopener">API</a>
+  </nav>
+  <span id="connection" class="connection" title="Live connection lost; reconnecting"></span>
+  <label class="theme-picker" title="Theme">Theme <select id="theme-select"></select></label>
+  <span id="who"></span>
+  <button id="logout" type="button" class="secondary" hidden>Sign out</button>
+</header>
+<main id="view"></main>
+<p id="toast" role="status" hidden></p>
+</body>
+</html>

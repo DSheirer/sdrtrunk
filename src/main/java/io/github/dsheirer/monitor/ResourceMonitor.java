@@ -24,6 +24,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.database.DatabaseSettings;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -77,6 +78,7 @@ public class ResourceMonitor
     private final AtomicBoolean mStorageScanRunning = new AtomicBoolean();
     private final Deque<Double> mCpuSamples = new ArrayDeque<>();
     private final Deque<Long> mMemorySamples = new ArrayDeque<>();
+    private volatile DatabaseSettings mDatabaseSettings;
     private ScheduledFuture<?> mMemoryCpuMonitorFuture;
     private ScheduledFuture<?> mStorageMonitorFuture;
     private boolean mRunning;
@@ -142,6 +144,14 @@ public class ResourceMonitor
         //The scheduled task only hands the scan to another thread, so a slow drive can't hold up the scheduler
         mStorageMonitorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this::scanStorage, 1,
             STORAGE_SCAN_INTERVAL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Sets the call database preference so that the recordings usage meter can use the size age-off rule limit.
+     */
+    public void setDatabaseSettings(DatabaseSettings databaseSettings)
+    {
+        mDatabaseSettings = databaseSettings;
     }
 
     /**
@@ -268,8 +278,17 @@ public class ResourceMonitor
      */
     private void updateStorageUsage()
     {
-        StorageUsage recordings = measure(mSettings.getDirectorySettings().getDirectoryRecording(),
-            mSettings.getDirectorySettings().getDirectoryMaxUsageRecordings() * BYTES_PER_MEGABYTE);
+        long recordingsLimit = mSettings.getDirectorySettings().getDirectoryMaxUsageRecordings() * BYTES_PER_MEGABYTE;
+
+        //When the call audio size age-off rule is enabled, the recordings meter shows usage against the rule's limit
+        DatabaseSettings databaseSettings = mDatabaseSettings;
+
+        if(databaseSettings != null && databaseSettings.isSizeRuleEnabled())
+        {
+            recordingsLimit = databaseSettings.getSizeRuleLimitMB() * BYTES_PER_MEGABYTE;
+        }
+
+        StorageUsage recordings = measure(mSettings.getDirectorySettings().getDirectoryRecording(), recordingsLimit);
         StorageUsage eventLogs = measure(mSettings.getDirectorySettings().getDirectoryEventLog(),
             mSettings.getDirectorySettings().getDirectoryMaxUsageEventLogs() * BYTES_PER_MEGABYTE);
 

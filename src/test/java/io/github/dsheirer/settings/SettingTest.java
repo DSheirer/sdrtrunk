@@ -52,6 +52,9 @@ public class SettingTest
         assertEquals("/io/github/dsheirer/gui/table", Setting.TABLE_COLUMN_ORDER.getNodePath());
         assertEquals("/io/github/dsheirer/gui/viewer", Setting.VIEWER_DMR_LAST_DIRECTORY.getNodePath());
         assertEquals("/io/github/dsheirer/vector/calibrate", Setting.VECTOR_CALIBRATION.getNodePath());
+        assertEquals("/io/github/dsheirer/preference/database", Setting.DATABASE_TYPE.getNodePath());
+        assertEquals("/io/github/dsheirer/gui/calls", Setting.CALLS_VIEW_PAGE_SIZE.getNodePath());
+        assertEquals("/io/github/dsheirer/gui/events", Setting.EVENTS_VIEW_PAGE_SIZE.getNodePath());
 
         for(Setting setting: Setting.values())
         {

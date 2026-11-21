@@ -25,6 +25,9 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.playback.AudioChannel;
+import io.github.dsheirer.audio.playback.AudioPlaybackManager;
+import io.github.dsheirer.audio.playback.ReplaySource;
+import io.github.dsheirer.audio.playback.TalkgroupHold;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
@@ -80,6 +83,10 @@ public class AudioChannelView extends HBox
     private final Label mStatusLabel = new Label();
     private final Label mElapsedLabel = new Label();
     private final ToggleButton mMuteButton = new ToggleButton();
+    private final ToggleButton mHoldButton = new ToggleButton();
+    private final Label mHoldLabel = new Label();
+    private final AudioPlaybackManager mAudioPlaybackManager;
+    private final int mChannelIndex;
     private final IconNode mMuteIcon = new IconNode(FontAwesome.VOLUME_UP);
     private final Label mToLabel = new Label(NO_CALL);
     private final Label mToDetailLabel = new Label();
@@ -103,12 +110,16 @@ public class AudioChannelView extends HBox
      * @param talkgroupFormatSettings for identifier formatting
      * @param updatesPerSecond rate that {@link #tick()} is invoked
      * @param muteChangeListener notified on the FX thread when this channel's mute state changes
+     * @param audioPlaybackManager for setting the hold talkgroup, or null to hide the hold button
+     * @param channelIndex of this channel in the audio output
      */
     public AudioChannelView(AudioChannel audioChannel, AliasModel aliasModel, IconModel iconModel,
                             TalkgroupFormatSettings talkgroupFormatSettings, double updatesPerSecond,
-                            Runnable muteChangeListener)
+                            Runnable muteChangeListener, AudioPlaybackManager audioPlaybackManager, int channelIndex)
     {
         mAudioChannel = audioChannel;
+        mAudioPlaybackManager = audioPlaybackManager;
+        mChannelIndex = channelIndex;
         mAliasModel = aliasModel;
         mIconModel = iconModel;
         mTalkgroupFormatSettings = talkgroupFormatSettings;
@@ -143,6 +154,8 @@ public class AudioChannelView extends HBox
 
         mChannelTag.setText(audioChannel.getChannelName());
         mChannelTag.getStyleClass().add("audio-channel-tag");
+        mChannelTag.getStyleClass().add("RIGHT".equals(audioChannel.getChannelName()) ? "audio-channel-tag-right" :
+            "audio-channel-tag-left");
         mStatusLabel.getStyleClass().add("audio-status");
         mElapsedLabel.getStyleClass().add("audio-elapsed");
         mMuteIcon.setIconSize(15);
@@ -154,9 +167,24 @@ public class AudioChannelView extends HBox
             mAudioChannel.setMuted(mMuteButton.isSelected());
             updateMuted();
         });
+        IconNode holdIcon = new IconNode(FontAwesome.THUMB_TACK);
+        holdIcon.setIconSize(15);
+        holdIcon.getStyleClass().add("audio-button-icon");
+        mHoldButton.setGraphic(holdIcon);
+        mHoldButton.getStyleClass().addAll("audio-icon-button", "audio-hold-button");
+        mHoldButton.setFocusTraversable(true);
+        mHoldButton.setOnAction(event -> toggleHold());
+        mHoldButton.setVisible(audioPlaybackManager != null);
+        mHoldButton.setManaged(audioPlaybackManager != null);
+        mHoldLabel.getStyleClass().add("audio-hold-label");
+        mHoldLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+        mHoldLabel.setMinWidth(0);
+        mHoldLabel.setVisible(false);
+        mHoldLabel.setManaged(false);
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
-        HBox header = new HBox(8, mChannelTag, mStatusLabel, headerSpacer, mElapsedLabel, mMuteButton);
+        HBox header = new HBox(8, mChannelTag, mStatusLabel, mHoldLabel, headerSpacer, mElapsedLabel, mHoldButton,
+            mMuteButton);
         header.setAlignment(Pos.CENTER_LEFT);
 
         mToLabel.getStyleClass().add("audio-to");
@@ -202,6 +230,79 @@ public class AudioChannelView extends HBox
 
         mAudioChannel.addAudioEventListener(mAudioEventListener);
         mAudioChannel.setIdentifierCollectionListener(mMetadataListener);
+        mAudioChannel.setHoldListener(hold -> Platform.runLater(this::updateHold));
+        updateHold();
+    }
+
+    /**
+     * Holds the talkgroup of the current (or last) call on this channel, or releases the hold.
+     */
+    private void toggleHold()
+    {
+        if(mAudioPlaybackManager == null)
+        {
+            return;
+        }
+
+        if(mAudioChannel.getHold() != null)
+        {
+            mAudioPlaybackManager.setHold(mChannelIndex, null);
+        }
+        else
+        {
+            TalkgroupHold hold = getCallHold();
+
+            if(hold != null)
+            {
+                mAudioPlaybackManager.setHold(mChannelIndex, hold);
+            }
+        }
+
+        updateHold();
+    }
+
+    /**
+     * Hold for the TO talkgroup of the current or last call, labeled with the talkgroup and its alias, or null.
+     */
+    private TalkgroupHold getCallHold()
+    {
+        IdentifierCollection collection = mIdentifierCollection;
+        TalkgroupHold hold = TalkgroupHold.from(collection, null);
+
+        if(hold == null)
+        {
+            return null;
+        }
+
+        Identifier to = collection.getToIdentifier();
+        AliasList aliasList = mAliasModel != null ? mAliasModel.getAliasList(collection) : null;
+        List<Alias> aliases = getAliases(aliasList, to);
+        String label = format(to);
+
+        if(!aliases.isEmpty())
+        {
+            label = label + " " + Joiner.on(", ").skipNulls().join(aliases);
+        }
+
+        return new TalkgroupHold(hold.protocol(), hold.talkgroup(), label);
+    }
+
+    /**
+     * Updates the hold button and label from the channel's hold talkgroup.  FX thread.
+     */
+    private void updateHold()
+    {
+        TalkgroupHold hold = mAudioChannel.getHold();
+        boolean held = hold != null;
+        mHoldButton.setSelected(held);
+        mHoldButton.setDisable(!held && getCallHold() == null);
+        mHoldButton.setTooltip(new Tooltip(held ? "Release hold on talkgroup " + hold :
+            "Hold this talkgroup: only play calls to this talkgroup on the " + getChannelDescription()));
+        mHoldButton.setAccessibleText(held ? "Release hold" : "Hold talkgroup");
+        mHoldLabel.setText(held ? "HOLD " + hold : "");
+        mHoldLabel.setVisible(held);
+        mHoldLabel.setManaged(held);
+        pseudoClassStateChanged(AudioView.HELD, held);
     }
 
     /**
@@ -211,6 +312,7 @@ public class AudioChannelView extends HBox
     {
         mAudioChannel.removeAudioEventListener(mAudioEventListener);
         mAudioChannel.removeAudioMetadataListener();
+        mAudioChannel.setHoldListener(null);
     }
 
     /**
@@ -285,6 +387,7 @@ public class AudioChannelView extends HBox
         switch(audioEvent.getType())
         {
             case AUDIO_STOPPED -> Platform.runLater(() -> setIdentifierCollection(null));
+            case REPLAY_STARTED, REPLAY_STOPPED -> Platform.runLater(this::updateReplay);
             case AUDIO_MUTED, AUDIO_UNMUTED -> Platform.runLater(() -> {
                 updateMuted();
                 mMuteChangeListener.run();
@@ -336,6 +439,35 @@ public class AudioChannelView extends HBox
         pseudoClassStateChanged(AudioView.ACTIVE, true);
         updateDisplay();
         updateElapsed();
+        updateHold();
+    }
+
+    /**
+     * Shows the recorded call that is replaying on this channel, or restores the call display when the replay ends.
+     * FX thread.
+     */
+    private void updateReplay()
+    {
+        ReplaySource replay = mAudioChannel.getReplay();
+
+        if(replay != null && !replay.isFinished())
+        {
+            mActive = false;
+            mHasPlayed = true;
+            mCallStartNanos = System.nanoTime();
+            mToLabel.setText("Replay");
+            mToDetailLabel.setText("");
+            mFromBox.setVisible(false);
+            mContextLabel.setText(replay.getDescription());
+            setAlias(null);
+            pseudoClassStateChanged(AudioView.ACTIVE, true);
+            mStatusLabel.setText(mAudioChannel.isMuted() ? "MUTED" : "REPLAY");
+        }
+        else
+        {
+            pseudoClassStateChanged(AudioView.ACTIVE, false);
+            updateDisplay();
+        }
     }
 
     /**
@@ -343,6 +475,15 @@ public class AudioChannelView extends HBox
      */
     private void updateStatus()
     {
+        ReplaySource replay = mAudioChannel.getReplay();
+
+        if(replay != null && !replay.isFinished())
+        {
+            mStatusLabel.setText(mAudioChannel.isMuted() ? "MUTED" : "REPLAY");
+            mElapsedLabel.setVisible(false);
+            return;
+        }
+
         String status;
 
         if(mActive)

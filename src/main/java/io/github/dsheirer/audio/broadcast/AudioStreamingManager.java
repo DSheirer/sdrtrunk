@@ -23,12 +23,18 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivity;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivityModel;
+import io.github.dsheirer.audio.broadcast.activity.StreamStatus;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.AudioSegmentRecorder;
 import io.github.dsheirer.record.RecordFormat;
@@ -40,7 +46,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -60,6 +68,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     private Listener<AudioRecording> mAudioRecordingListener;
     private BroadcastFormat mBroadcastFormat;
     private Settings mSettings;
+    private StreamActivityModel mStreamActivityModel;
     private ScheduledFuture<?> mAudioSegmentProcessorFuture;
     private int mNextRecordingNumber = 1;
 
@@ -71,9 +80,23 @@ public class AudioStreamingManager implements Listener<AudioSegment>
      */
     public AudioStreamingManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, Settings settings)
     {
+        this(listener, broadcastFormat, settings, null);
+    }
+
+    /**
+     * Constructs an instance
+     * @param listener to receive completed audio recordings
+     * @param broadcastFormat for temporary recordings
+     * @param settings to manage recording directories
+     * @param streamActivityModel to receive a row for each call and stream that the call is selected for, or null
+     */
+    public AudioStreamingManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, Settings settings,
+                                 StreamActivityModel streamActivityModel)
+    {
         mAudioRecordingListener = listener;
         mBroadcastFormat = broadcastFormat;
         mSettings = settings;
+        mStreamActivityModel = streamActivityModel;
     }
 
     /**
@@ -139,6 +162,16 @@ public class AudioStreamingManager implements Listener<AudioSegment>
             if(audioSegment.isDuplicate() && mSettings.getCallManagementSettings().isDuplicateStreamingSuppressionEnabled())
             {
                 it.remove();
+
+                if(audioSegment.hasBroadcastChannels())
+                {
+                    IdentifierCollection identifiers =
+                        new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers());
+                    addActivities(audioSegment, identifiers, audioSegment.getBroadcastChannels(), null,
+                        StreamStatus.SUPPRESSED, "Duplicate call - duplicate call streaming is suppressed " +
+                            "(Call Management settings)");
+                }
+
                 audioSegment.decrementConsumerCount();
             }
             else if(audioSegment.completeProperty().get())
@@ -171,6 +204,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
                             else
                             {
                                 AliasList aliasList = audioSegment.getAliasList();
+                                Set<BroadcastChannel> decomposedChannels = new HashSet<>();
 
                                 for(Identifier identifier: ids)
                                 {
@@ -188,8 +222,21 @@ public class AudioStreamingManager implements Listener<AudioSegment>
                                         //Remove patch group TO identifier & replace with the patched talkgroup/radio
                                         decomposedIdentifiers.remove(Role.TO);
                                         decomposedIdentifiers.update(identifier);
-                                        processAudioSegment(audioSegment, decomposedIdentifiers, broadcastChannels);
+                                        decomposedChannels.addAll(broadcastChannels);
+                                        processAudioSegment(audioSegment, decomposedIdentifiers, broadcastChannels,
+                                            getSelectingAliases(aliasList, identifier, "Patched"));
                                     }
+                                }
+
+                                //Streams of the patch group aliases that no patched talkgroup or radio streams to
+                                Set<BroadcastChannel> notStreamed = new HashSet<>(audioSegment.getBroadcastChannels());
+                                notStreamed.removeAll(decomposedChannels);
+
+                                if(!notStreamed.isEmpty())
+                                {
+                                    addActivities(audioSegment, identifiers, notStreamed, null, StreamStatus.SUPPRESSED,
+                                        "Patch group calls are streamed as the patched talkgroups (Call Management " +
+                                            "settings) and no patched talkgroup or radio has an alias for this stream");
                                 }
                             }
                         }
@@ -219,6 +266,21 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     private void processAudioSegment(AudioSegment audioSegment, IdentifierCollection identifierCollection,
                                      Set<BroadcastChannel> broadcastChannels)
     {
+        processAudioSegment(audioSegment, identifierCollection, broadcastChannels, null);
+    }
+
+    /**
+     * Processes an audio segment for streaming by creating a temporary MP3 recording and submitting the recording
+     * to the specific broadcast channel(s).
+     * @param audioSegment to process for streaming
+     * @param identifierCollection to use for the streamed audio recording.
+     * @param broadcastChannels to receive the audio recording
+     * @param selectingAliases by stream, or null to use the aliases that added each broadcast channel to the segment
+     */
+    private void processAudioSegment(AudioSegment audioSegment, IdentifierCollection identifierCollection,
+                                     Set<BroadcastChannel> broadcastChannels,
+                                     Map<BroadcastChannel,List<StreamActivity.SelectingAlias>> selectingAliases)
+    {
         Path path = getTemporaryRecordingPath();
         long length = 0;
 
@@ -235,12 +297,193 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
             AudioRecording audioRecording = new AudioRecording(path, broadcastChannels, identifierCollection,
                     audioSegment.getStartTimestamp(), length);
+
+            if(mStreamActivityModel != null)
+            {
+                audioRecording.setStreamActivities(mStreamActivityModel, addActivities(audioSegment,
+                    identifierCollection, broadcastChannels, selectingAliases, StreamStatus.PENDING, null));
+            }
+
             mAudioRecordingListener.receive(audioRecording);
         }
         catch(IOException ioe)
         {
             mLog.error("Error recording temporary stream MP3");
+            addActivities(audioSegment, identifierCollection, broadcastChannels, selectingAliases, StreamStatus.ERROR,
+                "Error creating the temporary streaming recording: " + ioe.getMessage());
         }
+    }
+
+    /**
+     * Adds a stream activity row for each broadcast channel.
+     * @param audioSegment of the call
+     * @param identifierCollection of the streamed call
+     * @param broadcastChannels that the call is selected for
+     * @param selectingAliases by stream, or null to use the aliases that added each broadcast channel to the segment
+     * @param status of the rows
+     * @param detail of the status, or null
+     * @return rows by stream name
+     */
+    private Map<String,StreamActivity> addActivities(AudioSegment audioSegment,
+                                                     IdentifierCollection identifierCollection,
+                                                     Set<BroadcastChannel> broadcastChannels,
+                                                     Map<BroadcastChannel,List<StreamActivity.SelectingAlias>> selectingAliases,
+                                                     StreamStatus status, String detail)
+    {
+        Map<String,StreamActivity> activities = new LinkedHashMap<>();
+
+        if(mStreamActivityModel == null)
+        {
+            return activities;
+        }
+
+        try
+        {
+            StreamActivity.Builder call = createCall(audioSegment, identifierCollection);
+
+            for(BroadcastChannel broadcastChannel: broadcastChannels)
+            {
+                String streamName = broadcastChannel.getChannelName();
+
+                if(streamName != null && !activities.containsKey(streamName))
+                {
+                    List<StreamActivity.SelectingAlias> aliases = selectingAliases != null ?
+                        selectingAliases.get(broadcastChannel) : getSelectingAliases(audioSegment, broadcastChannel);
+                    call.selectingAliases(aliases);
+                    activities.put(streamName, mStreamActivityModel.add(call, streamName, null, status, detail));
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error adding streaming activity for call", e);
+        }
+
+        return activities;
+    }
+
+    /**
+     * Call details for the stream activity rows.
+     */
+    private StreamActivity.Builder createCall(AudioSegment audioSegment, IdentifierCollection identifierCollection)
+    {
+        Identifier to = identifierCollection.getToIdentifier();
+        Identifier from = identifierCollection.getFromIdentifier();
+        Protocol protocol = to != null ? to.getProtocol() : (from != null ? from.getProtocol() : null);
+
+        return new StreamActivity.Builder()
+            .callKey(audioSegment.getId())
+            .callStart(audioSegment.getStartTimestamp())
+            .duration(getDuration(audioSegment))
+            .to(format(to))
+            .from(format(from))
+            .aliasList(audioSegment.getAliasList() != null ? audioSegment.getAliasList().getName() : null)
+            .protocol(protocol != null && protocol != Protocol.UNKNOWN ? protocol.toString() : null)
+            .system(getString(identifierCollection, Form.SYSTEM))
+            .site(getString(identifierCollection, Form.SITE))
+            .channel(getString(identifierCollection, Form.CHANNEL));
+    }
+
+    /**
+     * Aliases that added the broadcast channel to the audio segment.
+     */
+    private List<StreamActivity.SelectingAlias> getSelectingAliases(AudioSegment audioSegment,
+                                                                    BroadcastChannel broadcastChannel)
+    {
+        List<StreamActivity.SelectingAlias> aliases = new ArrayList<>();
+
+        for(Map.Entry<Alias,Identifier> entry: audioSegment.getBroadcastChannelAliases(broadcastChannel).entrySet())
+        {
+            aliases.add(new StreamActivity.SelectingAlias(entry.getKey().getName(), describe(entry.getValue(), null)));
+        }
+
+        return aliases;
+    }
+
+    /**
+     * Aliases of the identifier that stream to each broadcast channel.
+     * @param aliasList with the aliases
+     * @param identifier to alias
+     * @param label for the identifier, e.g. Patched, or null to label it with its role
+     */
+    private Map<BroadcastChannel,List<StreamActivity.SelectingAlias>> getSelectingAliases(AliasList aliasList,
+                                                                                         Identifier identifier,
+                                                                                         String label)
+    {
+        Map<BroadcastChannel,List<StreamActivity.SelectingAlias>> aliasesByChannel = new LinkedHashMap<>();
+
+        for(Alias alias: aliasList.getAliases(identifier))
+        {
+            for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+            {
+                aliasesByChannel.computeIfAbsent(broadcastChannel, key -> new ArrayList<>())
+                    .add(new StreamActivity.SelectingAlias(alias.getName(), describe(identifier, label)));
+            }
+        }
+
+        return aliasesByChannel;
+    }
+
+    /**
+     * Describes the identifier that an alias matched, e.g. To 1234
+     */
+    private String describe(Identifier identifier, String label)
+    {
+        if(identifier == null)
+        {
+            return null;
+        }
+
+        if(label == null)
+        {
+            label = switch(identifier.getRole())
+            {
+                case TO -> "To";
+                case FROM -> "From";
+                default -> identifier.getForm() != null ? identifier.getForm().toString() : null;
+            };
+        }
+
+        String value = format(identifier);
+        return label != null ? label + " " + value : value;
+    }
+
+    private String format(Identifier identifier)
+    {
+        if(identifier == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return mSettings.getTalkgroupFormatSettings().format(identifier);
+        }
+        catch(Exception e)
+        {
+            return String.valueOf(identifier);
+        }
+    }
+
+    private static String getString(IdentifierCollection collection, Form form)
+    {
+        Identifier identifier = collection.getIdentifier(IdentifierClass.CONFIGURATION, form, Role.ANY);
+        return identifier != null && identifier.getValue() != null ? identifier.getValue().toString() : null;
+    }
+
+    /**
+     * Audio duration of the segment in milliseconds (8 kHz audio)
+     */
+    private static long getDuration(AudioSegment audioSegment)
+    {
+        long samples = 0;
+
+        for(float[] audioBuffer: audioSegment.getAudioBuffers())
+        {
+            samples += audioBuffer.length;
+        }
+
+        return samples / 8;
     }
 
     /**

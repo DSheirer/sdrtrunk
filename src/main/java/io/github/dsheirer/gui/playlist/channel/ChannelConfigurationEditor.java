@@ -21,6 +21,10 @@ package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.gui.playlist.ExternalChangeGuard;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.web.playlist.PlaylistConfig;
 import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
@@ -87,6 +91,14 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private final static Logger mLog = LoggerFactory.getLogger(ChannelConfigurationEditor.class);
 
     private PlaylistManager mPlaylistManager;
+    private final ExternalChangeGuard<Channel> mExternalChangeGuard =
+        new ExternalChangeGuard<>(this, PlaylistConfig::version, "channel");
+    private final Listener<ChannelEvent> mChannelChangeListener = event -> {
+        if(event.getEvent() == ChannelEvent.Event.NOTIFICATION_CONFIGURATION_CHANGE)
+        {
+            mExternalChangeGuard.changed(event.getChannel());
+        }
+    };
     protected TunerManager mTunerManager;
     protected Settings mSettings;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
@@ -136,6 +148,9 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         VBox.setVgrow(getTitledPanesScrollPane(), Priority.ALWAYS);
 
         getChildren().addAll(hbox, getTitledPanesScrollPane());
+
+        //Notice changes to the edited channel made elsewhere, for example through the web API
+        mPlaylistManager.getChannelModel().addListener(mChannelChangeListener);
     }
 
     /**
@@ -149,6 +164,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     @Override
     public void dispose()
     {
+        mPlaylistManager.getChannelModel().removeListener(mChannelChangeListener);
     }
 
     /**
@@ -267,10 +283,19 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         }
 
         modifiedProperty().setValue(false);
+        mExternalChangeGuard.loaded(channel);
     }
 
     @Override
     public void save()
+    {
+        mExternalChangeGuard.save(this::saveChanges);
+    }
+
+    /**
+     * Copies the editor values to the channel.
+     */
+    private void saveChanges()
     {
         if(modifiedProperty().get())
         {

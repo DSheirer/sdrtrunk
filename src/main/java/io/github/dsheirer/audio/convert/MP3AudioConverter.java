@@ -97,41 +97,114 @@ public class MP3AudioConverter implements IAudioConverter
             audioPackets = mResampler.resample(audioPackets);
         }
 
-        for(int x = 0; x < audioPackets.size(); x++)
+        for(float[] audioPacket: audioPackets)
         {
-            byte[] bytesToEncode = null;
+            encodePacket(audioPacket, converted);
+        }
 
-            if(mInputAudioFormat.getAudioFormat().getSampleSizeInBits() == 16)
+        int finalChunkSize = mEncoder.encodeFinish(mOutputFramesBuffer);
+
+        if(finalChunkSize > 0)
+        {
+            converted.add(Arrays.copyOf(mOutputFramesBuffer, finalChunkSize));
+        }
+
+        return converted;
+    }
+
+    /**
+     * Encodes the PCM audio packet (already resampled) and adds any encoded MP3 frames to the list.
+     */
+    private void encodePacket(float[] audioPacket, List<byte[]> converted)
+    {
+        byte[] bytesToEncode;
+
+        if(mInputAudioFormat.getAudioFormat().getSampleSizeInBits() == 16)
+        {
+            bytesToEncode = ConversionUtils.convertToSigned16BitSamples(audioPacket).array();
+        }
+        else
+        {
+            bytesToEncode = ConversionUtils.convertToSigned32BitSamples(audioPacket).array();
+        }
+
+        int bytesToEncodePointer = 0;
+
+        int inputChunkSize = FastMath.min(mOutputFramesBuffer.length, bytesToEncode.length);
+        int outputChunkSize = 0;
+
+        try
+        {
+            while(bytesToEncodePointer < bytesToEncode.length)
             {
-                bytesToEncode = ConversionUtils.convertToSigned16BitSamples(audioPackets.get(x)).array();
-            }
-            else
-            {
-                bytesToEncode = ConversionUtils.convertToSigned32BitSamples(audioPackets.get(x)).array();
-            }
+                outputChunkSize = mEncoder.encodeBuffer(bytesToEncode, bytesToEncodePointer, inputChunkSize, mOutputFramesBuffer);
+                bytesToEncodePointer += inputChunkSize;
+                inputChunkSize = FastMath.min(mOutputFramesBuffer.length, bytesToEncode.length - bytesToEncodePointer);
 
-            int bytesToEncodePointer = 0;
-
-            int inputChunkSize = FastMath.min(mOutputFramesBuffer.length, bytesToEncode.length);
-            int outputChunkSize = 0;
-
-            try
-            {
-                while(bytesToEncodePointer < bytesToEncode.length)
+                if(outputChunkSize > 0)
                 {
-                    outputChunkSize = mEncoder.encodeBuffer(bytesToEncode, bytesToEncodePointer, inputChunkSize, mOutputFramesBuffer);
-                    bytesToEncodePointer += inputChunkSize;
-                    inputChunkSize = FastMath.min(mOutputFramesBuffer.length, bytesToEncode.length - bytesToEncodePointer);
-
-                    if(outputChunkSize > 0)
-                    {
-                        converted.add(Arrays.copyOf(mOutputFramesBuffer, outputChunkSize));
-                    }
+                    converted.add(Arrays.copyOf(mOutputFramesBuffer, outputChunkSize));
                 }
             }
-            catch(Exception e)
+        }
+        catch(Exception e)
+        {
+            mLog.error("There was an error converting audio to MP3: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Encodes a chunk of a continuing audio stream to MP3.  Unlike {@link #convert(List)}, the encoder and resampler
+     * keep their state between invocations, so the chunks of a call are encoded as one continuous stream.  Invoke
+     * {@link #finishStream()} after the last chunk.  Note: audio normalization is not applied.
+     *
+     * @param audioPackets of PCM audio sampled at 8 kHz
+     * @return encoded MP3 frames, possibly empty
+     */
+    public List<byte[]> encodeStream(List<float[]> audioPackets)
+    {
+        List<byte[]> converted = new ArrayList<>();
+
+        if(mResampler != null)
+        {
+            List<float[]> resampled = new ArrayList<>();
+            mResampler.setListener(resampled::add);
+
+            for(float[] audioPacket: audioPackets)
             {
-                mLog.error("There was an error converting audio to MP3: " + e.getMessage());
+                mResampler.resample(audioPacket);
+            }
+
+            mResampler.setListener(null);
+            audioPackets = resampled;
+        }
+
+        for(float[] audioPacket: audioPackets)
+        {
+            encodePacket(audioPacket, converted);
+        }
+
+        return converted;
+    }
+
+    /**
+     * Flushes the resampler and the encoder at the end of a stream encoded with {@link #encodeStream(List)}.
+     * @return final encoded MP3 frames
+     */
+    public List<byte[]> finishStream()
+    {
+        List<byte[]> converted = new ArrayList<>();
+
+        if(mResampler != null)
+        {
+            List<float[]> resampled = new ArrayList<>();
+            mResampler.setListener(resampled::add);
+            mResampler.flush();
+            mResampler.setListener(null);
+
+            for(float[] audioPacket: resampled)
+            {
+                encodePacket(audioPacket, converted);
             }
         }
 

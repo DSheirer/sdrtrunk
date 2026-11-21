@@ -1,0 +1,154 @@
+/* Themes: generated from the desktop application's palettes (gui/theme/Theme.java).  Borders too close to the
+   panel color are blended from the text color, and --link is the accent made readable on the panel. */
+:root, :root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f2f2;
+  --panel: #ffffff;
+  --fg: #000000;
+  --muted: #616161;
+  --border: #c2c2c2;
+  --row-hover: #f0f0f0;
+  --accent: #2675bf;
+  --accent-fg: #ffffff;
+  --link: #2675bf;
+  --tint: #dce9f5;
+  --selected: #2675bf;
+  --selected-fg: #ffffff;
+  --live: #d33a2c;
+  --ok: #1f9d55;
+  --warn: #9a5b00;
+  --error: #b3261e;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #3c3f41;
+  --panel: #46494b;
+  --fg: #dddddd;
+  --muted: #a4a5a6;
+  --border: #616365;
+  --row-hover: #4f5254;
+  --accent: #4b6eaf;
+  --accent-fg: #ffffff;
+  --link: #b1bccf;
+  --tint: #474f5b;
+  --selected: #4b6eaf;
+  --selected-fg: #eeeeee;
+  --live: #ff6b5e;
+  --ok: #4fd18b;
+  --warn: #f0b45a;
+  --error: #ff8a80;
+}
+:root[data-theme="nord"] {
+  color-scheme: dark;
+  --bg: #2e3440;
+  --panel: #3b4252;
+  --fg: #eceff4;
+  --muted: #a9adb6;
+  --border: #676d7a;
+  --row-hover: #464c5c;
+  --accent: #88c0d0;
+  --accent-fg: #000000;
+  --link: #88c0d0;
+  --tint: #475666;
+  --selected: #88c0d0;
+  --selected-fg: #2e3440;
+  --live: #ff6b5e;
+  --ok: #4fd18b;
+  --warn: #f0b45a;
+  --error: #ff8a80;
+}
+:root[data-theme="dracula"] {
+  color-scheme: dark;
+  --bg: #414450;
+  --panel: #3a3d4c;
+  --fg: #dddddd;
+  --muted: #9fa0a6;
+  --border: #6272a4;
+  --row-hover: #444755;
+  --accent: #ff79c6;
+  --accent-fg: #000000;
+  --link: #ff79c6;
+  --tint: #5a4760;
+  --selected: #6272a4;
+  --selected-fg: #f8f8f2;
+  --live: #ff6b5e;
+  --ok: #4fd18b;
+  --warn: #f0b45a;
+  --error: #ff8a80;
+}
+:root[data-theme="solarized-light"] {
+  color-scheme: light;
+  --bg: #eee8d5;
+  --panel: #fdf6e3;
+  --fg: #2e4e58;
+  --muted: #7d8e8d;
+  --border: #bac0b8;
+  --row-hover: #f1ecdb;
+  --accent: #3d7ec0;
+  --accent-fg: #000000;
+  --link: #3a74ab;
+  --tint: #dee3dd;
+  --selected: #3570cd;
+  --selected-fg: #ffffeb;
+  --live: #d33a2c;
+  --ok: #1f9d55;
+  --warn: #9a5b00;
+  --error: #b3261e;
+}
+:root[data-theme="solarized-dark"] {
+  color-scheme: dark;
+  --bg: #0e3c4a;
+  --panel: #1b4854;
+  --fg: #a9b3ae;
+  --muted: #738a8c;
+  --border: #49636b;
+  --row-hover: #244e59;
+  --accent: #3985c7;
+  --accent-fg: #000000;
+  --link: #a3b1af;
+  --tint: #205266;
+  --selected: #1c62c9;
+  --selected-fg: #c2c5bc;
+  --live: #ff6b5e;
+  --ok: #4fd18b;
+  --warn: #f0b45a;
+  --error: #ff8a80;
+}
+:root[data-theme="material-deep-ocean"] {
+  color-scheme: dark;
+  --bg: #0f111a;
+  --panel: #090b10;
+  --fg: #8f93a2;
+  --muted: #5c5f6b;
+  --border: #2a2d34;
+  --row-hover: #111319;
+  --accent: #84ffff;
+  --accent-fg: #000000;
+  --link: #84ffff;
+  --tint: #1d3236;
+  --selected: #3d4669;
+  --selected-fg: #ffffff;
+  --live: #ff6b5e;
+  --ok: #4fd18b;
+  --warn: #f0b45a;
+  --error: #ff8a80;
+}
+:root[data-theme="arc-dark"] {
+  color-scheme: dark;
+  --bg: #383c4a;
+  --panel: #474c5b;
+  --fg: #d3dae3;
+  --muted: #9ea4af;
+  --border: #2b2e39;
+  --row-hover: #4f5563;
+  --accent: #2679db;
+  --accent-fg: #000000;
+  --link: #a8c2e1;
+  --tint: #42536f;
+  --selected: #2679db;
+  --selected-fg: #ffffff;
+  --live: #ff6b5e;
+  --ok: #4fd18b;
+  --warn: #f0b45a;
+  --error: #ff8a80;
+}

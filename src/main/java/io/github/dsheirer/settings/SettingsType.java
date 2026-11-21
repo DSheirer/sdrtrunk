@@ -26,6 +26,7 @@ public enum SettingsType
 {
     APPLICATION,
     CALIBRATION,
+    DATABASE,
     DECODE_EVENT,
     DIRECTORY,
     DUPLICATE_CALL_DETECTION,
@@ -37,5 +38,6 @@ public enum SettingsType
     RADIO_REFERENCE,
     RECORD,
     TALKGROUP_FORMAT,
-    TUNER;
+    TUNER,
+    WEB;
 }

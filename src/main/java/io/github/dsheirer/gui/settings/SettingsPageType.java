@@ -23,6 +23,7 @@ import io.github.dsheirer.gui.settings.application.AppearanceSettingsPage;
 import io.github.dsheirer.gui.settings.application.GeneralSettingsPage;
 import io.github.dsheirer.gui.settings.calibration.PerformanceSettingsPage;
 import io.github.dsheirer.gui.settings.call.CallManagementSettingsPage;
+import io.github.dsheirer.gui.settings.database.DatabaseSettingsPage;
 import io.github.dsheirer.gui.settings.decoder.AudioCodecSettingsPage;
 import io.github.dsheirer.gui.settings.directory.StorageSettingsPage;
 import io.github.dsheirer.gui.settings.map.MapSettingsPage;
@@ -30,6 +31,8 @@ import io.github.dsheirer.gui.settings.playback.PlaybackSettingsPage;
 import io.github.dsheirer.gui.settings.radioreference.RadioReferenceSettingsPage;
 import io.github.dsheirer.gui.settings.record.RecordingSettingsPage;
 import io.github.dsheirer.gui.settings.tuner.TunerSettingsPage;
+import io.github.dsheirer.gui.settings.web.WebAccountsSettingsPage;
+import io.github.dsheirer.gui.settings.web.WebServerSettingsPage;
 import java.util.function.Function;
 import jiconfont.icons.font_awesome.FontAwesome;
 
@@ -66,19 +69,28 @@ public enum SettingsPageType
         "Duplicate call detection and suppression, and patch group streaming.",
         context -> new CallManagementSettingsPage(context.settings())),
     RECORDING(Group.AUDIO, "Recording", FontAwesome.MICROPHONE,
-        "File formats for audio and baseband I/Q recordings, and MP3 encoding.",
+        "File formats for audio and baseband I/Q recordings, call recording folders, and MP3 encoding.",
         context -> new RecordingSettingsPage(context.settings())),
 
     STORAGE(Group.DATA, "Storage", FontAwesome.FOLDER_OPEN,
         "Where sdrtrunk stores its files, and disk usage limits.",
         context -> new StorageSettingsPage(context.settings())),
+    DATABASE(Group.DATA, "Database", FontAwesome.DATABASE,
+        "Where calls and decode events are stored, how long they are kept, and backups.",
+        context -> new DatabaseSettingsPage(context.settings(), context.databaseManager())),
 
     RADIO_REFERENCE(Group.SERVICES, "Radio Reference", FontAwesome.GLOBE,
         "Your Radio Reference account, imports and alias list updates.",
         RadioReferenceSettingsPage::new),
     MAP(Group.SERVICES, "Map", FontAwesome.MAP,
         "Map tiles and the layers shown on the Map tab.",
-        context -> new MapSettingsPage(context.settings()));
+        context -> new MapSettingsPage(context.settings())),
+    WEB_SERVER(Group.SERVICES, "Web Server", FontAwesome.SERVER,
+        "The web API: listen address, HTTPS and the initial administrator account.",
+        context -> new WebServerSettingsPage(context.settings(), context.webServer())),
+    WEB_ACCOUNTS(Group.SERVICES, "Web Accounts", FontAwesome.USERS,
+        "Web page and API accounts: approve requests, see who is active, reset passwords and create API tokens.",
+        context -> new WebAccountsSettingsPage(context.settings(), context.webServer()));
 
     private final Group mGroup;
     private final String mTitle;

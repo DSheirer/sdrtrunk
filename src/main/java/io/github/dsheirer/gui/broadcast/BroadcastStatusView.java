@@ -129,7 +129,7 @@ public class BroadcastStatusView extends VBox
         IconNode titleIcon = new IconNode(FontAwesome.PODCAST);
         titleIcon.setIconSize(14);
         titleIcon.getStyleClass().add("broadcast-title-icon");
-        Label title = new Label("Streaming", titleIcon);
+        Label title = new Label("Streams", titleIcon);
         title.getStyleClass().add("broadcast-title");
         mSummaryLabel.getStyleClass().add("broadcast-summary");
 
@@ -143,7 +143,7 @@ public class BroadcastStatusView extends VBox
         configureButton.setTooltip(new Tooltip("Add and edit streams in the playlist editor"));
         configureButton.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewStreamingRequest()));
 
-        ColumnConfigurationButton columnsButton = new ColumnConfigurationButton(monitor, "Streaming Status Columns");
+        ColumnConfigurationButton columnsButton = new ColumnConfigurationButton(monitor, "Streams Columns");
 
         HBox toolbar = new HBox(10, title, mSummaryLabel, spacer, configureButton, columnsButton);
         toolbar.getStyleClass().add("broadcast-toolbar");
