@@ -26,6 +26,11 @@ import java.util.List;
  * Monitors sync pattern detections to automatically detect the prevailing or dominant sync mode group used on a channel
  * and optimizes the DMR sync detectors to reduce the quantity of false detects of unused sync patterns and the overall
  * sync detection processing workload.
+ *
+ * An automatically detected mode is not permanent: reset() restores AUTOMATIC mode so that the dominant mode can be
+ * re-established, for example after a period of inactivity on a channel that carries sparse or mixed mode (ie
+ * repeater and direct mode) traffic.  A mode that is set via setMode() (ie BASE_ONLY for a traffic channel) is locked
+ * and is not affected by sync detections or reset().
  */
 public class DMRSyncModeMonitor
 {
@@ -34,6 +39,7 @@ public class DMRSyncModeMonitor
     private int mBaseCount;
     private int mMobileCount;
     private int mDirectCount;
+    private DMRSyncDetectMode mLockedMode = DMRSyncDetectMode.AUTOMATIC;
     private DMRSyncDetectMode mMode = DMRSyncDetectMode.AUTOMATIC;
 
     /**
@@ -45,17 +51,39 @@ public class DMRSyncModeMonitor
 
     /**
      * Sets (and locks) the sync detection mode.  This can be directly invoked when the operating mode is known
-     * in advance, such as for a repeated traffic channel where the expected mode is BASE_ONLY, otherwise this method
-     * is automatically invoked by this monitor when operating in ALL mode, once the dominant mode is established.
+     * in advance, such as for a repeated traffic channel where the expected mode is BASE_ONLY.  Setting AUTOMATIC
+     * unlocks the mode so that this monitor detects the dominant mode from the sync detections.
      * @param mode to set
      */
     public void setMode(DMRSyncDetectMode mode)
     {
-        mMode = mode;
+        mLockedMode = mode;
+        clearCounts();
+        applyMode(mode);
+    }
 
-        for(DMRSyncDetector detector : mSyncDetectors)
+    /**
+     * Current sync detection mode.
+     */
+    public DMRSyncDetectMode getMode()
+    {
+        return mMode;
+    }
+
+    /**
+     * Restores AUTOMATIC mode and clears the sync detection counts so that the dominant mode is re-established from
+     * subsequent sync detections.  Has no effect when the mode is locked via setMode().
+     */
+    public void reset()
+    {
+        if(mLockedMode == DMRSyncDetectMode.AUTOMATIC)
         {
-            detector.setMode(mode);
+            clearCounts();
+
+            if(mMode != DMRSyncDetectMode.AUTOMATIC)
+            {
+                applyMode(DMRSyncDetectMode.AUTOMATIC);
+            }
         }
     }
 
@@ -92,15 +120,32 @@ public class DMRSyncModeMonitor
 
         if(mBaseCount - mMobileCount > DOMINANT_THRESHOLD && mBaseCount - mDirectCount > DOMINANT_THRESHOLD)
         {
-            setMode(DMRSyncDetectMode.BASE_ONLY);
+            applyMode(DMRSyncDetectMode.BASE_ONLY);
         }
         else if(mMobileCount - mBaseCount > DOMINANT_THRESHOLD && mMobileCount - mDirectCount > DOMINANT_THRESHOLD)
         {
-            setMode(DMRSyncDetectMode.MOBILE_ONLY);
+            applyMode(DMRSyncDetectMode.MOBILE_ONLY);
         }
         else if(mDirectCount - mBaseCount > DOMINANT_THRESHOLD && mDirectCount - mMobileCount > DOMINANT_THRESHOLD)
         {
-            setMode(DMRSyncDetectMode.DIRECT_ONLY);
+            applyMode(DMRSyncDetectMode.DIRECT_ONLY);
+        }
+    }
+
+    private void clearCounts()
+    {
+        mBaseCount = 0;
+        mMobileCount = 0;
+        mDirectCount = 0;
+    }
+
+    private void applyMode(DMRSyncDetectMode mode)
+    {
+        mMode = mode;
+
+        for(DMRSyncDetector detector : mSyncDetectors)
+        {
+            detector.setMode(mode);
         }
     }
 

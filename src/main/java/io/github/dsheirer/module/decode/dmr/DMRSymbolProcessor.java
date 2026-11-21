@@ -72,6 +72,10 @@ public class DMRSymbolProcessor extends C4FMSymbolProcessor
     //recordings with injected noise, where valid link control improved.  A max of 10 leaks noise false syncs and 6
     //costs more multipath data bursts.  Applying the max once synchronized cost 3 - 20% of valid bursts.
     private static final int SYNC_ACQUISITION_MAX_BIT_ERRORS = 8;
+    //Restores automatic sync mode detection after this many symbols (5 seconds) without a sync detection, so that a
+    //sync mode that was established on earlier traffic (ie direct mode) doesn't prevent detection of later traffic
+    //that uses a different sync mode (ie a repeater) on the same channel.
+    private static final int SYNC_MODE_INACTIVITY_TIMEOUT_SYMBOLS = SYMBOL_RATE * 5;
     private final DMRSyncModeMonitor mSyncModeMonitor = new DMRSyncModeMonitor();
     private final DMRMessageFramer mMessageFramer;
 
@@ -116,6 +120,10 @@ public class DMRSymbolProcessor extends C4FMSymbolProcessor
 
     /**
      * Captures the detected sync pattern to update the sync mode monitor and the message framer.
+     *
+     * Only sync detections that follow a previous sync detection within the max sync interval (ie consecutive sync
+     * periods) are counted toward the sync mode, since noise produces isolated false sync detections while acquiring
+     * that would otherwise accumulate across long idle periods and lock the sync mode to the wrong mode.
      * @param syncDetector that triggered the sync detection.
      */
     @Override
@@ -124,9 +132,30 @@ public class DMRSymbolProcessor extends C4FMSymbolProcessor
         if(syncDetector instanceof DMRSoftSyncDetector dmrSyncDetector)
         {
             DMRSyncPattern pattern = dmrSyncDetector.getDetectedPattern();
-            mSyncModeMonitor.detected(pattern);
+
+            if(getConsecutiveSyncPeriods() >= 2)
+            {
+                mSyncModeMonitor.detected(pattern);
+            }
+
             mMessageFramer.setSyncPattern(pattern);
         }
+    }
+
+    @Override
+    protected int getSyncInactivityTimeoutSymbolCount()
+    {
+        return SYNC_MODE_INACTIVITY_TIMEOUT_SYMBOLS;
+    }
+
+    /**
+     * Restores automatic sync mode detection after a period of inactivity, unless the mode was locked (ie BASE_ONLY
+     * for a traffic channel).
+     */
+    @Override
+    protected void syncInactivityTimeout()
+    {
+        mSyncModeMonitor.reset();
     }
 
     /**
