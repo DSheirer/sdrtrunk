@@ -22,6 +22,8 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallBroadcaster;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
+import io.github.dsheirer.audio.broadcast.pcmlan.PcmLanBroadcaster;
+import io.github.dsheirer.audio.broadcast.pcmlan.PcmLanConfiguration;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.audio.broadcast.thinline.ThinlineRadioConfiguration;
@@ -90,6 +92,8 @@ public class BroadcastFactory
                 case SHOUTCAST_V2:
                     return new ShoutcastV2AudioStreamingBroadcaster((ShoutcastV2Configuration) configuration,
                             inputAudioFormat, mp3Setting, aliasModel);
+                case PCM_LAN:
+                    return new PcmLanBroadcaster((PcmLanConfiguration) configuration);
                 case UNKNOWN:
                 default:
                     mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
@@ -129,6 +133,8 @@ public class BroadcastFactory
                 return new ShoutcastV1Configuration(format);
             case SHOUTCAST_V2:
                 return new ShoutcastV2Configuration(format);
+            case PCM_LAN:
+                return new PcmLanConfiguration(format);
             case UNKNOWN:
             default:
                 mLog.info("Unrecognized broadcastAudio server type: " + serverType.name());
