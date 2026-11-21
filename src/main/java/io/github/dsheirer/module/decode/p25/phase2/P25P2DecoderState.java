@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.IChannelDescriptor;
@@ -1867,13 +1868,11 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append(mNetworkConfigurationMonitor.getActivitySummary());
-        sb.append("\n");
-        sb.append(mPatchGroupManager.getPatchGroupSummary());
-        sb.append("\n");
-        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
-        return sb.toString();
+        ActivitySummary summary = new ActivitySummary("P25 Phase 2");
+        mNetworkConfigurationMonitor.addActivitySummary(summary);
+        mPatchGroupManager.addPatchGroupSummary(summary);
+        mTrafficChannelManager.getTalkerAliasManager().addAliasSummary(summary);
+        return summary.toString();
     }
 
     @Override

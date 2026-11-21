@@ -25,7 +25,9 @@ import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import java.time.Duration;
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,27 +55,27 @@ public class PatchGroupManager
     }
 
     /**
-     * Summary listing of active patch groups
+     * Adds an active patch groups section to the activity summary.
+     * @param summary to add to
      */
-    public String getPatchGroupSummary()
+    public synchronized void addPatchGroupSummary(ActivitySummary summary)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Active Patch Groups\n");
+        summary.section("Active Patch Groups");
+        ActivitySummary.Table table = summary.table("Patch Group", "Patched Talkgroups", "Patched Radios");
         List<PatchGroupTracker> trackers = new ArrayList<>(mPatchGroupTrackerMap.values());
+        trackers.sort(Comparator.comparingInt(tracker -> tracker.mPatchGroupIdentifier.getValue().getPatchGroup().getValue()));
 
-        if(trackers.isEmpty())
+        for(PatchGroupTracker tracker : trackers)
         {
-            sb.append("  None\n");
+            PatchGroup patchGroup = tracker.mPatchGroupIdentifier.getValue();
+            table.row(patchGroup.getPatchGroup(), join(patchGroup.getPatchedTalkgroupIdentifiers()),
+                join(patchGroup.getPatchedRadioIdentifiers()));
         }
-        else
-        {
-            for(PatchGroupTracker tracker : trackers)
-            {
-                sb.append("  ").append(tracker.mPatchGroupIdentifier).append("\n");
-            }
-        }
+    }
 
-        return sb.toString();
+    private static String join(List<? extends Identifier> identifiers)
+    {
+        return identifiers.stream().map(String::valueOf).collect(Collectors.joining(", "));
     }
 
     /**

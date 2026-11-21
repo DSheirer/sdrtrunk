@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.nxdn;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -168,16 +169,17 @@ public class NXDNDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("NXDN Channel Activity Summary\n");
+        ActivitySummary summary = new ActivitySummary("NXDN");
 
         if(mChannel.getDecodeConfiguration() instanceof DecodeConfigNXDN configNXDN)
         {
-            sb.append("Transmission Mode: ").append(configNXDN.getTransmissionMode()).append("\n");
+            summary.section("Configuration");
+            summary.field("Transmission Mode", configNXDN.getTransmissionMode());
         }
-        sb.append(mNetworkConfigurationMonitor.getSummary()).append("\n");
-        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary()).append("\n");
-        return sb.toString();
+
+        mNetworkConfigurationMonitor.addActivitySummary(summary);
+        mTrafficChannelManager.getTalkerAliasManager().addAliasSummary(summary);
+        return summary.toString();
     }
 
     @Override

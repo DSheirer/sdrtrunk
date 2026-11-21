@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.passport;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -243,74 +244,32 @@ public class PassportDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("Passport");
+        summary.section("Site Channels");
+        ActivitySummary.Table site = summary.table("LCN", "Frequency");
+        mSiteLCNs.entrySet().stream().sorted(Map.Entry.comparingByKey())
+            .forEach(entry -> site.row(entry.getKey(), entry.getValue()));
 
-        sb.append("Activity Summary\n");
-        sb.append("Decoder:\tPassport\n\n");
-        sb.append("Site Channels\n");
+        summary.section("Neighbor Channels");
+        ActivitySummary.Table neighbors = summary.table("LCN", "Frequency");
+        mNeighborLCNs.entrySet().stream().sorted(Map.Entry.comparingByKey())
+            .forEach(entry -> neighbors.row(entry.getKey(), entry.getValue()));
 
-        if(mSiteLCNs.isEmpty())
+        summary.section("Talkgroups");
+
+        for(PassportTalkgroup talkgroup : mTalkgroups)
         {
-            sb.append("  None\n");
-        }
-        else
-        {
-            mSiteLCNs.entrySet()
-                    .stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> {
-                        sb.append("  " + entry.getKey());
-                        sb.append("\t" + entry.getValue());
-                        sb.append("\n");
-                    });
+            summary.text(talkgroup);
         }
 
-        sb.append("\nNeighbor Channels\n");
+        summary.section("Mobile ID Numbers");
 
-        if(mNeighborLCNs.isEmpty())
+        for(PassportRadioId mobileID : mMobileIDs)
         {
-            sb.append("  None\n");
-        }
-        else
-        {
-            mNeighborLCNs.entrySet()
-                    .stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> {
-                        sb.append("  " + entry.getKey());
-                        sb.append("\t" + entry.getValue());
-                        sb.append("\n");
-                    });
+            summary.text(mobileID);
         }
 
-        sb.append("\nTalkgroups\n");
-
-        if(mTalkgroups.isEmpty())
-        {
-            sb.append("  None\n");
-        }
-        else
-        {
-
-            for (PassportTalkgroup mTalkgroup : mTalkgroups) {
-                sb.append("  ").append(mTalkgroup).append("\n");
-            }
-        }
-
-        sb.append("\nMobile ID Numbers\n");
-
-        if(mMobileIDs.isEmpty())
-        {
-            sb.append("  None\n");
-        }
-        else
-        {
-            for (PassportRadioId mMobileID : mMobileIDs) {
-                sb.append("  ").append(mMobileID).append("\n");
-            }
-        }
-
-        return sb.toString();
+        return summary.toString();
     }
 
     public void reset()

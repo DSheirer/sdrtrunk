@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.mpt1327;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -286,69 +287,30 @@ public class MPT1327DecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("MPT-1327");
+        summary.section("Site");
+        summary.field("Site", mSite);
 
-        sb.append("Activity Summary - Decoder: MPT-1327\n");
-        sb.append(DIVIDER1);
-        sb.append("Site: ");
+        summary.section("Talkgroups");
+        ActivitySummary.Table table = summary.table("Talkgroup", "Members");
+        List<String> talkgroups = new ArrayList<>(mGroups.keySet());
+        Collections.sort(talkgroups);
 
-        if(mSite != null)
+        for(String talkgroup : talkgroups)
         {
-            sb.append(mSite).append("\n");
-
-        }
-        else
-        {
-            sb.append("Unknown\n");
-        }
-
-        sb.append(DIVIDER2).append("Talkgroups: ");
-
-        if(mGroups.isEmpty())
-        {
-            sb.append("None\n");
-        }
-        else
-        {
-            List<String> talkgroups = new ArrayList<String>(mGroups.keySet());
-            Collections.sort(talkgroups);
-
-            for(String talkgroup : talkgroups)
-            {
-                sb.append("\n ").append(talkgroup);
-
-                sb.append("\n");
-
-                ArrayList<String> members = mGroups.get(talkgroup);
-                Collections.sort(members);
-
-                for(String member : members)
-                {
-                    sb.append("  >");
-                    sb.append(member);
-
-                    sb.append("\n");
-                }
-            }
+            List<String> members = new ArrayList<>(mGroups.get(talkgroup));
+            Collections.sort(members);
+            table.row(talkgroup, String.join(", ", members));
         }
 
-        sb.append(DIVIDER2).append("All Idents: ");
+        summary.section("All Idents");
 
-        if(mIdents.isEmpty())
+        for(String ident : mIdents)
         {
-            sb.append("None\n");
-        }
-        else
-        {
-            sb.append("\n");
-
-            for (String ident : mIdents) {
-                sb.append(ident);
-                sb.append("\n");
-            }
+            summary.text(ident);
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     @Override
