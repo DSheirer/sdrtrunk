@@ -21,6 +21,9 @@ package io.github.dsheirer.gui;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
+import io.github.dsheirer.call.CallManager;
+import io.github.dsheirer.database.DatabaseManager;
+import io.github.dsheirer.gui.calls.CallsView;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.audio.AudioView;
 import io.github.dsheirer.gui.broadcast.BroadcastStatusView;
@@ -128,6 +131,7 @@ public class MainWindow
     private final MainSpectralDisplay mSpectralDisplay;
     private final HBox mSpectralHiddenBar;
     private final NowPlayingView mNowPlayingView;
+    private final CallsView mCallsView;
     private final TabPane mTabPane = new TabPane();
     private BroadcastStatusView mBroadcastStatusView;
     private StatusBox mStatusBox;
@@ -155,11 +159,14 @@ public class MainWindow
      * @param mapService for the map
      * @param resourceMonitor for the status bar
      * @param diagnosticMonitor for the reports
+     * @param databaseManager for the Calls tab
+     * @param callManager for live call updates in the Calls tab
      * @param exitHandler that shuts down the application, invoked on a background thread
      */
     public MainWindow(UserPreferences userPreferences, PlaylistManager playlistManager, TunerManager tunerManager,
                       AudioPlaybackManager audioPlaybackManager, AliasModel aliasModel, IconModel iconModel,
                       MapService mapService, ResourceMonitor resourceMonitor, DiagnosticMonitor diagnosticMonitor,
+                      DatabaseManager databaseManager, CallManager callManager,
                       Runnable exitHandler)
     {
         mUserPreferences = userPreferences;
@@ -182,6 +189,7 @@ public class MainWindow
 
         boolean detailsVisible = mPreferences.getBoolean(PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE, true);
         mNowPlayingView = new NowPlayingView(playlistManager, iconModel, userPreferences, detailsVisible);
+        mCallsView = new CallsView(databaseManager, callManager, audioPlaybackManager, aliasModel);
         createTabs(mapService, iconModel);
 
         URL stylesheet = MainWindow.class.getResource("/main_window.css");
@@ -298,6 +306,7 @@ public class MainWindow
     public void dispose()
     {
         mAudioView.dispose();
+        mCallsView.dispose();
 
         if(mBroadcastStatusView != null)
         {
@@ -352,6 +361,7 @@ public class MainWindow
             new RadioReferencePlaylistActions(mPlaylistManager), true);
 
         Tab nowPlaying = new Tab("Now Playing", mNowPlayingView);
+        Tab calls = new Tab("Calls", mCallsView);
         Tab map = new Tab("Map", mapView);
         Tab tuners = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
             mUserPreferences));
@@ -364,7 +374,7 @@ public class MainWindow
         playlist.setGraphic(playIcon);
         playlist.setContent(new Region());
 
-        mTabPane.getTabs().addAll(nowPlaying, map, tuners, playlist);
+        mTabPane.getTabs().addAll(nowPlaying, calls, map, tuners, playlist);
         mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         mTabPane.getStyleClass().add("main-tab-pane");
         mTabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, newTab) -> {

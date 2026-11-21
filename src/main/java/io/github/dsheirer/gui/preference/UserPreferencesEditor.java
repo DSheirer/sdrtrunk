@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.database.DatabaseManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.preference.UserPreferences;
@@ -53,6 +54,7 @@ public class UserPreferencesEditor extends BorderPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(UserPreferencesEditor.class);
 
+    private DatabaseManager mDatabaseManager;
     private Map<PreferenceEditorType,Node> mEditors = new EnumMap<>(PreferenceEditorType.class);
     private UserPreferences mUserPreferences;
     private MenuBar mMenuBar;
@@ -66,9 +68,10 @@ public class UserPreferencesEditor extends BorderPane
      *
      * @param userPreferences to edit
      */
-    public UserPreferencesEditor(UserPreferences userPreferences)
+    public UserPreferencesEditor(UserPreferences userPreferences, DatabaseManager databaseManager)
     {
         mUserPreferences = userPreferences;
+        mDatabaseManager = databaseManager;
 
         setTop(getMenuBar());
 
@@ -184,6 +187,11 @@ public class UserPreferencesEditor extends BorderPane
             treeRoot.getChildren().add(cpuItem);
             cpuItem.setExpanded(true);
 
+            TreeItem<String> databaseItem = new TreeItem<>("Database");
+            databaseItem.getChildren().add(new TreeItem(PreferenceEditorType.DATABASE));
+            treeRoot.getChildren().add(databaseItem);
+            databaseItem.setExpanded(true);
+
             TreeItem<String> decoderItem = new TreeItem<>("Decoder");
             decoderItem.getChildren().add(new TreeItem(PreferenceEditorType.JMBE_LIBRARY));
             treeRoot.getChildren().add(decoderItem);
@@ -282,7 +290,7 @@ public class UserPreferencesEditor extends BorderPane
             }
             else
             {
-                editor = PreferenceEditorFactory.getEditor(type, getUserPreferences());
+                editor = PreferenceEditorFactory.getEditor(type, getUserPreferences(), mDatabaseManager);
                 mEditors.put(type, editor);
             }
         }

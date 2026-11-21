@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.database.DatabaseManager;
+import io.github.dsheirer.gui.preference.database.DatabasePreferenceEditor;
 import io.github.dsheirer.gui.preference.application.AppearancePreferenceEditor;
 import io.github.dsheirer.gui.preference.application.ApplicationPreferenceEditor;
 import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
@@ -38,7 +40,8 @@ import javafx.scene.Node;
  */
 public class PreferenceEditorFactory
 {
-    public static Node getEditor(PreferenceEditorType preferenceEditorType, UserPreferences userPreferences)
+    public static Node getEditor(PreferenceEditorType preferenceEditorType, UserPreferences userPreferences,
+                                 DatabaseManager databaseManager)
     {
         switch(preferenceEditorType)
         {
@@ -54,6 +57,8 @@ public class PreferenceEditorFactory
                 return new PlaybackPreferenceEditor(userPreferences);
             case AUDIO_RECORD:
                 return new RecordPreferenceEditor(userPreferences);
+            case DATABASE:
+                return new DatabasePreferenceEditor(userPreferences, databaseManager);
             case CHANNEL_EVENT:
                 return new DecodeEventViewPreferenceEditor(userPreferences);
             case DIRECTORY:

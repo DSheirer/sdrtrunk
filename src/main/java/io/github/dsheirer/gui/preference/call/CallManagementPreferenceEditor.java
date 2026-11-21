@@ -47,7 +47,6 @@ public class CallManagementPreferenceEditor extends HBox
     private ToggleSwitch mDetectDuplicateTalkgroups;
     private ToggleSwitch mDetectDuplicateRadios;
     private ToggleSwitch mSuppressDuplicateListening;
-    private ToggleSwitch mSuppressDuplicateRecording;
     private ToggleSwitch mSuppressDuplicateStreaming;
     private ComboBox<PatchGroupStreamingOption> mPatchGroupStreamingOptionComboBox;
 
@@ -124,14 +123,6 @@ public class CallManagementPreferenceEditor extends HBox
             GridPane.setConstraints(listeningLabel, 1, row);
             mEditorPane.getChildren().add(listeningLabel);
 
-            GridPane.setConstraints(getSuppressDuplicateRecording(), 0, ++row);
-            mEditorPane.getChildren().add(getSuppressDuplicateRecording());
-
-            Label recordingLabel = new Label("Recording");
-            recordingLabel.setWrapText(true);
-            GridPane.setConstraints(recordingLabel, 1, row);
-            mEditorPane.getChildren().add(recordingLabel);
-
             GridPane.setConstraints(getSuppressDuplicateStreaming(), 0, ++row);
             mEditorPane.getChildren().add(getSuppressDuplicateStreaming());
 
@@ -139,6 +130,13 @@ public class CallManagementPreferenceEditor extends HBox
             streamingLabel.setWrapText(true);
             GridPane.setConstraints(streamingLabel, 1, row);
             mEditorPane.getChildren().add(streamingLabel);
+
+            Label recordingNote = new Label("Duplicate calls are recorded and listed in the call database.  They " +
+                "are deleted after the duplicate and Do Not Monitor retention time set in the Call Database " +
+                "preferences.");
+            recordingNote.setWrapText(true);
+            GridPane.setConstraints(recordingNote, 0, ++row, 2, 1);
+            mEditorPane.getChildren().add(recordingNote);
 
             Separator separator2 = new Separator();
             GridPane.setHgrow(separator2, Priority.ALWAYS);
@@ -197,22 +195,6 @@ public class CallManagementPreferenceEditor extends HBox
         }
 
         return mSuppressDuplicateListening;
-    }
-
-    private ToggleSwitch getSuppressDuplicateRecording()
-    {
-        if(mSuppressDuplicateRecording == null)
-        {
-            mSuppressDuplicateRecording = new ToggleSwitch();
-            mSuppressDuplicateRecording.disableProperty()
-                .bind(Bindings.and(getDetectDuplicateTalkgroups().selectedProperty().not(),
-                    getDetectDuplicateRadios().selectedProperty().not()));
-            mSuppressDuplicateRecording.setSelected(mPreference.isDuplicateRecordingSuppressionEnabled());
-            mSuppressDuplicateRecording.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> mPreference.setDuplicateRecordingSuppressionEnabled(newValue));
-        }
-
-        return mSuppressDuplicateRecording;
     }
 
     private ToggleSwitch getSuppressDuplicateStreaming()

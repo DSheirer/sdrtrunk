@@ -61,12 +61,17 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     private final String mChannelName;
     private final AtomicInteger mPeakLevelBits = new AtomicInteger();
 
-    private AudioSegment mCurrentAudioSegment;
+    private volatile AudioSegment mCurrentAudioSegment;
     private Listener<IdentifierCollection> mIdentifierCollectionListener;
     private boolean mDropDuplicates;
     private boolean mMetadataSent = false;
     private boolean mMuted;
     private boolean mDisabled;
+    private volatile TalkgroupHold mHold;
+    private Listener<TalkgroupHold> mHoldListener;
+    private volatile Runnable mPlaybackListener;
+    private volatile ReplaySource mPendingReplay;
+    private volatile ReplaySource mReplay;
     private float[] mAudioSegmentStartTone;
     private float[] mAudioSegmentDropTone;
     private int mCurrentBufferIndex = -1;
@@ -104,6 +109,114 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
                 segment.decrementConsumerCount();
                 segment = mAudioSegmentQueue.poll();
             }
+        }
+    }
+
+    /**
+     * Hold talkgroup for this channel, or null.  While a talkgroup is held, only calls to the talkgroup play on this
+     * channel, including calls that are otherwise flagged as do-not-monitor.  The audio playback manager is
+     * responsible for steering calls to the channel; use {@link AudioPlaybackManager#setHold(int, TalkgroupHold)}.
+     */
+    public TalkgroupHold getHold()
+    {
+        return mHold;
+    }
+
+    /**
+     * Sets or clears (null) the hold talkgroup.  A call that is playing and doesn't match the hold talkgroup stops
+     * at the next audio interval.
+     */
+    void setHold(TalkgroupHold hold)
+    {
+        mHold = hold;
+
+        Listener<TalkgroupHold> listener = mHoldListener;
+
+        if(listener != null)
+        {
+            listener.receive(hold);
+        }
+    }
+
+    /**
+     * Registers a single listener to be notified when the hold talkgroup is set (non-null) or cleared (null).
+     */
+    public void setHoldListener(Listener<TalkgroupHold> listener)
+    {
+        mHoldListener = listener;
+    }
+
+    /**
+     * Indicates if the audio segment is allowed on this channel by the hold talkgroup.
+     */
+    public boolean isAllowedByHold(AudioSegment audioSegment)
+    {
+        TalkgroupHold hold = mHold;
+        return hold == null || hold.matches(audioSegment);
+    }
+
+    /**
+     * Indicates if this channel is currently playing (or about to play) a call to its hold talkgroup.
+     */
+    boolean isPlayingHeldTalkgroup()
+    {
+        TalkgroupHold hold = mHold;
+        AudioSegment current = mCurrentAudioSegment;
+        return hold != null && current != null && hold.matches(current);
+    }
+
+    /**
+     * Registers a single listener to be notified when this channel starts or stops playing a call audio segment or a
+     * replay.  The listener reads the state from {@link #getCurrentAudioSegment()} and {@link #getReplay()}.  Notified
+     * on the audio playback thread.  Used by the audio playback manager.
+     */
+    void setPlaybackListener(Runnable listener)
+    {
+        mPlaybackListener = listener;
+    }
+
+    /**
+     * Replays the recorded call on this channel.  The replay takes over the channel at the next audio interval: a
+     * call that is playing is dropped and a replay that is playing is stopped.  Calls queued for the channel play
+     * after the replay finishes.  Use {@link AudioPlaybackManager#replay(ReplaySource)}.
+     */
+    void startReplay(ReplaySource replay)
+    {
+        mPendingReplay = replay;
+    }
+
+    /**
+     * Replay that is playing on this channel, or null.
+     */
+    public ReplaySource getReplay()
+    {
+        return mReplay;
+    }
+
+    /**
+     * Indicates if this channel is replaying (or about to replay) a recorded call.
+     */
+    public boolean isReplaying()
+    {
+        ReplaySource replay = mReplay;
+        return mPendingReplay != null || (replay != null && !replay.isFinished());
+    }
+
+    /**
+     * Audio segment that this channel is currently playing, or null.
+     */
+    public AudioSegment getCurrentAudioSegment()
+    {
+        return mCurrentAudioSegment;
+    }
+
+    private void notifyPlayback()
+    {
+        Runnable listener = mPlaybackListener;
+
+        if(listener != null)
+        {
+            listener.run();
         }
     }
 
@@ -155,7 +268,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      */
     public boolean hasAudioSegment()
     {
-        return mCurrentAudioSegment != null;
+        return mCurrentAudioSegment != null || mReplay != null;
     }
 
     /**
@@ -233,6 +346,13 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      */
     private float[] getNextAudio()
     {
+        float[] replayAudio = getReplayAudio();
+
+        if(replayAudio != null)
+        {
+            return replayAudio;
+        }
+
         if(mAudioBuffer.isFull())
         {
             return mAudioBuffer.get();
@@ -303,6 +423,56 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     }
 
     /**
+     * Starts a pending replay and provides the next replay audio.  Audio thread.
+     * @return replay audio, or null when no replay is playing (normal call playback continues)
+     */
+    private float[] getReplayAudio()
+    {
+        ReplaySource pending = mPendingReplay;
+
+        if(pending != null)
+        {
+            mPendingReplay = null;
+
+            if(mReplay != null)
+            {
+                mReplay.stop();
+            }
+
+            //The replay takes over the channel: drop the buffered audio and the call that is playing
+            mAudioBuffer.flush();
+
+            if(mCurrentAudioSegment != null)
+            {
+                disposeCurrentAudioSegment();
+                clearMetadata();
+            }
+
+            mReplay = pending;
+            notifyPlayback();
+            notify(AudioEvent.Type.REPLAY_STARTED);
+        }
+
+        ReplaySource replay = mReplay;
+
+        if(replay == null)
+        {
+            return null;
+        }
+
+        float[] audio = replay.next();
+
+        if(audio == null)
+        {
+            mReplay = null;
+            notifyPlayback();
+            notify(AudioEvent.Type.REPLAY_STOPPED);
+        }
+
+        return audio;
+    }
+
+    /**
      * Notifies listener(s) of the audio event.
      * @param eventType to notify for this channel
      */
@@ -342,7 +512,20 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      */
     private boolean isThrowaway(AudioSegment audioSegment)
     {
-        return audioSegment != null && (audioSegment.isDoNotMonitor() || mDropDuplicates && (audioSegment.isDuplicate()));
+        if(audioSegment == null)
+        {
+            return false;
+        }
+
+        TalkgroupHold hold = mHold;
+
+        if(hold != null)
+        {
+            //A held talkgroup plays even when do-not-monitor, and nothing else plays on a held channel
+            return !hold.matches(audioSegment) || (mDropDuplicates && audioSegment.isDuplicate());
+        }
+
+        return audioSegment.isDoNotMonitor() || mDropDuplicates && (audioSegment.isDuplicate());
     }
 
     /**
@@ -388,9 +571,18 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     {
 
         MyEventBus.getGlobalEventBus().unregister(this);
+        ReplaySource replay = mReplay;
+
+        if(replay != null)
+        {
+            replay.stop();
+        }
+
         disposeCurrentAudioSegment();
         mAudioEventBroadcaster.clear();
         mIdentifierCollectionListener = null;
+        mHoldListener = null;
+        mPlaybackListener = null;
     }
 
     /**
@@ -501,6 +693,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
             mCurrentAudioSegment.decrementConsumerCount();
             mCurrentAudioSegment.removeIdentifierUpdateNotificationListener(this);
             mCurrentAudioSegment = null;
+            notifyPlayback();
         }
     }
 
@@ -538,6 +731,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
 
         if(audioSegment != null)
         {
+            notifyPlayback();
             mCurrentAudioSegment.addIdentifierUpdateNotificationListener(this);
             broadcast(mCurrentAudioSegment.getIdentifierCollection());
         }

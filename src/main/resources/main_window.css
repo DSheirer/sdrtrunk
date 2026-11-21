@@ -45,3 +45,66 @@
 {
     -fx-fill: -fx-accent;
 }
+
+/* Calls tab: a TO/FROM search field shows a selected alias (rather than typed text) in bold */
+.calls-view .calls-alias-search:alias-selected
+{
+    -fx-font-weight: bold;
+}
+
+/* Calls tab: calls that are playing on an audio channel.  Left (and mono) is blue and right is orange, matching the
+   channel tags in the audio panel.  The row tint is a translucent overlay so it works with every theme and with the
+   row selection color.  Chip text is set on the label and its .text node for the dark theme. */
+.calls-view
+{
+    -calls-playing-left: #4a90d9;
+    -calls-playing-right: #e8912d;
+}
+
+/* The channel color edge is a background layer, not a border: a border takes layout space and shifts the row's
+   cells out of alignment with the other rows. */
+.calls-view .table-row-cell:playing-left,
+.calls-view .table-row-cell:playing-mono
+{
+    -fx-background-color: -fx-table-cell-border-color, -calls-playing-left, -fx-background,
+        rgba(74, 144, 217, 0.20);
+    -fx-background-insets: 0, 0 0 1 0, 0 0 1 4, 0 0 1 4;
+}
+
+.calls-view .table-row-cell:playing-right
+{
+    -fx-background-color: -fx-table-cell-border-color, -calls-playing-right, -fx-background,
+        rgba(232, 145, 45, 0.20);
+    -fx-background-insets: 0, 0 0 1 0, 0 0 1 4, 0 0 1 4;
+}
+
+.calls-view .calls-playing-chip
+{
+    -fx-background-radius: 4;
+    -fx-padding: 0 6 0 5;
+    -fx-graphic-text-gap: 4;
+    -fx-font-size: 0.8em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.calls-view .calls-playing-chip .text
+{
+    -fx-fill: white;
+}
+
+.calls-view .calls-playing-chip .calls-playing-icon
+{
+    -fx-fill: white;
+}
+
+.calls-view .calls-playing-left,
+.calls-view .calls-playing-mono
+{
+    -fx-background-color: -calls-playing-left;
+}
+
+.calls-view .calls-playing-right
+{
+    -fx-background-color: -calls-playing-right;
+}

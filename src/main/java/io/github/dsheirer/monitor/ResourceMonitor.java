@@ -21,6 +21,7 @@ package io.github.dsheirer.monitor;
 
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.database.DatabasePreference;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -56,8 +57,9 @@ public class ResourceMonitor
 {
     private static final Logger sLog = LoggerFactory.getLogger(ResourceMonitor.class);
     private static final LoggingSuppressor sLogSuppressor = new LoggingSuppressor(sLog);
-    private static final int SCALOR_MEGABYTE = 1024 * 1024;
+    private static final long SCALOR_MEGABYTE = 1024L * 1024L;
     private UserPreferences mUserPreferences;
+    private volatile DatabasePreference mDatabasePreference;
     private ScheduledFuture<?> mMemoryCpuMonitorFuture;
     private ScheduledFuture<?> mStorageMonitorFuture;
     private LongProperty mMemoryTotal = new SimpleLongProperty();
@@ -106,6 +108,14 @@ public class ResourceMonitor
         {
             mStorageMonitorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> updateDirectoryUsage(), 1,30, TimeUnit.SECONDS);
         }
+    }
+
+    /**
+     * Sets the call database preference so that the recordings usage meter can use the size age-off rule limit.
+     */
+    public void setDatabasePreference(DatabasePreference databasePreference)
+    {
+        mDatabasePreference = databasePreference;
     }
 
     /**
@@ -158,6 +168,14 @@ public class ResourceMonitor
     {
         long thresholdEventLog = mUserPreferences.getDirectoryPreference().getDirectoryMaxUsageEventLogs() * SCALOR_MEGABYTE;
         long thresholdRecording = mUserPreferences.getDirectoryPreference().getDirectoryMaxUsageRecordings() * SCALOR_MEGABYTE;
+
+        //When the call audio size age-off rule is enabled, the recordings meter shows usage against the rule's limit
+        DatabasePreference databasePreference = mDatabasePreference;
+
+        if(databasePreference != null && databasePreference.isSizeRuleEnabled())
+        {
+            thresholdRecording = databasePreference.getSizeRuleLimitMB() * SCALOR_MEGABYTE;
+        }
 
         Path recordingPath = mUserPreferences.getDirectoryPreference().getDirectoryRecording();
         Path eventLogsPath = mUserPreferences.getDirectoryPreference().getDirectoryEventLog();

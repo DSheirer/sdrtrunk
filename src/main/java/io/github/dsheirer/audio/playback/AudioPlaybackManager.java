@@ -53,6 +53,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     private static final Logger mLog = LoggerFactory.getLogger(AudioPlaybackManager.class);
     private final AudioSegmentPrioritySorter mAudioSegmentPrioritySorter = new AudioSegmentPrioritySorter();
     private final Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
+    private final Broadcaster<ChannelPlayback> mPlaybackBroadcaster = new Broadcaster<>();
     private final List<AudioSegment> mAudioSegments = new ArrayList<>();
     private final List<AudioSegment> mPendingAudioSegments = new ArrayList<>();
     private final LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
@@ -61,6 +62,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     private AudioPlaybackDeviceDescriptor mAudioPlaybackDevice;
     private AudioOutput mAudioOutput;
     private ScheduledFuture<?> mProcessingTask;
+    private final TalkgroupHold[] mHolds = new TalkgroupHold[2];
+    private final long[] mHoldActivity = new long[2];
 
     /**
      * Constructs an instance.
@@ -114,6 +117,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      */
     private void processAudioSegments()
     {
+        updateHoldActivity();
+
         //Process new audio segments queue.  If segment has audio, queue it for replay, otherwise place in pending queue
         AudioSegment newSegment = mNewAudioSegmentQueue.poll();
 
@@ -182,7 +187,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             {
                 audioSegment = it.next();
 
-                if(audioSegment.isDoNotMonitor() || (audioSegment.isDuplicate() &&
+                if((audioSegment.isDoNotMonitor() && getHoldingChannelIndex(audioSegment) < 0) ||
+                   (audioSegment.isDuplicate() &&
                    mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled()))
                 {
                     it.remove();
@@ -233,20 +239,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
                 try
                 {
-                    //Assign empty audio outputs first
-                    for(AudioChannel audioChannel: mAudioOutput.getAudioProvider().getAudioChannels())
-                    {
-                        if(audioChannel.isEmpty())
-                        {
-                            audioChannel.play(mAudioSegments.removeFirst());
-                            if(mAudioSegments.isEmpty())
-                            {
-                                return;
-                            }
-                        }
-                    }
-
-                    replaceLowerPriorityQueuedSegments(mAudioSegments, mAudioOutput.getAudioProvider().getAudioChannels());
+                    assignAudioSegments(mAudioSegments, mAudioOutput.getAudioProvider().getAudioChannels());
                 }
                 finally
                 {
@@ -266,6 +259,352 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     it.remove();
                     audioSegment.decrementConsumerCount();
                 }
+            }
+        }
+    }
+
+    /**
+     * Assigns waiting audio segments, in priority order, to empty audio channels.  Calls to a hold talkgroup only go to
+     * the channel that holds the talkgroup, and other calls only go to channels without a hold talkgroup.
+     *
+     * @param waiting audio segments, sorted by playback priority.  Assigned segments are removed.
+     * @param audioChannels to assign to.
+     */
+    static void assignAudioSegments(List<AudioSegment> waiting, List<AudioChannel> audioChannels)
+    {
+        Iterator<AudioSegment> it = waiting.iterator();
+
+        while(it.hasNext())
+        {
+            AudioSegment audioSegment = it.next();
+            AudioChannel holding = getHoldingChannel(audioSegment, audioChannels);
+            AudioChannel target = null;
+
+            if(holding != null)
+            {
+                if(holding.isEmpty())
+                {
+                    target = holding;
+                }
+            }
+            else
+            {
+                for(AudioChannel audioChannel: audioChannels)
+                {
+                    if(audioChannel.getHold() == null && audioChannel.isEmpty() && !audioChannel.isReplaying())
+                    {
+                        target = audioChannel;
+                        break;
+                    }
+                }
+            }
+
+            if(target != null)
+            {
+                it.remove();
+                target.play(audioSegment);
+            }
+        }
+
+        //Priority replacement of queued segments only applies to channels and calls without a hold talkgroup
+        List<AudioChannel> unheld = new ArrayList<>();
+
+        for(AudioChannel audioChannel: audioChannels)
+        {
+            if(audioChannel.getHold() == null && !audioChannel.isReplaying())
+            {
+                unheld.add(audioChannel);
+            }
+        }
+
+        if(!unheld.isEmpty() && !waiting.isEmpty())
+        {
+            List<AudioSegment> unmatched = new ArrayList<>();
+            it = waiting.iterator();
+
+            while(it.hasNext())
+            {
+                AudioSegment audioSegment = it.next();
+
+                if(getHoldingChannel(audioSegment, audioChannels) == null)
+                {
+                    unmatched.add(audioSegment);
+                    it.remove();
+                }
+            }
+
+            replaceLowerPriorityQueuedSegments(unmatched, unheld);
+            waiting.addAll(unmatched);
+        }
+    }
+
+    /**
+     * Channel that holds the talkgroup of the audio segment, or null.
+     */
+    static AudioChannel getHoldingChannel(AudioSegment audioSegment, List<AudioChannel> audioChannels)
+    {
+        for(AudioChannel audioChannel: audioChannels)
+        {
+            TalkgroupHold hold = audioChannel.getHold();
+
+            if(hold != null && hold.matches(audioSegment))
+            {
+                return audioChannel;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Index of the channel that holds the talkgroup of the audio segment, or -1.
+     */
+    private int getHoldingChannelIndex(AudioSegment audioSegment)
+    {
+        for(int x = 0; x < mHolds.length; x++)
+        {
+            TalkgroupHold hold = mHolds[x];
+
+            if(hold != null && hold.matches(audioSegment))
+            {
+                return x;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Sets (or clears, with null) the hold talkgroup for the audio channel.  Setting a talkgroup that another channel
+     * holds moves the hold to this channel.  Queued calls that don't match the hold talkgroup are returned for
+     * assignment to another channel, and a call that is playing and doesn't match stops.
+     *
+     * @param channelIndex of the audio channel (0 = left/mono, 1 = right)
+     * @param hold talkgroup or null to release the hold
+     */
+    public void setHold(int channelIndex, TalkgroupHold hold)
+    {
+        if(channelIndex < 0 || channelIndex >= mHolds.length)
+        {
+            return;
+        }
+
+        mAudioChannelsLock.lock();
+
+        try
+        {
+            if(hold != null)
+            {
+                for(int x = 0; x < mHolds.length; x++)
+                {
+                    if(x != channelIndex && hold.isSameTalkgroup(mHolds[x]))
+                    {
+                        applyHold(x, null);
+                    }
+                }
+            }
+
+            applyHold(channelIndex, hold);
+        }
+        finally
+        {
+            mAudioChannelsLock.unlock();
+        }
+
+        mLog.info("Audio channel " + channelIndex + (hold != null ? " hold talkgroup [" + hold + "]" :
+            " hold talkgroup released"));
+    }
+
+    /**
+     * Applies the hold to the channel.  Audio channels lock must be held.
+     */
+    private void applyHold(int channelIndex, TalkgroupHold hold)
+    {
+        mHolds[channelIndex] = hold;
+        mHoldActivity[channelIndex] = System.currentTimeMillis();
+
+        if(mAudioOutput != null)
+        {
+            List<AudioChannel> channels = mAudioOutput.getAudioProvider().getAudioChannels();
+
+            if(channelIndex < channels.size())
+            {
+                AudioChannel channel = channels.get(channelIndex);
+                channel.setHold(hold);
+
+                if(hold != null)
+                {
+                    //Return queued calls that can no longer play on this channel
+                    List<AudioSegment> keep = new ArrayList<>();
+                    AudioSegment queued = channel.pollQueuedAudioSegment();
+
+                    while(queued != null)
+                    {
+                        if(hold.matches(queued))
+                        {
+                            keep.add(queued);
+                        }
+                        else
+                        {
+                            mNewAudioSegmentQueue.add(queued);
+                        }
+
+                        queued = channel.pollQueuedAudioSegment();
+                    }
+
+                    for(AudioSegment segment: keep)
+                    {
+                        channel.play(segment);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Registers the listener to be notified when an audio channel starts or stops playing a call.  Notified on the
+     * audio playback thread.
+     */
+    public void addPlaybackListener(Listener<ChannelPlayback> listener)
+    {
+        mPlaybackBroadcaster.addListener(listener);
+    }
+
+    public void removePlaybackListener(Listener<ChannelPlayback> listener)
+    {
+        mPlaybackBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Current playback state of each audio channel, for a listener that registers after playback started.
+     */
+    public List<ChannelPlayback> getChannelPlayback()
+    {
+        List<ChannelPlayback> playback = new ArrayList<>();
+        List<AudioChannel> channels = getAudioChannels();
+
+        for(int x = 0; x < channels.size(); x++)
+        {
+            playback.add(getChannelPlayback(channels.get(x), x, channels.size()));
+        }
+
+        return playback;
+    }
+
+    private static ChannelPlayback getChannelPlayback(AudioChannel channel, int channelIndex, int channelCount)
+    {
+        AudioSegment current = channel.getCurrentAudioSegment();
+        ReplaySource replay = channel.getReplay();
+        return new ChannelPlayback(channelIndex, channel.getChannelName(), channelCount,
+            current != null ? current.getId() : 0, replay != null && !replay.isFinished() ? replay.getCallId() : 0);
+    }
+
+    /**
+     * Replays a recorded call through the audio channels.  A channel that is already replaying is reused, otherwise
+     * an idle channel (left first), otherwise the left (or mono) channel, which drops the call that it is playing.
+     * Live calls aren't assigned to the channel while it replays.
+     *
+     * @param replay to play
+     * @return index of the channel that replays the call, or -1 if there is no audio output
+     */
+    public int replay(ReplaySource replay)
+    {
+        mAudioChannelsLock.lock();
+
+        try
+        {
+            List<AudioChannel> channels = getAudioChannels();
+
+            if(channels.isEmpty())
+            {
+                return -1;
+            }
+
+            int selected = -1;
+
+            for(int x = 0; x < channels.size() && selected < 0; x++)
+            {
+                if(channels.get(x).isReplaying())
+                {
+                    selected = x;
+                }
+            }
+
+            for(int x = 0; x < channels.size() && selected < 0; x++)
+            {
+                AudioChannel channel = channels.get(x);
+
+                if(!channel.hasAudioSegment() && channel.isEmpty())
+                {
+                    selected = x;
+                }
+            }
+
+            if(selected < 0)
+            {
+                selected = 0;
+            }
+
+            channels.get(selected).startReplay(replay);
+            return selected;
+        }
+        finally
+        {
+            mAudioChannelsLock.unlock();
+        }
+    }
+
+    /**
+     * Hold talkgroup for the audio channel, or null.
+     */
+    public TalkgroupHold getHold(int channelIndex)
+    {
+        return channelIndex >= 0 && channelIndex < mHolds.length ? mHolds[channelIndex] : null;
+    }
+
+    /**
+     * Updates the last activity time of each hold talkgroup and releases holds that have been idle longer than the
+     * automatic release time.
+     */
+    private void updateHoldActivity()
+    {
+        int minutes = mUserPreferences.getPlaybackPreference().getHoldAutoReleaseMinutes();
+        long now = System.currentTimeMillis();
+
+        for(int x = 0; x < mHolds.length; x++)
+        {
+            TalkgroupHold hold = mHolds[x];
+
+            if(hold == null)
+            {
+                continue;
+            }
+
+            boolean active = false;
+
+            for(AudioSegment audioSegment: mAudioSegments)
+            {
+                if(hold.matches(audioSegment))
+                {
+                    active = true;
+                    break;
+                }
+            }
+
+            if(!active && mAudioOutput != null)
+            {
+                List<AudioChannel> channels = mAudioOutput.getAudioProvider().getAudioChannels();
+                active = x < channels.size() && channels.get(x).isPlayingHeldTalkgroup();
+            }
+
+            if(active)
+            {
+                mHoldActivity[x] = now;
+            }
+            else if(minutes > 0 && (now - mHoldActivity[x]) > TimeUnit.MINUTES.toMillis(minutes))
+            {
+                mLog.info("Releasing idle hold talkgroup [" + hold + "] after " + minutes + " minutes");
+                setHold(x, null);
             }
         }
     }
@@ -397,6 +736,30 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 //Note: audio output can use an alternate device if the requested device can't be used, so we assign
                 //the descriptor that was actually used by the audio output
                 mAudioPlaybackDevice = mAudioOutput.getAudioPlaybackDeviceDescriptor();
+
+                //Re-apply hold talkgroups to the new channels (and drop a right channel hold for a mono device)
+                List<AudioChannel> channels = mAudioOutput.getAudioProvider().getAudioChannels();
+
+                for(int x = 0; x < channels.size(); x++)
+                {
+                    final int channelIndex = x;
+                    final AudioChannel channel = channels.get(x);
+                    final int outputChannels = channels.size();
+                    channel.setPlaybackListener(() -> mPlaybackBroadcaster.broadcast(
+                        getChannelPlayback(channel, channelIndex, outputChannels)));
+                }
+
+                for(int x = 0; x < mHolds.length; x++)
+                {
+                    if(x < channels.size())
+                    {
+                        channels.get(x).setHold(mHolds[x]);
+                    }
+                    else
+                    {
+                        mHolds[x] = null;
+                    }
+                }
             }
             finally
             {

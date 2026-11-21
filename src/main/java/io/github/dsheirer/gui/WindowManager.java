@@ -25,6 +25,7 @@ import io.github.dsheirer.gui.icon.IconManager;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.PlaylistEditor;
 import io.github.dsheirer.gui.playlist.PlaylistEditorRequest;
+import io.github.dsheirer.database.DatabaseManager;
 import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditor;
 import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
@@ -70,6 +71,7 @@ public class WindowManager
     private PlaylistManager mPlaylistManager;
     private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
+    private final DatabaseManager mDatabaseManager;
     private UserPreferencesEditor mUserPreferencesEditor;
     private MessageRecordingViewer mMessageRecordingViewer;
 
@@ -85,10 +87,13 @@ public class WindowManager
      * @param userPreferences for the windows and their stored locations
      * @param tunerManager for the playlist editor
      * @param playlistManager for the playlist and channel map editors
+     * @param databaseManager for the call database preference editor
      */
-    public WindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
+    public WindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager,
+                         DatabaseManager databaseManager)
     {
         mUserPreferences = userPreferences;
+        mDatabaseManager = databaseManager;
         mTunerManager = tunerManager;
         mPlaylistManager = playlistManager;
 
@@ -309,7 +314,7 @@ public class WindowManager
     {
         if(mUserPreferencesEditor == null)
         {
-            mUserPreferencesEditor = new UserPreferencesEditor(mUserPreferences);
+            mUserPreferencesEditor = new UserPreferencesEditor(mUserPreferences, mDatabaseManager);
         }
 
         return mUserPreferencesEditor;

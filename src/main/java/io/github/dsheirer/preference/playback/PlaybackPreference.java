@@ -46,6 +46,7 @@ public class PlaybackPreference extends Preference
 
     private static final String PREFERENCE_KEY_AUDIO_DEVICE_NAME = "audio.playback.device.name";
     private static final String PREFERENCE_KEY_AUDIO_CHANNEL_COUNT = "audio.playback.channel.count";
+    private static final String PREFERENCE_KEY_HOLD_AUTO_RELEASE_MINUTES = "audio.playback.hold.auto.release.minutes";
     public static final int TONE_LENGTH_SAMPLES = 160;
 
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackPreference.class);
@@ -295,5 +296,23 @@ public class PlaybackPreference extends Preference
             mPreferences.putInt(PREFERENCE_KEY_AUDIO_CHANNEL_COUNT, descriptor.getAudioFormat().getChannels());
             notifyPreferenceUpdated();
         }
+    }
+
+    /**
+     * Minutes without a call to a hold talkgroup before the hold is released automatically, or 0 to never release
+     * a hold automatically.
+     */
+    public int getHoldAutoReleaseMinutes()
+    {
+        return Math.max(0, mPreferences.getInt(PREFERENCE_KEY_HOLD_AUTO_RELEASE_MINUTES, 0));
+    }
+
+    /**
+     * Sets the hold talkgroup automatic release time in minutes (0 = never).
+     */
+    public void setHoldAutoReleaseMinutes(int minutes)
+    {
+        mPreferences.putInt(PREFERENCE_KEY_HOLD_AUTO_RELEASE_MINUTES, Math.max(0, minutes));
+        notifyPreferenceUpdated();
     }
 }

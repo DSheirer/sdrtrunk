@@ -27,6 +27,7 @@ public enum PreferenceEditorType
     APPLICATION("General"),
     APPEARANCE("Appearance"),
     CHANNEL_EVENT("Channel Events"),
+    DATABASE("Call Database"),
     DIRECTORY("Directories"),
     JMBE_LIBRARY("JMBE Audio Library"),
     RADIO_REFERENCE_ALIAS_LISTS("Alias Lists"),

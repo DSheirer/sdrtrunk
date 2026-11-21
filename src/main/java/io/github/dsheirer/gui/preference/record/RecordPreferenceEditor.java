@@ -26,6 +26,7 @@ import io.github.dsheirer.record.RecordFormat;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -71,6 +72,19 @@ public class RecordPreferenceEditor extends HBox
             Label basebandLabel = new Label("Baseband I/Q Recording Format:");
             mEditorPane.add(basebandLabel, 0, 1);
             mEditorPane.add(getBasebandRecordFormatComboBox(), 1, 1);
+
+            CheckBox recordAll = new CheckBox("Record all calls");
+            recordAll.setSelected(mRecordPreference.isRecordAllCalls());
+            recordAll.selectedProperty().addListener((observable, oldValue, selected) ->
+                mRecordPreference.setRecordAllCalls(selected));
+            mEditorPane.add(recordAll, 0, 2, 2, 1);
+            Label recordAllNote = new Label("Records the audio of every call.  When off, only calls with an alias " +
+                "that has the Record option are recorded.  Duplicate and Do Not Monitor calls are deleted after the " +
+                "retention time set in the Call Database preferences.  Use the Call Database age-off rules to limit " +
+                "the disk space used by recordings.");
+            recordAllNote.setWrapText(true);
+            recordAllNote.setMaxWidth(560);
+            mEditorPane.add(recordAllNote, 0, 3, 2, 1);
         }
 
         return mEditorPane;

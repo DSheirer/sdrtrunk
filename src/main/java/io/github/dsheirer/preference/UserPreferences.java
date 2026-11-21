@@ -22,6 +22,7 @@ package io.github.dsheirer.preference;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.application.ApplicationPreference;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
+import io.github.dsheirer.preference.database.DatabasePreference;
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.duplicate.CallManagementPreference;
@@ -74,6 +75,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private VectorCalibrationPreference mVectorCalibrationPreference;
 
     private SwingPreference mSwingPreference = new SwingPreference();
+    private DatabasePreference mDatabasePreference;
     private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
 
     /**
@@ -111,7 +113,15 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
-     * Decode Event preferences
+     * Call database and age-off preferences
+     */
+    public DatabasePreference getDatabasePreference()
+    {
+        return mDatabasePreference;
+    }
+
+    /**
+     * Decode event preferences
      */
     public DecodeEventPreference getDecodeEventPreference()
     {
@@ -231,6 +241,7 @@ public class UserPreferences implements Listener<PreferenceType>
     {
         mApplicationPreference = new ApplicationPreference(this::receive);
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
+        mDatabasePreference = new DatabasePreference(this::receive);
         mDecodeEventPreference = new DecodeEventPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
         mCallManagementPreference = new CallManagementPreference(this::receive);

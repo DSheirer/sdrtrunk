@@ -73,6 +73,7 @@ public class AudioView extends HBox
     private static final Logger mLog = LoggerFactory.getLogger(AudioView.class);
     static final PseudoClass ACTIVE = PseudoClass.getPseudoClass("active");
     static final PseudoClass MUTED = PseudoClass.getPseudoClass("muted");
+    static final PseudoClass HELD = PseudoClass.getPseudoClass("held");
     private static final double UPDATES_PER_SECOND = 25.0;
 
     private final AudioPlaybackManager mAudioPlaybackManager;
@@ -260,10 +261,12 @@ public class AudioView extends HBox
 
         List<AudioChannel> channels = mAudioPlaybackManager.getAudioChannels();
 
-        for(AudioChannel channel: channels)
+        for(int x = 0; x < channels.size(); x++)
         {
+            AudioChannel channel = channels.get(x);
             AudioChannelView view = new AudioChannelView(channel, mAliasModel, mIconModel,
-                mUserPreferences.getTalkgroupFormatPreference(), UPDATES_PER_SECOND, this::updateMuted);
+                mUserPreferences.getTalkgroupFormatPreference(), UPDATES_PER_SECOND, this::updateMuted,
+                mAudioPlaybackManager, x);
             mChannelViews.add(view);
             mChannelsBox.getChildren().add(view);
         }

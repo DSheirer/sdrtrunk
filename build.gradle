@@ -151,6 +151,8 @@ dependencies {
     }
     implementation 'com.google.code.gson:gson:2.15.0'
     implementation 'com.google.guava:guava:33.8.0-jre'
+    implementation 'com.h2database:h2:2.5.252' //Built-in call database
+    implementation 'com.zaxxer:HikariCP:7.1.0' //Database connection pool
     implementation 'com.mpatric:mp3agic:0.9.1'
     implementation 'commons-io:commons-io:2.22.0'
     implementation 'io.github.dsheirer:jairspy:1.0.12.1' //Airspy tuners - GitHub release, see settings.gradle
@@ -171,6 +173,8 @@ dependencies {
     implementation 'org.apache.mina:mina-core:2.2.10'
     implementation 'org.apache.mina:mina-http:2.2.10'
     implementation 'org.controlsfx:controlsfx:11.2.6'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.11' //Optional MariaDB call database
+    implementation 'org.postgresql:postgresql:42.7.14' //Optional PostgreSQL call database
     implementation 'org.rauschig:jarchivelib:1.2.0'
     implementation 'org.slf4j:slf4j-api:2.0.20'
 }
@@ -309,9 +313,11 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
     //java.management for JVM resource monitoring
+    //java.sql, java.naming, java.security.jgss, jdk.net - call database JDBC drivers and connection pool
     //java.base, java.desktop, java.logging, java.net.http, java.prefs, javafx.controls - required by sdrtrunk (jdeps)
     rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management',
-            'java.base', 'java.desktop', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls')
+            'java.base', 'java.desktop', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls', 'java.sql',
+            'java.naming', 'java.security.jgss', 'jdk.net')
 
     //Use only the modules listed above.  The runtime plugin's module auto-detection uses a bundled ASM library that
     //can't read Java 27 class files and logs a 'Failed to scan' error for each sdrtrunk class.  The jdeps module check

@@ -530,6 +530,34 @@ public class AliasList
         return Collections.emptyList();
     }
 
+    /**
+     * Alias for a talkgroup that is identified by its stored values instead of an identifier instance, for example a
+     * talkgroup from the call database.
+     * @param protocol of the talkgroup
+     * @param value of the talkgroup
+     * @param fullyQualifiedAddress (wacn.system.id) of a fully qualified talkgroup, or null
+     * @return alias or null
+     */
+    public Alias getTalkgroupAlias(Protocol protocol, int value, String fullyQualifiedAddress)
+    {
+        TalkgroupAliasList talkgroupAliasList = protocol != null ? mTalkgroupProtocolMap.get(protocol) : null;
+        return talkgroupAliasList != null ? talkgroupAliasList.getAlias(value, fullyQualifiedAddress) : null;
+    }
+
+    /**
+     * Alias for a radio that is identified by its stored values instead of an identifier instance, for example a
+     * radio from the call database.
+     * @param protocol of the radio
+     * @param value of the radio
+     * @param fullyQualifiedAddress (wacn.system.id) of a fully qualified radio, or null
+     * @return alias or null
+     */
+    public Alias getRadioAlias(Protocol protocol, int value, String fullyQualifiedAddress)
+    {
+        RadioAliasList radioAliasList = protocol != null ? mRadioProtocolMap.get(protocol) : null;
+        return radioAliasList != null ? radioAliasList.getAlias(value, fullyQualifiedAddress) : null;
+    }
+
     private static List<Alias> toList(Alias alias)
     {
         if(alias != null)
@@ -670,11 +698,26 @@ public class AliasList
             //Attempt to do a fully qualified identifier match only
             if(identifier instanceof FullyQualifiedTalkgroupIdentifier fqti)
             {
-                return mFullyQualifiedTalkgroupAliasMap.get(fqti.getFullyQualifiedTalkgroupAddress());
+                return getAlias(fqti.getValue(), fqti.getFullyQualifiedTalkgroupAddress());
+            }
+
+            return getAlias(identifier.getValue(), null);
+        }
+
+        /**
+         * Alias for a talkgroup value, or for a fully qualified talkgroup address.
+         * @param value of the talkgroup
+         * @param fullyQualifiedAddress (wacn.system.id) for a fully qualified talkgroup, which is matched exclusively,
+         * or null.
+         */
+        public Alias getAlias(int value, String fullyQualifiedAddress)
+        {
+            if(fullyQualifiedAddress != null)
+            {
+                return mFullyQualifiedTalkgroupAliasMap.get(fullyQualifiedAddress);
             }
 
             //Attempt to match the talkgroup value
-            int value = identifier.getValue();
 
             Alias mapValue = mTalkgroupAliasMap.get(value);
             if (mapValue != null)
@@ -790,11 +833,26 @@ public class AliasList
             //Match fully qualified identifier only.
             if(identifier instanceof FullyQualifiedRadioIdentifier fqri)
             {
-                return mFullyQualifiedRadioAliasMap.get(fqri.getFullyQualifiedRadioAddress());
+                return getAlias(fqri.getValue(), fqri.getFullyQualifiedRadioAddress());
+            }
+
+            return getAlias(identifier.getValue(), null);
+        }
+
+        /**
+         * Alias for a radio value, or for a fully qualified radio address.
+         * @param value of the radio
+         * @param fullyQualifiedAddress (wacn.system.id) for a fully qualified radio, which is matched exclusively, or
+         * null.
+         */
+        public Alias getAlias(int value, String fullyQualifiedAddress)
+        {
+            if(fullyQualifiedAddress != null)
+            {
+                return mFullyQualifiedRadioAliasMap.get(fullyQualifiedAddress);
             }
 
             //Attempt to match against the radio identifier
-            int value = identifier.getValue();
 
             Alias mapValue = mRadioAliasMap.get(value);
             if(mapValue != null)

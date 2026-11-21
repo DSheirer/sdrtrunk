@@ -26,6 +26,7 @@ public enum PreferenceType
 {
     APPLICATION,
     CALIBRATION,
+    DATABASE,
     DECODE_EVENT,
     DIRECTORY,
     DUPLICATE_CALL_DETECTION,

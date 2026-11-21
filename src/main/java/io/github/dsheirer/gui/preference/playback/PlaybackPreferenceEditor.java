@@ -33,6 +33,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -111,6 +113,24 @@ public class PlaybackPreferenceEditor extends HBox
             mEditorPane.add(dropVolumeLabel, 3, row);
             mEditorPane.add(getDropToneVolumeComboBox(), 4, row);
             mEditorPane.add(getTestDropToneButton(), 5, row);
+
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, ++row, 6, 1);
+            mEditorPane.add(new Label("Talkgroup Hold"), 0, ++row, 2, 1);
+            Label releaseLabel = new Label("Release an idle hold after");
+            mEditorPane.add(releaseLabel, 0, ++row, 2, 1);
+            Spinner<Integer> releaseSpinner = new Spinner<>(0, 1440, mPlaybackPreference.getHoldAutoReleaseMinutes());
+            releaseSpinner.setEditable(true);
+            releaseSpinner.setPrefWidth(90);
+            releaseSpinner.setTooltip(new Tooltip("Minutes without a call to the hold talkgroup before the hold is " +
+                "released automatically.  0 = never release automatically."));
+            releaseSpinner.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue != null)
+                {
+                    mPlaybackPreference.setHoldAutoReleaseMinutes(newValue);
+                }
+            });
+            mEditorPane.add(releaseSpinner, 2, row);
+            mEditorPane.add(new Label("minutes (0 = never)"), 3, row, 2, 1);
         }
 
         return mEditorPane;

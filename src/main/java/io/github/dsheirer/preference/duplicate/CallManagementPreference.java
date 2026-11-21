@@ -143,7 +143,10 @@ public class CallManagementPreference extends Preference implements ICallManagem
 
     /**
      * Preference for suppressing recording of duplicate calls.
+     * @deprecated duplicate calls are always recorded and are deleted after the call database duplicate and Do Not
+     * Monitor retention time (#2742).  Kept so that the stored preference value remains readable.
      */
+    @Deprecated
     public boolean isDuplicateRecordingSuppressionEnabled()
     {
         if(mDuplicateRecordingSuppressionEnabled == null)
@@ -156,7 +159,9 @@ public class CallManagementPreference extends Preference implements ICallManagem
 
     /**
      * Sets the preference for suppressing recording of duplicate calls.
+     * @deprecated see {@link #isDuplicateRecordingSuppressionEnabled()}
      */
+    @Deprecated
     public void setDuplicateRecordingSuppressionEnabled(boolean enabled)
     {
         mPreferences.putBoolean(PREFERENCE_KEY_SUPPRESS_DUPLICATE_RECORDING, enabled);

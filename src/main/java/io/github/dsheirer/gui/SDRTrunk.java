@@ -38,11 +38,12 @@ import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.monitor.DiagnosticMonitor;
+import io.github.dsheirer.call.CallManager;
+import io.github.dsheirer.database.DatabaseManager;
 import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
-import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.MapViewSetting;
 import io.github.dsheirer.settings.SettingsManager;
@@ -72,7 +73,8 @@ public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
 
-    private AudioRecordingManager mAudioRecordingManager;
+    private CallManager mCallManager;
+    private DatabaseManager mDatabaseManager;
     private AudioStreamingManager mAudioStreamingManager;
     private DiagnosticMonitor mDiagnosticMonitor;
     private IconModel mIconModel = new IconModel();
@@ -158,9 +160,12 @@ public class SDRTrunk implements Listener<TunerEvent>
                 mTunerManager, headless);
         mDiagnosticMonitor.start();
 
+        mDatabaseManager = new DatabaseManager(mUserPreferences);
+        mDatabaseManager.start();
+
         if(!headless)
         {
-            mWindowManager = new WindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
+            mWindowManager = new WindowManager(mUserPreferences, mTunerManager, mPlaylistManager, mDatabaseManager);
         }
 
         CalibrationManager calibrationManager = CalibrationManager.getInstance(mUserPreferences);
@@ -171,8 +176,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mUserPreferences);
 
-        mAudioRecordingManager = new AudioRecordingManager(mUserPreferences);
-        mAudioRecordingManager.start();
+        mCallManager = new CallManager(mUserPreferences, mDatabaseManager);
+        mCallManager.start();
+        mResourceMonitor.setDatabasePreference(mUserPreferences.getDatabasePreference());
 
         mAudioStreamingManager = new AudioStreamingManager(mPlaylistManager.getBroadcastModel(), BroadcastFormat.MP3,
             mUserPreferences);
@@ -182,7 +188,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(duplicateCallDetector);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(audioPlaybackManager);
-        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioRecordingManager);
+        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mCallManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);
 
         MapService mapService = new MapService(aliasModel, mIconModel);
@@ -193,7 +199,7 @@ public class SDRTrunk implements Listener<TunerEvent>
             mResourceMonitor.start();
             mMainWindow = FxToolkit.callAndWait(() -> new MainWindow(mUserPreferences, mPlaylistManager,
                 mTunerManager, audioPlaybackManager, aliasModel, mIconModel, mapService, mResourceMonitor,
-                mDiagnosticMonitor, this::processShutdown));
+                mDiagnosticMonitor, mDatabaseManager, mCallManager, this::processShutdown));
         }
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(
@@ -326,7 +332,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
-        mAudioRecordingManager.stop();
+        mCallManager.stop();
+        mLog.info("Closing call database ...");
+        mDatabaseManager.stop();
         mResourceMonitor.stop();
 
         mLog.info("Stopping tuners ...");

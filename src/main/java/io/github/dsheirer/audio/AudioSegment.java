@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -67,6 +68,8 @@ import org.slf4j.LoggerFactory;
 public class AudioSegment implements Listener<IdentifierUpdateNotification>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioSegment.class);
+    private static final AtomicLong ID_GENERATOR = new AtomicLong();
+    private final long mId = ID_GENERATOR.incrementAndGet();
     private BooleanProperty mComplete = new SimpleBooleanProperty(false);
     private BooleanProperty mDuplicate = new SimpleBooleanProperty(false);
     private BooleanProperty mEncrypted = new SimpleBooleanProperty(false);
@@ -94,6 +97,15 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         mAliasList = aliasList;
         mTimeslot = timeslot;
         mIdentifierCollection.setTimeslot(timeslot);
+    }
+
+    /**
+     * Unique identifier of this audio segment for the current application session.  The call manager uses it as the
+     * call key, which links a call that is playing on an audio channel to the call in the Calls tab.
+     */
+    public long getId()
+    {
+        return mId;
     }
 
     /**

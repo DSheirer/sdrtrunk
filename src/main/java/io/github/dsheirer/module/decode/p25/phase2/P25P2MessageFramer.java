@@ -33,7 +33,7 @@ import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.record.AudioRecordingManager;
+import io.github.dsheirer.call.CallManager;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import java.io.IOException;
@@ -202,7 +202,7 @@ public class P25P2MessageFramer extends C4FMMessageFramer
 //        alias.addAliasID(new Talkgroup(Protocol.APCO25, 11857));
 //        alias.addAliasID(new Talkgroup(Protocol.APCO25, 12601));
 //        aliasList.addAlias(alias);
-        AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
+        CallManager recordingManager = new CallManager(userPreferences, null);
         recordingManager.start();
         ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
 

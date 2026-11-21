@@ -52,7 +52,7 @@ public class PlaylistEditorApplication extends Application
         mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
 
         mPlaylistManager.init();
-        mWindowManager = new WindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
+        mWindowManager = new WindowManager(mUserPreferences, mTunerManager, mPlaylistManager, null);
     }
 
     @Override

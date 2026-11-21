@@ -37,6 +37,7 @@ public class RecordPreference extends Preference
     private static final String PREFERENCE_KEY_AUDIO_RECORD_FORMAT = "audio.record.format";
     private static final RecordFormat DEFAULT_RECORD_FORMAT = RecordFormat.MP3;
     private static final String PREFERENCE_KEY_BASEBAND_RECORD_FORMAT = "baseband.record.format";
+    private static final String PREFERENCE_KEY_RECORD_ALL_CALLS = "audio.record.all.calls";
     private static final BasebandRecordFormat DEFAULT_BASEBAND_RECORD_FORMAT = BasebandRecordFormat.WAVE;
     private final static Logger mLog = LoggerFactory.getLogger(RecordPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(RecordPreference.class);
@@ -129,6 +130,24 @@ public class RecordPreference extends Preference
     {
         mBasebandRecordFormat = basebandRecordFormat;
         mPreferences.put(PREFERENCE_KEY_BASEBAND_RECORD_FORMAT, basebandRecordFormat.name());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Indicates if the audio of every call is recorded.  When false, only calls with an alias that has the record
+     * option are recorded.  Default: true.
+     */
+    public boolean isRecordAllCalls()
+    {
+        return mPreferences.getBoolean(PREFERENCE_KEY_RECORD_ALL_CALLS, true);
+    }
+
+    /**
+     * Sets whether the audio of every call is recorded
+     */
+    public void setRecordAllCalls(boolean recordAllCalls)
+    {
+        mPreferences.putBoolean(PREFERENCE_KEY_RECORD_ALL_CALLS, recordAllCalls);
         notifyPreferenceUpdated();
     }
 }
