@@ -20,17 +20,17 @@
 package io.github.dsheirer.module.decode.mdc1200.identifier;
 
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Identifier for an MDC1200 radio identity
  */
-public class MDC1200Identifier extends TalkgroupIdentifier implements Comparable<MDC1200Identifier>
+public class MDC1200Identifier extends RadioIdentifier implements Comparable<MDC1200Identifier>
 {
 
     /**
-     * Constructs an MDC1200 talkgroup Identifier
+     * Constructs an MDC1200 radio identifier
      */
     public MDC1200Identifier(Integer value, Role role)
     {
@@ -44,7 +44,7 @@ public class MDC1200Identifier extends TalkgroupIdentifier implements Comparable
     }
 
     /**
-     * Creates an MDC1200 talkgroup identifier for the TO identity
+     * Creates an MDC1200 radio identifier for the TO identity
      */
     public static MDC1200Identifier createTo(int value)
     {
@@ -52,7 +52,7 @@ public class MDC1200Identifier extends TalkgroupIdentifier implements Comparable
     }
 
     /**
-     * Creates an MDC1200 talkgroup identifier for the FROM identity
+     * Creates an MDC1200 radio identifier for the FROM identity
      */
     public static MDC1200Identifier createFrom(int value)
     {

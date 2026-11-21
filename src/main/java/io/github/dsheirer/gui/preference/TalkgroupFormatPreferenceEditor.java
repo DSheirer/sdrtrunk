@@ -64,7 +64,7 @@ public class TalkgroupFormatPreferenceEditor extends HBox
             mEditorPane.add(new Label("Display Format"), 1, row++);
             mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row++, 3, 1);
 
-            for(Protocol protocol : Protocol.TALKGROUP_PROTOCOLS)
+            for(Protocol protocol : Protocol.IDENTIFIER_FORMAT_PROTOCOLS)
             {
                 Label label = new Label(protocol.toString());
                 GridPane.setMargin(label, new Insets(0, 10, 0, 0));
