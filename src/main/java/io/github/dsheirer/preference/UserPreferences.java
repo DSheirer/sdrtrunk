@@ -200,7 +200,8 @@ public class UserPreferences implements Listener<PreferenceType>
 
 
     /**
-     * Swing window location/size user preferences
+     * Window locations and table column widths stored by the earlier Swing version of the application.  Used only to
+     * migrate those settings to the JavaFX windows and tables.
      */
     public SwingPreference getSwingPreference()
     {

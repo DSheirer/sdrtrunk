@@ -18,14 +18,15 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
-import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
+import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.identifier.Form;
@@ -33,6 +34,9 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.alias.TalkerAliasIdentifier;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.alias.TalkerAliasTracker;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
@@ -172,7 +176,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.PacketUtil;
 import java.util.Collections;
 import java.util.List;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,6 +203,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      * algorithm ID takes precedence over the link control service options when it is known.
      */
     private Boolean mCallEncryptedByAlgorithm = null;
+    //Keeps the talker alias matched to the talking radio and assigns received talker aliases to the right radio
+    private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
+            this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.PREVIOUS_TALKER);
 
     /**
      * Constructs an APCO-25 decoder state with an optional traffic channel manager.
@@ -327,12 +334,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         }
         else if(iMessage instanceof MotorolaTalkerAliasComplete tac && tac.isValid())
         {
-            mTrafficChannelManager.getTalkerAliasManager().update(tac.getRadio(), tac.getAlias());
-            mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), tac.getAlias(), tac.getTimestamp(), tac.toString());
+            //Motorola talker aliases identify their radio
+            processTalkerAlias(tac.getAlias(), tac.getRadio(), tac.getTimestamp(), tac.toString());
         }
         else if(iMessage instanceof LCHarrisTalkerAliasComplete talkerAlias)
         {
-            processTalkerAlias(talkerAlias);
+            processTalkerAlias(talkerAlias.getTalkerAlias(), null, talkerAlias.getTimestamp(), talkerAlias.toString());
         }
         else if(iMessage instanceof LinkControlWord lcw)
         {
@@ -341,19 +348,34 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     }
 
     /**
-     * Process a fully reassembled L3Harris talker alias on the current traffic channel.
-     * @param talkerAlias reassembled.
+     * Talker alias manager shared with the traffic channel manager
      */
-    private void processTalkerAlias(LCHarrisTalkerAliasComplete talkerAlias)
+    private TalkerAliasManager getTalkerAliasManager()
     {
-        Identifier identifier = getIdentifierCollection().getFromIdentifier();
+        return mTrafficChannelManager.getTalkerAliasManager();
+    }
 
-        if(identifier instanceof RadioIdentifier radioIdentifier)
+    /**
+     * Processes a talker alias: stores it for its radio and adds it to the call that it belongs to.  L3Harris talker
+     * aliases can complete during the call, or after the call ends in the TDULC messages, and belong to the talker of
+     * that call.
+     * @param talkerAlias that was received
+     * @param radio identified by the alias message, or null when the alias belongs to the talker of the current or
+     * just ended call
+     * @param timestamp of the message
+     * @param context of the message
+     */
+    private void processTalkerAlias(TalkerAliasIdentifier talkerAlias, RadioIdentifier radio, long timestamp,
+                                    String context)
+    {
+        switch(mTalkerAliasTracker.received(talkerAlias, radio, timestamp))
         {
-            mTrafficChannelManager.getTalkerAliasManager().update(radioIdentifier, talkerAlias.getTalkerAlias());
+            case CURRENT_CALL -> mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), talkerAlias,
+                    timestamp, context);
+            case ENDED_CALL -> mTrafficChannelManager.processTrafficTalkerAliasAfterCall(getCurrentFrequency(),
+                    P25P1Message.TIMESLOT_1, mTalkerAliasTracker.getEndedCallRadio(), talkerAlias);
+            default -> {} //Stored for the radio, for the radio's next call
         }
-
-        mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), talkerAlias.getTalkerAlias(), talkerAlias.getTimestamp(), talkerAlias.toString());
     }
 
     /**
@@ -415,11 +437,30 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     }
 
     /**
+     * Updates the identifier collection with the channel user identifiers from the link control word and keeps the
+     * talker alias matched to the radio that is talking.
+     * @param isCallActivity true for a call in progress, or false for a terminator link control after the call
+     */
+    private void updateChannelUserIdentifiers(LinkControlWord lcw, long timestamp, boolean isCallActivity)
+    {
+        getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
+
+        if(isCallActivity)
+        {
+            mTalkerAliasTracker.callActivity(timestamp);
+        }
+        else
+        {
+            mTalkerAliasTracker.update();
+        }
+    }
+
+    /**
      * Link Control (LC) Channel user (ie current user on this channel).
      */
     private void processLCChannelUser(LinkControlWord lcw, long timestamp)
     {
-        getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
+        updateChannelUserIdentifiers(lcw, timestamp, true);
         DecodeEventType decodeEventType = getLCDecodeEventType(lcw);
 
         ServiceOptions serviceOptions = null;
@@ -443,7 +484,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             serviceOptions = VoiceServiceOptions.createUnencrypted();
         }
 
-        mTrafficChannelManager.getTalkerAliasManager().enrichMutable(getIdentifierCollection());
         MutableIdentifierCollection mic = getMutableIdentifierCollection(getIdentifierCollection().getIdentifiers(), timestamp);
         mTrafficChannelManager.processP1TrafficCurrentUser(getCurrentFrequency(), getCurrentChannel(), decodeEventType,
                 serviceOptions, mic, timestamp, null, lcw.toString());
@@ -853,6 +893,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 Identifier<?> radio = getIdentifierCollection().getFromIdentifier();
 
                 mCallEncryptedByAlgorithm = headerData.isEncryptedAudio();
+                //A call starts.  The HDU doesn't identify the talker.
+                mTalkerAliasTracker.callActivity(message.getTimestamp());
                 mTrafficChannelManager.processP1TrafficCallStart(getCurrentFrequency(), talkgroup, radio,
                         headerData.getEncryptionKey(), mCurrentServiceOptions, getCurrentChannel(), message.getTimestamp());
 
@@ -921,7 +963,20 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         mCallEncryptedByAlgorithm = null;
         mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), message.getTimestamp(), "TDU:" + message);
+        clearCallUser();
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
+    }
+
+    /**
+     * Removes the FROM radio and talker alias at the end of a call, so that the next call doesn't start (e.g. with an
+     * HDU, which doesn't identify the talker) with the previous talker.  The next call's link control adds the radio
+     * that is talking and its stored talker alias, the same as the other protocols.
+     */
+    private void clearCallUser()
+    {
+        //Remembers the talker for a talker alias that completes after the call ends
+        mTalkerAliasTracker.callEnded();
+        getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
     }
 
     /**
@@ -942,6 +997,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 mTrafficChannelManager.processP1TrafficCallEnd(getCurrentFrequency(), message.getTimestamp(), "TDULC:" + message);
                 broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
                 processLC(lcw, message.getTimestamp(), true);
+                //After the terminator link control, which would otherwise add the radio and alias back
+                clearCallUser();
             }
         }
     }
@@ -1878,7 +1935,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             case UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                 if(isTerminator)
                 {
-                    getIdentifierCollection().update(mPatchGroupManager.update(lcw.getIdentifiers(), timestamp));
+                    updateChannelUserIdentifiers(lcw, timestamp, false);
                 }
                 else
                 {
@@ -2143,13 +2200,11 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append(mNetworkConfigurationMonitor.getActivitySummary());
-        sb.append("\n");
-        sb.append(mPatchGroupManager.getPatchGroupSummary());
-        sb.append("\n");
-        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary());
-        return sb.toString();
+        ActivitySummary summary = new ActivitySummary("P25 Phase 1 " + mModulation.getLabel());
+        mNetworkConfigurationMonitor.addActivitySummary(summary);
+        mPatchGroupManager.addPatchGroupSummary(summary);
+        mTrafficChannelManager.getTalkerAliasManager().addAliasSummary(summary);
+        return summary.toString();
     }
 
     @Override
@@ -2159,6 +2214,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         {
             case REQUEST_RESET:
                 resetState();
+                mTalkerAliasTracker.reset();
                 mNetworkConfigurationMonitor.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:

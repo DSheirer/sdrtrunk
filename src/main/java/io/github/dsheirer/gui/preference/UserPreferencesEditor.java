@@ -200,6 +200,11 @@ public class UserPreferencesEditor extends BorderPane
             treeRoot.getChildren().add(storageItem);
             storageItem.setExpanded(true);
 
+            TreeItem<String> radioReferenceItem = new TreeItem<>("Radio Reference");
+            radioReferenceItem.getChildren().add(new TreeItem(PreferenceEditorType.RADIO_REFERENCE_ALIAS_LISTS));
+            treeRoot.getChildren().add(radioReferenceItem);
+            radioReferenceItem.setExpanded(true);
+
             TreeItem<String> sourceItem = new TreeItem<>("Source");
             sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNERS));
             treeRoot.getChildren().add(sourceItem);

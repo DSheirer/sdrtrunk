@@ -55,6 +55,8 @@ public abstract class DftSpectralDisplay extends StackPane
     private static final String PEAK_HOLD = "peak.hold";
     private static final String SPECTRUM_ENABLED = "spectrum.enabled";
     private static final String WATERFALL_ENABLED = "waterfall.enabled";
+    private static final String WATERFALL_RANGE = "waterfall.range";
+    private static final String WATERFALL_AVERAGING = "waterfall.averaging";
     private static final String DIVIDER_POSITION = "divider.position";
     private static final String DECIBEL_SCALE = "decibel.scale";
     private static final String CONFIG_PINNED = "config.pinned";
@@ -121,6 +123,9 @@ public abstract class DftSpectralDisplay extends StackPane
         });
         mSpectralDisplay.averagingProperty().addListener((ob, ov, nv) -> save(AVERAGING, nv.intValue()));
         mSpectralDisplay.peakHoldProperty().addListener((ob, ov, nv) -> save(PEAK_HOLD, nv));
+        mSpectralDisplay.waterfallRangeProperty().addListener((ob, ov, nv) -> save(WATERFALL_RANGE, nv.intValue()));
+        mSpectralDisplay.waterfallAveragingProperty().addListener((ob, ov, nv) ->
+                save(WATERFALL_AVERAGING, nv.intValue()));
         mSpectralDisplay.dividerPositionProperty().addListener((ob, ov, nv) ->
                 save(DIVIDER_POSITION, String.valueOf(nv.doubleValue())));
         mDecibelLayer.visibleProperty().addListener((ob, ov, nv) -> save(DECIBEL_SCALE, nv));
@@ -139,6 +144,17 @@ public abstract class DftSpectralDisplay extends StackPane
 
         getChildren().add(mSpectralDisplay);
         setMinSize(0, 0);
+    }
+
+    private final ObjectProperty<Runnable> mHideHandler = new SimpleObjectProperty<>();
+
+    /**
+     * Optional handler that hides this display, for example by collapsing the main window's spectrum pane.  When set,
+     * the configuration panel shows a hide button.  JavaFX thread only.
+     */
+    public ObjectProperty<Runnable> hideHandlerProperty()
+    {
+        return mHideHandler;
     }
 
     /**
@@ -205,6 +221,12 @@ public abstract class DftSpectralDisplay extends StackPane
         mSpectralDisplay.averagingProperty().set(Math.max(SpectralDisplay.AVERAGING_MINIMUM,
                 Math.min(SpectralDisplay.AVERAGING_MAXIMUM, averaging)));
         mSpectralDisplay.peakHoldProperty().set(properties.get(key(PEAK_HOLD), false));
+        mSpectralDisplay.waterfallRangeProperty().set(Math.max(WaterfallScaler.RANGE_MINIMUM,
+                Math.min(WaterfallScaler.RANGE_MAXIMUM, properties.get(key(WATERFALL_RANGE),
+                        WaterfallScaler.RANGE_DEFAULT))));
+        mSpectralDisplay.waterfallAveragingProperty().set(Math.max(WaterfallScaler.AVERAGING_MINIMUM,
+                Math.min(WaterfallScaler.AVERAGING_MAXIMUM, properties.get(key(WATERFALL_AVERAGING),
+                        WaterfallScaler.AVERAGING_DEFAULT))));
         mDecibelLayer.visibleProperty().set(properties.get(key(DECIBEL_SCALE), true));
 
         try

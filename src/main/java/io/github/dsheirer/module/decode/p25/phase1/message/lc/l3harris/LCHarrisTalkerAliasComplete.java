@@ -93,7 +93,8 @@ public class LCHarrisTalkerAliasComplete extends LinkControlWord implements IMes
     {
         if(mTalkerAlias == null)
         {
-            String alias = getPayloadFragmentString();
+            //Join the untrimmed fragments and trim the result, so that a space at a fragment boundary is kept
+            String alias = getPayloadFragmentText();
 
             if(mFragment2 != null && !alias.contains(mFragment2))
             {
@@ -110,7 +111,7 @@ public class LCHarrisTalkerAliasComplete extends LinkControlWord implements IMes
                 }
             }
 
-            mTalkerAlias = P25TalkerAliasIdentifier.create(alias);
+            mTalkerAlias = P25TalkerAliasIdentifier.create(alias.trim());
         }
 
         return mTalkerAlias;
@@ -132,6 +133,16 @@ public class LCHarrisTalkerAliasComplete extends LinkControlWord implements IMes
     public String getPayloadFragmentString()
     {
         return new String(getPayloadFragment().toByteArray()).trim();
+    }
+
+    /**
+     * Payload fragment as a string, including leading and trailing spaces, for joining the fragments of an alias.
+     * A space at the start or end of a fragment can be a space within the alias.
+     * @return fragment
+     */
+    public String getPayloadFragmentText()
+    {
+        return new String(getPayloadFragment().toByteArray());
     }
 
     @Override

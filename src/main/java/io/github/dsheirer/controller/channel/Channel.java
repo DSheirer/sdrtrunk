@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.controller.channel;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
@@ -83,6 +84,8 @@ public class Channel extends Configuration implements Listener<SourceEvent>
 
     private BooleanProperty mProcessing = new SimpleBooleanProperty();
     private BooleanProperty mAutoStart = new SimpleBooleanProperty();
+    //Enabled for new channels.  Channels loaded from a playlist without the setting keep it disabled, see fromXml().
+    private BooleanProperty mAutoAddTalkerAliases = new SimpleBooleanProperty(true);
     private IntegerProperty mAutoStartOrder = new SimpleIntegerProperty();
     private boolean mSelected;
     private List<TunerChannel> mTunerChannels = null;
@@ -124,6 +127,19 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     }
 
     /**
+     * Creates a channel for deserialization from a playlist.  Settings added after a channel was saved take their
+     * legacy (disabled) value when the playlist doesn't specify them, instead of the default for new channels, so that
+     * existing channels don't change behavior.
+     */
+    @JsonCreator
+    private static Channel fromXml()
+    {
+        Channel channel = new Channel();
+        channel.setAutoAddTalkerAliases(false);
+        return channel;
+    }
+
+    /**
      * Creates a (new) deep copy of this channel
      */
     public Channel copyOf()
@@ -134,6 +150,7 @@ public class Channel extends Configuration implements Listener<SourceEvent>
         channel.setAliasListName(mAliasListName.get());
         channel.setAutoStart(mAutoStart.get());
         channel.setAutoStartOrder(mAutoStartOrder.get());
+        channel.setAutoAddTalkerAliases(mAutoAddTalkerAliases.get());
 
         AuxDecodeConfiguration auxCopy = new AuxDecodeConfiguration();
 
@@ -507,6 +524,36 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public void setAutoStart(boolean autoStart)
     {
         mAutoStart.set(autoStart);
+    }
+
+    /**
+     * Auto-add talker aliases property
+     */
+    public BooleanProperty autoAddTalkerAliasesProperty()
+    {
+        return mAutoAddTalkerAliases;
+    }
+
+    /**
+     * Indicates if decoded talker aliases are automatically added to the channel's alias list as radio aliases, using
+     * the talker alias as the alias name.
+     *
+     * @return true if talker aliases are automatically added to the alias list
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "auto_add_talker_aliases")
+    public boolean isAutoAddTalkerAliases()
+    {
+        return mAutoAddTalkerAliases.get();
+    }
+
+    /**
+     * Sets automatically adding decoded talker aliases to the channel's alias list.
+     *
+     * @param autoAdd true to automatically add talker aliases to the alias list
+     */
+    public void setAutoAddTalkerAliases(boolean autoAdd)
+    {
+        mAutoAddTalkerAliases.set(autoAdd);
     }
 
     /**

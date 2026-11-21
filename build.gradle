@@ -138,31 +138,26 @@ dependencies {
 
     //Jitpack imports
     implementation 'com.github.dnault:libresample4j:master'
-    implementation 'com.github.DSheirer.jmbe:api:v2.1.1'
     implementation 'com.github.nwaldispuehl:java-lame:v3.98.4'
 
     //mavenCentral/jcenter imports
     implementation 'ch.qos.logback:logback-classic:1.6.6'
     implementation 'ch.qos.logback:logback-core:1.6.6'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.23.0'
-    implementation 'com.formdev:flatlaf:3.8'
-    implementation 'com.formdev:flatlaf-intellij-themes:3.8' //Not imported - Theme.java loads these themes by class name
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     implementation 'com.github.jiconfont:jiconfont-javafx:1.0.0'
-    implementation 'com.github.jiconfont:jiconfont-swing:1.0.1'
     implementation('com.github.wendykierp:JTransforms:3.2') {
         exclude group: 'junit' //JLargeArrays 1.7 declares junit as a compile dependency
     }
     implementation 'com.google.code.gson:gson:2.15.0'
     implementation 'com.google.guava:guava:33.8.0-jre'
-    implementation 'com.jidesoft:jide-oss:3.6.18'
-    implementation 'com.miglayout:miglayout-swing:11.5.2'
     implementation 'com.mpatric:mp3agic:0.9.1'
     implementation 'commons-io:commons-io:2.22.0'
     implementation 'io.github.dsheirer:jairspy:1.0.12.1' //Airspy tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jairspyhf:1.8.1.1' //Airspy HF+ tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jbladerf:2.6.0.1' //bladeRF tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jhackrf:2026.01.3.1' //HackRF tuners - GitHub release, see settings.gradle
+    implementation 'io.github.dsheirer:jmbe-api:3.0.0' //JMBE audio codec interfaces - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jlibusb:1.0.30.1' //libusb and USB hotplug for the tuner libraries - GitHub release; not pulled in transitively
     implementation 'io.github.dsheirer:jhydrasdr:1.1.4.1' //HydraSDR tuners - GitHub release, see settings.gradle
     implementation 'io.github.dsheirer:jlimesdr:25.1.0.2' //LimeSDR tuners - GitHub release, see settings.gradle
@@ -195,7 +190,6 @@ tasks.withType(JavaCompile).configureEach {
  */
 def jvmArgsWindows =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
-         '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED', //windows users for JIDE
          '--add-modules=jdk.incubator.vector',   //Project Panama vector API is still in incubator
          '--enable-preview', //Project Panama Vector API is still in incubator
          '--enable-native-access=ALL-UNNAMED', //Suppress unsafe warnings for FFM API Foreign Memory calls
@@ -213,6 +207,14 @@ def jvmArgsLinux =
          '--enable-native-access=javafx.graphics', //JDK24 - suppress restricted java.lang.System calls
          '--enable-native-access=ALL-UNNAMED'] //Suppress warnings for FFM API native calls (tuner libraries)
 
+/**
+ * Startup splash screen image.  The JVM shows it before any application code runs and closes it when the main window
+ * opens.  The release launch scripts load it from the runtime image lib folder (see the runtime task below) and the
+ * gradle run task loads it from the resources folder.  The JVM picks up the @2x image on HiDPI displays.
+ */
+def splashImages = ['sdrtrunk-splash.png', 'sdrtrunk-splash@2x.png']
+def splashResourceDir = 'src/main/resources/images/sdrtrunk'
+
 application {
     mainClass = "io.github.dsheirer.gui.SDRTrunk"
 
@@ -222,6 +224,16 @@ application {
     else {
         applicationDefaultJvmArgs = jvmArgsLinux
     }
+}
+
+/**
+ * Adds the splash screen to the run task through an argument provider.  Calling jvmArgs here would replace the
+ * applicationDefaultJvmArgs convention (--add-modules=jdk.incubator.vector, --enable-preview, etc.) instead of adding
+ * to it.
+ */
+tasks.named('run') {
+    def splashImage = file(splashResourceDir + '/' + splashImages[0]).absolutePath
+    jvmArgumentProviders.add({ ["-splash:${splashImage}".toString()] } as CommandLineArgumentProvider)
 }
 
 test {
@@ -288,8 +300,8 @@ def jdk_download_windows_aarch64 = jdk_download_base + "windows-aarch64-full.zip
  * @return configured task.
  */
 def configure(RuntimeZipTask rt, List<String> jvmArgs) {
-    //Use the correct set of JVM arguments
-    rt.extension.launcherData.get().jvmArgs = jvmArgs
+    //Use the correct set of JVM arguments, plus the startup splash screen that the runtime task copies to lib
+    rt.extension.launcherData.get().jvmArgs = jvmArgs + ['-splash:{{BIN_DIR}}/../lib/sdrtrunk-splash.png']
 
     //Additional modules to include with auto-detected modules.
     //jdk.charsets - NXDN BIG5 encoding support
@@ -297,9 +309,9 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
     //java.management for JVM resource monitoring
-    //java.base, java.logging, java.net.http, java.prefs, javafx.controls, javafx.swing - required by sdrtrunk (jdeps)
+    //java.base, java.desktop, java.logging, java.net.http, java.prefs, javafx.controls - required by sdrtrunk (jdeps)
     rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management',
-            'java.base', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls', 'javafx.swing')
+            'java.base', 'java.desktop', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls')
 
     //Use only the modules listed above.  The runtime plugin's module auto-detection uses a bundled ASM library that
     //can't read Java 27 class files and logs a 'Failed to scan' error for each sdrtrunk class.  The jdeps module check
@@ -384,6 +396,22 @@ tasks.named('runtime') {rt ->
             }
             logger.lifecycle("Native strip: removed ${String.format('%.1f', total / 1048576)} MB of other " +
                     "platform native libraries from [${target}]")
+        }
+    }
+}
+
+/**
+ * Copies the startup splash screen images into the lib folder of each runtime target image, where the launch scripts
+ * load them from (-splash:{{BIN_DIR}}/../lib/...).
+ */
+tasks.named('runtime') {rt ->
+    rt.doLast {
+        rt.targetPlatforms.get().keySet().each { target ->
+            def lib = new File(rt.imageDir.asFile, "${project.name}-${target}/lib")
+            splashImages.each { name ->
+                java.nio.file.Files.copy(file(splashResourceDir + '/' + name).toPath(), new File(lib, name).toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
         }
     }
 }

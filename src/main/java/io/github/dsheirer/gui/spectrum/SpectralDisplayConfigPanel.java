@@ -34,6 +34,7 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -233,7 +234,25 @@ public class SpectralDisplayConfigPanel extends VBox
         pinButton.getStyleClass().add("spectral-config-pin");
         pinButton.selectedProperty().bindBidirectional(mPinned);
         pinButton.setTooltip(new Tooltip("Keep the settings panel open"));
-        HBox header = new HBox(6, headerIcon, title, spacer, pinButton);
+        IconNode hideIcon = new IconNode(FontAwesome.EYE_SLASH);
+        hideIcon.setIconSize(12);
+        hideIcon.getStyleClass().add("spectral-config-icon");
+        Button hideButton = new Button(null, hideIcon);
+        hideButton.getStyleClass().add("spectral-config-pin");
+        hideButton.setTooltip(new Tooltip("Hide the spectrum and waterfall.  A hidden display uses no processing " +
+            "or memory.  Show it again from the View menu or the bar at the top of the window."));
+        hideButton.setAccessibleText("Hide spectrum and waterfall");
+        hideButton.visibleProperty().bind(mHost.hideHandlerProperty().isNotNull());
+        hideButton.managedProperty().bind(hideButton.visibleProperty());
+        hideButton.setOnAction(event -> {
+            Runnable handler = mHost.hideHandlerProperty().get();
+
+            if(handler != null)
+            {
+                handler.run();
+            }
+        });
+        HBox header = new HBox(6, headerIcon, title, spacer, hideButton, pinButton);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(2, 2, 4, 4));
 
@@ -352,6 +371,27 @@ public class SpectralDisplayConfigPanel extends VBox
         Tooltip.install(peakHold.control(), new Tooltip("Show a line at the recent peak of each frequency, " +
                 "falling slowly"));
         row = addRow(grid, row, peakHold.label(), peakHold.control());
+
+        //Waterfall
+        grid.add(sectionLabel("Waterfall"), 0, row++, 2, 1);
+        ComboBox<Integer> waterfallAveraging = new ComboBox<>();
+        for(int frames = WaterfallScaler.AVERAGING_MINIMUM; frames <= WaterfallScaler.AVERAGING_MAXIMUM; frames++)
+        {
+            waterfallAveraging.getItems().add(frames);
+        }
+        waterfallAveraging.setMaxWidth(Double.MAX_VALUE);
+        waterfallAveraging.setConverter(converter(frames -> frames == 1 ? "Off" : frames + " frames"));
+        waterfallAveraging.setValue(mSpectralDisplay.waterfallAveragingProperty().get());
+        waterfallAveraging.valueProperty().addListener((ob, ov, nv) -> {
+            if(nv != null)
+            {
+                mSpectralDisplay.waterfallAveragingProperty().set(nv);
+            }
+        });
+        waterfallAveraging.setTooltip(new Tooltip("FFT frames averaged into each waterfall row.  Averaging steadies " +
+                "the noise floor so weak signals stand out, but the waterfall scrolls more slowly."));
+        trackPopup(waterfallAveraging.showingProperty());
+        row = addRow(grid, row, "Averaging", waterfallAveraging);
 
         //Layer settings
         for(SpectralDisplayLayer layer: mSpectralDisplay.getLayers())

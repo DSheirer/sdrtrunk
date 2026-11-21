@@ -60,6 +60,7 @@ public class RadioReferencePreference extends Preference
     private static final String ENCRYPTED_TALKGROUP_DO_NOT_MONITOR = "encrypted.talkgroup.import.do.not.monitor";
     private static final String CREATE_AND_SHOW_CHANNEL_EDITOR = "create.and.show.channel.editor";
     private static final String LOCATION = "location";
+    private static final String ALIAS_LIST_UPDATE_INTERVAL = "alias.list.update.interval";
     private static final String LOCATION_LABEL = "location.label";
 
     private String mUserName;
@@ -71,6 +72,7 @@ public class RadioReferencePreference extends Preference
     private Boolean mShowChannelEditorCounty;
     private Boolean mEncryptedTalkgroupImport;
     private Boolean mCreateAndShowChannelEditor;
+    private AliasListUpdateInterval mAliasListUpdateInterval;
     private int mPreferredCountryId = INVALID_ID;
     private int mPreferredStateId = INVALID_ID;
     private int mPreferredCountyId = INVALID_ID;
@@ -493,6 +495,41 @@ public class RadioReferencePreference extends Preference
         notifyPreferenceUpdated();
     }
 
+
+    /**
+     * How often alias lists that track a Radio Reference system check the system for changes.
+     */
+    public AliasListUpdateInterval getAliasListUpdateInterval()
+    {
+        if(mAliasListUpdateInterval == null)
+        {
+            String name = mPreferences.get(ALIAS_LIST_UPDATE_INTERVAL, AliasListUpdateInterval.DAILY.name());
+
+            try
+            {
+                mAliasListUpdateInterval = AliasListUpdateInterval.valueOf(name);
+            }
+            catch(IllegalArgumentException iae)
+            {
+                mAliasListUpdateInterval = AliasListUpdateInterval.DAILY;
+            }
+        }
+
+        return mAliasListUpdateInterval;
+    }
+
+    /**
+     * Sets how often alias lists that track a Radio Reference system check the system for changes.
+     */
+    public void setAliasListUpdateInterval(AliasListUpdateInterval interval)
+    {
+        if(interval != null)
+        {
+            mAliasListUpdateInterval = interval;
+            mPreferences.put(ALIAS_LIST_UPDATE_INTERVAL, interval.name());
+            notifyPreferenceUpdated();
+        }
+    }
 
     /**
      * Indicates if should show channel editor after trunked channel configuration create

@@ -33,49 +33,41 @@ public class WaterfallPalette
     }
 
     /**
-     * Palette of the original Swing waterfall: dark blue noise floor, a blue to yellow ramp, yellow fading to orange,
-     * then red.
+     * Palette based on the original Swing waterfall colors: a dark to bright blue ramp, a blue to yellow ramp, yellow
+     * fading to orange, then red.  The blue ramp covers the bottom quarter of the palette, where the waterfall places
+     * the noise floor, so the noise stays blue and weak signals stand out from it.
      */
     public static int[] classic()
     {
         int[] palette = new int[SIZE];
 
-        for(int x = 0; x < 16; x++)
+        for(int x = 0; x < 64; x++)
         {
-            palette[x] = argb(0, 0, 127);
+            palette[x] = argb(0, 0, blend(64, 191, x / 63.0));
         }
 
-        for(int x = 16; x < 32; x++)
+        for(int x = 64; x < 100; x++)
         {
-            palette[x] = argb(0, 0, 191);
+            double t = (x - 64) / 36.0;
+            palette[x] = argb(blend(0, 255, t), blend(0, 255, t), blend(191, 0, t));
         }
 
-        int r = 0;
-        int g = 0;
-        int b = 191;
-
-        for(int x = 32; x < 60; x++)
+        for(int x = 100; x < 220; x++)
         {
-            palette[x] = argb(r, g, b);
-            r += 9;
-            g += 9;
-            b -= 6;
+            palette[x] = argb(255, blend(255, 0, (x - 100) / 120.0), 0);
         }
 
-        g = 255;
-
-        for(int x = 60; x < 188; x++)
-        {
-            palette[x] = argb(255, g, 0);
-            g -= 2;
-        }
-
-        for(int x = 188; x < SIZE; x++)
+        for(int x = 220; x < SIZE; x++)
         {
             palette[x] = argb(255, 0, 0);
         }
 
         return palette;
+    }
+
+    private static int blend(int from, int to, double fraction)
+    {
+        return (int)Math.round(from + (to - from) * fraction);
     }
 
     /**

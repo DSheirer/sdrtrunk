@@ -1,0 +1,162 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* Frequency control.  All colors are derived from the theme's looked-up colors (-fx-control-inner-background,
+   -fx-text-base-color, -fx-accent) so the control follows every application theme. */
+
+.frequency-control
+{
+    -fc-face: derive(-fx-control-inner-background, -5%);
+    -fc-edge: derive(-fx-control-inner-background, -28%);
+    -fc-digit: -fx-text-base-color;
+    -fc-dim: ladder(-fc-face, derive(-fc-face, 42%) 49%, derive(-fc-face, -30%) 50%);
+    -fc-hover: -fx-accent;
+    -fx-background-color: -fc-edge, -fc-face;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 7, 6;
+    -fx-padding: 0 10 0 8;
+    -fx-spacing: 0;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.30), 6, 0, 0, 1);
+}
+
+.frequency-control:focused
+{
+    -fx-background-color: -fx-focus-color, -fc-face;
+    -fx-background-insets: 0, 2;
+}
+
+.frequency-control:entry
+{
+    -fx-background-color: -fx-accent, -fc-face;
+    -fx-background-insets: 0, 2;
+}
+
+.frequency-control:invalid
+{
+    -fx-background-color: #d9443a, -fc-face;
+    -fx-background-insets: 0, 2;
+}
+
+.frequency-control:disabled
+{
+    -fx-opacity: 0.55;
+}
+
+.frequency-control .frequency-digit-text
+{
+    -fx-font-size: 2.15em;
+    -fx-font-weight: bold;
+    -fx-fill: -fc-digit;
+}
+
+.frequency-control .frequency-point
+{
+    -fx-fill: -fc-digit;
+}
+
+.frequency-control .frequency-group-gap
+{
+    -fx-min-width: 6;
+    -fx-pref-width: 6;
+}
+
+.frequency-control .frequency-unit
+{
+    -fx-text-fill: derive(-fc-digit, -25%);
+    -fx-font-size: 1.05em;
+    -fx-padding: 0.9em 0 0 6;
+}
+
+/* Leading zeros are dimmed so the significant part of the frequency stands out */
+.frequency-control .frequency-digit:leading .frequency-digit-text
+{
+    -fx-fill: -fc-dim;
+}
+
+/* Typed entry: typed digits use the accent color, implied digits are dimmed */
+.frequency-control:entry .frequency-digit .frequency-digit-text
+{
+    -fx-fill: -fc-dim;
+}
+
+.frequency-control:entry .frequency-digit:typed .frequency-digit-text
+{
+    -fx-fill: -fx-accent;
+}
+
+.frequency-control .frequency-digit-cell
+{
+    -fx-background-radius: 3;
+}
+
+/* Up/down halves revealed while the mouse is over a digit */
+.frequency-control .frequency-half
+{
+    -fx-background-color: -fc-hover;
+    -fx-background-radius: 3;
+    -fx-opacity: 0;
+}
+
+.frequency-control .frequency-digit:hover-up .frequency-half-up,
+.frequency-control .frequency-digit:hover-down .frequency-half-down
+{
+    -fx-opacity: 0.22;
+}
+
+.frequency-control .frequency-arrow
+{
+    -fx-background-color: -fc-hover;
+    -fx-scale-shape: true;
+    -fx-opacity: 0;
+}
+
+.frequency-control .frequency-arrow-up
+{
+    -fx-shape: "M0,10 L10,0 L20,10 Z";
+    -fx-translate-y: 2;
+}
+
+.frequency-control .frequency-arrow-down
+{
+    -fx-shape: "M0,0 L20,0 L10,10 Z";
+    -fx-translate-y: -2;
+}
+
+.frequency-control .frequency-digit:hover .frequency-arrow
+{
+    -fx-opacity: 0.35;
+}
+
+.frequency-control .frequency-digit:hover-up .frequency-arrow-up,
+.frequency-control .frequency-digit:hover-down .frequency-arrow-down
+{
+    -fx-opacity: 1.0;
+}
+
+.frequency-control .frequency-digit:hover
+{
+    -fx-cursor: hand;
+}
+
+/* Keyboard cursor digit */
+.frequency-control .frequency-digit:cursor .frequency-digit-cell
+{
+    -fx-border-color: transparent transparent -fx-accent transparent;
+    -fx-border-width: 0 0 2 0;
+}

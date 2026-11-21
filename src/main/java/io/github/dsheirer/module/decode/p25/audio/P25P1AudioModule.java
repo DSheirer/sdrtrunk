@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
-import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
@@ -32,6 +31,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
+import jmbe.frame.CorrectedIMBEFrame;
 
 public class P25P1AudioModule extends ImbeAudioModule
 {
@@ -134,9 +134,14 @@ public class P25P1AudioModule extends ImbeAudioModule
     {
         if(!mEncryptedCall)
         {
-            for(byte[] frame : ldu.getIMBEFrames())
+            List<byte[]> frames = ldu.getIMBEFrames();
+
+            //Only error correct the frames in sdrtrunk when the JMBE library (version 3+) can synthesize from them
+            List<CorrectedIMBEFrame> correctedFrames = isCorrectedFrameSupported() ? ldu.getCorrectedIMBEFrames() : null;
+
+            for(int x = 0; x < frames.size(); x++)
             {
-                addAudio(getAudioCodec().getAudio(frame));
+                addAudio(getAudio(frames.get(x), correctedFrames != null ? correctedFrames.get(x) : null));
             }
         }
         else

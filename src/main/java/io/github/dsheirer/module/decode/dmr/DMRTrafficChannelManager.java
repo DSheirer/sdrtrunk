@@ -135,6 +135,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     /**
      * Talker alias manager
      */
+    @Override
     public TalkerAliasManager getTalkerAliasManager()
     {
         return mTalkerAliasManager;
@@ -381,6 +382,9 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     public void processChannelGrant(DMRChannel channel, IdentifierCollection identifierCollection,
                                     Opcode opcode, long timestamp, boolean encrypted)
     {
+        //Apply the stored talker alias for the radio, learned from the radio's earlier calls
+        identifierCollection = mTalkerAliasManager.enrich(identifierCollection);
+
         mLock.lock();
 
         try
@@ -419,11 +423,11 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 }
                 else if(event != null) //Update current event
                 {
-                    Identifier from = getIdentifier(identifierCollection, Role.FROM);
+                    Identifier from = getFrom(identifierCollection);
 
                     if(from != null)
                     {
-                        Identifier currentFrom = getIdentifier(event.getIdentifierCollection(), Role.FROM);
+                        Identifier currentFrom = getFrom(event.getIdentifierCollection());
                         if(currentFrom != null && !Objects.equals(from, currentFrom))
                         {
                             event.end(timestamp);
@@ -660,6 +664,15 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
      * @param collection containing a TO identifier
      * @return TO identifier or null
      */
+    /**
+     * FROM identifier of the collection, preferring the radio over other FROM identifiers such as a talker alias.
+     */
+    private Identifier getFrom(IdentifierCollection collection)
+    {
+        Identifier radio = TalkerAliasManager.getFromRadio(collection);
+        return radio != null ? radio : getIdentifier(collection, Role.FROM);
+    }
+
     private Identifier getIdentifier(IdentifierCollection collection, Role role)
     {
         List<Identifier> identifiers = collection.getIdentifiers(role);

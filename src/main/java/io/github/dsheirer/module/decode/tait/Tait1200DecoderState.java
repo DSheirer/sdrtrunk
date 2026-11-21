@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.tait;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -32,7 +33,7 @@ import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.tait.identifier.TaitIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.TreeSet;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 public class Tait1200DecoderState extends DecoderState
 {
@@ -112,22 +113,15 @@ public class Tait1200DecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("Tait-1200I");
+        summary.section("Radio Identifiers");
 
-        sb.append("=============================\n");
-        sb.append("Decoder:\tTait-1200I\n\n");
-
-        if(!mIdents.isEmpty())
+        for(TaitIdentifier taitIdentifier : mIdents)
         {
-            sb.append("Radio Identifiers:\n");
-
-            for(TaitIdentifier taitIdentifier : mIdents)
-            {
-                sb.append("\t").append(taitIdentifier).append("\n");
-            }
+            summary.text(taitIdentifier);
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     /**

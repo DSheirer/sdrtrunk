@@ -79,6 +79,11 @@ public enum DecoderType
      */
     public static final EnumSet<DecoderType> MBE_AUDIO_CODEC_DECODERS = EnumSet.of(DMR, NXDN, P25_PHASE1, P25_PHASE2);
 
+    /**
+     * Decoders that produce talker aliases
+     */
+    public static final EnumSet<DecoderType> TALKER_ALIAS_DECODERS = EnumSet.of(DMR, NXDN, P25_PHASE1, P25_PHASE2);
+
     public Protocol getProtocol()
     {
         return mProtocol;
@@ -114,5 +119,13 @@ public enum DecoderType
     public boolean providesMBEAudioFrames()
     {
         return MBE_AUDIO_CODEC_DECODERS.contains(this);
+    }
+
+    /**
+     * Indicates if the decoder type produces talker aliases
+     */
+    public boolean providesTalkerAlias()
+    {
+        return TALKER_ALIAS_DECODERS.contains(this);
     }
 }

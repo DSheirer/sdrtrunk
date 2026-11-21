@@ -22,18 +22,20 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
-import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCall;
-import io.github.dsheirer.module.decode.nxdn.layer3.call.VoiceCallWithOptionalLocation;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.Information1;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.InitializationVectorPart1;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CipherType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
+import jmbe.frame.CorrectedAMBEFrame;
 
 /**
  * NXDN AMBE audio module
@@ -41,7 +43,6 @@ import java.util.List;
 public class NXDNAudioModule extends AmbeAudioModule
 {
     private final SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-    private final NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private final List<Audio> mCachedAudioMessages = new ArrayList<>();
     private boolean mEncryptedCall = false;
     private boolean mEncryptedCallStateEstablished = false;
@@ -102,11 +103,18 @@ public class NXDNAudioModule extends AmbeAudioModule
                     mAudioCodec = voiceCall.getCallOption().getCodec();
                     processCachedAudio();
                 }
-                else if(message instanceof VoiceCallWithOptionalLocation voiceCall)
+                //Note: VoiceCallWithOptionalLocation subclasses (request, response, assignment, etc.) don't carry the
+                //cipher type and key ID, so they can't be used to establish the encryption state.
+                else if(!mEncryptedCallStateEstablished && message instanceof Information1 info1 &&
+                        info1.getLICH().hasAudio())
                 {
-                    mEncryptedCall = voiceCall.getEncryptionKeyIdentifier().isEncrypted();
+                    //Type-D only sends the VOICE CALL message at the start of the call.  Use the SCCH call info or
+                    //initialization vector from a voice frame to establish the encryption state when we join a call
+                    //late, or when the VOICE CALL message was missed.  Type-D only supports AMBE+ half-rate.
+                    mEncryptedCall = info1 instanceof InitializationVectorPart1 ||
+                            info1.getCipherType() != CipherType.UNENCRYPTED;
                     mEncryptedCallStateEstablished = true;
-                    mAudioCodec = voiceCall.getCallOption().getCodec();
+                    mAudioCodec = AudioCodec.HALF_RATE;
                     processCachedAudio();
                 }
                 else if(message instanceof Disconnect || message instanceof TransmissionRelease)
@@ -140,11 +148,14 @@ public class NXDNAudioModule extends AmbeAudioModule
     {
         if(!mEncryptedCall && mAudioCodec != null && mAudioCodec.equals(AudioCodec.HALF_RATE)) //Full rate not yet supported
         {
-            for(byte[] frame : audio.getAudioFrames())
+            List<byte[]> frames = audio.getAudioFrames();
+
+            //Only error correct the frames in sdrtrunk when the JMBE library (version 3+) can synthesize from them
+            List<CorrectedAMBEFrame> correctedFrames = isCorrectedFrameSupported() ? audio.getCorrectedAudioFrames() : null;
+
+            for(int x = 0; x < frames.size(); x++)
             {
-                float[] generatedAudio = getAudioCodec().getAudio(frame);
-                generatedAudio = mGain.apply(generatedAudio);
-                addAudio(generatedAudio);
+                addAudio(getAudio(frames.get(x), correctedFrames != null ? correctedFrames.get(x) : null));
             }
         }
         else

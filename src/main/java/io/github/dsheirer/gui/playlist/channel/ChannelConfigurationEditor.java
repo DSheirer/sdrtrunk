@@ -96,6 +96,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private TextField mNameField;
     private ComboBox<String> mAliasListComboBox;
     private Button mNewAliasListButton;
+    private CheckBox mAutoAddTalkerAliasesCheckBox;
     private GridPane mTextFieldPane;
     private Button mSaveButton;
     private Button mResetButton;
@@ -187,6 +188,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         getNameField().setDisable(disable);
         getAliasListComboBox().setDisable(disable);
         getNewAliasListButton().setDisable(disable);
+        getAutoAddTalkerAliasesCheckBox().setDisable(disable);
         getAutoStartSwitch().setDisable(disable);
 
         if(channel != null)
@@ -210,6 +212,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                 getAliasListComboBox().getSelectionModel().select(null);
             }
 
+            getAutoAddTalkerAliasesCheckBox().setSelected(channel.isAutoAddTalkerAliases());
             getAutoStartSwitch().selectedProperty().set(channel.isAutoStart());
             getAutoStartOrderSpinner().setDisable(!channel.isAutoStart());
             Integer order = channel.getAutoStartOrder();
@@ -251,6 +254,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             getSiteField().setText(null);
             getNameField().setText(null);
             getAliasListComboBox().getSelectionModel().select(null);
+            getAutoAddTalkerAliasesCheckBox().setSelected(false);
             getAutoStartSwitch().selectedProperty().set(false);
             getAutoStartOrderSpinner().setDisable(true);
             getAutoStartOrderSpinner().getValueFactory().setValue(0);
@@ -277,6 +281,12 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             getItem().setName(" ");
             getItem().setName(getNameField().getText());
             getItem().setAliasListName(getAliasListComboBox().getSelectionModel().getSelectedItem());
+
+            if(providesTalkerAlias())
+            {
+                getItem().setAutoAddTalkerAliases(getAutoAddTalkerAliasesCheckBox().isSelected());
+            }
+
             getItem().setAutoStart(getAutoStartSwitch().isSelected());
 
             Integer order = getAutoStartOrderSpinner().getValue();
@@ -598,6 +608,12 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
             GridPane.setConstraints(getNewAliasListButton(), 4, row);
             mTextFieldPane.getChildren().add(getNewAliasListButton());
+
+            if(providesTalkerAlias())
+            {
+                GridPane.setConstraints(getAutoAddTalkerAliasesCheckBox(), 3, ++row, 2, 1);
+                mTextFieldPane.getChildren().add(getAutoAddTalkerAliasesCheckBox());
+            }
         }
 
         return mTextFieldPane;
@@ -658,6 +674,33 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         }
 
         return mAliasListComboBox;
+    }
+
+    /**
+     * Indicates if the decoder for this editor produces talker aliases.
+     */
+    private boolean providesTalkerAlias()
+    {
+        return getDecoderType() != null && getDecoderType().providesTalkerAlias();
+    }
+
+    /**
+     * Check box to automatically add decoded talker aliases to the selected alias list.
+     */
+    private CheckBox getAutoAddTalkerAliasesCheckBox()
+    {
+        if(mAutoAddTalkerAliasesCheckBox == null)
+        {
+            mAutoAddTalkerAliasesCheckBox = new CheckBox("Auto-Add Talker Aliases");
+            mAutoAddTalkerAliasesCheckBox.setDisable(true);
+            mAutoAddTalkerAliasesCheckBox.setTooltip(new Tooltip("Adds decoded talker aliases as radio aliases in " +
+                "the Talker Alias category.  Only radio aliases in that category are automatically renamed; existing " +
+                "radio aliases outside the category are left unchanged.  Move an alias out of the Talker Alias category " +
+                "to preserve a custom name.  Applies when the channel is (re)started."));
+            mAutoAddTalkerAliasesCheckBox.setOnAction(event -> modifiedProperty().set(true));
+        }
+
+        return mAutoAddTalkerAliasesCheckBox;
     }
 
     private Button getNewAliasListButton()

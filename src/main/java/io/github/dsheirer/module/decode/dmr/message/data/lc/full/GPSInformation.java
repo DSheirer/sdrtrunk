@@ -28,7 +28,7 @@ import io.github.dsheirer.module.decode.dmr.message.type.PositionError;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.util.FastMath;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 /**
  * GPS Information

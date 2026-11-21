@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.ltrstandard;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,57 +215,21 @@ public class LTRStandardDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Activity Summary\n\n");
-
-        sb.append("Decoder:\tLTR-Standard\n");
-
-        sb.append("Monitored LCN: ");
-
-        if(hasChannelNumber())
-        {
-            sb.append(getChannelNumber());
-        }
-        else
-        {
-            sb.append("*Insufficient Data*");
-        }
-
-        sb.append("\n");
-
-        sb.append("Active LCNs:\t");
-
+        ActivitySummary summary = new ActivitySummary("LTR-Standard");
+        summary.section("Channels");
+        summary.field("Monitored LCN", hasChannelNumber() ? getChannelNumber() : "Insufficient Data");
         List<Integer> lcns = mLCNTracker.getActiveLCNs();
+        summary.field("Active LCNs", lcns.isEmpty() ? "Insufficient Data" :
+            lcns.stream().map(String::valueOf).collect(Collectors.joining(", ")));
 
-        if(lcns.size() > 0)
-        {
-            sb.append(mLCNTracker.getActiveLCNs());
-        }
-        else
-        {
-            sb.append("*Insufficient Data*");
-        }
-        sb.append("\n\n");
+        summary.section("Talkgroups");
 
-        sb.append("Talkgroups\n");
-
-        if(mTalkgroups.isEmpty())
+        for(LTRTalkgroup talkgroup : mTalkgroups)
         {
-            sb.append("  None\n");
-        }
-        else
-        {
-            for(LTRTalkgroup talkgroup : mTalkgroups)
-            {
-                sb.append("  ");
-                sb.append(talkgroup.formatted());
-                sb.append("\n");
-
-            }
+            summary.text(talkgroup.formatted());
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     /**

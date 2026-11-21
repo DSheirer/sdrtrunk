@@ -52,6 +52,7 @@ public class P25P1SoftSyncDetectorFactory
             case VECTOR_SIMD_512:
                 return new P25P1SoftSyncDetectorVector512();
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new P25P1SoftSyncDetectorScalar();
         }

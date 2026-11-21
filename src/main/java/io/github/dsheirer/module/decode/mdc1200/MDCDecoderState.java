@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.mdc1200;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -119,39 +120,22 @@ public class MDCDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("MDC-1200");
+        summary.section("Idents");
 
-        sb.append("=============================\n");
-        sb.append("Decoder:\tMDC-1200\n\n");
-        sb.append("MDC-1200 Idents\n");
-
-        if(mIdents.isEmpty())
+        for(MDC1200Identifier ident : mIdents)
         {
-            sb.append("  None\n");
-        }
-        else
-        {
-
-            for (MDC1200Identifier mIdent : mIdents) {
-                sb.append("  ").append(mIdent).append("\n");
-            }
+            summary.text(ident);
         }
 
-        sb.append("MDC-1200 Emergency Idents\n");
+        summary.section("Emergency Idents");
 
-        if(mEmergencyIdents.isEmpty())
+        for(MDC1200Identifier ident : mEmergencyIdents)
         {
-            sb.append("  None\n");
-        }
-        else
-        {
-            for(MDC1200Identifier mIdent : mEmergencyIdents)
-            {
-                sb.append("  ").append(mIdent).append("\n");
-            }
+            summary.text(ident);
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     /**

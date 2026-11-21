@@ -19,22 +19,25 @@
 
 package io.github.dsheirer.module.decode.nxdn;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.alias.TalkerAliasTracker;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkerAliasIdentifier;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
@@ -73,6 +76,9 @@ import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationCommand
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponse;
 import io.github.dsheirer.module.decode.nxdn.layer3.mobility.RegistrationResponseTypeD;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.TalkerAliasComplete;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.Information1;
+import io.github.dsheirer.module.decode.nxdn.layer3.scch.InitializationVectorPart1;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.CipherType;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.Collections;
 import java.util.List;
@@ -86,6 +92,9 @@ public class NXDNDecoderState extends DecoderState
     private final Channel mChannel;
     private final NXDNNetworkConfigurationMonitor mNetworkConfigurationMonitor = new NXDNNetworkConfigurationMonitor();
     private final NXDNTrafficChannelManager mTrafficChannelManager;
+    //Keeps the talker alias matched to the talking radio and assigns received talker aliases to the right radio
+    private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
+            this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.PREVIOUS_TALKER);
     private boolean mEncryptedCallStateDetermined = false;
     private boolean mEncryptedCall = false;
     private int mDisconnectResponseCount = 0;
@@ -139,7 +148,9 @@ public class NXDNDecoderState extends DecoderState
         switch(event.getEvent())
         {
             case REQUEST_RESET:
+                mTalkerAliasTracker.callEnded();
                 resetState();
+                mTalkerAliasTracker.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 setCurrentFrequency(event.getFrequency());
@@ -158,16 +169,17 @@ public class NXDNDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("NXDN Channel Activity Summary\n");
+        ActivitySummary summary = new ActivitySummary("NXDN");
 
         if(mChannel.getDecodeConfiguration() instanceof DecodeConfigNXDN configNXDN)
         {
-            sb.append("Transmission Mode: ").append(configNXDN.getTransmissionMode()).append("\n");
+            summary.section("Configuration");
+            summary.field("Transmission Mode", configNXDN.getTransmissionMode());
         }
-        sb.append(mNetworkConfigurationMonitor.getSummary()).append("\n");
-        sb.append(mTrafficChannelManager.getTalkerAliasManager().getAliasSummary()).append("\n");
-        return sb.toString();
+
+        mNetworkConfigurationMonitor.addActivitySummary(summary);
+        mTrafficChannelManager.getTalkerAliasManager().addAliasSummary(summary);
+        return summary.toString();
     }
 
     @Override
@@ -187,6 +199,32 @@ public class NXDNDecoderState extends DecoderState
             {
                 processPacketMessage(packetMessage);
             }
+        }
+    }
+
+    /**
+     * Talker alias manager shared with the traffic channel manager, or null when there's no traffic channel manager.
+     */
+    private TalkerAliasManager getTalkerAliasManager()
+    {
+        return hasTrafficChannelManager() ? mTrafficChannelManager.getTalkerAliasManager() : null;
+    }
+
+    /**
+     * Processes a talker alias: stores it for the talking radio and adds it to the call that it belongs to.
+     * @param talkerAlias that was received
+     * @param timestamp of the message
+     */
+    private void processTalkerAlias(NXDNTalkerAliasIdentifier talkerAlias, long timestamp)
+    {
+        TalkerAliasTracker.Assignment assignment = mTalkerAliasTracker.received(talkerAlias, null, timestamp);
+
+        if(hasTrafficChannelManager() && (assignment == TalkerAliasTracker.Assignment.CURRENT_CALL ||
+                assignment == TalkerAliasTracker.Assignment.ENDED_CALL))
+        {
+            RadioIdentifier radio = assignment == TalkerAliasTracker.Assignment.ENDED_CALL ?
+                    mTalkerAliasTracker.getEndedCallRadio() : mTalkerAliasTracker.getCurrentRadio();
+            mTrafficChannelManager.processTalkerAlias(getCurrentChannel(), talkerAlias, radio, timestamp);
         }
     }
 
@@ -255,8 +293,9 @@ public class NXDNDecoderState extends DecoderState
                 {
                     //Controller responds to a voice call request with either a channel grant, or this message if
                     //it can't support the call or the called party is not available
+                    //Type-D call response doesn't carry a cause.
                     broadcastEvent(vcr.getIdentifiers(), vcr.getTimestamp(), DecodeEventType.RESPONSE,
-                            "VOICE CALL REQUEST - RESPONSE:" + vcr.getCause().toString());
+                            vcr.isTypeD() ? "CALL RESPONSE" : "VOICE CALL REQUEST - RESPONSE:" + vcr.getCause());
                 }
                 break;
             case TRAFFIC_OUT_01_CC_VOICE_CALL:
@@ -265,6 +304,9 @@ public class NXDNDecoderState extends DecoderState
                 {
                     mIdleDuringCallCount = 0;
                     getIdentifierCollection().update(vc.getIdentifiers());
+                    //Keep the talker alias matched to the radio that is talking
+                    mTalkerAliasTracker.callActivity(vc.getTimestamp());
+
                     mEncryptedCallStateDetermined = true;
                     mEncryptedCall = vc.getEncryptionKeyIdentifier().isEncrypted();
                     state = mEncryptedCall ? State.ENCRYPTED : State.CALL;
@@ -326,6 +368,7 @@ public class NXDNDecoderState extends DecoderState
                 mEncryptedCall = false;
                 mIdleDuringCallCount = IDLE_DURING_CALL_MAX_COUNT;
                 //Only remove the FROM identifier, anticipating a continuation call for the same talkgroup
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(Role.FROM);
                 break;
             case CONTROL_OUT_09_CC_DATA_CALL_RESPONSE:
@@ -404,6 +447,7 @@ public class NXDNDecoderState extends DecoderState
                 mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
                 mEncryptedCall = false;
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 mDisconnectResponseCount++;
 
@@ -424,6 +468,7 @@ public class NXDNDecoderState extends DecoderState
             case CONTROL_OUT_27_BC_ADJACENT_SITE_INFORMATION:
             case CONTROL_OUT_28_BC_FAILURE_STATUS_INFORMATION:
                 mNetworkConfigurationMonitor.process(layer3);
+                mTalkerAliasTracker.callEnded();
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 break;
             case CONTROL_OUT_26_BC_CONTROL_CHANNEL_INFORMATION:
@@ -645,12 +690,7 @@ public class NXDNDecoderState extends DecoderState
                 {
                     state = State.CALL;
                     event = DecoderStateEvent.Event.CONTINUATION;
-                    var radio = getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
-
-                    if(radio instanceof RadioIdentifier ri)
-                    {
-                        mTrafficChannelManager.processTalkerAlias(getCurrentChannel(), tac.getTalkerAlias(), ri, tac.getTimestamp());
-                    }
+                    processTalkerAlias(tac.getTalkerAlias(), tac.getTimestamp());
                 }
                 break;
 
@@ -690,6 +730,24 @@ public class NXDNDecoderState extends DecoderState
 
             case UNKNOWN:
                 break;
+        }
+
+        //Messages that don't otherwise change the state (e.g. Type-D SCCH) but are carried in a frame that also carries
+        //voice are a continuation of the call.  Otherwise, the ACTIVE state toggles the channel out of CALL state on
+        //every voice frame, squelching the audio module which then discards the call audio.
+        if(state == State.ACTIVE && event == DecoderStateEvent.Event.DECODE && layer3.getLICH().hasAudio())
+        {
+            //Type-D only sends the VOICE CALL at the start of a call.  When we join late, or miss it, use the SCCH call
+            //info or initialization vector to determine the encryption state.
+            if(!mEncryptedCallStateDetermined && layer3 instanceof Information1 info1)
+            {
+                mEncryptedCallStateDetermined = true;
+                mEncryptedCall = info1 instanceof InitializationVectorPart1 ||
+                        info1.getCipherType() != CipherType.UNENCRYPTED;
+            }
+
+            state = (mEncryptedCallStateDetermined && mEncryptedCall) ? State.ENCRYPTED : State.CALL;
+            event = DecoderStateEvent.Event.CONTINUATION;
         }
 
         broadcast(new DecoderStateEvent(this, event, state));

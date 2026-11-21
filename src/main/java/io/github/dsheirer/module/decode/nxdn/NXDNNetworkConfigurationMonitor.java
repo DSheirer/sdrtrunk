@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.nxdn;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.AdjacentSiteInformationTypeD;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Processes NXDN Layer 3 messages to assemble a snapshot of the site's broadcast configuration details
@@ -61,86 +63,89 @@ public class NXDNNetworkConfigurationMonitor
     {
     }
 
-    public String getSummary()
+    /**
+     * Adds the network configuration sections to the activity summary.
+     * @param summary to add to
+     */
+    public void addActivitySummary(ActivitySummary summary)
     {
-        StringBuilder sb = new StringBuilder();
+        summary.section("Current Site");
 
-        if(mDigitalStationIDInformation != null)
-        {
-            sb.append("Current Channel Station ID\n  ").append(mDigitalStationIDInformation).append("\n");
-        }
         if(mSiteInformation != null)
         {
-            sb.append("\nCurrent Site\n  ").append(mSiteInformation).append("\n");
+            summary.field("Site", mSiteInformation);
         }
         else if(mTypeDSiteID != null)
         {
-            sb.append("\nCurrent Site\n  ").append(mTypeDSiteID).append("\n");
+            summary.field("Site", mTypeDSiteID);
+        }
+        else
+        {
+            summary.field("Site", ActivitySummary.UNKNOWN);
+        }
+
+        if(mDigitalStationIDInformation != null)
+        {
+            summary.field("Station ID", mDigitalStationIDInformation);
         }
         if(mServiceInformation != null)
         {
-            sb.append("\nCurrent Site Services\n  ").append(mServiceInformation).append("\n");
-        }
-        if(mFailureStatusInformation != null)
-        {
-            sb.append("\nFailure Status\n  ").append(mFailureStatusInformation).append("\n");
+            summary.field("Services", mServiceInformation);
         }
         if(mControlChannelInformation != null)
         {
-            sb.append("\nCurrent Site Control Channel\n  ").append(mControlChannelInformation).append("\n");
+            summary.field("Control Channel", mControlChannelInformation);
         }
-
+        if(mFailureStatusInformation != null)
+        {
+            summary.field("Failure Status", mFailureStatusInformation);
+        }
         if(mTypeDRepeater != null)
         {
-            sb.append("\nType-D Current Repeater: ").append(mTypeDRepeater).append("\n");
+            summary.field("Type-D Current Repeater", mTypeDRepeater);
         }
-
         if(!mTypeDObservedRepeaters.isEmpty())
         {
             Collections.sort(mTypeDObservedRepeaters);
-            sb.append("\nType-D Observed Repeater Numbers:").append(mTypeDObservedRepeaters).append("\n");
+            summary.field("Type-D Observed Repeaters", mTypeDObservedRepeaters.stream().map(String::valueOf)
+                .collect(Collectors.joining(", ")));
         }
+
+        summary.section("Neighbor Sites");
 
         if(!mNeighborMap.isEmpty())
         {
-            sb.append("\nNeighbor Sites\n");
             List<Integer> ids = new ArrayList<>(mNeighborMap.keySet());
             Collections.sort(ids);
 
             for(Integer id : ids)
             {
-                sb.append("  ").append(mNeighborMap.get(id)).append("\n");
+                summary.text(mNeighborMap.get(id));
             }
         }
         else if(mTypeDNeighborA != null || mTypeDNeighborB != null)
         {
-            sb.append("\nNeighbor Sites\n");
+            ActivitySummary.Table table = summary.table("System", "Site");
 
             if(mTypeDNeighborA != null)
             {
-                sb.append("  ").append(mTypeDNeighborA.getSystemID1()).append(" SITE:").append(mTypeDNeighborA.getSite1()).append("\n");
+                table.row(mTypeDNeighborA.getSystemID1(), mTypeDNeighborA.getSite1());
 
                 if(mTypeDNeighborA.hasSite2())
                 {
-                    sb.append("  ").append(mTypeDNeighborA.getSystemID2()).append(" SITE:").append(mTypeDNeighborA.getSite2()).append("\n");
+                    table.row(mTypeDNeighborA.getSystemID2(), mTypeDNeighborA.getSite2());
                 }
             }
             if(mTypeDNeighborB != null)
             {
-                sb.append("  ").append(mTypeDNeighborB.getSystemID1()).append(" SITE:").append(mTypeDNeighborB.getSite1()).append("\n");
+                table.row(mTypeDNeighborB.getSystemID1(), mTypeDNeighborB.getSite1());
 
                 if(mTypeDNeighborB.hasSite2())
                 {
-                    sb.append("  ").append(mTypeDNeighborB.getSystemID2()).append(" SITE:").append(mTypeDNeighborB.getSite2()).append("\n");
+                    table.row(mTypeDNeighborB.getSystemID2(), mTypeDNeighborB.getSite2());
                 }
             }
         }
-        else
-        {
-            sb.append("\nNeighbor Sites\n  NONE\n");
-        }
-
-        return sb.toString();
     }
 
     public void process(NXDNLayer3Message layer3)

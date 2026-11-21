@@ -51,6 +51,7 @@ public class NXDNSyncDetectorFactory
             case VECTOR_SIMD_512:
                 return new NXDNSoftSyncDetectorVector512();
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new NXDNSoftSyncDetectorScalar();
         }

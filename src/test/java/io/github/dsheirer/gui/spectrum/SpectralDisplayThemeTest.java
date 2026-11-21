@@ -39,13 +39,23 @@ public class SpectralDisplayThemeTest
     }
 
     @Test
-    void classicPaletteMatchesTheOriginalWaterfall()
+    void classicPaletteUsesTheOriginalWaterfallColors()
     {
         int[] palette = WaterfallPalette.classic();
-        assertEquals(0xFF00007F, palette[0]);
-        assertEquals(0xFF0000BF, palette[16]);
-        assertEquals(0xFFFFFF00, palette[60]);
+        assertEquals(0xFF0000BF, palette[63]);
+        assertEquals(0xFFFFFF00, palette[100]);
         assertEquals(0xFFFF0000, palette[255]);
+    }
+
+    @Test
+    void classicPaletteHasDistinctColorsNearTheNoiseFloor()
+    {
+        int[] palette = WaterfallPalette.classic();
+
+        for(int index = 1; index < 64; index++)
+        {
+            assertTrue((palette[index] & 0xFF) > (palette[index - 1] & 0xFF), "index " + index);
+        }
     }
 
     @Test
@@ -68,5 +78,24 @@ public class SpectralDisplayThemeTest
     {
         SpectralDisplayTheme theme = SpectralDisplayTheme.CLASSIC;
         assertEquals(theme.getWaterfallColor(255), theme.getWaterfallColor((byte)255));
+    }
+
+    @Test
+    void channelMenuColorsAreReadableAndDistinct()
+    {
+        for(SpectralDisplayTheme theme: SpectralDisplayTheme.values())
+        {
+            javafx.scene.paint.Color background = theme.getBackground();
+            javafx.scene.paint.Color active = theme.getChannelActive();
+            javafx.scene.paint.Color inactive = theme.getChannelInactive();
+            javafx.scene.paint.Color text = theme.getText();
+
+            //Readable without the menu having to adjust them
+            assertTrue(ChannelMenus.contrast(active, background) >= 3.0, theme + " active contrast");
+            assertTrue(ChannelMenus.contrast(inactive, background) >= 3.0, theme + " inactive contrast");
+            assertTrue(ChannelMenus.contrast(text, background) >= 4.5, theme + " text contrast");
+            assertTrue(!active.equals(inactive) && !active.equals(text) && !inactive.equals(text),
+                theme + " colors differ");
+        }
     }
 }

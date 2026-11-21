@@ -39,11 +39,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JOptionPane;
 
 /**
  * Utility class for monitoring system components and producing logging reports.
@@ -155,7 +156,12 @@ public class DiagnosticMonitor
                                          "The application may degrade over time and eventually run out of memory.\n" +
                                          "A diagnostic report was generated.  Please open an issue on the GitHub\n" +
                                          "website and attach this diagnostic report:\n\n" + reportPath.toString();
-                        JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, message);
+                            alert.setTitle(title);
+                            alert.setHeaderText("Thread deadlock detected");
+                            alert.show();
+                        });
                     }
                 }
             }

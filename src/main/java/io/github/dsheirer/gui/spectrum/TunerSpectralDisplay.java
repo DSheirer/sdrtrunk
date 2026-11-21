@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.spectrum;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
+import io.github.dsheirer.gui.spectrum.layer.ChannelCardLayer;
 import io.github.dsheirer.gui.spectrum.layer.ChannelLayer;
 import io.github.dsheirer.gui.spectrum.layer.RadioReferenceLayer;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -104,8 +105,8 @@ public class TunerSpectralDisplay extends DftSpectralDisplay implements ISourceE
     private TunerSpectralDisplay(ChannelLayer channelLayer, RadioReferenceLayer radioReferenceLayer,
                                  DiscoveredTunerModel discoveredTunerModel, boolean saveSettings)
     {
-        //The radio reference layer draws after the channel layer, so its card is on top
-        super(SETTINGS_PREFIX, saveSettings, channelLayer, radioReferenceLayer);
+        //The channels card draws after the other layers, so it's on top
+        super(SETTINGS_PREFIX, saveSettings, channelLayer, radioReferenceLayer, new ChannelCardLayer());
         mChannelLayer = channelLayer;
         mRadioReferenceLayer = radioReferenceLayer;
         mDiscoveredTunerModel = discoveredTunerModel;

@@ -26,10 +26,14 @@ import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
+import io.github.dsheirer.identifier.alias.TalkerAliasTracker;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -144,6 +148,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     /**
      * Talker alias manager
      */
+    @Override
     public TalkerAliasManager getTalkerAliasManager()
     {
         return mTalkerAliasManager;
@@ -440,9 +445,11 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     }
 
     /**
-     * Adds or updates the talker alias for the tracked call event.
+     * Adds or updates the talker alias for the tracked call event, when the event is for the talker, or when the
+     * event's talker isn't identified yet.
      * @param channel for the call
      * @param talkerAlias to add or update
+     * @param radio that the alias belongs to, or null when the talker isn't identified yet
      * @param timestamp for the talker alias message
      */
     public void processTalkerAlias(IChannelDescriptor channel, NXDNTalkerAliasIdentifier talkerAlias,
@@ -457,11 +464,20 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
             if(tracker != null)
             {
-                tracker.addIdentifierIfMissing(talkerAlias);
-                broadcast(tracker);
+                Identifier eventRadio = tracker.getEvent().getIdentifierCollection()
+                        .getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
+
+                if(radio == null || eventRadio == null || TalkerAliasTracker.isSameRadio(radio, eventRadio))
+                {
+                    tracker.addIdentifierIfMissing(talkerAlias);
+                    broadcast(tracker);
+                }
             }
 
-            getTalkerAliasManager().update(radio, talkerAlias);
+            if(radio != null)
+            {
+                getTalkerAliasManager().update(radio, talkerAlias);
+            }
         }
         finally
         {
@@ -537,7 +553,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         {
             NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
             MutableIdentifierCollection ic = getMergedIdentifierCollection(identifiers);
-            mTalkerAliasManager.enrich(ic);
+            //Apply the stored talker alias for the radio (enrich() returns a copy, so update the collection in place)
+            mTalkerAliasManager.enrichMutable(ic);
             if(tracker != null)
             {
                 if(tracker.isSameCallCheckingToAndFrom(ic, timestamp))

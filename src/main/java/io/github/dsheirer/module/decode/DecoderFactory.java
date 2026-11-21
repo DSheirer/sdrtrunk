@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.alias.TalkerAliasAutoAdder;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.*;
 import io.github.dsheirer.audio.codec.mbe.JmbeAudioModule;
@@ -221,7 +222,35 @@ public class DecoderFactory
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
         }
 
+        configureTalkerAliasAutoAdd(channel, modules, aliasModel);
+
         return modules;
+    }
+
+    /**
+     * Configures the traffic channel manager of a standard (control) channel to automatically add talker aliases to
+     * the channel's alias list, when the channel is configured for it.  Traffic channels share the talker alias manager
+     * of their control channel, so they use the control channel's setting.
+     * @param channel configuration
+     * @param modules for the channel
+     * @param aliasModel to add aliases to
+     */
+    private static void configureTalkerAliasAutoAdd(Channel channel, List<Module> modules, AliasModel aliasModel)
+    {
+        if(channel.isStandardChannel() && channel.isAutoAddTalkerAliases() &&
+            channel.getDecodeConfiguration().getDecoderType().providesTalkerAlias() &&
+            channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
+        {
+            TalkerAliasAutoAdder autoAdder = new TalkerAliasAutoAdder(aliasModel, channel.getAliasListName());
+
+            for(Module module: modules)
+            {
+                if(module instanceof TrafficChannelManager tcm && tcm.getTalkerAliasManager() != null)
+                {
+                    tcm.getTalkerAliasManager().setTalkerAliasListener(autoAdder);
+                }
+            }
+        }
     }
 
     /**

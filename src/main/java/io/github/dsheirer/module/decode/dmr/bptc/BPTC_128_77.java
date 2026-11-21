@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.dmr.bptc;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Hamming16;
+import io.github.dsheirer.edac.ProductCodeDecoder;
 import io.github.dsheirer.edac.soft.SoftBlockCode;
 import io.github.dsheirer.edac.soft.SoftProductCodeDecoder;
 
@@ -39,10 +40,12 @@ public class BPTC_128_77 extends BPTCBase
     //require correcting high reliability bits are rejected to avoid false decodes.  Noise injection testing: all
     //soft decisions with a cost up to 3.0 were correct, whereas most of those with a higher cost were false decodes.
     private static final float SOFT_MAX_CORRECTION_COST = 3.0f;
-    //Maximum corrected bit count for a hard decision result.  Hard decisions that correct more bits are treated as
-    //uncorrectable to avoid false decodes, given the weak 5-bit checksum.  Noise injection testing: all hard
-    //decisions with more than 6 corrected bits were false decodes.
-    private static final int HARD_MAX_CORRECTED_BITS = 6;
+    //Maximum number of bit errors corrected by the hard decision minimum distance decoder.  The product code minimum
+    //distance of 8 guarantees correction of 3 bit errors.  Correcting more increases the miscorrection rate, and the
+    //embedded link control is only protected by a 5-bit checksum, with soft decision decoding only applied when hard
+    //decision decoding fails.  AWGN simulation of the hard + soft decoding sequence: a maximum of 5 decoded more
+    //messages than the previous hard decision decoder at each noise level, with 3-5x fewer false decodes.
+    private static final int HARD_MAXIMUM_ERRORS = 5;
     //Soft decision decoder for the Hamming(16,11,4) rows and even parity columns
     private static final SoftProductCodeDecoder SOFT_DECODER = new SoftProductCodeDecoder(
             SoftBlockCode.fromCodewordTest(COLUMN_COUNT, word -> Hamming16.getSyndrome(toMessage(word), 0) == 0),
@@ -68,16 +71,9 @@ public class BPTC_128_77 extends BPTCBase
 
     public BPTC_128_77()
     {
-        super(new Hamming16(), 16, 8);
-    }
-
-    /**
-     * Allow the base class to attempt to correct multiple rows of 2-bit errors each
-     */
-    @Override
-    protected boolean canCorrectMultiRow2BitErrors()
-    {
-        return true;
+        //No row erasure fallback, given the weak 5-bit checksum.  Recording testing: no messages were lost without it.
+        super(ProductCodeDecoder.getParityChecks(COLUMN_COUNT, message -> Hamming16.getSyndrome(message, 0)), ROW_COUNT,
+                HARD_MAXIMUM_ERRORS, 0);
     }
 
     /**
@@ -91,9 +87,8 @@ public class BPTC_128_77 extends BPTCBase
     }
 
     /**
-     * Performs error detection and correction and extracts the payload from the BPTC encoded message.  Hard decision
-     * results that exceed the maximum corrected bit count are treated as uncorrectable.  When the hard decision
-     * decoder can't correct the message and soft bits are provided, applies iterative soft decision decoding.
+     * Performs error detection and correction and extracts the payload from the BPTC encoded message.  When the hard
+     * decision decoder can't correct the message and soft bits are provided, applies iterative soft decision decoding.
      * @param message with BPTC encoding.
      * @param softBits for the 128 (interleaved) bits of the message where a positive value favors a 1 bit, or null.
      * @return decoded message.
@@ -102,11 +97,6 @@ public class BPTC_128_77 extends BPTCBase
     {
         CorrectedBinaryMessage deinterleaved = deinterleave(message);
         correct(deinterleaved);
-
-        if(deinterleaved.getCorrectedBitCount() > HARD_MAX_CORRECTED_BITS)
-        {
-            deinterleaved.setCorrectedBitCount(ERRORS_NOT_CORRECTED);
-        }
 
         if(softBits != null && softBits.length == LENGTH && deinterleaved.getCorrectedBitCount() < 0)
         {

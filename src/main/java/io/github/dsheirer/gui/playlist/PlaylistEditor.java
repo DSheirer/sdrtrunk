@@ -27,6 +27,7 @@ import io.github.dsheirer.gui.playlist.channel.ChannelEditor;
 import io.github.dsheirer.gui.playlist.channel.ChannelTabRequest;
 import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
+import io.github.dsheirer.gui.playlist.radioreference.ViewRadioReferenceRequest;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
@@ -36,7 +37,6 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -77,6 +77,7 @@ public class PlaylistEditor extends BorderPane
     private Tab mStreamingTab;
     private AliasEditor mAliasEditor;
     private ChannelEditor mChannelEditor;
+    private RadioReferenceEditor mRadioReferenceEditor;
 
     /**
      * Constructs an instance
@@ -121,6 +122,16 @@ public class PlaylistEditor extends BorderPane
                     getTabPane().getSelectionModel().select(getChannelsTab());
                     getChannelEditor().process((ChannelTabRequest)request);
                 }
+                break;
+            case RADIOREFERENCE:
+                if(request instanceof ViewRadioReferenceRequest viewRequest)
+                {
+                    getTabPane().getSelectionModel().select(getRadioReferenceTab());
+                    getRadioReferenceEditor().view(viewRequest);
+                }
+                break;
+            case STREAM:
+                getTabPane().getSelectionModel().select(getStreamingTab());
                 break;
             case PLAYLIST:
                 //Ignore - this is a request to simply show te playlist editor
@@ -173,7 +184,7 @@ public class PlaylistEditor extends BorderPane
             screenShot.setOnShown(event -> menuItem.fire());
             menuItem.setOnAction(event -> {
                 WritableImage image = getMenuBar().getScene().snapshot(null);
-                final BufferedImage bufferedImage = SwingFXUtils.fromFXImage(image, null);
+                final BufferedImage bufferedImage = io.github.dsheirer.gui.FxToolkit.toBufferedImage(image);
                 String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
                 final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
@@ -266,10 +277,20 @@ public class PlaylistEditor extends BorderPane
         if(mRadioReferenceTab == null)
         {
             mRadioReferenceTab = new Tab("Radio Reference");
-            mRadioReferenceTab.setContent(new RadioReferenceEditor(mUserPreferences, mPlaylistManager));
+            mRadioReferenceTab.setContent(getRadioReferenceEditor());
         }
 
         return mRadioReferenceTab;
+    }
+
+    private RadioReferenceEditor getRadioReferenceEditor()
+    {
+        if(mRadioReferenceEditor == null)
+        {
+            mRadioReferenceEditor = new RadioReferenceEditor(mUserPreferences, mPlaylistManager);
+        }
+
+        return mRadioReferenceEditor;
     }
 
     private Tab getStreamingTab()

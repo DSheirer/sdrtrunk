@@ -40,9 +40,21 @@ public class MapPreference extends Preference
      */
     public static final int DEFAULT_ZOOM = 7;
 
+    /**
+     * Range of OpenStreetMap tile zoom levels the map shows
+     */
+    public static final int MINIMUM_TILE_ZOOM = 2;
+    public static final int MAXIMUM_TILE_ZOOM = 19;
+    /**
+     * Tile zoom level plus the stored zoom level, for the original Swing map viewer's inverted zoom scale
+     */
+    private static final int TILE_ZOOM_OFFSET = 19;
     private static final String CENTER = "center";
     private static final String ZOOM = "zoom";
     private static final String SHOW_RADIO_REFERENCE_SITES = "show.radioreference.sites";
+    private static final String TILE_SERVER = "tile.server";
+    private static final String TILE_SERVER_KEY = "tile.server.key.";
+    private static final String TILE_STYLE = "tile.style";
     private final Preferences mPreferences = Preferences.userNodeForPackage(MapPreference.class);
 
     /**
@@ -146,6 +158,27 @@ public class MapPreference extends Preference
     }
 
     /**
+     * Last zoom level of the map as an OpenStreetMap tile zoom level, where 0 shows the whole world in one tile and
+     * higher levels are closer.  The stored zoom level uses the inverted scale of the original Swing map viewer,
+     * where the tile zoom level is {@link #TILE_ZOOM_OFFSET} minus the stored level, so existing views carry over.
+     * Can be called from any thread.
+     * @return tile zoom level, {@link #MINIMUM_TILE_ZOOM} to {@link #MAXIMUM_TILE_ZOOM}
+     */
+    public int getTileZoom()
+    {
+        return Math.clamp(TILE_ZOOM_OFFSET - getZoom(), MINIMUM_TILE_ZOOM, MAXIMUM_TILE_ZOOM);
+    }
+
+    /**
+     * Stores the zoom level of the map as an OpenStreetMap tile zoom level
+     * @param tileZoom level, clamped to {@link #MINIMUM_TILE_ZOOM} to {@link #MAXIMUM_TILE_ZOOM}
+     */
+    public void setTileZoom(int tileZoom)
+    {
+        setZoom(TILE_ZOOM_OFFSET - Math.clamp(tileZoom, MINIMUM_TILE_ZOOM, MAXIMUM_TILE_ZOOM));
+    }
+
+    /**
      * Indicates if the map shows the radio reference trunked system sites near the user
      */
     public boolean isShowRadioReferenceSites()
@@ -161,6 +194,82 @@ public class MapPreference extends Preference
         if(show != isShowRadioReferenceSites())
         {
             mPreferences.putBoolean(SHOW_RADIO_REFERENCE_SITES, show);
+            notifyPreferenceUpdated();
+        }
+    }
+
+    /**
+     * Identifier of the map tile server
+     * @return identifier, or null when none was chosen
+     */
+    public String getTileServer()
+    {
+        return mPreferences.get(TILE_SERVER, null);
+    }
+
+    /**
+     * Stores the identifier of the map tile server
+     */
+    public void setTileServer(String id)
+    {
+        if(id != null && !id.equals(getTileServer()))
+        {
+            mPreferences.put(TILE_SERVER, id);
+            notifyPreferenceUpdated();
+        }
+    }
+
+    /**
+     * Style of the map tiles: following the theme, light or dark
+     * @return style name, or null when none was chosen
+     */
+    public String getTileStyle()
+    {
+        return mPreferences.get(TILE_STYLE, null);
+    }
+
+    /**
+     * Stores the style of the map tiles
+     */
+    public void setTileStyle(String style)
+    {
+        if(style != null && !style.equals(getTileStyle()))
+        {
+            mPreferences.put(TILE_STYLE, style);
+            notifyPreferenceUpdated();
+        }
+    }
+
+    /**
+     * Key the user entered for a map tile server that needs one
+     * @param id of the tile server
+     * @return key, or null
+     */
+    public String getTileServerKey(String id)
+    {
+        return mPreferences.get(TILE_SERVER_KEY + id, null);
+    }
+
+    /**
+     * Stores the key for a map tile server, or removes it when it's blank
+     * @param id of the tile server
+     * @param key for the server, or null
+     */
+    public void setTileServerKey(String id, String key)
+    {
+        String value = key != null && !key.isBlank() ? key.strip() : null;
+
+        if(!Objects.equals(value, getTileServerKey(id)))
+        {
+            if(value != null)
+            {
+                mPreferences.put(TILE_SERVER_KEY + id, value);
+            }
+            else
+            {
+                mPreferences.remove(TILE_SERVER_KEY + id);
+            }
+
             notifyPreferenceUpdated();
         }
     }

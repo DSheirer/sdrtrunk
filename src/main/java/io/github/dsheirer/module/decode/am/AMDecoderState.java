@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.am;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -69,11 +70,7 @@ public class AMDecoderState extends AnalogDecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Activity Summary\n");
-        sb.append("\tDecoder: AM");
-        sb.append("\n\n");
-        return sb.toString();
+        return new ActivitySummary("AM").toString();
     }
 
 }

@@ -47,6 +47,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
+import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
@@ -137,6 +138,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
 
         discoverRecordingTuners();
+        discoverNetworkTuners();
     }
 
     /**
@@ -438,6 +440,33 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     }
 
     /**
+     * Discover network (e.g. rtl_tcp) based tuners
+     */
+    private void discoverNetworkTuners()
+    {
+        List<TunerConfiguration> tunerConfigurations = getTunerConfigurationManager().getTunerConfigurations(TunerType.RTL_TCP);
+
+        if(tunerConfigurations.size() > 0)
+        {
+            mLog.info("Discovered [" + tunerConfigurations.size() + "] network tuners");
+        }
+
+        for(TunerConfiguration tunerConfiguration: tunerConfigurations)
+        {
+            if(tunerConfiguration instanceof NetworkTunerConfiguration networkTunerConfiguration)
+            {
+                DiscoveredNetworkTuner discoveredNetworkTuner =
+                        new DiscoveredNetworkTuner(mUserPreferences, networkTunerConfiguration);
+
+                discoveredNetworkTuner.addTunerStatusListener(this);
+                discoveredNetworkTuner.setEnabled(false);
+                mLog.info("Tuner Added: " + discoveredNetworkTuner);
+                mDiscoveredTunerModel.addDiscoveredTuner(discoveredNetworkTuner);
+            }
+        }
+    }
+
+    /**
      * Handles tuner status change events.  Events are sent to the tuner configuration manager so that it can save
      * configuration updates and events are also monitored to detect when a user changes the tuner state of a tuner
      * so that we can auto-start the tuner and apply a tuner configuration.
@@ -626,6 +655,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
 
                         if(source != null)
                         {
+                            source.setTunerName(discoveredTuner.getTuner().getPreferredName());
                             return source;
                         }
                     }
@@ -651,6 +681,11 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                     {
                         source = discoveredTuner.getTuner().getChannelSourceManager().getSource(tunerChannel,
                                 channelSpecification, threadName);
+
+                        if(source != null)
+                        {
+                            source.setTunerName(discoveredTuner.getTuner().getPreferredName());
+                        }
                     }
                     catch(Exception e)
                     {

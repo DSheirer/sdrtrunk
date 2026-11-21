@@ -20,7 +20,7 @@
 package io.github.dsheirer.gui.playlist;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.gui.JavaFxWindowManager;
+import io.github.dsheirer.gui.WindowManager;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -41,7 +41,7 @@ public class PlaylistEditorApplication extends Application
     private TunerManager mTunerManager;
     private UserPreferences mUserPreferences = new UserPreferences();
     private PlaylistManager mPlaylistManager;
-    private JavaFxWindowManager mJavaFxWindowManager;
+    private WindowManager mWindowManager;
 
     public PlaylistEditorApplication()
     {
@@ -52,7 +52,7 @@ public class PlaylistEditorApplication extends Application
         mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
 
         mPlaylistManager.init();
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
+        mWindowManager = new WindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
     }
 
     @Override

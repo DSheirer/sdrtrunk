@@ -25,7 +25,7 @@ import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token.Point2d;
 import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token.Token;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 /**
  * Packet utility methods.

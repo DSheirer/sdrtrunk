@@ -29,7 +29,7 @@ import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 public class PlottableEntityHistory
 {
     private final TrackHistoryModel mTrackHistoryModel = new TrackHistoryModel();
-    private PlottableDecodeEvent mCurrentEvent;
+    private volatile PlottableDecodeEvent mCurrentEvent;
     private final Identifier mIdentifier;
 
     /**

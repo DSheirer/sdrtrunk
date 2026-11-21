@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.nbfm;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -178,49 +179,40 @@ public class NBFMDecoderState extends AnalogDecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Activity Summary - Decoder:NBFM\n");
+        ActivitySummary summary = new ActivitySummary("NBFM");
+        summary.section("Squelch Decoder");
+        summary.field("Status", mSquelchDecoderEnabled ? "Enabled" : "Disabled");
 
-        sb.append("\n\nSquelch Decoder: ");
-        if(mSquelchDecoderEnabled)
+        if(mSquelchDecoderEnabled && !mConfiguredSquelchDecoders.isEmpty())
         {
-            sb.append("ENABLED\n");
-            sb.append("Configured decoder: ");
-            if(!mConfiguredSquelchDecoders.isEmpty())
-            {
-                sb.append(mConfiguredSquelchDecoders.get(0).getDisplayString());
-            }
-            sb.append("\n");
-        }
-        else
-        {
-            sb.append("Disabled\n");
+            summary.field("Configured Decoder", mConfiguredSquelchDecoders.get(0).getDisplayString());
         }
 
         synchronized(mToneCounts)
         {
             if(!mToneCounts.isEmpty())
             {
-                sb.append("\nDetected codes:\n");
+                summary.section("Detected Codes");
+                ActivitySummary.Table table = summary.table("Code", "Status", "Count");
+
                 for(Map.Entry<String, int[]> entry : mToneCounts.entrySet())
                 {
-                    String status;
                     int accepted = entry.getValue()[0];
                     int rejected = entry.getValue()[1];
+
                     if(accepted > 0)
                     {
-                        status = accepted < Integer.MAX_VALUE ? "ALLOWED (" + accepted + ")" : "ALLOWED (>Max value)";
+                        table.row(entry.getKey(), "Allowed", accepted < Integer.MAX_VALUE ? accepted : ">Max value");
                     }
                     else
                     {
-                        status = rejected < Integer.MAX_VALUE ? "REJECTED (" + rejected + ")" : "REJECTED (>Max value)";
+                        table.row(entry.getKey(), "Rejected", rejected < Integer.MAX_VALUE ? rejected : ">Max value");
                     }
-                    sb.append("\t").append(entry.getKey()).append(" - ").append(status).append("\n");
                 }
             }
         }
-        sb.append("\n");
-        return sb.toString();
+
+        return summary.toString();
     }
 
     /**

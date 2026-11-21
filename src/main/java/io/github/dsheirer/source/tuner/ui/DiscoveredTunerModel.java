@@ -28,8 +28,6 @@ import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner2;
-import java.awt.EventQueue;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,29 +37,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.table.AbstractTableModel;
-
 /**
  * Model for discovered tuners
  */
-public class DiscoveredTunerModel extends AbstractTableModel implements Listener<TunerEvent>,
+public class DiscoveredTunerModel implements Listener<TunerEvent>,
         IDiscoveredTunerStatusListener
 {
-    private static final long serialVersionUID = 1L;
     private static final Logger mLog = LoggerFactory.getLogger(DiscoveredTunerModel.class);
 
-    //Model columns
-    public static final int COLUMN_TUNER_STATUS = 0;
-    public static final int COLUMN_TUNER_CLASS = 1;
-    public static final int COLUMN_TUNER_TYPE = 2;
-    public static final int COLUMN_FREQUENCY = 3;
-    public static final int COLUMN_CHANNEL_COUNT = 4;
-    private static final String MHZ = " MHz";
-    private static final String[] COLUMN_HEADERS = {"Status","Class", "Type", "Frequency", "Channels"};
 
     private List<DiscoveredTuner> mDiscoveredTuners = new CopyOnWriteArrayList<>();
     private List<Listener<TunerEvent>> mTunerEventListeners = new ArrayList<>();
-    private DecimalFormat mFrequencyFormat = new DecimalFormat("0.00000");
+    private List<ModelListener> mModelListeners = new CopyOnWriteArrayList<>();
     private Lock mLock = new ReentrantLock();
     private TunerConfigurationManager mTunerConfigurationManager;
 
@@ -177,8 +164,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
             if(!mDiscoveredTuners.contains(discoveredTuner))
             {
                 mDiscoveredTuners.add(discoveredTuner);
-                int index = mDiscoveredTuners.indexOf(discoveredTuner);
-                EventQueue.invokeLater(() -> fireTableRowsInserted(index, index));
+                notifyAdded(discoveredTuner);
                 if(discoveredTuner.hasTuner())
                 {
                     discoveredTuner.getTuner().addTunerEventListener(this);
@@ -204,7 +190,11 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         try
         {
             mDiscoveredTuners.clear();
-            fireTableDataChanged();
+
+            for(DiscoveredTuner discoveredTuner: discoveredTuners)
+            {
+                notifyRemoved(discoveredTuner);
+            }
         }
         finally
         {
@@ -230,34 +220,8 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         {
             if(mDiscoveredTuners.contains(discoveredTuner))
             {
-                int index = mDiscoveredTuners.indexOf(discoveredTuner);
                 mDiscoveredTuners.remove(discoveredTuner);
-
-                if(EventQueue.isDispatchThread())
-                {
-                    try
-                    {
-                        fireTableRowsDeleted(index, index);
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.info("Exception firing table rows deleted for index [" + index + "] on calling event dispatch thread", e);
-                    }
-                }
-                else
-                {
-                    EventQueue.invokeLater(() ->
-                    {
-                        try
-                        {
-                            fireTableRowsDeleted(index, index);
-                        }
-                        catch(Exception e)
-                        {
-                            mLog.info("Exception firing table rows deleted for index [" + index + "]", e);
-                        }
-                    });
-                }
+                notifyRemoved(discoveredTuner);
                 discoveredTuner.stop();
             }
         }
@@ -366,14 +330,12 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         if(current == TunerStatus.ENABLED && discoveredTuner.hasTuner())
         {
             discoveredTuner.getTuner().addTunerEventListener(this);
-            int row = mDiscoveredTuners.indexOf(discoveredTuner);
-            EventQueue.invokeLater(() -> fireTableRowsUpdated(row, row));
+            notifyUpdated(discoveredTuner);
             return;
         }
-        else if(current == TunerStatus.DISABLED)
+        else if(current == TunerStatus.DISABLED || current == TunerStatus.ERROR)
         {
-            int row = mDiscoveredTuners.indexOf(discoveredTuner);
-            EventQueue.invokeLater(() -> fireTableRowsUpdated(row, row));
+            notifyUpdated(discoveredTuner);
             return;
         }
 
@@ -429,20 +391,17 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
             try
             {
                 DiscoveredTuner matchingTuner = getDiscoveredTuner(event.getTuner());
-                int index = mDiscoveredTuners.indexOf(matchingTuner);
 
-                if(index >= 0)
+                if(matchingTuner != null)
                 {
                     switch(event.getEvent())
                     {
                         case UPDATE_CHANNEL_COUNT:
-                            EventQueue.invokeLater(() -> fireTableCellUpdated(index, COLUMN_CHANNEL_COUNT));
-                            break;
                         case UPDATE_FREQUENCY:
-                            EventQueue.invokeLater(() -> fireTableCellUpdated(index, COLUMN_FREQUENCY));
-                            break;
+                        case UPDATE_LOCK_STATE:
+                        case UPDATE_SAMPLE_RATE:
                         case NOTIFICATION_ERROR_STATE:
-                            EventQueue.invokeLater(() -> fireTableRowsUpdated(index, index));
+                            notifyUpdated(matchingTuner);
                             break;
                         case UPDATE_FREQUENCY_ERROR:
                             if(mTunerConfigurationManager != null)
@@ -468,77 +427,77 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         broadcast(event);
     }
 
-    @Override
-    public int getRowCount()
+
+    /**
+     * Snapshot of the discovered tuners.
+     */
+    public List<DiscoveredTuner> getDiscoveredTuners()
     {
-        return mDiscoveredTuners.size();
-    }
-
-    @Override
-    public int getColumnCount()
-    {
-        return COLUMN_HEADERS.length;
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex)
-    {
-        if(rowIndex < mDiscoveredTuners.size())
-        {
-            DiscoveredTuner discoveredTuner = mDiscoveredTuners.get(rowIndex);
-
-            switch(columnIndex)
-            {
-                case COLUMN_TUNER_STATUS:
-                    return discoveredTuner.getTunerStatus();
-                case COLUMN_TUNER_CLASS:
-                    return discoveredTuner.getTunerClass().toString();
-                case COLUMN_TUNER_TYPE:
-                    if(discoveredTuner.hasTuner())
-                    {
-                        return discoveredTuner.getTuner().getTunerType().getLabel();
-                    }
-                    else
-                    {
-                        return "";
-                    }
-                case COLUMN_FREQUENCY:
-                    if(discoveredTuner.hasTuner())
-                    {
-                        long frequency = discoveredTuner.getTuner().getTunerController().getFrequency();
-                        return mFrequencyFormat.format(frequency / 1E6D) + MHZ;
-                    }
-                    else
-                    {
-                        return "";
-                    }
-                case COLUMN_CHANNEL_COUNT:
-                    if(discoveredTuner.hasTuner())
-                    {
-                        int channelCount = discoveredTuner.getTuner().getChannelSourceManager().getTunerChannelCount();
-                        return channelCount + " (" + (discoveredTuner.getTuner().getTunerController().isLockedSampleRate() ? "LOCKED)" : "UNLOCKED)");
-                    }
-                    else
-                    {
-                        return "";
-                    }
-                default:
-                    break;
-            }
-        }
-
-        return null;
-    }
-
-    @Override
-    public String getColumnName(int columnIndex)
-    {
-        return COLUMN_HEADERS[columnIndex];
+        return new ArrayList<>(mDiscoveredTuners);
     }
 
     /**
-     * Generates a diagnostic report for all discovered tuners.
+     * Adds a listener for tuners added to, removed from or updated in the model.  Listeners are invoked on the
+     * calling thread, which can be any thread.
      */
+    public void addModelListener(ModelListener listener)
+    {
+        mModelListeners.add(listener);
+    }
+
+    /**
+     * Removes the model listener
+     */
+    public void removeModelListener(ModelListener listener)
+    {
+        mModelListeners.remove(listener);
+    }
+
+    private void notifyAdded(DiscoveredTuner discoveredTuner)
+    {
+        for(ModelListener listener: mModelListeners)
+        {
+            listener.tunerAdded(discoveredTuner);
+        }
+    }
+
+    private void notifyRemoved(DiscoveredTuner discoveredTuner)
+    {
+        for(ModelListener listener: mModelListeners)
+        {
+            listener.tunerRemoved(discoveredTuner);
+        }
+    }
+
+    private void notifyUpdated(DiscoveredTuner discoveredTuner)
+    {
+        for(ModelListener listener: mModelListeners)
+        {
+            listener.tunerUpdated(discoveredTuner);
+        }
+    }
+
+    /**
+     * Listener for changes to the discovered tuners in the model.
+     */
+    public interface ModelListener
+    {
+        /**
+         * A tuner was added to the model
+         */
+        void tunerAdded(DiscoveredTuner discoveredTuner);
+
+        /**
+         * A tuner was removed from the model
+         */
+        void tunerRemoved(DiscoveredTuner discoveredTuner);
+
+        /**
+         * A tuner's status, frequency, sample rate, channel count or lock state changed
+         */
+        void tunerUpdated(DiscoveredTuner discoveredTuner);
+    }
+
     public String getDiagnosticReport()
     {
         StringBuilder sb = new StringBuilder();

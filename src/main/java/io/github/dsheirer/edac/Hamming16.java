@@ -47,13 +47,6 @@ public class Hamming16 implements IHamming
             return NO_ERRORS;
         }
 
-        //If the syndrome indicates the error is in the final parity bit position, and we already have odd parity, then
-        //flag it as invalid for multiple errors.
-        if(syndrome == 1 && message.getSubMessage(offset, offset + 16).cardinality() % 2 == 1) //check final parity bit
-        {
-            return MULTIPLE_ERRORS;
-        }
-
         for(int index = 0; index < CHECKSUMS.length; index++)
         {
             if(syndrome == CHECKSUMS[index])

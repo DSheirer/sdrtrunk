@@ -65,7 +65,7 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
         SpectralDisplayModel model = getSpectralDisplay().getModel();
         getSpectralDisplay().messageProperty().set(MESSAGE_NO_CHANNEL);
 
-        //Noise floor slider along the right edge, below the configuration panel tab
+        //Noise floor slider for the spectrum
         mNoiseFloorSlider = new EdgeSlider("Floor", "Noise floor: moves the bottom of the spectrum's dB range.  " +
                 "Higher settings show a deeper range and move the noise floor up the display.",
                 MINIMUM_SAMPLE_SIZE, MAXIMUM_SAMPLE_SIZE, 1, this::formatPlotBottom);
@@ -82,9 +82,10 @@ public class ChannelSpectralDisplay extends DftSpectralDisplay
         model.binCountProperty().addListener((ob, ov, nv) -> mNoiseFloorSlider.refreshLabel());
         model.noiseBandwidthProperty().addListener((ob, ov, nv) -> mNoiseFloorSlider.refreshLabel());
         mNoiseFloorSlider.refreshLabel();
+        //Along the right edge of the spectrum section, below the configuration panel tab
         StackPane.setAlignment(mNoiseFloorSlider, Pos.CENTER_RIGHT);
         StackPane.setMargin(mNoiseFloorSlider, new Insets(44, 0, 8, 0));
-        getChildren().add(mNoiseFloorSlider);
+        getSpectralDisplay().addSectionOverlay(DisplaySection.SPECTRUM, mNoiseFloorSlider);
 
         installConfigPanel();
     }

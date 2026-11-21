@@ -41,11 +41,11 @@ public abstract class AmbeAudioModule extends JmbeAudioModule
         {
             if(getAudioCodec() != null)
             {
-                mLog.info("AMBE CODEC successfully loaded - P25-2/DMR/NXDN audio will be available");
+                mLog.info("AMBE CODEC successfully loaded - P25-2/DMR/NXDN audio can be processed");
             }
             else
             {
-                mLog.warn("AMBE CODEC not loaded - P25-2/DMR/NXDN audio will NOT be available");
+                mLog.warn("AMBE CODEC not loaded - P25-2/DMR/NXDN audio will NOT be processed");
             }
 
             sLibraryStatusLogged = true;

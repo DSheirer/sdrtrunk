@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.event;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.protocol.Protocol;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 public class PlottableDecodeEvent extends DecodeEvent
 {

@@ -151,6 +151,16 @@ public class LimeSdrTunerController extends TunerController
         setUsableBandwidthPercentage(USABLE_BANDWIDTH_PERCENT);
     }
 
+    /**
+     * Disables the generic sample drop monitor since dropped samples are counted exactly from the hardware sample
+     * timestamps (see countDroppedSamples()).
+     */
+    @Override
+    protected boolean isSampleDropMonitorSupported()
+    {
+        return false;
+    }
+
     @Override
     public TunerType getTunerType()
     {

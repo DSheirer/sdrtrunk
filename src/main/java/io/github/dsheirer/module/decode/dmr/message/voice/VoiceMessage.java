@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jmbe.frame.CorrectedAMBEFrame;
 
 /**
  * Base DMR Voice Message
@@ -41,6 +42,7 @@ public abstract class VoiceMessage extends DMRBurst
     public static int[] FRAME_2_IV_FRAGMENT = new int[]{215, 211, 207, 203};
     public static int[] FRAME_3_IV_FRAGMENT = new int[]{287, 283, 279, 275};
     private Boolean mValid;
+    private List<CorrectedAMBEFrame> mCorrectedAMBEFrames;
 
     /**
      * DMR message frame.  This message comprises a 24-bit prefix and a 264-bit message frame.  Outbound base
@@ -90,6 +92,27 @@ public abstract class VoiceMessage extends DMRBurst
         frames.add(frame_2);
         frames.add(frame_3);
         return frames;
+    }
+
+    /**
+     * Error corrected versions of the three AMBE voice frames from getAMBEFrames(), in the same order.  The frames are
+     * error corrected once and cached.
+     */
+    public synchronized List<CorrectedAMBEFrame> getCorrectedAMBEFrames()
+    {
+        if(mCorrectedAMBEFrames == null)
+        {
+            List<CorrectedAMBEFrame> corrected = new ArrayList<>();
+
+            for(byte[] frame: getAMBEFrames())
+            {
+                corrected.add(CorrectedAMBEFrame.correct(frame));
+            }
+
+            mCorrectedAMBEFrames = corrected;
+        }
+
+        return mCorrectedAMBEFrames;
     }
 
     /**

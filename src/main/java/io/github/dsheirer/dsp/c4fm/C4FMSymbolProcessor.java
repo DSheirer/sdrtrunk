@@ -272,6 +272,26 @@ public abstract class C4FMSymbolProcessor
     }
 
     /**
+     * Number of symbols without a sync detection after which syncInactivityTimeout() is invoked.  Default is zero,
+     * which disables the timeout.
+     * @return timeout as a count of symbols, or zero to disable.
+     */
+    protected int getSyncInactivityTimeoutSymbolCount()
+    {
+        return 0;
+    }
+
+    /**
+     * Notification that no sync was detected for the sync inactivity timeout period (see
+     * getSyncInactivityTimeoutSymbolCount()).  Invoked once per period of inactivity.  Subclasses can override this to
+     * reset protocol specific state that was learned from the signal.  Default implementation is a no-op.
+     */
+    protected void syncInactivityTimeout()
+    {
+        //No-op default implementation
+    }
+
+    /**
      * Number of consecutive sync periods (capped at 3) where a sync was detected within the max message length.
      */
     protected int getConsecutiveSyncPeriods()
@@ -405,6 +425,11 @@ public abstract class C4FMSymbolProcessor
                     }
 
                     symbolsSinceLastSync++;
+
+                    if(symbolsSinceLastSync == getSyncInactivityTimeoutSymbolCount())
+                    {
+                        syncInactivityTimeout();
+                    }
 
                     //Clear synchronized state when we miss a sync period.
                     if(mSynchronized && symbolsSinceLastSync > getMaxMessageDibitLength())

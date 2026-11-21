@@ -20,24 +20,27 @@
 package io.github.dsheirer.gui.spectrum.layer;
 
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.playlist.radioreference.ViewRadioReferenceRequest;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.service.radioreference.SiteRecord;
-import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import java.util.HashSet;
 import java.util.Set;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import io.github.dsheirer.gui.spectrum.ChannelCardEntry;
+import io.github.dsheirer.gui.spectrum.ChannelMenus;
+import io.github.dsheirer.gui.spectrum.ChannelMenus.State;
 import io.github.dsheirer.gui.spectrum.ConfigurationRow;
-import io.github.dsheirer.gui.spectrum.CursorReadout;
 import io.github.dsheirer.gui.spectrum.DisplayCursor;
 import io.github.dsheirer.gui.spectrum.DisplaySection;
 import io.github.dsheirer.gui.spectrum.RenderArea;
 import io.github.dsheirer.gui.spectrum.SpectralDisplayLayer;
 import io.github.dsheirer.gui.spectrum.SpectralDisplayModel;
-import io.github.dsheirer.gui.spectrum.SpectralDisplayTheme;
 import io.github.dsheirer.service.radioreference.DistanceFormat;
 import io.github.dsheirer.service.radioreference.FrequencyCandidate;
 import io.github.dsheirer.service.radioreference.RadioReferenceFrequencyIndex;
@@ -45,76 +48,37 @@ import io.github.dsheirer.service.radioreference.RadioReferenceFrequencyIndex.Ra
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import javafx.animation.PauseTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.geometry.VPos;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
-import javafx.util.Duration;
 
 /**
- * Radio reference candidates layer.  When the mouse rests over the spectrum or the waterfall, shows a card next to the
- * mouse with the radio reference frequencies near the frequency under the mouse, nearest to the user's location first.
+ * Radio reference candidates layer.  Lists the radio reference frequencies near the frequency under the mouse,
+ * nearest to the user's location first, in the Channels hover card (drawn by {@link ChannelCardLayer}) and the
+ * Channels context menu.  A candidate that a playlist channel already decodes is listed as that channel.
  *
  * The candidates come from the radio reference frequency index, which needs a premium account and the user's location.
  * Looking up a frequency doesn't call the web service.
  */
 public class RadioReferenceLayer extends SpectralDisplayLayer
 {
-    private static final Duration HOVER_DELAY = Duration.millis(400);
-    private static final Font FONT = Font.font(11);
-    private static final Font TITLE_FONT = Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, 11);
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private static final long MIN_TOLERANCE_HZ = 3_000;
     private static final double TOLERANCE_PIXELS = 3.0;
     private static final int MAX_CANDIDATES = 6;
-    private static final double MAX_TEXT_WIDTH = 380;
-    private static final double PADDING = 6;
-    private static final double GAP = 5;
-    //Space beside the text and below the readout lines, as in the cursor readout, so the readout lines stay in place
-    private static final double PADDING_X = 4;
-    //Space kept between the card and the edges of the section
-    private static final double EDGE_MARGIN = 2;
-    private static final double READOUT_PADDING = 2;
-    private static final String HEADER = "Radio Reference";
 
     private final RadioReferenceFrequencyIndex mIndex;
     private final RadioReferencePlaylistActions mActions;
     private final BooleanProperty mHoverCandidates = new SimpleBooleanProperty(true);
-    private final Text mMeasure = new Text();
-    private final double mTextHeight;
-    private PauseTransition mHoverTimer;
-    private DisplaySection mHoverSection;
-    private double mHoverX = Double.NaN;
-    private double mHoverY = Double.NaN;
-    private boolean mHoverReady;
     private long mResultsFrequency = Long.MIN_VALUE;
     private long mResultsTolerance;
     private List<RankedCandidate> mResults = Collections.emptyList();
-    private Card mCard;
-
-    /**
-     * Candidate text of the card, measured once per lookup
-     * @param entries lines of each candidate: the title, then the details
-     * @param more line, or null
-     * @param textWidth of the widest line
-     * @param lineCount of the header, candidate and more lines
-     * @param maxTextWidth that the lines were shortened to
-     * @param maxHeight that the card was limited to
-     * @param readoutLines that the card was sized for
-     */
-    private record Card(List<List<String>> entries, String more, double textWidth, int lineCount,
-                        double maxTextWidth, double maxHeight, int readoutLines)
-    {
-    }
+    private List<RankedCandidate> mCardCandidates;
+    private List<ChannelCardEntry> mCardEntries = Collections.emptyList();
+    private long mCardEntriesTime;
 
     /**
      * Constructs an instance.
@@ -125,9 +89,6 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
     {
         mIndex = index;
         mActions = actions;
-        mMeasure.setFont(FONT);
-        mMeasure.setText("Ag");
-        mTextHeight = Math.ceil(mMeasure.getLayoutBounds().getHeight());
         mHoverCandidates.addListener((ob, ov, nv) -> requestRender());
     }
 
@@ -145,15 +106,6 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
         if(mIndex != null)
         {
             mIndex.start();
-        }
-    }
-
-    @Override
-    public void dispose()
-    {
-        if(mHoverTimer != null)
-        {
-            mHoverTimer.stop();
         }
     }
 
@@ -181,10 +133,17 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
         return List.of(hover, new ConfigurationRow("Nearby", status));
     }
 
+    @Override
+    public String getContextMenuSection()
+    {
+        return ChannelMenus.SECTION;
+    }
+
     /**
-     * Context menu items for the candidates at the frequency, in the card's order: add a candidate to the playlist and
-     * start it, or enable or disable the playlist channel that already decodes it.  One item per site, and per
-     * frequency and protocol, so an item never adds a duplicate channel.
+     * Channel entries for the candidates at the frequency, in the card's order.  A candidate that a playlist channel
+     * already decodes is listed as that playlist channel, otherwise as a candidate to add to the playlist (and
+     * start).  Both can be viewed in the playlist editor's Radio Reference tab (View in Radio Reference).  One entry per site, since the site's
+     * frequencies share its channel.  Adding never duplicates a playlist channel.
      */
     @Override
     public List<MenuItem> getContextMenuItems(DisplaySection section, long frequency)
@@ -219,139 +178,121 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
 
                 if(site != null && offered.add(key))
                 {
-                    addSiteItem(items, site, candidate, frequency);
+                    items.add(createSiteEntry(site, ranked));
                 }
             }
-            else
+            else if(offered.add("frequency:" + candidate.frequencyHz() + ":" + candidate.title() + ":" +
+                candidate.source()))
             {
-                DecoderType decoderType = RadioReferencePlaylistActions.getDecoderType(candidate);
-                Set<DecoderType> family = RadioReferencePlaylistActions.getProtocolFamily(decoderType);
-                String protocol = family.isEmpty() ? String.valueOf(candidate.mode()) : family.iterator().next().name();
-
-                if(offered.add("frequency:" + candidate.frequencyHz() + ":" + protocol))
-                {
-                    addConventionalItem(items, candidate, decoderType, frequency);
-                }
+                items.add(createConventionalEntry(ranked, RadioReferencePlaylistActions.getDecoderType(candidate)));
             }
         }
 
-        if(!items.isEmpty())
-        {
-            MenuItem header = new MenuItem("Radio Reference");
-            header.setDisable(true);
-            items.add(0, header);
-        }
-
+        //Playlist channels first, then the candidates, each in the card's order
+        items.sort(Comparator.comparing(item -> item.getUserData() == null));
         return items;
     }
 
-    private void addSiteItem(List<MenuItem> items, SiteRecord site, FrequencyCandidate candidate, long frequency)
+    /**
+     * Entry for a trunked system site, or for the candidate's repeater of a repeater site (LTR)
+     */
+    private Menu createSiteEntry(SiteRecord site, RankedCandidate ranked)
     {
-        String label = site.systemName() + " \u00B7 Site " + site.siteNumber() +
-            (site.description() != null ? " " + site.description() : "");
+        FrequencyCandidate candidate = ranked.candidate();
+        boolean repeater = RadioReferencePlaylistActions.isRepeaterSite(site);
+        ViewRadioReferenceRequest view = ViewRadioReferenceRequest.site(site.systemId(), site.siteId());
         String unsupported = RadioReferencePlaylistActions.getUnsupportedReason(site);
+        Channel existing = unsupported != null ? null : repeater ? mActions.findChannel(List.of(candidate.frequencyHz()),
+            RadioReferencePlaylistActions.getSiteDecoderTypes(site)) : mActions.findSiteChannel(site);
+
+        if(existing != null)
+        {
+            return createPlaylistEntry(existing, view);
+        }
+
+        String title = site.systemName() + " \u00B7 Site " + site.siteNumber() +
+            (site.description() != null ? " " + site.description() : "");
+
+        if(repeater)
+        {
+            title += site.channels().stream().filter(channel -> channel.frequencyHz() == candidate.frequencyHz() &&
+                channel.logicalChannelNumber() > 0).map(channel -> " LCN " + channel.logicalChannelNumber())
+                .findFirst().orElse("");
+        }
+
+        Menu menu = ChannelMenus.createEntry(title, describe(ranked), State.CANDIDATE, null);
 
         if(unsupported != null)
         {
-            MenuItem item = new MenuItem(label + " \u2013 " + unsupported);
-            item.setDisable(true);
-            items.add(item);
-            return;
+            menu.getItems().add(ChannelMenus.createNote(unsupported));
         }
-
-        if(RadioReferencePlaylistActions.isRepeaterSite(site))
+        else if(repeater)
         {
-            addRepeaterItem(items, site, candidate.frequencyHz(), label, frequency);
-            return;
-        }
-
-        Channel existing = mActions.findSiteChannel(site);
-
-        if(existing != null)
-        {
-            //The channel layer offers the channels at the clicked frequency
-            if(!covers(existing, frequency))
-            {
-                items.add(createEnableItem(existing));
-            }
+            menu.getItems().addAll(
+                ChannelMenus.createItem("Add to Playlist and Start", State.CANDIDATE,
+                    () -> mActions.addRepeater(site, candidate.frequencyHz(), true, this::showError)),
+                ChannelMenus.createItem("Add to Playlist", State.CANDIDATE,
+                    () -> mActions.addRepeater(site, candidate.frequencyHz(), false, this::showError)));
         }
         else
         {
-            MenuItem item = new MenuItem("Add and Start: " + label);
-            //Start on the right-clicked frequency when it's a control or alternate control channel
-            item.setOnAction(event -> mActions.addSite(site, candidate.frequencyHz(), this::showError));
-            items.add(item);
+            //Start on the candidate frequency when it's a control or alternate control channel
+            menu.getItems().addAll(
+                ChannelMenus.createItem("Add to Playlist and Start", State.CANDIDATE,
+                    () -> mActions.addSite(site, candidate.frequencyHz(), true, this::showError)),
+                ChannelMenus.createItem("Add to Playlist", State.CANDIDATE,
+                    () -> mActions.addSite(site, candidate.frequencyHz(), false, this::showError)));
         }
+
+        addViewItem(menu, State.CANDIDATE, view);
+        return menu;
     }
 
     /**
-     * Menu item for one repeater of a repeater site (LTR): add and start it, or enable or disable its channel
+     * Entry for a conventional frequency
      */
-    private void addRepeaterItem(List<MenuItem> items, SiteRecord site, long repeaterFrequency, String label,
-                                 long frequency)
+    private Menu createConventionalEntry(RankedCandidate ranked, DecoderType decoderType)
     {
-        Channel existing = mActions.findChannel(List.of(repeaterFrequency),
-            RadioReferencePlaylistActions.getSiteDecoderTypes(site));
+        FrequencyCandidate candidate = ranked.candidate();
+        String sourceKey = mIndex.getSourceKey(candidate);
+        ViewRadioReferenceRequest view = sourceKey != null ?
+            ViewRadioReferenceRequest.frequency(sourceKey, candidate) : null;
+        Channel existing = decoderType != null ? mActions.findConventionalChannel(candidate) : null;
 
         if(existing != null)
         {
-            if(!covers(existing, frequency))
-            {
-                items.add(createEnableItem(existing));
-            }
-
-            return;
+            return createPlaylistEntry(existing, view);
         }
 
-        String lcn = site.channels().stream().filter(channel -> channel.frequencyHz() == repeaterFrequency &&
-            channel.logicalChannelNumber() > 0).map(channel -> " LCN " + channel.logicalChannelNumber())
-            .findFirst().orElse("");
-        MenuItem item = new MenuItem("Add and Start: " + label + lcn + " (" +
-            FREQUENCY_FORMAT.format(repeaterFrequency / 1E6) + " MHz)");
-        item.setOnAction(event -> mActions.addRepeater(site, repeaterFrequency, this::showError));
-        items.add(item);
-    }
-
-    private void addConventionalItem(List<MenuItem> items, FrequencyCandidate candidate, DecoderType decoderType,
-                                     long frequency)
-    {
-        String label = candidate.title() + " (" + FREQUENCY_FORMAT.format(candidate.frequencyHz() / 1E6) + " MHz" +
-            (candidate.mode() != null ? " " + candidate.mode() : "") + ")";
+        Menu menu = ChannelMenus.createEntry(candidate.title() != null ? candidate.title() : "(untitled)",
+            describe(ranked), State.CANDIDATE, null);
 
         if(decoderType == null)
         {
-            MenuItem item = new MenuItem(label + " \u2013 mode isn't supported");
-            item.setDisable(true);
-            items.add(item);
-            return;
-        }
-
-        Channel existing = mActions.findConventionalChannel(candidate);
-
-        if(existing != null)
-        {
-            if(!covers(existing, frequency))
-            {
-                items.add(createEnableItem(existing));
-            }
+            menu.getItems().add(ChannelMenus.createNote("Mode isn't supported"));
         }
         else
         {
-            MenuItem item = new MenuItem("Add and Start: " + label);
-            item.setOnAction(event -> mActions.addConventional(candidate, this::showError));
-            items.add(item);
+            menu.getItems().addAll(
+                ChannelMenus.createItem("Add to Playlist and Start", State.CANDIDATE,
+                    () -> mActions.addConventional(candidate, true, this::showError)),
+                ChannelMenus.createItem("Add to Playlist", State.CANDIDATE,
+                    () -> mActions.addConventional(candidate, false, this::showError)));
         }
+
+        addViewItem(menu, State.CANDIDATE, view);
+        return menu;
     }
 
     /**
-     * Menu item that enables the playlist channel when it's disabled, or disables it when it's enabled
+     * Entry for the playlist channel that decodes a candidate: enable or disable it, view or edit it, and view the
+     * candidate in the Radio Reference tab
+     * @param view request for the candidate, or null when its listing isn't known
      */
-    private MenuItem createEnableItem(Channel channel)
+    private Menu createPlaylistEntry(Channel channel, ViewRadioReferenceRequest view)
     {
-        boolean processing = channel.isProcessing();
-        MenuItem item = new MenuItem((processing ? "Disable: " : "Enable: ") + channel.getShortTitle());
-        item.setOnAction(event -> {
-            if(processing)
+        Runnable toggle = channel.isTrafficChannel() ? null : () -> {
+            if(channel.isProcessing())
             {
                 mActions.disable(channel, this::showError);
             }
@@ -359,25 +300,22 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
             {
                 mActions.enable(channel, this::showError);
             }
-        });
-        return item;
+        };
+        Menu menu = ChannelMenus.createChannelEntry(channel, null, toggle);
+        addViewItem(menu, channel.isProcessing() ? State.ENABLED : State.DISABLED, view);
+        return menu;
     }
 
     /**
-     * Indicates if one of the channel's tuner channels includes the frequency
+     * Adds the item that shows the candidate in the playlist editor's Radio Reference tab
+     * @param request to show the candidate, or null when the candidate's listing isn't known
      */
-    private static boolean covers(Channel channel, long frequency)
+    private static void addViewItem(Menu menu, State state, ViewRadioReferenceRequest request)
     {
-        for(TunerChannel tunerChannel: channel.getTunerChannels())
-        {
-            if(tunerChannel != null && tunerChannel.getMinFrequency() <= frequency &&
-                frequency <= tunerChannel.getMaxFrequency())
-            {
-                return true;
-            }
-        }
-
-        return false;
+        MenuItem view = ChannelMenus.createItem("View in Radio Reference", state,
+            () -> MyEventBus.getGlobalEventBus().post(request));
+        view.setDisable(request == null);
+        menu.getItems().addAll(ChannelMenus.createSeparator(), view);
     }
 
     /**
@@ -399,49 +337,88 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
         });
     }
 
-    @Override
-    public void renderSpectrumForeground(GraphicsContext gc, RenderArea area)
-    {
-        render(gc, area, DisplaySection.SPECTRUM);
-    }
-
-    @Override
-    public void renderWaterfall(GraphicsContext gc, RenderArea area)
-    {
-        render(gc, area, DisplaySection.WATERFALL);
-    }
-
     /**
-     * Draws the card in the section under the mouse once the mouse has rested for the hover delay
-     */
-    private void render(GraphicsContext gc, RenderArea area, DisplaySection section)
-    {
-        DisplayCursor cursor = getSpectralDisplay() != null ? getSpectralDisplay().getDisplayCursor() : null;
-        trackHover(cursor);
-
-        if(cursor != null && cursor.section() == section && replacesCursorReadout(cursor, area))
-        {
-            drawCard(gc, area, cursor, getCandidates(cursor.frequency(), getTolerance(getModel(), area)));
-        }
-    }
-
-    /**
-     * The card replaces the cursor readout while it's shown: it ends with the readout lines, in the readout's place.
+     * Card entries for the candidates at the mouse position, in the card's order.  A candidate that a playlist
+     * channel already decodes is listed as that playlist channel.
      */
     @Override
-    public boolean replacesCursorReadout(DisplayCursor cursor, RenderArea area)
+    public List<ChannelCardEntry> getCardEntries(DisplayCursor cursor, RenderArea area)
     {
         SpectralDisplayModel model = getModel();
 
-        //Only for the position the mouse rested at - the readout comes back as soon as the mouse moves
-        if(mIndex == null || !mHoverCandidates.get() || !mHoverReady || model == null || !model.hasSource() ||
-            cursor == null || cursor.section() != mHoverSection || cursor.x() != mHoverX || cursor.y() != mHoverY ||
-            area.width() <= 0)
+        if(mIndex == null || !mHoverCandidates.get() || model == null || area.width() <= 0)
         {
-            return false;
+            return Collections.emptyList();
         }
 
-        return !getCandidates(cursor.frequency(), getTolerance(model, area)).isEmpty();
+        List<RankedCandidate> candidates = getCandidates(cursor.frequency(), getTolerance(model, area));
+
+        //The playlist channels of the candidates, looked up once per lookup or second, since that copies the playlist
+        if(candidates != mCardCandidates || System.currentTimeMillis() - mCardEntriesTime > 1000)
+        {
+            mCardCandidates = candidates;
+            mCardEntriesTime = System.currentTimeMillis();
+            mCardEntries = createCardEntries(candidates);
+        }
+
+        return mCardEntries;
+    }
+
+    private List<ChannelCardEntry> createCardEntries(List<RankedCandidate> candidates)
+    {
+        List<ChannelCardEntry> entries = new ArrayList<>();
+        Set<String> listed = new HashSet<>();
+
+        for(RankedCandidate ranked: candidates)
+        {
+            FrequencyCandidate candidate = ranked.candidate();
+            Channel existing = mActions != null ? findChannel(candidate) : null;
+
+            if(existing != null)
+            {
+                entries.add(ChannelMenus.createCardEntry(existing, null, true));
+            }
+            //The same listing in several places (e.g. a county and its agency) is shown once
+            else if(listed.add(candidate.frequencyHz() + "|" + candidate.title() + "|" + candidate.source()))
+            {
+                List<String> details = new ArrayList<>();
+                details.add(describe(ranked));
+                String source = source(candidate);
+
+                if(source != null)
+                {
+                    details.add(source);
+                }
+
+                String title = candidate.title() != null ? candidate.title() : "(untitled)";
+                entries.add(new ChannelCardEntry(title, details, State.CANDIDATE, null, true));
+            }
+        }
+
+        return entries;
+    }
+
+    /**
+     * Playlist channel that decodes the candidate, or null
+     */
+    private Channel findChannel(FrequencyCandidate candidate)
+    {
+        if(candidate.isSiteFrequency())
+        {
+            SiteRecord site = mIndex.getSite(candidate.systemId(), candidate.siteId());
+
+            if(site == null || RadioReferencePlaylistActions.getUnsupportedReason(site) != null)
+            {
+                return null;
+            }
+
+            return RadioReferencePlaylistActions.isRepeaterSite(site) ?
+                mActions.findChannel(List.of(candidate.frequencyHz()),
+                    RadioReferencePlaylistActions.getSiteDecoderTypes(site)) : mActions.findSiteChannel(site);
+        }
+
+        return RadioReferencePlaylistActions.getDecoderType(candidate) != null ?
+            mActions.findConventionalChannel(candidate) : null;
     }
 
     /**
@@ -454,47 +431,6 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
     }
 
     /**
-     * Restarts the hover delay each time the mouse moves, and hides the card until it passes
-     */
-    private void trackHover(DisplayCursor cursor)
-    {
-        if(cursor == null)
-        {
-            if(mHoverSection != null)
-            {
-                mHoverSection = null;
-                mHoverReady = false;
-                getHoverTimer().stop();
-            }
-
-            return;
-        }
-
-        if(cursor.section() != mHoverSection || cursor.x() != mHoverX || cursor.y() != mHoverY)
-        {
-            mHoverSection = cursor.section();
-            mHoverX = cursor.x();
-            mHoverY = cursor.y();
-            mHoverReady = false;
-            getHoverTimer().playFromStart();
-        }
-    }
-
-    private PauseTransition getHoverTimer()
-    {
-        if(mHoverTimer == null)
-        {
-            mHoverTimer = new PauseTransition(HOVER_DELAY);
-            mHoverTimer.setOnFinished(event -> {
-                mHoverReady = true;
-                requestRender();
-            });
-        }
-
-        return mHoverTimer;
-    }
-
-    /**
      * Candidates for the frequency, looked up again only when the frequency or the tolerance changes
      */
     private List<RankedCandidate> getCandidates(long frequency, long tolerance)
@@ -504,170 +440,9 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
             mResults = mIndex.lookup(frequency, tolerance);
             mResultsFrequency = frequency;
             mResultsTolerance = tolerance;
-            mCard = null;
         }
 
         return mResults;
-    }
-
-    /**
-     * Draws the card in place of the cursor readout: beside the mouse and above it, placed like the readout, with the
-     * candidates above the readout lines so the frequency and level stay where the readout showed them.  The card
-     * fits the larger side of the mouse and the height of the section, showing as many candidates as fit.
-     */
-    private void drawCard(GraphicsContext gc, RenderArea area, DisplayCursor cursor, List<RankedCandidate> candidates)
-    {
-        //The level line changes with the mouse height while the candidates don't
-        List<String> readout = CursorReadout.lines(cursor, area, getModel());
-        double readoutWidth = 0;
-
-        for(String line: readout)
-        {
-            readoutWidth = Math.max(readoutWidth, measure(line, FONT));
-        }
-
-        double room = Math.max(area.width() - cursor.x(), cursor.x()) - CursorReadout.GAP_X - EDGE_MARGIN;
-        double maxTextWidth = Math.max(readoutWidth, Math.min(MAX_TEXT_WIDTH, room - (PADDING_X * 2)));
-        //Above the mouse, so the readout lines stay where the readout showed them, when a candidate fits there
-        double above = cursor.y() - CursorReadout.GAP_Y;
-        double maxHeight = above >= cardHeight(5, 1, true, readout.size()) ? above : area.plotHeight() - EDGE_MARGIN;
-
-        if(mCard == null || mCard.maxTextWidth() != maxTextWidth || mCard.maxHeight() != maxHeight ||
-            mCard.readoutLines() != readout.size())
-        {
-            mCard = createCard(candidates, maxTextWidth, maxHeight, readout.size());
-        }
-
-        Card card = mCard;
-        SpectralDisplayTheme theme = getSpectralDisplay().getTheme();
-        double width = Math.max(card.textWidth(), readoutWidth) + (PADDING_X * 2);
-        double height = cardHeight(card.lineCount(), card.entries().size(), card.more() != null, readout.size());
-        double x = Math.max(0, CursorReadout.x(cursor, width, area));
-        double y = CursorReadout.y(cursor, height, area);
-
-        gc.setFill(theme.getBackground(0.92));
-        gc.fillRoundRect(x, y, width, height, 8, 8);
-        gc.setStroke(opaque(theme.getLine()));
-        gc.setLineWidth(1.0);
-        gc.strokeRoundRect(Math.floor(x) + 0.5, Math.floor(y) + 0.5, width, height, 8, 8);
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setTextBaseline(VPos.TOP);
-
-        double textX = x + PADDING_X;
-        double lineY = y + PADDING;
-        gc.setFill(theme.getCursor());
-        gc.setFont(TITLE_FONT);
-        gc.fillText(HEADER, textX, lineY);
-        lineY += mTextHeight + GAP;
-
-        for(List<String> lines: card.entries())
-        {
-            gc.setFill(theme.getCursor());
-            gc.setFont(TITLE_FONT);
-            gc.fillText(lines.get(0), textX, lineY);
-            lineY += mTextHeight;
-            gc.setFill(opaque(theme.getLine()));
-            gc.setFont(FONT);
-
-            for(int line = 1; line < lines.size(); line++)
-            {
-                gc.fillText(lines.get(line), textX, lineY);
-                lineY += mTextHeight;
-            }
-
-            lineY += GAP;
-        }
-
-        if(card.more() != null)
-        {
-            gc.setFill(opaque(theme.getLine()));
-            gc.setFont(FONT);
-            gc.fillText(card.more(), textX, lineY);
-            lineY += mTextHeight + GAP;
-        }
-
-        //The readout lines, separated from the candidates, in the readout's style
-        double separator = Math.floor(lineY - (GAP / 2.0)) + 0.5;
-        gc.setStroke(theme.getLine(0.5));
-        gc.strokeLine(textX, separator, x + width - PADDING_X, separator);
-        gc.setFill(theme.getCursor());
-        gc.setFont(FONT);
-
-        for(String line: readout)
-        {
-            gc.fillText(line, textX, lineY);
-            lineY += mTextHeight;
-        }
-    }
-
-    /**
-     * Height of a card with the lines
-     * @param lineCount of the header, candidate and more lines
-     * @param entries number of candidates
-     * @param more true when the card has a more line
-     * @param readoutLines number of readout lines
-     */
-    private double cardHeight(int lineCount, int entries, boolean more, int readoutLines)
-    {
-        int gaps = 1 + entries + (more ? 1 : 0);
-        return ((lineCount + readoutLines) * mTextHeight) + (gaps * GAP) + PADDING + READOUT_PADDING;
-    }
-
-    /**
-     * Card text for as many candidates as fit the height: each candidate's title, details and source, shortened to
-     * the width
-     */
-    private Card createCard(List<RankedCandidate> candidates, double maxTextWidth, double maxHeight,
-                            int readoutLines)
-    {
-        int limit = Math.min(candidates.size(), MAX_CANDIDATES);
-        List<List<String>> entries = new ArrayList<>();
-        double textWidth = measure(HEADER, TITLE_FONT);
-        int lineCount = 1;
-
-        for(int index = 0; index < limit; index++)
-        {
-            RankedCandidate candidate = candidates.get(index);
-            List<String> lines = new ArrayList<>();
-            String title = candidate.candidate().title() != null ? candidate.candidate().title() : "(untitled)";
-            lines.add(fit(title, TITLE_FONT, maxTextWidth));
-            lines.add(fit(describe(candidate), FONT, maxTextWidth));
-            String source = source(candidate.candidate());
-
-            if(source != null)
-            {
-                lines.add(fit(source, FONT, maxTextWidth));
-            }
-
-            //Keep room for the more line when candidates are left out
-            boolean more = index + 1 < candidates.size();
-
-            if(!entries.isEmpty() && cardHeight(lineCount + lines.size() + (more ? 1 : 0), entries.size() + 1, more,
-                readoutLines) > maxHeight)
-            {
-                break;
-            }
-
-            textWidth = Math.max(textWidth, measure(lines.get(0), TITLE_FONT));
-
-            for(int line = 1; line < lines.size(); line++)
-            {
-                textWidth = Math.max(textWidth, measure(lines.get(line), FONT));
-            }
-
-            lineCount += lines.size();
-            entries.add(lines);
-        }
-
-        String more = candidates.size() > entries.size() ? "+ " + (candidates.size() - entries.size()) + " more" : null;
-
-        if(more != null)
-        {
-            textWidth = Math.max(textWidth, measure(more, FONT));
-            lineCount++;
-        }
-
-        return new Card(entries, more, textWidth, lineCount, maxTextWidth, maxHeight, readoutLines);
     }
 
     /**
@@ -691,35 +466,6 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
         return join(alphaTag, candidate.source());
     }
 
-    /**
-     * Text shortened with an ellipsis to fit the width
-     */
-    private String fit(String text, Font font, double maxWidth)
-    {
-        if(measure(text, font) <= maxWidth)
-        {
-            return text;
-        }
-
-        int length = text.length();
-
-        while(length > 1 && measure(text.substring(0, length) + "…", font) > maxWidth)
-        {
-            length--;
-        }
-
-        return text.substring(0, length) + "…";
-    }
-
-    private double measure(String text, Font font)
-    {
-        mMeasure.setFont(font);
-        mMeasure.setText(text);
-        double width = mMeasure.getLayoutBounds().getWidth();
-        mMeasure.setFont(FONT);
-        return width;
-    }
-
     private static String join(String... values)
     {
         StringBuilder sb = new StringBuilder();
@@ -738,10 +484,5 @@ public class RadioReferenceLayer extends SpectralDisplayLayer
         }
 
         return sb.isEmpty() ? null : sb.toString();
-    }
-
-    private static Color opaque(Color color)
-    {
-        return Color.color(color.getRed(), color.getGreen(), color.getBlue());
     }
 }

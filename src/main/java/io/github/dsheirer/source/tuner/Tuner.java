@@ -89,6 +89,7 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
             try
             {
                 getTunerController().start();
+                getTunerController().setSampleDropMonitorTunerName(getPreferredName());
             }
             catch(SourceException se)
             {
