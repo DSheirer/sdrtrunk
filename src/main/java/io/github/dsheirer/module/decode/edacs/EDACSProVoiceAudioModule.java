@@ -36,7 +36,8 @@ import org.slf4j.LoggerFactory;
  * {@link EDACSProVoiceMessage} instances from the
  * {@link EDACSProVoiceDecoder}, decodes each of the 4 IMBE 7100
  * voice frames via the JMBE {@code PROVOICE} codec, and emits 80 ms
- * of 8 kHz PCM audio per ProVoice frame.
+ * of 8 kHz PCM audio per ProVoice frame.  The codec is in JMBE version
+ * 3.0.0 and later.
  */
 public class EDACSProVoiceAudioModule extends JmbeAudioModule
 {
@@ -89,11 +90,16 @@ public class EDACSProVoiceAudioModule extends JmbeAudioModule
                 return;
             }
 
-            for(byte[] frame : pv.getPackedImbe7100Frames())
+            byte[][] frames = pv.getPackedImbe7100Frames();
+
+            //Only error correct the frames in sdrtrunk when the JMBE library (version 3+) can synthesize from them
+            boolean correctFrames = isCorrectedFrameSupported();
+
+            for(int x = 0; x < frames.length; x++)
             {
                 try
                 {
-                    addAudio(getAudioCodec().getAudio(frame));
+                    addAudio(getAudio(frames[x], correctFrames ? pv.getCorrectedImbe7100Frames().get(x) : null));
                 }
                 catch(Exception e)
                 {

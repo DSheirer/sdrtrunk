@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.edacs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.edacs.message.EDACSProVoiceEndMessage;
@@ -28,6 +29,7 @@ import io.github.dsheirer.module.decode.edacs.message.EDACSProVoiceMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import jmbe.frame.CorrectedProVoiceFrame;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -195,6 +197,27 @@ class EDACSProVoiceDecoderTest
         assertEquals(1, messages.stream().filter(m -> m instanceof EDACSProVoiceEndMessage).count());
         assertEquals(EDACSProVoiceEndMessage.class, messages.get(messages.size() - 1).getClass(),
             "the end of transmission follows the last voice frame");
+    }
+
+    @Test
+    void providesCorrectedVoiceFrames()
+    {
+        List<IMessage> messages = decode(new EDACSProVoiceDecoder(), samples(frames(FRAMES, VOICE_MARKER), 0));
+        int checked = 0;
+
+        for(IMessage message : messages)
+        {
+            if(message instanceof EDACSProVoiceMessage voice && voice.isValid())
+            {
+                List<CorrectedProVoiceFrame> corrected = voice.getCorrectedImbe7100Frames();
+                assertEquals(voice.getPackedImbe7100Frames().length, corrected.size(),
+                    "one corrected frame for each voice frame");
+                assertSame(corrected, voice.getCorrectedImbe7100Frames(), "the corrected frames are cached");
+                checked++;
+            }
+        }
+
+        assertEquals(FRAMES, checked);
     }
 
     @Test

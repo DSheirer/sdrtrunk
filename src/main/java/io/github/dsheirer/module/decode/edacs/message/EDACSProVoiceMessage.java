@@ -26,6 +26,7 @@ import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jmbe.frame.CorrectedProVoiceFrame;
 
 /**
  * EDACS ProVoice message carrying 4 IMBE 7100 voice frames (one per
@@ -52,6 +53,7 @@ public class EDACSProVoiceMessage implements IMessage
 
     private final byte[][] mImbeFrames = new byte[4][];
     private final int[][][] mImbeGrids;
+    private List<CorrectedProVoiceFrame> mCorrectedImbeFrames;
     private final boolean[] mFrameBits;
     private final int mLid;
     private final int mBfMarker;
@@ -109,6 +111,27 @@ public class EDACSProVoiceMessage implements IMessage
     /**
      * ProVoice IMBE7100 grids packed row-major, MSB first, for the JMBE PROVOICE codec.
      */
+    /**
+     * Error corrected versions of the 4 IMBE 7100 voice frames from getPackedImbe7100Frames(), in the same order.
+     * The frames are error corrected and derandomized once and cached.
+     */
+    public synchronized List<CorrectedProVoiceFrame> getCorrectedImbe7100Frames()
+    {
+        if(mCorrectedImbeFrames == null)
+        {
+            List<CorrectedProVoiceFrame> correctedFrames = new ArrayList<>();
+
+            for(byte[] frame : getPackedImbe7100Frames())
+            {
+                correctedFrames.add(CorrectedProVoiceFrame.correct(frame));
+            }
+
+            mCorrectedImbeFrames = correctedFrames;
+        }
+
+        return mCorrectedImbeFrames;
+    }
+
     public byte[][] getPackedImbe7100Frames()
     {
         byte[][] frames = new byte[4][];

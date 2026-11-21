@@ -36,6 +36,7 @@ import io.github.dsheirer.module.decode.edacs.channel.EDACSChannel;
 import io.github.dsheirer.module.decode.edacs.message.EDACSMessage;
 import io.github.dsheirer.module.decode.edacs.message.EDACSProVoiceEndMessage;
 import io.github.dsheirer.module.decode.edacs.message.EDACSProVoiceMessage;
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -297,15 +298,16 @@ public class EDACSDecoderState extends DecoderState implements IMessageListener
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Decoder:\tEDACS\n");
-        sb.append("System ID:\t").append(String.format("0x%04X", mSystemId)).append("\n");
-        sb.append("Site ID:\t").append(mSiteId).append("\n");
-        sb.append("Area:\t").append(mAreaCode).append("\n");
-        sb.append("CC LCN:\t").append(mCcLcn).append("\n");
-        sb.append("Messages:\t").append(mTotalMessagesDecoded).append("\n");
-        sb.append("BCH Errors:\t").append(mBchErrors).append("\n");
-        return sb.toString();
+        ActivitySummary summary = new ActivitySummary("EDACS");
+        summary.section("Site");
+        summary.field("System ID", mSystemIdDecoded ? String.format("0x%04X", mSystemId) : null);
+        summary.field("Site ID", mSiteIdDecoded ? mSiteId : null);
+        summary.field("Area", mSiteIdDecoded ? mAreaCode : null);
+        summary.field("Control Channel LCN", mCcLcnDecoded ? mCcLcn : null);
+        summary.section("Messages");
+        summary.field("Decoded", mTotalMessagesDecoded);
+        summary.field("BCH Errors", mBchErrors);
+        return summary.toString();
     }
 
     @Override
