@@ -243,7 +243,8 @@ public class ChannelSpectrumView extends SplitPane implements Listener<Processin
 
             if(source instanceof TunerChannelSource tcs)
             {
-                mChannelSpectralDisplay.setChannel(tcs.getFrequency(), (int)tcs.getSampleRate(), bandwidth);
+                mChannelSpectralDisplay.setChannel(tcs.getFrequency(), (int)tcs.getSampleRate(), bandwidth,
+                    tcs::getNoiseDensity);
             }
         }
 

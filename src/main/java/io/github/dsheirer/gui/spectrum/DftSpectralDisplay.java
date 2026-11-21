@@ -24,6 +24,7 @@ import io.github.dsheirer.gui.spectrum.layer.DecibelLayer;
 import io.github.dsheirer.gui.spectrum.layer.FrequencyLayer;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.spectrum.ComplexDftProcessor;
+import io.github.dsheirer.spectrum.DFTResultsListener;
 import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.converter.FullScaleDecibelConverter;
 import javafx.application.Platform;
@@ -322,6 +323,14 @@ public abstract class DftSpectralDisplay extends StackPane
     /**
      * DFT processor.  Register it with the sample source to feed the display.
      */
+    /**
+     * Adds a listener for the dBFS spectrum frames, lowest frequency first.  Frames arrive on the DFT processor thread.
+     */
+    protected void addDecibelListener(DFTResultsListener listener)
+    {
+        mDecibelConverter.addListener(listener);
+    }
+
     protected ComplexDftProcessor getDftProcessor()
     {
         return mDftProcessor;
