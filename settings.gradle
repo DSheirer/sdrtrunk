@@ -83,6 +83,15 @@ dependencyResolutionManagement {
             content { includeModule 'io.github.dsheirer', 'jbladerf' }
         }
 
+        //JMBE API is published as a GitHub release.  It holds only the codec interfaces; users create the JMBE codec
+        //library itself with the JMBE creator, which sdrtrunk downloads from the release matching the API major version
+        ivy {
+            url = 'https://github.com/DSheirer/jmbe/releases/download'
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.dsheirer', 'jmbe-api' }
+        }
+
         //radio-reference-api is published as a GitHub release.  Its dependencies (jackson-dataformat-xml, slf4j-api)
         //are not pulled in transitively and are declared directly in build.gradle
         ivy {

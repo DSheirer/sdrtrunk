@@ -30,8 +30,10 @@ import io.github.dsheirer.module.decode.nxdn.layer2.SACCHFragment;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.AudioCodec;
 import io.github.dsheirer.util.ByteUtil;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jmbe.frame.CorrectedAMBEFrame;
 
 /**
  * NXDN audio frame data
@@ -46,6 +48,7 @@ public class Audio extends NXDNMessage
 
     private final AudioCodec mAudioCodec;
     private final List<byte[]> mAudioFrames;
+    private List<CorrectedAMBEFrame> mCorrectedAudioFrames;
     private SACCHFragment mSACCHFragment;
 
     /**
@@ -117,6 +120,27 @@ public class Audio extends NXDNMessage
     public List<byte[]> getAudioFrames()
     {
         return mAudioFrames;
+    }
+
+    /**
+     * Error corrected versions of the audio frames from getAudioFrames(), in the same order.  The frames are error
+     * corrected once and cached.
+     */
+    public synchronized List<CorrectedAMBEFrame> getCorrectedAudioFrames()
+    {
+        if(mCorrectedAudioFrames == null)
+        {
+            List<CorrectedAMBEFrame> corrected = new ArrayList<>();
+
+            for(byte[] frame: mAudioFrames)
+            {
+                corrected.add(CorrectedAMBEFrame.correct(frame));
+            }
+
+            mCorrectedAudioFrames = corrected;
+        }
+
+        return mCorrectedAudioFrames;
     }
 
     /**

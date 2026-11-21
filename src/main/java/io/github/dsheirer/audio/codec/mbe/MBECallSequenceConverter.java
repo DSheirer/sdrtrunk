@@ -36,7 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import jmbe.iface.IAudioCodec;
+import jmbe.frame.CorrectedIMBEFrame;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -111,12 +111,15 @@ public class MBECallSequenceConverter
                     }
                 }
 
-                IAudioCodec codec = audioModule.getAudioCodec();
+                boolean correctFrames = audioModule.isCorrectedFrameSupported();
 
                 for(VoiceFrame voiceFrame: callSequence.getVoiceFrames())
                 {
                     byte[] frameBytes = voiceFrame.getFrameBytes();
-                    float[] audio = codec.getAudio(frameBytes);
+
+                    //Only error correct the frame in sdrtrunk when the JMBE library (version 3+) can synthesize from it
+                    float[] audio = audioModule.getAudio(frameBytes,
+                        correctFrames ? CorrectedIMBEFrame.correct(frameBytes) : null);
                     audioModule.addAudio(audio);
                 }
 
