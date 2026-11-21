@@ -167,7 +167,7 @@ public class BladeRfTunerController extends TunerController
             mGainModes = mDevice.gainModes(CHANNEL);
 
             setSampleRate(BladeRfSampleRate.getClosest(mSampleRates, BladeRfSampleRate.DEFAULT.getRate()));
-            setFrequency(FREQUENCY_DEFAULT);
+            setFrequency(getDefaultFrequency(mMinimumTunableFrequency, mMaximumTunableFrequency));
             setGainMode(GAIN_MODE_DEFAULT);
             setGain(GAIN_DEFAULT);
             mGainRange = mDevice.gainRange(CHANNEL);
@@ -392,11 +392,29 @@ public class BladeRfTunerController extends TunerController
         setSampleRate(rate);
         config.setSampleRate(rate.getRate());
 
+        //A new configuration has the default frequency, which is below the range of the bladeRF 1.0.
+        if(config.getFrequency() < mMinimumTunableFrequency || config.getFrequency() > mMaximumTunableFrequency)
+        {
+            config.setFrequency(getDefaultFrequency(mMinimumTunableFrequency, mMaximumTunableFrequency));
+        }
+
         //Invoke super for frequency, frequency correction and autoPPM
         super.apply(config);
         setBiasT(config.isBiasT());
         setGain(config.getGain());
         setGainMode(isSupported(config.getGainMode()) ? config.getGainMode() : GAIN_MODE_DEFAULT);
+    }
+
+    /**
+     * Default frequency for a device, moved into the range that the device can tune.  The bladeRF 1.0 can't tune as
+     * low as the default frequency.
+     * @param minimum tunable frequency of the device
+     * @param maximum tunable frequency of the device
+     * @return default frequency, or the nearest frequency that the device can tune
+     */
+    static long getDefaultFrequency(long minimum, long maximum)
+    {
+        return Math.max(minimum, Math.min(maximum, FREQUENCY_DEFAULT));
     }
 
     private boolean isSupported(GainMode mode)
