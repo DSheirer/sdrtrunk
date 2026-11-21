@@ -39,6 +39,8 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
 {
     private boolean mAudioFilter = true;
     private boolean mAudioALC = false;
+    private int mHangTimeMs = 0;
+    private boolean mHangTimeRemoveSilence = false;
     private float mSquelchNoiseOpenThreshold = NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD;
     private float mSquelchNoiseCloseThreshold = NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD;
     private int mSquelchHysteresisOpenThreshold = NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD;
@@ -126,6 +128,47 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
     public void setAudioALC(boolean audioALC)
     {
         mAudioALC = audioALC;
+    }
+
+    /**
+     * Hang time in milliseconds.  When greater than zero, the audio segment (call) is kept open for this long after the
+     * squelch closes, so that a transmission and a reply, or a transmission that briefly drops out, are captured as a
+     * single call.
+     * @return hang time in milliseconds, default 0 (disabled).
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "hangTimeMs")
+    public int getHangTimeMs()
+    {
+        return mHangTimeMs;
+    }
+
+    /**
+     * Sets the hang time in milliseconds.
+     * @param hangTimeMs time to keep the call open after the squelch closes; 0 disables.
+     */
+    public void setHangTimeMs(int hangTimeMs)
+    {
+        mHangTimeMs = Math.max(0, hangTimeMs);
+    }
+
+    /**
+     * Indicates if the gap is removed when audio continues within the hang time (true), joining the audio either side
+     * of the gap directly, or if silence is inserted for the duration of the gap so the call keeps its real timing
+     * (false).
+     * @return true to remove the gap, default false.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "hangTimeRemoveSilence")
+    public boolean isHangTimeRemoveSilence()
+    {
+        return mHangTimeRemoveSilence;
+    }
+
+    /**
+     * Sets whether the gap is removed or kept as silence when audio continues within the hang time.
+     */
+    public void setHangTimeRemoveSilence(boolean removeSilence)
+    {
+        mHangTimeRemoveSilence = removeSilence;
     }
 
     /**
