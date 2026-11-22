@@ -20,7 +20,7 @@ package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.buffer.INativeBufferProvider;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.RecorderFactory;
 import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.record.wave.NativeBufferWaveRecorder;
@@ -781,15 +781,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
     /**
      * Records the complex I/Q buffers produced by the tuner
-     * @param userPreferences to obtain a baseband recorder
+     * @param settings to obtain a baseband recorder
      * @param statusListener to receive updates on recording file name and size
      * @param prefix for the recording file name (ie tuner class name)
      */
-    public void startRecorder(UserPreferences userPreferences, IRecordingStatusListener statusListener, String prefix)
+    public void startRecorder(Settings settings, IRecordingStatusListener statusListener, String prefix)
     {
         if(!isRecording())
         {
-            mRecorder = RecorderFactory.getTunerRecorder(prefix, getFrequency(), userPreferences, statusListener);
+            mRecorder = RecorderFactory.getTunerRecorder(prefix, getFrequency(), settings, statusListener);
             mRecorder.setSampleRate((float)getSampleRate());
             mRecorder.start();
             addBufferListener(mRecorder);

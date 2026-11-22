@@ -23,7 +23,7 @@
 package io.github.dsheirer.audio.codec.mbe;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +33,9 @@ public abstract class ImbeAudioModule extends JmbeAudioModule
     private static final String IMBE_CODEC = "IMBE";
     private static boolean sLibraryStatusLogged = false;
 
-    public ImbeAudioModule(UserPreferences userPreferences, AliasList aliasList)
+    public ImbeAudioModule(Settings settings, AliasList aliasList)
     {
-        super(userPreferences, aliasList, DEFAULT_TIMESLOT);
+        super(settings, aliasList, DEFAULT_TIMESLOT);
 
         if(!sLibraryStatusLogged)
         {

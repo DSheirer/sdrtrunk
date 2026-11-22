@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.audio.playback;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -42,16 +42,16 @@ public class AudioProviderMultiChannel extends AudioProvider
 
     /**
      * Constructs a multi-channel audio provider
-     * @param userPreferences for this provider
+     * @param settings for this provider
      * @param audioFormat for this provider
      */
-    public AudioProviderMultiChannel(UserPreferences userPreferences, AudioFormat audioFormat)
+    public AudioProviderMultiChannel(Settings settings, AudioFormat audioFormat)
     {
         SILENCE = ByteBuffer.allocate(AudioChannel.SAMPLES_PER_INTERVAL * audioFormat.getChannels());
 
         for(int channel = 0; channel < audioFormat.getChannels(); channel++)
         {
-            mAudioChannels.add(new AudioChannel(userPreferences, String.valueOf(channel)));
+            mAudioChannels.add(new AudioChannel(settings, String.valueOf(channel)));
         }
 
         mAudioFormat = audioFormat;

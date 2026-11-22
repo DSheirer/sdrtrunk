@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sdrplay.Tuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.GainSlider;
@@ -65,9 +65,9 @@ public abstract class RspTunerEditor<C extends RspTunerConfiguration> extends Tu
     /**
      * Constructs an instance.  Implementations add their own sections and then call {@link #refresh()}.
      */
-    public RspTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
+    public RspTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         getTuningSection().addRow("Sample Rate", getSampleRateCombo());
 
         TunerSection gain = addSection("Gain");

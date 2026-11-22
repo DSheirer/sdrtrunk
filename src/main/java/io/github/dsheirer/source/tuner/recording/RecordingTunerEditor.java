@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.recording;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
@@ -33,13 +33,13 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
 
     /**
      * Constructs an instance
-     * @param userPreferences for settings
+     * @param settings for settings
      * @param tunerManager for saving configurations
      * @param discoveredTuner to edit
      */
-    public RecordingTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public RecordingTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         mRecordingPath.setWrapText(true);
         mRecordingPath.getStyleClass().add("tuner-value-label");
         getTuningSection().addRow("File", mRecordingPath);

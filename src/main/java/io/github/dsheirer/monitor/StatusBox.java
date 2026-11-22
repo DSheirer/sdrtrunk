@@ -77,7 +77,7 @@ public class StatusBox extends HBox
 
         ProgressBar eventLogsBar = new ProgressBar();
         eventLogsBar.progressProperty().bind(mResourceMonitor.directoryUsePercentEventLogsProperty());
-        eventLogsBar.setTooltip(new Tooltip("Percentage of drive space used for event logs based on user-specified max threshold in user preferences"));
+        eventLogsBar.setTooltip(new Tooltip("Percentage of drive space used for event logs based on user-specified max threshold in Settings"));
         getChildren().add(eventLogsBar);
 
         Label eventLogsSizeLabel = new Label();
@@ -92,7 +92,7 @@ public class StatusBox extends HBox
 
         ProgressBar recordingsBar = new ProgressBar();
         recordingsBar.progressProperty().bind(mResourceMonitor.directoryUsePercentRecordingsProperty());
-        recordingsBar.setTooltip(new Tooltip("Percentage of drive space used for recordings based on user-specified max threshold in user preferences"));
+        recordingsBar.setTooltip(new Tooltip("Percentage of drive space used for recordings based on user-specified max threshold in Settings"));
         getChildren().add(recordingsBar);
 
         Label recordingsSizeLabel = new Label();

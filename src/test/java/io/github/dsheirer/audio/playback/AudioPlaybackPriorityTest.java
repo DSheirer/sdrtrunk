@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.AudioSegment;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -45,7 +45,7 @@ public class AudioPlaybackPriorityTest
     @BeforeEach
     public void setup()
     {
-        mChannel = new AudioChannel(new UserPreferences(), "TEST");
+        mChannel = new AudioChannel(new Settings(), "TEST");
     }
 
     @AfterEach

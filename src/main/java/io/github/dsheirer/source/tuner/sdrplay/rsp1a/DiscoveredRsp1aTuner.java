@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rsp1a;
 
-import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.settings.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.sdrplay.DeviceInfo;
 

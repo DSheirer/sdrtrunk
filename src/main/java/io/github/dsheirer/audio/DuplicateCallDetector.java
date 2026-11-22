@@ -27,8 +27,8 @@ import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.duplicate.ICallManagementProvider;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.duplicate.ICallManagementProvider;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.ArrayList;
@@ -58,11 +58,11 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
 
     /**
      * Constructs an instance.
-     * @param userPreferences to access the duplicate call detection preferences.
+     * @param settings to access the duplicate call detection preferences.
      */
-    public DuplicateCallDetector(UserPreferences userPreferences)
+    public DuplicateCallDetector(Settings settings)
     {
-        this(userPreferences.getCallManagementPreference());
+        this(settings.getCallManagementSettings());
     }
 
     /**

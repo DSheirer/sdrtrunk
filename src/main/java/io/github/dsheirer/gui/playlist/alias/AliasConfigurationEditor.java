@@ -32,8 +32,8 @@ import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.service.radioreference.AliasListSynchronizer;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -94,7 +94,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
     private static final Logger mLog = LoggerFactory.getLogger(AliasConfigurationEditor.class);
 
     private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private AliasItemEditor mAliasItemEditor;
     private AliasBulkEditor mAliasBulkEditor;
     private Editor mCurrentEditor;
@@ -125,13 +125,13 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
     /**
      * Constructs an instance
      * @param playlistManager for playlist operations
-     * @param userPreferences for user preferences
+     * @param settings for user preferences
      */
-    public AliasConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public AliasConfigurationEditor(PlaylistManager playlistManager, Settings settings)
     {
         mPlaylistManager = playlistManager;
         mPlaylistManager.addAliasListRefreshListener(this);
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         VBox leftBox = new VBox();
         VBox.setVgrow(getAliasTableView(), Priority.ALWAYS);
@@ -214,7 +214,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
         {
             mAutoUpdateCheckBox = new CheckBox("Auto-Update Talkgroups");
             mAutoUpdateCheckBox.setTooltip(new Tooltip("Automatically add or update talkgroup aliases when the " +
-                "system changes on Radio Reference.  Set how often to check in User Preferences > Radio Reference > Alias Lists."));
+                "system changes on Radio Reference.  Set how often to check in Settings > Radio Reference > Alias Lists."));
             mAutoUpdateCheckBox.setOnAction(event -> {
                 AliasListConfiguration configuration = getSelectedConfiguration();
 
@@ -334,9 +334,9 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
      * Redraws the alias color swatches after a change to the application theme.
      */
     @Subscribe
-    public void onPreferenceUpdated(PreferenceType preferenceType)
+    public void onSettingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.APPLICATION)
+        if(settingsType == SettingsType.APPLICATION)
         {
             Platform.runLater(() -> getAliasTableView().refresh());
         }
@@ -443,7 +443,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
     {
         if(mAliasItemEditor == null)
         {
-            mAliasItemEditor = new AliasItemEditor(mPlaylistManager, mUserPreferences);
+            mAliasItemEditor = new AliasItemEditor(mPlaylistManager, mSettings);
         }
 
         return mAliasItemEditor;

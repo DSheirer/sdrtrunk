@@ -21,7 +21,7 @@ package io.github.dsheirer.source.tuner.manager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.network.NetworkTuner;
@@ -29,10 +29,10 @@ import io.github.dsheirer.source.tuner.network.NetworkTunerConfiguration;
 
 public class DiscoveredNetworkTuner extends DiscoveredTuner {
   private static final Logger mLog = LoggerFactory.getLogger(DiscoveredNetworkTuner.class);
-  private UserPreferences mUserPreferences;
+  private Settings mSettings;
 
-  public DiscoveredNetworkTuner(UserPreferences userPreferences, NetworkTunerConfiguration networkTunerConfiguration) {
-    mUserPreferences = userPreferences;
+  public DiscoveredNetworkTuner(Settings settings, NetworkTunerConfiguration networkTunerConfiguration) {
+    mSettings = settings;
     setTunerConfiguration(networkTunerConfiguration);
 
     // Default all network tuners to be disabled on startup
@@ -56,7 +56,7 @@ public class DiscoveredNetworkTuner extends DiscoveredTuner {
   @Override
   public void start() {
     if (!hasTuner()) {
-      mTuner = new NetworkTuner(mUserPreferences, this, getNetworkTunerConfiguration());
+      mTuner = new NetworkTuner(mSettings, this, getNetworkTunerConfiguration());
 
       try {
         mTuner.start();

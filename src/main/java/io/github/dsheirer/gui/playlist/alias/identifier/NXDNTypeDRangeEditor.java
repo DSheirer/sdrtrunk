@@ -22,7 +22,7 @@ package io.github.dsheirer.gui.playlist.alias.identifier;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.INXDNTypeDRange;
 import io.github.dsheirer.gui.control.IntegerFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.NXDNTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.HPos;
 import javafx.scene.control.Label;

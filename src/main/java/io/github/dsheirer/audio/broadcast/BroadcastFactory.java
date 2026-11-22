@@ -41,7 +41,7 @@ import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.audio.convert.MP3SilenceGenerator;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,12 +56,12 @@ public class BroadcastFactory
      * @return configured broadcaster or null
      */
     public static AbstractAudioBroadcaster getBroadcaster(BroadcastConfiguration configuration, AliasModel aliasModel,
-                                                          UserPreferences userPreferences)
+                                                          Settings settings)
     {
         if(configuration != null)
         {
-            InputAudioFormat inputAudioFormat = userPreferences.getMP3Preference().getAudioSampleRate();
-            MP3Setting mp3Setting = userPreferences.getMP3Preference().getMP3Setting();
+            InputAudioFormat inputAudioFormat = settings.getMP3Settings().getAudioSampleRate();
+            MP3Setting mp3Setting = settings.getMP3Settings().getMP3Setting();
 
             switch(configuration.getBroadcastServerType())
             {

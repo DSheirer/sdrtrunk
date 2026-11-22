@@ -22,9 +22,9 @@ package io.github.dsheirer.service.radioreference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceJson;
@@ -112,7 +112,7 @@ public class RadioReferenceFrequencyIndex
     private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(10);
 
     private final RadioReference mRadioReference;
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final ReadOnlyStringWrapper mStatus = new ReadOnlyStringWrapper("Not started");
     private final AtomicBoolean mStarted = new AtomicBoolean();
     private final AtomicLong mGeneration = new AtomicLong();
@@ -245,12 +245,12 @@ public class RadioReferenceFrequencyIndex
     /**
      * Constructs an instance
      * @param radioReference service
-     * @param userPreferences for the user's location
+     * @param settings for the user's location
      */
-    public RadioReferenceFrequencyIndex(RadioReference radioReference, UserPreferences userPreferences)
+    public RadioReferenceFrequencyIndex(RadioReference radioReference, Settings settings)
     {
         mRadioReference = radioReference;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
     }
 
     /**
@@ -283,9 +283,9 @@ public class RadioReferenceFrequencyIndex
      * Rebuilds the index when the user's location changes
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.RADIO_REFERENCE)
+        if(settingsType == SettingsType.RADIO_REFERENCE)
         {
             update();
         }
@@ -296,7 +296,7 @@ public class RadioReferenceFrequencyIndex
      */
     private synchronized void update()
     {
-        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        RadioReferenceSettings.Location location = mSettings.getRadioReferenceSettings().getLocation();
 
         if(!mRadioReference.premiumAccountProperty().get())
         {
@@ -352,7 +352,7 @@ public class RadioReferenceFrequencyIndex
      */
     public List<RankedCandidate> lookup(long frequency, long toleranceHz)
     {
-        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        RadioReferenceSettings.Location location = mSettings.getRadioReferenceSettings().getLocation();
 
         if(location == null || !mRadioReference.premiumAccountProperty().get())
         {

@@ -21,8 +21,8 @@ package io.github.dsheirer.gui.theme;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import java.awt.Color;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
@@ -51,7 +51,7 @@ public class ThemeManager
     private final Set<WeakReference<Scene>> mScenes = new LinkedHashSet<>();
     private final AtomicBoolean mWindowListenerAttached = new AtomicBoolean();
     private final String mDarkStylesheetUrl;
-    private volatile UserPreferences mUserPreferences;
+    private volatile Settings mSettings;
     private volatile Theme mCurrentTheme = Theme.LIGHT;
     private volatile double mCurrentGuiScale = 1.0d;
     private volatile boolean mComplementaryAliasColors = false;
@@ -79,18 +79,18 @@ public class ThemeManager
      * Bind the theme manager to the user preferences and apply the current preference immediately.
      * Safe to call multiple times - subsequent calls update the reference and re-apply.
      */
-    public void initialize(UserPreferences userPreferences)
+    public void initialize(Settings settings)
     {
-        if(userPreferences == null)
+        if(settings == null)
         {
             return;
         }
 
-        boolean firstBind = (mUserPreferences == null);
-        mUserPreferences = userPreferences;
-        mCurrentTheme = userPreferences.getApplicationPreference().getTheme();
-        mCurrentGuiScale = userPreferences.getApplicationPreference().getGuiScale();
-        mComplementaryAliasColors = userPreferences.getApplicationPreference().isComplementaryAliasColors();
+        boolean firstBind = (mSettings == null);
+        mSettings = settings;
+        mCurrentTheme = settings.getApplicationSettings().getTheme();
+        mCurrentGuiScale = settings.getApplicationSettings().getGuiScale();
+        mComplementaryAliasColors = settings.getApplicationSettings().isComplementaryAliasColors();
 
         if(firstBind)
         {
@@ -245,16 +245,16 @@ public class ThemeManager
     }
 
     @Subscribe
-    public void onPreferenceUpdated(PreferenceType type)
+    public void onSettingsUpdated(SettingsType type)
     {
-        if(type != PreferenceType.APPLICATION || mUserPreferences == null)
+        if(type != SettingsType.APPLICATION || mSettings == null)
         {
             return;
         }
 
-        Theme updated = mUserPreferences.getApplicationPreference().getTheme();
-        double updatedScale = mUserPreferences.getApplicationPreference().getGuiScale();
-        boolean updatedComplementary = mUserPreferences.getApplicationPreference().isComplementaryAliasColors();
+        Theme updated = mSettings.getApplicationSettings().getTheme();
+        double updatedScale = mSettings.getApplicationSettings().getGuiScale();
+        boolean updatedComplementary = mSettings.getApplicationSettings().isComplementaryAliasColors();
 
         mComplementaryAliasColors = updatedComplementary;
 

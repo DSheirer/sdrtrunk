@@ -1,0 +1,56 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+package io.github.dsheirer.settings.radioreference;
+
+import java.time.Duration;
+
+/**
+ * How often alias lists that track a Radio Reference system check the system for changes.
+ */
+public enum AliasListUpdateInterval
+{
+    TWELVE_HOURS("Every 12 Hours", Duration.ofHours(12)),
+    DAILY("Every Day", Duration.ofDays(1)),
+    WEEKLY("Once a Week", Duration.ofDays(7)),
+    MONTHLY("Once a Month", Duration.ofDays(30));
+
+    private final String mLabel;
+    private final Duration mInterval;
+
+    AliasListUpdateInterval(String label, Duration interval)
+    {
+        mLabel = label;
+        mInterval = interval;
+    }
+
+    /**
+     * Time between checks
+     */
+    public Duration getInterval()
+    {
+        return mInterval;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
+    }
+}

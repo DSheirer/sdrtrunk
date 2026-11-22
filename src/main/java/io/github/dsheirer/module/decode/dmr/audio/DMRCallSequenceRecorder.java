@@ -36,7 +36,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.Capaci
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import java.util.List;
 import org.slf4j.Logger;
@@ -56,14 +56,14 @@ public class DMRCallSequenceRecorder extends MBECallSequenceRecorder
     /**
      * Constructs a DMR MBE call sequence recorder.
      *
-     * @param userPreferences to obtain the recording directory
+     * @param settings to obtain the recording directory
      * @param channelFrequency for the channel to record
      * @param system defined by the user
      * @param site defined by the user
      */
-    public DMRCallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
+    public DMRCallSequenceRecorder(Settings settings, long channelFrequency, String system, String site)
     {
-        super(userPreferences, channelFrequency, system, site);
+        super(settings, channelFrequency, system, site);
     }
 
     /**

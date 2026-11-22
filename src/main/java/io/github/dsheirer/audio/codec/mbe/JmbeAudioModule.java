@@ -26,8 +26,8 @@ import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
@@ -65,13 +65,13 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
         "jmbe.JMBEAudioLibraryV2", "jmbe.JMBEAudioLibrary");
     private static final List<String> mLibraryLoadStatusLogged = new ArrayList<>();
     private IAudioCodec mAudioCodec;
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private static Class sLoadedJmbeAudioConverterClass;
 
-    public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
+    public JmbeAudioModule(Settings settings, AliasList aliasList, int timeslot)
     {
         super(aliasList, timeslot, DEFAULT_MAX_SEGMENT_LENGTH_MILLIS);
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         MyEventBus.getGlobalEventBus().register(this);
         loadConverter();
     }
@@ -198,12 +198,12 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     /**
      * Receives notifications that the JMBE library preference has been updated via the Guava event bus
      *
-     * @param preferenceType that was updated
+     * @param settingsType that was updated
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.JMBE_LIBRARY)
+        if(settingsType == SettingsType.JMBE_LIBRARY)
         {
             mLibraryLoadStatusLogged.clear();
             loadConverter();
@@ -224,7 +224,7 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
 
         if(sLoadedJmbeAudioConverterClass == null)
         {
-            Path path = mUserPreferences.getJmbeLibraryPreference().getPathJmbeLibrary();
+            Path path = mSettings.getJmbeLibrarySettings().getPathJmbeLibrary();
 
             if(path != null)
             {
@@ -373,7 +373,7 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
         {
             if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
             {
-                LOG.warn("JMBE audio library path is NOT SET in your User Preferences.");
+                LOG.warn("JMBE audio library path is NOT SET in your Settings.");
                 mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
             }
         }

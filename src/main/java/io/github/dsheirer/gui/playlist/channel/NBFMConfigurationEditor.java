@@ -38,8 +38,8 @@ import io.github.dsheirer.module.decode.nbfm.DeemphasisMode;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
@@ -92,12 +92,12 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
      * Constructs an instance
      * @param playlistManager for playlists
      * @param tunerManager for tuners
-     * @param userPreferences for preferences
+     * @param settings for preferences
      */
     public NBFMConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                   UserPreferences userPreferences, IFilterProcessor filterProcessor)
+                                   Settings settings, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+        super(playlistManager, tunerManager, settings, filterProcessor);
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getAuxDecoderPane());
@@ -485,7 +485,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mTalkgroupTextFormatter.valueProperty().removeListener(mTalkgroupValueChangeListener);
         }
 
-        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(Protocol.NBFM);
+        IntegerFormat format = mSettings.getTalkgroupFormatSettings().getTalkgroupFormat(Protocol.NBFM);
 
         if(format == null)
         {

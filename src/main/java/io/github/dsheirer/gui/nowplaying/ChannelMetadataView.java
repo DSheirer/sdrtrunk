@@ -35,9 +35,9 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.TalkgroupFormatSettings;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
@@ -95,7 +95,7 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     private final ChannelProcessingManager mChannelProcessingManager;
     private final ChannelMetadataModel mChannelMetadataModel;
     private final IconModel mIconModel;
-    private final TalkgroupFormatPreference mTalkgroupFormatPreference;
+    private final TalkgroupFormatSettings mTalkgroupFormatSettings;
     private final TableView<Row> mTableView = new TableView<>();
     private final ObservableList<Row> mRows = FXCollections.observableArrayList();
     //Changed on the JavaFX thread and read on the decoder threads that send channel metadata updates
@@ -108,15 +108,15 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
      * Constructs an instance.  Construct on the JavaFX application thread.
      * @param channelProcessingManager for the channel metadata and processing chains
      * @param iconModel for alias icons
-     * @param userPreferences for talkgroup formatting and column settings
+     * @param settings for talkgroup formatting and column settings
      */
     public ChannelMetadataView(ChannelProcessingManager channelProcessingManager, IconModel iconModel,
-                               UserPreferences userPreferences)
+                               Settings settings)
     {
         mChannelProcessingManager = channelProcessingManager;
         mChannelMetadataModel = mChannelProcessingManager.getChannelMetadataModel();
         mIconModel = iconModel;
-        mTalkgroupFormatPreference = userPreferences.getTalkgroupFormatPreference();
+        mTalkgroupFormatSettings = settings.getTalkgroupFormatSettings();
 
         mTableView.getColumns().addAll(createColumns());
         mTableView.setItems(mRows);
@@ -124,7 +124,7 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         mTableView.setPlaceholder(new javafx.scene.control.Label("No channels are processing"));
         mTableView.setRowFactory(tableView -> createRow());
         mTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldRow, newRow) -> selected(newRow));
-        mTableColumnMonitor = new TableColumnMonitor<>(mTableView, TABLE_KEY, userPreferences.getSwingPreference(),
+        mTableColumnMonitor = new TableColumnMonitor<>(mTableView, TABLE_KEY, settings.getSwingSettings(),
             SWING_TABLE_KEY);
 
         Region spacer = new Region();
@@ -166,10 +166,10 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
      * Receives preference update notifications via the event bus
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
         //Talkgroup format changes the identifiers and the application preference can change the alias colors
-        if(preferenceType == PreferenceType.TALKGROUP_FORMAT || preferenceType == PreferenceType.APPLICATION)
+        if(settingsType == SettingsType.TALKGROUP_FORMAT || settingsType == SettingsType.APPLICATION)
         {
             Platform.runLater(() -> mRows.forEach(Row::refresh));
         }
@@ -317,7 +317,7 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
 
         columns.add(NowPlayingCells.column("from", "From", null, Pos.CENTER,
             row -> {
-                String text = mTalkgroupFormatPreference.format(row.getChannelMetadata().getFromIdentifier());
+                String text = mTalkgroupFormatSettings.format(row.getChannelMetadata().getFromIdentifier());
                 return text == null || text.isEmpty() ? EMPTY_IDENTIFIER : text;
             }, Row::revisionProperty));
 
@@ -336,7 +336,7 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
 
         columns.add(NowPlayingCells.column("to", "To", null, Pos.CENTER,
             row -> {
-                String text = mTalkgroupFormatPreference.format(row.getChannelMetadata().getToIdentifier());
+                String text = mTalkgroupFormatSettings.format(row.getChannelMetadata().getToIdentifier());
                 return text == null || text.isEmpty() ? EMPTY_IDENTIFIER : text;
             }, Row::revisionProperty));
 

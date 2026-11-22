@@ -20,7 +20,7 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AgencyInfo;
 import io.github.dsheirer.rrapi.type.CountyInfo;
@@ -48,7 +48,7 @@ import java.util.List;
 public class AgencyEditor extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(AgencyEditor.class);
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private RadioReference mRadioReference;
     private PlaylistManager mPlaylistManager;
     private Level mLevel;
@@ -60,14 +60,14 @@ public class AgencyEditor extends VBox
 
     /**
      * Constructs an instance
-     * @param userPreferences
+     * @param settings
      * @param radioReference
      * @param level
      */
-    public AgencyEditor(UserPreferences userPreferences, RadioReference radioReference,
+    public AgencyEditor(Settings settings, RadioReference radioReference,
                         PlaylistManager playlistManager, Level level)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mRadioReference = radioReference;
         mPlaylistManager = playlistManager;
         mLevel = level;
@@ -97,7 +97,7 @@ public class AgencyEditor extends VBox
             getAgencyListView().getItems().addAll(agencies);
             getAgencyListView().getItems().sort(new AgencyComparator());
 
-            int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId(mLevel);
+            int preferredAgencyId = mSettings.getRadioReferenceSettings().getPreferredAgencyId(mLevel);
 
             for(Agency agency: getAgencyListView().getItems())
             {
@@ -118,7 +118,7 @@ public class AgencyEditor extends VBox
      */
     public void prepareView(int agencyId, AgencyFrequencyEditor.FrequencyTarget frequency)
     {
-        mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agencyId, mLevel);
+        mSettings.getRadioReferenceSettings().setPreferredAgencyId(agencyId, mLevel);
         mPendingAgencyId = agencyId;
         mPendingFrequency = frequency;
     }
@@ -179,7 +179,7 @@ public class AgencyEditor extends VBox
     {
         if(mAgencyFrequencyEditor == null)
         {
-            mAgencyFrequencyEditor = new AgencyFrequencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, mLevel);
+            mAgencyFrequencyEditor = new AgencyFrequencyEditor(mSettings, mRadioReference, mPlaylistManager, mLevel);
         }
 
         return mAgencyFrequencyEditor;
@@ -218,7 +218,7 @@ public class AgencyEditor extends VBox
                 mPendingFrequency = null;
             }
 
-            mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agency.getAgencyId(), mLevel);
+            mSettings.getRadioReferenceSettings().setPreferredAgencyId(agency.getAgencyId(), mLevel);
 
             ThreadPool.CACHED.submit(() -> {
                 try

@@ -41,9 +41,9 @@ import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.talkgroup.LTRTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.Site;
@@ -68,7 +68,7 @@ public class RadioReferenceDecoder
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioReferenceDecoder.class);
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private Map<Integer,Flavor> mFlavorMap;
     private Map<Integer,Tag> mTagMap;
     private Map<Integer,Type> mTypeMap;
@@ -76,16 +76,16 @@ public class RadioReferenceDecoder
 
     /**
      * Constructs an instance
-     * @param userPreferences for settings lookup
+     * @param settings for settings lookup
      * @param typeMap from radio reference
      * @param flavorMap from radio reference
      * @param voiceMap from radio reference
      * @param tagMap from radio reference
      */
-    public RadioReferenceDecoder(UserPreferences userPreferences, Map<Integer,Type> typeMap,
+    public RadioReferenceDecoder(Settings settings, Map<Integer,Type> typeMap,
                                  Map<Integer,Flavor> flavorMap, Map<Integer,Voice> voiceMap, Map<Integer,Tag> tagMap)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mTypeMap = typeMap;
         mFlavorMap = flavorMap;
         mVoiceMap = voiceMap;
@@ -209,7 +209,7 @@ public class RadioReferenceDecoder
      */
     public String format(Talkgroup talkgroup, System system)
     {
-        return mUserPreferences.getTalkgroupFormatPreference().format(getIdentifier(talkgroup, system));
+        return mSettings.getTalkgroupFormatSettings().format(getIdentifier(talkgroup, system));
     }
 
     /**

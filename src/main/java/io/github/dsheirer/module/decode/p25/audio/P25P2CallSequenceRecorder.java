@@ -36,7 +36,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.Telepho
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,12 +57,12 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
     /**
      * Constructs a P25-Phase2 MBE call sequence recorder.
      *
-     * @param userPreferences to obtain the recording directory
+     * @param settings to obtain the recording directory
      * @param channelFrequency for the channel to record
      */
-    public P25P2CallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
+    public P25P2CallSequenceRecorder(Settings settings, long channelFrequency, String system, String site)
     {
-        super(userPreferences, channelFrequency, system, site);
+        super(settings, channelFrequency, system, site);
     }
 
     /**

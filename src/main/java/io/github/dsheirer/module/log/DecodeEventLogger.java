@@ -29,7 +29,7 @@ import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentif
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
-import io.github.dsheirer.preference.TimestampFormat;
+import io.github.dsheirer.settings.TimestampFormat;
 import io.github.dsheirer.sample.Listener;
 import java.nio.file.Path;
 import java.text.DecimalFormat;

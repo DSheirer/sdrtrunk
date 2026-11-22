@@ -19,9 +19,9 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.gui.settings.SettingsPageType;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
@@ -47,13 +47,13 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
 
     /**
      * Constructs an instance
-     * @param userPreferences for preference settings
+     * @param settings for preference settings
      * @param tunerManager for saving tuner configurations
      * @param discoveredTuner to edit
      */
-    public RspDuoTuner1Editor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
+    public RspDuoTuner1Editor(Settings settings, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         addHeaderNode(createPreferencesButton());
 
         TunerSection options = addSection("Options");
@@ -75,10 +75,10 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
      */
     static Button createPreferencesButton()
     {
-        Button button = new Button("RSPduo Preferences");
+        Button button = new Button("RSPduo Settings");
         button.setTooltip(new Tooltip("Choose how sdrtrunk uses the RSPduo's two tuners"));
         button.setOnAction(e -> MyEventBus.getGlobalEventBus()
-                .post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.SOURCE_TUNERS)));
+                .post(new ViewSettingsEditorRequest(SettingsPageType.TUNERS)));
         return button;
     }
 

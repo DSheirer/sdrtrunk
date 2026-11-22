@@ -36,8 +36,8 @@ import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.event.DecodeEventHistory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.filter.DecodeEventFilterSet;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -63,19 +63,19 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
     /**
      * Constructs an instance.  Construct on the JavaFX application thread.
      * @param iconModel for alias icons
-     * @param userPreferences for display formats and column settings
+     * @param settings for display formats and column settings
      * @param aliasModel for aliasing identifiers
      */
-    public DecodeEventView(IconModel iconModel, UserPreferences userPreferences, AliasModel aliasModel)
+    public DecodeEventView(IconModel iconModel, Settings settings, AliasModel aliasModel)
     {
-        this(iconModel, userPreferences, aliasModel, new TimestampFormatter(userPreferences));
+        this(iconModel, settings, aliasModel, new TimestampFormatter(settings));
     }
 
-    private DecodeEventView(IconModel iconModel, UserPreferences userPreferences, AliasModel aliasModel,
+    private DecodeEventView(IconModel iconModel, Settings settings, AliasModel aliasModel,
                             TimestampFormatter timestampFormatter)
     {
-        super(createColumns(iconModel, userPreferences, aliasModel, timestampFormatter), TABLE_KEY,
-            userPreferences.getSwingPreference(), SWING_TABLE_KEY, "Event Filter Editor", "Event Columns");
+        super(createColumns(iconModel, settings, aliasModel, timestampFormatter), TABLE_KEY,
+            settings.getSwingSettings(), SWING_TABLE_KEY, "Event Filter Editor", "Event Columns");
         mTimestampFormatter = timestampFormatter;
         getHistoryControls().setFilterSet(mFilterSet);
         //Filter changes come from the filter editor
@@ -96,10 +96,10 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
      * Receives preference update notifications via the event bus
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.TALKGROUP_FORMAT ||
-            preferenceType == PreferenceType.APPLICATION)
+        if(settingsType == SettingsType.DECODE_EVENT || settingsType == SettingsType.TALKGROUP_FORMAT ||
+            settingsType == SettingsType.APPLICATION)
         {
             Platform.runLater(this::refreshAll);
         }
@@ -164,7 +164,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
     }
 
     private static List<TableColumn<Row<IDecodeEvent>,?>> createColumns(IconModel iconModel,
-                                                                        UserPreferences userPreferences,
+                                                                        Settings settings,
                                                                         AliasModel aliasModel,
                                                                         TimestampFormatter timestampFormatter)
     {
@@ -186,7 +186,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
             Row::revisionProperty));
 
         columns.add(NowPlayingCells.column("from", "From", null, Pos.CENTER,
-            row -> formatIdentifiers(row.getItem().getIdentifierCollection(), Role.FROM, userPreferences),
+            row -> formatIdentifiers(row.getItem().getIdentifierCollection(), Role.FROM, settings),
             Row::revisionProperty));
 
         //Talker alias sent over the air by the radio (e.g. DMR, P25 or NXDN)
@@ -200,7 +200,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
         columns.add(fromAlias);
 
         columns.add(NowPlayingCells.column("to", "To", null, Pos.CENTER,
-            row -> formatIdentifiers(row.getItem().getIdentifierCollection(), Role.TO, userPreferences),
+            row -> formatIdentifiers(row.getItem().getIdentifierCollection(), Role.TO, settings),
             Row::revisionProperty));
 
         TableColumn<Row<IDecodeEvent>,AliasDisplay> toAlias = NowPlayingCells.column("to.alias", "Alias",
@@ -278,12 +278,12 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
      */
     private static class TimestampFormatter
     {
-        private final UserPreferences mUserPreferences;
+        private final Settings mSettings;
         private SimpleDateFormat mFormat;
 
-        TimestampFormatter(UserPreferences userPreferences)
+        TimestampFormatter(Settings settings)
         {
-            mUserPreferences = userPreferences;
+            mSettings = settings;
             update();
         }
 
@@ -292,7 +292,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
          */
         void update()
         {
-            mFormat = mUserPreferences.getDecodeEventPreference().getTimestampFormat().getFormatter();
+            mFormat = mSettings.getDecodeEventSettings().getTimestampFormat().getFormatter();
         }
 
         String format(long timestamp)
@@ -321,7 +321,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
      * Formats the identifiers for the role as a comma separated list
      */
     private static String formatIdentifiers(IdentifierCollection identifierCollection, Role role,
-                                            UserPreferences userPreferences)
+                                            Settings settings)
     {
         if(identifierCollection == null)
         {
@@ -347,7 +347,7 @@ public class DecodeEventView extends HistoryTableView<IDecodeEvent,IDecodeEvent>
             if(identifier.getForm() == Form.TALKGROUP || identifier.getForm() == Form.RADIO ||
                 identifier.getForm() == Form.PATCH_GROUP)
             {
-                sb.append(userPreferences.getTalkgroupFormatPreference().format(identifier));
+                sb.append(settings.getTalkgroupFormatSettings().format(identifier));
             }
             else
             {

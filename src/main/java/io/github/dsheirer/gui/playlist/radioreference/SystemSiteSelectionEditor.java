@@ -24,7 +24,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 
 import com.google.common.collect.Ordering;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
@@ -55,7 +55,7 @@ public class SystemSiteSelectionEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(SystemSiteSelectionEditor.class);
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private PlaylistManager mPlaylistManager;
     private ProgressIndicator mProgressIndicator;
     private int mPendingSystemId = -1;
@@ -72,12 +72,12 @@ public class SystemSiteSelectionEditor extends GridPane
 
     /**
      * Constructs an instance
-     * @param userPreferences for settings
+     * @param settings for settings
      * @param playlistManager to access radio reference
      */
-    public SystemSiteSelectionEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public SystemSiteSelectionEditor(Settings settings, PlaylistManager playlistManager)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mPlaylistManager = playlistManager;
 
         setPadding(new Insets(10,0,0,0));
@@ -194,7 +194,7 @@ public class SystemSiteSelectionEditor extends GridPane
     {
         if(mSiteEditor == null)
         {
-            mSiteEditor = new SiteEditor(mUserPreferences, mPlaylistManager);
+            mSiteEditor = new SiteEditor(mSettings, mPlaylistManager);
         }
 
         return mSiteEditor;

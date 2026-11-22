@@ -39,7 +39,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -302,9 +302,9 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         DMRDecoder decoder = new DMRDecoder(new DecodeConfigDMR(), false);
         decoder.start();
 
-        UserPreferences userPreferences = new UserPreferences();
-        DMRAudioModule audio1 = new DMRAudioModule(userPreferences, new AliasList(""), DMRMessage.TIMESLOT_1);
-        DMRAudioModule audio2 = new DMRAudioModule(userPreferences, new AliasList(""), DMRMessage.TIMESLOT_2);
+        Settings settings = new Settings();
+        DMRAudioModule audio1 = new DMRAudioModule(settings, new AliasList(""), DMRMessage.TIMESLOT_1);
+        DMRAudioModule audio2 = new DMRAudioModule(settings, new AliasList(""), DMRMessage.TIMESLOT_2);
 
         decoder.setMessageListener(new Listener<>()
         {

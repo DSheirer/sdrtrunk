@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.fcd.proV1;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.fcd.FCDTuner;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.LNAEnhance;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.LNAGain;
@@ -51,13 +51,13 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param settings for wide-band recordings
      * @param tunerManager for saving tuner configuration
      * @param discoveredTuner for the optionally usable tuner and controller
      */
-    public FCD1TunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public FCD1TunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         init();
         refresh();
     }

@@ -20,7 +20,7 @@
 package io.github.dsheirer.audio.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -38,11 +38,11 @@ public class AudioProviderMono extends AudioProvider
 
     /**
      * Constructs an instance
-     * @param userPreferences for monitoring preference changes
+     * @param settings for monitoring preference changes
      */
-    public AudioProviderMono(UserPreferences userPreferences)
+    public AudioProviderMono(Settings settings)
     {
-        mAudioChannel = new AudioChannel(userPreferences, "MONO");
+        mAudioChannel = new AudioChannel(settings, "MONO");
     }
 
     @Override

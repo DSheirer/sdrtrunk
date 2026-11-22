@@ -24,7 +24,7 @@ import io.github.dsheirer.alias.AliasListConfiguration;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.Talkgroup;
@@ -56,14 +56,14 @@ public class AliasListSynchronizerTest
     @BeforeEach
     void setup()
     {
-        UserPreferences userPreferences = new UserPreferences();
+        Settings settings = new Settings();
         mAliasModel = new AliasModel();
-        mSynchronizer = new AliasListSynchronizer(mAliasModel, null, userPreferences);
+        mSynchronizer = new AliasListSynchronizer(mAliasModel, null, settings);
 
         Type p25 = new Type();
         p25.setTypeId(1);
         p25.setName("Project 25");
-        mDecoder = new RadioReferenceDecoder(userPreferences, Map.of(1, p25), Map.of(), Map.of(), Map.of());
+        mDecoder = new RadioReferenceDecoder(settings, Map.of(1, p25), Map.of(), Map.of(), Map.of());
 
         mSystem = new System();
         mSystem.setSystemId(SYSTEM_ID);

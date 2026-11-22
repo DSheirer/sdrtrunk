@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.hydrasdr;
 
-import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.settings.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;

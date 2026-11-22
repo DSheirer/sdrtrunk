@@ -25,7 +25,7 @@ import io.github.dsheirer.module.decode.dmr.audio.DMRCallSequenceRecorder;
 import io.github.dsheirer.module.decode.nxdn.audio.NXDNCallSequenceRecorder;
 import io.github.dsheirer.module.decode.p25.audio.P25P1CallSequenceRecorder;
 import io.github.dsheirer.module.decode.p25.audio.P25P2CallSequenceRecorder;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.record.wave.ComplexSamplesWaveRecorder;
 import io.github.dsheirer.record.wave.IRecordingStatusListener;
@@ -58,11 +58,11 @@ public class RecorderFactory
 
     /**
      * Creates recorder modules based on the channel configuration details
-     * @param userPreferences
+     * @param settings
      * @param channel
      * @return
      */
-    public static List<Module> getRecorders(UserPreferences userPreferences, Channel channel)
+    public static List<Module> getRecorders(Settings settings, Channel channel)
     {
         List<Module> recorderModules = new ArrayList<>();
 
@@ -75,13 +75,13 @@ public class RecorderFactory
                 case BASEBAND:
                     if(channel.isStandardChannel())
                     {
-                        recorderModules.add(getBasebandRecorder(channel.toString(), frequency, userPreferences));
+                        recorderModules.add(getBasebandRecorder(channel.toString(), frequency, settings));
                     }
                     break;
                 case DEMODULATED_BIT_STREAM:
                     if(channel.isStandardChannel() && channel.getDecodeConfiguration().getDecoderType().providesBitstream())
                     {
-                        recorderModules.add(new BinaryRecorder(getRecordingBasePath(userPreferences),
+                        recorderModules.add(new BinaryRecorder(getRecordingBasePath(settings),
                                 StringUtils.replaceIllegalCharacters(channel.toString()),
                                 channel.getDecodeConfiguration().getDecoderType().getProtocol(),
                                 channel.getDecodeConfiguration().getBitRate(),
@@ -91,13 +91,13 @@ public class RecorderFactory
                 case TRAFFIC_BASEBAND:
                     if(channel.isTrafficChannel())
                     {
-                        recorderModules.add(getBasebandRecorder(channel.toString(), frequency, userPreferences));
+                        recorderModules.add(getBasebandRecorder(channel.toString(), frequency, settings));
                     }
                     break;
                 case TRAFFIC_DEMODULATED_BIT_STREAM:
                     if(channel.isTrafficChannel() && channel.getDecodeConfiguration().getDecoderType().providesBitstream())
                     {
-                        recorderModules.add(new BinaryRecorder(getRecordingBasePath(userPreferences),
+                        recorderModules.add(new BinaryRecorder(getRecordingBasePath(settings),
                                 StringUtils.replaceIllegalCharacters(channel.toString()),
                                 channel.getDecodeConfiguration().getDecoderType().getProtocol(),
                                 channel.getDecodeConfiguration().getBitRate(),
@@ -111,19 +111,19 @@ public class RecorderFactory
                         switch(channel.getDecodeConfiguration().getDecoderType())
                         {
                             case DMR:
-                                recorderModules.add(new DMRCallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new DMRCallSequenceRecorder(settings, frequency,
                                         channel.getSystem(), channel.getSite()));
                                 break;
                             case NXDN:
-                                recorderModules.add(new NXDNCallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new NXDNCallSequenceRecorder(settings, frequency,
                                         channel.getSystem(), channel.getSite()));
                                 break;
                             case P25_PHASE1:
-                                recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new P25P1CallSequenceRecorder(settings, frequency,
                                     channel.getSystem(), channel.getSite()));
                                 break;
                             case P25_PHASE2:
-                                recorderModules.add(new P25P2CallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new P25P2CallSequenceRecorder(settings, frequency,
                                     channel.getSystem(), channel.getSite()));
                                 break;
                         }
@@ -135,19 +135,19 @@ public class RecorderFactory
                         switch(channel.getDecodeConfiguration().getDecoderType())
                         {
                             case DMR:
-                                recorderModules.add(new DMRCallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new DMRCallSequenceRecorder(settings, frequency,
                                         channel.getSystem(), channel.getSite()));
                                 break;
                             case NXDN:
-                                recorderModules.add(new NXDNCallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new NXDNCallSequenceRecorder(settings, frequency,
                                         channel.getSystem(), channel.getSite()));
                                 break;
                             case P25_PHASE1:
-                                recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new P25P1CallSequenceRecorder(settings, frequency,
                                     channel.getSystem(), channel.getSite()));
                                 break;
                             case P25_PHASE2:
-                                recorderModules.add(new P25P2CallSequenceRecorder(userPreferences, frequency,
+                                recorderModules.add(new P25P2CallSequenceRecorder(settings, frequency,
                                     channel.getSystem(), channel.getSite()));
                                 break;
                         }
@@ -181,9 +181,9 @@ public class RecorderFactory
     /**
      * Base path to recordings folder
      */
-    public static Path getRecordingBasePath(UserPreferences userPreferences)
+    public static Path getRecordingBasePath(Settings settings)
     {
-        return userPreferences.getDirectoryPreference().getDirectoryRecording();
+        return settings.getDirectorySettings().getDirectoryRecording();
     }
 
     /**
@@ -191,12 +191,12 @@ public class RecorderFactory
      * recording format.
      * @param channelName for the file name
      * @param frequency of the channel
-     * @param userPreferences for the recording directory and baseband record format
+     * @param settings for the recording directory and baseband record format
      */
-    public static ComplexSamplesWaveRecorder getBasebandRecorder(String channelName, long frequency, UserPreferences userPreferences)
+    public static ComplexSamplesWaveRecorder getBasebandRecorder(String channelName, long frequency, Settings settings)
     {
-        BasebandRecordFormat format = userPreferences.getRecordPreference().getBasebandRecordFormat();
-        Path directory = getRecordingBasePath(userPreferences);
+        BasebandRecordFormat format = settings.getRecordSettings().getBasebandRecordFormat();
+        Path directory = getRecordingBasePath(settings);
         String label = StringUtils.replaceIllegalCharacters(channelName);
 
         if(format == BasebandRecordFormat.SDRSHARP_IQ)
@@ -221,15 +221,15 @@ public class RecorderFactory
      * Constructs a tuner baseband recorder, using the user's preferred baseband recording format.
      * @param tunerName (e.g. tuner class AIRSPY) used in the file name
      * @param frequency tuner center frequency
-     * @param userPreferences for the recording directory and baseband record format
+     * @param settings for the recording directory and baseband record format
      * @param statusListener to receive recording status updates
      */
     public static NativeBufferWaveRecorder getTunerRecorder(String tunerName, long frequency,
-                                                            UserPreferences userPreferences,
+                                                            Settings settings,
                                                             IRecordingStatusListener statusListener)
     {
-        BasebandRecordFormat format = userPreferences.getRecordPreference().getBasebandRecordFormat();
-        Path directory = getRecordingBasePath(userPreferences);
+        BasebandRecordFormat format = settings.getRecordSettings().getBasebandRecordFormat();
+        Path directory = getRecordingBasePath(settings);
         String tuner = StringUtils.replaceIllegalCharacters(tunerName);
 
         if(format == BasebandRecordFormat.SDRSHARP_IQ)

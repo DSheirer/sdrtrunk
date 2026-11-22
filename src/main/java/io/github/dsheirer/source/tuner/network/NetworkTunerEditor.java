@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.network;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController.SampleRate;
@@ -44,9 +44,9 @@ public class NetworkTunerEditor extends TunerEditor<NetworkTuner, NetworkTunerCo
   private ComboBox<Integer> mGainCombo;
   private CheckBox mAutoReconnectCheckBox;
 
-  public NetworkTunerEditor(UserPreferences userPreferences, TunerManager tunerManager,
+  public NetworkTunerEditor(Settings settings, TunerManager tunerManager,
       DiscoveredTuner discoveredTuner) {
-    super(userPreferences, tunerManager, discoveredTuner);
+    super(settings, tunerManager, discoveredTuner);
     init();
     refresh();
   }

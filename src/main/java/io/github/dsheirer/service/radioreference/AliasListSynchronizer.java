@@ -26,8 +26,8 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceDecoder;
 import io.github.dsheirer.gui.playlist.radioreference.TalkgroupEncryption;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.radioreference.AliasListUpdateInterval;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.radioreference.AliasListUpdateInterval;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.type.System;
@@ -66,7 +66,7 @@ public class AliasListSynchronizer
 
     private final AliasModel mAliasModel;
     private final RadioReference mRadioReference;
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final Object mSynchronizationLock = new Object();
     private final Map<Integer,Long> mFailedAttempts = new HashMap<>();
     private RadioReferenceDecoder mRadioReferenceDecoder;
@@ -76,13 +76,13 @@ public class AliasListSynchronizer
      * Constructs an instance
      * @param aliasModel containing aliases and alias list configurations
      * @param radioReference for access to the web service
-     * @param userPreferences for the update interval and encrypted talkgroup import preferences
+     * @param settings for the update interval and encrypted talkgroup import preferences
      */
-    public AliasListSynchronizer(AliasModel aliasModel, RadioReference radioReference, UserPreferences userPreferences)
+    public AliasListSynchronizer(AliasModel aliasModel, RadioReference radioReference, Settings settings)
     {
         mAliasModel = aliasModel;
         mRadioReference = radioReference;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
     }
 
     /**
@@ -115,12 +115,12 @@ public class AliasListSynchronizer
      */
     private void checkDueAliasLists()
     {
-        if(!mUserPreferences.getRadioReferencePreference().hasStoredCredentials())
+        if(!mSettings.getRadioReferenceSettings().hasStoredCredentials())
         {
             return;
         }
 
-        AliasListUpdateInterval interval = mUserPreferences.getRadioReferencePreference().getAliasListUpdateInterval();
+        AliasListUpdateInterval interval = mSettings.getRadioReferenceSettings().getAliasListUpdateInterval();
         long now = java.lang.System.currentTimeMillis();
 
         for(AliasListConfiguration configuration: getTrackedConfigurations())
@@ -326,7 +326,7 @@ public class AliasListSynchronizer
 
         String aliasListName = configuration.getName();
         long previousSynchronization = configuration.getSynchronizedLastUpdated();
-        boolean encryptedDoNotMonitor = mUserPreferences.getRadioReferencePreference().isEncryptedTalkgroupDoNotMonitor();
+        boolean encryptedDoNotMonitor = mSettings.getRadioReferenceSettings().isEncryptedTalkgroupDoNotMonitor();
 
         List<Alias> listAliases = new ArrayList<>();
 
@@ -434,7 +434,7 @@ public class AliasListSynchronizer
         if(mRadioReferenceDecoder == null)
         {
             RadioReferenceService service = mRadioReference.getService();
-            mRadioReferenceDecoder = new RadioReferenceDecoder(mUserPreferences, service.getTypesMap(),
+            mRadioReferenceDecoder = new RadioReferenceDecoder(mSettings, service.getTypesMap(),
                 service.getFlavorsMap(), service.getVoicesMap(), service.getTagsMap());
         }
 

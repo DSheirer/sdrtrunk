@@ -21,7 +21,7 @@ package io.github.dsheirer.audio.broadcast;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.icon.IconModel;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -64,16 +64,16 @@ public class BroadcastModel implements Listener<AudioRecording>
     private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
     private BroadcastEventListener mBroadcastEventListener = new BroadcastEventListener();
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(AliasModel aliasModel, IconModel iconModel, UserPreferences userPreferences)
+    public BroadcastModel(AliasModel aliasModel, IconModel iconModel, Settings settings)
     {
         mAliasModel = aliasModel;
         mIconModel = iconModel;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
@@ -327,7 +327,7 @@ public class BroadcastModel implements Listener<AudioRecording>
             }
 
             final AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration,
-                    mAliasModel, mUserPreferences);
+                    mAliasModel, mSettings);
 
             if(audioBroadcaster != null)
             {

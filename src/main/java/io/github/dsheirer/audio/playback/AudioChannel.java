@@ -25,8 +25,8 @@ import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import java.util.Arrays;
@@ -57,7 +57,7 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     private final AudioBuffer mAudioBuffer = new AudioBuffer();
     private final Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
     private final LinkedTransferQueue<AudioSegment> mAudioSegmentQueue = new LinkedTransferQueue<>();
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final String mChannelName;
     private final AtomicInteger mPeakLevelBits = new AtomicInteger();
 
@@ -75,12 +75,12 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
     /**
      * Constructs an instance
      */
-    public AudioChannel(UserPreferences userPreferences, String channelName)
+    public AudioChannel(Settings settings, String channelName)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mChannelName = channelName;
 
-        mDropDuplicates = mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled();
+        mDropDuplicates = mSettings.getCallManagementSettings().isDuplicatePlaybackSuppressionEnabled();
         updateToneInsertionAudioClips();
 
         //Register to receive preference update notifications so we can update the preference items
@@ -397,15 +397,15 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      * Guava event bus notifications that the preferences have been updated, so that we can update audio segment tones.
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.PLAYBACK)
+        if(settingsType == SettingsType.PLAYBACK)
         {
             updateToneInsertionAudioClips();
         }
-        else if(preferenceType == PreferenceType.DUPLICATE_CALL_DETECTION)
+        else if(settingsType == SettingsType.DUPLICATE_CALL_DETECTION)
         {
-            mDropDuplicates = mUserPreferences.getCallManagementPreference().isDuplicatePlaybackSuppressionEnabled();
+            mDropDuplicates = mSettings.getCallManagementSettings().isDuplicatePlaybackSuppressionEnabled();
         }
     }
 
@@ -438,8 +438,8 @@ public class AudioChannel implements Listener<IdentifierUpdateNotification>
      */
     private void updateToneInsertionAudioClips()
     {
-        mAudioSegmentStartTone = mUserPreferences.getPlaybackPreference().getStartTone();
-        mAudioSegmentDropTone = mUserPreferences.getPlaybackPreference().getDropTone();;
+        mAudioSegmentStartTone = mSettings.getPlaybackSettings().getStartTone();
+        mAudioSegmentDropTone = mSettings.getPlaybackSettings().getDropTone();;
     }
 
     /**

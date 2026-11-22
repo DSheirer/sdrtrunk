@@ -19,9 +19,9 @@
 
 package io.github.dsheirer.source.tuner;
 
-import io.github.dsheirer.gui.preference.tuner.RspDuoSelectionMode;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.gui.settings.tuner.RspDuoSelectionMode;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.source.ChannelizerType;
 import io.github.dsheirer.sdrplay.DeviceInfo;
 import io.github.dsheirer.sdrplay.RspModel;
 import io.github.dsheirer.source.SourceException;
@@ -393,51 +393,51 @@ public class TunerFactory
     /**
      * Creates a tuner editor gui for the specified tuner
      */
-    public static TunerEditor getEditor(UserPreferences userPreferences, DiscoveredTuner discoveredTuner,
+    public static TunerEditor getEditor(Settings settings, DiscoveredTuner discoveredTuner,
                                         TunerManager tunerManager)
     {
         switch(discoveredTuner.getTunerClass())
         {
             case AIRSPY:
-                return new AirspyTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new AirspyTunerEditor(settings, tunerManager, discoveredTuner);
             case AIRSPY_HF:
-                return new AirspyHfTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new AirspyHfTunerEditor(settings, tunerManager, discoveredTuner);
             case FUNCUBE_DONGLE_PRO:
-                return new FCD1TunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new FCD1TunerEditor(settings, tunerManager, discoveredTuner);
             case FUNCUBE_DONGLE_PRO_PLUS:
-                return new FCD2TunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new FCD2TunerEditor(settings, tunerManager, discoveredTuner);
             case BLADERF:
-                return new BladeRfTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new BladeRfTunerEditor(settings, tunerManager, discoveredTuner);
             case HACKRF:
-                return new HackRFTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new HackRFTunerEditor(settings, tunerManager, discoveredTuner);
             case HYDRASDR:
-                return new HydraSdrTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new HydraSdrTunerEditor(settings, tunerManager, discoveredTuner);
             case LIMESDR:
-                return new LimeSdrTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new LimeSdrTunerEditor(settings, tunerManager, discoveredTuner);
             case RSP:
                 if(discoveredTuner instanceof DiscoveredRspTuner discoveredRspTuner)
                 {
                     switch(discoveredRspTuner.getModel())
                     {
                         case RSP1:
-                            return new Rsp1TunerEditor(userPreferences, tunerManager, discoveredRspTuner);
+                            return new Rsp1TunerEditor(settings, tunerManager, discoveredRspTuner);
                         case RSP1A:
-                            return new Rsp1aTunerEditor(userPreferences, tunerManager, discoveredRspTuner);
+                            return new Rsp1aTunerEditor(settings, tunerManager, discoveredRspTuner);
                         case RSP1B:
-                            return new Rsp1bTunerEditor(userPreferences, tunerManager, discoveredRspTuner);
+                            return new Rsp1bTunerEditor(settings, tunerManager, discoveredRspTuner);
                         case RSP2:
-                            return new Rsp2TunerEditor(userPreferences, tunerManager, discoveredRspTuner);
+                            return new Rsp2TunerEditor(settings, tunerManager, discoveredRspTuner);
                         case RSPDX:
                         case RSPDX_R2:
-                            return new RspDxTunerEditor(userPreferences, tunerManager, discoveredRspTuner);
+                            return new RspDxTunerEditor(settings, tunerManager, discoveredRspTuner);
                         case RSPDUO:
                             if(discoveredRspTuner instanceof DiscoveredRspDuoTuner1 duoTuner1)
                             {
-                                return new RspDuoTuner1Editor(userPreferences, tunerManager, duoTuner1);
+                                return new RspDuoTuner1Editor(settings, tunerManager, duoTuner1);
                             }
                             else if(discoveredRspTuner instanceof DiscoveredRspDuoTuner2 duoTuner2)
                             {
-                                return new RspDuoTuner2Editor(userPreferences, tunerManager, duoTuner2);
+                                return new RspDuoTuner2Editor(settings, tunerManager, duoTuner2);
                             }
                             else
                             {
@@ -452,13 +452,13 @@ public class TunerFactory
                 throw new IllegalArgumentException("Unrecognized discovered RSP tuner class: " +
                         discoveredTuner.getClass());
             case RECORDING_TUNER:
-                return new RecordingTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new RecordingTunerEditor(settings, tunerManager, discoveredTuner);
             case NETWORK_TUNER:
                 if(discoveredTuner.hasTuner())
                 {
-                    return new NetworkTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                    return new NetworkTunerEditor(settings, tunerManager, discoveredTuner);
                 }
-                return new NetworkTunerDisabledEditor(userPreferences, tunerManager, discoveredTuner);
+                return new NetworkTunerDisabledEditor(settings, tunerManager, discoveredTuner);
             case RTL2832:
                 if(discoveredTuner.hasTuner())
                 {
@@ -470,10 +470,10 @@ public class TunerFactory
                         case FITIPOWER_FC0013:
                         case RAFAELMICRO_R820T:
                         case RAFAELMICRO_R828D:
-                            return new RTL2832TunerEditor(userPreferences, tunerManager, discoveredTuner);
+                            return new RTL2832TunerEditor(settings, tunerManager, discoveredTuner);
                     }
                 }
-                return new RTL2832UnknownTunerEditor(userPreferences, tunerManager, discoveredTuner);
+                return new RTL2832UnknownTunerEditor(settings, tunerManager, discoveredTuner);
             case TEST_TUNER:
             case UNKNOWN:
             default:

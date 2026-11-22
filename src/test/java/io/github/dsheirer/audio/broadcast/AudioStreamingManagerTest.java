@@ -32,7 +32,7 @@ import io.github.dsheirer.message.TimeslotMessage;
 import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import java.io.IOException;
@@ -68,9 +68,9 @@ public class AudioStreamingManagerTest
             latch.countDown();
         };
 
-        UserPreferences userPreferences = new UserPreferences();
-        userPreferences.getCallManagementPreference().setPatchGroupStreamingOption(PatchGroupStreamingOption.PATCH_GROUP);
-        AudioStreamingManager manager = new AudioStreamingManager(listener, BroadcastFormat.MP3, userPreferences);
+        Settings settings = new Settings();
+        settings.getCallManagementSettings().setPatchGroupStreamingOption(PatchGroupStreamingOption.PATCH_GROUP);
+        AudioStreamingManager manager = new AudioStreamingManager(listener, BroadcastFormat.MP3, settings);
         manager.start();
         manager.receive(getAudioSegment());
 
@@ -85,7 +85,7 @@ public class AudioStreamingManagerTest
             throw new RuntimeException(e);
         }
 
-        cleanupStreamingDirectory(userPreferences.getDirectoryPreference().getDirectoryStreaming());
+        cleanupStreamingDirectory(settings.getDirectorySettings().getDirectoryStreaming());
 
         assertTrue(success, "Stream patch group audio as PATCHED GROUP failed to produce [" +
                 latch.getCount() + "/" + expectedRecordingsCount + "] streaming recordings");
@@ -103,9 +103,9 @@ public class AudioStreamingManagerTest
             latch.countDown();
         };
 
-        UserPreferences userPreferences = new UserPreferences();
-        userPreferences.getCallManagementPreference().setPatchGroupStreamingOption(PatchGroupStreamingOption.TALKGROUPS);
-        AudioStreamingManager manager = new AudioStreamingManager(listener, BroadcastFormat.MP3, userPreferences);
+        Settings settings = new Settings();
+        settings.getCallManagementSettings().setPatchGroupStreamingOption(PatchGroupStreamingOption.TALKGROUPS);
+        AudioStreamingManager manager = new AudioStreamingManager(listener, BroadcastFormat.MP3, settings);
         manager.start();
         manager.receive(getAudioSegment());
 
@@ -120,7 +120,7 @@ public class AudioStreamingManagerTest
             throw new RuntimeException(e);
         }
 
-        cleanupStreamingDirectory(userPreferences.getDirectoryPreference().getDirectoryStreaming());
+        cleanupStreamingDirectory(settings.getDirectorySettings().getDirectoryStreaming());
 
         assertTrue(success, "Stream patch group audio as INDIVIDUAL TALKGROUPS failed to produce [" +
                 latch.getCount() + "/" + expectedRecordingsCount + "] streaming recordings");

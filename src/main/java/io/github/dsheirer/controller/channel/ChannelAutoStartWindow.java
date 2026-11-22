@@ -21,7 +21,7 @@ package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.gui.ApplicationIcons;
 import io.github.dsheirer.gui.theme.ThemeManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.List;
@@ -71,15 +71,15 @@ public class ChannelAutoStartWindow
      * Constructs an instance.  JavaFX thread only.
      * @param listener to receive the channel start requests
      * @param channels to start, in auto-start order
-     * @param userPreferences for the countdown length
+     * @param settings for the countdown length
      * @param owner window, or null
      */
     public ChannelAutoStartWindow(Listener<ChannelEvent> listener, List<Channel> channels,
-                                  UserPreferences userPreferences, Window owner)
+                                  Settings settings, Window owner)
     {
         mChannelEventListener = listener;
         mChannels = channels;
-        mTimeoutSeconds = Math.max(0, userPreferences.getApplicationPreference().getChannelAutoStartTimeout());
+        mTimeoutSeconds = Math.max(0, settings.getApplicationSettings().getChannelAutoStartTimeout());
         mRemainingSeconds = mTimeoutSeconds;
 
         Label title = new Label("Starting " + channels.size() + (channels.size() == 1 ? " channel" : " channels"));

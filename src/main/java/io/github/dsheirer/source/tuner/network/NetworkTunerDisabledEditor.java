@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.network;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
@@ -29,9 +29,9 @@ import javafx.scene.control.Label;
  * Editor for a network tuner that is disabled or not connected.  Shows the status and the enable switch only.
  */
 public class NetworkTunerDisabledEditor extends TunerEditor<NetworkTuner, NetworkTunerConfiguration> {
-  public NetworkTunerDisabledEditor(UserPreferences userPreferences, TunerManager tunerManager,
+  public NetworkTunerDisabledEditor(Settings settings, TunerManager tunerManager,
       DiscoveredTuner discoveredTuner) {
-    super(userPreferences, tunerManager, discoveredTuner);
+    super(settings, tunerManager, discoveredTuner);
     TunerSection section = addSection("Network Tuner");
     Label message = new Label("Enable the tuner to connect to the rtl_tcp server and change its settings.");
     message.setWrapText(true);

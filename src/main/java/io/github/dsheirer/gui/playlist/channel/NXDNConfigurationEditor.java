@@ -39,7 +39,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
@@ -105,12 +105,12 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
      * Constructs an instance
      * @param playlistManager for playlists
      * @param tunerManager for tuners
-     * @param userPreferences for preferences
+     * @param settings for preferences
      */
     public NXDNConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                   UserPreferences userPreferences, IFilterProcessor filterProcessor)
+                                   Settings settings, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+        super(playlistManager, tunerManager, settings, filterProcessor);
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
         getTitledPanesBox().getChildren().add(getEventLogPane());

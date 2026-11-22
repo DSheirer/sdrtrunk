@@ -27,7 +27,7 @@ import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P1CallSequenceRecorder;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.AudioSegmentRecorder;
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +75,7 @@ public class MBECallSequenceConverter
         {
             if(callSequence.getProtocol().equals(P25P1CallSequenceRecorder.PROTOCOL))
             {
-                P25P1AudioModule audioModule = new P25P1AudioModule(new UserPreferences(), new AliasList("mbe generator"));
+                P25P1AudioModule audioModule = new P25P1AudioModule(new Settings(), new AliasList("mbe generator"));
                 audioModule.setRecordAudio(true);
                 audioModule.start();
 

@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.settings.Setting;
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.control.IntegerTextField;
@@ -45,7 +46,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
@@ -89,12 +89,7 @@ public class P25P2Viewer extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(P25P2Viewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
-    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.p25p2";
-    private static final String LAST_WACN_VALUE = "last.wacn.value.p25p2";
-    private static final String LAST_SYSTEM_VALUE = "last.system.value.p25p2";
-    private static final String LAST_NAC_VALUE = "last.nac.value.p25p2";
     private static final String FILE_FREQUENCY_REGEX = ".*\\d{8}_\\d{6}_(\\d{9}).*";
-    private Preferences mPreferences = Preferences.userNodeForPackage(P25P2Viewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
     private TableView<MessagePackage> mMessagePackageTableView;
@@ -419,8 +414,8 @@ public class P25P2Viewer extends VBox
         if(mWACNTextField == null)
         {
             mWACNTextField = new IntegerTextField();
-            mWACNTextField.textProperty().addListener((ob, ol, ne) -> mPreferences.putInt(LAST_WACN_VALUE, getWACNTextField().get()));
-            int previous = mPreferences.getInt(LAST_WACN_VALUE, 0);
+            mWACNTextField.textProperty().addListener((ob, ol, ne) -> Setting.VIEWER_P25P2_LAST_WACN.putInt(getWACNTextField().get()));
+            int previous = Setting.VIEWER_P25P2_LAST_WACN.getInt(0);
             if(previous > 0)
             {
                 getWACNTextField().set(previous);
@@ -435,8 +430,8 @@ public class P25P2Viewer extends VBox
         if(mSystemTextField == null)
         {
             mSystemTextField = new IntegerTextField();
-            mSystemTextField.textProperty().addListener((ob, ol, ne) -> mPreferences.putInt(LAST_SYSTEM_VALUE, getSystemTextField().get()));
-            int previous = mPreferences.getInt(LAST_SYSTEM_VALUE, 0);
+            mSystemTextField.textProperty().addListener((ob, ol, ne) -> Setting.VIEWER_P25P2_LAST_SYSTEM.putInt(getSystemTextField().get()));
+            int previous = Setting.VIEWER_P25P2_LAST_SYSTEM.getInt(0);
             if(previous > 0)
             {
                 getSystemTextField().set(previous);
@@ -451,8 +446,8 @@ public class P25P2Viewer extends VBox
         if(mNACTextField == null)
         {
             mNACTextField = new IntegerTextField();
-            mNACTextField.textProperty().addListener((ob, ol, ne) -> mPreferences.putInt(LAST_NAC_VALUE, getNACTextField().get()));
-            int previous = mPreferences.getInt(LAST_NAC_VALUE, 0);
+            mNACTextField.textProperty().addListener((ob, ol, ne) -> Setting.VIEWER_P25P2_LAST_NAC.putInt(getNACTextField().get()));
+            int previous = Setting.VIEWER_P25P2_LAST_NAC.getInt(0);
             if(previous > 0)
             {
                 getNACTextField().set(previous);
@@ -600,7 +595,7 @@ public class P25P2Viewer extends VBox
                 fileChooser.getExtensionFilters().addAll(f1, f2);
                 fileChooser.setSelectedExtensionFilter(f1);
                 fileChooser.setTitle("Select P25 Phase 2 .bits Recording");
-                String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
+                String lastDirectory = Setting.VIEWER_P25P2_LAST_DIRECTORY.get(null);
                 if(lastDirectory != null)
                 {
                     File file = new File(lastDirectory);
@@ -613,7 +608,7 @@ public class P25P2Viewer extends VBox
 
                 if(selected != null)
                 {
-                    mPreferences.put(LAST_SELECTED_DIRECTORY, selected.getParent());
+                    Setting.VIEWER_P25P2_LAST_DIRECTORY.put(selected.getParent());
                     load(selected);
                 }
             });

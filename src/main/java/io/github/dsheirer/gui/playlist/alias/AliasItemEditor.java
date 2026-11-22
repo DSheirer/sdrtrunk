@@ -68,9 +68,9 @@ import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditor;
 import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditorFactory;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
@@ -131,7 +131,7 @@ public class AliasItemEditor extends Editor<Alias>
     private static final Logger mLog = LoggerFactory.getLogger(AliasItemEditor.class);
 
     private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private IdentifierEditorModificationListener mIdentifierEditorModificationListener = new IdentifierEditorModificationListener();
     private ActionEditorModificationListener mActionEditorModificationListener = new ActionEditorModificationListener();
@@ -176,10 +176,10 @@ public class AliasItemEditor extends Editor<Alias>
     private ActionEditor mActionEditor;
 
 
-    public AliasItemEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public AliasItemEditor(PlaylistManager playlistManager, Settings settings)
     {
         mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         //Listen for changes to the stream configurations and refresh the stream lists
         mPlaylistManager.getBroadcastModel().getConfiguredBroadcasts()
@@ -208,9 +208,9 @@ public class AliasItemEditor extends Editor<Alias>
 
 
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
+        if(settingsType == SettingsType.TALKGROUP_FORMAT)
         {
             //When the talkgroup format changes, refresh any alias identifiers in the identifier list so that the
             //display string is correctly formatted.
@@ -538,7 +538,7 @@ public class AliasItemEditor extends Editor<Alias>
 
             if(editor == null)
             {
-                editor = ActionEditorFactory.getEditor(aliasAction.getType(), mUserPreferences);
+                editor = ActionEditorFactory.getEditor(aliasAction.getType(), mSettings);
                 mActionEditorMap.put(aliasAction.getType(), editor);
             }
         }
@@ -649,7 +649,7 @@ public class AliasItemEditor extends Editor<Alias>
 
             if(editor == null)
             {
-                editor = IdentifierEditorFactory.getEditor(aliasID.getType(), mUserPreferences);
+                editor = IdentifierEditorFactory.getEditor(aliasID.getType(), mSettings);
                 mIdentifierEditorMap.put(aliasID.getType(), editor);
             }
         }
@@ -1693,7 +1693,7 @@ public class AliasItemEditor extends Editor<Alias>
                 {
                     Talkgroup talkgroup = (Talkgroup)item;
                     Protocol protocol = talkgroup.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
+                    IntegerFormat integerFormat = mSettings.getTalkgroupFormatSettings()
                         .getTalkgroupFormat(protocol);
                     String formatted = TalkgroupFormatter.format(protocol, talkgroup.getValue(), integerFormat);
                     StringBuilder sb = new StringBuilder();
@@ -1717,7 +1717,7 @@ public class AliasItemEditor extends Editor<Alias>
                 {
                     TalkgroupRange talkgroupRange = (TalkgroupRange)item;
                     Protocol protocol = talkgroupRange.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
+                    IntegerFormat integerFormat = mSettings.getTalkgroupFormatSettings()
                         .getTalkgroupFormat(protocol);
                     String formattedMin = TalkgroupFormatter.format(protocol, talkgroupRange.getMinTalkgroup(), integerFormat);
                     String formattedMax = TalkgroupFormatter.format(protocol, talkgroupRange.getMaxTalkgroup(), integerFormat);
@@ -1758,7 +1758,7 @@ public class AliasItemEditor extends Editor<Alias>
                 {
                     Radio radio = (Radio)item;
                     Protocol protocol = radio.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
+                    IntegerFormat integerFormat = mSettings.getTalkgroupFormatSettings()
                         .getTalkgroupFormat(protocol);
                     String formatted = RadioFormatter.format(protocol, radio.getValue(), integerFormat);
                     StringBuilder sb = new StringBuilder();
@@ -1780,7 +1780,7 @@ public class AliasItemEditor extends Editor<Alias>
                 {
                     RadioRange radioRange = (RadioRange)item;
                     Protocol protocol = radioRange.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
+                    IntegerFormat integerFormat = mSettings.getTalkgroupFormatSettings()
                         .getTalkgroupFormat(protocol);
                     String formattedMin = TalkgroupFormatter.format(protocol, radioRange.getMinRadio(), integerFormat);
                     String formattedMax = TalkgroupFormatter.format(protocol, radioRange.getMaxRadio(), integerFormat);

@@ -24,8 +24,8 @@ import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.control.LtrFormatter;
 import io.github.dsheirer.gui.control.PrefixIdentFormatter;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
 {
     private static final Logger mLog = LoggerFactory.getLogger(TalkgroupRangeEditor.class);
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private Label mProtocolLabel;
     private Label mFormatLabel;
     private TextField mMinTalkgroupField;
@@ -60,11 +60,11 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
 
     /**
      * Constructs an instance
-     * @param userPreferences for determining user preferred talkgroup formats
+     * @param settings for determining user preferred talkgroup formats
      */
-    public TalkgroupRangeEditor(UserPreferences userPreferences)
+    public TalkgroupRangeEditor(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mTalkgroupDetails = createTalkgroupDetails();
 
         GridPane gridPane = new GridPane();
@@ -137,7 +137,7 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
             mMaxIntegerTextFormatter.valueProperty().removeListener(mMaxTalkgroupValueChangeListener);
         }
 
-        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(getItem().getProtocol());
+        IntegerFormat format = mSettings.getTalkgroupFormatSettings().getTalkgroupFormat(getItem().getProtocol());
 
         if(format != null)
         {

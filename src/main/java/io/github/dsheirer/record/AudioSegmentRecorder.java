@@ -25,7 +25,7 @@ import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.wave.AudioMetadata;
 import io.github.dsheirer.record.wave.AudioMetadataUtils;
 import io.github.dsheirer.record.wave.WaveWriter;
@@ -58,9 +58,9 @@ public class AudioSegmentRecorder
      * @throws IOException on any errors
      */
     public static void record(AudioSegment audioSegment, Path path, RecordFormat recordFormat,
-                              UserPreferences userPreferences) throws IOException
+                              Settings settings) throws IOException
     {
-        record(audioSegment, path, recordFormat, userPreferences, audioSegment.getIdentifierCollection());
+        record(audioSegment, path, recordFormat, settings, audioSegment.getIdentifierCollection());
     }
 
     /**
@@ -72,12 +72,12 @@ public class AudioSegmentRecorder
      * @throws IOException on any errors
      */
     public static void record(AudioSegment audioSegment, Path path, RecordFormat recordFormat,
-                              UserPreferences userPreferences, IdentifierCollection identifierCollection) throws IOException
+                              Settings settings, IdentifierCollection identifierCollection) throws IOException
     {
         switch(recordFormat)
         {
             case MP3:
-                recordMP3(audioSegment, path, userPreferences, identifierCollection);
+                recordMP3(audioSegment, path, settings, identifierCollection);
                 break;
             case WAVE:
                 recordWAVE(audioSegment, path, identifierCollection);
@@ -91,11 +91,11 @@ public class AudioSegmentRecorder
      * Records the audio segment as an MP3 file to the specified path.
      * @param audioSegment to record
      * @param path for the recording
-     * @param userPreferences for configuration
+     * @param settings for configuration
      * @param identifierCollection to use instead of the collection embedded in the audio segment
      * @throws IOException on any errors
      */
-    public static void recordMP3(AudioSegment audioSegment, Path path, UserPreferences userPreferences,
+    public static void recordMP3(AudioSegment audioSegment, Path path, Settings settings,
                                  IdentifierCollection identifierCollection) throws IOException
     {
         if(audioSegment.hasAudio())
@@ -110,10 +110,10 @@ public class AudioSegmentRecorder
             outputStream.write(id3Bytes);
 
             //Convert audio to MP3 and write to file
-            InputAudioFormat inputAudioFormat = userPreferences.getMP3Preference().getAudioSampleRate();
-            MP3Setting mp3Setting = userPreferences.getMP3Preference().getMP3Setting();
+            InputAudioFormat inputAudioFormat = settings.getMP3Settings().getAudioSampleRate();
+            MP3Setting mp3Setting = settings.getMP3Settings().getMP3Setting();
 
-            boolean normalizeAudio = userPreferences.getMP3Preference().isNormalizeAudioBeforeEncode();
+            boolean normalizeAudio = settings.getMP3Settings().isNormalizeAudioBeforeEncode();
 
             MP3AudioConverter converter = new MP3AudioConverter(inputAudioFormat, mp3Setting, normalizeAudio);
             List<byte[]> mp3Frames = converter.convert(audioSegment.getAudioBuffers());

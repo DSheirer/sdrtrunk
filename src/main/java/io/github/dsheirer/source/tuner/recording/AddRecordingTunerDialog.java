@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.recording;
 
 import io.github.dsheirer.gui.control.FrequencyEntry;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
@@ -55,7 +55,7 @@ public class AddRecordingTunerDialog extends Dialog<ButtonType>
     private static final String LAST_FILE_BROWSE_LOCATION_KEY = "AddRecordingTunerDialog.lastBrowseLocation";
     private static final ButtonType ADD = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
     private static final Pattern TUNER_RECORDING_PATTERN = Pattern.compile(".*_(\\d*)_baseband_\\d{8}_\\d{6}\\.wav");
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
     private final TunerConfigurationManager mTunerConfigurationManager;
     private final Label mRecordingFileLabel = new Label(SELECT_A_FILE);
@@ -67,18 +67,18 @@ public class AddRecordingTunerDialog extends Dialog<ButtonType>
     /**
      * Constructs an instance
      * @param owner window for the dialog
-     * @param userPreferences for the default recording directory
+     * @param settings for the default recording directory
      * @param discoveredTunerModel to add the recording tuner to
      * @param tunerConfigurationManager to add the recording tuner configuration to
      */
-    public AddRecordingTunerDialog(Window owner, UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
+    public AddRecordingTunerDialog(Window owner, Settings settings, DiscoveredTunerModel discoveredTunerModel,
                                    TunerConfigurationManager tunerConfigurationManager)
     {
-        Validate.notNull(userPreferences, "UserPreferences cannot be null");
+        Validate.notNull(settings, "Settings cannot be null");
         Validate.notNull(discoveredTunerModel, "TunerModel cannot be null");
         Validate.notNull(tunerConfigurationManager, "TunerConfigurationManager cannot be null");
         mDiscoveredTunerModel = discoveredTunerModel;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mTunerConfigurationManager = tunerConfigurationManager;
 
         initOwner(owner);
@@ -123,7 +123,7 @@ public class AddRecordingTunerDialog extends Dialog<ButtonType>
         fileChooser.setTitle("Select Recording File");
         String lastBrowsedDirectory = SystemProperties.getInstance().get(LAST_FILE_BROWSE_LOCATION_KEY, "");
         File browseDirectory = (lastBrowsedDirectory != null && !lastBrowsedDirectory.isEmpty()) ?
-                new File(lastBrowsedDirectory) : mUserPreferences.getDirectoryPreference().getDefaultRecordingDirectory().toFile();
+                new File(lastBrowsedDirectory) : mSettings.getDirectorySettings().getDefaultRecordingDirectory().toFile();
 
         if(browseDirectory.isDirectory())
         {
@@ -231,7 +231,7 @@ public class AddRecordingTunerDialog extends Dialog<ButtonType>
             config.setFrequency(frequency);
             config.setPath(mSelectedRecording.getAbsolutePath());
             mTunerConfigurationManager.addTunerConfiguration(config);
-            DiscoveredRecordingTuner discoveredRecordingTuner = new DiscoveredRecordingTuner(mUserPreferences, config);
+            DiscoveredRecordingTuner discoveredRecordingTuner = new DiscoveredRecordingTuner(mSettings, config);
             mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
         }
         catch(Exception ex)

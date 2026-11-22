@@ -23,7 +23,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.alias.ViewAliasRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.Talkgroup;
 import javafx.geometry.HPos;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class TalkgroupEditor extends GridPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private PlaylistManager mPlaylistManager;
     private TextField mAlphaTagTextField;
     private TextField mDescriptionTextField;
@@ -64,9 +64,9 @@ public class TalkgroupEditor extends GridPane
     private Alias mAlias;
     private boolean mSetEncryptedDoNotMonitor;
 
-    public TalkgroupEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public TalkgroupEditor(Settings settings, PlaylistManager playlistManager)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mPlaylistManager = playlistManager;
 
         setHgap(5);

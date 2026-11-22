@@ -24,8 +24,6 @@ import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventListener;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.module.Module;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
@@ -49,7 +47,6 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     public static final int CHANNEL_ROTATION_DELAY_MAXIMUM = 2000;
 
     private final static Logger mLog = LoggerFactory.getLogger(ChannelRotationMonitor.class);
-    private UserPreferences mUserPreferences;
     private Collection<State> mActiveStates;
     private ScheduledFuture<?> mScheduledFuture;
     private Listener<SourceEvent> mSourceEventListener;
@@ -62,11 +59,10 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
      * @param activeStates to monitor
      * @param rotationDelay specifies how long to remain on each frequency before rotating (in milliseconds).
      */
-    public ChannelRotationMonitor(Collection<State> activeStates, long rotationDelay, UserPreferences userPreferences)
+    public ChannelRotationMonitor(Collection<State> activeStates, long rotationDelay)
     {
         mActiveStates = activeStates;
         mRotationDelay = rotationDelay;
-        mUserPreferences = userPreferences;
 
         if(mRotationDelay < CHANNEL_ROTATION_DELAY_MINIMUM)
         {
@@ -151,19 +147,6 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
         {
             mSourceEventListener.receive(SourceEvent.frequencyRotationRequest());
             mLastActiveTimestamp = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * Guava event bus method to receive notifications when user preferences are updated.  This allows us to
-     * dynamically adjust rotation delay if/when the user changes the rotation delay value.
-     */
-    @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
-    {
-        if(preferenceType == PreferenceType.MULTI_FREQUENCY)
-        {
-            mRotationDelay = mUserPreferences.getChannelMultiFrequencyPreference().getRotationDelay();
         }
     }
 

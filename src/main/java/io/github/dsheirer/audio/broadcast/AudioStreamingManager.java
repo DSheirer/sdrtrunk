@@ -29,7 +29,7 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.AudioSegmentRecorder;
 import io.github.dsheirer.record.RecordFormat;
 import io.github.dsheirer.sample.Listener;
@@ -59,7 +59,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     private List<AudioSegment> mAudioSegments = new ArrayList<>();
     private Listener<AudioRecording> mAudioRecordingListener;
     private BroadcastFormat mBroadcastFormat;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private ScheduledFuture<?> mAudioSegmentProcessorFuture;
     private int mNextRecordingNumber = 1;
 
@@ -67,13 +67,13 @@ public class AudioStreamingManager implements Listener<AudioSegment>
      * Constructs an instance
      * @param listener to receive completed audio recordings
      * @param broadcastFormat for temporary recordings
-     * @param userPreferences to manage recording directories
+     * @param settings to manage recording directories
      */
-    public AudioStreamingManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, UserPreferences userPreferences)
+    public AudioStreamingManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, Settings settings)
     {
         mAudioRecordingListener = listener;
         mBroadcastFormat = broadcastFormat;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
     }
 
     /**
@@ -136,7 +136,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
         {
             audioSegment = it.next();
 
-            if(audioSegment.isDuplicate() && mUserPreferences.getCallManagementPreference().isDuplicateStreamingSuppressionEnabled())
+            if(audioSegment.isDuplicate() && mSettings.getCallManagementSettings().isDuplicateStreamingSuppressionEnabled())
             {
                 it.remove();
                 audioSegment.decrementConsumerCount();
@@ -152,7 +152,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
                     if(identifiers.getToIdentifier() instanceof PatchGroupIdentifier patchGroupIdentifier)
                     {
-                        if(mUserPreferences.getCallManagementPreference()
+                        if(mSettings.getCallManagementSettings()
                                 .getPatchGroupStreamingOption() == PatchGroupStreamingOption.TALKGROUPS)
                         {
                             //Decompose the patch group into the individual (patched) talkgroups and process the audio
@@ -231,7 +231,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
 
         try
         {
-            AudioSegmentRecorder.record(audioSegment, path, RecordFormat.MP3, mUserPreferences, identifierCollection);
+            AudioSegmentRecorder.record(audioSegment, path, RecordFormat.MP3, mSettings, identifierCollection);
 
             AudioRecording audioRecording = new AudioRecording(path, broadcastChannels, identifierCollection,
                     audioSegment.getStartTimestamp(), length);
@@ -263,7 +263,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
         sb.append(TimeStamp.getLongTimeStamp("_"));
         sb.append(mBroadcastFormat.getFileExtension());
 
-        Path temporaryRecordingPath = mUserPreferences.getDirectoryPreference().getDirectoryStreaming().resolve(sb.toString());
+        Path temporaryRecordingPath = mSettings.getDirectorySettings().getDirectoryStreaming().resolve(sb.toString());
 
         return temporaryRecordingPath;
     }

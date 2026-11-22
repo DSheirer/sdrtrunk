@@ -1,0 +1,285 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* Settings dialog.  Colors are derived from the theme's looked-up colors so the dialog follows every application
+   theme, and muted text uses opacity rather than a fixed color so it reads on light and dark backgrounds. */
+
+.settings-editor
+{
+    -fx-background-color: -fx-background;
+}
+
+/* Sidebar */
+
+.settings-editor .settings-sidebar,
+.settings-editor .settings-sidebar-scroll,
+.settings-editor .settings-sidebar-scroll > .viewport
+{
+    -fx-background-color: derive(-fx-background, -6%);
+}
+
+.settings-editor .settings-sidebar
+{
+    -fx-pref-width: 220;
+    -fx-min-width: 180;
+    -fx-border-color: transparent derive(-fx-background, -18%) transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+
+.settings-editor .settings-sidebar-scroll
+{
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.settings-editor .settings-search
+{
+    -fx-padding: 10 10 4 12;
+}
+
+.settings-editor .settings-search-icon
+{
+    -fx-fill: -fx-text-base-color;
+    -fx-opacity: 0.6;
+}
+
+.settings-editor .settings-no-matches
+{
+    -fx-padding: 12 14 4 14;
+    -fx-opacity: 0.7;
+}
+
+.settings-editor .settings-navigation
+{
+    -fx-padding: 8 0 12 0;
+    -fx-spacing: 1;
+}
+
+.settings-editor .settings-group-header
+{
+    -fx-font-size: 0.8em;
+    -fx-font-weight: bold;
+    -fx-opacity: 0.6;
+    -fx-padding: 12 14 4 14;
+}
+
+.settings-editor .settings-nav-item
+{
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 6 12 6 11;
+    -fx-graphic-text-gap: 10;
+    -fx-text-fill: -fx-text-base-color;
+    -fx-cursor: hand;
+}
+
+.settings-editor .settings-nav-item:hover
+{
+    -fx-background-color: derive(-fx-background, -12%);
+}
+
+.settings-editor .settings-nav-item:selected
+{
+    -fx-background-color: ladder(-fx-background, derive(-fx-accent, -45%) 49%, derive(-fx-accent, 75%) 50%);
+    -fx-border-color: -fx-accent;
+    -fx-font-weight: bold;
+}
+
+.settings-editor .settings-nav-item:focus-visible
+{
+    -fx-border-color: -fx-focus-color;
+}
+
+.settings-editor .settings-nav-icon
+{
+    -fx-fill: -fx-accent;
+}
+
+.settings-editor .settings-nav-icon-cell
+{
+    -fx-min-width: 18;
+    -fx-pref-width: 18;
+    -fx-max-width: 18;
+}
+
+/* Page */
+
+.settings-editor .settings-page,
+.settings-editor .settings-page > .viewport
+{
+    -fx-background-color: -fx-background;
+}
+
+.settings-editor .settings-page
+{
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.settings-editor .settings-page-content
+{
+    -fx-padding: 16 20 20 20;
+    -fx-spacing: 14;
+}
+
+.settings-editor .settings-page-header
+{
+    -fx-spacing: 4;
+    -fx-padding: 0 0 4 0;
+}
+
+.settings-editor .settings-page-title
+{
+    -fx-font-size: 1.5em;
+    -fx-font-weight: bold;
+    -fx-graphic-text-gap: 10;
+}
+
+.settings-editor .settings-page-icon
+{
+    -fx-fill: -fx-accent;
+}
+
+.settings-editor .settings-page-description
+{
+    -fx-opacity: 0.75;
+}
+
+/* Sections and rows */
+
+.settings-editor .settings-section
+{
+    -fx-background-color: derive(-fx-background, -10%), ladder(-fx-background, derive(-fx-background, 4%) 49%, derive(-fx-background, 45%) 50%);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 8, 7;
+    -fx-padding: 10 14 12 14;
+    -fx-spacing: 10;
+}
+
+.settings-editor .settings-section-title
+{
+    -fx-font-weight: bold;
+    -fx-font-size: 0.95em;
+    -fx-text-fill: -fx-accent;
+}
+
+.settings-editor .settings-section-title .text
+{
+    -fx-fill: -fx-accent;
+}
+
+.settings-editor .settings-row
+{
+    -fx-spacing: 3;
+}
+
+.settings-editor .settings-row-line
+{
+    -fx-spacing: 12;
+    -fx-min-height: 28;
+}
+
+.settings-editor .settings-row-label
+{
+    -fx-min-width: 160;
+}
+
+.settings-editor .settings-row-controls
+{
+    -fx-spacing: 8;
+}
+
+.settings-editor .settings-help
+{
+    -fx-font-size: 0.9em;
+    -fx-opacity: 0.75;
+}
+
+.settings-editor .settings-value
+{
+    -fx-font-family: monospace;
+}
+
+/* Restart required badge */
+
+.settings-editor .settings-badge-restart
+{
+    -fx-background-color: #f0ad4e40;
+    -fx-background-radius: 10;
+    -fx-padding: 1 8 1 8;
+    -fx-font-size: 0.85em;
+    -fx-graphic-text-gap: 5;
+}
+
+.settings-editor .settings-badge-icon
+{
+    -fx-fill: #e0912a;
+}
+
+/* Footer */
+
+.settings-editor .settings-footer
+{
+    -fx-padding: 6 14 6 14;
+    -fx-background-color: derive(-fx-background, -6%);
+    -fx-border-color: derive(-fx-background, -18%) transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.settings-editor .settings-footer-note
+{
+    -fx-font-size: 0.9em;
+    -fx-opacity: 0.7;
+}
+
+/* Changed from default marker */
+
+.settings-editor .settings-changed-icon
+{
+    -fx-fill: -fx-accent;
+}
+
+/* Search matches */
+
+.settings-editor .settings-row:search-match
+{
+    -fx-background-color: ladder(-fx-background, derive(-fx-accent, -55%) 49%, derive(-fx-accent, 82%) 50%);
+    -fx-background-radius: 4;
+    -fx-background-insets: -2 -6 -2 -6;
+}
+
+.settings-editor .settings-section-title:search-match
+{
+    -fx-underline: true;
+}
+
+/* Reset page footer */
+
+.settings-editor .settings-page-footer
+{
+    -fx-padding: 2 0 0 0;
+}
+
+.settings-editor .settings-reset-icon
+{
+    -fx-fill: -fx-text-base-color;
+}

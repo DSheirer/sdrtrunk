@@ -20,7 +20,7 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference.Location;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings.Location;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;

@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.settings.Setting;
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.Channel;
@@ -34,7 +35,7 @@ import io.github.dsheirer.module.decode.nxdn.NXDNTrafficChannelManager;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.IPacketHeader;
 import io.github.dsheirer.module.decode.nxdn.layer3.data.GPS;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -53,7 +54,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
@@ -95,10 +95,7 @@ public class NxdnViewer extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(NxdnViewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
-    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.nxdn";
-    private static final String LAST_SELECTED_FILE = "last.selected.file.nxdn";
     private static final String FILE_FREQUENCY_REGEX = ".*\\d{8}_\\d{6}_(\\d{9}).*";
-    private Preferences mPreferences = Preferences.userNodeForPackage(NxdnViewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
     private TableView<MessagePackage> mMessagePackageTableView;
@@ -111,11 +108,11 @@ public class NxdnViewer extends VBox
     private ProgressIndicator mLoadingIndicator;
     private MessagePackageViewer mMessagePackageViewer;
     private StringProperty mLoadedFile = new SimpleStringProperty();
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
 
-    public NxdnViewer(UserPreferences userPreferences)
+    public NxdnViewer(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         setPadding(new Insets(5));
         setSpacing(5);
 
@@ -528,7 +525,7 @@ public class NxdnViewer extends VBox
                 FileChooser.ExtensionFilter f2 = new FileChooser.ExtensionFilter("All Files *.*", "*.*");
                 fileChooser.getExtensionFilters().addAll(f1, f2);
                 fileChooser.setSelectedExtensionFilter(f1);
-                String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
+                String lastDirectory = Setting.VIEWER_NXDN_LAST_DIRECTORY.get(null);
                 if(lastDirectory != null)
                 {
                     File file = new File(lastDirectory);
@@ -536,7 +533,7 @@ public class NxdnViewer extends VBox
                     {
                         fileChooser.setInitialDirectory(file);
 
-                        String lastFile = mPreferences.get(LAST_SELECTED_FILE, null);
+                        String lastFile = Setting.VIEWER_NXDN_LAST_FILE.get(null);
 
                         if(lastFile != null)
                         {
@@ -549,8 +546,8 @@ public class NxdnViewer extends VBox
 
                 if(selected != null)
                 {
-                    mPreferences.put(LAST_SELECTED_DIRECTORY, selected.getParent());
-                    mPreferences.put(LAST_SELECTED_FILE, selected.getName());
+                    Setting.VIEWER_NXDN_LAST_DIRECTORY.put(selected.getParent());
+                    Setting.VIEWER_NXDN_LAST_FILE.put(selected.getName());
                     load(selected);
                 }
             });

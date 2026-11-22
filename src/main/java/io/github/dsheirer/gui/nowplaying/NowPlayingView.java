@@ -21,7 +21,7 @@ package io.github.dsheirer.gui.nowplaying;
 import io.github.dsheirer.gui.channel.ChannelSpectrumView;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import javafx.geometry.Orientation;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
@@ -48,18 +48,18 @@ public class NowPlayingView extends SplitPane
      * Constructs an instance.  Construct on the JavaFX application thread.
      * @param playlistManager for the channels
      * @param iconModel for alias icons
-     * @param userPreferences for display formats and column settings
+     * @param settings for display formats and column settings
      * @param detailTabsVisible to show the detail tabs
      */
-    public NowPlayingView(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences,
+    public NowPlayingView(PlaylistManager playlistManager, IconModel iconModel, Settings settings,
                           boolean detailTabsVisible)
     {
         setOrientation(Orientation.VERTICAL);
 
-        mChannelMetadataView = new ChannelMetadataView(playlistManager.getChannelProcessingManager(), iconModel, userPreferences);
+        mChannelMetadataView = new ChannelMetadataView(playlistManager.getChannelProcessingManager(), iconModel, settings);
         mChannelDetailView = new ChannelDetailView(playlistManager.getChannelProcessingManager());
-        mDecodeEventView = new DecodeEventView(iconModel, userPreferences, playlistManager.getAliasModel());
-        mMessageActivityView = new MessageActivityView(userPreferences);
+        mDecodeEventView = new DecodeEventView(iconModel, settings, playlistManager.getAliasModel());
+        mMessageActivityView = new MessageActivityView(settings);
         mChannelSpectrumView = new ChannelSpectrumView(playlistManager);
 
         Tab detailsTab = new Tab("Details", mChannelDetailView);

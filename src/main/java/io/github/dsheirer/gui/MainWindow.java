@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui;
 
+import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -29,7 +30,7 @@ import io.github.dsheirer.gui.map.MapView;
 import io.github.dsheirer.gui.nowplaying.NowPlayingView;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
-import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.gui.spectrum.MainSpectralDisplay;
 import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
 import io.github.dsheirer.gui.theme.ThemeManager;
@@ -40,7 +41,7 @@ import io.github.dsheirer.monitor.DiagnosticMonitor;
 import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.monitor.StatusBox;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
@@ -55,7 +56,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.prefs.Preferences;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -99,20 +99,12 @@ import org.slf4j.LoggerFactory;
 public class MainWindow
 {
     private static final Logger mLog = LoggerFactory.getLogger(MainWindow.class);
-    public static final String STAGE_MONITOR_KEY = "main.window";
-    private static final String PREFERENCE_BROADCAST_STATUS_VISIBLE = "sdrtrunk.broadcast.status.visible";
-    private static final String PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE = "sdrtrunk.now.playing.details.visible";
-    private static final String PREFERENCE_RESOURCE_STATUS_VISIBLE = "sdrtrunk.resource.status.visible";
-    private static final String PREFERENCE_SPECTRAL_DISPLAY_VISIBLE = "sdrtrunk.spectral.display.visible";
-    private static final String PREFERENCE_SPECTRAL_DIVIDER = "sdrtrunk.main.window.spectral.fraction";
-    private static final String PREFERENCE_BROADCAST_DIVIDER = "sdrtrunk.main.window.streaming.fraction";
     private static final double DEFAULT_SPECTRAL_DIVIDER = 0.38;
     private static final double DEFAULT_BROADCAST_FRACTION = 0.18;
     static final KeyCombination SPECTRAL_TOGGLE_SHORTCUT = new KeyCodeCombination(KeyCode.S,
         KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN);
 
-    private final Preferences mPreferences = Preferences.userNodeForPackage(SDRTrunk.class);
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final PlaylistManager mPlaylistManager;
     private final TunerManager mTunerManager;
     private final DiagnosticMonitor mDiagnosticMonitor;
@@ -146,7 +138,7 @@ public class MainWindow
 
     /**
      * Constructs the main window.  JavaFX thread only.
-     * @param userPreferences for the views
+     * @param settings for the views
      * @param playlistManager for the channels, aliases and streams
      * @param tunerManager for the tuners
      * @param audioPlaybackManager for the audio display
@@ -157,31 +149,31 @@ public class MainWindow
      * @param diagnosticMonitor for the reports
      * @param exitHandler that shuts down the application, invoked on a background thread
      */
-    public MainWindow(UserPreferences userPreferences, PlaylistManager playlistManager, TunerManager tunerManager,
+    public MainWindow(Settings settings, PlaylistManager playlistManager, TunerManager tunerManager,
                       AudioPlaybackManager audioPlaybackManager, AliasModel aliasModel, IconModel iconModel,
                       MapService mapService, ResourceMonitor resourceMonitor, DiagnosticMonitor diagnosticMonitor,
                       Runnable exitHandler)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mPlaylistManager = playlistManager;
         mTunerManager = tunerManager;
         mResourceMonitor = resourceMonitor;
         mDiagnosticMonitor = diagnosticMonitor;
         mExitHandler = exitHandler;
         mTitle = SystemProperties.getInstance().getApplicationName();
-        mSpectralDivider = clamp(mPreferences.getDouble(PREFERENCE_SPECTRAL_DIVIDER, DEFAULT_SPECTRAL_DIVIDER));
-        mBroadcastFraction = clamp(mPreferences.getDouble(PREFERENCE_BROADCAST_DIVIDER, DEFAULT_BROADCAST_FRACTION));
+        mSpectralDivider = clamp(Setting.MAIN_WINDOW_SPECTRAL_DIVIDER.getDouble(DEFAULT_SPECTRAL_DIVIDER));
+        mBroadcastFraction = clamp(Setting.MAIN_WINDOW_BROADCAST_DIVIDER.getDouble(DEFAULT_BROADCAST_FRACTION));
 
-        mAudioView = new AudioView(audioPlaybackManager, aliasModel, iconModel, userPreferences);
+        mAudioView = new AudioView(audioPlaybackManager, aliasModel, iconModel, settings);
 
-        boolean spectralVisible = mPreferences.getBoolean(PREFERENCE_SPECTRAL_DISPLAY_VISIBLE, true);
+        boolean spectralVisible = Setting.MAIN_WINDOW_SPECTRAL_DISPLAY_VISIBLE.getBoolean(true);
         mSpectralDisplay = new MainSpectralDisplay(playlistManager, tunerManager.getDiscoveredTunerModel(),
             spectralVisible);
         mSpectralDisplay.setHideRequestHandler(() -> setSpectralDisplayVisible(false));
         mSpectralHiddenBar = createSpectralHiddenBar();
 
-        boolean detailsVisible = mPreferences.getBoolean(PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE, true);
-        mNowPlayingView = new NowPlayingView(playlistManager, iconModel, userPreferences, detailsVisible);
+        boolean detailsVisible = Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.getBoolean(true);
+        mNowPlayingView = new NowPlayingView(playlistManager, iconModel, settings, detailsVisible);
         createTabs(mapService, iconModel);
 
         URL stylesheet = MainWindow.class.getResource("/main_window.css");
@@ -205,8 +197,8 @@ public class MainWindow
 
         mSpectralMenuItem.setSelected(spectralVisible);
         mNowPlayingDetailsMenuItem.setSelected(detailsVisible);
-        mBroadcastMenuItem.setSelected(mPreferences.getBoolean(PREFERENCE_BROADCAST_STATUS_VISIBLE, false));
-        mResourceMenuItem.setSelected(mPreferences.getBoolean(PREFERENCE_RESOURCE_STATUS_VISIBLE, true));
+        mBroadcastMenuItem.setSelected(Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.getBoolean(false));
+        mResourceMenuItem.setSelected(Setting.MAIN_WINDOW_RESOURCE_STATUS_VISIBLE.getBoolean(true));
         updateSplitPaneItems();
         updateStatusBar();
 
@@ -226,7 +218,7 @@ public class MainWindow
         });
 
         migrateSwingWindowLocation();
-        mUserPreferences.getJavaFxPreferences().monitor(mStage, STAGE_MONITOR_KEY);
+        mSettings.getJavaFxSettings().monitor(mStage, Setting.Window.MAIN_WINDOW);
     }
 
     /**
@@ -316,7 +308,7 @@ public class MainWindow
 
         if(visible != mSpectralDisplay.displayVisibleProperty().get())
         {
-            mPreferences.putBoolean(PREFERENCE_SPECTRAL_DISPLAY_VISIBLE, visible);
+            Setting.MAIN_WINDOW_SPECTRAL_DISPLAY_VISIBLE.putBoolean(visible);
             mSpectralDisplay.setDisplayVisible(visible);
             updateSplitPaneItems();
             applyDividers();
@@ -346,7 +338,7 @@ public class MainWindow
 
     private void createTabs(MapService mapService, IconModel iconModel)
     {
-        MapView mapView = new MapView(mapService, iconModel, mUserPreferences,
+        MapView mapView = new MapView(mapService, iconModel, mSettings,
             mPlaylistManager.getRadioReference() != null ?
                 mPlaylistManager.getRadioReference().getFrequencyIndex() : null,
             new RadioReferencePlaylistActions(mPlaylistManager), true);
@@ -354,7 +346,7 @@ public class MainWindow
         Tab nowPlaying = new Tab("Now Playing", mNowPlayingView);
         Tab map = new Tab("Map", mapView);
         Tab tuners = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
-            mUserPreferences));
+            mSettings));
 
         //The playlist editor tab opens the playlist editor window and stays on the current tab
         IconNode playIcon = new IconNode(FontAwesome.PLAY_CIRCLE_O);
@@ -399,7 +391,7 @@ public class MainWindow
             if(mBroadcastStatusView == null)
             {
                 mBroadcastStatusView = new BroadcastStatusView(mPlaylistManager.getBroadcastModel(),
-                    mUserPreferences.getSwingPreference());
+                    mSettings.getSwingSettings());
                 mBroadcastStatusView.setMinHeight(70);
             }
 
@@ -458,13 +450,13 @@ public class MainWindow
         if(mSpectralDisplay.displayVisibleProperty().get() && index < dividers.size())
         {
             mSpectralDivider = clamp(dividers.get(index++).getPosition());
-            mPreferences.putDouble(PREFERENCE_SPECTRAL_DIVIDER, mSpectralDivider);
+            Setting.MAIN_WINDOW_SPECTRAL_DIVIDER.putDouble(mSpectralDivider);
         }
 
         if(mBroadcastMenuItem.isSelected() && index < dividers.size())
         {
             mBroadcastFraction = clamp(1.0 - dividers.get(index).getPosition());
-            mPreferences.putDouble(PREFERENCE_BROADCAST_DIVIDER, mBroadcastFraction);
+            Setting.MAIN_WINDOW_BROADCAST_DIVIDER.putDouble(mBroadcastFraction);
         }
     }
 
@@ -515,20 +507,21 @@ public class MainWindow
         playlistEditor.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest()));
 
         MenuItem logs = folderItem("Application Log Files",
-            () -> mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog());
+            () -> mSettings.getDirectorySettings().getDirectoryApplicationLog());
         MenuItem recordings = folderItem("Audio Recordings",
-            () -> mUserPreferences.getDirectoryPreference().getDirectoryRecording());
+            () -> mSettings.getDirectorySettings().getDirectoryRecording());
         MenuItem eventLogs = folderItem("Channel Event Log Files",
-            () -> mUserPreferences.getDirectoryPreference().getDirectoryEventLog());
+            () -> mSettings.getDirectorySettings().getDirectoryEventLog());
         MenuItem screenCaptures = folderItem("Screen Captures",
-            () -> mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture());
+            () -> mSettings.getDirectorySettings().getDirectoryScreenCapture());
 
         MenuItem iconManager = new MenuItem("Icon Manager", icon(FontAwesome.PICTURE_O));
         iconManager.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
         MenuItem recordingViewer = new MenuItem("Message Recording Viewer (.bits)", icon(FontAwesome.BRAILLE));
         recordingViewer.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewRecordingViewerRequest()));
-        MenuItem preferences = new MenuItem("User Preferences", icon(FontAwesome.COG));
-        preferences.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest()));
+        MenuItem settings = new MenuItem("Settings", icon(FontAwesome.COG));
+        settings.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewSettingsEditorRequest()));
+        settings.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
 
         Menu tuners = new Menu("Tuners");
         tuners.getItems().add(new MenuItem("(none)"));
@@ -538,20 +531,20 @@ public class MainWindow
         mSpectralMenuItem.setOnAction(event -> setSpectralDisplayVisible(mSpectralMenuItem.isSelected()));
         mNowPlayingDetailsMenuItem.setOnAction(event -> {
             mNowPlayingView.setDetailTabsVisible(mNowPlayingDetailsMenuItem.isSelected());
-            mPreferences.putBoolean(PREFERENCE_NOW_PLAYING_DETAILS_VISIBLE, mNowPlayingDetailsMenuItem.isSelected());
+            Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.putBoolean(mNowPlayingDetailsMenuItem.isSelected());
         });
         mBroadcastMenuItem.setOnAction(event -> {
-            mPreferences.putBoolean(PREFERENCE_BROADCAST_STATUS_VISIBLE, mBroadcastMenuItem.isSelected());
+            Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.putBoolean(mBroadcastMenuItem.isSelected());
             updateSplitPaneItems();
             applyDividers();
         });
         mResourceMenuItem.setOnAction(event -> {
-            mPreferences.putBoolean(PREFERENCE_RESOURCE_STATUS_VISIBLE, mResourceMenuItem.isSelected());
+            Setting.MAIN_WINDOW_RESOURCE_STATUS_VISIBLE.putBoolean(mResourceMenuItem.isSelected());
             updateStatusBar();
         });
 
         Menu view = new Menu("View", null, playlistEditor, new SeparatorMenuItem(), logs, recordings, eventLogs,
-            iconManager, recordingViewer, screenCaptures, preferences, new SeparatorMenuItem(), tuners,
+            iconManager, recordingViewer, screenCaptures, settings, new SeparatorMenuItem(), tuners,
             new SeparatorMenuItem(), mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem,
             mResourceMenuItem);
 
@@ -696,7 +689,7 @@ public class MainWindow
 
             try
             {
-                file = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
+                file = mSettings.getDirectorySettings().getDirectoryScreenCapture().resolve(filename);
                 ImageIO.write(FxToolkit.toBufferedImage(image), "png", file.toFile());
             }
             catch(Exception e)
@@ -734,19 +727,19 @@ public class MainWindow
      */
     private void migrateSwingWindowLocation()
     {
-        if(mUserPreferences.getJavaFxPreferences().hasStoredLocation(STAGE_MONITOR_KEY))
+        if(mSettings.getJavaFxSettings().hasStoredLocation(Setting.Window.MAIN_WINDOW))
         {
             return;
         }
 
         String swingKey = "sdrtrunk.main.window.frame";
-        java.awt.Point location = mUserPreferences.getSwingPreference().getLocation(swingKey);
-        java.awt.Dimension size = mUserPreferences.getSwingPreference().getDimension(swingKey);
+        java.awt.Point location = mSettings.getSwingSettings().getLocation(swingKey);
+        java.awt.Dimension size = mSettings.getSwingSettings().getDimension(swingKey);
 
         if(location != null && size != null)
         {
-            mUserPreferences.getJavaFxPreferences().storeLocation(STAGE_MONITOR_KEY, location.x, location.y,
-                size.width, size.height, mUserPreferences.getSwingPreference().getMaximized(swingKey, false));
+            mSettings.getJavaFxSettings().storeLocation(Setting.Window.MAIN_WINDOW, location.x, location.y,
+                size.width, size.height, mSettings.getSwingSettings().getMaximized(swingKey, false));
         }
         else
         {

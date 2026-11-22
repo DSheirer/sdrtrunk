@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.airspy.hf;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
@@ -41,13 +41,13 @@ public class AirspyHfTunerEditor extends TunerEditor<AirspyHfTuner,AirspyHfTuner
 
     /**
      * Constructs an instance
-     * @param userPreferences for settings
+     * @param settings for settings
      * @param tunerManager for state updates
      * @param discoveredTuner to edit or control.
      */
-    public AirspyHfTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public AirspyHfTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         init();
         refresh();
     }

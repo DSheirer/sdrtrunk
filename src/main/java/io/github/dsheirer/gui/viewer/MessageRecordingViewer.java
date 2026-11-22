@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.gui.viewer;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Node;
@@ -53,7 +53,7 @@ public class MessageRecordingViewer extends VBox
     private int mTabCounterNxdn = 1;
     private int mTabCounterP25P1 = 1;
     private int mTabCounterP25P2 = 1;
-    private UserPreferences mUserPreferences = new UserPreferences();
+    private Settings mSettings = new Settings();
 
     /**
      * Constructs an instance
@@ -80,13 +80,13 @@ public class MessageRecordingViewer extends VBox
             });
             MenuItem nxdnMenuItem = new MenuItem("NXDN");
             nxdnMenuItem.onActionProperty().set(event -> {
-                Tab tab = new LabeledTab("NXDN-" + mTabCounterNxdn++, new NxdnViewer(mUserPreferences));
+                Tab tab = new LabeledTab("NXDN-" + mTabCounterNxdn++, new NxdnViewer(mSettings));
                 getTabPane().getTabs().add(tab);
                 getTabPane().getSelectionModel().select(tab);
             });
             MenuItem p25p1MenuItem = new MenuItem("P25 Phase 1");
             p25p1MenuItem.onActionProperty().set(event -> {
-                Tab tab = new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mUserPreferences));
+                Tab tab = new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mSettings));
                 getTabPane().getTabs().add(tab);
                 getTabPane().getSelectionModel().select(tab);
             });
@@ -117,8 +117,8 @@ public class MessageRecordingViewer extends VBox
             mTabPane = new TabPane();
             mTabPane.setMaxHeight(Double.MAX_VALUE);
             mTabPane.getTabs().add(new LabeledTab("DMR-" + mTabCounterDmr++, new DmrViewer()));
-            mTabPane.getTabs().add(new LabeledTab("NXDN-" + mTabCounterNxdn++, new NxdnViewer(mUserPreferences)));
-            mTabPane.getTabs().add(new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mUserPreferences)));
+            mTabPane.getTabs().add(new LabeledTab("NXDN-" + mTabCounterNxdn++, new NxdnViewer(mSettings)));
+            mTabPane.getTabs().add(new LabeledTab("P25P1-" + mTabCounterP25P1++, new P25P1Viewer(mSettings)));
             mTabPane.getTabs().add(new LabeledTab("P25P2-" + mTabCounterP25P2++, new P25P2Viewer()));
         }
 

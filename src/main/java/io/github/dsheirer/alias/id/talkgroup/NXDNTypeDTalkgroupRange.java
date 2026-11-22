@@ -22,7 +22,7 @@ package io.github.dsheirer.alias.id.talkgroup;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.INXDNTypeDRange;
-import io.github.dsheirer.preference.identifier.talkgroup.NXDNTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
