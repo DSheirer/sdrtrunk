@@ -44,8 +44,6 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.settings.MapViewSetting;
-import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -77,7 +75,6 @@ public class SDRTrunk implements Listener<TunerEvent>
     private DiagnosticMonitor mDiagnosticMonitor;
     private IconModel mIconModel = new IconModel();
     private PlaylistManager mPlaylistManager;
-    private SettingsManager mSettingsManager;
     private MainWindow mMainWindow;
     private WindowManager mWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
@@ -136,17 +133,6 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mTunerManager = new TunerManager(mUserPreferences);
         mTunerManager.start();
-
-        mSettingsManager = new SettingsManager();
-
-        //Older versions stored the map view in the settings file.  Move it to the map preferences once.
-        MapViewSetting legacyMapView = mSettingsManager.getLegacyMapView();
-
-        if(legacyMapView != null)
-        {
-            mUserPreferences.getMapPreference().migrateLegacyView(legacyMapView.getLatitude(),
-                legacyMapView.getLongitude(), legacyMapView.getZoom());
-        }
 
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);

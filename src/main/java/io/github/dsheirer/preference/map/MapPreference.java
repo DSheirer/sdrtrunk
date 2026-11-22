@@ -273,28 +273,4 @@ public class MapPreference extends Preference
             notifyPreferenceUpdated();
         }
     }
-
-    /**
-     * Moves the map view stored in the settings file by older versions of the application into this preference.
-     * Does nothing once a center point is stored here.
-     * @param latitude of the stored map view
-     * @param longitude of the stored map view
-     * @param zoom of the stored map view
-     */
-    public void migrateLegacyView(double latitude, double longitude, int zoom)
-    {
-        if(getCenter() == null)
-        {
-            try
-            {
-                setCenter(new Center(latitude, longitude));
-                setZoom(zoom);
-                mLog.info("Moved the map view from the settings file to the map preferences");
-            }
-            catch(IllegalArgumentException e)
-            {
-                mLog.warn("Ignoring invalid map view from the settings file: " + latitude + ", " + longitude);
-            }
-        }
-    }
 }
