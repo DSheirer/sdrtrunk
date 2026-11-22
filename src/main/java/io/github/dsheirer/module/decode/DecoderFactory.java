@@ -105,6 +105,13 @@ import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.filter.P25P2MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
+import io.github.dsheirer.dsp.filter.equalizer.GraphicEqualizer;
+import io.github.dsheirer.dsp.squelch.NoiseSquelch;
+import io.github.dsheirer.module.decode.smartnet.DecodeConfigSmartNet;
+import io.github.dsheirer.module.decode.smartnet.LowSpeedDataFilter;
+import io.github.dsheirer.module.decode.smartnet.SmartNetDecoder;
+import io.github.dsheirer.module.decode.smartnet.SmartNetDecoderState;
+import io.github.dsheirer.module.decode.smartnet.SmartNetTrafficChannelManager;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderState;
 import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
@@ -200,6 +207,10 @@ public class DecoderFactory
                 break;
             case PASSPORT:
                 processPassport(channel, modules, aliasList, decodeConfig);
+                break;
+            case SMARTNET:
+                processSmartNet(channel, modules, aliasList, channelType, (DecodeConfigSmartNet)decodeConfig,
+                    userPreferences);
                 break;
             case P25_PHASE1:
                 processP25Phase1(channel, userPreferences, modules, aliasList, trafficChannelManager, channelDescriptor);
@@ -373,6 +384,92 @@ public class DecoderFactory
      * @param aliasList for the channel
      * @param decodeConfig for the channel
      */
+    /**
+     * Motorola Type II.  The control channel decodes the outbound signalling and starts a voice
+     * (traffic) channel for each call; a voice channel is plain analog FM audio carrying the call's identifiers.
+     */
+    private static void processSmartNet(Channel channel, List<Module> modules, AliasList aliasList,
+                                        ChannelType channelType, DecodeConfigSmartNet config,
+                                        UserPreferences userPreferences)
+    {
+        if(channelType == ChannelType.STANDARD)
+        {
+            modules.add(new SmartNetDecoder());
+            SmartNetTrafficChannelManager trafficChannelManager = new SmartNetTrafficChannelManager(channel);
+            modules.add(trafficChannelManager);
+            SmartNetDecoderState smartNetState = new SmartNetDecoderState(channelType, trafficChannelManager, config);
+            smartNetState.setAliasList(aliasList);
+            modules.add(smartNetState);
+
+            //Several control channel frequencies (Radio Reference import lists every 'c' frequency): move to the
+            //next one while no control channel is decoded
+            if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency sctmf &&
+                sctmf.hasMultipleFrequencies())
+            {
+                List<State> activeStates = new ArrayList<>();
+                activeStates.add(State.CONTROL);
+                modules.add(new ChannelRotationMonitor(activeStates, sctmf.getFrequencyRotationDelay(), userPreferences));
+            }
+        }
+        else if(config.isDigital())
+        {
+            //Voice channel of a call granted as digital (OSW 0x321) - P25 Phase 1 voice.  The P25
+            //decoder and audio module do the voice; the talkgroup and radio stay those of the control channel (the
+            //link control inside the voice frames of MSP Central MA does not carry usable ones).
+            P25P1DecoderC4FM decoder = new P25P1DecoderC4FM();
+            modules.add(decoder);
+            P25P1AudioModule p25AudioModule = new P25P1AudioModule(userPreferences, aliasList);
+            //A Type II voice channel has no JMBE settings of its own: use the P25 defaults
+            configureJMBEAudioModule(p25AudioModule, new DecodeConfigP25Phase1());
+            modules.add(p25AudioModule);
+            modules.add(new SmartNetDecoderState(channelType, null, config));
+        }
+        else
+        {
+            long maxAudioSegmentLengthMillis = config.getCallTimeoutSeconds() * 1000L + 5000;
+            AudioModule audioModule = new AudioModule(aliasList, AbstractAudioModule.DEFAULT_TIMESLOT,
+                maxAudioSegmentLengthMillis, highPassFilter());
+            modules.add(audioModule);
+
+            SourceType sourceType = channel.getSourceConfiguration().getSourceType();
+
+            if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
+            {
+                //Noise squelch: the voice channel stays open until the control channel stops announcing the call,
+                //a few seconds after the transmitter drops - this keeps that static out of the audio
+                FMDemodulatorModule demodulator = new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, new NoiseSquelch(
+                    NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD, NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD,
+                    NoiseSquelch.DEFAULT_HYSTERESIS_OPEN_THRESHOLD, NoiseSquelch.DEFAULT_HYSTERESIS_CLOSE_THRESHOLD));
+
+                //Trunked voice channel: mute as soon as the carrier drops, and remove the sub-audible low-speed data
+                demodulator.setCarrierSquelch(true);
+                demodulator.setOutputFilter(LowSpeedDataFilter.create());
+
+                if(config.isGraphicEQEnabled())
+                {
+                    GraphicEqualizer equalizer = new GraphicEqualizer(8000.0);
+                    equalizer.setBandGains(config.getGraphicEQBandGains());
+                    equalizer.setEnabled(true);
+                    demodulator.setGraphicEqualizer(equalizer);
+                }
+
+                modules.add(demodulator);
+            }
+
+            modules.add(new SmartNetDecoderState(channelType, null, config));
+        }
+    }
+
+    /**
+     * The default audio filtering (high-pass) as an audio module filter list.
+     */
+    private static List<AbstractAudioFilter> highPassFilter()
+    {
+        List<AbstractAudioFilter> filters = new ArrayList<>();
+        filters.add(new HighPassAudioFilter());
+        return filters;
+    }
+
     private static void processPassport(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
         modules.add(new PassportDecoder(decodeConfig));
         modules.add(new PassportDecoderState());
@@ -879,6 +976,8 @@ public class DecoderFactory
                 return new DecodeConfigNXDN();
             case PASSPORT:
                 return new DecodeConfigPassport();
+            case SMARTNET:
+                return new DecodeConfigSmartNet();
             case P25_PHASE1:
                 return new DecodeConfigP25Phase1();
             case P25_PHASE2:
@@ -971,6 +1070,15 @@ public class DecoderFactory
                     return copyP25P2;
                 case PASSPORT:
                     return new DecodeConfigPassport();
+                case SMARTNET:
+                    DecodeConfigSmartNet originalSmartNet = (DecodeConfigSmartNet)config;
+                    DecodeConfigSmartNet copySmartNet = new DecodeConfigSmartNet();
+                    copySmartNet.setBandPlan(originalSmartNet.getBandPlan());
+                    copySmartNet.setCallTimeoutSeconds(originalSmartNet.getCallTimeoutSeconds());
+                    copySmartNet.setTrafficChannelPoolSize(originalSmartNet.getTrafficChannelPoolSize());
+                    copySmartNet.setGraphicEQEnabled(originalSmartNet.isGraphicEQEnabled());
+                    copySmartNet.setGraphicEQBandGains(originalSmartNet.getGraphicEQBandGains());
+                    return copySmartNet;
                 default:
                     throw new IllegalArgumentException("Unrecognized decoder configuration type:" + config.getDecoderType());
             }

@@ -40,6 +40,7 @@ import io.github.dsheirer.module.decode.mpt1327.identifier.MPT1327Talkgroup;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
+import io.github.dsheirer.module.decode.smartnet.identifier.SmartNetTalkgroup;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
@@ -169,6 +170,8 @@ public class RadioReferenceDecoder
                 return NXDNTalkgroupIdentifier.createTo(value);
             case PASSPORT:
                 return PassportTalkgroup.create(value);
+            case SMARTNET:
+                return SmartNetTalkgroup.createTo(value);
             default:
                 return UnknownTalkgroupIdentifier.create(value);
         }
@@ -489,6 +492,11 @@ public class RadioReferenceDecoder
             case "Project 25":
                 return Protocol.APCO25;
             case "Motorola":
+                //A Type II control channel is decoded by the Motorola Type II decoder, whatever the voice
+                if(isTypeII(flavor))
+                {
+                    return Protocol.SMARTNET;
+                }
                 if(voice.getName().contentEquals("Analog and APCO-25 Common Air Interface") ||
                     voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
                 {
@@ -510,6 +518,15 @@ public class RadioReferenceDecoder
 //        mLog.info("Type:" + type + " Flavor:" + flavor + " Voice:" + voice);
 
         return Protocol.UNKNOWN;
+    }
+
+    /**
+     * True for a Motorola system flavor with a Type II control channel (Type II, Type II SmartZone, Type II SmartZone
+     * OmniLink, Type IIi Hybrid ...)
+     */
+    private static boolean isTypeII(Flavor flavor)
+    {
+        return flavor != null && flavor.getName() != null && flavor.getName().toLowerCase().contains("type ii");
     }
 
     /**
@@ -565,6 +582,11 @@ public class RadioReferenceDecoder
                     }
                     break;
                 case "Motorola":
+                    //A Type II control channel is decoded by the Motorola Type II decoder
+                    if(isTypeII(flavor))
+                    {
+                        return DecoderType.SMARTNET;
+                    }
                     if(voice.getName().contentEquals("Analog and APCO-25 Common Air Interface") ||
                         voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
                     {
