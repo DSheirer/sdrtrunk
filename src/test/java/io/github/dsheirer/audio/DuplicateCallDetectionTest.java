@@ -27,8 +27,8 @@ import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25Encrypti
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
-import io.github.dsheirer.preference.duplicate.ICallManagementProvider;
-import io.github.dsheirer.preference.duplicate.TestCallManagementProvider;
+import io.github.dsheirer.settings.duplicate.ICallManagementProvider;
+import io.github.dsheirer.settings.duplicate.TestCallManagementProvider;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import java.util.concurrent.CountDownLatch;

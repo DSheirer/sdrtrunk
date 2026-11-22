@@ -29,11 +29,12 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.Talkgroup;
 import io.github.dsheirer.rrapi.type.TalkgroupCategory;
+import io.github.dsheirer.settings.SettingsType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javafx.animation.RotateTransition;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -82,7 +84,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     private static final Logger mLog = LoggerFactory.getLogger(SystemTalkgroupSelectionEditor.class);
 
     private final TalkgroupCategory ALL_TALKGROUPS = new TalkgroupCategory();
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private PlaylistManager mPlaylistManager;
     private TableView<AliasedTalkgroup> mTalkgroupTableView;
     private ComboBox<TalkgroupCategory> mTalkgroupCategoryComboBox;
@@ -102,12 +104,12 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     private ProgressIndicator mProgressIndicator;
     private CheckBox mEncryptedAsDoNotMonitorCheckBox;
 
-    public SystemTalkgroupSelectionEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public SystemTalkgroupSelectionEditor(Settings settings, PlaylistManager playlistManager)
     {
         //Register to receive flash alias box requests
         MyEventBus.getGlobalEventBus().register(this);
 
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mPlaylistManager = playlistManager;
 
         ALL_TALKGROUPS.setName("(All Talkgroups)");
@@ -200,10 +202,10 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         {
             mEncryptedAsDoNotMonitorCheckBox = new CheckBox("Set Encrypted Talkgroups To Muted");
             mEncryptedAsDoNotMonitorCheckBox.setDisable(true);
-            mEncryptedAsDoNotMonitorCheckBox.selectedProperty().set(mUserPreferences.getRadioReferencePreference()
+            mEncryptedAsDoNotMonitorCheckBox.selectedProperty().set(mSettings.getRadioReferenceSettings()
                 .isEncryptedTalkgroupDoNotMonitor());
             mEncryptedAsDoNotMonitorCheckBox.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> mUserPreferences.getRadioReferencePreference()
+                .addListener((observable, oldValue, newValue) -> mSettings.getRadioReferenceSettings()
                     .setEncryptedTalkgroupDoNotMonitor(mEncryptedAsDoNotMonitorCheckBox.isSelected()));
         }
 
@@ -442,7 +444,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     {
         if(mTalkgroupEditor == null)
         {
-            mTalkgroupEditor = new TalkgroupEditor(mUserPreferences, mPlaylistManager);
+            mTalkgroupEditor = new TalkgroupEditor(mSettings, mPlaylistManager);
         }
 
         return mTalkgroupEditor;
@@ -875,6 +877,19 @@ public class SystemTalkgroupSelectionEditor extends GridPane
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Follows changes to this setting made on the settings dialog's Radio Reference page
+     */
+    @Subscribe
+    public void settingsUpdated(SettingsType settingsType)
+    {
+        if(settingsType == SettingsType.RADIO_REFERENCE)
+        {
+            Platform.runLater(() -> getEncryptedAsDoNotMonitorCheckBox().setSelected(mSettings.getRadioReferenceSettings()
+                .isEncryptedTalkgroupDoNotMonitor()));
         }
     }
 }

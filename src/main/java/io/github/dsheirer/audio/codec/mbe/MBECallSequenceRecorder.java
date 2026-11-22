@@ -26,8 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
-import io.github.dsheirer.preference.TimestampFormat;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.TimestampFormat;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
     protected static final String CALL_TYPE_GROUP = "GROUP";
     protected static final String CALL_TYPE_INDIVIDUAL = "INDIVIDUAL";
     protected static final String CALL_TYPE_TELEPHONE_INTERCONNECT = "TELEPHONE INTERCONNECT";
-    protected UserPreferences mUserPreferences;
+    protected Settings mSettings;
     protected long mChannelFrequency;
     protected String mSystem;
     protected String mSite;
@@ -56,12 +56,12 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
 
     /**
      * Constructs an instance
-     * @param userPreferences to obtain recording directory
+     * @param settings to obtain recording directory
      * @param channelFrequency for the channel to record
      */
-    public MBECallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
+    public MBECallSequenceRecorder(Settings settings, long channelFrequency, String system, String site)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mChannelFrequency = channelFrequency;
         mSystem = system;
         mSite = site;
@@ -130,7 +130,7 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
 
             sb.append(".mbe");
 
-            Path recordingDirectory = mUserPreferences.getDirectoryPreference().getDirectoryRecording();
+            Path recordingDirectory = mSettings.getDirectorySettings().getDirectoryRecording();
             Path filePath = recordingDirectory.resolve(sb.toString());
 
             try

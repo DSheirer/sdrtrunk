@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.source.tuner.manager;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.recording.RecordingTuner;
@@ -33,17 +33,17 @@ import org.slf4j.LoggerFactory;
 public class DiscoveredRecordingTuner extends DiscoveredTuner
 {
     private static final Logger mLog = LoggerFactory.getLogger(DiscoveredRecordingTuner.class);
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
 
     /**
      * Constructs an instance
-     * @param userPreferences instance
+     * @param settings instance
      * @param recordingTunerConfiguration with recording path and frequency
      */
-    public DiscoveredRecordingTuner(UserPreferences userPreferences,
+    public DiscoveredRecordingTuner(Settings settings,
                                     RecordingTunerConfiguration recordingTunerConfiguration)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         setTunerConfiguration(recordingTunerConfiguration);
 
         //Default all recordings to be disabled on startup
@@ -75,7 +75,7 @@ public class DiscoveredRecordingTuner extends DiscoveredTuner
     {
         if(!hasTuner())
         {
-            mTuner = new RecordingTuner(mUserPreferences, this, getRecordingTunerConfiguration());
+            mTuner = new RecordingTuner(mSettings, this, getRecordingTunerConfiguration());
 
             try
             {

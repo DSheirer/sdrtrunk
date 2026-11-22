@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.sdrplay.rsp2;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerEditor;
@@ -39,13 +39,13 @@ public class Rsp2TunerEditor extends RspTunerEditor<Rsp2TunerConfiguration>
 
     /**
      * Constructs an instance
-     * @param userPreferences for preference settings
+     * @param settings for preference settings
      * @param tunerManager for saving tuner configurations
      * @param discoveredTuner to edit
      */
-    public Rsp2TunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
+    public Rsp2TunerEditor(Settings settings, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         TunerSection options = addSection("Options");
         mAntennaCombo = addChoice(options, "Antenna", List.of(Rsp2AntennaSelection.values()),
                 () -> control().getAntennaSelection(), selection -> control().setAntennaSelection(selection));

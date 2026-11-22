@@ -22,7 +22,7 @@ package io.github.dsheirer.source.tuner.configuration;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
@@ -49,7 +49,7 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(TunerConfigurationManager.class);
     private static final String SETTINGS_FILE_NAME = "tuner_configuration.json";
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private List<DisabledTuner> mDisabledTunerList = new ArrayList<>();
     private List<TunerConfiguration> mTunerConfigurations = new ArrayList<>();
     private AtomicBoolean mSavePending = new AtomicBoolean();
@@ -58,11 +58,11 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
     /**
      * Constructs an instance and loads the save configuration state.
      *
-     * @param userPreferences to determine directories for accessing files
+     * @param settings to determine directories for accessing files
      */
-    public TunerConfigurationManager(UserPreferences userPreferences)
+    public TunerConfigurationManager(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         load();
     }
 
@@ -96,7 +96,7 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
      */
     private Path getConfigurationFilePath()
     {
-        return mUserPreferences.getDirectoryPreference().getDirectoryConfiguration().resolve(SETTINGS_FILE_NAME);
+        return mSettings.getDirectorySettings().getDirectoryConfiguration().resolve(SETTINGS_FILE_NAME);
     }
 
     /**

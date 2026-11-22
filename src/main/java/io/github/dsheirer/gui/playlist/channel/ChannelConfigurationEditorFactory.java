@@ -21,7 +21,7 @@ package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,36 +41,36 @@ public class ChannelConfigurationEditorFactory
      * @param decoderType to create
      * @param playlistManager for the editor
      * @param tunerManager for tuners
-     * @param userPreferences for preferences
+     * @param settings for preferences
      * @param filterProcessor to be notified to clear and restore any applied filters.
      * @return constructed editor
      */
     public static ChannelConfigurationEditor getEditor(DecoderType decoderType, PlaylistManager playlistManager,
-                                                       TunerManager tunerManager, UserPreferences userPreferences,
+                                                       TunerManager tunerManager, Settings settings,
                                                        IFilterProcessor filterProcessor)
     {
         switch(decoderType)
         {
             case AM:
-                return new AMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new AMConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case DMR:
-                return new DMRConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new DMRConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case LTR_NET:
-                return new LTRNetConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new LTRNetConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case LTR:
-                return new LTRConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new LTRConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case MPT1327:
-                return new MPT1327ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new MPT1327ConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case NBFM:
-                return new NBFMConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new NBFMConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case NXDN:
-                return new NXDNConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new NXDNConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case PASSPORT:
-                return new PassportConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new PassportConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case P25_PHASE1:
-                return new P25P1ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new P25P1ConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             case P25_PHASE2:
-                return new P25P2ConfigurationEditor(playlistManager, tunerManager, userPreferences, filterProcessor);
+                return new P25P2ConfigurationEditor(playlistManager, tunerManager, settings, filterProcessor);
             default:
                 if(decoderType != null && !mLoggedUnrecognizedTypes.contains(decoderType))
                 {

@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.rtl;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.rtl.r8x.R8xTunerConfiguration;
@@ -33,10 +33,10 @@ public class RTL2832UnknownTunerEditor extends TunerEditor<RTL2832Tuner, RTL2832
 {
     private final Label mUniqueIdLabel = new Label();
 
-    public RTL2832UnknownTunerEditor(UserPreferences userPreferences, TunerManager tunerManager,
+    public RTL2832UnknownTunerEditor(Settings settings, TunerManager tunerManager,
                                      DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         TunerSection section = addSection("Unsupported Tuner");
         Label message = new Label("This RTL-2832 device has an embedded tuner type that isn't supported.");
         message.setWrapText(true);

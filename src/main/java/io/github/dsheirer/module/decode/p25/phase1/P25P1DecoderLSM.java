@@ -31,7 +31,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -284,8 +284,8 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         P25P1DecoderLSM decoder = new P25P1DecoderLSM();
         decoder.start();
 
-        UserPreferences userPreferences = new UserPreferences();
-        P25P1AudioModule audio1 = new P25P1AudioModule(userPreferences, new AliasList(""));
+        Settings settings = new Settings();
+        P25P1AudioModule audio1 = new P25P1AudioModule(settings, new AliasList(""));
 
         decoder.setMessageListener(new Listener<>()
         {

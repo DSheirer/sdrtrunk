@@ -20,7 +20,7 @@
 package io.github.dsheirer.audio.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -42,12 +42,12 @@ public class AudioProviderStereo extends AudioProvider
 
     /**
      * Constructs an instance.
-     * @param userPreferences for monitoring preference changes
+     * @param settings for monitoring preference changes
      */
-    public AudioProviderStereo(UserPreferences userPreferences)
+    public AudioProviderStereo(Settings settings)
     {
-        mAudioChannelLeft = new AudioChannel(userPreferences, "LEFT");
-        mAudioChannelRight = new AudioChannel(userPreferences, "RIGHT");
+        mAudioChannelLeft = new AudioChannel(settings, "LEFT");
+        mAudioChannelRight = new AudioChannel(settings, "RIGHT");
     }
 
     @Override

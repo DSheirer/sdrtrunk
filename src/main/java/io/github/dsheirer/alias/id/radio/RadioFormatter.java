@@ -19,12 +19,12 @@
 
 package io.github.dsheirer.alias.id.radio;
 
-import io.github.dsheirer.preference.identifier.IntegerFormat;
-import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.AbstractIntegerFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.DMRTalkgroupFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.NXDNTalkgroupFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.UnknownTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
+import io.github.dsheirer.settings.identifier.talkgroup.APCO25TalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.AbstractIntegerFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.DMRTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.UnknownTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import java.text.ParseException;
 import java.util.EnumMap;

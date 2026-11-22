@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasListConfiguration;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
@@ -39,7 +40,7 @@ import io.github.dsheirer.module.decode.p25.phase1.Modulation;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.RadioNetwork;
 import io.github.dsheirer.rrapi.type.Site;
@@ -47,6 +48,7 @@ import io.github.dsheirer.rrapi.type.SiteFrequency;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
 import io.github.dsheirer.service.radioreference.AliasListSynchronizer;
+import io.github.dsheirer.settings.SettingsType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import java.text.DecimalFormat;
@@ -100,7 +102,7 @@ public class SiteEditor extends GridPane
     private static final String TOGGLE_BUTTON_P25_VOICE = "All P25 Voice";
     private static final String PHASE_2_FLAVOR = "Phase II";
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private PlaylistManager mPlaylistManager;
     private TableView<SiteFrequency> mSiteFrequencyTableView;
     private TableColumn<SiteFrequency,String> mTypeColumn;
@@ -130,10 +132,11 @@ public class SiteEditor extends GridPane
     private ToggleButton mFdmaControlToggleButton;
     private ToggleButton mTdmaControlToggleButton;
 
-    public SiteEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public SiteEditor(Settings settings, PlaylistManager playlistManager)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mPlaylistManager = playlistManager;
+        MyEventBus.getGlobalEventBus().register(this);
 
         setMaxHeight(Double.MAX_VALUE);
         setHgap(5.0);
@@ -1232,10 +1235,10 @@ public class SiteEditor extends GridPane
             mGoToChannelEditorCheckBox = new CheckBox("Go To Channel Editor");
             mGoToChannelEditorCheckBox.setDisable(true);
             mGoToChannelEditorCheckBox.setVisible(false);
-            mGoToChannelEditorCheckBox.setSelected(mUserPreferences.getRadioReferencePreference()
+            mGoToChannelEditorCheckBox.setSelected(mSettings.getRadioReferenceSettings()
                 .isCreateAndShowChannelEditor());
             mGoToChannelEditorCheckBox.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> mUserPreferences.getRadioReferencePreference()
+                .addListener((observable, oldValue, newValue) -> mSettings.getRadioReferenceSettings()
                     .setCreateAndShowChannelEditor(newValue));
         }
 
@@ -1410,5 +1413,18 @@ public class SiteEditor extends GridPane
         }
 
         return false;
+    }
+
+    /**
+     * Follows changes to this setting made on the settings dialog's Radio Reference page
+     */
+    @Subscribe
+    public void settingsUpdated(SettingsType settingsType)
+    {
+        if(settingsType == SettingsType.RADIO_REFERENCE)
+        {
+            Platform.runLater(() -> getGoToChannelEditorCheckBox().setSelected(mSettings.getRadioReferenceSettings()
+                .isCreateAndShowChannelEditor()));
+        }
     }
 }

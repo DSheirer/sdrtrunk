@@ -25,8 +25,8 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -71,7 +71,7 @@ public class PlaylistManagerEditor extends HBox
         new FileChooser.ExtensionFilter("All Files (*.*)", "*.*");
 
     private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private TableView<Path> mPlaylistTableView;
     private VBox mButtonBox;
     private Button mSelectButton;
@@ -84,12 +84,12 @@ public class PlaylistManagerEditor extends HBox
     /**
      * Constructs an instance
      * @param playlistManager for managing playlist
-     * @param userPreferences for accessing preferences
+     * @param settings for accessing preferences
      */
-    public PlaylistManagerEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public PlaylistManagerEditor(PlaylistManager playlistManager, Settings settings)
     {
         mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         //Register to receive preferences updates
         MyEventBus.getGlobalEventBus().register(this);
@@ -110,7 +110,7 @@ public class PlaylistManagerEditor extends HBox
      */
     private boolean isCurrent(Path path)
     {
-        Path current = mUserPreferences.getPlaylistPreference().getPlaylist();
+        Path current = mSettings.getPlaylistSettings().getPlaylist();
         return path != null && current != null && path.equals(current);
     }
 
@@ -119,7 +119,7 @@ public class PlaylistManagerEditor extends HBox
      */
     private void savePlaylistsPreference()
     {
-        mUserPreferences.getPlaylistPreference().setPlaylistList(getPlaylistTableView().getItems());
+        mSettings.getPlaylistSettings().setPlaylistList(getPlaylistTableView().getItems());
     }
 
     private TableView<Path> getPlaylistTableView()
@@ -218,7 +218,7 @@ public class PlaylistManagerEditor extends HBox
                 }
             });
 
-            List<Path> playlistPaths = mUserPreferences.getPlaylistPreference().getPlaylistList();
+            List<Path> playlistPaths = mSettings.getPlaylistSettings().getPlaylistList();
 
             mPlaylistTableView.getItems().addAll(playlistPaths);
         }
@@ -265,7 +265,7 @@ public class PlaylistManagerEditor extends HBox
     {
         if(selected != null)
         {
-            Path current = mUserPreferences.getPlaylistPreference().getPlaylist();
+            Path current = mSettings.getPlaylistSettings().getPlaylist();
 
             try
             {
@@ -353,7 +353,7 @@ public class PlaylistManagerEditor extends HBox
             mAddButton.setOnAction(event -> {
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Add Playlist");
-                fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
+                fileChooser.setInitialDirectory(mSettings.getDirectorySettings().getDirectoryPlaylist().toFile());
                 fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER, ALL_FILES_FILE_FILTER);
 
                 File playlistToAdd = fileChooser.showOpenDialog(null);
@@ -398,7 +398,7 @@ public class PlaylistManagerEditor extends HBox
                 {
                     FileChooser fileChooser = new FileChooser();
                     fileChooser.setTitle("Copy Playlist");
-                    fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
+                    fileChooser.setInitialDirectory(mSettings.getDirectorySettings().getDirectoryPlaylist().toFile());
                     fileChooser.setInitialFileName(selected.getName(selected.getNameCount() - 1).toString());
                     fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER, ALL_FILES_FILE_FILTER);
 
@@ -470,7 +470,7 @@ public class PlaylistManagerEditor extends HBox
             mNewButton.setOnAction(event -> {
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("New Playlist");
-                fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
+                fileChooser.setInitialDirectory(mSettings.getDirectorySettings().getDirectoryPlaylist().toFile());
                 fileChooser.setInitialFileName("*.xml");
                 fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER);
 
@@ -550,12 +550,12 @@ public class PlaylistManagerEditor extends HBox
     /**
      * Receives preference update notifications via the event bus for playlist updates.  Use this to queue an update
      * to the playlist list view so that we can reflect changes to the current playlist.
-     * @param preferenceType that was updated
+     * @param settingsType that was updated
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.PLAYLIST)
+        if(settingsType == SettingsType.PLAYLIST)
         {
             Platform.runLater(new Runnable()
             {

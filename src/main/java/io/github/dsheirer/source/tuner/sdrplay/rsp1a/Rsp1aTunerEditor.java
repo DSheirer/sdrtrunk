@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.sdrplay.rsp1a;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerEditor;
@@ -36,13 +36,13 @@ public class Rsp1aTunerEditor extends RspTunerEditor<Rsp1aTunerConfiguration>
 
     /**
      * Constructs an instance
-     * @param userPreferences for preference settings
+     * @param settings for preference settings
      * @param tunerManager for saving tuner configurations
      * @param discoveredTuner to edit
      */
-    public Rsp1aTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
+    public Rsp1aTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         TunerSection options = addSection("Options");
         mBiasTCheckBox = addOption(options, "Bias-T power", "Provide DC power on the antenna connector",
                 () -> control().isBiasT(), enabled -> control().setBiasT(enabled));

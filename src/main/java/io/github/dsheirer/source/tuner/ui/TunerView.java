@@ -21,7 +21,7 @@ package io.github.dsheirer.source.tuner.ui;
 import io.github.dsheirer.gui.control.FrequencyEntry;
 import io.github.dsheirer.gui.table.ColumnConfigurationButton;
 import io.github.dsheirer.gui.table.TableColumnMonitor;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredNetworkTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
@@ -72,7 +72,7 @@ public class TunerView extends SplitPane implements DiscoveredTunerModel.ModelLi
     private static final PseudoClass STATUS_ERROR = PseudoClass.getPseudoClass("error");
     private static final PseudoClass STATUS_REMOVED = PseudoClass.getPseudoClass("removed");
 
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
     private final TunerConfigurationManager mTunerConfigurationManager;
     private final DiscoveredTunerEditor mDiscoveredTunerEditor;
@@ -84,14 +84,14 @@ public class TunerView extends SplitPane implements DiscoveredTunerModel.ModelLi
     /**
      * Constructs an instance.  Must be invoked on the JavaFX application thread.
      * @param tunerManager for tuners
-     * @param userPreferences for tuner editors and column settings
+     * @param settings for tuner editors and column settings
      */
-    public TunerView(TunerManager tunerManager, UserPreferences userPreferences)
+    public TunerView(TunerManager tunerManager, Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mDiscoveredTunerModel = tunerManager.getDiscoveredTunerModel();
         mTunerConfigurationManager = tunerManager.getTunerConfigurationManager();
-        mDiscoveredTunerEditor = new DiscoveredTunerEditor(userPreferences, tunerManager);
+        mDiscoveredTunerEditor = new DiscoveredTunerEditor(settings, tunerManager);
 
         getStyleClass().add("tuner-view");
         URL stylesheet = TunerView.class.getResource("/tuner_editor.css");
@@ -102,7 +102,7 @@ public class TunerView extends SplitPane implements DiscoveredTunerModel.ModelLi
         }
 
         createColumns();
-        mTableColumnMonitor = new TableColumnMonitor<>(mTableView, TABLE_KEY, userPreferences.getSwingPreference(),
+        mTableColumnMonitor = new TableColumnMonitor<>(mTableView, TABLE_KEY, settings.getSwingSettings(),
                 SWING_TABLE_KEY);
 
         mTableView.setItems(mTuners);
@@ -141,10 +141,10 @@ public class TunerView extends SplitPane implements DiscoveredTunerModel.ModelLi
     private HBox createToolbar()
     {
         MenuItem addRecording = new MenuItem("Recording Tuner ...");
-        addRecording.setOnAction(e -> new AddRecordingTunerDialog(getScene().getWindow(), mUserPreferences,
+        addRecording.setOnAction(e -> new AddRecordingTunerDialog(getScene().getWindow(), mSettings,
                 mDiscoveredTunerModel, mTunerConfigurationManager).show());
         MenuItem addNetwork = new MenuItem("Network Tuner (rtl_tcp) ...");
-        addNetwork.setOnAction(e -> new AddNetworkTunerDialog(getScene().getWindow(), mUserPreferences,
+        addNetwork.setOnAction(e -> new AddNetworkTunerDialog(getScene().getWindow(), mSettings,
                 mDiscoveredTunerModel, mTunerConfigurationManager).show());
         MenuButton addButton = new MenuButton("Add Tuner", null, addRecording, addNetwork);
         addButton.setTooltip(new Tooltip("Add a recording tuner that replays a baseband recording, or an rtl_tcp " +

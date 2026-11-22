@@ -27,8 +27,8 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -49,25 +49,25 @@ public class ApplicationLog
     private static final String APPLICATION_LOG_FILENAME = "sdrtrunk_app.log";
     private static final int APPLICATION_LOG_MAX_HISTORY = 10;
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private RollingFileAppender mRollingFileAppender;
     private Path mApplicationLogPath;
 
     /**
      * Constructs the application log instance.  Note: use the start() method to initiate logging.
-     * @param userPreferences
+     * @param settings
      */
-    public ApplicationLog(UserPreferences userPreferences)
+    public ApplicationLog(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
     }
 
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.DIRECTORY && mRollingFileAppender != null && mApplicationLogPath != null)
+        if(settingsType == SettingsType.DIRECTORY && mRollingFileAppender != null && mApplicationLogPath != null)
         {
-            Path applicationLogPath = mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog();
+            Path applicationLogPath = mSettings.getDirectorySettings().getDirectoryApplicationLog();
 
             //Restart the application log if the path is updated
             if(!applicationLogPath.equals(mApplicationLogPath))
@@ -88,7 +88,7 @@ public class ApplicationLog
 
         if(mRollingFileAppender == null)
         {
-            mApplicationLogPath = mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog();
+            mApplicationLogPath = mSettings.getDirectorySettings().getDirectoryApplicationLog();
             Path logfile = mApplicationLogPath.resolve(APPLICATION_LOG_FILENAME);
             mLog.info("Application Log File: " + logfile.toString());
 
@@ -155,11 +155,11 @@ public class ApplicationLog
             mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
             mLog.info("Host Max Java Memory:  " + FileUtils.byteCountToDisplaySize(Runtime.getRuntime().maxMemory()));
             mLog.info("Storage Directories:");
-            mLog.info(" Application Root: " + mUserPreferences.getDirectoryPreference().getDirectoryApplicationRoot());
-            mLog.info(" Application Log:  " + mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog());
-            mLog.info(" Event Log:        " + mUserPreferences.getDirectoryPreference().getDirectoryEventLog());
-            mLog.info(" Playlist:         " + mUserPreferences.getDirectoryPreference().getDirectoryPlaylist());
-            mLog.info(" Recordings:       " + mUserPreferences.getDirectoryPreference().getDirectoryRecording());
+            mLog.info(" Application Root: " + mSettings.getDirectorySettings().getDirectoryApplicationRoot());
+            mLog.info(" Application Log:  " + mSettings.getDirectorySettings().getDirectoryApplicationLog());
+            mLog.info(" Event Log:        " + mSettings.getDirectorySettings().getDirectoryEventLog());
+            mLog.info(" Playlist:         " + mSettings.getDirectorySettings().getDirectoryPlaylist());
+            mLog.info(" Recordings:       " + mSettings.getDirectorySettings().getDirectoryRecording());
         }
 
     }

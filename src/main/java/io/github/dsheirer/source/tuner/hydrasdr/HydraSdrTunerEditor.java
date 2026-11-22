@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.hydrasdr;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController.Gain;
 import io.github.dsheirer.source.tuner.hydrasdr.HydraSdrTunerController.GainMode;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
@@ -55,13 +55,13 @@ public class HydraSdrTunerEditor extends TunerEditor<HydraSdrTuner, HydraSdrTune
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param settings for wide-band recordings
      * @param tunerManager for saving tuner configuration
      * @param discoveredTuner for the optionally usable HydraSDR tuner and controller
      */
-    public HydraSdrTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public HydraSdrTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         init();
         refresh();
     }

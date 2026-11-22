@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.fcd.proplusV2;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.fcd.FCDTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -38,13 +38,13 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param settings for wide-band recordings
      * @param tunerManager for saving tuner configuration
      * @param discoveredTuner for the optionally usable tuner and controller
      */
-    public FCD2TunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public FCD2TunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         TunerSection gain = addSection("Gain");
         gain.addControl(getLnaGainCheckBox());
         gain.addControl(getMixerGainCheckBox());

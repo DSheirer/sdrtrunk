@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.network;
 
 import io.github.dsheirer.gui.control.FrequencyEntry;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredNetworkTuner;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class AddNetworkTunerDialog extends Dialog<ButtonType> {
   private static final Logger mLog = LoggerFactory.getLogger(AddNetworkTunerDialog.class);
   private static final ButtonType ADD = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
-  private final UserPreferences mUserPreferences;
+  private final Settings mSettings;
   private final DiscoveredTunerModel mDiscoveredTunerModel;
   private final TunerConfigurationManager mTunerConfigurationManager;
   private final ComboBox<String> mTypeComboBox = new ComboBox<>();
@@ -54,13 +54,13 @@ public class AddNetworkTunerDialog extends Dialog<ButtonType> {
   private final TextField mFrequencyField = new TextField();
   private final Label mValidationLabel = new Label();
 
-  public AddNetworkTunerDialog(Window owner, UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
+  public AddNetworkTunerDialog(Window owner, Settings settings, DiscoveredTunerModel discoveredTunerModel,
       TunerConfigurationManager tunerConfigurationManager) {
-    Validate.notNull(userPreferences, "UserPreferences cannot be null");
+    Validate.notNull(settings, "Settings cannot be null");
     Validate.notNull(discoveredTunerModel, "TunerModel cannot be null");
     Validate.notNull(tunerConfigurationManager, "TunerConfigurationManager cannot be null");
     mDiscoveredTunerModel = discoveredTunerModel;
-    mUserPreferences = userPreferences;
+    mSettings = settings;
     mTunerConfigurationManager = tunerConfigurationManager;
 
     initOwner(owner);
@@ -146,7 +146,7 @@ public class AddNetworkTunerDialog extends Dialog<ButtonType> {
       config.setHost(getHost());
       config.setPort(getPort());
       mTunerConfigurationManager.addTunerConfiguration(config);
-      DiscoveredNetworkTuner discoveredNetworkTuner = new DiscoveredNetworkTuner(mUserPreferences, config);
+      DiscoveredNetworkTuner discoveredNetworkTuner = new DiscoveredNetworkTuner(mSettings, config);
       mDiscoveredTunerModel.addDiscoveredTuner(discoveredNetworkTuner);
     } catch (Exception ex) {
       mLog.error("Error adding network tuner", ex);

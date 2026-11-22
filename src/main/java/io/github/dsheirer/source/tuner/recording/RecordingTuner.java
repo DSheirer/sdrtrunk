@@ -18,8 +18,8 @@
  */
 package io.github.dsheirer.source.tuner.recording;
 
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.source.ChannelizerType;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
@@ -39,14 +39,14 @@ public class RecordingTuner extends Tuner
     private final static Logger mLog = LoggerFactory.getLogger(RecordingTuner.class);
     private static int mInstanceCounter = 1;
     private final int mInstanceID = mInstanceCounter++;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
 
-    public RecordingTuner(UserPreferences userPreferences, ITunerErrorListener tunerErrorListener,
+    public RecordingTuner(Settings settings, ITunerErrorListener tunerErrorListener,
                           RecordingTunerConfiguration config)
     {
         super(new RecordingTunerController(tunerErrorListener, config.getPath(), config.getFrequency()), tunerErrorListener);
 
-        mUserPreferences = userPreferences;
+        mSettings = settings;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class RecordingTuner extends Tuner
         }
         else
         {
-            ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+            ChannelizerType channelizerType = mSettings.getTunerSettings().getChannelizerType();
 
             if(channelizerType == ChannelizerType.POLYPHASE)
             {

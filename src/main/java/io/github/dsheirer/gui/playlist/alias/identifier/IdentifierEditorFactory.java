@@ -24,7 +24,7 @@ import io.github.dsheirer.alias.id.radio.NXDNTypeDRadio;
 import io.github.dsheirer.alias.id.radio.NXDNTypeDRadioRange;
 import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroup;
 import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroupRange;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public class IdentifierEditorFactory
 {
     private static final Logger mLog = LoggerFactory.getLogger(IdentifierEditorFactory.class);
 
-    public static IdentifierEditor getEditor(AliasIDType type, UserPreferences userPreferences)
+    public static IdentifierEditor getEditor(AliasIDType type, Settings settings)
     {
         switch(type)
         {
@@ -54,17 +54,17 @@ public class IdentifierEditorFactory
             case NXDN_TYPE_D_TALKGROUP_RANGE:
                 return new NXDNTypeDRangeEditor<NXDNTypeDTalkgroupRange>("Talkgroup Range");
             case P25_FULLY_QUALIFIED_RADIO_ID:
-                return new P25FullyQualifiedRadioIdEditor(userPreferences);
+                return new P25FullyQualifiedRadioIdEditor(settings);
             case P25_FULLY_QUALIFIED_TALKGROUP:
-                return new P25FullyQualifiedTalkgroupEditor(userPreferences);
+                return new P25FullyQualifiedTalkgroupEditor(settings);
             case RADIO_ID:
-                return new RadioIdEditor(userPreferences);
+                return new RadioIdEditor(settings);
             case RADIO_ID_RANGE:
-                return new RadioIdRangeEditor(userPreferences);
+                return new RadioIdRangeEditor(settings);
             case TALKGROUP:
-                return new TalkgroupEditor(userPreferences);
+                return new TalkgroupEditor(settings);
             case TALKGROUP_RANGE:
-                return new TalkgroupRangeEditor(userPreferences);
+                return new TalkgroupRangeEditor(settings);
             case STATUS:
                 return new UserStatusEditor();
             case TONES:

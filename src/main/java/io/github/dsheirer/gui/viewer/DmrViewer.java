@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.settings.Setting;
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.controller.channel.Channel;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-import java.util.prefs.Preferences;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -80,8 +80,6 @@ public class DmrViewer extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(DmrViewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
-    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.dmr";
-    private final Preferences mPreferences = Preferences.userNodeForPackage(DmrViewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
     private TableView<MessagePackage> mMessagePackageTableView;
@@ -473,7 +471,7 @@ public class DmrViewer extends VBox
                 fileChooser.getExtensionFilters().addAll(f1, f2);
                 fileChooser.setSelectedExtensionFilter(f1);
                 fileChooser.setTitle("Select DMR .bits Recording");
-                String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
+                String lastDirectory = Setting.VIEWER_DMR_LAST_DIRECTORY.get(null);
                 if(lastDirectory != null)
                 {
                     File file = new File(lastDirectory);
@@ -486,7 +484,7 @@ public class DmrViewer extends VBox
 
                 if(selected != null)
                 {
-                    mPreferences.put(LAST_SELECTED_DIRECTORY, selected.getParent());
+                    Setting.VIEWER_DMR_LAST_DIRECTORY.put(selected.getParent());
                     load(selected);
                 }
             });

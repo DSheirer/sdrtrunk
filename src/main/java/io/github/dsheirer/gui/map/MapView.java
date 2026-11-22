@@ -34,10 +34,12 @@ import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.map.PlottableEntityHistory;
 import io.github.dsheirer.map.PlottableEntityModel;
 import io.github.dsheirer.map.TimestampedGeoPosition;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.map.MapPreference;
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.gui.settings.SettingsPageType;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.map.MapSettings;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.service.radioreference.RadioReferenceFrequencyIndex;
 import io.github.dsheirer.service.radioreference.SiteRecord;
 import java.awt.Desktop;
@@ -114,7 +116,7 @@ public class MapView extends SplitPane
 
     private final MapService mMapService;
     private final PlottableEntityModel mEntityModel;
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final RadioReferenceFrequencyIndex mFrequencyIndex;
     private final RadioReferencePlaylistActions mPlaylistActions;
     private final TileMapView mMap;
@@ -163,25 +165,25 @@ public class MapView extends SplitPane
      * Constructs an instance
      * @param mapService for the entities to plot
      * @param iconModel for alias icons
-     * @param userPreferences for the map view and the user's location, which is shared with the radio reference editor
+     * @param settings for the map view and the user's location, which is shared with the radio reference editor
      * @param frequencyIndex of the radio reference frequencies near the user, for the trunked system sites, or null
      * @param playlistActions to add sites to the playlist or enable their channels, or null
      * @param loadTiles true to download map tiles, or false for a blank map (tests and off-screen rendering)
      */
-    public MapView(MapService mapService, IconModel iconModel, UserPreferences userPreferences,
+    public MapView(MapService mapService, IconModel iconModel, Settings settings,
                    RadioReferenceFrequencyIndex frequencyIndex, RadioReferencePlaylistActions playlistActions,
                    boolean loadTiles)
     {
         mMapService = mapService;
         mEntityModel = mapService.getPlottableEntityModel();
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mFrequencyIndex = frequencyIndex;
         mPlaylistActions = playlistActions;
 
-        Path tileCache = userPreferences.getDirectoryPreference().getDirectoryApplicationRoot().resolve("map_tiles");
+        Path tileCache = settings.getDirectorySettings().getDirectoryApplicationRoot().resolve("map_tiles");
         mMap = new TileMapView(tileCache, loadTiles);
         mSiteLayer = new SiteLayer(frequencyIndex != null ? frequencyIndex::getSites : Collections::emptyList);
-        mSiteLayer.setShowSites(userPreferences.getMapPreference().isShowRadioReferenceSites());
+        mSiteLayer.setShowSites(settings.getMapSettings().isShowRadioReferenceSites());
         mTrackLayer = new TrackLayer(mEntityModel, iconModel);
 
         //Radio reference sites under the tracks, and the user's location pin over the tracks
@@ -213,7 +215,7 @@ public class MapView extends SplitPane
         });
 
         //Show the stored location without moving the map, which starts at the stored view
-        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        RadioReferenceSettings.Location location = mSettings.getRadioReferenceSettings().getLocation();
         mUserLocationLayer.setPosition(location != null ? toGeoPosition(location) : null);
         updateUserLocationLabel(location);
 
@@ -249,9 +251,9 @@ public class MapView extends SplitPane
      */
     private void initMap()
     {
-        MapPreference mapPreference = mUserPreferences.getMapPreference();
-        MapPreference.Center center = mapPreference.getCenter();
-        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        MapSettings mapSettings = mSettings.getMapSettings();
+        MapSettings.Center center = mapSettings.getCenter();
+        RadioReferenceSettings.Location location = mSettings.getRadioReferenceSettings().getLocation();
         GeoPosition initial;
 
         if(center != null)
@@ -267,7 +269,7 @@ public class MapView extends SplitPane
             initial = DEFAULT_CENTER;
         }
 
-        mMap.setZoom(mapPreference.getTileZoom());
+        mMap.setZoom(mapSettings.getTileZoom());
         mMap.setCenter(initial);
 
         //Remember the view after each pan or zoom, once the map stops moving
@@ -303,7 +305,7 @@ public class MapView extends SplitPane
         mCenterOnUserLocationButton.setOnAction(event -> mMap.setCenter(mUserLocationLayer.getPosition()));
 
         SpinnerValueFactory.IntegerSpinnerValueFactory zoomFactory = new SpinnerValueFactory
-            .IntegerSpinnerValueFactory(MapPreference.MINIMUM_TILE_ZOOM, MapPreference.MAXIMUM_TILE_ZOOM, mMap.getZoom());
+            .IntegerSpinnerValueFactory(MapSettings.MINIMUM_TILE_ZOOM, MapSettings.MAXIMUM_TILE_ZOOM, mMap.getZoom());
         mZoomSpinner.setValueFactory(zoomFactory);
         mZoomSpinner.setPrefWidth(80);
         mZoomSpinner.setTooltip(new Tooltip("Map zoom level: higher is closer.  Scroll over the map to zoom."));
@@ -323,7 +325,7 @@ public class MapView extends SplitPane
         mShowSitesCheckBox.setOnAction(event -> {
             boolean show = mShowSitesCheckBox.isSelected();
             mSiteLayer.setShowSites(show);
-            mUserPreferences.getMapPreference().setShowRadioReferenceSites(show);
+            mSettings.getMapSettings().setShowRadioReferenceSites(show);
             hideCard();
             mMap.requestRedraw();
         });
@@ -459,8 +461,12 @@ public class MapView extends SplitPane
         Label layers = new Label("Layers");
         layers.setStyle("-fx-font-weight: bold;");
 
+        Hyperlink moreSettings = new Hyperlink("More map settings...");
+        moreSettings.setOnAction(event -> MyEventBus.getGlobalEventBus()
+            .post(new ViewSettingsEditorRequest(SettingsPageType.MAP)));
+
         VBox settings = tabContent(server, serverKey, new Separator(), location, locationButtons, new Separator(),
-            zoom, new Separator(), layers, sites);
+            zoom, new Separator(), layers, sites, new Separator(), moreSettings);
 
         HBox trackButtons = row(mDeleteTrackButton, mDeleteAllTracksButton, mClearMapButton);
         HBox followButtons = row(mReplotAllTracksButton, mFollowButton, mFollowedEntityLabel);
@@ -526,7 +532,7 @@ public class MapView extends SplitPane
      */
     private void initTileServerControls()
     {
-        MapPreference preference = mUserPreferences.getMapPreference();
+        MapSettings preference = mSettings.getMapSettings();
         mTileServerComboBox.getItems().setAll(TileChoice.CHOICES);
         mTileServerComboBox.setValue(TileChoice.get(preference.getTileServer(), preference.getTileStyle()));
         mTileServerComboBox.setVisibleRowCount(TileChoice.CHOICES.size());
@@ -571,7 +577,7 @@ public class MapView extends SplitPane
 
         if(server != null && server.requiresKey())
         {
-            mUserPreferences.getMapPreference().setTileServerKey(server.id(), mTileServerKeyField.getText());
+            mSettings.getMapSettings().setTileServerKey(server.id(), mTileServerKeyField.getText());
             updateTileSource();
         }
     }
@@ -584,7 +590,7 @@ public class MapView extends SplitPane
         TileChoice choice = mTileServerComboBox.getValue() != null ? mTileServerComboBox.getValue() :
             TileChoice.CHOICES.getFirst();
         TileServer server = choice.server();
-        String key = server.requiresKey() ? mUserPreferences.getMapPreference().getTileServerKey(server.id()) : null;
+        String key = server.requiresKey() ? mSettings.getMapSettings().getTileServerKey(server.id()) : null;
 
         mTileServerKeyField.setVisible(server.requiresKey());
         mTileServerKeyField.setManaged(server.requiresKey());
@@ -594,7 +600,47 @@ public class MapView extends SplitPane
             mTileServerKeyField.setText(key != null ? key : "");
         }
 
-        mMap.setSource(choice.getSource(mUserPreferences.getApplicationPreference().isDarkMode(), key));
+        mMap.setSource(choice.getSource(mSettings.getApplicationSettings().isDarkMode(), key));
+    }
+
+    /**
+     * Applies map settings changed elsewhere, such as on the settings dialog's Map page.  Panning and zooming also
+     * update the map settings, so this only changes what differs from the stored settings.
+     */
+    private void applyMapSettings()
+    {
+        MapSettings mapSettings = mSettings.getMapSettings();
+        TileChoice stored = TileChoice.get(mapSettings.getTileServer(), mapSettings.getTileStyle());
+
+        if(!stored.equals(mTileServerComboBox.getValue()))
+        {
+            //The combo box action stores the choice and updates the tile source
+            mTileServerComboBox.setValue(stored);
+        }
+        else
+        {
+            TileServer server = stored.server();
+
+            if(server.requiresKey() && !mTileServerKeyField.isFocused())
+            {
+                String key = mapSettings.getTileServerKey(server.id());
+
+                if(!mTileServerKeyField.getText().equals(key != null ? key : ""))
+                {
+                    updateTileSource();
+                }
+            }
+        }
+
+        boolean show = mapSettings.isShowRadioReferenceSites();
+
+        if(show != mShowSitesCheckBox.isSelected())
+        {
+            mShowSitesCheckBox.setSelected(show);
+            mSiteLayer.setShowSites(show);
+            hideCard();
+            mMap.requestRedraw();
+        }
     }
 
     /**
@@ -609,7 +655,7 @@ public class MapView extends SplitPane
     /**
      * Opens the web page in the user's browser, off the JavaFX thread
      */
-    private static void browse(String url)
+    public static void browse(String url)
     {
         Thread.ofVirtual().start(() -> {
             try
@@ -639,19 +685,24 @@ public class MapView extends SplitPane
 
     /**
      * Updates the user's location on the map when it changes, here or in the radio reference editor
-     * @param preferenceType that was updated
+     * @param settingsType that was updated
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.RADIO_REFERENCE)
+        if(settingsType == SettingsType.RADIO_REFERENCE)
         {
             Platform.runLater(this::updateUserLocation);
         }
-        else if(preferenceType == PreferenceType.APPLICATION)
+        else if(settingsType == SettingsType.APPLICATION)
         {
             //The theme may have changed between light and dark
             Platform.runLater(this::updateTileSource);
+        }
+        else if(settingsType == SettingsType.MAP)
+        {
+            //The tile server, key or layers may have changed on the settings dialog's Map page
+            Platform.runLater(this::applyMapSettings);
         }
     }
 
@@ -661,7 +712,7 @@ public class MapView extends SplitPane
      */
     private void updateUserLocation()
     {
-        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        RadioReferenceSettings.Location location = mSettings.getRadioReferenceSettings().getLocation();
         GeoPosition position = location != null ? toGeoPosition(location) : null;
         updateUserLocationLabel(location);
 
@@ -680,7 +731,7 @@ public class MapView extends SplitPane
         }
     }
 
-    private void updateUserLocationLabel(RadioReferencePreference.Location location)
+    private void updateUserLocationLabel(RadioReferenceSettings.Location location)
     {
         mUserLocationLabel.setText(location != null ? location.coordinates() : LOCATION_NOT_SET);
         mCenterOnUserLocationButton.setDisable(location == null);
@@ -699,11 +750,11 @@ public class MapView extends SplitPane
         double latitude = round(position.getLatitude());
         double longitude = round(Mercator.normalizeLongitude(position.getLongitude()));
 
-        if(RadioReferencePreference.Location.isValid(latitude, longitude))
+        if(RadioReferenceSettings.Location.isValid(latitude, longitude))
         {
             mMapChosenPosition = new GeoPosition(latitude, longitude);
-            mUserPreferences.getRadioReferencePreference()
-                .setLocation(new RadioReferencePreference.Location(latitude, longitude, null));
+            mSettings.getRadioReferenceSettings()
+                .setLocation(new RadioReferenceSettings.Location(latitude, longitude, null));
         }
     }
 
@@ -713,11 +764,11 @@ public class MapView extends SplitPane
     private void saveView()
     {
         GeoPosition center = mMap.getCenter();
-        MapPreference preference = mUserPreferences.getMapPreference();
+        MapSettings preference = mSettings.getMapSettings();
 
         try
         {
-            preference.setCenter(new MapPreference.Center(round(center.getLatitude()),
+            preference.setCenter(new MapSettings.Center(round(center.getLatitude()),
                 round(Mercator.normalizeLongitude(center.getLongitude()))));
         }
         catch(IllegalArgumentException e)
@@ -736,7 +787,7 @@ public class MapView extends SplitPane
         return Math.round(degrees * 1_000_000.0) / 1_000_000.0;
     }
 
-    private static GeoPosition toGeoPosition(RadioReferencePreference.Location location)
+    private static GeoPosition toGeoPosition(RadioReferenceSettings.Location location)
     {
         return new GeoPosition(location.latitude(), location.longitude());
     }
@@ -1068,7 +1119,7 @@ public class MapView extends SplitPane
         }
 
         Region card = SiteCard.create(SiteCard.content(sites,
-            mUserPreferences.getRadioReferencePreference().getLocation()));
+            mSettings.getRadioReferenceSettings().getLocation()));
         mCardPane.getChildren().add(card);
         card.applyCss();
         card.autosize();

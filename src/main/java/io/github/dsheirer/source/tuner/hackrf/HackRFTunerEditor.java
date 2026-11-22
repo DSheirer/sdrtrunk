@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.hackrf;
 
 import io.github.dsheirer.hackrf.HackRf;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
@@ -48,13 +48,13 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param settings for wide-band recordings
      * @param tunerManager for saving tuner configuration
      * @param discoveredTuner for the optionally usable HackRF tuner and controller
      */
-    public HackRFTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public HackRFTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         init();
         refresh();
     }

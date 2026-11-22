@@ -22,7 +22,7 @@ package io.github.dsheirer.gui.playlist.alias;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import javafx.geometry.Insets;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -33,7 +33,7 @@ import javafx.scene.control.TabPane;
 public class AliasEditor extends TabPane
 {
     private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private AliasConfigurationEditor mAliasConfigurationEditor;
     private AliasViewByIdentifierEditor mAliasViewByIdentifierEditor;
     private Tab mAliasConfigurationTab;
@@ -43,12 +43,12 @@ public class AliasEditor extends TabPane
     /**
      * Constructs an instance
      * @param playlistManager for alias model access
-     * @param userPreferences for settings
+     * @param settings for settings
      */
-    public AliasEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public AliasEditor(PlaylistManager playlistManager, Settings settings)
     {
         mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         setPadding(new Insets(4,0,0,0));
         setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
@@ -103,7 +103,7 @@ public class AliasEditor extends TabPane
     {
         if(mAliasConfigurationEditor == null)
         {
-            mAliasConfigurationEditor = new AliasConfigurationEditor(mPlaylistManager, mUserPreferences);
+            mAliasConfigurationEditor = new AliasConfigurationEditor(mPlaylistManager, mSettings);
         }
 
         return mAliasConfigurationEditor;

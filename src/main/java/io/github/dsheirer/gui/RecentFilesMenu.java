@@ -18,8 +18,8 @@
  */
 package io.github.dsheirer.gui;
 
+import io.github.dsheirer.settings.Setting;
 import java.io.File;
-import java.util.prefs.Preferences;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Menu;
@@ -28,8 +28,6 @@ import javafx.scene.control.SeparatorMenuItem;
 
 public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
 {
-    private static final String PREFERENCE_RECENT_FILE = ".recent.file.";
-    private Preferences mPreferences = Preferences.userNodeForPackage(RecentFilesMenu.class);
     private IFileSelectionListener mFileSelectionListener;
     private String mIdentifier;
     private int mSize;
@@ -78,7 +76,7 @@ public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
             //Check to see if this file is already in the recent files list
             for(int x = mSize - 1; x >= 0; x--)
             {
-                String existingItem = mPreferences.get(getKey(x), null);
+                String existingItem = getValue(x).get(null);
 
                 if(existingItem != null && existingItem.equals(filePath))
                 {
@@ -90,17 +88,17 @@ public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
             //Shift all recent files down to make room for the newly added file at the top of the list
             while(index > 0)
             {
-                String newerItem = mPreferences.get(getKey(index - 1), null);
+                String newerItem = getValue(index - 1).get(null);
 
                 if(newerItem != null)
                 {
-                    mPreferences.put(getKey(index), newerItem);
+                    getValue(index).put(newerItem);
                 }
 
                 index--;
             }
 
-            mPreferences.put(getKey(0), file.getAbsolutePath());
+            getValue(0).put(file.getAbsolutePath());
         }
 
         load();
@@ -110,11 +108,11 @@ public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
      * Creates a unique key value for each numbered recently used file item in the preferences.
      *
      * @param index of recent file item.
-     * @return unique key to use with the preferences instance.
+     * @return stored value for the recent file item.
      */
-    private String getKey(int index)
+    private Setting.Value getValue(int index)
     {
-        return mIdentifier + PREFERENCE_RECENT_FILE + index;
+        return Setting.RECENT_FILE.with(mIdentifier, index);
     }
 
     /**
@@ -126,7 +124,7 @@ public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
 
         for(int x = 0; x < mSize; x++)
         {
-            String path = mPreferences.get(getKey(x), null);
+            String path = getValue(x).get(null);
 
             if(path != null)
             {
@@ -171,7 +169,7 @@ public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
     {
         for(int x = 0; x < mSize; x++)
         {
-            mPreferences.remove(getKey(x));
+            getValue(x).remove();
         }
 
         load();

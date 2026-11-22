@@ -25,7 +25,7 @@ import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.MessageItem;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,11 +47,11 @@ public class MessageActivityView extends HistoryTableView<MessageItem,IMessage> 
 
     /**
      * Constructs an instance.  Construct on the JavaFX application thread.
-     * @param userPreferences for the column settings
+     * @param settings for the column settings
      */
-    public MessageActivityView(UserPreferences userPreferences)
+    public MessageActivityView(Settings settings)
     {
-        super(createColumns(), TABLE_KEY, userPreferences.getSwingPreference(), SWING_TABLE_KEY,
+        super(createColumns(), TABLE_KEY, settings.getSwingSettings(), SWING_TABLE_KEY,
             "Message Filter Editor", "Message Columns");
     }
 

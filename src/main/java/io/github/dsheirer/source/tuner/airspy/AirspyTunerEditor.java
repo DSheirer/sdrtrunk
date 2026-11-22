@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.airspy;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerController.Gain;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerController.GainMode;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
@@ -55,13 +55,13 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param settings for wide-band recordings
      * @param tunerManager for saving tuner configuration
      * @param discoveredTuner for the optionally usable Airspy tuner and controller
      */
-    public AirspyTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public AirspyTunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         init();
         refresh();
     }

@@ -34,7 +34,7 @@ import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressDestinati
 import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressDestinationInfo4;
 import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInProgressSourceID;
 import io.github.dsheirer.module.decode.nxdn.layer3.scch.CallInfo;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,14 +52,14 @@ public class NXDNCallSequenceRecorder extends MBECallSequenceRecorder
     /**
      * Constructs an instance
      *
-     * @param userPreferences to obtain the recording directory
+     * @param settings to obtain the recording directory
      * @param channelFrequency for the channel to record
      * @param system defined by the user
      * @param site defined by the user
      */
-    public NXDNCallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
+    public NXDNCallSequenceRecorder(Settings settings, long channelFrequency, String system, String site)
     {
-        super(userPreferences, channelFrequency, system, site);
+        super(settings, channelFrequency, system, site);
     }
 
     /**

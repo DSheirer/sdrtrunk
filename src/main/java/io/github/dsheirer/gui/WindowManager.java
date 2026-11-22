@@ -27,16 +27,17 @@ import io.github.dsheirer.gui.playlist.PlaylistEditor;
 import io.github.dsheirer.gui.playlist.PlaylistEditorRequest;
 import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditor;
 import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
-import io.github.dsheirer.gui.preference.UserPreferencesEditor;
-import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
-import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
+import io.github.dsheirer.gui.settings.SettingsEditor;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
+import io.github.dsheirer.gui.settings.calibration.CalibrationDialog;
 import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.gui.viewer.MessageRecordingViewer;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Setting;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -46,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Opens the application's tool windows (playlist editor, user preferences, icon manager, channel map editor, JMBE
+ * Opens the application's tool windows (playlist editor, settings, icon manager, channel map editor, JMBE
  * library editor and message recording viewer) when it receives their request events on the event bus.  Each window
  * is created once, then restored and brought to the front on later requests, and its size and location are kept
  * across sessions.
@@ -55,40 +56,32 @@ public class WindowManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(WindowManager.class);
 
-    public static final String STAGE_MONITOR_KEY_CALIBRATION_DIALOG = "calibration.dialog";
-    public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
-    public static final String STAGE_MONITOR_KEY_RECORDING_VIEWER = "recording.viewer";
-    public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
-    public static final String STAGE_MONITOR_KEY_JMBE_EDITOR = "jmbe.editor";
-    public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
-    public static final String STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR = "user.preferences";
-
     private ChannelMapEditor mChannelMapEditor;
     private IconManager mIconManager;
     private JmbeEditor mJmbeEditor;
     private PlaylistEditor mPlaylistEditor;
     private PlaylistManager mPlaylistManager;
     private TunerManager mTunerManager;
-    private UserPreferences mUserPreferences;
-    private UserPreferencesEditor mUserPreferencesEditor;
+    private Settings mSettings;
+    private SettingsEditor mSettingsEditor;
     private MessageRecordingViewer mMessageRecordingViewer;
 
     private Stage mChannelMapStage;
     private Stage mIconManagerStage;
     private Stage mJmbeEditorStage;
     private Stage mPlaylistStage;
-    private Stage mUserPreferencesStage;
+    private Stage mSettingsStage;
     private Stage mRecordingViewerStage;
 
     /**
      * Constructs an instance and registers it to receive window requests on the event bus.
-     * @param userPreferences for the windows and their stored locations
+     * @param settings for the windows and their stored locations
      * @param tunerManager for the playlist editor
      * @param playlistManager for the playlist and channel map editors
      */
-    public WindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
+    public WindowManager(Settings settings, TunerManager tunerManager, PlaylistManager playlistManager)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mTunerManager = tunerManager;
         mPlaylistManager = playlistManager;
 
@@ -137,14 +130,14 @@ public class WindowManager
     public void shutdown()
     {
         MyEventBus.getGlobalEventBus().unregister(this);
-        mUserPreferences.getJavaFxPreferences().clearStageMonitors();
+        mSettings.getJavaFxSettings().clearStageMonitors();
         Platform.exit();
     }
 
-    public CalibrationDialog getCalibrationDialog(UserPreferences userPreferences)
+    public CalibrationDialog getCalibrationDialog(Settings settings)
     {
         startToolkit();
-        return new CalibrationDialog(userPreferences);
+        return new CalibrationDialog(settings);
     }
 
     /**
@@ -160,7 +153,7 @@ public class WindowManager
             mRecordingViewerStage = new Stage();
             mRecordingViewerStage.setTitle("sdrtrunk - Message Recording Viewer (.bits)");
             mRecordingViewerStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mRecordingViewerStage, STAGE_MONITOR_KEY_RECORDING_VIEWER);
+            mSettings.getJavaFxSettings().monitor(mRecordingViewerStage, Setting.Window.RECORDING_VIEWER);
         }
 
         return mRecordingViewerStage;
@@ -186,7 +179,7 @@ public class WindowManager
             mIconManagerStage = new Stage();
             mIconManagerStage.setTitle("sdrtrunk - Icon Manager");
             mIconManagerStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mIconManagerStage, STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR);
+            mSettings.getJavaFxSettings().monitor(mIconManagerStage, Setting.Window.ICON_MANAGER);
         }
 
         return mIconManagerStage;
@@ -235,7 +228,7 @@ public class WindowManager
             mJmbeEditorStage = new Stage();
             mJmbeEditorStage.setTitle("sdrtrunk - JMBE Library Updater");
             mJmbeEditorStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mJmbeEditorStage, STAGE_MONITOR_KEY_JMBE_EDITOR);
+            mSettings.getJavaFxSettings().monitor(mJmbeEditorStage, Setting.Window.JMBE_EDITOR);
         }
 
         return mJmbeEditorStage;
@@ -245,7 +238,7 @@ public class WindowManager
     {
         if(mJmbeEditor == null)
         {
-            mJmbeEditor = new JmbeEditor(mUserPreferences);
+            mJmbeEditor = new JmbeEditor(mSettings);
         }
 
         return mJmbeEditor;
@@ -258,7 +251,7 @@ public class WindowManager
     {
         if(mPlaylistEditor == null)
         {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
+            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mSettings);
         }
 
         return mPlaylistEditor;
@@ -277,7 +270,7 @@ public class WindowManager
             mPlaylistStage = new Stage();
             mPlaylistStage.setTitle("sdrtrunk - Playlist Editor");
             mPlaylistStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mPlaylistStage, STAGE_MONITOR_KEY_PLAYLIST_EDITOR);
+            mSettings.getJavaFxSettings().monitor(mPlaylistStage, Setting.Window.PLAYLIST_EDITOR);
         }
 
         return mPlaylistStage;
@@ -305,44 +298,47 @@ public class WindowManager
     /**
      * User Preferences Editor
      */
-    private UserPreferencesEditor getUserPreferencesEditor()
+    private SettingsEditor getSettingsEditor()
     {
-        if(mUserPreferencesEditor == null)
+        if(mSettingsEditor == null)
         {
-            mUserPreferencesEditor = new UserPreferencesEditor(mUserPreferences);
+            mSettingsEditor = new SettingsEditor(mSettings,
+                mPlaylistManager != null ? mPlaylistManager.getRadioReference() : null);
         }
 
-        return mUserPreferencesEditor;
+        return mSettingsEditor;
     }
 
     /**
-     * User Preferences Stage
+     * Settings dialog stage
      */
-    private Stage getUserPreferencesStage()
+    private Stage getSettingsStage()
     {
-        if(mUserPreferencesStage == null)
+        if(mSettingsStage == null)
         {
             startToolkit();
-            Scene scene = new Scene(getUserPreferencesEditor(), 900, 500);
+            Scene scene = new Scene(getSettingsEditor(), 960, 640);
             ThemeManager.getInstance().register(scene);
-            mUserPreferencesStage = new Stage();
-            mUserPreferencesStage.setTitle("sdrtrunk - User Preferences");
-            mUserPreferencesStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mUserPreferencesStage, STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR);
+            mSettingsStage = new Stage();
+            mSettingsStage.setTitle("sdrtrunk - Settings");
+            mSettingsStage.setMinWidth(760);
+            mSettingsStage.setMinHeight(480);
+            mSettingsStage.setScene(scene);
+            mSettings.getJavaFxSettings().monitor(mSettingsStage, Setting.Window.SETTINGS_EDITOR);
         }
 
-        return mUserPreferencesStage;
+        return mSettingsStage;
     }
 
     /**
-     * Processes a user preferences editor request
+     * Processes a request to show the settings dialog
      */
     @Subscribe
-    public void process(final ViewUserPreferenceEditorRequest request)
+    public void process(final ViewSettingsEditorRequest request)
     {
         execute(() -> {
-            restoreStage(getUserPreferencesStage());
-            getUserPreferencesEditor().process(request);
+            restoreStage(getSettingsStage());
+            getSettingsEditor().process(request);
         });
     }
 
@@ -372,7 +368,7 @@ public class WindowManager
             mChannelMapStage = new Stage();
             mChannelMapStage.setTitle("sdrtrunk - Channel Map Editor");
             mChannelMapStage.setScene(scene);
-            mUserPreferences.getJavaFxPreferences().monitor(mChannelMapStage, STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR);
+            mSettings.getJavaFxSettings().monitor(mChannelMapStage, Setting.Window.CHANNEL_MAP_EDITOR);
         }
 
         return mChannelMapStage;

@@ -416,7 +416,7 @@ public class RadioReferencePlaylistActions
                 return null;
             }
 
-            RadioReferenceDecoder decoder = new RadioReferenceDecoder(radioReference.getUserPreferences(),
+            RadioReferenceDecoder decoder = new RadioReferenceDecoder(radioReference.getSettings(),
                 service.getTypesMap(), service.getFlavorsMap(), service.getVoicesMap(), service.getTagsMap());
             io.github.dsheirer.rrapi.type.System system = new io.github.dsheirer.rrapi.type.System();
             system.setSystemId(siteRecord.systemId());

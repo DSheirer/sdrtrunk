@@ -24,7 +24,7 @@ package io.github.dsheirer.module.decode.mpt1327.identifier;
 
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 
 /**

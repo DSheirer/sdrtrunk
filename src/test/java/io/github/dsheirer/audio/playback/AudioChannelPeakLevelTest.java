@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.audio.playback;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ public class AudioChannelPeakLevelTest
     @BeforeEach
     public void setup()
     {
-        mChannel = new AudioChannel(new UserPreferences(), "TEST");
+        mChannel = new AudioChannel(new Settings(), "TEST");
     }
 
     private static float[] interval(float... values)

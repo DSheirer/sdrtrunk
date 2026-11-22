@@ -19,9 +19,9 @@
 
 package io.github.dsheirer.vector.calibrate;
 
+import io.github.dsheirer.settings.Setting;
 import java.text.DecimalFormat;
 import java.util.Random;
-import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,6 @@ public abstract class Calibration
 {
     protected static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
     public static final Logger mLog = LoggerFactory.getLogger(Calibration.class);
-    private Preferences mPreferences = Preferences.userNodeForPackage(Calibration.class);
     private CalibrationType mType;
     private Implementation mImplementation;
 
@@ -82,7 +81,7 @@ public abstract class Calibration
     {
         if(mImplementation == null)
         {
-            String implementation = mPreferences.get(getType().getPreferenceKey(), Implementation.UNCALIBRATED.name());
+            String implementation = Setting.VECTOR_CALIBRATION.with(getType().getPreferenceKey()).get(Implementation.UNCALIBRATED.name());
             mImplementation = Implementation.valueOf(implementation);
         }
 
@@ -96,7 +95,7 @@ public abstract class Calibration
     protected void setImplementation(Implementation implementation)
     {
         mImplementation = implementation;
-        mPreferences.put(getType().getPreferenceKey(), implementation.name());
+        Setting.VECTOR_CALIBRATION.with(getType().getPreferenceKey()).put(implementation.name());
     }
 
     /**

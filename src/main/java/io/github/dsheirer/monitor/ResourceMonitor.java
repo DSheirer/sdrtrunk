@@ -20,7 +20,7 @@
 package io.github.dsheirer.monitor;
 
 import io.github.dsheirer.log.LoggingSuppressor;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.util.ThreadPool;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -57,7 +57,7 @@ public class ResourceMonitor
     private static final Logger sLog = LoggerFactory.getLogger(ResourceMonitor.class);
     private static final LoggingSuppressor sLogSuppressor = new LoggingSuppressor(sLog);
     private static final int SCALOR_MEGABYTE = 1024 * 1024;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private ScheduledFuture<?> mMemoryCpuMonitorFuture;
     private ScheduledFuture<?> mStorageMonitorFuture;
     private LongProperty mMemoryTotal = new SimpleLongProperty();
@@ -76,9 +76,9 @@ public class ResourceMonitor
     /**
      * Constructs an instance
      */
-    public ResourceMonitor(UserPreferences userPreferences)
+    public ResourceMonitor(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         try
         {
@@ -156,11 +156,11 @@ public class ResourceMonitor
      */
     private void updateDirectoryUsage()
     {
-        long thresholdEventLog = mUserPreferences.getDirectoryPreference().getDirectoryMaxUsageEventLogs() * SCALOR_MEGABYTE;
-        long thresholdRecording = mUserPreferences.getDirectoryPreference().getDirectoryMaxUsageRecordings() * SCALOR_MEGABYTE;
+        long thresholdEventLog = mSettings.getDirectorySettings().getDirectoryMaxUsageEventLogs() * SCALOR_MEGABYTE;
+        long thresholdRecording = mSettings.getDirectorySettings().getDirectoryMaxUsageRecordings() * SCALOR_MEGABYTE;
 
-        Path recordingPath = mUserPreferences.getDirectoryPreference().getDirectoryRecording();
-        Path eventLogsPath = mUserPreferences.getDirectoryPreference().getDirectoryEventLog();
+        Path recordingPath = mSettings.getDirectorySettings().getDirectoryRecording();
+        Path eventLogsPath = mSettings.getDirectorySettings().getDirectoryEventLog();
 
         try
         {

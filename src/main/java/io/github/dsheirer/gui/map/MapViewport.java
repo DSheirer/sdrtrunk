@@ -20,7 +20,7 @@
 package io.github.dsheirer.gui.map;
 
 import io.github.dsheirer.map.GeoPosition;
-import io.github.dsheirer.preference.map.MapPreference;
+import io.github.dsheirer.settings.map.MapSettings;
 
 /**
  * Part of the world in view: the center point, the tile zoom level and the size of the view in pixels, with the
@@ -56,7 +56,7 @@ public class MapViewport
      */
     public void setZoom(int zoom)
     {
-        mZoom = Math.clamp(zoom, MapPreference.MINIMUM_TILE_ZOOM, MapPreference.MAXIMUM_TILE_ZOOM);
+        mZoom = Math.clamp(zoom, MapSettings.MINIMUM_TILE_ZOOM, MapSettings.MAXIMUM_TILE_ZOOM);
         clamp();
     }
 
@@ -70,7 +70,7 @@ public class MapViewport
     {
         double worldX = (getLeft() + x) / getWorldSize();
         double worldY = (getTop() + y) / getWorldSize();
-        mZoom = Math.clamp(zoom, MapPreference.MINIMUM_TILE_ZOOM, MapPreference.MAXIMUM_TILE_ZOOM);
+        mZoom = Math.clamp(zoom, MapSettings.MINIMUM_TILE_ZOOM, MapSettings.MAXIMUM_TILE_ZOOM);
         mCenterX = worldX - (x - mWidth / 2.0) / getWorldSize();
         mCenterY = worldY - (y - mHeight / 2.0) / getWorldSize();
         clamp();

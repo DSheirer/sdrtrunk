@@ -22,8 +22,8 @@ package io.github.dsheirer.gui.playlist.alias.identifier;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioIdRangeEditor.class);
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private Label mProtocolLabel;
     private Label mFormatLabel;
     private TextField mMinRadioIdField;
@@ -58,11 +58,11 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
 
     /**
      * Constructs an instance
-     * @param userPreferences for determining user preferred radio ID formats
+     * @param settings for determining user preferred radio ID formats
      */
-    public RadioIdRangeEditor(UserPreferences userPreferences)
+    public RadioIdRangeEditor(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mRadioDetails = createRadioDetails();
 
         GridPane gridPane = new GridPane();
@@ -135,7 +135,7 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
             mMaxIntegerTextFormatter.valueProperty().removeListener(mMaxRadioValueChangeListener);
         }
 
-        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(getItem().getProtocol());
+        IntegerFormat format = mSettings.getTalkgroupFormatSettings().getTalkgroupFormat(getItem().getProtocol());
 
         if(format != null)
         {

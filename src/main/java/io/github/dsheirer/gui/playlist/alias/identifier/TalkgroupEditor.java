@@ -24,8 +24,8 @@ import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.control.LtrFormatter;
 import io.github.dsheirer.gui.control.PrefixIdentFormatter;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
 {
     private static final Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private Label mProtocolLabel;
     private Label mFormatLabel;
     private TextField mTalkgroupField;
@@ -57,11 +57,11 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
 
     /**
      * Constructs an instance
-     * @param userPreferences for determining user preferred talkgroup formats
+     * @param settings for determining user preferred talkgroup formats
      */
-    public TalkgroupEditor(UserPreferences userPreferences)
+    public TalkgroupEditor(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         loadTalkgroupDetails();
 
@@ -117,7 +117,7 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
             mIntegerTextFormatter.valueProperty().removeListener(mTalkgroupValueChangeListener);
         }
 
-        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(getItem().getProtocol());
+        IntegerFormat format = mSettings.getTalkgroupFormatSettings().getTalkgroupFormat(getItem().getProtocol());
 
         if(format != null)
         {

@@ -21,7 +21,7 @@ package io.github.dsheirer.audio.playback;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.log.LoggingSuppressor;
-import io.github.dsheirer.preference.playback.PlayTestAudioRequest;
+import io.github.dsheirer.settings.playback.PlayTestAudioRequest;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;

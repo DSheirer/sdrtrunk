@@ -22,9 +22,11 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.playlist.PlaylistManager;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.gui.settings.SettingsPageType;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.type.AgencyInfo;
@@ -74,11 +76,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import javafx.scene.control.Hyperlink;
 
 public class RadioReferenceEditor extends BorderPane implements Consumer<AuthorizationInformation>
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioReferenceEditor.class);
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private RadioReference mRadioReference;
     private PlaylistManager mPlaylistManager;
     private VBox mTopBox;
@@ -110,9 +113,9 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private Tab mStateSystemTab;
     private Tab mCountySystemTab;
 
-    public RadioReferenceEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public RadioReferenceEditor(Settings settings, PlaylistManager playlistManager)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mRadioReference = playlistManager.getRadioReference();
         mPlaylistManager = playlistManager;
 
@@ -145,14 +148,14 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
     /**
      * Refreshes the location text when the location or the preferred county changes
-     * @param preferenceType that was updated
+     * @param settingsType that was updated
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.RADIO_REFERENCE)
+        if(settingsType == SettingsType.RADIO_REFERENCE)
         {
-            RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+            RadioReferenceSettings preference = mSettings.getRadioReferenceSettings();
             String key = preference.getLocation() + "/" + preference.getPreferredCountyId();
 
             if(!key.equals(mLocationKey))
@@ -185,7 +188,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                 Platform.runLater(() -> {
                     getCountryComboBox().getItems().addAll(countries);
                     //Read when the list arrives, so a view request made while loading is honored
-                    int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
+                    int preferredCountryId = mSettings.getRadioReferenceSettings().getPreferredCountryId();
 
                     if(preferredCountryId >= 0)
                     {
@@ -399,7 +402,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
      */
     private int getCountryId(RadioReferenceService service, int stateId) throws RadioReferenceException
     {
-        int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
+        int preferredCountryId = mSettings.getRadioReferenceSettings().getPreferredCountryId();
         List<Integer> countryIds = new ArrayList<>();
 
         if(preferredCountryId > 0)
@@ -449,7 +452,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
      */
     private void navigate(ViewTarget target)
     {
-        RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+        RadioReferenceSettings preference = mSettings.getRadioReferenceSettings();
         preference.setPreferredCountryId(target.countryId());
         preference.setPreferredStateId(target.stateId());
 
@@ -677,7 +680,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     {
         if(mNationalAgencyEditor == null)
         {
-            mNationalAgencyEditor = new AgencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.NATIONAL);
+            mNationalAgencyEditor = new AgencyEditor(mSettings, mRadioReference, mPlaylistManager, Level.NATIONAL);
         }
 
         return mNationalAgencyEditor;
@@ -687,7 +690,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     {
         if(mStateAgencyEditor == null)
         {
-            mStateAgencyEditor = new AgencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.STATE);
+            mStateAgencyEditor = new AgencyEditor(mSettings, mRadioReference, mPlaylistManager, Level.STATE);
         }
 
         return mStateAgencyEditor;
@@ -697,7 +700,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     {
         if(mCountyAgencyEditor == null)
         {
-            mCountyAgencyEditor = new AgencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.COUNTY);
+            mCountyAgencyEditor = new AgencyEditor(mSettings, mRadioReference, mPlaylistManager, Level.COUNTY);
         }
 
         return mCountyAgencyEditor;
@@ -707,7 +710,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     {
         if(mStateSystemEditor == null)
         {
-            mStateSystemEditor = new SystemEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.STATE);
+            mStateSystemEditor = new SystemEditor(mSettings, mRadioReference, mPlaylistManager, Level.STATE);
         }
 
         return mStateSystemEditor;
@@ -717,7 +720,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     {
         if(mCountySystemEditor == null)
         {
-            mCountySystemEditor = new SystemEditor(mUserPreferences, mRadioReference, mPlaylistManager, Level.COUNTY);
+            mCountySystemEditor = new SystemEditor(mSettings, mRadioReference, mPlaylistManager, Level.COUNTY);
         }
 
         return mCountySystemEditor;
@@ -801,6 +804,12 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mCredentialsBox.getChildren().add(getTestPassIcon());
             mCredentialsBox.getChildren().add(getTestExpiredIcon());
             mCredentialsBox.getChildren().add(getLoginButton());
+
+            Hyperlink settingsLink = new Hyperlink("Settings...");
+            settingsLink.setTooltip(new Tooltip("Radio Reference account, import and alias list settings"));
+            settingsLink.setOnAction(event -> MyEventBus.getGlobalEventBus()
+                .post(new ViewSettingsEditorRequest(SettingsPageType.RADIO_REFERENCE)));
+            mCredentialsBox.getChildren().add(settingsLink);
         }
 
         return mCredentialsBox;
@@ -902,7 +911,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             configureIcon.setFill(Color.GRAY);
             mLoginButton.setGraphic(configureIcon);
             mLoginButton.setOnAction(event -> {
-                new LoginDialog(mUserPreferences).showAndWait().ifPresent(this);
+                new LoginDialog(mSettings).showAndWait().ifPresent(this);
             });
         }
 
@@ -949,7 +958,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                     Platform.runLater(() -> {
                         getNationalAgencyEditor().setAgencies(countryInfo.getAgencies());
                         getStateComboBox().getItems().addAll(countryInfo.getStates());
-                        int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
+                        int preferredStateId = mSettings.getRadioReferenceSettings().getPreferredStateId();
 
                         for(State state: mStateComboBox.getItems())
                         {
@@ -983,7 +992,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
                 if(selected != null)
                 {
-                    mUserPreferences.getRadioReferencePreference().setPreferredCountryId(selected.getCountryId());
+                    mSettings.getRadioReferenceSettings().setPreferredCountryId(selected.getCountryId());
                 }
             });
         }
@@ -1007,7 +1016,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                         getStateAgencyEditor().setAgencies(stateInfo.getAgencies());
                         getStateSystemEditor().setSystems(stateInfo.getSystems());
                         getCountyComboBox().getItems().addAll(stateInfo.getCounties());
-                        int preferredCountyId = mUserPreferences.getRadioReferencePreference().getPreferredCountyId();
+                        int preferredCountyId = mSettings.getRadioReferenceSettings().getPreferredCountyId();
 
                         for(County county: mCountyComboBox.getItems())
                         {
@@ -1041,7 +1050,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
                 if(selected != null)
                 {
-                    mUserPreferences.getRadioReferencePreference().setPreferredStateId(selected.getStateId());
+                    mSettings.getRadioReferenceSettings().setPreferredStateId(selected.getStateId());
                 }
             });
         }
@@ -1092,7 +1101,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
                 if(selected != null)
                 {
-                    mUserPreferences.getRadioReferencePreference().setPreferredCountyId(selected.getCountyId());
+                    mSettings.getRadioReferenceSettings().setPreferredCountyId(selected.getCountyId());
                     refreshLocation();
                 }
             });
@@ -1115,10 +1124,10 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             Button setLocationButton = new Button("My Location:");
             setLocationButton.setOnAction(event -> {
                 LocationDialog dialog = new LocationDialog(mRadioReference,
-                    mUserPreferences.getRadioReferencePreference().getLocation(), getScene().getWindow());
+                    mSettings.getRadioReferenceSettings().getLocation(), getScene().getWindow());
                 //The map follows the location through the preference update
                 dialog.showAndWait().ifPresent(result -> {
-                    mUserPreferences.getRadioReferencePreference().setLocation(result.location());
+                    mSettings.getRadioReferenceSettings().setLocation(result.location());
                     refreshLocation();
                 });
             });
@@ -1148,7 +1157,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private void refreshLocation()
     {
         long request = mLocationRequest.incrementAndGet();
-        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+        RadioReferenceSettings.Location location = mSettings.getRadioReferenceSettings().getLocation();
 
         if(location != null)
         {
@@ -1158,7 +1167,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         String notRanked = "Not set";
 
-        if(mUserPreferences.getRadioReferencePreference().getPreferredCountyId() <= 0 ||
+        if(mSettings.getRadioReferenceSettings().getPreferredCountyId() <= 0 ||
             !mRadioReference.premiumAccountProperty().get())
         {
             getLocationText().setText(notRanked);

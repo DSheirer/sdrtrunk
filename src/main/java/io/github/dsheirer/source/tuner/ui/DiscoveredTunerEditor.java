@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.ui;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class DiscoveredTunerEditor extends StackPane implements IDiscoveredTunerStatusListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(DiscoveredTunerEditor.class);
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final TunerManager mTunerManager;
     private final EmptyTunerEditor mEmptyEditor = new EmptyTunerEditor();
     private final ScrollPane mScrollPane = new ScrollPane();
@@ -46,12 +46,12 @@ public class DiscoveredTunerEditor extends StackPane implements IDiscoveredTuner
 
     /**
      * Constructs an instance
-     * @param userPreferences to use for starting wideband recordings sourced by a tuner
+     * @param settings to use for starting wideband recordings sourced by a tuner
      * @param tunerManager for creating tuner editors
      */
-    public DiscoveredTunerEditor(UserPreferences userPreferences, TunerManager tunerManager)
+    public DiscoveredTunerEditor(Settings settings, TunerManager tunerManager)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mTunerManager = tunerManager;
         getStyleClass().add("discovered-tuner-editor");
         mScrollPane.setFitToWidth(true);
@@ -106,7 +106,7 @@ public class DiscoveredTunerEditor extends StackPane implements IDiscoveredTuner
         {
             try
             {
-                mEditor = TunerFactory.getEditor(mUserPreferences, discoveredTuner, mTunerManager);
+                mEditor = TunerFactory.getEditor(mSettings, discoveredTuner, mTunerManager);
             }
             catch(Exception e)
             {

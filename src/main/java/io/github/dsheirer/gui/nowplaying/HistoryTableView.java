@@ -19,7 +19,7 @@
 package io.github.dsheirer.gui.nowplaying;
 
 import io.github.dsheirer.gui.table.TableColumnMonitor;
-import io.github.dsheirer.preference.swing.SwingPreference;
+import io.github.dsheirer.settings.swing.SwingSettings;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,12 +65,12 @@ public abstract class HistoryTableView<T,F> extends VBox
      * Constructs an instance
      * @param columns for the table
      * @param tableKey for the stored column settings
-     * @param swingPreference with the legacy Swing column widths
+     * @param swingSettings with the legacy Swing column widths
      * @param swingTableKey of the legacy Swing table
      * @param filterEditorTitle for the filter editor window
      * @param columnsTitle for the column configuration editor window
      */
-    protected HistoryTableView(List<TableColumn<Row<T>,?>> columns, String tableKey, SwingPreference swingPreference,
+    protected HistoryTableView(List<TableColumn<Row<T>,?>> columns, String tableKey, SwingSettings swingSettings,
                                String swingTableKey, String filterEditorTitle, String columnsTitle)
     {
         mTableView.getColumns().addAll(columns);
@@ -89,7 +89,7 @@ public abstract class HistoryTableView<T,F> extends VBox
                 event.consume();
             }
         });
-        mTableColumnMonitor = new TableColumnMonitor<>(mTableView, tableKey, swingPreference, swingTableKey);
+        mTableColumnMonitor = new TableColumnMonitor<>(mTableView, tableKey, swingSettings, swingTableKey);
         mHistoryControls = new HistoryControls<>(filterEditorTitle, this::clear, this::setHistorySize,
             mTableColumnMonitor, columnsTitle);
 

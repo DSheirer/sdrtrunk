@@ -41,7 +41,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,14 +61,14 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
     /**
      * Constructs a P25-Phase2 MBE call sequence recorder.
      *
-     * @param userPreferences to obtain the recording directory
+     * @param settings to obtain the recording directory
      * @param channelFrequency for the channel to record
      * @param system defined by the user
      * @param site defined by the user
      */
-    public P25P1CallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
+    public P25P1CallSequenceRecorder(Settings settings, long channelFrequency, String system, String site)
     {
-        super(userPreferences, channelFrequency, system, site);
+        super(settings, channelFrequency, system, site);
     }
 
     /**

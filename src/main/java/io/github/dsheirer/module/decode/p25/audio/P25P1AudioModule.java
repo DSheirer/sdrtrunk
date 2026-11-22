@@ -27,7 +27,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +41,9 @@ public class P25P1AudioModule extends ImbeAudioModule
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private List<LDUMessage> mCachedLDUMessages = new ArrayList<>();
 
-    public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
+    public P25P1AudioModule(Settings settings, AliasList aliasList)
     {
-        super(userPreferences, aliasList);
+        super(settings, aliasList);
     }
 
     @Override

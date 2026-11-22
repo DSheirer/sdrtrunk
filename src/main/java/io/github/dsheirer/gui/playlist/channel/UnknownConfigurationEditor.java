@@ -24,7 +24,7 @@ import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
@@ -45,9 +45,9 @@ public class UnknownConfigurationEditor extends ChannelConfigurationEditor
      * @param aliasModel
      */
     public UnknownConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
+                                      Settings settings, IFilterProcessor filterProcessor)
     {
-        super(playlistManager, tunerManager, userPreferences, filterProcessor);
+        super(playlistManager, tunerManager, settings, filterProcessor);
         getTitledPanesBox().getChildren().add(getDecoderPane());
     }
 

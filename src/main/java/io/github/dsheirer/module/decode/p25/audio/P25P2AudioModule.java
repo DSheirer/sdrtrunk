@@ -40,7 +40,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructure;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToTalk;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayDeque;
@@ -65,9 +65,9 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     private boolean mEncryptedCall = false;
     private Listener<IMessage> mMessageListener;
 
-    public P25P2AudioModule(UserPreferences userPreferences, int timeslot, AliasList aliasList)
+    public P25P2AudioModule(Settings settings, int timeslot, AliasList aliasList)
     {
-        super(userPreferences, aliasList, timeslot);
+        super(settings, aliasList, timeslot);
     }
 
     @Override

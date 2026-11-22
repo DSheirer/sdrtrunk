@@ -21,7 +21,7 @@ package io.github.dsheirer.source.tuner.network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
@@ -30,10 +30,10 @@ import io.github.dsheirer.source.tuner.TunerType;
 public class NetworkTuner extends Tuner {
   private final static Logger mLog = LoggerFactory.getLogger(NetworkTuner.class);
 
-  public NetworkTuner(UserPreferences userPreferences, ITunerErrorListener tunerErrorListener,
+  public NetworkTuner(Settings settings, ITunerErrorListener tunerErrorListener,
       NetworkTunerConfiguration config) {
     super(new NetworkTunerController(tunerErrorListener, config), tunerErrorListener,
-        userPreferences.getTunerPreference().getChannelizerType());
+        settings.getTunerSettings().getChannelizerType());
   }
 
   @Override

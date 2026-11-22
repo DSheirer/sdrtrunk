@@ -22,8 +22,8 @@ package io.github.dsheirer.gui.playlist.alias.identifier;
 import io.github.dsheirer.alias.id.talkgroup.P25FullyQualifiedTalkgroup;
 import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
@@ -42,7 +42,7 @@ public class P25FullyQualifiedTalkgroupEditor extends IdentifierEditor<P25FullyQ
 {
     private static final Logger mLog = LoggerFactory.getLogger(P25FullyQualifiedTalkgroupEditor.class);
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private Label mProtocolLabel;
     private TextField mWacnField;
     private TextField mSystemField;
@@ -56,11 +56,11 @@ public class P25FullyQualifiedTalkgroupEditor extends IdentifierEditor<P25FullyQ
 
     /**
      * Constructs an instance
-     * @param userPreferences for determining user preferred talkgroup formats
+     * @param settings for determining user preferred talkgroup formats
      */
-    public P25FullyQualifiedTalkgroupEditor(UserPreferences userPreferences)
+    public P25FullyQualifiedTalkgroupEditor(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         GridPane gridPane = new GridPane();
         gridPane.setHgap(5);
@@ -141,7 +141,7 @@ public class P25FullyQualifiedTalkgroupEditor extends IdentifierEditor<P25FullyQ
             mTalkgroupTextFormatter.valueProperty().removeListener(mTalkgroupValueChangeListener);
         }
 
-        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(getItem().getProtocol());
+        IntegerFormat format = mSettings.getTalkgroupFormatSettings().getTalkgroupFormat(getItem().getProtocol());
 
         if(format == IntegerFormat.DECIMAL && (mTalkgroupTextFormatter == null || !(mTalkgroupTextFormatter instanceof IntegerFormatter)))
         {

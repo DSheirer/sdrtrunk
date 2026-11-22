@@ -22,7 +22,7 @@ package io.github.dsheirer.jmbe;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.jmbe.github.Release;
 import io.github.dsheirer.jmbe.github.Version;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -48,7 +48,7 @@ import java.nio.file.Path;
 public class JmbeEditor extends VBox
 {
     private final static Logger mLog = LoggerFactory.getLogger(JmbeEditor.class);
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private Release mCurrentRelease;
     private Label mCurrentVersionLabel;
     private Label mUpdatedVersionLabel;
@@ -61,11 +61,11 @@ public class JmbeEditor extends VBox
 
     /**
      * Constructs an instance
-     * @param userPreferences
+     * @param settings
      */
-    public JmbeEditor(UserPreferences userPreferences)
+    public JmbeEditor(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         setPadding(new Insets(10,10,10,10));
         setSpacing(10);
         Separator separator = new Separator();
@@ -155,7 +155,7 @@ public class JmbeEditor extends VBox
             else
             {
                 content = "JMBE library successfully created/updated";
-                mUserPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(jmbeCreator.getLibraryPath());
+                mSettings.getJmbeLibrarySettings().setPathJmbeLibrary(jmbeCreator.getLibraryPath());
                 getCurrentVersionLabel().setText(mCurrentRelease.getVersion().toString());
             }
             Alert alert = new Alert(Alert.AlertType.INFORMATION, content, ButtonType.OK);
@@ -220,7 +220,7 @@ public class JmbeEditor extends VBox
     {
         if(mLibraryDirectoryPath == null)
         {
-            mLibraryDirectoryPath = mUserPreferences.getDirectoryPreference().getDefaultJmbeDirectory();
+            mLibraryDirectoryPath = mSettings.getDirectorySettings().getDefaultJmbeDirectory();
         }
 
         return mLibraryDirectoryPath;
@@ -276,7 +276,7 @@ public class JmbeEditor extends VBox
         {
             mCurrentVersionLabel = new Label("(empty)");
 
-            Version currentVersion = mUserPreferences.getJmbeLibraryPreference().getCurrentVersion();
+            Version currentVersion = mSettings.getJmbeLibrarySettings().getCurrentVersion();
 
             if(currentVersion != null)
             {

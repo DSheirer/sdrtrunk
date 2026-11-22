@@ -26,15 +26,15 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
-import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.settings.SettingsPageType;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
@@ -88,7 +88,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
     private PlaylistManager mPlaylistManager;
     protected TunerManager mTunerManager;
-    protected UserPreferences mUserPreferences;
+    protected Settings mSettings;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private Button mPlayButton;
     private TextField mSystemField;
@@ -114,14 +114,14 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
      * Constructs an instance
      * @param playlistManager for playlists
      * @param tunerManager for tuners
-     * @param userPreferences for preferences
+     * @param settings for preferences
      */
     public ChannelConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
-                                      UserPreferences userPreferences, IFilterProcessor filterProcessor)
+                                      Settings settings, IFilterProcessor filterProcessor)
     {
         mPlaylistManager = playlistManager;
         mTunerManager = tunerManager;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mFilterProcessor = filterProcessor;
 
         setMaxWidth(Double.MAX_VALUE);
@@ -356,7 +356,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                     }
 
                     if(requiresJmbeLibrarySetup() &&
-                       mUserPreferences.getJmbeLibraryPreference().getAlertIfMissingLibraryRequired() &&
+                       mSettings.getJmbeLibrarySettings().getAlertIfMissingLibraryRequired() &&
                        !getItem().processingProperty().get())
                     {
                         String content = "The decoder for this channel configuration requires the (optional) JMBE " +
@@ -376,7 +376,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                         CheckBox checkBox = new CheckBox("Don't Show This Again");
                         checkBox.setOnAction(event1 -> {
                             boolean dontShowAgain = checkBox.isSelected();
-                            mUserPreferences.getJmbeLibraryPreference().setAlertIfMissingLibraryRequired(!dontShowAgain);
+                            mSettings.getJmbeLibrarySettings().setAlertIfMissingLibraryRequired(!dontShowAgain);
                         });
 
                         VBox contentBox = new VBox();
@@ -389,7 +389,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
                         if(optionalButtonType.isPresent() && optionalButtonType.get() == ButtonType.YES)
                         {
-                            MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.JMBE_LIBRARY));
+                            MyEventBus.getGlobalEventBus().post(new ViewSettingsEditorRequest(SettingsPageType.AUDIO_CODECS));
                             return;
                         }
                     }
@@ -451,7 +451,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     {
         return getItem() != null &&
                getItem().getDecodeConfiguration().getDecoderType().providesMBEAudioFrames() &&
-               !mUserPreferences.getJmbeLibraryPreference().hasJmbeLibraryPath();
+               !mSettings.getJmbeLibrarySettings().hasJmbeLibraryPath();
     }
 
     /**

@@ -29,10 +29,10 @@ import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.gui.playlist.radioreference.ViewRadioReferenceRequest;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
-import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.settings.SettingsPageType;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
@@ -67,7 +67,7 @@ public class PlaylistEditor extends BorderPane
 
     private PlaylistManager mPlaylistManager;
     private TunerManager mTunerManager;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private MenuBar mMenuBar;
     private TabPane mTabPane;
     private Tab mPlaylistsTab;
@@ -83,13 +83,13 @@ public class PlaylistEditor extends BorderPane
      * Constructs an instance
      * @param playlistManager for alias and channel models
      * @param tunerManager for tuners
-     * @param userPreferences for settings
+     * @param settings for settings
      */
-    public PlaylistEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
+    public PlaylistEditor(PlaylistManager playlistManager, TunerManager tunerManager, Settings settings)
     {
         mPlaylistManager = playlistManager;
         mTunerManager = tunerManager;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         //Throw a new runnable back onto the FX thread to lazy load the editor content after the editor has been
         //constructed and shown.
@@ -166,11 +166,11 @@ public class PlaylistEditor extends BorderPane
             iconManagerItem.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
             viewMenu.getItems().add(iconManagerItem);
 
-            MenuItem userPreferenceItem = new MenuItem("_User Preferences");
-            userPreferenceItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_ANY));
-            userPreferenceItem.setOnAction(event -> MyEventBus.getGlobalEventBus()
-                .post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.TALKGROUP_FORMAT)));
-            viewMenu.getItems().add(userPreferenceItem);
+            MenuItem settingsItem = new MenuItem("_Settings");
+            settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_ANY));
+            settingsItem.setOnAction(event -> MyEventBus.getGlobalEventBus()
+                .post(new ViewSettingsEditorRequest(SettingsPageType.FORMATS)));
+            viewMenu.getItems().add(settingsItem);
 
             mMenuBar.getMenus().add(viewMenu);
 
@@ -186,7 +186,7 @@ public class PlaylistEditor extends BorderPane
                 WritableImage image = getMenuBar().getScene().snapshot(null);
                 final BufferedImage bufferedImage = io.github.dsheirer.gui.FxToolkit.toBufferedImage(image);
                 String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
-                final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
+                final Path captureFile = mSettings.getDirectorySettings().getDirectoryScreenCapture().resolve(filename);
 
                 ThreadPool.CACHED.submit(() -> {
                     try
@@ -234,7 +234,7 @@ public class PlaylistEditor extends BorderPane
     {
         if(mAliasEditor == null)
         {
-            mAliasEditor = new AliasEditor(mPlaylistManager, mUserPreferences);
+            mAliasEditor = new AliasEditor(mPlaylistManager, mSettings);
         }
 
         return mAliasEditor;
@@ -255,7 +255,7 @@ public class PlaylistEditor extends BorderPane
     {
         if(mChannelEditor == null)
         {
-            mChannelEditor = new ChannelEditor(mPlaylistManager, mTunerManager, mUserPreferences);
+            mChannelEditor = new ChannelEditor(mPlaylistManager, mTunerManager, mSettings);
         }
 
         return mChannelEditor;
@@ -266,7 +266,7 @@ public class PlaylistEditor extends BorderPane
         if(mPlaylistsTab == null)
         {
             mPlaylistsTab = new Tab("Playlists");
-            mPlaylistsTab.setContent(new PlaylistManagerEditor(mPlaylistManager, mUserPreferences));
+            mPlaylistsTab.setContent(new PlaylistManagerEditor(mPlaylistManager, mSettings));
         }
 
         return mPlaylistsTab;
@@ -287,7 +287,7 @@ public class PlaylistEditor extends BorderPane
     {
         if(mRadioReferenceEditor == null)
         {
-            mRadioReferenceEditor = new RadioReferenceEditor(mUserPreferences, mPlaylistManager);
+            mRadioReferenceEditor = new RadioReferenceEditor(mSettings, mPlaylistManager);
         }
 
         return mRadioReferenceEditor;

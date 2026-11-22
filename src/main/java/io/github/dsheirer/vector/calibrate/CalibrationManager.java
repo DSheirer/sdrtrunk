@@ -20,8 +20,8 @@
 package io.github.dsheirer.vector.calibrate;
 
 import io.github.dsheirer.dsp.am.AmDemodulatorCalibration;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.calibration.VectorCalibrationSettings;
 import io.github.dsheirer.vector.calibrate.channelizer.ChannelDFTCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.DifferentialDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
@@ -61,7 +61,7 @@ public class CalibrationManager
     private static final Logger mLog = LoggerFactory.getLogger(CalibrationManager.class);
     private Map<CalibrationType, Calibration> mCalibrationMap = new HashMap<>();
     private static CalibrationManager sInstance;
-    private static VectorCalibrationPreference sVectorCalibrationPreference;
+    private static VectorCalibrationSettings sVectorCalibrationSettings;
 
     /**
      * Uses the singleton pattern to construct a single instance.
@@ -76,11 +76,11 @@ public class CalibrationManager
      *
      * Note: invoke this method first with a preferences instance to ensure it is the one that is used.
      */
-    public static CalibrationManager getInstance(UserPreferences userPreferences)
+    public static CalibrationManager getInstance(Settings settings)
     {
-        if(sVectorCalibrationPreference == null)
+        if(sVectorCalibrationSettings == null)
         {
-            sVectorCalibrationPreference = userPreferences.getVectorCalibrationPreference();
+            sVectorCalibrationSettings = settings.getVectorCalibrationSettings();
         }
 
         return getInstance();
@@ -93,9 +93,9 @@ public class CalibrationManager
     {
         if(sInstance == null)
         {
-            if(sVectorCalibrationPreference == null)
+            if(sVectorCalibrationSettings == null)
             {
-                sVectorCalibrationPreference = new UserPreferences().getVectorCalibrationPreference();
+                sVectorCalibrationSettings = new Settings().getVectorCalibrationSettings();
             }
 
             sInstance = new CalibrationManager();
@@ -169,7 +169,7 @@ public class CalibrationManager
      */
     public Implementation getImplementation(CalibrationType type)
     {
-        if(sVectorCalibrationPreference.isVectorEnabled())
+        if(sVectorCalibrationSettings.isVectorEnabled())
         {
             Calibration calibration = getCalibration(type);
 

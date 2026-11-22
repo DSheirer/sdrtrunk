@@ -41,7 +41,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedEncryptionParameters;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
@@ -68,13 +68,13 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
 
     /**
      * Constructs an instance
-     * @param userPreferences for JMBE library location
+     * @param settings for JMBE library location
      * @param aliasList for audio
      * @param timeslot for this audio module
      */
-    public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
+    public DMRAudioModule(Settings settings, AliasList aliasList, int timeslot)
     {
-        super(userPreferences, aliasList, timeslot);
+        super(settings, aliasList, timeslot);
     }
 
     @Override

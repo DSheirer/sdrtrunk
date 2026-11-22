@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference.Location;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings.Location;
 import org.junit.jupiter.api.Test;
 
 /**

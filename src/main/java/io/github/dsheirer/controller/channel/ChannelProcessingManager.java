@@ -39,7 +39,7 @@ import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.log.EventLogManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.RecorderFactory;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -90,7 +90,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private EventLogManager mEventLogManager;
     private TunerManager mTunerManager;
     private AliasModel mAliasModel;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private List<Long> mLoggedFrequencies = new ArrayList<>();
     private List<ScheduledFuture<?>> mDelayedChannelStartTasks = new ArrayList<>();
 
@@ -101,16 +101,16 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * @param eventLogManager for adding event loggers to channels
      * @param tunerManager for obtaining a tuner channel source for the channel
      * @param aliasModel for aliasing of identifiers produced by the channel
-     * @param userPreferences for user defined behavior and settings
+     * @param settings for user defined behavior and settings
      */
     public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    TunerManager tunerManager, AliasModel aliasModel, UserPreferences userPreferences)
+                                    TunerManager tunerManager, AliasModel aliasModel, Settings settings)
     {
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
         mTunerManager = tunerManager;
         mAliasModel = aliasModel;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mChannelMetadataModel = new ChannelMetadataModel();
     }
 
@@ -474,7 +474,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         processingChain.addFrequencyChangeListener(channel);
 
         /* Processing Modules */
-        List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences,
+        List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mSettings,
             request.getTrafficChannelManager(), request.getChannelDescriptor());
         processingChain.addModules(modules);
 
@@ -494,7 +494,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         }
 
         //Add recorders
-        processingChain.addModules(RecorderFactory.getRecorders(mUserPreferences, channel));
+        processingChain.addModules(RecorderFactory.getRecorders(mSettings, channel));
 
         //Set the samples source
         processingChain.setSource(source);

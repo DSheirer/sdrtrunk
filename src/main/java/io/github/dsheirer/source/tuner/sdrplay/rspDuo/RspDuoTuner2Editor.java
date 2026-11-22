@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
@@ -41,13 +41,13 @@ public class RspDuoTuner2Editor extends RspTunerEditor<RspDuoTuner2Configuration
 
     /**
      * Constructs an instance
-     * @param userPreferences for preference settings
+     * @param settings for preference settings
      * @param tunerManager for saving tuner configurations
      * @param discoveredTuner to edit
      */
-    public RspDuoTuner2Editor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
+    public RspDuoTuner2Editor(Settings settings, TunerManager tunerManager, DiscoveredRspTuner discoveredTuner)
     {
-        super(userPreferences, tunerManager, discoveredTuner);
+        super(settings, tunerManager, discoveredTuner);
         addHeaderNode(RspDuoTuner1Editor.createPreferencesButton());
 
         TunerSection options = addSection("Options");

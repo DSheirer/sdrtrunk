@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.gui.map;
 
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.rrapi.type.Coverage;
 import io.github.dsheirer.service.radioreference.DistanceFormat;
 import io.github.dsheirer.service.radioreference.SiteRecord;
@@ -80,7 +80,7 @@ public final class SiteCard
      * @param sites under the mouse, nearest first
      * @param location of the user, for the distances, or null
      */
-    public static Content content(List<SiteRecord> sites, RadioReferencePreference.Location location)
+    public static Content content(List<SiteRecord> sites, RadioReferenceSettings.Location location)
     {
         DecimalFormat frequencyFormat = new DecimalFormat("0.00000");
         List<Entry> entries = new ArrayList<>();

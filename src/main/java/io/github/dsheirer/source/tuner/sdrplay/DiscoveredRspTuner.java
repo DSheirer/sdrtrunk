@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.settings.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;

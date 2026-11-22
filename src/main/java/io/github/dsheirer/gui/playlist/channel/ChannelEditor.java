@@ -26,7 +26,7 @@ import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,7 +80,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
     private final static Logger mLog = LoggerFactory.getLogger(ChannelEditor.class);
     private PlaylistManager mPlaylistManager;
     private TunerManager mTunerManager;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
     private MenuButton mNewButton;
@@ -103,14 +103,14 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
      * Constructs an instance
      * @param playlistManager containing playlists and channel configurations
      */
-    public ChannelEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
+    public ChannelEditor(PlaylistManager playlistManager, TunerManager tunerManager, Settings settings)
     {
         mPlaylistManager = playlistManager;
         mPlaylistManager.addAliasListRefreshListener(this);
         mTunerManager = tunerManager;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager, mTunerManager,
-                userPreferences, this);
+                settings, this);
 
         HBox channelsBox = new HBox();
         channelsBox.setSpacing(10.0);
@@ -216,7 +216,7 @@ public class ChannelEditor extends SplitPane implements IFilterProcessor, IAlias
                     if(editor == null)
                     {
                         editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager,
-                            mTunerManager, mUserPreferences, this);
+                            mTunerManager, mSettings, this);
 
                         if(editor != null)
                         {

@@ -20,8 +20,8 @@
 package io.github.dsheirer.service.radioreference;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
@@ -60,7 +60,7 @@ public class RadioReference
 
     public static final String SDRTRUNK_APP_KEY = "88969092";
     private RadioReferenceService mRadioReferenceService;
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private AuthorizationInformation mAuthorizationInformation;
     private final AtomicLong mLoginRequest = new AtomicLong();
     private final RadioReferenceFrequencyIndex mFrequencyIndex;
@@ -84,20 +84,20 @@ public class RadioReference
 
     /**
      * Constructs an instance of the radio reference service
-     * @param userPreferences for user credentials and other settings
+     * @param settings for user credentials and other settings
      */
-    public RadioReference(UserPreferences userPreferences)
+    public RadioReference(Settings settings)
     {
-        mUserPreferences = userPreferences;
-        mFrequencyIndex = new RadioReferenceFrequencyIndex(this, userPreferences);
+        mSettings = settings;
+        mFrequencyIndex = new RadioReferenceFrequencyIndex(this, settings);
     }
 
     /**
      * User preferences, for the location, credentials and talkgroup formats
      */
-    public UserPreferences getUserPreferences()
+    public Settings getSettings()
     {
-        return mUserPreferences;
+        return mSettings;
     }
 
     /**
@@ -115,7 +115,7 @@ public class RadioReference
      */
     public void loginWithStoredCredentials()
     {
-        RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+        RadioReferenceSettings preference = mSettings.getRadioReferenceSettings();
 
         if(mLoginRequest.get() == 0 && preference.hasStoredCredentials())
         {
@@ -216,8 +216,8 @@ public class RadioReference
      */
     public UserLocation getUserLocation() throws RadioReferenceException
     {
-        RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
-        RadioReferencePreference.Location location = preference.getLocation();
+        RadioReferenceSettings preference = mSettings.getRadioReferenceSettings();
+        RadioReferenceSettings.Location location = preference.getLocation();
 
         if(location != null)
         {
@@ -247,7 +247,7 @@ public class RadioReference
      * @return location with a label naming the city, state and zip code
      * @throws RadioReferenceException if the lookup fails or the service has no location for the zip code
      */
-    public RadioReferencePreference.Location lookupZipcode(int zipcode) throws RadioReferenceException
+    public RadioReferenceSettings.Location lookupZipcode(int zipcode) throws RadioReferenceException
     {
         RadioReferenceService service = getService();
         ZipInfo zipInfo = service.getZipcodeInfo(zipcode);
@@ -261,7 +261,7 @@ public class RadioReference
                 double longitude = Double.parseDouble(zipInfo.getLongitude().trim());
 
                 //The service returns zeros for some unknown zip codes
-                if(RadioReferencePreference.Location.isValid(latitude, longitude) && (latitude != 0.0 || longitude != 0.0))
+                if(RadioReferenceSettings.Location.isValid(latitude, longitude) && (latitude != 0.0 || longitude != 0.0))
                 {
                     String state = null;
 
@@ -289,7 +289,7 @@ public class RadioReference
                     }
 
                     label.append(zip);
-                    return new RadioReferencePreference.Location(latitude, longitude, label.toString());
+                    return new RadioReferenceSettings.Location(latitude, longitude, label.toString());
                 }
             }
             catch(NullPointerException | NumberFormatException e)
@@ -509,10 +509,10 @@ public class RadioReference
 
     public static void main(String[] args)
     {
-        UserPreferences userPreferences = new UserPreferences();
-        RadioReference radioReference = new RadioReference(userPreferences);
+        Settings settings = new Settings();
+        RadioReference radioReference = new RadioReference(settings);
 
-        AuthorizationInformation credentials = userPreferences.getRadioReferencePreference().getAuthorizationInformation();
+        AuthorizationInformation credentials = settings.getRadioReferenceSettings().getAuthorizationInformation();
 
         if(credentials == null)
         {

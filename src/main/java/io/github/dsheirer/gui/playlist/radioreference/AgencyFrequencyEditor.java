@@ -20,7 +20,7 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.Category;
 import io.github.dsheirer.rrapi.type.Frequency;
@@ -62,7 +62,7 @@ public class AgencyFrequencyEditor extends GridPane
     private static final Category ALL_CATEGORIES = new AllCategories();
     private static final SubCategory ALL_SUB_CATEGORIES = new AllSubCategories();
 
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private RadioReference mRadioReference;
     private PlaylistManager mPlaylistManager;
     private Level mLevel;
@@ -88,10 +88,10 @@ public class AgencyFrequencyEditor extends GridPane
     private ProgressIndicator mProgressIndicator;
     private FrequencyEditor mFrequencyEditor;
 
-    public AgencyFrequencyEditor(UserPreferences userPreferences, RadioReference radioReference,
+    public AgencyFrequencyEditor(Settings settings, RadioReference radioReference,
                                  PlaylistManager playlistManager, Level level)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mRadioReference = radioReference;
         mPlaylistManager = playlistManager;
         mLevel = level;
@@ -305,7 +305,7 @@ public class AgencyFrequencyEditor extends GridPane
     {
         if(mFrequencyEditor == null)
         {
-            mFrequencyEditor = new FrequencyEditor(mUserPreferences, mRadioReference, mPlaylistManager, mLevel);
+            mFrequencyEditor = new FrequencyEditor(mSettings, mRadioReference, mPlaylistManager, mLevel);
         }
 
         return mFrequencyEditor;

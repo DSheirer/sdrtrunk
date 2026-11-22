@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.viewer;
 
+import io.github.dsheirer.settings.Setting;
 import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
@@ -36,7 +37,7 @@ import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageFramer;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageProcessor;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.util.ThreadPool;
@@ -47,7 +48,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
@@ -89,9 +89,7 @@ public class P25P1Viewer extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(P25P1Viewer.class);
     private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
-    private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory.p25p1";
     private static final String FILE_FREQUENCY_REGEX = ".*\\d{8}_\\d{6}_(\\d{9}).*";
-    private Preferences mPreferences = Preferences.userNodeForPackage(P25P1Viewer.class);
     private Button mSelectFileButton;
     private Label mSelectedFileLabel;
     private TableView<MessagePackage> mMessagePackageTableView;
@@ -104,11 +102,11 @@ public class P25P1Viewer extends VBox
     private ProgressIndicator mLoadingIndicator;
     private MessagePackageViewer mMessagePackageViewer;
     private StringProperty mLoadedFile = new SimpleStringProperty();
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
 
-    public P25P1Viewer(UserPreferences userPreferences)
+    public P25P1Viewer(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         setPadding(new Insets(5));
         setSpacing(5);
 
@@ -217,7 +215,7 @@ public class P25P1Viewer extends VBox
                     }
                 });
 
-                P25P1AudioModule audioModule = new P25P1AudioModule(mUserPreferences, new AliasList("debug"));
+                P25P1AudioModule audioModule = new P25P1AudioModule(mSettings, new AliasList("debug"));
                 decoderState.setIdentifierUpdateListener(audioModule.getIdentifierUpdateListener());
                 audioModule.setAudioSegmentListener(messagePackager::add);
                 messageBroadcaster.addListener(audioModule);
@@ -513,7 +511,7 @@ public class P25P1Viewer extends VBox
                 fileChooser.getExtensionFilters().addAll(f1, f2);
                 fileChooser.setSelectedExtensionFilter(f1);
                 fileChooser.setTitle("Select P25 Phase 1 .bits Recording");
-                String lastDirectory = mPreferences.get(LAST_SELECTED_DIRECTORY, null);
+                String lastDirectory = Setting.VIEWER_P25P1_LAST_DIRECTORY.get(null);
                 if(lastDirectory != null)
                 {
                     File file = new File(lastDirectory);
@@ -526,7 +524,7 @@ public class P25P1Viewer extends VBox
 
                 if(selected != null)
                 {
-                    mPreferences.put(LAST_SELECTED_DIRECTORY, selected.getParent());
+                    Setting.VIEWER_P25P1_LAST_DIRECTORY.put(selected.getParent());
                     load(selected);
                 }
             });

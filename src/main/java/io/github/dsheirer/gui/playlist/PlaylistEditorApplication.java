@@ -24,7 +24,7 @@ import io.github.dsheirer.gui.WindowManager;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.application.Application;
 import javafx.scene.Parent;
@@ -39,20 +39,20 @@ public class PlaylistEditorApplication extends Application
     private Stage mStage;
     private Parent mPlaylistEditor;
     private TunerManager mTunerManager;
-    private UserPreferences mUserPreferences = new UserPreferences();
+    private Settings mSettings = new Settings();
     private PlaylistManager mPlaylistManager;
     private WindowManager mWindowManager;
 
     public PlaylistEditorApplication()
     {
         AliasModel aliasModel = new AliasModel();
-        EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mTunerManager = new TunerManager(mUserPreferences);
+        EventLogManager eventLogManager = new EventLogManager(aliasModel, mSettings);
+        mTunerManager = new TunerManager(mSettings);
         mTunerManager.start();
-        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
+        mPlaylistManager = new PlaylistManager(mSettings, mTunerManager, aliasModel, eventLogManager, new IconModel());
 
         mPlaylistManager.init();
-        mWindowManager = new WindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
+        mWindowManager = new WindowManager(mSettings, mTunerManager, mPlaylistManager);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class PlaylistEditorApplication extends Application
     {
         if(mPlaylistEditor == null)
         {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
+            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mSettings);
         }
 
         return mPlaylistEditor;

@@ -32,7 +32,7 @@ import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -177,9 +177,9 @@ public class P25P2MessageFramer extends C4FMMessageFramer
 
     public static void main(String[] args)
     {
-        UserPreferences userPreferences = new UserPreferences();
-        userPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(Path.of("/home/denny/JMBE/jmbe-1.0.3.jar"));
-        ApplicationLog applicationLog = new ApplicationLog(userPreferences);
+        Settings settings = new Settings();
+        settings.getJmbeLibrarySettings().setPathJmbeLibrary(Path.of("/home/denny/JMBE/jmbe-1.0.3.jar"));
+        ApplicationLog applicationLog = new ApplicationLog(settings);
         applicationLog.start();
 
 //        Path directory = Paths.get("/home/denny/SDRTrunk/recordings");
@@ -202,7 +202,7 @@ public class P25P2MessageFramer extends C4FMMessageFramer
 //        alias.addAliasID(new Talkgroup(Protocol.APCO25, 11857));
 //        alias.addAliasID(new Talkgroup(Protocol.APCO25, 12601));
 //        aliasList.addAlias(alias);
-        AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
+        AudioRecordingManager recordingManager = new AudioRecordingManager(settings);
         recordingManager.start();
         ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
 
@@ -213,8 +213,8 @@ public class P25P2MessageFramer extends C4FMMessageFramer
                 patchGroupManager));
         processingChain.addModule(new P25P2DecoderState(channel, P25P2Message.TIMESLOT_2, trafficChannelManager,
                 patchGroupManager));
-        processingChain.addModule(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList));
-        processingChain.addModule(new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList));
+        processingChain.addModule(new P25P2AudioModule(settings, P25P2Message.TIMESLOT_1, aliasList));
+        processingChain.addModule(new P25P2AudioModule(settings, P25P2Message.TIMESLOT_2, aliasList));
         MessageProviderModule messageProviderModule = new MessageProviderModule();
         processingChain.addModule(messageProviderModule);
 

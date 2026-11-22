@@ -22,7 +22,7 @@ import io.github.dsheirer.gui.control.FrequencyControl;
 import io.github.dsheirer.gui.control.FrequencyEntry;
 import io.github.dsheirer.gui.control.FrequencyField;
 import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.sample.Listener;
@@ -86,7 +86,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     private static final PseudoClass STATUS_ERROR = PseudoClass.getPseudoClass("error");
     private static final PseudoClass STATUS_REMOVED = PseudoClass.getPseudoClass("removed");
 
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final TunerManager mTunerManager;
     private final DiscoveredTuner mDiscoveredTuner;
     private C mTunerConfiguration;
@@ -127,13 +127,13 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param settings for wide-band recordings
      * @param tunerManager for requesting configuration saves.
      * @param discoveredTuner to edit
      */
-    public TunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
+    public TunerEditor(Settings settings, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
         mTunerManager = tunerManager;
         mDiscoveredTuner = discoveredTuner;
 
@@ -1035,7 +1035,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                     {
                         getRecordingStatusLabel().setVisible(true);
                         getRecordingStatusLabel().setText("Recording ...");
-                        getTuner().getTunerController().startRecorder(mUserPreferences, new RecordingStatusListener(),
+                        getTuner().getTunerController().startRecorder(mSettings, new RecordingStatusListener(),
                                 getDiscoveredTuner().getTunerClass().name());
                     }
                     else
@@ -1125,9 +1125,9 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     /**
      * User preferences
      */
-    protected UserPreferences getUserPreferences()
+    protected Settings getSettings()
     {
-        return mUserPreferences;
+        return mSettings;
     }
 
     /**

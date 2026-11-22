@@ -27,11 +27,11 @@ import io.github.dsheirer.audio.playback.AudioOutput;
 import io.github.dsheirer.audio.playback.AudioPlaybackDeviceDescriptor;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.settings.SettingsPageType;
+import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.icon.IconModel;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsType;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import java.net.URL;
 import java.util.ArrayList;
@@ -78,7 +78,7 @@ public class AudioView extends HBox
     private final AudioPlaybackManager mAudioPlaybackManager;
     private final AliasModel mAliasModel;
     private final IconModel mIconModel;
-    private final UserPreferences mUserPreferences;
+    private final Settings mSettings;
     private final Listener<AudioEvent> mAudioEventListener = this::receive;
     private final List<AudioChannelView> mChannelViews = new ArrayList<>();
     private final HBox mChannelsBox = new HBox(8);
@@ -100,15 +100,15 @@ public class AudioView extends HBox
      * @param audioPlaybackManager for the audio output and channels
      * @param aliasModel for alias lookup
      * @param iconModel for alias icons
-     * @param userPreferences for identifier formatting
+     * @param settings for identifier formatting
      */
     public AudioView(AudioPlaybackManager audioPlaybackManager, AliasModel aliasModel, IconModel iconModel,
-                     UserPreferences userPreferences)
+                     Settings settings)
     {
         mAudioPlaybackManager = audioPlaybackManager;
         mAliasModel = aliasModel;
         mIconModel = iconModel;
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         getStyleClass().add("audio-view");
         URL stylesheet = AudioView.class.getResource("/audio_panel.css");
@@ -217,9 +217,9 @@ public class AudioView extends HBox
      * Updates the identifier display when the identifier format preference changes.
      */
     @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public void settingsUpdated(SettingsType settingsType)
     {
-        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
+        if(settingsType == SettingsType.TALKGROUP_FORMAT)
         {
             Platform.runLater(() -> mChannelViews.forEach(AudioChannelView::refresh));
         }
@@ -263,7 +263,7 @@ public class AudioView extends HBox
         for(AudioChannel channel: channels)
         {
             AudioChannelView view = new AudioChannelView(channel, mAliasModel, mIconModel,
-                mUserPreferences.getTalkgroupFormatPreference(), UPDATES_PER_SECOND, this::updateMuted);
+                mSettings.getTalkgroupFormatSettings(), UPDATES_PER_SECOND, this::updateMuted);
             mChannelViews.add(view);
             mChannelsBox.getChildren().add(view);
         }
@@ -339,7 +339,7 @@ public class AudioView extends HBox
 
     private void showAudioPreferences()
     {
-        MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_OUTPUT));
+        MyEventBus.getGlobalEventBus().post(new ViewSettingsEditorRequest(SettingsPageType.PLAYBACK));
     }
 
     private void applyVolume(int value)

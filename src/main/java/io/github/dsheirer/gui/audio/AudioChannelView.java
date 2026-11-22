@@ -31,7 +31,7 @@ import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
-import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
+import io.github.dsheirer.settings.identifier.TalkgroupFormatSettings;
 import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,7 +67,7 @@ public class AudioChannelView extends HBox
     private final AudioChannel mAudioChannel;
     private final AliasModel mAliasModel;
     private final IconModel mIconModel;
-    private final TalkgroupFormatPreference mTalkgroupFormatPreference;
+    private final TalkgroupFormatSettings mTalkgroupFormatSettings;
     private final Runnable mMuteChangeListener;
     private final Listener<AudioEvent> mAudioEventListener = this::receive;
     private final Listener<IdentifierCollection> mMetadataListener = this::receive;
@@ -100,18 +100,18 @@ public class AudioChannelView extends HBox
      * @param audioChannel to display
      * @param aliasModel for alias lookup
      * @param iconModel for alias icons
-     * @param talkgroupFormatPreference for identifier formatting
+     * @param talkgroupFormatSettings for identifier formatting
      * @param updatesPerSecond rate that {@link #tick()} is invoked
      * @param muteChangeListener notified on the FX thread when this channel's mute state changes
      */
     public AudioChannelView(AudioChannel audioChannel, AliasModel aliasModel, IconModel iconModel,
-                            TalkgroupFormatPreference talkgroupFormatPreference, double updatesPerSecond,
+                            TalkgroupFormatSettings talkgroupFormatSettings, double updatesPerSecond,
                             Runnable muteChangeListener)
     {
         mAudioChannel = audioChannel;
         mAliasModel = aliasModel;
         mIconModel = iconModel;
-        mTalkgroupFormatPreference = talkgroupFormatPreference;
+        mTalkgroupFormatSettings = talkgroupFormatSettings;
         mMuteChangeListener = muteChangeListener;
         mLevelMeter = new LevelMeter(updatesPerSecond);
 
@@ -499,7 +499,7 @@ public class AudioChannelView extends HBox
             return null;
         }
 
-        return mTalkgroupFormatPreference != null ? mTalkgroupFormatPreference.format(identifier) :
+        return mTalkgroupFormatSettings != null ? mTalkgroupFormatSettings.format(identifier) :
             identifier.toString();
     }
 

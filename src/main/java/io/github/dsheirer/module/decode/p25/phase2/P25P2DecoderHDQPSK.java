@@ -41,7 +41,7 @@ import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -320,8 +320,8 @@ public class P25P2DecoderHDQPSK extends FeedbackDecoder implements ISourceEventL
 
     public static void main(String[] args)
     {
-        UserPreferences userPreferences = new UserPreferences();
-        userPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(Path.of("/home/denny/SDRTrunk/jmbe/jmbe-1.0.9.jar"));
+        Settings settings = new Settings();
+        settings.getJmbeLibrarySettings().setPathJmbeLibrary(Path.of("/home/denny/SDRTrunk/jmbe/jmbe-1.0.9.jar"));
 
         Channel channel = new Channel("Phase 2 Test", Channel.ChannelType.TRAFFIC);
         DecodeConfigP25Phase2 config = new DecodeConfigP25Phase2();
@@ -354,9 +354,9 @@ public class P25P2DecoderHDQPSK extends FeedbackDecoder implements ISourceEventL
         ds2.start();
         processingChain.addModule(ds1);
         processingChain.addModule(ds2);
-        P25P2AudioModule am1 = new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_1, aliasList);
+        P25P2AudioModule am1 = new P25P2AudioModule(settings, P25P2Message.TIMESLOT_1, aliasList);
         am1.start();
-        P25P2AudioModule am2 = new P25P2AudioModule(userPreferences, P25P2Message.TIMESLOT_2, aliasList);
+        P25P2AudioModule am2 = new P25P2AudioModule(settings, P25P2Message.TIMESLOT_2, aliasList);
         am2.start();
         processingChain.addModule(am1);
         processingChain.addModule(am2);

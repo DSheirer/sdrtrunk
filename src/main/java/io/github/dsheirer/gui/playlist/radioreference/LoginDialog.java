@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
@@ -62,7 +62,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
     private final static Logger mLog = LoggerFactory.getLogger(LoginDialog.class);
     private static final String TEST_CONNECTION = "Test Connection";
     private static final String TESTING_CONNECTION = "Testing...";
-    private UserPreferences mUserPreferences;
+    private Settings mSettings;
     private TextField mUserNameText;
     private PasswordField mPasswordField;
     private TextField mPasswordText;
@@ -76,11 +76,11 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
 
     /**
      * Constructs an instance.
-     * @param userPreferences for accessing stored user credentials and preferences
+     * @param settings for accessing stored user credentials and preferences
      */
-    public LoginDialog(UserPreferences userPreferences)
+    public LoginDialog(Settings settings)
     {
-        mUserPreferences = userPreferences;
+        mSettings = settings;
 
         setTitle("sdrtrunk - Radio Reference");
         final DialogPane dialogPane = getDialogPane();
@@ -109,13 +109,13 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
 
         if(store)
         {
-            mUserPreferences.getRadioReferencePreference().setStoreCredentials(getStoreLoginCheckBox().isSelected());
-            mUserPreferences.getRadioReferencePreference().setUserName(username);
-            mUserPreferences.getRadioReferencePreference().setPassword(password);
+            mSettings.getRadioReferenceSettings().setStoreCredentials(getStoreLoginCheckBox().isSelected());
+            mSettings.getRadioReferenceSettings().setUserName(username);
+            mSettings.getRadioReferenceSettings().setPassword(password);
         }
         else
         {
-            mUserPreferences.getRadioReferencePreference().removeStoredCredentials();
+            mSettings.getRadioReferenceSettings().removeStoredCredentials();
         }
 
         return RadioReference.getAuthorizatonInformation(username, password);
@@ -147,7 +147,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             GridPane.setConstraints(passwordLabel, 0, 1);
             mGridPane.getChildren().add(passwordLabel);
 
-            boolean show = mUserPreferences.getRadioReferencePreference().getShowPassword();
+            boolean show = mSettings.getRadioReferenceSettings().getShowPassword();
             getPasswordField().setVisible(!show);
             getPasswordText().setVisible(show);
 
@@ -192,7 +192,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             mUserNameText = new TextField();
             mUserNameText.setMaxWidth(Double.MAX_VALUE);
 
-            String userName = mUserPreferences.getRadioReferencePreference().getUserName();
+            String userName = mSettings.getRadioReferenceSettings().getUserName();
             mUserNameText.setText(userName);
         }
 
@@ -206,7 +206,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             mPasswordField = new PasswordField();
             mPasswordField.setMaxWidth(Double.MAX_VALUE);
 
-            String password = mUserPreferences.getRadioReferencePreference().getPassword();
+            String password = mSettings.getRadioReferenceSettings().getPassword();
             mPasswordField.setText(password);
         }
 
@@ -220,7 +220,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             mPasswordText = new TextField();
             mPasswordText.setMaxWidth(Double.MAX_VALUE);
 
-            String password = mUserPreferences.getRadioReferencePreference().getPassword();
+            String password = mSettings.getRadioReferenceSettings().getPassword();
             mPasswordText.setText(password);
         }
 
@@ -236,7 +236,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
         {
             mShowPasswordCheckBox = new CheckBox("Show");
             mShowPasswordCheckBox.setAccessibleText("Show password");
-            mShowPasswordCheckBox.setSelected(mUserPreferences.getRadioReferencePreference().getShowPassword());
+            mShowPasswordCheckBox.setSelected(mSettings.getRadioReferenceSettings().getShowPassword());
             mShowPasswordCheckBox.setOnAction(new EventHandler<ActionEvent>()
             {
                 @Override
@@ -257,7 +257,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                         getPasswordField().setText(getPasswordText().getText());
                     }
 
-                    mUserPreferences.getRadioReferencePreference().setShowPassword(show);
+                    mSettings.getRadioReferenceSettings().setShowPassword(show);
                 }
             });
         }
@@ -270,7 +270,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
         if(mStoreLoginCheckBox == null)
         {
             mStoreLoginCheckBox = new CheckBox("Store Login Credentials");
-            mStoreLoginCheckBox.setSelected(mUserPreferences.getRadioReferencePreference().isStoreCredentials());
+            mStoreLoginCheckBox.setSelected(mSettings.getRadioReferenceSettings().isStoreCredentials());
         }
 
         return mStoreLoginCheckBox;

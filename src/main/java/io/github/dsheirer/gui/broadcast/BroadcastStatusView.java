@@ -30,7 +30,7 @@ import io.github.dsheirer.gui.playlist.streaming.ViewStreamingRequest;
 import io.github.dsheirer.gui.table.ColumnConfigurationButton;
 import io.github.dsheirer.gui.table.TableColumnMonitor;
 import io.github.dsheirer.icon.Icon;
-import io.github.dsheirer.preference.swing.SwingPreference;
+import io.github.dsheirer.settings.swing.SwingSettings;
 import io.github.dsheirer.sample.Listener;
 import java.net.URL;
 import java.util.ArrayList;
@@ -87,9 +87,9 @@ public class BroadcastStatusView extends VBox
     /**
      * Constructs an instance
      * @param broadcastModel with the configured streams
-     * @param swingPreference with the column widths of the Swing version of this table, migrated once
+     * @param swingSettings with the column widths of the Swing version of this table, migrated once
      */
-    public BroadcastStatusView(BroadcastModel broadcastModel, SwingPreference swingPreference)
+    public BroadcastStatusView(BroadcastModel broadcastModel, SwingSettings swingSettings)
     {
         mBroadcastModel = broadcastModel;
         getStyleClass().add("broadcast-status-view");
@@ -124,7 +124,7 @@ public class BroadcastStatusView extends VBox
         VBox.setVgrow(mTableView, Priority.ALWAYS);
 
         TableColumnMonitor<ConfiguredBroadcast> monitor = new TableColumnMonitor<>(mTableView, TABLE_KEY,
-            swingPreference, SWING_TABLE_KEY);
+            swingSettings, SWING_TABLE_KEY);
 
         IconNode titleIcon = new IconNode(FontAwesome.PODCAST);
         titleIcon.setIconSize(14);

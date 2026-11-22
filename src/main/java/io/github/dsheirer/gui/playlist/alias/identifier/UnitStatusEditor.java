@@ -25,7 +25,7 @@ import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.control.LtrFormatter;
 import io.github.dsheirer.gui.control.PrefixIdentFormatter;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;

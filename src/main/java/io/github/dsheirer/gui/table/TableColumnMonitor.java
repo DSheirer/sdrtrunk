@@ -18,7 +18,8 @@
  */
 package io.github.dsheirer.gui.table;
 
-import io.github.dsheirer.preference.swing.SwingPreference;
+import io.github.dsheirer.settings.Setting;
+import io.github.dsheirer.settings.swing.SwingSettings;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,10 +56,6 @@ public class TableColumnMonitor<S>
      * Swing column widths.
      */
     public static final String LEGACY_INDEX = "column.legacy.index";
-    private static final String ORDER = ".column.order";
-    private static final String HIDDEN = ".column.hidden";
-    private static final String KNOWN = ".column.known";
-    private static final String WIDTH = ".column.width.";
     private static final String SEPARATOR = ",";
 
     private final TableView<S> mTableView;
@@ -75,7 +72,7 @@ public class TableColumnMonitor<S>
      */
     public TableColumnMonitor(TableView<S> tableView, String key)
     {
-        this(tableView, key, Preferences.userNodeForPackage(TableColumnMonitor.class), null, null);
+        this(tableView, key, Setting.TABLE_COLUMN_ORDER.getNode(), null, null);
     }
 
     /**
@@ -83,12 +80,12 @@ public class TableColumnMonitor<S>
      * width yet use the width stored by the Swing version of the table, so that users keep their column widths.
      * @param tableView to monitor
      * @param key that uniquely identifies the table, used as the prefix for its stored settings
-     * @param swingPreference that holds the column widths of the Swing table
+     * @param swingSettings that holds the column widths of the Swing table
      * @param swingKey of the Swing table.  The Swing column number is the default index of the column.
      */
-    public TableColumnMonitor(TableView<S> tableView, String key, SwingPreference swingPreference, String swingKey)
+    public TableColumnMonitor(TableView<S> tableView, String key, SwingSettings swingSettings, String swingKey)
     {
-        this(tableView, key, Preferences.userNodeForPackage(TableColumnMonitor.class), swingPreference, swingKey);
+        this(tableView, key, Setting.TABLE_COLUMN_ORDER.getNode(), swingSettings, swingKey);
     }
 
     /**
@@ -96,10 +93,10 @@ public class TableColumnMonitor<S>
      * @param tableView to monitor
      * @param key that uniquely identifies the table, used as the prefix for its stored settings
      * @param preferences node for storing the settings
-     * @param swingPreference that holds legacy Swing column widths, or null
+     * @param swingSettings that holds legacy Swing column widths, or null
      * @param swingKey for the legacy Swing column widths, or null
      */
-    TableColumnMonitor(TableView<S> tableView, String key, Preferences preferences, SwingPreference swingPreference,
+    TableColumnMonitor(TableView<S> tableView, String key, Preferences preferences, SwingSettings swingSettings,
                        String swingKey)
     {
         mTableView = tableView;
@@ -121,7 +118,7 @@ public class TableColumnMonitor<S>
             mDefaultVisibility.put(column, column.isVisible());
         }
 
-        restore(swingPreference, swingKey);
+        restore(swingSettings, swingKey);
 
         mTableView.getColumns().addListener((ListChangeListener<TableColumn<S,?>>)c -> {
             if(!mRestoring)
@@ -229,9 +226,9 @@ public class TableColumnMonitor<S>
             mRestoring = false;
         }
 
-        mPreferences.remove(mKey + ORDER);
-        mPreferences.remove(mKey + HIDDEN);
-        mPreferences.remove(mKey + KNOWN);
+        mPreferences.remove(Setting.TABLE_COLUMN_ORDER.getKey(mKey));
+        mPreferences.remove(Setting.TABLE_COLUMN_HIDDEN.getKey(mKey));
+        mPreferences.remove(Setting.TABLE_COLUMN_KNOWN.getKey(mKey));
     }
 
     /**
@@ -282,7 +279,7 @@ public class TableColumnMonitor<S>
     /**
      * Applies the stored column settings to the table.
      */
-    private void restore(SwingPreference swingPreference, String swingKey)
+    private void restore(SwingSettings swingSettings, String swingKey)
     {
         mRestoring = true;
 
@@ -295,7 +292,7 @@ public class TableColumnMonitor<S>
                 columnMap.put(column.getId(), column);
             }
 
-            String order = mPreferences.get(mKey + ORDER, null);
+            String order = mPreferences.get(Setting.TABLE_COLUMN_ORDER.getKey(mKey), null);
 
             if(order != null)
             {
@@ -325,7 +322,7 @@ public class TableColumnMonitor<S>
                 mTableView.getColumns().setAll(ordered);
             }
 
-            String hidden = mPreferences.get(mKey + HIDDEN, null);
+            String hidden = mPreferences.get(Setting.TABLE_COLUMN_HIDDEN.getKey(mKey), null);
 
             if(hidden != null)
             {
@@ -358,9 +355,9 @@ public class TableColumnMonitor<S>
                 Integer legacyIndex = column.getProperties().get(LEGACY_INDEX) instanceof Integer index ? index :
                     (hasLegacyIndexes ? null : x);
 
-                if(Double.isNaN(width) && swingPreference != null && swingKey != null && legacyIndex != null)
+                if(Double.isNaN(width) && swingSettings != null && swingKey != null && legacyIndex != null)
                 {
-                    int swingWidth = swingPreference.getInt(swingKey + ".column." + legacyIndex, Integer.MAX_VALUE);
+                    int swingWidth = swingSettings.getColumnWidth(swingKey, legacyIndex, Integer.MAX_VALUE);
 
                     if(swingWidth != Integer.MAX_VALUE && swingWidth > 0)
                     {
@@ -386,7 +383,7 @@ public class TableColumnMonitor<S>
      */
     private Set<String> getKnownIds()
     {
-        String known = mPreferences.get(mKey + KNOWN, null);
+        String known = mPreferences.get(Setting.TABLE_COLUMN_KNOWN.getKey(mKey), null);
 
         if(known != null)
         {
@@ -430,7 +427,7 @@ public class TableColumnMonitor<S>
             ids.add(column.getId());
         }
 
-        mPreferences.put(mKey + ORDER, String.join(SEPARATOR, ids));
+        mPreferences.put(Setting.TABLE_COLUMN_ORDER.getKey(mKey), String.join(SEPARATOR, ids));
     }
 
     private void storeVisibility()
@@ -448,12 +445,12 @@ public class TableColumnMonitor<S>
             }
         }
 
-        mPreferences.put(mKey + HIDDEN, String.join(SEPARATOR, ids));
-        mPreferences.put(mKey + KNOWN, String.join(SEPARATOR, known));
+        mPreferences.put(Setting.TABLE_COLUMN_HIDDEN.getKey(mKey), String.join(SEPARATOR, ids));
+        mPreferences.put(Setting.TABLE_COLUMN_KNOWN.getKey(mKey), String.join(SEPARATOR, known));
     }
 
     private String getWidthKey(TableColumn<S,?> column)
     {
-        return mKey + WIDTH + column.getId();
+        return Setting.TABLE_COLUMN_WIDTH.getKey(mKey, column.getId());
     }
 }
