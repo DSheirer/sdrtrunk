@@ -78,11 +78,11 @@ public abstract class UMBTCMessage extends P25P1Message implements IBitErrorProv
 
     public UnconfirmedDataBlock getDataBlock(int index)
     {
-        DataBlock dataBlock = getPDUSequence().getDataBlocks().get(index);
-
-        if(dataBlock instanceof UnconfirmedDataBlock)
+        //An incomplete sequence can have fewer data blocks than the header specifies
+        if(index >= 0 && index < getPDUSequence().getDataBlocks().size() &&
+           getPDUSequence().getDataBlocks().get(index) instanceof UnconfirmedDataBlock dataBlock)
         {
-            return (UnconfirmedDataBlock)dataBlock;
+            return dataBlock;
         }
 
         return null;

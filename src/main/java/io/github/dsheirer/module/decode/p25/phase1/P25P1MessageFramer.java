@@ -308,10 +308,6 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     break;
                 case PACKET_DATA_UNIT:
                 case PACKET_DATA_UNIT_BLOCK_1:
-                case PACKET_DATA_UNIT_BLOCK_2:
-                case PACKET_DATA_UNIT_BLOCK_3:
-                case PACKET_DATA_UNIT_BLOCK_4:
-                case PACKET_DATA_UNIT_BLOCK_5:
                     dispatchPDU();
                     break;
                 case TERMINATOR_DATA_UNIT:
@@ -341,7 +337,7 @@ public class P25P1MessageFramer extends C4FMMessageFramer
     {
         if(mMessageAssembler != null)
         {
-            mDibitCounter -= mMessageAssembler.getDataUnitID().getElapsedDibitLength(); //SYNC + NID + Message
+            mDibitCounter -= mMessageAssembler.getElapsedDibitLength(); //SYNC + NID + Message
         }
     }
 
@@ -532,15 +528,22 @@ public class P25P1MessageFramer extends C4FMMessageFramer
 
 
     /**
-     * Dispatches the message currently in the message assembler when the DUID is PDU or PDU1
+     * Dispatches the message currently in the message assembler when the DUID is PDU (header) or PDU block (header
+     * plus one or more data blocks).
+     *
+     * A PDU header can specify up to 127 data blocks to follow.  The assembler is reconfigured after the header and
+     * after each data block to capture the next block, extending the expected message length by one 196-bit block
+     * each time, until the sequence has all of the blocks that the header specified.
      */
     private void dispatchPDU()
     {
         switch(mMessageAssembler.getDataUnitID())
         {
             case PACKET_DATA_UNIT:
-                CorrectedBinaryMessage message = mMessageAssembler.getMessage().getSubMessage(0, 196);
-                PDUHeader header = PDUMessageFactory.createHeader(message, mMessageAssembler.getSoftSymbols(0, 196), mMessageAssembler.getReliabilities(0, 196), mPhaseWrappedSoftSymbols);
+                int headerLength = P25P1DataUnitID.PDU_BLOCK_BIT_LENGTH;
+                CorrectedBinaryMessage message = mMessageAssembler.getMessage().getSubMessage(0, headerLength);
+                PDUHeader header = PDUMessageFactory.createHeader(message, mMessageAssembler.getSoftSymbols(0, headerLength),
+                    mMessageAssembler.getReliabilities(0, headerLength), mPhaseWrappedSoftSymbols);
 
                 if(header != null)
                 {
@@ -548,8 +551,8 @@ public class P25P1MessageFramer extends C4FMMessageFramer
 
                     if(mPDUSequence.getHeader().isValid() && mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
                     {
-                        //Setup to catch the sequence of data blocks that follow the header
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1);
+                        //Setup to catch the first of the data blocks that follow the header
+                        reconfigureForNextDataBlock();
                     }
                     else
                     {
@@ -567,15 +570,20 @@ public class P25P1MessageFramer extends C4FMMessageFramer
             case PACKET_DATA_UNIT_BLOCK_1:
                 if(mPDUSequence != null)
                 {
-                    CorrectedBinaryMessage messageB1 = mMessageAssembler.getMessage().getSubMessage(196, 392);
+                    //The data block just assembled follows the header and the data blocks already in the sequence
+                    int start = P25P1DataUnitID.PDU_BLOCK_BIT_LENGTH * (mPDUSequence.getDataBlocks().size() + 1);
+                    int end = start + P25P1DataUnitID.PDU_BLOCK_BIT_LENGTH;
+                    CorrectedBinaryMessage dataBlock = mMessageAssembler.getMessage().getSubMessage(start, end);
 
                     if(mPDUSequence.getHeader().isConfirmationRequired())
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB1));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(dataBlock));
                     }
                     else
                     {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB1, mMessageAssembler.getSoftSymbols(196, 392), mMessageAssembler.getReliabilities(196, 392), mPhaseWrappedSoftSymbols));
+                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(dataBlock,
+                            mMessageAssembler.getSoftSymbols(start, end), mMessageAssembler.getReliabilities(start, end),
+                            mPhaseWrappedSoftSymbols));
                     }
 
                     if(mPDUSequence.isComplete())
@@ -586,124 +594,8 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     else
                     {
                         //Setup to catch the next data block
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_2);
+                        reconfigureForNextDataBlock();
                     }
-                }
-                else
-                {
-                    adjustDibitCounterFromMessageAssembler();
-                    mMessageAssembler = null;
-                }
-                break;
-            case PACKET_DATA_UNIT_BLOCK_2:
-                if(mPDUSequence != null)
-                {
-                    CorrectedBinaryMessage messageB2 = mMessageAssembler.getMessage().getSubMessage(392, 588);
-
-                    if(mPDUSequence.getHeader().isConfirmationRequired())
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB2));
-                    }
-                    else
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB2, mMessageAssembler.getSoftSymbols(392, 588), mMessageAssembler.getReliabilities(392, 588), mPhaseWrappedSoftSymbols));
-                    }
-
-                    if(mPDUSequence.isComplete())
-                    {
-                        adjustDibitCounterFromMessageAssembler();
-                        dispatchPDUSequence();
-                    }
-                    else
-                    {
-                        //Setup to catch the next data block
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_3);
-                    }
-                }
-                else
-                {
-                    adjustDibitCounterFromMessageAssembler();
-                    mMessageAssembler = null;
-                }
-                break;
-            case PACKET_DATA_UNIT_BLOCK_3:
-                if(mPDUSequence != null)
-                {
-                    CorrectedBinaryMessage messageB3 = mMessageAssembler.getMessage().getSubMessage(588, 784);
-
-                    if(mPDUSequence.getHeader().isConfirmationRequired())
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB3));
-                    }
-                    else
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB3, mMessageAssembler.getSoftSymbols(588, 784), mMessageAssembler.getReliabilities(588, 784), mPhaseWrappedSoftSymbols));
-                    }
-
-                    if(mPDUSequence.isComplete())
-                    {
-                        adjustDibitCounterFromMessageAssembler();
-                        dispatchPDUSequence();
-                    }
-                    else
-                    {
-                        //Setup to catch the next data block
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_4);
-                    }
-                }
-                else
-                {
-                    adjustDibitCounterFromMessageAssembler();
-                    mMessageAssembler = null;
-                }
-                break;
-            case PACKET_DATA_UNIT_BLOCK_4:
-                if(mPDUSequence != null)
-                {
-                    CorrectedBinaryMessage messageB4 = mMessageAssembler.getMessage().getSubMessage(784, 980);
-
-                    if(mPDUSequence.getHeader().isConfirmationRequired())
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB4));
-                    }
-                    else
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB4, mMessageAssembler.getSoftSymbols(784, 980), mMessageAssembler.getReliabilities(784, 980), mPhaseWrappedSoftSymbols));
-                    }
-
-                    if(mPDUSequence.isComplete())
-                    {
-                        adjustDibitCounterFromMessageAssembler();
-                        dispatchPDUSequence();
-                    }
-                    else
-                    {
-                        //Setup to catch the last data block
-                        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_5);
-                    }
-                }
-                else
-                {
-                    adjustDibitCounterFromMessageAssembler();
-                    mMessageAssembler = null;
-                }
-                break;
-            case PACKET_DATA_UNIT_BLOCK_5:
-                if(mPDUSequence != null)
-                {
-                    CorrectedBinaryMessage messageB5 = mMessageAssembler.getMessage().getSubMessage(980, 1176);
-
-                    if(mPDUSequence.getHeader().isConfirmationRequired())
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(messageB5));
-                    }
-                    else
-                    {
-                        mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(messageB5, mMessageAssembler.getSoftSymbols(980, 1176), mMessageAssembler.getReliabilities(980, 1176), mPhaseWrappedSoftSymbols));
-                    }
-
-                    adjustDibitCounterFromMessageAssembler();
-                    dispatchPDUSequence();
                 }
                 else
                 {
@@ -719,11 +611,25 @@ public class P25P1MessageFramer extends C4FMMessageFramer
     }
 
     /**
-     * Dispatches a completed PDU sequence
+     * Reconfigures the message assembler to capture the next data block of the current PDU sequence, extending the
+     * expected message length and the elapsed dibit length to cover the header and all data blocks received so far
+     * plus the next one.
+     */
+    private void reconfigureForNextDataBlock()
+    {
+        int dataBlockCount = mPDUSequence.getDataBlocks().size() + 1;
+        mMessageAssembler.reconfigure(P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1,
+            P25P1DataUnitID.getPDUMessageLength(dataBlockCount),
+            P25P1DataUnitID.getPDUElapsedDibitLength(dataBlockCount));
+    }
+
+    /**
+     * Dispatches the PDU sequence, which is either complete or was ended by the next frame before all of its data
+     * blocks were received (incomplete).
      */
     private void dispatchPDUSequence()
     {
-        P25P1Message pduMessage = PDUMessageFactory.create(mPDUSequence, mMessageAssembler.getNAC(), getTimestamp());
+        P25P1Message pduMessage = PDUMessageFactory.create(mPDUSequence, mPDUSequence.getNAC(), getTimestamp());
         if(pduMessage != null)
         {
             if(pduMessage.getMessage() != null)
@@ -801,6 +707,14 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     mMessageAssembler = null;
                 }
             }
+            else if(mPDUSequence != null && mMessageAssembler.getDataUnitID() == P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1)
+            {
+                //The next frame started before the PDU data block under assembly was received.  A data block that was
+                //transmitted completes assembly ahead of the next frame's NID, so the assembled bits are only trailing
+                //null bits and the next frame's sync and NID and they're not decoded as a data block.  The sequence
+                //is dispatched below as incomplete.
+                mPreviousDataUnitID = mMessageAssembler.getDataUnitID();
+            }
             else
             {
                 int droppedBitCount = mMessageAssembler.forceCompletion(mPreviousDataUnitID, mDetectedDataUnitID);
@@ -816,7 +730,16 @@ public class P25P1MessageFramer extends C4FMMessageFramer
             }
 
             //The new NID ended the multi-block sequence, so the assembler can't continue into the next frame, which
-            //would prevent starting the assembler for that frame.  The elapsed dibits are reported as sync loss.
+            //would prevent starting the assembler for that frame.  The elapsed dibits are reported as sync loss, except
+            //for a PDU sequence that is still waiting for data blocks, which is dispatched as incomplete rather than
+            //discarded.
+            if(mPDUSequence != null)
+            {
+                //Account for the header and the data blocks that were received
+                mDibitCounter -= P25P1DataUnitID.getPDUElapsedDibitLength(mPDUSequence.getDataBlocks().size());
+                dispatchPDUSequence();
+            }
+
             mMessageAssembler = null;
             mPDUSequence = null;
         }
