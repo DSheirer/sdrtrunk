@@ -145,7 +145,8 @@ public class AudioStreamingManager implements Listener<AudioSegment>
             {
                 it.remove();
 
-                if(mAudioRecordingListener != null && audioSegment.hasBroadcastChannels())
+                //A segment that is silence throughout (see AudioSegment.isSilent()) is not streamed
+                if(mAudioRecordingListener != null && audioSegment.hasBroadcastChannels() && !audioSegment.isSilent())
                 {
                     IdentifierCollection identifiers =
                             new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers());

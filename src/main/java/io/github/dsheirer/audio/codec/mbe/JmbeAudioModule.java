@@ -91,6 +91,15 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     }
 
     /**
+     * Indicates the loaded JMBE library is version 2.0 or later, which applies its own gain control, so an audio
+     * module should not add a fixed gain of its own on top of it.
+     */
+    protected boolean hasLibraryGainControl()
+    {
+        return mAudioCodec instanceof IAudioCodecV2;
+    }
+
+    /**
      * Sets the JMBE feature
      * @param name of the feature
      * @param value for the feature

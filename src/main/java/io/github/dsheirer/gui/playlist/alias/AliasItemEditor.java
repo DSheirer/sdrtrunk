@@ -794,6 +794,12 @@ public class AliasItemEditor extends Editor<Alias>
             passportMenu.getItems().add(new AddRadioIdItem(Protocol.PASSPORT));
             passportMenu.getItems().add(new AddRadioIdRangeItem(Protocol.PASSPORT));
 
+            Menu edacsMenu = new ProtocolMenu(Protocol.EDACS);
+            edacsMenu.getItems().add(new AddTalkgroupItem(Protocol.EDACS));
+            edacsMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.EDACS));
+            edacsMenu.getItems().add(new AddRadioIdItem(Protocol.EDACS));
+            edacsMenu.getItems().add(new AddRadioIdRangeItem(Protocol.EDACS));
+
             Menu taitMenu = new ProtocolMenu(Protocol.TAIT1200);
             taitMenu.setDisable(true);  //tbd
 
@@ -801,7 +807,7 @@ public class AliasItemEditor extends Editor<Alias>
             lojackMenu.getItems().add(new AddLojackItem());
 
             mAddIdentifierButton.getItems().addAll(amMenu, p25Menu, dmrMenu, fleetsyncMenu, ltrMenu, mdcMenu, mptMenu,
-                nbfmMenu, nxdnMenu, passportMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
+                nbfmMenu, nxdnMenu, passportMenu, edacsMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
         }
 
         return mAddIdentifierButton;
@@ -856,6 +862,7 @@ public class AliasItemEditor extends Editor<Alias>
             availableBox.getChildren().addAll(availableLabel, getAvailableStreamsView());
 
             Label selectedLabel = new Label("Selected");
+
             getSelectedStreamsView().setAccessibleText("Selected streams");
             VBox selectedBox = new VBox();
             VBox.setVgrow(getSelectedStreamsView(), Priority.ALWAYS);
