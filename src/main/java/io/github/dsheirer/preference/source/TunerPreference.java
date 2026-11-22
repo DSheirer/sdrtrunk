@@ -36,9 +36,11 @@ public class TunerPreference extends Preference
     private Preferences mPreferences = Preferences.userNodeForPackage(TunerPreference.class);
     private static final String PREFERENCE_KEY_CHANNELIZER_TYPE = "channelizer.type";
     private static final String PREFERENCE_KEY_RSP_DUO_TUNER_MODE = "rsp.duo.tuner.mode";
+    private static final String PREFERENCE_KEY_DECODE_QUALITY_LOGGING = "decode.quality.logging";
 
     private ChannelizerType mChannelizerType;
     private RspDuoSelectionMode mRspDuoSelectionMode;
+    private Boolean mDecodeQualityLogging;
 
     /**
      * Constructs a tuner preference with the update listener
@@ -120,6 +122,32 @@ public class TunerPreference extends Preference
     {
         mRspDuoSelectionMode = mode;
         mPreferences.put(PREFERENCE_KEY_RSP_DUO_TUNER_MODE, mRspDuoSelectionMode.name());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Indicates if the decode quality of each control and conventional channel is periodically logged with the
+     * channel's position in its tuner's band.
+     * @return true if enabled, default false
+     */
+    public boolean isDecodeQualityLogging()
+    {
+        if(mDecodeQualityLogging == null)
+        {
+            mDecodeQualityLogging = mPreferences.getBoolean(PREFERENCE_KEY_DECODE_QUALITY_LOGGING, false);
+        }
+
+        return mDecodeQualityLogging;
+    }
+
+    /**
+     * Sets the decode quality logging option
+     * @param enabled true to log decode quality
+     */
+    public void setDecodeQualityLogging(boolean enabled)
+    {
+        mDecodeQualityLogging = enabled;
+        mPreferences.putBoolean(PREFERENCE_KEY_DECODE_QUALITY_LOGGING, enabled);
         notifyPreferenceUpdated();
     }
 }
