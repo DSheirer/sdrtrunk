@@ -59,9 +59,9 @@ public class VectorRealHalfBandDecimationFilter11Tap256Bit implements IRealDecim
 
         System.arraycopy(coefficients, 0, mCoefficients, 0, coefficients.length);
 
-        //Set buffer overlap to larger of the length of the SIMD lanes (16) minus 1 or the coefficients length minus 1
-        //to ensure we don't get an index out of bounds exception when loading samples from the buffer.
-        mBufferOverlap = Math.max(VECTOR_SPECIES.length() -1, coefficients.length - 1);
+        //Set buffer overlap to the padded coefficients length (two 8-lane vectors = 16) minus 1 to ensure we don't get
+        //an index out of bounds exception when loading the second vector of samples from the buffer.
+        mBufferOverlap = Math.max(mCoefficients.length - 1, coefficients.length - 1);
     }
 
     public float[] decimateReal(float[] samples)
@@ -107,7 +107,7 @@ public class VectorRealHalfBandDecimationFilter11Tap256Bit implements IRealDecim
         for(int bufferPointer = 0; bufferPointer < samples.length; bufferPointer += 2)
         {
             product1 = filter1.mul(FloatVector.fromArray(VECTOR_SPECIES, mBuffer, bufferPointer));
-            product2 = filter2.mul(FloatVector.fromArray(VECTOR_SPECIES, mBuffer, bufferPointer + 3));
+            product2 = filter2.mul(FloatVector.fromArray(VECTOR_SPECIES, mBuffer, bufferPointer + 8));
             filtered[bufferPointer / 2] = product1.add(product2).reduceLanes(VectorOperators.ADD);
         }
 
