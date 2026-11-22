@@ -153,6 +153,107 @@ public class P25P1MessageFramerPDUTest
         assertPduAssembled(true, P25P1DataUnitID.PDU_MAXIMUM_DATA_BLOCK_COUNT, udpPayload(1998));
     }
 
+    @Test
+    public void confirmedPduEndedByNextFrameIsDispatchedIncomplete()
+    {
+        assertPduDispatchedIncomplete(true, 14, 8);
+    }
+
+    @Test
+    public void unconfirmedPduEndedByNextFrameIsDispatchedIncomplete()
+    {
+        assertPduDispatchedIncomplete(false, 6, 2);
+    }
+
+    @Test
+    public void pduEndedByNextFrameBeforeFirstDataBlockIsDispatchedIncomplete()
+    {
+        assertPduDispatchedIncomplete(true, 3, 0);
+    }
+
+    /**
+     * Frames a PDU header that announces the block count, but only the first received count of data blocks, followed
+     * by a terminator data unit.  The terminator's NID ends the sequence early, and the framer must dispatch the PDU
+     * sequence as incomplete with the received blocks rather than discarding it.
+     */
+    private static void assertPduDispatchedIncomplete(boolean confirmed, int blockCount, int receivedCount)
+    {
+        int blockOctets = confirmed ? 16 : 12;
+        List<BinaryMessage> blocks = new ArrayList<>();
+        for(int x = 0; x < receivedCount; x++)
+        {
+            byte[] octets = new byte[blockOctets];
+            octets[0] = (byte)x;
+            blocks.add(confirmed ? interleave(encodeThreeQuarterRate(confirmedDataBlock(x, octets))) :
+                interleave(encodeHalfRate(unconfirmedDataBlock(octets))));
+        }
+
+        BinaryMessage header = interleave(encodeHalfRate(packetHeader(confirmed, RADIO_LLID, blockCount, 0)));
+
+        List<Dibit> dibits = new ArrayList<>();
+        //A NID only preempts a message under assembly when it matches the tracked NAC, so the framer first observes
+        //the NAC in enough frames for it to be tracked, as it would on a live channel.
+        for(int x = 0; x < 4; x++)
+        {
+            dibits.addAll(toDibits(frame(P25P1DataUnitID.TERMINATOR_DATA_UNIT, new BinaryMessage(28))));
+        }
+        dibits.addAll(toDibits(frame(P25P1DataUnitID.PACKET_DATA_UNIT, pduMessage(header, blocks))));
+        dibits.addAll(toDibits(frame(P25P1DataUnitID.TERMINATOR_DATA_UNIT, new BinaryMessage(28))));
+        for(int x = 0; x < 10; x++)
+        {
+            dibits.add(Dibit.D00_PLUS_1);
+        }
+
+        List<IMessage> messages = frame(dibits);
+
+        P25P1Message pduMessage = null;
+        PDUSequence sequence = null;
+        for(IMessage message : messages)
+        {
+            sequence = pduSequenceOf(message);
+
+            if(sequence != null)
+            {
+                pduMessage = (P25P1Message)message;
+                break;
+            }
+        }
+        assertTrue(pduMessage != null, "No PDU message dispatched: " + messages);
+        assertEquals(1, messages.stream().filter(m -> pduSequenceOf(m) != null).count(), messages.toString());
+
+        assertTrue(sequence.getHeader().isValid(), pduMessage.toString());
+        assertEquals(blockCount, sequence.getHeader().getBlocksToFollowCount());
+        assertEquals(receivedCount, sequence.getDataBlocks().size(), pduMessage.toString());
+        assertFalse(sequence.isComplete(), pduMessage.toString());
+
+        for(int x = 0; x < receivedCount; x++)
+        {
+            assertTrue(sequence.getDataBlock(x).isValid(), "Data block " + x + " invalid");
+        }
+
+        String text = pduMessage.toString();
+        assertTrue(text.contains("INCOMPLETE - RECEIVED " + receivedCount + "/" + blockCount), text);
+
+        //The terminator that ended the sequence is framed with no sync loss or dropped samples, so the framer accounted
+        //for the elapsed dibits of the header and the received data blocks.
+        int pduIndex = messages.indexOf(pduMessage);
+        assertFalse(messages.get(pduIndex - 1) instanceof SyncLossMessage, "Sync loss before PDU: " + messages);
+        assertFalse(messages.get(pduIndex - 1) instanceof DroppedSamplesMessage, "Dropped samples before PDU: " + messages);
+        boolean terminator = false;
+        for(IMessage message : messages.subList(pduIndex + 1, messages.size()))
+        {
+            assertFalse(message instanceof SyncLossMessage, "Sync loss after PDU: " + messages);
+            assertFalse(message instanceof DroppedSamplesMessage, "Dropped samples after PDU: " + messages);
+
+            if(message instanceof P25P1Message && ((P25P1Message)message).getDUID() == P25P1DataUnitID.TERMINATOR_DATA_UNIT)
+            {
+                terminator = true;
+            }
+        }
+
+        assertTrue(terminator, "No terminator after PDU: " + messages);
+    }
+
     /**
      * Frames a PDU carrying the UDP payload in the specified number of data blocks, followed by a terminator data
      * unit, and asserts that the framer dispatches the complete PDU sequence followed by the terminator with no sync

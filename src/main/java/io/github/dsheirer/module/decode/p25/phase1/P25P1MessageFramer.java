@@ -624,11 +624,12 @@ public class P25P1MessageFramer extends C4FMMessageFramer
     }
 
     /**
-     * Dispatches a completed PDU sequence
+     * Dispatches the PDU sequence, which is either complete or was ended by the next frame before all of its data
+     * blocks were received (incomplete).
      */
     private void dispatchPDUSequence()
     {
-        P25P1Message pduMessage = PDUMessageFactory.create(mPDUSequence, mMessageAssembler.getNAC(), getTimestamp());
+        P25P1Message pduMessage = PDUMessageFactory.create(mPDUSequence, mPDUSequence.getNAC(), getTimestamp());
         if(pduMessage != null)
         {
             if(pduMessage.getMessage() != null)
@@ -706,6 +707,14 @@ public class P25P1MessageFramer extends C4FMMessageFramer
                     mMessageAssembler = null;
                 }
             }
+            else if(mPDUSequence != null && mMessageAssembler.getDataUnitID() == P25P1DataUnitID.PACKET_DATA_UNIT_BLOCK_1)
+            {
+                //The next frame started before the PDU data block under assembly was received.  A data block that was
+                //transmitted completes assembly ahead of the next frame's NID, so the assembled bits are only trailing
+                //null bits and the next frame's sync and NID and they're not decoded as a data block.  The sequence
+                //is dispatched below as incomplete.
+                mPreviousDataUnitID = mMessageAssembler.getDataUnitID();
+            }
             else
             {
                 int droppedBitCount = mMessageAssembler.forceCompletion(mPreviousDataUnitID, mDetectedDataUnitID);
@@ -721,7 +730,16 @@ public class P25P1MessageFramer extends C4FMMessageFramer
             }
 
             //The new NID ended the multi-block sequence, so the assembler can't continue into the next frame, which
-            //would prevent starting the assembler for that frame.  The elapsed dibits are reported as sync loss.
+            //would prevent starting the assembler for that frame.  The elapsed dibits are reported as sync loss, except
+            //for a PDU sequence that is still waiting for data blocks, which is dispatched as incomplete rather than
+            //discarded.
+            if(mPDUSequence != null)
+            {
+                //Account for the header and the data blocks that were received
+                mDibitCounter -= P25P1DataUnitID.getPDUElapsedDibitLength(mPDUSequence.getDataBlocks().size());
+                dispatchPDUSequence();
+            }
+
             mMessageAssembler = null;
             mPDUSequence = null;
         }
