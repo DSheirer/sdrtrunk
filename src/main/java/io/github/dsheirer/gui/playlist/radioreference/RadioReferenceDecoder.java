@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.edacs.DecodeConfigEDACS;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
@@ -498,6 +499,13 @@ public class RadioReferenceDecoder
             case "NXDN":
                 return Protocol.NXDN;
             case "EDACS":
+                //EDACS narrowband and SCAT are not supported
+                if(flavor != null && flavor.getName() != null &&
+                    (flavor.getName().contains("Narrowband") || flavor.getName().contains("SCAT")))
+                {
+                    break;
+                }
+                return Protocol.EDACS;
             case "TETRA":
             case "Midland CMS":
             case "OpenSky":
@@ -575,6 +583,13 @@ public class RadioReferenceDecoder
                     return DecoderType.NXDN;
 
                 case "EDACS":
+                    //EDACS narrowband and SCAT are not supported
+                    if(flavor != null && flavor.getName() != null &&
+                        (flavor.getName().contains("Narrowband") || flavor.getName().contains("SCAT")))
+                    {
+                        break;
+                    }
+                    return DecoderType.EDACS;
                 case "TETRA":
                 case "Midland CMS":
                 case "OpenSky":
@@ -642,6 +657,50 @@ public class RadioReferenceDecoder
                 List<ChannelFrequency> channelMap = getChannelMap(systemInformation, site);
                 nxdn.setChannelMap(channelMap);
                 return nxdn;
+            case EDACS:
+                //The RadioReference site frequencies carry the logical channel number (LCN) of each frequency
+                DecodeConfigEDACS edacs = new DecodeConfigEDACS();
+
+                if(site != null)
+                {
+                    int maximumLcn = 0;
+
+                    for(SiteFrequency siteFrequency : site.getSiteFrequencies())
+                    {
+                        maximumLcn = Math.max(maximumLcn, siteFrequency.getLogicalChannelNumber());
+                    }
+
+                    if(maximumLcn > 0)
+                    {
+                        long[] lcnFrequencies = new long[maximumLcn];
+
+                        for(SiteFrequency siteFrequency : site.getSiteFrequencies())
+                        {
+                            int lcn = siteFrequency.getLogicalChannelNumber();
+
+                            if(lcn > 0)
+                            {
+                                lcnFrequencies[lcn - 1] = siteFrequency.getFrequencyHz();
+                            }
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+
+                        for(int x = 0; x < maximumLcn; x++)
+                        {
+                            if(x > 0)
+                            {
+                                sb.append(",");
+                            }
+
+                            sb.append(lcnFrequencies[x]);
+                        }
+
+                        edacs.setLcnFrequencies(sb.toString());
+                    }
+                }
+
+                return edacs;
             case P25_PHASE1:
                 DecodeConfiguration p1config = DecoderFactory.getDecodeConfiguration(decoderType);
 
